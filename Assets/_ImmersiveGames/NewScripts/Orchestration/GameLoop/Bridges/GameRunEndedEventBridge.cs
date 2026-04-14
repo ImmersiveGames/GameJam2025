@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
@@ -8,6 +9,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CanonicalRunEndIntent = _ImmersiveGames.NewScripts.Experience.PostRun.Contracts.RunEndIntent;
@@ -20,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
     {
         private EventBinding<GameRunEndedEvent> _binding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
+        private EventBinding<RunContinuationSelectionResolvedEvent> _runContinuationSelectionResolvedBinding;
         private bool _registered;
         private bool _postStagePending;
 
@@ -27,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
         {
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
+            _runContinuationSelectionResolvedBinding = new EventBinding<RunContinuationSelectionResolvedEvent>(OnRunContinuationSelectionResolved);
             RegisterBinding();
         }
 
@@ -45,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
             EventBus<GameRunEndedEvent>.Register(_binding);
             EventBus<GameRunStartedEvent>.Register(_runStartedBinding);
+            EventBus<RunContinuationSelectionResolvedEvent>.Register(_runContinuationSelectionResolvedBinding);
             _registered = true;
         }
 
@@ -57,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
             EventBus<GameRunEndedEvent>.Unregister(_binding);
             EventBus<GameRunStartedEvent>.Unregister(_runStartedBinding);
+            EventBus<RunContinuationSelectionResolvedEvent>.Unregister(_runContinuationSelectionResolvedBinding);
             _registered = false;
         }
 
@@ -77,6 +83,42 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             _postStagePending = false;
+
+            if (DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var continuationOwner) &&
+                continuationOwner != null)
+            {
+                continuationOwner.ClearCurrentContext("GameRunStarted");
+            }
+        }
+
+        private void OnRunContinuationSelectionResolved(RunContinuationSelectionResolvedEvent evt)
+        {
+            if (!evt.Selection.IsValid)
+            {
+                DebugUtility.LogError<GameRunEndedEventBridge>(
+                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida com estado invalido.");
+                return;
+            }
+
+            DebugUtility.Log<GameRunEndedEventBridge>(
+                $"[OBS][GameplaySessionFlow][RunDecision] RunContinuationSelectionResolved continuation='{evt.Selection.SelectedContinuation}' reason='{evt.Selection.Reason}' nextState='{evt.Selection.NextState}'.",
+                DebugUtility.Colors.Info);
+
+            if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var planResolver) || planResolver == null)
+            {
+                DebugUtility.LogError<GameRunEndedEventBridge>(
+                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida mas SessionTransitionPlanResolver nao foi encontrado no escopo global.");
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var orchestrator) || orchestrator == null)
+            {
+                DebugUtility.LogError<GameRunEndedEventBridge>(
+                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida mas SessionTransitionOrchestrator nao foi encontrado no escopo global.");
+                return;
+            }
+
+            _ = ExecuteTransitionAsync(planResolver, orchestrator, evt.Selection);
         }
 
         private void HandleGameRunEnded(GameRunEndedEvent evt)
@@ -106,47 +148,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
                         "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas o runtime da phase e invalido.");
-                    return;
-                }
-
-                if (!phaseRuntime.HasRunResultStage)
-                {
-                    DebugUtility.Log<GameRunEndedEventBridge>(
-                        $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' source='GameplaySessionFlow' scene='{sceneName}' frame={Time.frameCount} phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.",
-                        DebugUtility.Colors.Info);
-
-                    if (!DependencyManager.Provider.TryGetGlobal<IPostRunResultService>(out var noResultService) || noResultService == null)
-                    {
-                        DebugUtility.LogError<GameRunEndedEventBridge>(
-                            "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IPostRunResultService nao foi encontrado no escopo global para phase sem RunResultStage.");
-                        return;
-                    }
-
-                    if (!DependencyManager.Provider.TryGetGlobal<IRunEndIntentOwnershipService>(out var noResultIntentOwner) || noResultIntentOwner == null)
-                    {
-                        DebugUtility.LogError<GameRunEndedEventBridge>(
-                            "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunEndIntentOwnershipService nao foi encontrado no escopo global para phase sem RunResultStage.");
-                        return;
-                    }
-
-                    if (!DependencyManager.Provider.TryGetGlobal<IRunDecisionOwnershipService>(out var noResultDecisionOwner) || noResultDecisionOwner == null)
-                    {
-                        DebugUtility.LogError<GameRunEndedEventBridge>(
-                            "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunDecisionOwnershipService nao foi encontrado no escopo global para phase sem RunResultStage.");
-                        return;
-                    }
-
-                    var noResultIntent = new CanonicalRunEndIntent(
-                        signature: phaseRuntime.PhaseRuntimeSignature,
-                        sceneName: sceneName,
-                        profile: string.Empty,
-                        frame: Time.frameCount,
-                        reason: reason,
-                        isGameplayScene: isGameplayScene);
-
-                    noResultService.TrySetRunOutcome(evt.Outcome, reason);
-                    noResultIntentOwner.AcceptRunEndIntent(noResultIntent);
-                    noResultDecisionOwner.EnterRunDecision(new RunDecision(noResultIntent, runResult));
                     return;
                 }
 
@@ -182,17 +183,47 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 resultService.TrySetRunOutcome(evt.Outcome, reason);
                 runEndIntentOwner.AcceptRunEndIntent(intent);
 
+                if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var continuationOwner) || continuationOwner == null)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunContinuationOwnershipService nao foi encontrado no escopo global.");
+                    return;
+                }
+
+                continuationOwner.AcceptTerminalFact(new RunContinuationTerminalFact(
+                    intent,
+                    runResult,
+                    phaseRuntime.HasRunResultStage));
+
                 DebugUtility.Log<GameRunEndedEventBridge>(
                     $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageDispatchRequested outcome='{evt?.Outcome}' result='{runResult}' reason='{reason}' scene='{sceneName}' frame={Time.frameCount} isGameplayScene='{isGameplayScene}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.",
                     DebugUtility.Colors.Info);
 
-                runResultStageOwner.EnterRunResultStage(new RunResultStage(intent, runResult));
+                runResultStageOwner.EnterRunResultStage(continuationOwner.CurrentContext);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
                     $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar RunResultStage. ex='{ex.GetType().Name}: {ex.Message}'.");
                 _postStagePending = false;
+            }
+        }
+
+        private static async Task ExecuteTransitionAsync(
+            SessionTransitionPlanResolver planResolver,
+            SessionTransitionOrchestrator orchestrator,
+            RunContinuationSelection selection)
+        {
+            try
+            {
+                SessionTransitionContext context = new SessionTransitionContext(selection);
+                SessionTransitionPlan plan = planResolver.Resolve(context);
+                await orchestrator.ExecuteAsync(plan);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<GameRunEndedEventBridge>(
+                    $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar SessionTransition. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

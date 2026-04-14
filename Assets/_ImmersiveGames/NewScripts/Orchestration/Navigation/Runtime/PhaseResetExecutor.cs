@@ -2,6 +2,7 @@ using System;
 using UnityEngine.SceneManagement;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
@@ -77,6 +78,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
             }
 
             await _localExecutor.ExecuteAsync(executors, normalizedReason);
+
+            DebugUtility.Log<PhaseResetExecutor>(
+                $"[OBS][PhaseReset] ResetPhaseCompleted phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.PhaseSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+
+            EventBus<PhaseResetCompletedEvent>.Raise(
+                new PhaseResetCompletedEvent(
+                    resetContext,
+                    normalizedReason,
+                    source: nameof(PhaseResetExecutor)));
         }
 
         private static string NormalizeReason(string reason, string fallback)

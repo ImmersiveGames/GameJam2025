@@ -383,7 +383,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
         private static void PublishSelection(PhaseNavigationSelectionContext selectionContext)
         {
-            SyncRestartContextFromPhaseSelection(selectionContext.PhaseSelectedEvent);
             EventBus<PhaseDefinitionSelectedEvent>.Raise(selectionContext.PhaseSelectedEvent);
 
             DebugUtility.Log<PhaseNextPhaseSelectionService>(
@@ -416,30 +415,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             return currentSnapshot;
         }
 
-        private static void SyncRestartContextFromPhaseSelection(PhaseDefinitionSelectedEvent phaseSelectedEvent)
-        {
-            if (!PhaseNextPhaseServiceSupport.TryResolveGlobal<IRestartContextService>(out var restartContextService) ||
-                restartContextService == null)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseNextPhaseSelectionService),
-                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] RestartContextService ausente durante publicacao phase-owned de PhaseDefinitionSelectedEvent.");
-            }
-
-            GameplayStartSnapshot gameplayStartSnapshot = new GameplayStartSnapshot(
-                phaseSelectedEvent.PhaseDefinitionRef,
-                phaseSelectedEvent.MacroRouteId,
-                phaseSelectedEvent.MacroRouteRef,
-                phaseSelectedEvent.PhaseDefinitionRef.BuildCanonicalIntroContentId(),
-                phaseSelectedEvent.Reason,
-                phaseSelectedEvent.SelectionVersion,
-                phaseSelectedEvent.SelectionSignature);
-
-            restartContextService.RegisterGameplayStart(gameplayStartSnapshot);
-
-            DebugUtility.Log<PhaseNextPhaseSelectionService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] GameplayStartSnapshotLinked owner='PhaseNextPhaseSelectionService' phaseId='{phaseSelectedEvent.PhaseId}' routeId='{phaseSelectedEvent.MacroRouteId}' v='{phaseSelectedEvent.SelectionVersion}' reason='{phaseSelectedEvent.Reason}' signature='{gameplayStartSnapshot.PhaseSignature}'.",
-                DebugUtility.Colors.Info);
-        }
     }
 
     [DebugLevel(DebugLevel.Verbose)]

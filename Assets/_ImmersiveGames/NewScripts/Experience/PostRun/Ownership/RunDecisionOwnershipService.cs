@@ -13,8 +13,9 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
         bool IsActive { get; }
         bool HasCompleted { get; }
         RunDecision CurrentDecision { get; }
-        void EnterRunDecision(RunDecision decision);
-        void ExitRunDecision(RunDecisionCompletion completion);
+        void EnterRunDecision(RunContinuationContext continuationContext);
+        void EnterRunDecision(RunResultStageToRunDecisionHandoff handoff);
+        void ExitRunDecision(RunDecisionCompletion completion, RunContinuationKind selectedContinuation);
     }
 
     [DebugLevel(DebugLevel.Verbose)]
@@ -32,13 +33,36 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
         public bool HasCompleted { get; private set; }
         public RunDecision CurrentDecision { get; private set; }
 
-        public void EnterRunDecision(RunDecision decision)
+        public void EnterRunDecision(RunContinuationContext continuationContext)
+        {
+            EnterRunDecisionInternal(continuationContext, "DirectContext");
+        }
+
+        public void EnterRunDecision(RunResultStageToRunDecisionHandoff handoff)
+        {
+            if (!handoff.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(RunDecisionOwnershipService),
+                    "[FATAL][H1][RunDecision] Handoff de RunResultStage invalido recebido pelo owner canonico.");
+            }
+
+            EnterRunDecisionInternal(handoff.ContinuationContext, handoff.Source);
+        }
+
+        private void EnterRunDecisionInternal(RunContinuationContext continuationContext, string source)
         {
             if (IsActive)
             {
                 return;
             }
 
+            if (!continuationContext.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(RunDecisionOwnershipService),
+                    "[FATAL][H1][RunDecision] RunContinuationContext invalido recebido pelo owner canonico.");
+            }
+
+            var decision = new RunDecision(continuationContext);
             CurrentDecision = decision;
 
             AttachPresenterOrFail(decision);
@@ -55,27 +79,41 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             HasCompleted = false;
 
             DebugUtility.Log<RunDecisionOwnershipService>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered signature='{decision.Signature}' scene='{decision.SceneName}' frame={decision.Frame} result='{decision.Result}' reason='{decision.Reason}'.",
+                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionEntered signature='{decision.Signature}' scene='{decision.SceneName}' frame={decision.Frame} result='{decision.Result}' reason='{decision.Reason}' source='{Normalize(source)}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<RunDecisionEnteredEvent>.Raise(new RunDecisionEnteredEvent(decision));
         }
 
-        public void ExitRunDecision(RunDecisionCompletion completion)
+        public void ExitRunDecision(RunDecisionCompletion completion, RunContinuationKind selectedContinuation)
         {
             if (!IsActive)
             {
                 return;
             }
 
+            if (CurrentDecision.ContinuationContext.IsValid &&
+                !CurrentDecision.ContinuationContext.HasContinuation(selectedContinuation))
+            {
+                HardFailFastH1.Trigger(typeof(RunDecisionOwnershipService),
+                    $"[FATAL][H1][RunDecision] Continuation selecionada invalida. selected='{selectedContinuation}' signature='{CurrentDecision.Signature}'.");
+            }
+
             IsActive = false;
             HasCompleted = true;
 
             DebugUtility.Log<RunDecisionOwnershipService>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionCompleted signature='{CurrentDecision.Signature}' scene='{CurrentDecision.SceneName}' frame='{CurrentDecision.Frame}' result='{CurrentDecision.Result}' reason='{completion.Reason}' handoff='{completion.NextState}' kind='{completion.Kind}'.",
+                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionCompleted signature='{CurrentDecision.Signature}' scene='{CurrentDecision.SceneName}' frame='{CurrentDecision.Frame}' result='{CurrentDecision.Result}' reason='{completion.Reason}' handoff='{completion.NextState}' kind='{completion.Kind}' selectedContinuation='{selectedContinuation}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<RunDecisionCompletedEvent>.Raise(new RunDecisionCompletedEvent(CurrentDecision, completion));
+
+            var selection = new RunContinuationSelection(
+                CurrentDecision.ContinuationContext,
+                selectedContinuation,
+                completion);
+
+            EventBus<RunContinuationSelectionResolvedEvent>.Raise(new RunContinuationSelectionResolvedEvent(selection));
 
             if (_currentPresenter != null)
             {

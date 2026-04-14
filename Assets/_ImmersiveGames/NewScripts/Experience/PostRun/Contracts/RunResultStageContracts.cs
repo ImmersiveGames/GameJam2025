@@ -18,20 +18,21 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
 
     public readonly struct RunResultStage
     {
-        public RunResultStage(RunEndIntent intent, RunResult result)
+        public RunResultStage(RunContinuationContext continuationContext)
         {
-            Intent = intent;
-            Result = result;
+            ContinuationContext = continuationContext;
         }
 
-        public RunEndIntent Intent { get; }
-        public RunResult Result { get; }
+        public RunContinuationContext ContinuationContext { get; }
+        public RunEndIntent Intent => ContinuationContext.Intent;
+        public RunResult Result => ContinuationContext.Result;
         public string Signature => Intent.Signature;
         public string SceneName => Intent.SceneName;
         public string Profile => Intent.Profile;
         public int Frame => Intent.Frame;
         public string Reason => Intent.Reason;
         public bool IsGameplayScene => Intent.IsGameplayScene;
+        public bool HasRunResultStage => ContinuationContext.HasRunResultStage;
     }
 
     public readonly struct RunResultStageCompletion
@@ -45,6 +46,28 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
         public RunResultStageCompletionKind Kind { get; }
         public string Reason { get; }
         public bool WasContinued => Kind == RunResultStageCompletionKind.Continue;
+    }
+
+    /// <summary>
+    /// Handoff estreito da saida local da phase para a continuidade macro.
+    /// </summary>
+    public readonly struct RunResultStageToRunDecisionHandoff
+    {
+        public RunResultStageToRunDecisionHandoff(RunResultStage stage, RunResultStageCompletion completion, string source)
+        {
+            Stage = stage;
+            Completion = completion;
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+        }
+
+        public RunResultStage Stage { get; }
+        public RunResultStageCompletion Completion { get; }
+        public string Source { get; }
+        public RunContinuationContext ContinuationContext => Stage.ContinuationContext;
+        public bool IsValid =>
+            Stage.ContinuationContext.IsValid &&
+            Completion.Kind != RunResultStageCompletionKind.Unknown &&
+            !string.IsNullOrWhiteSpace(Source);
     }
 
     public interface IRunResultStageControl

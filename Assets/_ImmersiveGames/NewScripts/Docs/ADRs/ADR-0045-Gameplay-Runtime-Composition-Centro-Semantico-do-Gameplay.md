@@ -23,6 +23,8 @@ A linguagem final do projeto nao deve girar em torno de swap de conteudo.
 
 O centro semantico do gameplay passa a ser o **Gameplay Runtime Composition**.
 
+Nota de escopo: a camada acima do baseline para transformacao composta de sessao/runtime e documentada em `ADR-0052`; este ADR permanece valido para o centro semantico do gameplay, mas nao governa a composicao acima do baseline.
+
 Esse subsistema e o ponto de leitura canonica para o V1 ja consolidado:
 - `SessionContext`
 - `PhaseRuntime`

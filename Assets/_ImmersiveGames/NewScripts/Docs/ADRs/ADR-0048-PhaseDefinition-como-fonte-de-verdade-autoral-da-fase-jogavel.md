@@ -11,6 +11,8 @@
 
 Este ADR congela a camada de authoring da fase como contrato positivo, tipado e autocontido, separada da leitura runtime que `GameplaySessionFlow` deriva em memoria.
 
+Nota de escopo: `PhaseDefinition` continua sendo a fonte autoral da phase, mas nao e owner da transformacao composta da sessao/runtime acima do baseline; essa leitura pertence a `ADR-0052`.
+
 ## 2. Escopo
 
 Este ADR cobre:

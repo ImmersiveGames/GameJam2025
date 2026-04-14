@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Bootstrap;
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
     /// <summary>
@@ -37,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
             EnsureNavigationCoreComposition();
             EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
+            SessionTransitionBootstrap.ComposeRuntime();
             NavigationAdaptersBootstrap.ComposeRuntime(bootstrapConfig);
             EnsureNavigationModuleComposition();
 

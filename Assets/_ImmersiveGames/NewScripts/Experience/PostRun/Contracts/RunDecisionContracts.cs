@@ -1,17 +1,21 @@
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
 {
     public readonly struct RunDecision
     {
-        public RunDecision(RunEndIntent intent, RunResult result)
+        public RunDecision(RunContinuationContext continuationContext)
         {
-            Intent = intent;
-            Result = result;
+            ContinuationContext = continuationContext;
         }
 
-        public RunEndIntent Intent { get; }
-        public RunResult Result { get; }
+        public RunContinuationContext ContinuationContext { get; }
+        public RunEndIntent Intent => ContinuationContext.Intent;
+        public RunResult Result => ContinuationContext.Result;
+        public IReadOnlyList<RunContinuationKind> AllowedContinuations => ContinuationContext.AllowedContinuations;
+        public bool RequiresPlayerDecision => ContinuationContext.RequiresPlayerDecision;
+        public bool HasAllowedContinuations => ContinuationContext.HasAllowedContinuations;
         public string Signature => Intent.Signature;
         public string SceneName => Intent.SceneName;
         public string Profile => Intent.Profile;

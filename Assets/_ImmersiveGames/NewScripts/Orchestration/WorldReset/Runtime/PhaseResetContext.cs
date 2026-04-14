@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Core.Events;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
 {
@@ -23,5 +24,21 @@ namespace _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime
         public PhaseContextSignature PhaseSignature { get; }
         public string ResetSignature { get; }
         public bool IsValid => PhaseDefinitionRef != null && MacroRouteId.IsValid && PhaseSignature.IsValid;
+    }
+
+    public readonly struct PhaseResetCompletedEvent : IEvent
+    {
+        public PhaseResetCompletedEvent(PhaseResetContext resetContext, string reason, string source)
+        {
+            ResetContext = resetContext;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+        }
+
+        public PhaseResetContext ResetContext { get; }
+        public string Reason { get; }
+        public string Source { get; }
+
+        public bool IsValid => ResetContext.IsValid;
     }
 }

@@ -2,19 +2,22 @@
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
-
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     public readonly struct GameplayPhaseRuntimeMaterializedEvent : _ImmersiveGames.NewScripts.Core.Events.IEvent
     {
-        public GameplayPhaseRuntimeMaterializedEvent(GameplayPhaseRuntimeSnapshot runtime, string source)
+        public GameplayPhaseRuntimeMaterializedEvent(GameplayPhaseRuntimeSnapshot runtime, string source, int phaseLocalEntrySequence, string entrySignature = "")
         {
             Runtime = runtime;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+            PhaseLocalEntrySequence = phaseLocalEntrySequence < 0 ? 0 : phaseLocalEntrySequence;
+            EntrySignature = string.IsNullOrWhiteSpace(entrySignature) ? string.Empty : entrySignature.Trim();
         }
 
         public GameplayPhaseRuntimeSnapshot Runtime { get; }
         public string Source { get; }
+        public int PhaseLocalEntrySequence { get; }
+        public string EntrySignature { get; }
     }
 
     public readonly struct GameplayPhaseRuntimeSnapshot
@@ -57,7 +60,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             string localContentId,
             string reason,
             int selectionVersion,
-            string phaseSignature)
+            int phaseLocalEntrySequence,
+            string phaseSignature,
+            string entrySignature = "")
         {
             if (PhaseDefinitionRef == null)
             {
@@ -73,10 +78,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 normalizedContentId,
                 reason,
                 selectionVersion,
+                phaseLocalEntrySequence,
                 phaseSignature,
                 IntroPresenterPrefab,
                 HasIntroStage,
-                HasRunResultStage);
+                HasRunResultStage,
+                entrySignature);
         }
 
         public GameplayPhaseRuntimeSnapshot(

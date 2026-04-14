@@ -22,8 +22,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
 
         public void Update()
         {
-            // Executa no maximo uma transicao por tick.
-            // StartRequested pode permanecer true ate o fim do Tick; evitar encadear Boot -> Ready -> Playing no mesmo frame.
+            // Executa no maximo uma transicao por chamada.
+            // O GameLoopService pode chamar uma segunda vez no mesmo Tick apenas para completar o start handoff.
             TryTransitionOnce();
         }
 

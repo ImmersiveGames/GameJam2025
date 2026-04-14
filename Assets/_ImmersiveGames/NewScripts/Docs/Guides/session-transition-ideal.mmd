@@ -1,0 +1,69 @@
+flowchart TD
+    subgraph L1[Baseline - Run Closure & Continuity]
+        A1[Run End<br/>Victory / Defeat / etc.]
+        A2[RunContinuationOwnershipService]
+        A3[RunContinuationContext]
+        A4[RunResultStage<br/>phase-owned opcional]
+        A5[RunDecision<br/>macro decision]
+        A6[RunContinuationSelection]
+    end
+
+    subgraph L2[Session Transition - camada acima do baseline]
+        B1[SessionTransitionContext]
+        B2[SessionTransitionPolicy Resolver]
+        B3[SessionTransitionPlan]
+        B4[SessionTransitionOrchestrator]
+    end
+
+    subgraph L3[Transition Axes]
+        C1[Continuation Axis]
+        C2[Reset Axis]
+        C3[World Reconstruction Axis]
+        C4[Content / Spawn Transition Axis]
+        C5[Actor / Object Carry-over Axis]
+    end
+
+    subgraph L4[Execution Capabilities]
+        D1[Phase Navigation]
+        D2[Phase Reset]
+        D3[World Reset / Rebuild]
+        D4[Content / Spawn Transition Executors]
+        D5[Actor / Object Executors]
+        D6[Frontend / Menu Routing]
+    end
+
+    subgraph L5[Result]
+        E1[Runtime / Session transformed]
+    end
+
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A3 --> A5
+    A4 --> A5
+    A5 --> A6
+
+    A6 --> B1
+    B1 --> B2
+    B2 --> B3
+    B3 --> B4
+
+    B3 --> C1
+    B3 --> C2
+    B3 --> C3
+    B3 --> C4
+    B3 --> C5
+
+    B4 --> D1
+    B4 --> D2
+    B4 --> D3
+    B4 --> D4
+    B4 --> D5
+    B4 --> D6
+
+    D1 --> E1
+    D2 --> E1
+    D3 --> E1
+    D4 --> E1
+    D5 --> E1
+    D6 --> E1

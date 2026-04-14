@@ -1,4 +1,4 @@
-# ADR-0051 - Fluxo canonico de continuidade apos o fechamento da run
+# ADR-0051 - Fluxo canonico de continuidade apos o fechamento de run
 
 ## Status
 - Estado: Aceito
@@ -7,151 +7,204 @@
 
 ## 1. Contexto
 
-Os ADRs atuais ja separam o centro semantico do gameplay, o pipeline de montagem da phase e o fim de run canonico:
+Os ADRs canonicamente relevantes ja separam:
 
-- `ADR-0001` define o vocabulario fundamental de contexto, rota, resultado e intencao.
-- `ADR-0044` estabelece o centro semantico do gameplay e a separacao entre resultado, continuidade e navegacao.
-- `ADR-0045` consolida o `Gameplay Runtime Composition` como centro semantico do gameplay.
-- `ADR-0047` fixa o pipeline canonico da phase dentro de `GameplaySessionFlow`.
-- `ADR-0049` fecha o contrato canonico de fim de run com `RunEndIntent`, `RunResultStage` e `RunDecision`.
-- `ADR-0050` fixa a `IntroStage` como rail local de entrada da phase apos `SceneTransitionCompleted`.
+- `ADR-0001`: vocabulario fundamental de contexto, rota, resultado e intencao
+- `ADR-0044`: centro semantico do gameplay, resultado e continuidade
+- `ADR-0045`: `Gameplay Runtime Composition` como centro semantico do gameplay
+- `ADR-0046`: `GameplaySessionFlow` como primeiro bloco do runtime
+- `ADR-0047`: pipeline canonico da phase dentro de `GameplaySessionFlow`
+- `ADR-0048`: `PhaseDefinition` como fonte de verdade autoral da fase jogavel
+- `ADR-0049`: fim de run canonico com `RunEndIntent`, `RunResultStage` e `RunDecision`
+- `ADR-0050`: `IntroStage` como rail local de entrada da phase
 
-Na pratica, o runtime atual ja distingue o fechamento da run, consolida um resultado e abre o rail de pos-run. O ponto que ainda precisa de formalizacao canonica e a separacao entre:
+A frente de reset/restart ja foi separada em outra linha para manter o reset previsivel. Este ADR nao pode reabrir a mistura anterior entre fechamento, continuidade, restart/reset e navegacao.
 
-1. o motivo do fechamento da run atual
-2. o contexto canonico de continuidade apos o fechamento
-3. a decisao ou apresentacao opcional dessa continuidade
-4. a execucao downstream da continuidade escolhida
-5. a navegacao pura de phase, mantida como dominio separado
-
-Este ADR formaliza esse boundary sem detalhar implementacao.
+O problema que ainda precisa ser formalizado e a continuidade canonica apos o fechamento da run, com owner concreto no nivel de `GameplaySessionFlow`.
 
 ## 2. Problema
 
-Hoje a continuacao apos o fechamento da run ainda pode ser lida a partir de payload estreito demais.
+Hoje a continuidade apos o fechamento ainda pode ser lida por contratos estreitos demais ou por seams transitarios demais.
 
-Mesmo com `RunEndIntent`, `RunResult` e `RunDecision`, falta um contrato canonico explicito que carregue a semantica de continuidade apos o fechamento e sirva como fonte de verdade para:
+Sem um owner concreto e um contexto canonico explicitos, o sistema tende a misturar:
 
-- quais continuidades estao permitidas
-- se a continuidade exige decisao do jogador
-- qual continuidade ja foi selecionada por regra
-- como tratar casos automaticos e casos com escolha
-- como manter `PhaseNavigation` neutra em relacao ao fechamento da run
+- fechamento semantico da run
+- contextualizacao da continuidade
+- selecao/confirmacao da continuidade
+- execucao downstream da continuidade
+- navegacao pura de phase
 
-Sem esse contrato, o sistema tende a misturar:
-
-- motivo de fechamento
-- decisao de continuidade
-- apresentacao da continuidade
-- navegacao de phase
-- execucao downstream
-
-Essa mistura enfraquece o boundary entre o fim de run e a progressao editorial ou operacional da phase.
+Essa mistura reabre exatamente o tipo de confusao que ja impediu restart/reset previsiveis em tentativas anteriores de unificacao.
 
 ## 3. Decisao
 
-Este ADR congela a existencia de um contexto canonico de continuidade apos o fechamento da run.
+Este ADR congela `RunContinuationContext` como contrato central de continuidade apos o fechamento da run.
 
-Nome canonico recomendado:
+### Owner concreto
 
-- `RunContinuationContext`
+- `RunContinuationOwnershipService` e o owner concreto do contexto de continuidade
+- ele vive no boundary de `GameplaySessionFlow`
+- ele materializa, guarda e expoe o contexto canonico
 
-`RunContinuationContext` e o contrato que nasce depois do fechamento semantico da run e centraliza a continuidade possivel daquela run encerrada.
+### Nascimento canonico
 
-Payload minimo esperado de `RunContinuationContext`:
+`RunContinuationContext` nasce logo apos a consolidacao do fechamento semantico da run, quando o owner concreto recebe o evento/registro terminal da run e materializa o contexto de continuidade.
 
-- `closing reason`
-- `allowed continuations`
-- `requires player decision`
-- `selected continuation` opcional ate ser resolvida
+`GameRunEndedEventBridge` nao e owner semantico. Ele sobrevive apenas como transporte fino do fato terminal ate o owner concreto.
 
-Ele nao substitui `RunEndIntent`.
-Ele nao substitui `RunResult`.
-Ele nao substitui `RunDecision`.
+### Payload minimo de `RunContinuationContext`
 
-Ele existe para representar a continuidade canonica disponivel apos o fechamento, com ownership semantico explicito e sem depender de UI local, de `PhaseNavigation` ou de heuristica de presenter.
+O contexto carrega apenas:
+
+- contexto consolidado da run/sessao
+- continuidades validas
+- metadados minimos necessarios para expor e confirmar a selecao
+
+Ele nao carrega semantica de execucao.
+Ele nao carrega comando de restart.
+Ele nao carrega navegacao editorial.
+Ele nao carrega state de presenter.
+Ele nao carrega bootstrap/start-plan.
+
+Uma continuidade selecionada pode ser registrada como resolucao derivada, mas a selecao nao vira execucao e nao mora no contexto como comando.
 
 ## 4. Boundaries e ownership
 
 ### Ownership canonico
 
-- `RunContinuationContext` e owned por `GameplaySessionFlow` / centro semantico do gameplay.
-- `RunResultStage` e `RunDecision` consomem o contexto, mas nao sao owners da semantica de continuidade.
+- `RunContinuationOwnershipService` e o owner canonico do contexto
+- `GameplaySessionFlow` e o boundary macro de ownership da continuidade
+- `RunResultStage` e `RunDecision` sao consumidores, nunca owners da semantica
 
 ### Boundaries proibidos
 
 Nao e permitido colocar a semantica de continuidade em:
 
+- `GameRunEndedEventBridge`
+- `PostRunOverlayController`
 - `PhaseNavigation`
-- UI/presenter local
 - catalogo de phase
-- `RunResultStage` local
 - executor downstream
+- presenter local
 
 ### Separacao obrigatoria
 
-O contrato canonico deve separar explicitamente:
+O desenho canonico deve manter separados:
 
-1. motivo do fechamento da run
-2. contexto de continuidade
-3. continuidades permitidas
-4. continuidade final selecionada
-5. execucao downstream da continuidade
-6. navegacao pura de phase
+1. contexto de continuidade
+2. selecao/confirmacao da continuidade
+3. execucao downstream da continuidade
+4. navegacao pura de phase
 
 ## 5. Fluxo canonico
 
-O fluxo canonico passa a ser lido assim:
+O fluxo canonico passa a ser:
 
 1. a run fecha semanticamente
-2. `RunContinuationContext` e materializado
-3. `RunResultStage`, quando existir, consome o contexto
-4. `RunDecision`, quando existir ou quando necessario, consome o contexto
-5. a continuidade final e escolhida ou confirmada
-6. a continuidade resolvida e executada downstream
-7. `PhaseNavigation` so entra quando a continuidade escolhida for explicitamente `AdvancePhase`
+2. `GameRunEndedEventBridge` transporta o fato terminal ao owner concreto
+3. `RunContinuationOwnershipService` materializa `RunContinuationContext`
+4. `RunResultStage`, quando existir, consome o contexto
+5. `RunDecision`, quando existir ou quando necessario, consome o contexto e escolhe/confirma uma continuidade
+6. a continuidade escolhida e resolvida como resultado de continuidade, nao como execucao
+7. o executor downstream executa a continuidade resolvida
+8. `AdvancePhase` entra em tratamento editorial explicito e so entao pode acionar navegacao pura
+9. `RestartCurrentPhase` resolve para o rail proprio de phase reset
+10. `PhaseNavigation` permanece fora do rail semantico de continuidade
 
 Este fluxo continua valido quando `RunResultStage` e pulado.
-O contexto de continuidade existe mesmo no caminho `skip/no-content`, porque o fechamento da run ainda precisa carregar a semantica de continuidade.
+O contexto existe mesmo no caminho `skip/no-content`.
+
+## 5.1 Handoff macro para pipeline local
+
+A continuidade macro nao executa `IntroStage` nem `RunResultStage`.
+Ela resolve a continuidade e publica o handoff explicito para o pipeline local da phase.
+
+Handoff canonico:
+
+- `SessionTransitionOrchestrator` publica `SessionTransitionPhaseLocalEntryReadyEvent`
+- `GameplayPhaseFlowService` consome o handoff como owner phase-side
+- a phase local segue então pelo seu pipeline canonico ja existente
+- a identidade local de reentrada da `IntroStage` e um `PhaseLocalEntrySequence` monotônico produzido no phase-side, para nao colidir com a entrada inicial nem com restarts subsequentes
+
+Leitura pratica:
+
+- `RestartCurrentPhase` entrega o reset ao rail local de phase
+- `AdvancePhase` entrega a troca ao rail local de navigation/intro da phase
+- `RunResultStage` permanece phase-local
+- `RunDecision` permanece macro
+
+### 5.2 Handoff da saida local para a continuidade macro
+
+Quando `RunResultStage` conclui, o owner local publica um handoff estreito e tipado para `RunDecision`.
+
+- `RunResultStageOwnershipService` emite `RunResultStageToRunDecisionHandoff`
+- `RunDecisionOwnershipService` consome esse handoff e materializa a continuidade macro
+- `RunResultStage` nao executa continuidade por conta propria
+- `RunDecision` nao volta a ser stage local da phase
 
 ## 6. Responsabilidades por componente
 
 ### `GameplaySessionFlow`
 
+- boundary macro de continuidade do gameplay
+- abriga o owner concreto da continuidade
+- garante que o contexto nasca logo apos o fechamento
+
+### `RunContinuationOwnershipService`
+
 - materializa `RunContinuationContext`
-- mantem o ownership semantico do fechamento da run e da continuidade
+- mantem o contexto canonico de continuidade
 - fornece o contexto aos consumidores corretos
 
 ### `RunEndIntent`
 
 - continua sendo o ato de encerramento da run atual
-- carrega o fechamento inicial, nao o contrato completo de continuidade
+- nao carrega o contrato completo de continuidade
 
 ### `RunResultStage`
 
 - permanece um stage opcional e phase-owned
-- pode consumir o contexto
+- consome o contexto
 - nao decide a semantica de continuidade
-- nao deve ser a origem da continuidade
+- nao materializa contexto
 
 ### `RunDecision`
 
 - consome `RunContinuationContext`
-- pode escolher uma continuidade
-- ou pode apenas confirmar uma continuidade ja resolvida por regra
-- nao deve inventar a semantica localmente a partir de payload estreito
+- escolhe ou confirma uma continuidade ja canonizada
+- nao infere
+- nao classifica
+- nao monta execucao
+
+### `GameRunEndedEventBridge`
+
+- permanece apenas como transporte fino do evento terminal
+- nao e owner semantico
+- nao materializa o contexto canonico
 
 ### Execucao downstream
 
-- executa a continuidade escolhida ou confirmada
+- executa apenas a continuidade resolvida
 - nao define o contrato semantico
 - nao substitui o contexto
+
+### `GameplaySessionFlowContinuityService`
+
+- executor downstream resolvido
+- recebe a continuidade resolvida
+- nao e hub de continuidade, navegacao, restart/reset e presenter
 
 ### `PhaseNavigation`
 
 - continua sendo navegacao pura e editorial
-- nao carrega semantica de fechamento de run
-- so e acionada quando a continuidade for explicitamente `AdvancePhase`
+- fica fora do rail semantico de continuidade
+- so entra quando a continuidade escolhida for explicitamente `AdvancePhase`
+
+### `PostRunOverlayController`
+
+- presenter puro
+- exibe e emite escolha/confirmacao downstream
+- nao decide semantica
 
 ## 7. Continuidade minima de v1
 
@@ -164,33 +217,35 @@ As continuidades minimas de v1 sao:
 
 Leitura canonica:
 
-- `Victory`, `Defeat` e `ExitToMenu` sao motivos de fechamento, nao destinos automaticos
+- `Victory`, `Defeat` e `ExitToMenu` continuam sendo motivos de fechamento, nao destinos automaticos
 - o destino da continuidade e decidido depois do fechamento, por contrato de continuidade
-- `EndRun` nao e sinônimo automatico de `Defeat`
 - `EndRun` representa o encerramento terminal da continuidade, nao um atalho de `PhaseNavigation`
+- `RestartCurrentPhase` pode existir como continuidade valida, mas sua execucao resolve para o rail proprio de phase reset
+- `AdvancePhase` pode existir como continuidade valida, mas seu tratamento e editorial explicito e nao vira navegacao pura escondida no contexto amplo
 
 ## 8. Regras e invariantes
 
 - `RunContinuationContext` nasce apos o fechamento semantico da run
-- `RunContinuationContext` e canonicamente owned por `GameplaySessionFlow`
+- `RunContinuationOwnershipService` e o owner concreto do contexto
 - `RunResultStage` e `RunDecision` consomem o contexto, nao o definem
-- `RunDecision` pode escolher ou confirmar uma continuidade
+- `RunDecision` escolhe ou confirma uma continuidade ja canonizada
 - `RunDecision` nao define o conjunto canonico de continuidades validas
-- o contexto deve suportar continuidades automaticas e continuidades com decisao
+- o contexto deve suportar continuidades automaticas e continuidades com confirmacao
 - `RunResultStage` continua opcional e sua ausencia nao invalida o contexto
-- `PhaseNavigation` nao deve carregar semantica de fechamento de run
-- o executor downstream nao deve ser o lugar de definicao do contrato semantico
-- a decisao de continuidade nao deve morar em presenter local
-- a decisao de continuidade nao deve morar em catalogo de phase
+- `PhaseNavigation` nao carrega semantica de fechamento de run
+- `RestartCurrentPhase` nao e absorvido por um contexto amplo de continuidade
+- `GameplaySessionFlowContinuityService` nao volta a misturar continuidade, navigation e reset/restart
+- a decisao de continuidade nao mora em presenter local
+- a decisao de continuidade nao mora em catalogo de phase
 
 ## 9. Consequencias
 
-- o fim de run passa a ter um contrato explicito entre fechamento e continuidade
+- o fim de run passa a ter um contrato explicito entre fechamento, selecao e execucao
 - `RunDecision` deixa de depender de payload estreito para inferir significado
 - continuidades automaticas e com escolha ficam no mesmo modelo sem colapsar semantica
-- `RunResultStage` pode continuar opcional sem enfraquecer o boundary
+- `RunResultStage` continua opcional sem enfraquecer o boundary
 - `PhaseNavigation` permanece limpa e neutra
-- a execucao downstream fica separada do contexto semantico
+- restart/reset continuam fora do contexto amplo de continuidade
 
 ## 10. Nao objetivos
 
@@ -202,6 +257,7 @@ Este ADR nao define:
 - codigo de navegacao
 - regras detalhadas de dispatch
 - mapping de asset ou catalogo
+- bootstrap/start-plan para phase restart
 
 Este ADR tambem nao reabre o contrato de `IntroStage`.
 Ele apenas fecha o boundary de continuidade apos o fechamento da run.
@@ -209,9 +265,11 @@ Ele apenas fecha o boundary de continuidade apos o fechamento da run.
 ## 11. Relacao com ADRs existentes
 
 - `ADR-0001`: vocabulario fundamental para resultado, intencao e contexto
-- `ADR-0044`: coluna dorsal do runtime e leitura canonica de resultado e continuidade
+- `ADR-0044`: separacao entre resultado, continuidade e navegacao
 - `ADR-0045`: centro semantico do gameplay
+- `ADR-0046`: `GameplaySessionFlow` como primeiro bloco do runtime
 - `ADR-0047`: pipeline canonico da phase dentro de `GameplaySessionFlow`
+- `ADR-0048`: rail canonico de routing gameplay-side
 - `ADR-0049`: fim de run canonico com `RunEndIntent`, `RunResultStage` e `RunDecision`
 - `ADR-0050`: `IntroStage` canonica e separacao da entrada da phase
 
@@ -220,7 +278,8 @@ Ele formaliza o que acontece depois do fechamento semantico da run e antes da ex
 
 ## 12. Proximos passos
 
-1. Introduzir o contrato concreto de `RunContinuationContext` no dominio adequado.
-2. Adaptar os consumidores para ler o contexto de continuidade, e nao apenas `RunEndIntent` + `RunResult`.
-3. Separar claramente escolha de continuidade, apresentacao opcional e execucao downstream.
-4. Manter `PhaseNavigation` como dominio neutro e editorial.
+1. Introduzir o contrato concreto de `RunContinuationOwnershipService` no dominio de `GameplaySessionFlow`.
+2. Materializar `RunContinuationContext` logo apos o fechamento semantico da run.
+3. Manter `GameRunEndedEventBridge` apenas como transporte fino.
+4. Separar claramente contexto, selecao, execucao downstream e phase navigation.
+5. Garantir que `RestartCurrentPhase` siga resolvendo para o rail proprio de phase reset.

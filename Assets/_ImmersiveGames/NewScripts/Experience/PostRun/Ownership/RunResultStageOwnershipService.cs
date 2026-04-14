@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
         bool IsActive { get; }
         bool HasCompleted { get; }
         RunResultStage CurrentStage { get; }
-        void EnterRunResultStage(RunResultStage stage);
+        void EnterRunResultStage(RunContinuationContext continuationContext);
         void CompleteRunResultStage(RunResultStageCompletion completion);
     }
 
@@ -34,26 +34,45 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
         public bool HasCompleted { get; private set; }
         public RunResultStage CurrentStage { get; private set; }
 
-        public void EnterRunResultStage(RunResultStage stage)
+        public void EnterRunResultStage(RunContinuationContext continuationContext)
         {
             if (IsActive)
             {
                 return;
             }
 
-            CurrentStage = stage;
+            if (!continuationContext.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(RunResultStageOwnershipService),
+                    "[FATAL][H1][RunResultStage] RunContinuationContext invalido recebido pelo stage owner.");
+            }
 
-            if (!_presenterHost.TryEnsureCurrentPresenter(stage, this, nameof(RunResultStageOwnershipService), out IRunResultStagePresenter presenter) ||
-                presenter == null)
+            CurrentStage = new RunResultStage(continuationContext);
+
+            if (!continuationContext.HasRunResultStage)
             {
                 DebugUtility.Log<RunResultStageOwnershipService>(
-                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' signature='{Normalize(stage.Signature)}' scene='{Normalize(stage.SceneName)}' result='{stage.Result}' reasonText='{Normalize(stage.Reason)}'.",
+                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' signature='{Normalize(CurrentStage.Signature)}' scene='{Normalize(CurrentStage.SceneName)}' result='{CurrentStage.Result}' reasonText='{Normalize(CurrentStage.Reason)}'.",
                     DebugUtility.Colors.Info);
 
                 CurrentStage = default;
                 IsActive = false;
                 HasCompleted = true;
-                _runDecisionOwnershipService.EnterRunDecision(new RunDecision(stage.Intent, stage.Result));
+                _runDecisionOwnershipService.EnterRunDecision(continuationContext);
+                return;
+            }
+
+            if (!_presenterHost.TryEnsureCurrentPresenter(CurrentStage, this, nameof(RunResultStageOwnershipService), out IRunResultStagePresenter presenter) ||
+                presenter == null)
+            {
+                DebugUtility.Log<RunResultStageOwnershipService>(
+                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' signature='{Normalize(CurrentStage.Signature)}' scene='{Normalize(CurrentStage.SceneName)}' result='{CurrentStage.Result}' reasonText='{Normalize(CurrentStage.Reason)}'.",
+                    DebugUtility.Colors.Info);
+
+                CurrentStage = default;
+                IsActive = false;
+                HasCompleted = true;
+                _runDecisionOwnershipService.EnterRunDecision(continuationContext);
                 return;
             }
 
@@ -62,10 +81,10 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             HasCompleted = false;
 
             DebugUtility.Log<RunResultStageOwnershipService>(
-                $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageEntered signature='{stage.Signature}' scene='{stage.SceneName}' frame={stage.Frame} result='{stage.Result}' reason='{stage.Reason}'.",
+                $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageEntered signature='{CurrentStage.Signature}' scene='{CurrentStage.SceneName}' frame={CurrentStage.Frame} result='{CurrentStage.Result}' reason='{CurrentStage.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<RunResultStageEnteredEvent>.Raise(new RunResultStageEnteredEvent(stage));
+            EventBus<RunResultStageEnteredEvent>.Raise(new RunResultStageEnteredEvent(CurrentStage));
         }
 
         public bool TryComplete(string reason = null)
@@ -100,7 +119,13 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 
             EventBus<RunResultStageCompletedEvent>.Raise(new RunResultStageCompletedEvent(CurrentStage, completion));
 
-            _runDecisionOwnershipService.EnterRunDecision(new RunDecision(CurrentStage.Intent, CurrentStage.Result));
+            var handoff = new RunResultStageToRunDecisionHandoff(CurrentStage, completion, source);
+
+            DebugUtility.Log<RunResultStageOwnershipService>(
+                $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageToRunDecisionHandoffIssued signature='{CurrentStage.Signature}' scene='{CurrentStage.SceneName}' frame='{CurrentStage.Frame}' result='{CurrentStage.Result}' reason='{completion.Reason}' kind='{completion.Kind}' source='{handoff.Source}'.",
+                DebugUtility.Colors.Info);
+
+            _runDecisionOwnershipService.EnterRunDecision(handoff);
             return true;
         }
 

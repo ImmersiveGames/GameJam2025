@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Loading.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -28,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.Composition
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
             EventBus<PhaseDefinitionSelectedEvent>.Clear();
+            EventBus<PhaseResetCompletedEvent>.Clear();
             PhaseContentSceneRuntimeApplier.RecordCleared();
 
             // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.

@@ -9,6 +9,8 @@
 
 Este ADR congela o pipeline canonico de lifecycle da phase dentro de `GameplaySessionFlow`.
 
+Nota de escopo: `ADR-0052` passa a ser a leitura canonica para a composicao acima do baseline envolvendo reset, world reconstruction, content/spawn transition e carry-over; este ADR continua valido apenas para o pipeline phase-side.
+
 Ele define, de forma positiva e operacional, como a phase entra na janela protegida de preparacao, aplica o conteudo local, deriva o runtime minimo e so depois se apresenta ao jogador em `IntroStage`.
 
 ## 2. Escopo

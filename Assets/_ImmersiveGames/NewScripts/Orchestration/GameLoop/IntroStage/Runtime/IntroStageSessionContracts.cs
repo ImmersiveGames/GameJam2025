@@ -159,7 +159,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 localContentId,
                 runtime.SessionContext.Reason,
                 runtime.SessionContext.SelectionVersion,
-                runtime.PhaseRuntimeSignature);
+                evt.PhaseLocalEntrySequence,
+                runtime.PhaseRuntimeSignature,
+                evt.EntrySignature);
 
             lock (_sync)
             {
@@ -175,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<IntroStageSessionService>(
-                $"[OBS][IntroStage] IntroStageSessionUpdated rail='phase' contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' v='{session.SelectionVersion}' signature='{session.SessionSignature}' reason='{session.Reason}' source='{evt.Source}'.",
+                $"[OBS][IntroStage] IntroStageSessionUpdated rail='phase' contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' v='{session.SelectionVersion}' entrySeq='{session.PhaseLocalEntrySequence}' signature='{session.SessionSignature}' entrySignature='{session.EntrySignature}' reason='{session.Reason}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
         }
     }

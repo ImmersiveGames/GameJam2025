@@ -1,0 +1,38 @@
+flowchart TD
+    subgraph AT[Atual]
+        A1[RunContinuationSelection]
+        A2[RunContinuationSelectionResolvedEvent]
+        A3[GameplaySessionFlowContinuityService]
+    end
+
+    subgraph MG[Migracao minima recomendada]
+        B1[SessionTransitionContext]
+        B2[SessionTransitionPlan]
+        B3[SessionTransitionOrchestrator]
+    end
+
+    subgraph EX[Executores existentes reaproveitados]
+        C1[Phase Navigation atual]
+        C2[Phase Reset atual]
+        C3[World Reset atual]
+        C4[Outros executores atuais]
+    end
+
+    subgraph RS[Resultado]
+        D1[Runtime transformed]
+    end
+
+    A1 --> A2
+    A2 --> B1
+    B1 --> B2
+    B2 --> B3
+
+    B3 --> C1
+    B3 --> C2
+    B3 --> C3
+    B3 --> C4
+
+    C1 --> D1
+    C2 --> D1
+    C3 --> D1
+    C4 --> D1

@@ -101,6 +101,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core
             }
 
             _stateMachine.Update();
+
+            // Start canonical pode precisar de dois passos no mesmo tick:
+            // Boot/RunEnded -> Ready -> Playing.
+            // Mantemos isso restrito ao start handoff para nao alterar outros fluxos.
+            if (_signals.StartRequested &&
+                _stateMachine.Current == GameLoopStateId.Ready)
+            {
+                _stateMachine.Update();
+            }
+
             _signals.ResetTransientSignals();
         }
 

@@ -40,6 +40,23 @@ O contrato de entrada e organizado em torno de:
 
 O rail governa o estado canonico da IntroStage, enquanto o presenter local governa apenas a projecao concreta da entrada.
 
+### 4.1 Corte semantico congelado
+
+Este corte congela a separacao entre `phase-local` e `macro/gameplay`:
+
+- `phase-local`: `IntroStage`, `Playing`, `RunResultStage`
+- `macro/gameplay`: `RunDecision`, `RunContinuationContext`, `RunContinuationSelection`, `SessionTransition`
+
+Regras de precedencia:
+
+- o baseline nao abre IntroStage
+- o baseline apenas reinicia / rearma a phase por completo
+- `IntroStage` e a entrada local da phase
+- `RunResultStage` e a saida local da phase
+- `RunDecision` e `RunContinuation*` pertencem ao boundary macro/gameplay
+- o restart da mesma phase devolve o controle ao pipeline local da phase
+- quando houver intro valida, a `IntroStage` volta a abrir na reentrada da phase
+
 ## 5. Fluxo canonico
 
 O fluxo canonico ocorre assim:

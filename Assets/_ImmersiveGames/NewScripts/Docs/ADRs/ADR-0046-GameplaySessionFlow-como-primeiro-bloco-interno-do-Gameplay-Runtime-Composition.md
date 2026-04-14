@@ -6,6 +6,8 @@
 Ele fecha a fronteira da sessao jogavel ja consolidada no runtime: entrada, preparacao do level, outcome, fim de run e operacoes de retry/restart/advance ficam lidos a partir deste bloco, sem reatribuir ao backbone a semantica principal do gameplay.
 O owner documental do fim de run dentro desse centro e `ADR-0049`.
 
+Nota de escopo: a transformacao composta da sessao/runtime acima do baseline e owner de `ADR-0052`; `GameplaySessionFlow` nao absorve essa camada.
+
 ## 2. Papel do bloco
 
 O papel de `GameplaySessionFlow` e concentrar a orquestracao da sessao ativa do jogo.

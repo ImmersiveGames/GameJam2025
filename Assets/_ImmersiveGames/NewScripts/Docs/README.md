@@ -4,6 +4,7 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 
 ## Canon vivo
 
+- `Docs/ADRs/ADR-0052-Session-Transition-Composicao-de-Eixos-Acima-do-Baseline.md`
 - `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`
 - `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md`
 - `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`
@@ -18,6 +19,7 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 
 ## Leitura atual
 
+- A camada acima do baseline para transformacao composta de sessao/runtime e `Session Transition`, documentada em `ADR-0052`.
 - O centro semantico do gameplay e `Gameplay Runtime Composition`.
 - `GameplaySessionFlow` e o primeiro bloco interno desse centro.
 - `PhaseDefinition` e a fonte de verdade autoral da phase.

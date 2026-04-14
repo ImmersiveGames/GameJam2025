@@ -2,23 +2,26 @@
 
 ## 1. Objetivo
 
-Implementar o ADR-0051 com desenho canonico correto, substituindo contratos estreitos e separando de forma clara:
+Implementar o ADR-0051 com shape canonico correto, separando de forma clara:
 
 - fechamento semantico da run
-- contexto canônico de continuidade
-- decisao/apresentacao opcional de continuidade
+- contexto canonico de continuidade
+- selecao/confirmacao da continuidade
 - execucao downstream da continuidade
 - navegacao pura de phase
+
+O plano nao pode reabrir a confusao historica entre continuity e reset/restart.
 
 ## 2. Direcao Arquitetural
 
 O desenho alvo exige:
 
+- `RunContinuationOwnershipService` como owner concreto no nivel de `GameplaySessionFlow`
 - `RunContinuationContext` como contrato central
-- ownership em `GameplaySessionFlow`
 - `RunResultStage` e `RunDecision` como consumidores
-- `PhaseNavigation` fora do rail de continuidade
+- `GameRunEndedEventBridge` como transporte fino
 - `GameplaySessionFlowContinuityService` apenas como executor downstream resolvido
+- `PhaseNavigation` fora do rail de continuidade
 - `PostRunOverlayController` como presenter puro
 
 ## 3. Fases de Implementacao
@@ -33,83 +36,86 @@ Objetivo:
 Arquivos/componentes:
 
 - `ADR-0051`
+- `ADR-0051-Fase-0-Congelamento-Naming-Contrato`
+- `RunContinuationOwnershipService`
+- `RunContinuationContext`
 - `GameRunEndedEventBridge`
-- contratos centrais de continuidade e fechamento
-- `GameplaySessionFlow` como owner alvo
 
-Contratos novos ou nomes congelados:
+Contratos/nomes congelados:
 
-- owner canônico recomendado: `RunContinuationOwnershipService`
-- contexto canônico recomendado: `RunContinuationContext`
-- enum mínimo recomendado: `RunContinuationKind`
-- continuidades de v1: `AdvancePhase`, `RestartCurrentPhase`, `ExitToMenu`, `EndRun`
+- owner canonico: `RunContinuationOwnershipService`
+- contexto canonico: `RunContinuationContext`
+- enum minimo: `RunContinuationKind`
+- continuidades v1: `AdvancePhase`, `RestartCurrentPhase`, `ExitToMenu`, `EndRun`
 
-Contratos/nomes a evitar:
+Regras de boundary:
 
-- `PostRunResult`
-- `PostRun`
-- `Exit`
-- `RunOutcome` como semântica de continuidade
-- qualquer nome que misture fechamento, decisão e execução downstream
+- `GameRunEndedEventBridge` e apenas transporte fino
+- `RunContinuationContext` nao carrega comando de execucao
+- `RunDecision` nao classifica nem monta execucao
+- `PhaseNavigation` fica fora do rail semantico de continuidade
+- `RestartCurrentPhase` deve permanecer protegido e resolver para o rail proprio de phase reset
+- `AdvancePhase` pode existir, mas com tratamento editorial explicito, nao como navegacao escondida
 
-Decisão de seam atual:
+Decisao de seam:
 
-- `GameRunEndedEventBridge` permanece temporariamente como seam fino no início
-- ele deve sobreviver apenas como ponte operacional transitória até a materialização canônica ficar no owner novo
-- não deve continuar como owner semântico
-
-Confirmação de boundary:
-
-- contexto semântico: `RunContinuationContext`
-- decisao: `RunDecision`
-- execucao downstream: executor resolvido separado
-- phase navigation: `PhaseNavigation`
-
-Contratos que esta fase nao implementa:
-
-- comportamento
-- dispatch
-- presenter
-- navigation
-
-Riscos:
-
-- congelar nome errado e espalhar colisao semântica pelas fases seguintes
-- tratar seam transitório como owner final
-- misturar `allowed continuations` com `selected continuation`
+- o bridge atual sobrevive apenas como transporte operacional transitorio
+- ele nao e owner semantico
+- ele nao materializa o contexto canonico
 
 Pronto quando:
 
 - nomes centrais estao congelados
-- o papel de cada boundary esta explicitado
-- o seam atual foi classificado como transitório, nao semântico
+- o owner concreto esta explicito
+- o contexto nao mistura selecao e execucao
+- o bridge ficou classificado como transporte fino
 
-### Fase 1 - Fundacao do contexto canonico
+### Fase 0.5 - Redesenho estrutural do boundary
 
 Objetivo:
 
-- criar o novo contrato de continuidade e o owner semantico central
+- reduzir ambiguidade antes de tocar em comportamento
+- deixar o shape canonico legivel para os consumidores
 
 Arquivos/componentes:
 
-- `Experience/PostRun`
-- `GameplaySessionFlow` / `GameplayPhaseFlowService`
+- `ADR-0051`
+- `Plan-ADR-0051-RunContinuationContext-Refatoracao-Grande`
+
+Saidas esperadas:
+
+- owner concreto unico
+- momento de nascimento do contexto
+- separacao entre contexto, selecao, execucao e phase navigation
+- protecao explicita de `RestartCurrentPhase`
+- tratamento editorial explicito de `AdvancePhase`
+
+Pronto quando:
+
+- nao ha mais linguagem que permita bridge transitorio eterno como locus semantico
+- a selecao nao e confundida com execucao
+
+### Fase 1 - Fundacao do owner e do contexto canonico
+
+Objetivo:
+
+- materializar o novo owner de continuidade e o contexto canonico
+
+Arquivos/componentes:
+
+- `GameplaySessionFlow`
+- `RunContinuationOwnershipService`
 - contratos novos de continuidade
 
 Contratos novos:
 
 - `RunContinuationContext`
-- contratos de continuidades minimas de v1
-- owner canônico de continuidade
+- contratos de continuidade minima de v1
+- owner canonico de continuidade
 
 Contratos a substituir:
 
-- `PostRunResult`
-- `RunDecision` estreito baseado apenas em `RunEndIntent` + `RunResult`
-
-Contratos a remover ao final:
-
-- `PostRunResult` como contrato central
+- contratos estreitos de pos-run que infiram continuidade sem contexto
 
 Riscos:
 
@@ -118,32 +124,29 @@ Riscos:
 
 Pronto quando:
 
-- o contexto nasce e e exposto por owner canonico unico
-- o payload minimo de continuidade existe e e legivel
+- o contexto nasce imediatamente apos o fechamento
+- o owner concreto e unico
+- o payload minimo e legivel
 
-### Fase 2 - Seam de fechamento e materializacao
+### Fase 2 - Transporte fino e materializacao canonica
 
 Objetivo:
 
-- mover a materializacao do contexto para o seam canonico de fechamento
+- manter `GameRunEndedEventBridge` apenas como transporte fino
+- materializar o contexto no owner concreto
 
 Arquivos/componentes:
 
 - `GameRunEndedEventBridge`
-- `GameRunOutcomeService`
-- owner novo de continuidade
+- `RunContinuationOwnershipService`
 
 Contratos novos:
 
-- evento/contrato de materializacao de `RunContinuationContext`
-
-Contratos a substituir:
-
-- fluxo que vai de outcome direto para stage/decision sem contexto canônico
+- evento/contrato de transporte para o owner de continuidade
 
 Contratos a remover ao final:
 
-- dependência operacional de `IPostRunResultService` como fonte canônica
+- qualquer semantica de continuidade dentro do bridge
 
 Riscos:
 
@@ -152,14 +155,14 @@ Riscos:
 
 Pronto quando:
 
-- o contexto e materializado antes de `RunResultStage` e `RunDecision`
-- `Victory/Defeat/ExitToMenu` já viram semântica de continuidade
+- o bridge apenas encaminha o fato terminal
+- o owner concreto materializa o contexto
 
 ### Fase 3 - Reescrita do RunResultStage
 
 Objetivo:
 
-- fazer `RunResultStage` consumir o contexto canônico
+- fazer `RunResultStage` consumir o contexto canonico
 
 Arquivos/componentes:
 
@@ -186,14 +189,14 @@ Riscos:
 
 Pronto quando:
 
-- o stage é opcional
+- o stage e opcional
 - o stage consome contexto, mas nao decide continuidade
 
 ### Fase 4 - Reescrita do RunDecision
 
 Objetivo:
 
-- fazer `RunDecision` consumir o contexto canônico e remover a decisão local estreita
+- fazer `RunDecision` consumir o contexto canonico e remover a decisao local estreita
 
 Arquivos/componentes:
 
@@ -209,7 +212,7 @@ Contratos novos:
 Contratos a substituir:
 
 - `RunDecision(RunEndIntent, RunResult)`
-- dependência do overlay em resultado estreito
+- dependencia do overlay em resultado estreito
 
 Contratos a remover ao final:
 
@@ -217,8 +220,8 @@ Contratos a remover ao final:
 
 Riscos:
 
-- deixar o presenter decidir semântica
-- reintroduzir destino automático de `ExitToMenu`
+- deixar o presenter decidir semantica
+- reintroduzir destino automatico sem boundary claro
 
 Pronto quando:
 
@@ -226,11 +229,12 @@ Pronto quando:
 - pode escolher ou confirmar continuidade
 - nao define o conjunto canonico de continuidades validas
 
-### Fase 5 - Separacao de PhaseNavigation e executor downstream
+### Fase 5 - Separacao de selecao, execucao e phase navigation
 
 Objetivo:
 
-- tirar navegação pura do rail de continuidade
+- tirar navegacao pura do rail de continuidade
+- deixar `GameplaySessionFlowContinuityService` apenas como executor downstream resolvido
 
 Arquivos/componentes:
 
@@ -244,21 +248,23 @@ Contratos novos:
 
 Contratos a substituir:
 
-- `GameplaySessionFlowContinuityService` como mistura de continuidade e navegacao
+- `GameplaySessionFlowContinuityService` como mistura de continuidade, navigation e reset/restart
 
 Contratos a remover ao final:
 
-- navegação editorial dentro do rail de continuidade
+- navegacao editorial dentro do rail de continuidade
 
 Riscos:
 
-- quebrar restart/menu ao extrair navegação
+- quebrar restart/menu ao extrair execucao
 - duplicar roteamento entre executor e navigation
 
 Pronto quando:
 
 - `GameplaySessionFlowContinuityService` executa apenas continuidade resolvida
-- `PhaseNavigation` so entra quando a continuidade for `AdvancePhase`
+- `RestartCurrentPhase` resolve para o rail proprio de phase reset
+- `AdvancePhase` entra em tratamento editorial explicito e so entao aciona `PhaseNavigation`
+- `PhaseNavigation` permanece fora do rail semantico de continuidade
 
 ### Fase 6 - Presenter puro e limpeza de contratos estreitos
 
@@ -280,7 +286,7 @@ Contratos a substituir:
 
 - `PostRunResultService`
 - `PostRunResult`
-- botões que disparam execução downstream sem mediação canônica
+- botoes que disparam execucao downstream sem mediacao canonica
 
 Contratos a remover ao final:
 
@@ -290,27 +296,28 @@ Contratos a remover ao final:
 Riscos:
 
 - manter contrato estreito por compatibilidade interna
-- deixar o presenter com poder de decisão
+- deixar o presenter com poder de decisao
 
 Pronto quando:
 
-- o overlay so apresenta e emite intenção/seleção
-- o owner correto já possui a continuidade canônica
+- o overlay so apresenta e emite escolha/confirmacao
+- o owner correto ja possui a continuidade canonica
 
 ## 4. Ordem Recomendada
 
 1. Fase 0
-2. Fase 1
-3. Fase 2
-4. Fase 3
-5. Fase 4
-6. Fase 5
-7. Fase 6
+2. Fase 0.5
+3. Fase 1
+4. Fase 2
+5. Fase 3
+6. Fase 4
+7. Fase 5
+8. Fase 6
 
 ## 5. Dependencias
 
-- Fase 1 depende da Fase 0
-- Fase 2 depende da Fase 0 e da Fase 1
+- Fase 1 depende da Fase 0 e da Fase 0.5
+- Fase 2 depende da Fase 0, da Fase 0.5 e da Fase 1
 - Fase 3 depende da Fase 0, da Fase 1 e da Fase 2
 - Fase 4 depende da Fase 0, da Fase 1 e da Fase 2
 - Fase 5 depende da Fase 4
@@ -323,19 +330,20 @@ Pronto quando:
 - `PostRunResult` como contrato central
 - `IPostRunResultService` como fonte canonica de semantica
 - `RunDecision` estreito baseado apenas em `RunEndIntent` + `RunResult`
-- `GameplaySessionFlowContinuityService` como lugar de navegação pura
+- `GameplaySessionFlowContinuityService` como lugar de navegacao pura ou hub de selecao
 - `PostRunOverlayController` como decisor de continuidade
-- qualquer bridge que invente semântica de continuidade
+- qualquer bridge que invente semantica de continuidade
 - qualquer uso de `PhaseNavigation` como parte do rail de fechamento
 
 ### Permanece
 
-- `GameRunOutcomeService`
+- `RunContinuationOwnershipService`
+- `RunContinuationContext`
 - `RunEndIntent`
-- `GameplaySessionFlow` como owner canônico do contexto de continuidade
+- `GameplaySessionFlow` como owner canonico do contexto de continuidade
 - `RunResultStage` como stage opcional consumidor
 - `RunDecision` como consumidor/confirmador do contexto
-- `PhaseNavigation` como domínio neutro
+- `PhaseNavigation` como dominio neutro e editorial
 - `GameplaySessionFlowContinuityService` como executor downstream resolvido
 - `PostRunOverlayController` como presenter puro
 - `PhaseDefinitionAsset` como authoring de closure e policy
@@ -346,8 +354,8 @@ Recomendacao final: **refatoracao grande**.
 
 Justificativa:
 
-- o desenho ideal exige criar novo owner canonico
+- o desenho ideal exige um owner canonico concreto
 - contratos estreitos precisam ser substituidos
-- navegação pura deve sair do rail de continuidade
+- navegacao pura deve sair do rail de continuidade
 - o overlay precisa perder ownership semantico
 - o executor downstream precisa ser separado do contrato semantico

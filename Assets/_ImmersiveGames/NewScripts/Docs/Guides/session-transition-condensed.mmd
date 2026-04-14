@@ -1,0 +1,7 @@
+flowchart LR
+    A[Run End] --> B[Continuation Context]
+    B --> C[Decision / Selection]
+    C --> D[Session Transition Plan]
+    D --> E[Transition Orchestrator]
+    E --> F[Specialized Executors]
+    F --> G[Transformed Runtime]

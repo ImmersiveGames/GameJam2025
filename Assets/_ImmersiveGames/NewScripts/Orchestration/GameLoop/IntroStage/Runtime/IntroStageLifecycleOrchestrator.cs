@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
     public sealed class IntroStageLifecycleStateService : IIntroStageLifecycleStateService
     {
         private readonly object _sync = new();
-        private int _lastProcessedSelectionVersion = -1;
+        private int _lastProcessedPhaseLocalEntrySequence;
         private IntroStageSession _pendingGameplaySession;
         private string _pendingGameplaySource = string.Empty;
         private string _pendingGameplayReason = string.Empty;
@@ -116,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
         {
             shouldDefer = false;
 
-            if (!TryAdvanceDedupe(evt.Session.SelectionVersion, evt.Session.SessionSignature, evt.Source))
+            if (!TryAdvanceDedupe(evt.Session.PhaseLocalEntrySequence, evt.Session.SelectionVersion, evt.Source))
             {
                 return false;
             }
@@ -172,22 +172,23 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             return true;
         }
 
-        private bool TryAdvanceDedupe(int selectionVersion, string sessionSignature, string source)
+        private bool TryAdvanceDedupe(int phaseLocalEntrySequence, int selectionVersion, string source)
         {
-            if (selectionVersion < _lastProcessedSelectionVersion)
+            if (phaseLocalEntrySequence <= 0)
             {
-                _lastProcessedSelectionVersion = -1;
+                HardFailFastH1.Trigger(typeof(IntroStageLifecycleStateService),
+                    "[FATAL][H1][IntroStage] PhaseLocalEntrySequence is required to dedupe intro stage reentry.");
             }
 
-            if (selectionVersion <= _lastProcessedSelectionVersion)
+            if (phaseLocalEntrySequence <= _lastProcessedPhaseLocalEntrySequence)
             {
                 DebugUtility.LogVerbose<IntroStageLifecycleStateService>(
-                    $"[IntroStage] skipped reason='dedupe_selection_version' selectionVersion='{selectionVersion}' source='{source}' sessionSignature='{Normalize(sessionSignature)}'.",
+                    $"[IntroStage] skipped reason='dedupe_phase_local_entry_sequence' selectionVersion='{selectionVersion}' source='{source}' phaseLocalEntrySequence='{phaseLocalEntrySequence}'.",
                     DebugUtility.Colors.Info);
                 return false;
             }
 
-            _lastProcessedSelectionVersion = selectionVersion;
+            _lastProcessedPhaseLocalEntrySequence = phaseLocalEntrySequence;
             return true;
         }
 
@@ -304,10 +305,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 session.LocalContentId,
                 session.Reason,
                 session.SelectionVersion,
+                session.PhaseLocalEntrySequence,
                 session.SessionSignature,
                 null,
                 hasIntroStage: false,
-                session.HasRunResultStage);
+                hasRunResultStage: session.HasRunResultStage,
+                entrySignature: session.EntrySignature);
         }
 
         private static string Normalize(string value)

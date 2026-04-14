@@ -546,7 +546,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             string localContentId,
             string reason,
             int selectionVersion,
-            string phaseSignature)
+            int phaseLocalEntrySequence = 0,
+            string phaseSignature = "")
         {
             string normalizedContentId = string.IsNullOrWhiteSpace(localContentId)
                 ? BuildCanonicalIntroContentId()
@@ -557,6 +558,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 normalizedContentId,
                 reason,
                 selectionVersion,
+                phaseLocalEntrySequence,
                 phaseSignature,
                 intro != null ? intro.introPresenterPrefab : null,
                 HasIntroStage,

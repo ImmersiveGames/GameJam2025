@@ -7,6 +7,8 @@ using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -21,7 +23,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         private readonly object _sync = new();
         private readonly EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
         private readonly EventBinding<PhaseContentAppliedEvent> _phaseContentAppliedBinding;
+        private readonly EventBinding<PhaseResetCompletedEvent> _phaseResetCompletedBinding;
         private readonly EventBinding<IntroStageEntryEvent> _introStageEntryBinding;
+        private readonly EventBinding<SessionTransitionPhaseLocalEntryReadyEvent> _sessionTransitionPhaseLocalEntryReadyBinding;
         private PhaseDefinitionSelectedEvent _currentSelectionEvent;
         private PhaseDefinitionSelectedEvent _lastSelectionEvent;
         private GameplaySessionContextSnapshot _currentSessionContext = GameplaySessionContextSnapshot.Empty;
@@ -34,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         private GameplayPhaseRulesObjectivesSnapshot _lastPhaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
         private GameplayPhaseInitialStateSnapshot _currentPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
         private GameplayPhaseInitialStateSnapshot _lastPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
+        private int _phaseLocalEntrySequence;
         private bool _disposed;
 
         public GameplayPhaseFlowService()
@@ -42,10 +47,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(OnPhaseDefinitionSelected);
             _phaseContentAppliedBinding = new EventBinding<PhaseContentAppliedEvent>(OnPhaseContentApplied);
+            _phaseResetCompletedBinding = new EventBinding<PhaseResetCompletedEvent>(OnPhaseResetCompleted);
             _introStageEntryBinding = new EventBinding<IntroStageEntryEvent>(OnIntroStageEntry);
+            _sessionTransitionPhaseLocalEntryReadyBinding = new EventBinding<SessionTransitionPhaseLocalEntryReadyEvent>(OnSessionTransitionPhaseLocalEntryReady);
             EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
             EventBus<PhaseContentAppliedEvent>.Register(_phaseContentAppliedBinding);
+            EventBus<PhaseResetCompletedEvent>.Register(_phaseResetCompletedBinding);
             EventBus<IntroStageEntryEvent>.Register(_introStageEntryBinding);
+            EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Register(_sessionTransitionPhaseLocalEntryReadyBinding);
 
             DebugUtility.LogVerbose<GameplayPhaseFlowService>(
                 "[OBS][GameplaySessionFlow][PhaseDefinition] GameplayPhaseFlowService registrado como owner explicito phase-side.",
@@ -61,7 +70,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                     "[FATAL][H1][GameplaySessionFlow] Invalid PhaseDefinitionSelectedEvent requested for phase-owned publication.");
             }
 
-            SyncRestartContextFromPhaseSelection(evt);
             EventBus<PhaseDefinitionSelectedEvent>.Raise(evt);
         }
         public PhaseDefinitionSelectedEvent PublishPhaseDefinitionSelected(
@@ -88,7 +96,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelectedCanonical rail='phase' owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' signature='{evt.SelectionSignature}'.",
                 DebugUtility.Colors.Info);
 
-            SyncRestartContextFromPhaseSelection(evt);
             EventBus<PhaseDefinitionSelectedEvent>.Raise(evt);
             return evt;
         }
@@ -284,7 +291,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             _disposed = true;
             EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
             EventBus<PhaseContentAppliedEvent>.Unregister(_phaseContentAppliedBinding);
+            EventBus<PhaseResetCompletedEvent>.Unregister(_phaseResetCompletedBinding);
             EventBus<IntroStageEntryEvent>.Unregister(_introStageEntryBinding);
+            EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Unregister(_sessionTransitionPhaseLocalEntryReadyBinding);
         }
 
         private void RegisterSelfInGlobalDi()
@@ -351,6 +360,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 _currentPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
             }
 
+            SyncRestartContextFromPhaseSelection(evt);
+
             DebugUtility.Log<GameplayPhaseFlowService>(
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseSelectedConsumed owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' sessionSignature='{sessionContext.SessionSignature}'.",
                 DebugUtility.Colors.Info);
@@ -390,57 +401,74 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                     $"[FATAL][H1][GameplaySessionFlow] PhaseContentAppliedEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' appliedPhase='{evt.PhaseDefinitionRef.PhaseId}' source='{evt.Source}'.");
             }
 
+            HandlePhaseRearm(
+                selectionEvent,
+                sessionContext,
+                source: evt.Source,
+                activeSceneName: evt.ActiveSceneName,
+                operationLabel: "PhaseContentApplied",
+                shouldQueueIntro: string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal));
+        }
+
+        private void OnPhaseResetCompleted(PhaseResetCompletedEvent evt)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (!evt.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Invalid PhaseResetCompletedEvent received by explicit phase owner.");
+            }
+
+            if (!TryResolveRestartContextService(out var restartContextService) ||
+                restartContextService == null ||
+                !restartContextService.TryGetCurrent(out GameplayStartSnapshot restartSnapshot) ||
+                !restartSnapshot.IsValid ||
+                !restartSnapshot.HasPhaseDefinitionRef ||
+                restartSnapshot.PhaseDefinitionRef == null ||
+                !ReferenceEquals(restartSnapshot.PhaseDefinitionRef, evt.ResetContext.PhaseDefinitionRef) ||
+                restartSnapshot.MacroRouteId != evt.ResetContext.MacroRouteId)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    $"[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent received with stale or mismatched restart snapshot. phaseRef='{evt.ResetContext.PhaseDefinitionRef?.name ?? "<none>"}' routeId='{evt.ResetContext.MacroRouteId}' resetSignature='{evt.ResetContext.ResetSignature}' reason='{evt.Reason}'.");
+            }
+
+            PhaseDefinitionSelectedEvent selectionEvent;
+            GameplaySessionContextSnapshot sessionContext;
+
+            lock (_sync)
+            {
+                selectionEvent = _currentSelectionEvent;
+                sessionContext = _currentSessionContext;
+            }
+
+            if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent received before a valid phase selection was cached.");
+            }
+
+            if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.ResetContext.PhaseDefinitionRef) ||
+                selectionEvent.MacroRouteId != evt.ResetContext.MacroRouteId)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    $"[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' cachedVersion='{selectionEvent.SelectionVersion}' resetPhase='{evt.ResetContext.PhaseDefinitionRef?.PhaseId.Value ?? "<none>"}' resetRouteId='{evt.ResetContext.MacroRouteId}'.");
+            }
+
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseContentApplied owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}' sessionSignature='{sessionContext.SessionSignature}' source='{evt.Source}' activeScene='{evt.ActiveSceneName}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseResetRearmConsumed owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}' resetSignature='{evt.ResetContext.ResetSignature}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
 
-            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-            GameplayPhasePlayerParticipationSnapshot phasePlayers = GameplayPhasePlayerParticipationSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-            GameplayPhaseRulesObjectivesSnapshot phaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-
-            UpdatePhaseRuntime(phaseRuntime, source: "phase_content_applied");
-            UpdatePhasePlayers(phasePlayers, source: "phase_content_applied");
-            UpdateRulesObjectives(phaseRulesObjectives, source: "phase_content_applied");
-
-            GameplayPhaseInitialStateSnapshot phaseInitialState = GameplayPhaseInitialStateSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-            UpdateInitialState(phaseInitialState, source: "phase_content_applied");
-
-            DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDerivationCompleted owner='GameplayPhaseFlowService' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' sessionSignature='{sessionContext.SessionSignature}' playersSignature='{phasePlayers.ParticipationSignature}' rulesSignature='{phaseRulesObjectives.RulesSignature}' initialStateSignature='{phaseInitialState.InitialStateSignature}' source='{evt.Source}'.",
-                DebugUtility.Colors.Success);
-
-            EventBus<GameplayPhaseRuntimeMaterializedEvent>.Raise(
-                new GameplayPhaseRuntimeMaterializedEvent(phaseRuntime, evt.Source));
-
-            if (string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal))
-            {
-                PhaseDefinitionSelectedEvent currentSelectionEvent;
-
-                lock (_sync)
-                {
-                    currentSelectionEvent = _currentSelectionEvent;
-                }
-
-                if (currentSelectionEvent.IsValid && currentSelectionEvent.PhaseDefinitionRef != null)
-                {
-                    string sessionSignature = BuildPhaseSignature(currentSelectionEvent);
-                    string localContentId = currentSelectionEvent.PhaseDefinitionRef.BuildCanonicalIntroContentId();
-                    IntroStageSession introSession = phaseRuntime.CreateIntroStageSession(
-                        localContentId,
-                        currentSelectionEvent.Reason,
-                        currentSelectionEvent.SelectionVersion,
-                        sessionSignature);
-
-                    DebugUtility.Log<GameplayPhaseFlowService>(
-                        $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageQueued owner='GameplayPhaseFlowService' phaseId='{currentSelectionEvent.PhaseId}' routeId='{currentSelectionEvent.MacroRouteId}' v='{currentSelectionEvent.SelectionVersion}' reason='{currentSelectionEvent.Reason}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' hasIntroStage='{introSession.HasIntroStage}' hasRunResultStage='{introSession.HasRunResultStage}'.",
-                        DebugUtility.Colors.Info);
-
-                    EventBus<IntroStageEntryEvent>.Raise(new IntroStageEntryEvent(
-                        introSession,
-                        evt.Source,
-                        currentSelectionEvent.MacroRouteRef != null ? currentSelectionEvent.MacroRouteRef.RouteKind : default));
-                }
-            }
+            HandlePhaseRearm(
+                selectionEvent,
+                sessionContext,
+                source: evt.Source,
+                activeSceneName: string.Empty,
+                operationLabel: "PhaseResetRearm",
+                shouldQueueIntro: true);
         }
 
         private void OnIntroStageEntry(IntroStageEntryEvent evt)
@@ -485,7 +513,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageReady owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}' sessionSignature='{sessionContext.SessionSignature}' entrySource='{evt.Source}' phaseSignature='{_currentPhaseRuntime.PhaseRuntimeSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageReady owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{evt.Session.PhaseLocalEntrySequence}' reason='{selectionEvent.Reason}' sessionSignature='{sessionContext.SessionSignature}' entrySource='{evt.Source}' entrySignature='{evt.Session.EntrySignature}' phaseSignature='{_currentPhaseRuntime.PhaseRuntimeSignature}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void OnSessionTransitionPhaseLocalEntryReady(SessionTransitionPhaseLocalEntryReadyEvent evt)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (!evt.IsValid || !evt.IsPhaseLocalEntry)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Invalid SessionTransitionPhaseLocalEntryReadyEvent received by explicit phase owner.");
+            }
+
+            DebugUtility.Log<GameplayPhaseFlowService>(
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseLocalEntryReady owner='GameplayPhaseFlowService' continuation='{evt.Plan.ResolvedContinuation}' phaseAction='{evt.Plan.PhaseAction}' resetAction='{evt.Plan.ResetAction}' reason='{evt.Plan.Reason}' nextState='{evt.Plan.NextState}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -606,9 +652,88 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
         private static string BuildPhaseSignature(PhaseDefinitionSelectedEvent selectionEvent)
         {
-            string phaseName = selectionEvent.PhaseDefinitionRef != null ? selectionEvent.PhaseDefinitionRef.name : "<null>";
-            string normalizedReason = string.IsNullOrWhiteSpace(selectionEvent.Reason) ? string.Empty : selectionEvent.Reason.Trim();
-            return $"phase:{phaseName}|route:{selectionEvent.MacroRouteId}|reason:{normalizedReason}";
+            if (!selectionEvent.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Invalid selection event received while building phase signature.");
+            }
+
+            // Usa a assinatura canonica da selecao para que a reentrada da mesma phase
+            // gere uma identidade nova sem abrir um segundo rail de IntroStage.
+            return selectionEvent.SelectionSignature;
+        }
+
+        private string ResolveNextPhaseLocalEntrySequenceSignature(PhaseDefinitionSelectedEvent selectionEvent, string source, int phaseLocalEntrySequence)
+        {
+            if (!selectionEvent.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Invalid selection event received while building intro stage entry signature.");
+            }
+
+            string normalizedSource = string.IsNullOrWhiteSpace(source) ? "<unknown-source>" : source.Trim();
+            return $"{selectionEvent.SelectionSignature}|entry:{phaseLocalEntrySequence}|source:{normalizedSource}";
+        }
+
+        private int ResolveNextPhaseLocalEntrySequence()
+        {
+            lock (_sync)
+            {
+                _phaseLocalEntrySequence += 1;
+                return _phaseLocalEntrySequence;
+            }
+        }
+
+        private void HandlePhaseRearm(
+            PhaseDefinitionSelectedEvent selectionEvent,
+            GameplaySessionContextSnapshot sessionContext,
+            string source,
+            string activeSceneName,
+            string operationLabel,
+            bool shouldQueueIntro)
+        {
+            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
+            GameplayPhasePlayerParticipationSnapshot phasePlayers = GameplayPhasePlayerParticipationSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
+            GameplayPhaseRulesObjectivesSnapshot phaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
+
+            UpdatePhaseRuntime(phaseRuntime, source: operationLabel);
+            UpdatePhasePlayers(phasePlayers, source: operationLabel);
+            UpdateRulesObjectives(phaseRulesObjectives, source: operationLabel);
+
+            GameplayPhaseInitialStateSnapshot phaseInitialState = GameplayPhaseInitialStateSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
+            UpdateInitialState(phaseInitialState, source: operationLabel);
+
+            int phaseLocalEntrySequence = ResolveNextPhaseLocalEntrySequence();
+            string entrySignature = ResolveNextPhaseLocalEntrySequenceSignature(selectionEvent, source, phaseLocalEntrySequence);
+
+            DebugUtility.Log<GameplayPhaseFlowService>(
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] {operationLabel} owner='GameplayPhaseFlowService' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' sessionSignature='{sessionContext.SessionSignature}' playersSignature='{phasePlayers.ParticipationSignature}' rulesSignature='{phaseRulesObjectives.RulesSignature}' initialStateSignature='{phaseInitialState.InitialStateSignature}' source='{source}' activeScene='{activeSceneName}'.",
+                DebugUtility.Colors.Success);
+
+            EventBus<GameplayPhaseRuntimeMaterializedEvent>.Raise(
+                new GameplayPhaseRuntimeMaterializedEvent(phaseRuntime, source, phaseLocalEntrySequence, entrySignature));
+
+            if (shouldQueueIntro)
+            {
+                string sessionSignature = BuildPhaseSignature(selectionEvent);
+                string localContentId = selectionEvent.PhaseDefinitionRef.BuildCanonicalIntroContentId();
+                IntroStageSession introSession = phaseRuntime.CreateIntroStageSession(
+                    localContentId,
+                    selectionEvent.Reason,
+                    selectionEvent.SelectionVersion,
+                    phaseLocalEntrySequence,
+                    sessionSignature,
+                    entrySignature);
+
+                DebugUtility.Log<GameplayPhaseFlowService>(
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageQueued owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{phaseLocalEntrySequence}' reason='{selectionEvent.Reason}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' entrySignature='{entrySignature}' hasIntroStage='{introSession.HasIntroStage}' hasRunResultStage='{introSession.HasRunResultStage}'.",
+                    DebugUtility.Colors.Info);
+
+                EventBus<IntroStageEntryEvent>.Raise(new IntroStageEntryEvent(
+                    introSession,
+                    source,
+                    selectionEvent.MacroRouteRef != null ? selectionEvent.MacroRouteRef.RouteKind : default));
+            }
         }
 
         private static void SyncRestartContextFromPhaseSelection(PhaseDefinitionSelectedEvent evt)

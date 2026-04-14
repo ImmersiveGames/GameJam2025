@@ -29,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
             RegisterRunDecisionStagePresenterHost();
             RegisterRunEndRailResultService();
             RegisterRunEndIntentOwnershipService();
+            RegisterRunContinuationOwnershipService();
             RegisterRunDecisionOwnershipService();
             RegisterRunResultStageOwnershipService();
 
@@ -45,6 +46,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Bootstrap
                 () => new RunEndIntentOwnershipService(),
                 "[RunEndRail] IRunEndIntentOwnershipService ja registrado no DI global.",
                 "[RunEndRail] RunEndIntentOwnershipService registrado no DI global.");
+        }
+
+        private static void RegisterRunContinuationOwnershipService()
+        {
+            RegisterIfMissing<IRunContinuationOwnershipService>(
+                () => new RunContinuationOwnershipService(),
+                "[RunEndRail] IRunContinuationOwnershipService ja registrado no DI global.",
+                "[RunEndRail] RunContinuationOwnershipService registrado no DI global.");
         }
 
         private static void RegisterRunDecisionOwnershipService()

@@ -1,6 +1,4 @@
 using System;
-using System.Threading;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
@@ -8,7 +6,6 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -43,7 +40,6 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
 
         [Inject] private IRunDecisionOwnershipService _runDecisionOwnershipService;
         [Inject] private IPostRunResultService _postRunResultService;
-        [Inject] private IGameplaySessionFlowContinuityService _sessionFlowContinuityService;
         [Inject] private IRunDecisionStagePresenterHost _presenterHost;
 
         private bool _dependenciesInjected;
@@ -136,17 +132,15 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunRestart][Intent] Restart solicitado. Intent downstream formalizada e encaminhada ao executor.",
+                "[OBS][GameplaySessionFlow][RunDecision][Selection] Restart solicitado. Seleção confirmada e entregue ao owner de continuidade.",
                 DebugUtility.Colors.Info);
 
-            CloseRunDecision(RunDecisionCompletionKind.Unknown, "DownstreamHandoff", RestartReason);
+            CloseRunDecision(
+                selectedContinuation: RunContinuationKind.RestartCurrentPhase,
+                completionKind: RunDecisionCompletionKind.Unknown,
+                handoffState: "SelectionConfirmed",
+                reason: RestartReason);
             HideImmediate();
-
-            var restart = new RunRestart(RestartReason, nameof(PostRunOverlayController));
-            _ = ExecuteDownstreamActionAsync(
-                actionName: "RestartGameplay",
-                reason: RestartReason,
-                action: ct => _sessionFlowContinuityService.RestartGameplayAsync(restart, ct));
         }
 
         /// <summary>
@@ -164,41 +158,15 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Intent] ExitToMenu solicitado. Intent capturada e encaminhada ao executor downstream.",
+                "[OBS][GameplaySessionFlow][RunDecision][Selection] ExitToMenu solicitado. Seleção confirmada e entregue ao owner de continuidade.",
                 DebugUtility.Colors.Info);
 
-            CloseRunDecision(RunDecisionCompletionKind.Menu, "FrontendMenu", ExitToMenuReason);
+            CloseRunDecision(
+                selectedContinuation: RunContinuationKind.ExitToMenu,
+                completionKind: RunDecisionCompletionKind.Menu,
+                handoffState: "SelectionConfirmed",
+                reason: ExitToMenuReason);
             HideImmediate();
-
-            _ = ExecuteDownstreamActionAsync(
-                actionName: "ExitToMenu",
-                reason: ExitToMenuReason,
-                action: ct => _sessionFlowContinuityService.ExitToMenuAsync(ExitToMenuReason, ct));
-        }
-
-        private async Task ExecuteDownstreamActionAsync(string actionName, string reason, Func<CancellationToken, Task> action)
-        {
-            if (_sessionFlowContinuityService == null)
-            {
-                HardFailFastH1.Trigger(typeof(IRunDecisionStagePresenter),
-                    $"[FATAL][H1][RunDecision] IGameplaySessionFlowContinuityService indisponivel. action='{actionName}' reason='{reason}'.");
-                return;
-            }
-
-            try
-            {
-                DebugUtility.Log<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunRestart][Delegate] {actionName} entregue ao executor downstream real IGameplaySessionFlowContinuityService. reason='{reason}'.");
-                await action(CancellationToken.None);
-                DebugUtility.Log<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunRestart][Execute] {actionName} executado pelo executor downstream. reason='{reason}'.");
-            }
-            catch (Exception ex)
-            {
-                _actionRequested = false;
-                DebugUtility.LogWarning<IRunDecisionStagePresenter>(
-                    $"[OBS][GameplaySessionFlow][RunRestart] {actionName} falhou. reason='{reason}', notes='{ex.GetType().Name}'.");
-            }
         }
 
         private void RegisterBindings()
@@ -361,7 +329,11 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             rootCanvasGroup.blocksRaycasts = visible;
         }
 
-        private void CloseRunDecision(RunDecisionCompletionKind completionKind, string handoffState, string reason)
+        private void CloseRunDecision(
+            RunContinuationKind selectedContinuation,
+            RunDecisionCompletionKind completionKind,
+            string handoffState,
+            string reason)
         {
             var resultService = ResolveRequiredResultService("CloseRunDecision");
             var result = resultService.Result;
@@ -383,7 +355,8 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings
             _runDecisionOwnershipService.ExitRunDecision(new RunDecisionCompletion(
                 completionKind,
                 reason,
-                handoffState));
+                handoffState),
+                selectedContinuation);
         }
 
         private void EnsureTypedRegistration()

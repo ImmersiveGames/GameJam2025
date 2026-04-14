@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph L1[Baseline ja implementado]
+        A1[Run End<br/>Victory / Defeat / etc.]
+        A2[GameRunEndedEventBridge]
+        A3[RunContinuationOwnershipService]
+        A4[RunContinuationContext]
+        A5[RunResultStage]
+        A6[RunDecision]
+        A7[RunContinuationSelection]
+        A8[RunContinuationSelectionResolvedEvent]
+    end
+
+    subgraph L2[Downstream atual]
+        B1[GameplaySessionFlowContinuityService<br/>executor downstream]
+    end
+
+    subgraph L3[Capabilities atuais]
+        C1[AdvancePhase]
+        C2[RestartCurrentPhase]
+        C3[ExitToMenu]
+        C4[Outras continuidades atuais]
+    end
+
+    subgraph L4[Resultado]
+        D1[Runtime transformed<br/>baseline atual]
+    end
+
+    A1 --> A2
+    A2 --> A3
+    A3 --> A4
+    A4 --> A5
+    A4 --> A6
+    A5 --> A6
+    A6 --> A7
+    A7 --> A8
+    A8 --> A2
+    A2 --> B1
+
+    B1 --> C1
+    B1 --> C2
+    B1 --> C3
+    B1 --> C4
+
+    C1 --> D1
+    C2 --> D1
+    C3 --> D1
+    C4 --> D1
