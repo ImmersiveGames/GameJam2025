@@ -144,7 +144,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
         public Task<PhaseNavigationResult> AdvancePhaseAsync(string reason = null, CancellationToken ct = default)
         {
-            return NextPhaseAsync(reason, ct);
+            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);
+            HardFailFastH1.Trigger(typeof(PhaseNextPhaseService),
+                $"[FATAL][H1][PhaseFlow] AdvancePhaseAsync direto foi descontinuado. Use o trilho canonico RunEndIntent -> RunResultStage -> RunDecision -> SessionTransition. reason='{normalizedReason}'.");
+            throw new InvalidOperationException($"[FATAL][H1][PhaseFlow] AdvancePhaseAsync direto foi descontinuado. reason='{normalizedReason}'.");
         }
 
         public Task<PhaseNavigationResult> PreviousPhaseAsync(string reason = null, CancellationToken ct = default)
