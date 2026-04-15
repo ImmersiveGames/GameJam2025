@@ -7,6 +7,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
     {
         Task<PhaseNavigationResult> NavigateAsync(PhaseNavigationRequest request, CancellationToken ct = default);
         Task<PhaseNavigationResult> NextPhaseAsync(string reason = null, CancellationToken ct = default);
+        Task<PhaseNavigationResult> AdvancePhaseAsync(string reason = null, CancellationToken ct = default);
         Task<PhaseNavigationResult> PreviousPhaseAsync(string reason = null, CancellationToken ct = default);
+        Task<PhaseNavigationResult> GoToSpecificPhaseAsync(string phaseId, string reason = null, CancellationToken ct = default);
     }
 }

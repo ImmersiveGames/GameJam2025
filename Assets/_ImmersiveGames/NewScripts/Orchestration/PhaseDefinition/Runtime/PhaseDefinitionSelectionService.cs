@@ -5,51 +5,39 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     public sealed class PhaseDefinitionSelectionService : IPhaseDefinitionSelectionService
     {
-        private readonly PhaseDefinitionId _selectedPhaseDefinitionId;
-        private readonly PhaseDefinitionAsset _current;
+        private readonly IPhaseCatalogRuntimeStateService _runtimeStateService;
 
-        public PhaseDefinitionSelectionService(IPhaseDefinitionCatalog catalog)
+        public PhaseDefinitionSelectionService(IPhaseCatalogRuntimeStateService runtimeStateService)
         {
-            if (catalog == null)
-            {
-                throw new ArgumentNullException(nameof(catalog));
-            }
+            _runtimeStateService = runtimeStateService ?? throw new ArgumentNullException(nameof(runtimeStateService));
 
-            _current = catalog.ResolveInitialOrFail();
-            if (_current == null)
+            if (_runtimeStateService.CurrentCommitted == null || !_runtimeStateService.CurrentCommitted.PhaseId.IsValid)
             {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] Catalog initial phase could not be resolved.");
-            }
-
-            _selectedPhaseDefinitionId = _current.PhaseId;
-
-            if (!_selectedPhaseDefinitionId.IsValid)
-            {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] Selected phase reference is invalid.");
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] Runtime catalog state requires a valid currentCommitted phase.");
             }
 
             DebugUtility.LogVerbose(typeof(PhaseDefinitionSelectionService),
-                $"[OBS][PhaseDefinition] Selected phase resolved from catalog index_0 source='phase_catalog_index_0' phaseId='{_selectedPhaseDefinitionId}' asset='{_current.name}'.",
+                $"[OBS][PhaseDefinition] Selected phase resolved from runtime catalog state phaseId='{_runtimeStateService.CurrentCommitted.PhaseId}' asset='{_runtimeStateService.CurrentCommitted.name}'.",
                 DebugUtility.Colors.Info);
         }
 
-        public PhaseDefinitionId SelectedPhaseDefinitionId => _selectedPhaseDefinitionId;
-        public PhaseDefinitionAsset Current => _current;
+        public PhaseDefinitionId SelectedPhaseDefinitionId => Current != null ? Current.PhaseId : PhaseDefinitionId.None;
+        public PhaseDefinitionAsset Current => _runtimeStateService.CurrentCommitted;
 
         public bool TryGetCurrent(out PhaseDefinitionAsset phaseDefinition)
         {
-            phaseDefinition = _current;
-            return _current != null;
+            phaseDefinition = Current;
+            return phaseDefinition != null;
         }
 
         public PhaseDefinitionAsset ResolveOrFail()
         {
-            if (_current == null)
+            if (Current == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] Selected phase was not resolved.");
             }
 
-            return _current;
+            return Current;
         }
     }
 }

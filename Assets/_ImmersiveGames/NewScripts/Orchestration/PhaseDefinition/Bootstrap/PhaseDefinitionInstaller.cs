@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
 
             RegisterPhaseDefinitionCatalog(bootstrapConfig);
             RegisterPhaseDefinitionResolver();
+            RegisterPhaseCatalogRuntimeStateService();
             RegisterPhaseDefinitionSelectionService();
             RegisterRestartContextService();
             EnsureGameplayPhaseFlowOwner();
@@ -109,16 +110,41 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
             }
         }
 
+        private static void RegisterPhaseCatalogRuntimeStateService()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var catalog) || catalog == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseDefinitionCatalog missing from global DI before runtime state registration.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var existingStateService) || existingStateService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IPhaseCatalogRuntimeStateService>(new PhaseCatalogRuntimeStateService(catalog));
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][Core] Catalog runtime state service registered in global DI.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!ReferenceEquals(existingStateService.Catalog, catalog))
+            {
+                string existingCatalogName = existingStateService.Catalog is UnityEngine.Object existingObject ? existingObject.name : existingStateService.Catalog.GetType().Name;
+                string expectedCatalogName = catalog is UnityEngine.Object expectedObject ? expectedObject.name : catalog.GetType().Name;
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][PhaseDefinition] PhaseCatalogRuntimeStateService mismatch: DI has catalog '{existingCatalogName}' but gameplay route has '{expectedCatalogName}'.");
+            }
+        }
+
         private static void RegisterPhaseDefinitionSelectionService()
         {
             if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionSelectionService>(out var existingSelectionService) || existingSelectionService == null)
             {
-                if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var catalog) || catalog == null)
+                if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var runtimeStateService) || runtimeStateService == null)
                 {
-                    throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseDefinitionCatalog missing from global DI before selection service registration.");
+                    throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseCatalogRuntimeStateService missing from global DI before selection service registration.");
                 }
 
-                var selectionService = new PhaseDefinitionSelectionService(catalog);
+                var selectionService = new PhaseDefinitionSelectionService(runtimeStateService);
                 DependencyManager.Provider.RegisterGlobal<IPhaseDefinitionSelectionService>(selectionService);
 
                 DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
@@ -127,16 +153,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var catalogRef) || catalogRef == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var runtimeStateServiceRef) || runtimeStateServiceRef == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseDefinitionCatalog missing from global DI while validating selection service registration.");
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseCatalogRuntimeStateService missing from global DI while validating selection service registration.");
             }
 
-            PhaseDefinitionAsset initialPhaseDefinitionRef = catalogRef.ResolveInitialOrFail();
-            if (!ReferenceEquals(existingSelectionService.Current, initialPhaseDefinitionRef))
+            PhaseDefinitionAsset committedPhaseDefinitionRef = runtimeStateServiceRef.CurrentCommitted;
+            if (!ReferenceEquals(existingSelectionService.Current, committedPhaseDefinitionRef))
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][PhaseDefinition] Selection service mismatch: DI has phaseAsset='{existingSelectionService.Current?.name ?? "<none>"}' but catalog initial phase is '{initialPhaseDefinitionRef.name}'.");
+                    $"[FATAL][Config][PhaseDefinition] Selection service mismatch: DI has phaseAsset='{existingSelectionService.Current?.name ?? "<none>"}' but runtime committed phase is '{committedPhaseDefinitionRef.name}'.");
             }
         }
 

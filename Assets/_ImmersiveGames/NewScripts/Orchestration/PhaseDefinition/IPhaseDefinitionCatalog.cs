@@ -25,5 +25,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         PhaseDefinitionAsset ResolvePreviousOrFail(string phaseId);
 
         bool TryGetPrevious(string phaseId, out PhaseDefinitionAsset previousPhaseDefinition);
+
+        PhaseDefinitionAsset ResolveSpecificPhaseOrFail(string phaseId);
     }
 }
