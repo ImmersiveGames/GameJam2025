@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
         void SetPendingTarget(PhaseDefinitionAsset targetPhaseRef, string reason = null);
         void CommitCurrentTarget(PhaseDefinitionAsset targetPhaseRef, string reason = null);
+        void RegisterTraversalWrap(PhaseNavigationDirection direction, string reason = null);
         void ClearPendingTarget(string reason = null);
     }
 }

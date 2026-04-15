@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.SceneComposition;
@@ -126,13 +126,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 return Array.Empty<string>();
             }
 
+            bool forceFullReload = RequiresForceReloadOfCurrentPhase(reason);
             HashSet<string> loadSet = new HashSet<string>(scenesToLoad ?? Array.Empty<string>(), StringComparer.Ordinal);
             List<string> scenesToUnload = new List<string>();
 
             for (int i = 0; i < previousScenes.Count; i++)
             {
                 string sceneName = NormalizeSceneNameOrFail(previousScenes[i], phaseDefinitionRef: null, i, correlationId, reason);
-                if (loadSet.Contains(sceneName))
+                if (!forceFullReload && loadSet.Contains(sceneName))
                 {
                     continue;
                 }
@@ -140,7 +141,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 scenesToUnload.Add(sceneName);
             }
 
+            if (forceFullReload)
+            {
+                DebugUtility.Log(typeof(PhaseDefinitionSceneCompositionRequestFactory),
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionForceReloadApplied activeScenes=[{string.Join(",", previousScenes)}] scenesToLoad=[{string.Join(",", scenesToLoad ?? Array.Empty<string>())}] correlationId='{correlationId}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+            }
+
             return scenesToUnload;
+        }
+
+        private static bool RequiresForceReloadOfCurrentPhase(string reason)
+        {
+            if (string.IsNullOrWhiteSpace(reason))
+            {
+                return false;
+            }
+
+            return string.Equals(reason, "RunDecision/Retry", StringComparison.Ordinal)
+                || string.Equals(reason, "RunDecision/ResetRun", StringComparison.Ordinal);
         }
 
         private static string NormalizeSceneNameOrFail(

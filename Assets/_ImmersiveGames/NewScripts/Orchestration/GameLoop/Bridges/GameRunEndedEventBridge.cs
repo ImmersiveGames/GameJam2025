@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -104,6 +105,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 $"[OBS][GameplaySessionFlow][RunDecision] RunContinuationSelectionResolved continuation='{evt.Selection.SelectedContinuation}' reason='{evt.Selection.Reason}' nextState='{evt.Selection.NextState}'.",
                 DebugUtility.Colors.Info);
 
+            if (evt.Selection.SelectedContinuation is RunContinuationKind.ResetRun or RunContinuationKind.Retry)
+            {
+                RouteRunResetSelection(evt.Selection);
+                return;
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var planResolver) || planResolver == null)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
@@ -119,6 +126,24 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             }
 
             _ = ExecuteTransitionAsync(planResolver, orchestrator, evt.Selection);
+        }
+
+        private static void RouteRunResetSelection(RunContinuationSelection selection)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionRunResetService>(out var runResetService) || runResetService == null)
+            {
+                DebugUtility.LogError<GameRunEndedEventBridge>(
+                    "[FATAL][GameplaySessionFlow] RunContinuationSelection de reset recebida mas IGameplaySessionRunResetService nao foi encontrado no escopo global.");
+                return;
+            }
+
+            GameplayRunResetRequest request = new GameplayRunResetRequest(selection);
+
+            DebugUtility.Log<GameRunEndedEventBridge>(
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetRoutedFromRunDecision kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' reason='{request.Reason}' nextState='{selection.NextState}'.",
+                DebugUtility.Colors.Info);
+
+            _ = runResetService.AcceptAsync(request);
         }
 
         private void HandleGameRunEnded(GameRunEndedEvent evt)

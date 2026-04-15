@@ -257,8 +257,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   margin: 16
-  panelWidth: 360
-  panelHeight: 220
+  panelWidth: 720
+  panelHeight: 440
 --- !u!4 &647847399
 Transform:
   m_ObjectHideFlags: 0
@@ -319,8 +319,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   margin: 16
-  panelWidth: 460
-  panelHeight: 240
+  panelWidth: 720
+  panelHeight: 440
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

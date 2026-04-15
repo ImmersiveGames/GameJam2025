@@ -14,10 +14,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
     {
         [Header("Layout")]
         [SerializeField] private float margin = 16f;
-        [SerializeField] private float panelWidth = 360f;
-        [SerializeField] private float panelHeight = 220f;
+        [SerializeField] private float panelWidth = 540f;
+        [SerializeField] private float panelHeight = 340f;
 
         [Inject] private IIntroStageControlService? _controlService;
+
+        private GUIStyle? _titleStyle;
+        private GUIStyle? _bodyStyle;
+        private GUIStyle? _buttonStyle;
 
         private IntroStagePresentationContract _contract;
         private bool _dependenciesInjected;
@@ -99,15 +103,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             Rect panelRect = BuildPanelRect();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
             GUILayout.BeginVertical();
-            GUILayout.Label("IntroStage");
-            GUILayout.Label($"phase: {DescribePhaseName()}");
-            GUILayout.Label($"signature: {_presenterSignature}");
-            GUILayout.Label($"intro: {_contract.HasIntroStage}");
-            GUILayout.Label($"runResult: {_contract.HasRunResultStage}");
+            EnsureStyles();
+            GUILayout.Label("IntroStage", _titleStyle!);
+            GUILayout.Label($"phase: {DescribePhaseName()}", _bodyStyle!);
+            GUILayout.Label($"signature: {_presenterSignature}", _bodyStyle!);
+            GUILayout.Label($"intro: {_contract.HasIntroStage}", _bodyStyle!);
+            GUILayout.Label($"runResult: {_contract.HasRunResultStage}", _bodyStyle!);
             GUILayout.Space(10f);
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button("Continue", GUILayout.Height(40f)))
+            if (GUILayout.Button("Continue", _buttonStyle!, GUILayout.Height(48f)))
             {
                 RequestCompletion("IntroStage/ContinueButton");
             }
@@ -172,6 +177,38 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 
         private static string DescribePresenterLabel()
             => nameof(IntroStagePresenter);
+
+        private void EnsureStyles()
+        {
+            if (_titleStyle == null)
+            {
+                _titleStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 40,
+                    wordWrap = true
+                };
+            }
+
+            if (_bodyStyle == null)
+            {
+                _bodyStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 30,
+                    wordWrap = true
+                };
+            }
+
+            if (_buttonStyle == null)
+            {
+                _buttonStyle = new GUIStyle(GUI.skin.button)
+                {
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 30,
+                    wordWrap = true
+                };
+            }
+        }
 
         private static string Normalize(string? value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();

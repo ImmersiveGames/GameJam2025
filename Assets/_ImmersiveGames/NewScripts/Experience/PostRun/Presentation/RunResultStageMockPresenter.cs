@@ -15,8 +15,8 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
     {
         [Header("Layout")]
         [SerializeField] private float margin = 20f;
-        [SerializeField] private float panelWidth = 520f;
-        [SerializeField] private float panelHeight = 320f;
+        [SerializeField] private float panelWidth = 720f;
+        [SerializeField] private float panelHeight = 420f;
 
         [Inject] private IGameplaySessionContextService _sessionContextService;
         [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
@@ -27,6 +27,9 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
         private bool _dependenciesInjected;
         private bool _isPresentationAttached;
         private string _presenterSignature = string.Empty;
+        private GUIStyle _titleStyle;
+        private GUIStyle _bodyStyle;
+        private GUIStyle _buttonStyle;
 
         public string PresenterSignature => _presenterSignature;
 
@@ -114,17 +117,18 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
             Rect panelRect = BuildPanelRect();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
             GUILayout.BeginVertical();
-            GUILayout.Label("RunResultStage");
-            GUILayout.Label($"result: {model.Result}");
-            GUILayout.Label($"reason: {model.Reason}");
-            GUILayout.Label($"signature: {model.Signature}");
-            GUILayout.Label($"phase: {model.PhaseName}");
+            EnsureStyles();
+            GUILayout.Label("RunResultStage", _titleStyle);
+            GUILayout.Label($"result: {model.Result}", _bodyStyle);
+            GUILayout.Label($"reason: {model.Reason}", _bodyStyle);
+            GUILayout.Label($"signature: {model.Signature}", _bodyStyle);
+            GUILayout.Label($"phase: {model.PhaseName}", _bodyStyle);
             GUILayout.Space(10f);
             GUILayout.FlexibleSpace();
 
             bool previousEnabled = GUI.enabled;
             GUI.enabled = model.CanContinue;
-            if (GUILayout.Button("Continue", GUILayout.Height(40f)))
+            if (GUILayout.Button("Continue", _buttonStyle, GUILayout.Height(48f)))
             {
                 OnClickContinue();
             }
@@ -168,6 +172,38 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Presentation
             float x = Mathf.Max(margin, Mathf.Round((Screen.width - width) * 0.5f));
             float y = Mathf.Max(margin, Mathf.Round(Screen.height - height - margin));
             return new Rect(x, y, width, height);
+        }
+
+        private void EnsureStyles()
+        {
+            if (_titleStyle == null)
+            {
+                _titleStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 40,
+                    wordWrap = true
+                };
+            }
+
+            if (_bodyStyle == null)
+            {
+                _bodyStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 30,
+                    wordWrap = true
+                };
+            }
+
+            if (_buttonStyle == null)
+            {
+                _buttonStyle = new GUIStyle(GUI.skin.button)
+                {
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 30,
+                    wordWrap = true
+                };
+            }
         }
 
         private void RequestCompletion(string reason)

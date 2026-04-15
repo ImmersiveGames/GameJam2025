@@ -12,12 +12,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
     {
         private const string VictoryReason = "QA/BaselineV3/VictoryButton";
         private const string DefeatReason = "QA/BaselineV3/DefeatButton";
-        private const float MinPanelWidth = 460f;
-        private const float MinPanelHeight = 260f;
+        private const float MinPanelWidth = 760f;
+        private const float MinPanelHeight = 360f;
 
         [Header("Layout")]
-        [SerializeField] private Rect panelRect = new(16f, 16f, 460f, 240f);
-        [SerializeField] private string title = "Baseline V3 Outcome Mock";
+        [SerializeField] private Rect panelRect = new(16f, 16f, 760f, 360f);
+        [SerializeField] private string title = "Run Outcome QA";
 
         [Inject] private IGameRunEndRequestService _endRequest;
         [Inject] private IGameLoopService _gameLoopService;
@@ -35,6 +35,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
         private EventBinding<IntroStageCompletedEvent> _introStageCompletedBinding;
         private bool _registered;
         private bool _runEnded;
+        private GUIStyle _titleStyle;
+        private GUIStyle _bodyStyle;
+        private GUIStyle _buttonStyle;
 
         private void Awake()
         {
@@ -71,22 +74,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             }
 
             EnsurePanelBounds();
+            EnsureStyles();
             GUILayout.BeginArea(panelRect, GUI.skin.box);
             GUILayout.BeginVertical();
-            GUILayout.Label(title, GUI.skin.label);
+            GUILayout.Label(title, _titleStyle);
             GUILayout.Space(4f);
-            GUILayout.Label(BuildSmokeSummary(), GUI.skin.label);
+            GUILayout.Label(BuildSmokeSummary(), _bodyStyle);
             GUILayout.Space(8f);
 
-            if (GUILayout.Button("Victory"))
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Victory", _buttonStyle, GUILayout.Height(42f)))
             {
                 RequestOutcome(GameRunOutcome.Victory, VictoryReason);
             }
 
-            if (GUILayout.Button("Defeat"))
+            if (GUILayout.Button("Defeat", _buttonStyle, GUILayout.Height(42f)))
             {
                 RequestOutcome(GameRunOutcome.Defeat, DefeatReason);
             }
+            GUILayout.EndHorizontal();
 
             GUILayout.EndVertical();
             GUILayout.EndArea();
@@ -183,6 +189,38 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             }
         }
 
+        private void EnsureStyles()
+        {
+            if (_titleStyle == null)
+            {
+                _titleStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 27,
+                    wordWrap = true
+                };
+            }
+
+            if (_bodyStyle == null)
+            {
+                _bodyStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 21,
+                    wordWrap = true
+                };
+            }
+
+            if (_buttonStyle == null)
+            {
+                _buttonStyle = new GUIStyle(GUI.skin.button)
+                {
+                    fontStyle = FontStyle.Bold,
+                    fontSize = 21,
+                    wordWrap = true
+                };
+            }
+        }
+
         private void RegisterBindings()
         {
             if (_registered)
@@ -249,28 +287,28 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             bool hasInitialState = _phaseInitialStateService != null && _phaseInitialStateService.TryGetCurrent(out initialState);
 
             string sessionLabel = hasSession
-                ? $"Session: OK [phase:{session.PhaseId}] v{session.SelectionVersion}"
+                ? $"Session: {session.PhaseId} v{session.SelectionVersion}"
                 : "Session: empty";
 
             string phaseLabel = hasPhase
-                ? $"Phase: OK [{(phase.PhaseDefinitionRef != null ? phase.PhaseDefinitionRef.name : "<none>")}] v{phase.SessionContext.SelectionVersion}"
+                ? $"Phase: {(phase.PhaseDefinitionRef != null ? phase.PhaseDefinitionRef.name : "<none>")} v{phase.SessionContext.SelectionVersion}"
                 : "Phase: empty";
 
             string playersLabel = hasPlayers
-                ? $"Players: OK [{players.ParticipationMode}] x{players.ParticipatingPlayerCount} primary={players.PrimaryParticipantId}"
+                ? $"Players: {players.ParticipationMode} x{players.ParticipatingPlayerCount} primary={players.PrimaryParticipantId}"
                 : "Players: empty";
 
             string rulesObjectivesLabel = hasRulesObjectives
-                ? $"Rules/Objectives: OK rules={rulesObjectives.RuleEntryCount} objectives={rulesObjectives.ObjectiveEntryCount} primary={rulesObjectives.PrimaryObjectiveId}"
+                ? $"Rules: {rulesObjectives.RuleEntryCount} Obj: {rulesObjectives.ObjectiveEntryCount} primary={rulesObjectives.PrimaryObjectiveId}"
                 : "Rules/Objectives: empty";
 
             string initialStateLabel = hasInitialState
-                ? $"InitialState: OK seed={initialState.SeedSource}"
+                ? $"InitialState: {initialState.SeedSource}"
                 : "InitialState: empty";
 
             string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasPlayers, hasRulesObjectives, hasInitialState, session, phase, players, rulesObjectives, initialState);
 
-            return $"{sessionLabel} | {phaseLabel} | {playersLabel} | {rulesObjectivesLabel} | {initialStateLabel} | {linkLabel}";
+            return $"{sessionLabel} | {phaseLabel}\n{playersLabel} | {rulesObjectivesLabel} | {initialStateLabel}\n{linkLabel}";
         }
 
         private static string BuildLinkSummary(
@@ -289,25 +327,25 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
                 ? string.Equals(session.SessionSignature, phase.SessionContext.SessionSignature, System.StringComparison.Ordinal)
                     ? "S-P: linked"
                     : "S-P: mismatch"
-                : (hasSession ? "S-P: phase empty" : (hasPhase ? "S-P: session empty" : "S-P: empty"));
+                : "S-P: empty";
 
             string phasePlayers = hasPhase && hasPlayers
                 ? string.Equals(phase.PhaseRuntimeSignature, players.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
                     ? "P-Players: linked"
                     : "P-Players: mismatch"
-                : (hasPhase ? "P-Players: players empty" : (hasPlayers ? "P-Players: phase empty" : "P-Players: empty"));
+                : "P-Players: empty";
 
             string phaseRules = hasPhase && hasRulesObjectives
                 ? string.Equals(phase.PhaseRuntimeSignature, rulesObjectives.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
                     ? "P-Rules: linked"
                     : "P-Rules: mismatch"
-                : (hasPhase ? "P-Rules: rules empty" : (hasRulesObjectives ? "P-Rules: phase empty" : "P-Rules: empty"));
+                : "P-Rules: empty";
 
             string rulesInitial = hasRulesObjectives && hasInitialState
                 ? string.Equals(rulesObjectives.RulesSignature, initialState.RulesObjectives.RulesSignature, System.StringComparison.Ordinal)
                     ? "Rules-Initial: linked"
                     : "Rules-Initial: mismatch"
-                : (hasRulesObjectives ? "Rules-Initial: initial empty" : (hasInitialState ? "Rules-Initial: rules empty" : "Rules-Initial: empty"));
+                : "Rules-Initial: empty";
 
             return $"{sessionPhase} | {phasePlayers} | {phaseRules} | {rulesInitial}";
         }

@@ -129,7 +129,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
 
         public async Task<PhaseNavigationResult> NavigatePhaseAsync(PhaseNavigationRequest request, CancellationToken ct = default)
         {
-            PhaseNavigationRequest normalizedRequest = new PhaseNavigationRequest(request.Direction, request.Reason);
+            PhaseNavigationRequest normalizedRequest = request.Direction == PhaseNavigationDirection.Previous
+                ? PhaseNavigationRequest.Previous(request.Reason)
+                : request.Direction == PhaseNavigationDirection.Next
+                    ? PhaseNavigationRequest.Next(request.Reason)
+                    : PhaseNavigationRequest.Specific(request.TargetPhaseId, request.Reason);
             string normalizedReason = string.IsNullOrWhiteSpace(normalizedRequest.Reason) ? "GameplaySessionFlow/NavigationPhase" : normalizedRequest.Reason;
             string action = PhaseNextPhaseServiceSupport.DescribeDirection(normalizedRequest.Direction);
 

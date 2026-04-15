@@ -12,6 +12,8 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
         RestartCurrentPhase = 2,
         ExitToMenu = 3,
         EndRun = 4,
+        ResetRun = 5,
+        Retry = 6,
     }
 
     public readonly struct RunContinuationTerminalFact

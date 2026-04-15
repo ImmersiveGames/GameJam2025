@@ -24,6 +24,8 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             {
                 RunContinuationKind.AdvancePhase,
                 RunContinuationKind.RestartCurrentPhase,
+                RunContinuationKind.ResetRun,
+                RunContinuationKind.Retry,
                 RunContinuationKind.ExitToMenu,
                 RunContinuationKind.EndRun,
             };

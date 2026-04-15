@@ -1,10 +1,13 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
@@ -38,6 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
             EnsureNavigationCoreComposition();
             EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
+            EnsureGameplaySessionRunResetService();
             SessionTransitionBootstrap.ComposeRuntime();
             NavigationAdaptersBootstrap.ComposeRuntime(bootstrapConfig);
             EnsureNavigationModuleComposition();
@@ -137,6 +141,58 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
                 "[OBS][NavigationCore][Operational] IGameplaySessionFlowContinuityService registrado como continuity seam canonical.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureGameplaySessionRunResetService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionRunResetService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var phaseDefinitionCatalog) || phaseDefinitionCatalog == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IPhaseDefinitionCatalog ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var phaseCatalogRuntimeStateService) || phaseCatalogRuntimeStateService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IPhaseCatalogRuntimeStateService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var runContinuationOwnershipService) || runContinuationOwnershipService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRunContinuationOwnershipService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPostRunResultService>(out var postRunResultService) || postRunResultService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IPostRunResultService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+            }
+
+            var service = new GameplaySessionRunResetService(
+                restartContextService,
+                navigationService,
+                phaseDefinitionCatalog,
+                phaseCatalogRuntimeStateService,
+                runContinuationOwnershipService,
+                postRunResultService);
+
+            DependencyManager.Provider.RegisterGlobal<IGameplaySessionRunResetService>(service);
+
+            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
+                "[OBS][NavigationCore][Operational] IGameplaySessionRunResetService registrado como run-reset seam canonical.",
                 DebugUtility.Colors.Info);
         }
 

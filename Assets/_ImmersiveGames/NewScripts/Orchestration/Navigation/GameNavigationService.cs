@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched without explicit selection; GameplaySessionFlow prepara a selecao padrao como suporte operacional.",
+                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched using canonical phase catalog runtime state; GameplaySessionFlow consome pendingTarget/currentCommitted no prepare phase-side.",
                 DebugUtility.Colors.Info);
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);

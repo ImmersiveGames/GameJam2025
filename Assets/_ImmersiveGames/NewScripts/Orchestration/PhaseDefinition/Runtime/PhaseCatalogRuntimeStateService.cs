@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
@@ -24,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.LogVerbose(typeof(PhaseCatalogRuntimeStateService),
-                $"[OBS][PhaseDefinition][CatalogState] RuntimeStateInitialized currentCommitted='{DescribePhase(_currentCommitted)}' pendingTarget='<none>' looping='{Looping}' traversalMode='{TraversalMode}' loopCount='{LoopCount}'.",
+                $"[OBS][PhaseFlow][State] RuntimeStateInitialized currentCommitted='{DescribePhase(_currentCommitted)}' pendingTarget='<none>' looping='{Looping}' traversalMode='{TraversalMode}' loopCount='{LoopCount}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -58,51 +59,121 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public void SetPendingTarget(PhaseDefinitionAsset targetPhaseRef, string reason = null)
         {
             ValidateTargetOrFail(targetPhaseRef, nameof(SetPendingTarget), reason);
+            PhaseDefinitionAsset previousPendingTarget;
 
             lock (_sync)
             {
+                previousPendingTarget = _pendingTarget;
                 _pendingTarget = targetPhaseRef;
             }
 
             DebugUtility.LogVerbose(typeof(PhaseCatalogRuntimeStateService),
-                $"[OBS][PhaseDefinition][CatalogState] PendingTargetUpdated pendingTarget='{DescribePhase(targetPhaseRef)}' reason='{NormalizeReason(reason)}'.",
+                $"[OBS][PhaseFlow][State] PendingTargetUpdated pendingTarget='{DescribePhase(targetPhaseRef)}' reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);
+
+            if (!HasSamePhase(previousPendingTarget, targetPhaseRef))
+            {
+                EventBus<PhaseCatalogPendingTargetChangedEvent>.Raise(new PhaseCatalogPendingTargetChangedEvent(
+                    DescribePhase(previousPendingTarget),
+                    DescribePhase(targetPhaseRef),
+                    NormalizeReason(reason),
+                    false));
+            }
         }
 
         public void CommitCurrentTarget(PhaseDefinitionAsset targetPhaseRef, string reason = null)
         {
             ValidateTargetOrFail(targetPhaseRef, nameof(CommitCurrentTarget), reason);
+            PhaseDefinitionAsset previousCommittedTarget;
+            bool committedChanged;
 
             lock (_sync)
             {
+                previousCommittedTarget = _currentCommitted;
                 if (_pendingTarget != null && !ReferenceEquals(_pendingTarget, targetPhaseRef))
                 {
                     FailFastConfig($"CommitCurrentTarget mismatch: pendingTarget='{DescribePhase(_pendingTarget)}' target='{DescribePhase(targetPhaseRef)}' reason='{NormalizeReason(reason)}'.");
                 }
 
                 _currentCommitted = targetPhaseRef;
+                committedChanged = !HasSamePhase(previousCommittedTarget, targetPhaseRef);
             }
 
             DebugUtility.LogVerbose(typeof(PhaseCatalogRuntimeStateService),
-                $"[OBS][PhaseDefinition][CatalogState] CurrentCommittedUpdated currentCommitted='{DescribePhase(targetPhaseRef)}' pendingTarget='{DescribePhase(_pendingTarget)}' pendingTargetRetainedUntilHandoff='true' reason='{NormalizeReason(reason)}'.",
+                $"[OBS][PhaseFlow][State] CurrentCommittedUpdated currentCommitted='{DescribePhase(targetPhaseRef)}' pendingTarget='{DescribePhase(_pendingTarget)}' pendingTargetRetainedUntilHandoff='true' loopCount='{LoopCount}' reason='{NormalizeReason(reason)}'.",
                 DebugUtility.Colors.Info);
+
+            if (committedChanged)
+            {
+                EventBus<PhaseCatalogCurrentCommittedChangedEvent>.Raise(new PhaseCatalogCurrentCommittedChangedEvent(
+                    DescribePhase(previousCommittedTarget),
+                    DescribePhase(targetPhaseRef),
+                    NormalizeReason(reason)));
+            }
+        }
+
+        public void RegisterTraversalWrap(PhaseNavigationDirection direction, string reason = null)
+        {
+            string normalizedReason = NormalizeReason(reason);
+            string directionLabel = DescribeDirection(direction);
+            int previousLoopCount;
+            int nextLoopCount;
+
+            lock (_sync)
+            {
+                if (direction == PhaseNavigationDirection.Next)
+                {
+                    previousLoopCount = LoopCount;
+                    LoopCount++;
+                    nextLoopCount = LoopCount;
+                    DebugUtility.LogVerbose(typeof(PhaseCatalogRuntimeStateService),
+                        $"[OBS][PhaseFlow][State] LoopCountUpdated direction='{directionLabel}' delta='+1' loopCount='{LoopCount}' reason='{normalizedReason}' wrapKind='forward_catalog_wrap'.",
+                        DebugUtility.Colors.Info);
+                    EventBus<PhaseCatalogLoopCountChangedEvent>.Raise(new PhaseCatalogLoopCountChangedEvent(
+                        previousLoopCount,
+                        nextLoopCount,
+                        direction,
+                        normalizedReason,
+                        true));
+                    return;
+                }
+
+                if (direction == PhaseNavigationDirection.Previous)
+                {
+                    DebugUtility.LogVerbose(typeof(PhaseCatalogRuntimeStateService),
+                        $"[OBS][PhaseFlow][State] LoopCountUnchanged direction='{directionLabel}' delta='0' loopCount='{LoopCount}' reason='{normalizedReason}' wrapKind='retrograde_catalog_wrap' backwardWrapCounted='false'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+            }
+
+            FailFastConfig($"RegisterTraversalWrap received unsupported direction='{directionLabel}' reason='{normalizedReason}'.");
         }
 
         public void ClearPendingTarget(string reason = null)
         {
+            PhaseDefinitionAsset previousPendingTarget;
+
             lock (_sync)
             {
+                previousPendingTarget = _pendingTarget;
                 if (_pendingTarget == null)
                 {
                     return;
                 }
 
                 DebugUtility.LogVerbose(typeof(PhaseCatalogRuntimeStateService),
-                    $"[OBS][PhaseDefinition][CatalogState] PendingTargetCleared pendingTarget='{DescribePhase(_pendingTarget)}' reason='{NormalizeReason(reason)}' clearedAfterHandoff='true'.",
+                    $"[OBS][PhaseFlow][State] PendingTargetCleared pendingTarget='{DescribePhase(_pendingTarget)}' reason='{NormalizeReason(reason)}' clearedAfterHandoff='true'.",
                     DebugUtility.Colors.Info);
 
                 _pendingTarget = null;
             }
+
+            EventBus<PhaseCatalogPendingTargetChangedEvent>.Raise(new PhaseCatalogPendingTargetChangedEvent(
+                DescribePhase(previousPendingTarget),
+                string.Empty,
+                NormalizeReason(reason),
+                true));
         }
 
         private static void ValidateTargetOrFail(PhaseDefinitionAsset targetPhaseRef, string operation, string reason)
@@ -125,11 +196,147 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             return string.IsNullOrWhiteSpace(reason) ? "<null>" : reason.Trim();
         }
 
+        private static string DescribeDirection(PhaseNavigationDirection direction)
+        {
+            return direction == PhaseNavigationDirection.Previous
+                ? "Previous"
+                : direction == PhaseNavigationDirection.Next
+                    ? "Next"
+                    : direction.ToString();
+        }
+
+        private static bool HasSamePhase(PhaseDefinitionAsset left, PhaseDefinitionAsset right)
+        {
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left == null || right == null || !left.PhaseId.IsValid || !right.PhaseId.IsValid)
+            {
+                return false;
+            }
+
+            return string.Equals(left.PhaseId.Value, right.PhaseId.Value, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static void FailFastConfig(string detail)
         {
             string message = $"[FATAL][Config][PhaseDefinition] {detail}";
             DebugUtility.LogError(typeof(PhaseCatalogRuntimeStateService), message);
             throw new InvalidOperationException(message);
         }
+    }
+
+    public readonly struct PhaseCatalogNavigationRequestedEvent : IEvent
+    {
+        public PhaseCatalogNavigationRequestedEvent(
+            PhaseNavigationRequestKind requestKind,
+            PhaseNavigationDirection direction,
+            string fromPhaseId,
+            string toPhaseId,
+            string reason,
+            string routeId)
+        {
+            RequestKind = requestKind;
+            Direction = direction;
+            FromPhaseId = string.IsNullOrWhiteSpace(fromPhaseId) ? string.Empty : fromPhaseId.Trim();
+            ToPhaseId = string.IsNullOrWhiteSpace(toPhaseId) ? string.Empty : toPhaseId.Trim();
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            RouteId = string.IsNullOrWhiteSpace(routeId) ? string.Empty : routeId.Trim();
+        }
+
+        public PhaseNavigationRequestKind RequestKind { get; }
+        public PhaseNavigationDirection Direction { get; }
+        public string FromPhaseId { get; }
+        public string ToPhaseId { get; }
+        public string Reason { get; }
+        public string RouteId { get; }
+    }
+
+    public readonly struct PhaseCatalogPendingTargetChangedEvent : IEvent
+    {
+        public PhaseCatalogPendingTargetChangedEvent(
+            string previousPendingTargetId,
+            string pendingTargetId,
+            string reason,
+            bool isCleared)
+        {
+            PreviousPendingTargetId = string.IsNullOrWhiteSpace(previousPendingTargetId) ? string.Empty : previousPendingTargetId.Trim();
+            PendingTargetId = string.IsNullOrWhiteSpace(pendingTargetId) ? string.Empty : pendingTargetId.Trim();
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            IsCleared = isCleared;
+        }
+
+        public string PreviousPendingTargetId { get; }
+        public string PendingTargetId { get; }
+        public string Reason { get; }
+        public bool IsCleared { get; }
+    }
+
+    public readonly struct PhaseCatalogCurrentCommittedChangedEvent : IEvent
+    {
+        public PhaseCatalogCurrentCommittedChangedEvent(string previousCommittedId, string currentCommittedId, string reason)
+        {
+            PreviousCommittedId = string.IsNullOrWhiteSpace(previousCommittedId) ? string.Empty : previousCommittedId.Trim();
+            CurrentCommittedId = string.IsNullOrWhiteSpace(currentCommittedId) ? string.Empty : currentCommittedId.Trim();
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+        }
+
+        public string PreviousCommittedId { get; }
+        public string CurrentCommittedId { get; }
+        public string Reason { get; }
+    }
+
+    public readonly struct PhaseCatalogLoopCountChangedEvent : IEvent
+    {
+        public PhaseCatalogLoopCountChangedEvent(
+            int previousLoopCount,
+            int loopCount,
+            PhaseNavigationDirection direction,
+            string reason,
+            bool wasWrapped)
+        {
+            PreviousLoopCount = previousLoopCount;
+            LoopCount = loopCount;
+            Direction = direction;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            WasWrapped = wasWrapped;
+        }
+
+        public int PreviousLoopCount { get; }
+        public int LoopCount { get; }
+        public PhaseNavigationDirection Direction { get; }
+        public string Reason { get; }
+        public bool WasWrapped { get; }
+    }
+
+    public readonly struct PhaseCatalogNavigationCompletedEvent : IEvent
+    {
+        public PhaseCatalogNavigationCompletedEvent(
+            PhaseNavigationRequestKind requestKind,
+            PhaseNavigationOutcome outcome,
+            string fromPhaseId,
+            string toPhaseId,
+            string reason,
+            string routeId,
+            bool wasWrapped)
+        {
+            RequestKind = requestKind;
+            Outcome = outcome;
+            FromPhaseId = string.IsNullOrWhiteSpace(fromPhaseId) ? string.Empty : fromPhaseId.Trim();
+            ToPhaseId = string.IsNullOrWhiteSpace(toPhaseId) ? string.Empty : toPhaseId.Trim();
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            RouteId = string.IsNullOrWhiteSpace(routeId) ? string.Empty : routeId.Trim();
+            WasWrapped = wasWrapped;
+        }
+
+        public PhaseNavigationRequestKind RequestKind { get; }
+        public PhaseNavigationOutcome Outcome { get; }
+        public string FromPhaseId { get; }
+        public string ToPhaseId { get; }
+        public string Reason { get; }
+        public string RouteId { get; }
+        public bool WasWrapped { get; }
     }
 }

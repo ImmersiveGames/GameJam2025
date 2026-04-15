@@ -53,6 +53,8 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 - `Docs/Modules/WorldReset.md`
 - `Docs/Guides/Production-How-To-Use-Core-Modules.md`
 - `Docs/Guides/Event-Hooks-Reference.md`
+- `Docs/Guides/Phase-Catalog-Navigation-Hooks.md`
+- `Docs/Guides/Phase-Catalog-Navigation-Final-Checklist.md`
 - `Docs/Guides/GameLoop-Start-Contracts.md`
 - `Docs/Guides/How-To-Add-A-New-Module-To-Composition.md`
 - `Docs/CHANGELOG-docs.md`

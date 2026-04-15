@@ -15,3 +15,4 @@ MonoBehaviour:
   phaseDefinitions:
   - {fileID: 11400000, guid: 65c3655b7e7045088c702354dde6d671, type: 2}
   - {fileID: 11400000, guid: 7d8f9a0b1c2d3e4f5061728394a5b6c7, type: 2}
+  traversalMode: 0
