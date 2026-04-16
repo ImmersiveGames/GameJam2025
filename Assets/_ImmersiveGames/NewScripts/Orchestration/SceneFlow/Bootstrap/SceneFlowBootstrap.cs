@@ -270,7 +270,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Bootstrap
                 SceneCompositionRequest phaseCompositionRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
                     selectedPhaseDefinitionRef,
                     reason,
-                    phaseSelectedEvent.SelectionSignature);
+                    phaseSelectedEvent.SelectionSignature,
+                    forceFullReload: false);
 
                 SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
 

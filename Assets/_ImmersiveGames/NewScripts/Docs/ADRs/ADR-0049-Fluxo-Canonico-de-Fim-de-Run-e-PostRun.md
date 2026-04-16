@@ -21,6 +21,8 @@ Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacio
 
 `RunContinuation` pertence ao fluxo macro de continuidade apos o fechamento local da phase, nao ao "post-run local".
 
+Este ADR nao trata navegacao ordinal phase-local. `NextPhaseAsync` e `RestartCatalogAsync` pertencem ao ADR-0053 e nao substituem `RunResultStage` nem `RunDecision`.
+
 ## 2. Escopo
 
 Este ADR cobre:

@@ -228,32 +228,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         }
     }
 
-    public readonly struct PhaseCatalogNavigationRequestedEvent : IEvent
-    {
-        public PhaseCatalogNavigationRequestedEvent(
-            PhaseNavigationRequestKind requestKind,
-            PhaseNavigationDirection direction,
-            string fromPhaseId,
-            string toPhaseId,
-            string reason,
-            string routeId)
-        {
-            RequestKind = requestKind;
-            Direction = direction;
-            FromPhaseId = string.IsNullOrWhiteSpace(fromPhaseId) ? string.Empty : fromPhaseId.Trim();
-            ToPhaseId = string.IsNullOrWhiteSpace(toPhaseId) ? string.Empty : toPhaseId.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            RouteId = string.IsNullOrWhiteSpace(routeId) ? string.Empty : routeId.Trim();
-        }
-
-        public PhaseNavigationRequestKind RequestKind { get; }
-        public PhaseNavigationDirection Direction { get; }
-        public string FromPhaseId { get; }
-        public string ToPhaseId { get; }
-        public string Reason { get; }
-        public string RouteId { get; }
-    }
-
     public readonly struct PhaseCatalogPendingTargetChangedEvent : IEvent
     {
         public PhaseCatalogPendingTargetChangedEvent(
@@ -311,32 +285,4 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public bool WasWrapped { get; }
     }
 
-    public readonly struct PhaseCatalogNavigationCompletedEvent : IEvent
-    {
-        public PhaseCatalogNavigationCompletedEvent(
-            PhaseNavigationRequestKind requestKind,
-            PhaseNavigationOutcome outcome,
-            string fromPhaseId,
-            string toPhaseId,
-            string reason,
-            string routeId,
-            bool wasWrapped)
-        {
-            RequestKind = requestKind;
-            Outcome = outcome;
-            FromPhaseId = string.IsNullOrWhiteSpace(fromPhaseId) ? string.Empty : fromPhaseId.Trim();
-            ToPhaseId = string.IsNullOrWhiteSpace(toPhaseId) ? string.Empty : toPhaseId.Trim();
-            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
-            RouteId = string.IsNullOrWhiteSpace(routeId) ? string.Empty : routeId.Trim();
-            WasWrapped = wasWrapped;
-        }
-
-        public PhaseNavigationRequestKind RequestKind { get; }
-        public PhaseNavigationOutcome Outcome { get; }
-        public string FromPhaseId { get; }
-        public string ToPhaseId { get; }
-        public string Reason { get; }
-        public string RouteId { get; }
-        public bool WasWrapped { get; }
-    }
 }

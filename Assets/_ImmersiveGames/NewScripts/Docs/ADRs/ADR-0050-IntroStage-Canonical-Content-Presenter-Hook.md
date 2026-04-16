@@ -58,6 +58,8 @@ Regras de precedencia:
 - a reentrada local usa uma identidade monotonica por entrada valida da phase
 - quando houver intro valida, a `IntroStage` volta a abrir na reentrada da phase
 
+`IntroStage` e `RunResultStage` continuam sendo contratos materializados do phase runtime. O uso de `RunResultStage` como fechamento semantico antes de decidir o proximo destino nao foi resolvido pelo ADR-0053 e permanece dependente do plano/auditoria de `PostRun`.
+
 ## 5. Fluxo canonico
 
 O fluxo canonico ocorre assim:

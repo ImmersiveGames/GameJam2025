@@ -11,7 +11,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public static SceneCompositionRequest CreateApplyRequest(
             PhaseDefinitionAsset phaseDefinitionRef,
             string reason,
-            string correlationId)
+            string correlationId,
+            bool forceFullReload = false)
         {
             if (phaseDefinitionRef == null)
             {
@@ -22,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             phaseDefinitionRef.ValidateOrFail($"PhaseDefinitionSceneCompositionRequestFactory/Apply correlationId='{correlationId}'");
 
             IReadOnlyList<string> scenesToLoad = BuildSceneListOrFail(phaseDefinitionRef, correlationId, reason, out string contentMainScene);
-            IReadOnlyList<string> scenesToUnload = BuildSceneUnloadListOrFail(correlationId, reason, scenesToLoad);
+            IReadOnlyList<string> scenesToUnload = BuildSceneUnloadListOrFail(correlationId, reason, scenesToLoad, forceFullReload);
 
             DebugUtility.Log(typeof(PhaseDefinitionSceneCompositionRequestFactory),
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentTranslated phaseId='{phaseDefinitionRef.PhaseId}' phaseRef='{phaseDefinitionRef.name}' scenesToLoad=[{string.Join(",", scenesToLoad)}] scenesToUnload=[{string.Join(",", scenesToUnload)}] contentMainScene='{contentMainScene}' correlationId='{correlationId}' reason='{reason}'.",
@@ -118,7 +119,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             return sceneNames;
         }
 
-        private static IReadOnlyList<string> BuildSceneUnloadListOrFail(string correlationId, string reason, IReadOnlyList<string> scenesToLoad)
+        private static IReadOnlyList<string> BuildSceneUnloadListOrFail(
+            string correlationId,
+            string reason,
+            IReadOnlyList<string> scenesToLoad,
+            bool forceFullReload)
         {
             IReadOnlyList<string> previousScenes = PhaseContentSceneRuntimeApplier.ActiveAppliedSceneNames;
             if (previousScenes == null || previousScenes.Count == 0)
@@ -126,7 +131,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 return Array.Empty<string>();
             }
 
-            bool forceFullReload = RequiresForceReloadOfCurrentPhase(reason);
             HashSet<string> loadSet = new HashSet<string>(scenesToLoad ?? Array.Empty<string>(), StringComparer.Ordinal);
             List<string> scenesToUnload = new List<string>();
 
@@ -149,17 +153,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             return scenesToUnload;
-        }
-
-        private static bool RequiresForceReloadOfCurrentPhase(string reason)
-        {
-            if (string.IsNullOrWhiteSpace(reason))
-            {
-                return false;
-            }
-
-            return string.Equals(reason, "RunDecision/Retry", StringComparison.Ordinal)
-                || string.Equals(reason, "RunDecision/ResetRun", StringComparison.Ordinal);
         }
 
         private static string NormalizeSceneNameOrFail(

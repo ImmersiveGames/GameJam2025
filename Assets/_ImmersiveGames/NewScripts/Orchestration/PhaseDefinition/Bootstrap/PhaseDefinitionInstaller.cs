@@ -41,6 +41,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
             RegisterPhaseDefinitionCatalog(bootstrapConfig);
             RegisterPhaseDefinitionResolver();
             RegisterPhaseCatalogRuntimeStateService();
+            RegisterPhaseCatalogNavigationService();
             RegisterPhaseDefinitionSelectionService();
             RegisterRestartContextService();
             EnsureGameplayPhaseFlowOwner();
@@ -132,6 +133,36 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
                 string expectedCatalogName = catalog is UnityEngine.Object expectedObject ? expectedObject.name : catalog.GetType().Name;
                 throw new InvalidOperationException(
                     $"[FATAL][Config][PhaseDefinition] PhaseCatalogRuntimeStateService mismatch: DI has catalog '{existingCatalogName}' but gameplay route has '{expectedCatalogName}'.");
+            }
+        }
+
+        private static void RegisterPhaseCatalogNavigationService()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var catalog) || catalog == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseDefinitionCatalog missing from global DI before catalog navigation registration.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var runtimeStateService) || runtimeStateService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IPhaseCatalogRuntimeStateService missing from global DI before catalog navigation registration.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogNavigationService>(out var existingNavigationService) || existingNavigationService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IPhaseCatalogNavigationService>(new PhaseCatalogNavigationService(catalog, runtimeStateService));
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][Core] Catalog navigation service registered in global DI.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!ReferenceEquals(existingNavigationService.Catalog, catalog))
+            {
+                string existingCatalogName = existingNavigationService.Catalog is UnityEngine.Object existingObject ? existingObject.name : existingNavigationService.Catalog.GetType().Name;
+                string expectedCatalogName = catalog is UnityEngine.Object expectedObject ? expectedObject.name : catalog.GetType().Name;
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][PhaseDefinition] PhaseCatalogNavigationService mismatch: DI has catalog '{existingCatalogName}' but gameplay route has '{expectedCatalogName}'.");
             }
         }
 

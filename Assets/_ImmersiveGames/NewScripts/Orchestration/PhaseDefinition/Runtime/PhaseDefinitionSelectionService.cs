@@ -17,14 +17,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.LogVerbose(typeof(PhaseDefinitionSelectionService),
-                $"[OBS][PhaseDefinition] Selected phase resolved from runtime catalog state phaseId='{Current.PhaseId}' asset='{Current.name}' source='{( _runtimeStateService.PendingTarget != null ? "pending_target" : "current_committed")}'.",
+                $"[OBS][PhaseDefinition] Selected phase resolved from runtime catalog state phaseId='{Current.PhaseId}' asset='{Current.name}' source='current_committed'.",
                 DebugUtility.Colors.Info);
         }
 
         public PhaseDefinitionId SelectedPhaseDefinitionId => Current != null ? Current.PhaseId : PhaseDefinitionId.None;
-        public PhaseDefinitionAsset Current => _runtimeStateService.PendingTarget != null
-            ? _runtimeStateService.PendingTarget
-            : _runtimeStateService.CurrentCommitted;
+        public PhaseDefinitionAsset Current => _runtimeStateService.CurrentCommitted;
 
         public bool TryGetCurrent(out PhaseDefinitionAsset phaseDefinition)
         {

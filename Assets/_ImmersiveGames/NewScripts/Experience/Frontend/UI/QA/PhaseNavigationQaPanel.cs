@@ -1,17 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using UnityEngine;
@@ -30,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         private const string AdvancePhaseReason = "QA/PhaseNavigation/AdvancePhase";
         private const string GoToSpecificPhaseReason = "QA/PhaseNavigation/GoToSpecificPhase";
         private const string RestartCatalogReason = "QA/PhaseNavigation/RestartCatalog";
-        private const string RestartCurrentPhaseReason = "QA/PhaseNavigation/RestartCurrentPhase";
         private const float PanelWidth = 960f;
         private const float PanelHeight = 556f;
         private const float PanelMargin = 16f;
@@ -49,14 +44,11 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         [Inject] private IPhaseNextPhaseService _phaseNavigationService;
         [Inject] private IPhaseDefinitionCatalog _phaseDefinitionCatalog;
         [Inject] private IGameLoopService _gameLoopService;
-        [Inject] private IGameRunEndRequestService _gameRunEndRequestService;
-        [Inject] private IRunDecisionOwnershipService _runDecisionOwnershipService;
 
         private EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
         private EventBinding<PhaseContentAppliedEvent> _phaseContentAppliedBinding;
         private EventBinding<IntroStageCompletedEvent> _introStageCompletedBinding;
         private EventBinding<GameRunStartedEvent> _gameRunStartedBinding;
-        private EventBinding<RunDecisionEnteredEvent> _runDecisionEnteredBinding;
         private bool _dependenciesInjected;
         private bool _registered;
         private bool _isExecutingRequest;
@@ -65,7 +57,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         private bool _isOperationallyReadyForQa;
         private bool _buttonClickableNext;
         private bool _buttonClickablePrevious;
-        private bool _pendingCanonicalAdvanceSelection;
         private string _operationalStateReason = string.Empty;
         private string _phaseLabel = string.Empty;
         private string _specificPhaseId = string.Empty;
@@ -82,7 +73,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             _phaseContentAppliedBinding = new EventBinding<PhaseContentAppliedEvent>(_ => RefreshView("PhaseContentAppliedEvent"));
             _introStageCompletedBinding = new EventBinding<IntroStageCompletedEvent>(_ => RefreshView("IntroStageCompletedEvent"));
             _gameRunStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
-            _runDecisionEnteredBinding = new EventBinding<RunDecisionEnteredEvent>(OnRunDecisionEntered);
             RegisterBindings();
             RefreshView("Awake");
         }
@@ -103,7 +93,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         {
             UnregisterBindings();
             _isExecutingRequest = false;
-            _pendingCanonicalAdvanceSelection = false;
         }
 
         private void OnDestroy()
@@ -150,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
 
             if (GUILayout.Button("Next", _buttonStyle, GUILayout.Height(42f)))
             {
-                _ = ExecuteCanonicalAdvancePhaseAsync(AdvancePhaseReason);
+                _ = ExecuteCanonicalNextPhaseAsync(AdvancePhaseReason);
             }
 
             if (GUILayout.Button("Restart Cat", _buttonStyle, GUILayout.Height(42f)))
@@ -176,39 +165,17 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
 
             GUILayout.Space(ButtonSpacing);
 
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Restart Curr", _buttonStyle, GUILayout.Height(42f)))
-            {
-                _ = ExecuteRestartCurrentPhaseAsync(RestartCurrentPhaseReason);
-            }
-            GUILayout.EndHorizontal();
-
-            GUI.enabled = previousEnabled;
             GUILayout.EndVertical();
             GUILayout.EndArea();
         }
 
-        private async Task ExecuteCanonicalAdvancePhaseAsync(string reason)
+        private async Task ExecuteCanonicalNextPhaseAsync(string reason)
         {
             if (_isExecutingRequest)
             {
                 DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
                     $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' guard_ignored='true' reason='{reason}'.",
                     DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (_gameRunEndRequestService == null)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] IGameRunEndRequestService indisponivel. reason='{reason}'.");
-                return;
-            }
-
-            if (_runDecisionOwnershipService == null)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] IRunDecisionOwnershipService indisponivel. reason='{reason}'.");
                 return;
             }
 
@@ -219,27 +186,39 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
                 RefreshView("AdvancePhaseCanonical/RejectedNotReady");
                 return;
             }
+
+            if (_phaseNavigationService == null)
+            {
+                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
+                    $"[FATAL][H1][QA][PhaseNavigation] IPhaseNextPhaseService indisponivel. reason='{reason}'.");
+                return;
+            }
+
             _isExecutingRequest = true;
-            _pendingCanonicalAdvanceSelection = true;
 
             try
             {
                 DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' stage='RunEndRequested' currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' reason='{reason}'.",
+                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' stage='PhaseNavigationRequested' currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
-                // Comentário: o QA pede o encerramento canônico da run e aguarda o RunDecision.
-                _gameRunEndRequestService.RequestRunEnd(GameRunOutcome.Victory, reason);
+                PhaseNavigationResult result = await _phaseNavigationService.NextPhaseAsync(reason, CancellationToken.None);
+
+                DebugUtility.Log<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' outcome='{result.Outcome}' reason='{reason}'.",
+                    result.IsBlockedAtBoundary ? DebugUtility.Colors.Warning : DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
-                _pendingCanonicalAdvanceSelection = false;
-                _isExecutingRequest = false;
-
                 DebugUtility.LogWarning<PhaseNavigationQaPanel>(
                     $"[OBS][QA][PhaseNavigation] action='AdvancePhaseCanonical' failed reason='{reason}' notes='{ex.GetType().Name}: {ex.Message}'.");
 
                 RefreshView("AdvancePhaseCanonical/Failed");
+            }
+            finally
+            {
+                _isExecutingRequest = false;
+                RefreshView("AdvancePhaseCanonical/Finished");
             }
         }
 
@@ -295,7 +274,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
 
                 PhaseNavigationResult result = direction == PhaseNavigationDirection.Previous
                     ? await _phaseNavigationService.PreviousPhaseAsync(request.Reason, CancellationToken.None)
-                    : await _phaseNavigationService.AdvancePhaseAsync(request.Reason, CancellationToken.None);
+                    : await _phaseNavigationService.NextPhaseAsync(request.Reason, CancellationToken.None);
 
                 DebugUtility.Log<PhaseNavigationQaPanel>(
                     $"[OBS][QA][PhaseNavigation][Execute] action='{DescribeDirection(direction)}' outcome='{result.Outcome}' reason='{request.Reason}'.",
@@ -309,7 +288,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             finally
             {
                 _isExecutingRequest = false;
-            _pendingCanonicalAdvanceSelection = false;
                 RefreshView($"{DescribeDirection(direction)}/Finished");
             }
         }
@@ -378,7 +356,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             finally
             {
                 _isExecutingRequest = false;
-            _pendingCanonicalAdvanceSelection = false;
                 RefreshView("GoToSpecificPhase/Finished");
             }
         }
@@ -430,60 +407,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             finally
             {
                 _isExecutingRequest = false;
-            _pendingCanonicalAdvanceSelection = false;
                 RefreshView("RestartCatalog/Finished");
-            }
-        }
-
-        private async Task ExecuteRestartCurrentPhaseAsync(string reason)
-        {
-            if (_isExecutingRequest)
-            {
-                DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='RestartCurrentPhase' guard_ignored='true' reason='{reason}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (_phaseNavigationService == null)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] IPhaseNextPhaseService indisponivel. reason='{reason}'.");
-                return;
-            }
-
-            if (!_isOperationallyReadyForQa)
-            {
-                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='RestartCurrentPhase' outcome='RejectedNotReady' reason='{reason}'.");
-                RefreshView("RestartCurrentPhase/RejectedNotReady");
-                return;
-            }
-
-            _isExecutingRequest = true;
-
-            try
-            {
-                DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='RestartCurrentPhase' started currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' reason='{reason}'.",
-                    DebugUtility.Colors.Info);
-
-                PhaseNavigationResult result = await _phaseNavigationService.RestartCurrentPhaseAsync(reason, CancellationToken.None);
-
-                DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='RestartCurrentPhase' outcome='{result.Outcome}' reason='{reason}'.",
-                    result.Outcome == PhaseNavigationOutcome.Changed ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation] action='RestartCurrentPhase' failed reason='{reason}' notes='{ex.GetType().Name}: {ex.Message}'.");
-            }
-            finally
-            {
-                _isExecutingRequest = false;
-            _pendingCanonicalAdvanceSelection = false;
-                RefreshView("RestartCurrentPhase/Finished");
             }
         }
 
@@ -545,50 +469,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
 
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
-            _pendingCanonicalAdvanceSelection = false;
             _isExecutingRequest = false;
             RefreshView("GameRunStartedEvent");
-        }
-
-        private void OnRunDecisionEntered(RunDecisionEnteredEvent evt)
-        {
-            if (!_pendingCanonicalAdvanceSelection)
-            {
-                return;
-            }
-
-            if (!evt.Decision.HasAllowedContinuations || !evt.Decision.AllowedContinuations.Contains(RunContinuationKind.AdvancePhase))
-            {
-                _pendingCanonicalAdvanceSelection = false;
-                _isExecutingRequest = false;
-
-                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' stage='RunDecisionEntered' outcome='AdvancePhaseNotAllowed' signature='{evt.Decision.Signature}' reason='{evt.Decision.Reason}'.");
-
-                RefreshView("AdvancePhaseCanonical/AdvancePhaseNotAllowed");
-                return;
-            }
-
-            try
-            {
-                DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' stage='RunDecisionAutoConfirm' signature='{evt.Decision.Signature}' reason='{evt.Decision.Reason}'.",
-                    DebugUtility.Colors.Info);
-
-                // Comentário: a confirmação acontece só depois que o trilho canônico entra em RunDecision.
-                _runDecisionOwnershipService.ExitRunDecision(
-                    new RunDecisionCompletion(
-                        RunDecisionCompletionKind.Macro,
-                        AdvancePhaseReason,
-                        "SelectionConfirmed"),
-                    RunContinuationKind.AdvancePhase);
-            }
-            finally
-            {
-                _pendingCanonicalAdvanceSelection = false;
-                _isExecutingRequest = false;
-                RefreshView("AdvancePhaseCanonical/RunDecisionAutoConfirm");
-            }
         }
 
         private void RefreshView(string reason)
@@ -626,7 +508,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             EventBus<PhaseContentAppliedEvent>.Register(_phaseContentAppliedBinding);
             EventBus<IntroStageCompletedEvent>.Register(_introStageCompletedBinding);
             EventBus<GameRunStartedEvent>.Register(_gameRunStartedBinding);
-            EventBus<RunDecisionEnteredEvent>.Register(_runDecisionEnteredBinding);
             _registered = true;
 
             DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
@@ -645,7 +526,6 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             EventBus<PhaseContentAppliedEvent>.Unregister(_phaseContentAppliedBinding);
             EventBus<IntroStageCompletedEvent>.Unregister(_introStageCompletedBinding);
             EventBus<GameRunStartedEvent>.Unregister(_gameRunStartedBinding);
-            EventBus<RunDecisionEnteredEvent>.Unregister(_runDecisionEnteredBinding);
             _registered = false;
 
             DebugUtility.LogVerbose<PhaseNavigationQaPanel>(

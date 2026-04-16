@@ -246,7 +246,7 @@ MonoBehaviour:
   panelRect:
     serializedVersion: 2
     x: 500
-    y: 16
+    y: 300
     width: 400
     height: 300
   title: Phase Navigation QA Mock
