@@ -70,7 +70,8 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
                 dependencies.ActorRegistry,
                 dependencies.Context,
                 entry.Prefab,
-                dependencies.GameplayStateService);
+                dependencies.GameplayStateService,
+                dependencies.ParticipationFlowService);
         }
 
         private static IWorldSpawnService CreateEater(

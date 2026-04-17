@@ -24,6 +24,8 @@ A partir desta reorganizacao, o eixo SceneFlow/LevelFlow deve ser lido principal
 
 Para a camada acima do baseline de transformacao composta de sessao/runtime, a leitura canonica e `ADR-0052`. Para `PhaseDefinition`, a leitura documental canonica continua sendo `ADR-0048`. Para o fim de run, a leitura documental canonica e `ADR-0049`. Para IntroStage, a leitura operacional principal e `ADR-0050`. O `ADR-0027` e historico / superseded. Para hooks oficiais, use `ADR-0037`; o `ADR-0012` e historico / superseded.
 
+Para a leitura composta do sistema entre baseline tecnico, integracao semantica de sessao e camadas semanticas acima, use `ADR-0055`, `ADR-0056` e `ADR-0057` em conjunto. `ADR-0057` congela essa leitura sistêmica como `Base 1.0`.
+
 Leitura operacional resumida do trilho de phase:
 
 - `ADR-0050`: entrada local da phase, `IntroStage`, reentrada monotonica e lifecycle local
@@ -43,6 +45,9 @@ Leitura operacional resumida do trilho de phase:
 9. `ADR-0049`
 10. `ADR-0050`
 11. `ADR-0052`
+12. `ADR-0055`
+13. `ADR-0056`
+14. `ADR-0057`
 
 Com isso, nao e mais necessario usar a baseline `ADR-0009` a `ADR-0026` como leitura primaria do stack.
 

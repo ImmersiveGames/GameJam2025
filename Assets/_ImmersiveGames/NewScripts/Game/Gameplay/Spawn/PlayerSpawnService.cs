@@ -1,7 +1,9 @@
 using _ImmersiveGames.NewScripts.Core.Identifiers;
+using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
@@ -11,16 +13,19 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
     public sealed class PlayerSpawnService : ActorSpawnServiceBase
     {
         private readonly IGameplayStateGate _gameplayStateService;
+        private readonly IGameplayParticipationFlowService _participationFlowService;
 
         public PlayerSpawnService(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
             GameObject prefab,
-            IGameplayStateGate gameplayStateService)
+            IGameplayStateGate gameplayStateService,
+            IGameplayParticipationFlowService participationFlowService)
             : base(uniqueIdFactory, actorRegistry, context, prefab)
         {
             _gameplayStateService = gameplayStateService;
+            _participationFlowService = participationFlowService;
         }
 
         public override string Name => nameof(PlayerSpawnService);
@@ -35,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
         protected override void OnPostInstantiate(GameObject instance)
         {
             EnsureMovementStack(instance);
+            LogParticipationBridge();
             GameplayStateControllerInjector.TryInject<PlayerMovementController>(
                 instance,
                 _gameplayStateService,
@@ -55,6 +61,17 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             {
                 controller.SetInputReader(input);
             }
+        }
+
+        private void LogParticipationBridge()
+        {
+            if (_participationFlowService == null || !_participationFlowService.TryGetCurrent(out var snapshot))
+            {
+                return;
+            }
+
+            DebugUtility.Log(typeof(PlayerSpawnService),
+                $"[OBS][Gameplay][SpawnBridge] Player spawn consumed participation signature='{snapshot.Signature}' readiness='{snapshot.Readiness.State}' localParticipantId='{snapshot.LocalParticipantId}' primaryParticipantId='{snapshot.PrimaryParticipantId}'.");
         }
     }
 }

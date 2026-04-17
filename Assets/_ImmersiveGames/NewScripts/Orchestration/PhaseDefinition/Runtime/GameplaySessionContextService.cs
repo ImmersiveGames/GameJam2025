@@ -1,10 +1,12 @@
 ﻿using System;
+using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using System.Collections.Generic;
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     public readonly struct GameplayPhaseRuntimeMaterializedEvent : _ImmersiveGames.NewScripts.Core.Events.IEvent
@@ -481,7 +483,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public GameplayPhasePlayerParticipationService()
         {
             DebugUtility.LogVerbose<GameplayPhasePlayerParticipationService>(
-                "[OBS][GameplaySessionFlow][Players] GameplayPhasePlayerParticipationService registrado como owner da participacao de players na fase.");
+                "[OBS][GameplaySessionFlow][PlayersLegacy] GameplayPhasePlayerParticipationService registrado como ponte de compatibilidade.");
         }
 
         public GameplayPhasePlayerParticipationSnapshot Current
@@ -514,7 +516,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 _last = snapshot;
 
                 DebugUtility.Log<GameplayPhasePlayerParticipationService>(
-                    $"[OBS][GameplaySessionFlow][Players] PlayersUpdated phaseSignature='{snapshot.PhaseRuntime.PhaseRuntimeSignature}' participationMode='{snapshot.ParticipationMode}' participantCount='{snapshot.ParticipatingPlayerCount}' primaryId='{snapshot.PrimaryParticipantId}' participationSignature='{snapshot.ParticipationSignature}'.",
+                    $"[OBS][GameplaySessionFlow][PlayersLegacy] PlayersUpdated compatibilityOnly='true' phaseSignature='{snapshot.PhaseRuntime.PhaseRuntimeSignature}' participationMode='{snapshot.ParticipationMode}' participantCount='{snapshot.ParticipatingPlayerCount}' primaryId='{snapshot.PrimaryParticipantId}' participationSignature='{snapshot.ParticipationSignature}'.",
                     DebugUtility.Colors.Info);
 
                 return _current;
@@ -551,7 +553,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayPhasePlayerParticipationService>(
-                $"[OBS][GameplaySessionFlow][Players] PlayersCleared keepLast='true' lastParticipationSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][PlayersLegacy] PlayersCleared keepLast='true' compatibilityOnly='true' lastParticipationSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -565,6 +567,443 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         }
     }
 
+    public interface IGameplayParticipationFlowService
+    {
+        ParticipationSnapshot Current { get; }
+        ParticipationReadinessSnapshot CurrentReadiness { get; }
+        bool TryGetCurrent(out ParticipationSnapshot snapshot);
+        bool TryGetCurrentReadiness(out ParticipationReadinessSnapshot readiness);
+        bool TryGetLast(out ParticipationSnapshot snapshot);
+        ParticipationSnapshot Update(ParticipationSnapshot snapshot);
+        ParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
+        void Clear(string reason = null);
+    }
+
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class GameplayParticipationFlowService :
+        IGameplayParticipationFlowService,
+        IGameplayPhasePlayerParticipationService,
+        IDisposable
+    {
+        private readonly object _sync = new();
+        private ParticipationSnapshot _current = ParticipationSnapshot.Empty;
+        private ParticipationSnapshot _last = ParticipationSnapshot.Empty;
+        private GameplayPhaseRuntimeSnapshot _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
+        private GameplayPhaseRuntimeSnapshot _lastPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
+
+        public GameplayParticipationFlowService()
+        {
+            RegisterSelfInGlobalDi();
+
+            DebugUtility.LogVerbose<GameplayParticipationFlowService>(
+                "[OBS][GameplaySessionFlow][Participation] GameplayParticipationFlowService registrado como owner do roster semantico.",
+                DebugUtility.Colors.Info);
+        }
+
+        public ParticipationSnapshot Current
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _current;
+                }
+            }
+        }
+
+        public ParticipationReadinessSnapshot CurrentReadiness
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _current.Readiness;
+                }
+            }
+        }
+
+        public bool TryGetCurrent(out ParticipationSnapshot snapshot)
+        {
+            lock (_sync)
+            {
+                snapshot = _current;
+                return _current.IsValid;
+            }
+        }
+
+        public bool TryGetCurrentReadiness(out ParticipationReadinessSnapshot readiness)
+        {
+            lock (_sync)
+            {
+                readiness = _current.Readiness;
+                return _current.IsValid && readiness.IsValid;
+            }
+        }
+
+        public bool TryGetLast(out ParticipationSnapshot snapshot)
+        {
+            lock (_sync)
+            {
+                snapshot = _last;
+                return _last.IsValid;
+            }
+        }
+
+        public ParticipationSnapshot Update(ParticipationSnapshot snapshot)
+        {
+            return UpdateInternal(snapshot, GameplayPhaseRuntimeSnapshot.Empty, source: "manual_update");
+        }
+
+        public ParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt);
+            return UpdateInternal(FromPhaseDefinitionSelectedEvent(evt), phaseRuntime, source: "phase_selected_event");
+        }
+
+        public void Clear(string reason = null)
+        {
+            string normalizedReason = Normalize(reason);
+            string lastSignature;
+            ParticipationSnapshot clearedSnapshot = ParticipationSnapshot.Empty;
+
+            lock (_sync)
+            {
+                _last = _current;
+                _lastPhaseRuntime = _currentPhaseRuntime;
+                _current = clearedSnapshot;
+                _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
+                lastSignature = _last.Signature.Value;
+            }
+
+            DebugUtility.Log<GameplayParticipationFlowService>(
+                $"[OBS][GameplaySessionFlow][Participation] ParticipationCleared keepLast='true' lastParticipationSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<ParticipationSnapshotChangedEvent>.Raise(
+                new ParticipationSnapshotChangedEvent(
+                    clearedSnapshot,
+                    source: "GameplayParticipationFlowService.Clear",
+                    reason: normalizedReason,
+                    isCleared: true));
+        }
+
+        public void Dispose()
+        {
+        }
+
+        GameplayPhasePlayerParticipationSnapshot IGameplayPhasePlayerParticipationService.Current
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return ToLegacySnapshot(_current, _currentPhaseRuntime);
+                }
+            }
+        }
+
+        bool IGameplayPhasePlayerParticipationService.TryGetCurrent(out GameplayPhasePlayerParticipationSnapshot snapshot)
+        {
+            lock (_sync)
+            {
+                if (!_current.IsValid)
+                {
+                    snapshot = GameplayPhasePlayerParticipationSnapshot.Empty;
+                    return false;
+                }
+
+                snapshot = ToLegacySnapshot(_current, _currentPhaseRuntime);
+                return true;
+            }
+        }
+
+        bool IGameplayPhasePlayerParticipationService.TryGetLast(out GameplayPhasePlayerParticipationSnapshot snapshot)
+        {
+            lock (_sync)
+            {
+                if (!_last.IsValid)
+                {
+                    snapshot = GameplayPhasePlayerParticipationSnapshot.Empty;
+                    return false;
+                }
+
+                snapshot = ToLegacySnapshot(_last, _lastPhaseRuntime);
+                return true;
+            }
+        }
+
+        GameplayPhasePlayerParticipationSnapshot IGameplayPhasePlayerParticipationService.Update(GameplayPhasePlayerParticipationSnapshot snapshot)
+        {
+            HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                "[FATAL][H1][GameplaySessionFlow] Legacy player-participation write path is not owned by GameplayParticipationFlowService.");
+            return GameplayPhasePlayerParticipationSnapshot.Empty;
+        }
+
+        GameplayPhasePlayerParticipationSnapshot IGameplayPhasePlayerParticipationService.UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            ParticipationSnapshot updated = UpdateFromPhaseDefinitionSelectedEvent(evt);
+            return ToLegacySnapshot(updated, _currentPhaseRuntime);
+        }
+
+        void IGameplayPhasePlayerParticipationService.Clear(string reason)
+        {
+            Clear(reason);
+        }
+
+        private static ParticipationSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            if (evt.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] PhaseDefinitionSelectedEvent requires a valid phaseDefinitionRef to build participation.");
+            }
+
+            string sessionSignature = GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt).SessionSignature;
+            string phaseSignature = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt).PhaseRuntimeSignature;
+
+            ParticipantSnapshot[] participants = BuildParticipants(evt);
+            bool hasParticipants = participants.Length > 0;
+            ParticipantId primaryParticipantId = ResolveParticipantId(participants, participant => participant.IsPrimary);
+
+            ParticipationReadinessSnapshot readiness = new(
+                hasParticipants ? ParticipationReadinessState.Ready : ParticipationReadinessState.NoContent,
+                hasParticipants ? "phase_players_derived" : "phase_players_empty",
+                participants.Length,
+                primaryParticipantId);
+
+            return new ParticipationSnapshot(
+                sessionSignature,
+                phaseSignature,
+                participants,
+                readiness,
+                ParticipationPublicationMode.SnapshotOnly);
+        }
+
+        private ParticipationSnapshot UpdateInternal(ParticipationSnapshot snapshot, GameplayPhaseRuntimeSnapshot phaseRuntime, string source)
+        {
+            lock (_sync)
+            {
+                if (!snapshot.IsValid)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] Invalid participation snapshot received by participation owner.");
+                }
+
+                _lastPhaseRuntime = _currentPhaseRuntime;
+                _currentPhaseRuntime = phaseRuntime;
+                _last = _current;
+                _current = snapshot;
+            }
+
+            DebugUtility.Log<GameplayParticipationFlowService>(
+                $"[OBS][GameplaySessionFlow][Participation] ParticipationUpdated owner='GameplayParticipationFlowService' source='{source}' sessionSignature='{snapshot.SessionSignature}' phaseSignature='{snapshot.PhaseSignature}' participantCount='{snapshot.ParticipantCount}' primaryId='{snapshot.PrimaryParticipantId}' readinessState='{snapshot.Readiness.State}' readinessCanEnter='{snapshot.Readiness.CanEnterGameplay}' signature='{snapshot.Signature}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<ParticipationSnapshotChangedEvent>.Raise(
+                new ParticipationSnapshotChangedEvent(
+                    snapshot,
+                    source: $"GameplayParticipationFlowService.{source}",
+                    reason: source));
+
+            return snapshot;
+        }
+
+        private static ParticipantSnapshot[] BuildParticipants(PhaseDefinitionSelectedEvent evt)
+        {
+            PhaseDefinitionAsset.PhasePlayersBlock playersBlock = evt.PhaseDefinitionRef.Players;
+            if (playersBlock == null || playersBlock.entries == null || playersBlock.entries.Count == 0)
+            {
+                return Array.Empty<ParticipantSnapshot>();
+            }
+
+            var participants = new List<ParticipantSnapshot>(playersBlock.entries.Count);
+            int primaryIndex = ResolvePrimaryIndex(playersBlock.entries);
+
+            for (int index = 0; index < playersBlock.entries.Count; index += 1)
+            {
+                PhaseDefinitionAsset.PhasePlayerEntry entry = playersBlock.entries[index];
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                bool isPrimary = index == primaryIndex;
+                bool isLocal = entry.role == PhaseDefinitionAsset.PhasePlayerRole.Local;
+                ParticipantKind participantKind = ParticipantKind.Player;
+                OwnershipKind ownershipKind = ResolveOwnershipKind(entry.role);
+                BindingHint bindingHint = ResolveBindingHint(entry.role, isPrimary);
+                string participantIdValue = ResolveParticipantIdValue(evt.PhaseId, entry, index);
+
+                participants.Add(new ParticipantSnapshot(
+                    new ParticipantId(participantIdValue),
+                    participantKind,
+                    ownershipKind,
+                    bindingHint,
+                    ParticipantLifecycleState.Expected,
+                    isPrimary,
+                    isLocal,
+                    entry.localId));
+            }
+
+            return participants.ToArray();
+        }
+
+        private static int ResolvePrimaryIndex(IReadOnlyList<PhaseDefinitionAsset.PhasePlayerEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return -1;
+            }
+
+            for (int index = 0; index < entries.Count; index += 1)
+            {
+                PhaseDefinitionAsset.PhasePlayerEntry entry = entries[index];
+                if (entry != null && entry.role == PhaseDefinitionAsset.PhasePlayerRole.Local)
+                {
+                    return index;
+                }
+            }
+
+            return 0;
+        }
+
+        private static string ResolveParticipantIdValue(PhaseDefinitionId phaseId, PhaseDefinitionAsset.PhasePlayerEntry entry, int index)
+        {
+            if (entry != null && !string.IsNullOrWhiteSpace(entry.localId))
+            {
+                return entry.localId.Trim();
+            }
+
+            string phaseToken = phaseId.IsValid ? phaseId.Value : "<no-phase>";
+            string roleToken = entry != null ? entry.role.ToString() : "Unknown";
+            return $"{phaseToken}:participant:{roleToken}:{index + 1}";
+        }
+
+        private static OwnershipKind ResolveOwnershipKind(PhaseDefinitionAsset.PhasePlayerRole role)
+        {
+            switch (role)
+            {
+                case PhaseDefinitionAsset.PhasePlayerRole.Local:
+                    return OwnershipKind.Local;
+                case PhaseDefinitionAsset.PhasePlayerRole.Remote:
+                    return OwnershipKind.Remote;
+                case PhaseDefinitionAsset.PhasePlayerRole.Shared:
+                    return OwnershipKind.Shared;
+                case PhaseDefinitionAsset.PhasePlayerRole.Bot:
+                    return OwnershipKind.Authoring;
+                default:
+                    return OwnershipKind.Unknown;
+            }
+        }
+
+        private static BindingHint ResolveBindingHint(PhaseDefinitionAsset.PhasePlayerRole role, bool isPrimary)
+        {
+            switch (role)
+            {
+                case PhaseDefinitionAsset.PhasePlayerRole.Local:
+                    return new BindingHint(isPrimary ? BindingHintKind.LocalPrimary : BindingHintKind.LocalSecondary);
+                case PhaseDefinitionAsset.PhasePlayerRole.Remote:
+                    return new BindingHint(BindingHintKind.Remote);
+                case PhaseDefinitionAsset.PhasePlayerRole.Shared:
+                    return new BindingHint(BindingHintKind.Shared);
+                case PhaseDefinitionAsset.PhasePlayerRole.Bot:
+                    return new BindingHint(BindingHintKind.Custom, "bot");
+                default:
+                    return BindingHint.None;
+            }
+        }
+
+        private static ParticipantId ResolveParticipantId(ParticipantSnapshot[] participants, Func<ParticipantSnapshot, bool> predicate)
+        {
+            if (participants == null || predicate == null)
+            {
+                return ParticipantId.None;
+            }
+
+            for (int index = 0; index < participants.Length; index += 1)
+            {
+                ParticipantSnapshot participant = participants[index];
+                if (participant.IsValid && predicate(participant))
+                {
+                    return participant.ParticipantId;
+                }
+            }
+
+            return ParticipantId.None;
+        }
+
+        private static GameplayPhasePlayerParticipationSnapshot ToLegacySnapshot(ParticipationSnapshot snapshot, GameplayPhaseRuntimeSnapshot phaseRuntime)
+        {
+            if (!snapshot.IsValid || !phaseRuntime.IsValid)
+            {
+                return GameplayPhasePlayerParticipationSnapshot.Empty;
+            }
+
+            int participatingPlayerCount = snapshot.ParticipantCount;
+            string primaryParticipantId = snapshot.PrimaryParticipantId.IsValid ? snapshot.PrimaryParticipantId.Value : string.Empty;
+            string primaryParticipantLabel = "Player";
+
+            if (snapshot.HasPrimaryParticipant)
+            {
+                for (int index = 0; index < snapshot.Participants.Length; index += 1)
+                {
+                    if (snapshot.Participants[index].IsPrimary)
+                    {
+                        primaryParticipantLabel = snapshot.Participants[index].Kind.ToString();
+                        break;
+                    }
+                }
+            }
+
+            GameplayPhasePlayerParticipationMode participationMode =
+                participatingPlayerCount == 1
+                    ? GameplayPhasePlayerParticipationMode.SoloCanonical
+                    : GameplayPhasePlayerParticipationMode.ConfiguredRoster;
+
+            return new GameplayPhasePlayerParticipationSnapshot(
+                phaseRuntime,
+                participationMode,
+                participatingPlayerCount,
+                primaryParticipantId,
+                primaryParticipantLabel);
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        }
+
+        private void RegisterSelfInGlobalDi()
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] DependencyManager.Provider unavailable while registering participation owner.");
+            }
+
+            RegisterOwnerBinding<GameplayParticipationFlowService>(this);
+            RegisterOwnerBinding<IGameplayParticipationFlowService>(this);
+            RegisterOwnerBinding<IGameplayPhasePlayerParticipationService>(this);
+        }
+
+        private static void RegisterOwnerBinding<T>(T instance)
+            where T : class
+        {
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            {
+                if (!ReferenceEquals(existing, instance))
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                        $"[FATAL][H1][GameplaySessionFlow] Conflicting global binding for '{typeof(T).Name}' while registering participation owner.");
+                }
+
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<T>(instance);
+        }
+    }
+
     public static class GameplaySessionFlowSmokeReporter
     {
         public static bool ReportCurrentState(string stage, string reason = null)
@@ -574,19 +1013,19 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             bool hasSession = TryResolveSessionContext(out var sessionContext);
             bool hasPhase = TryResolvePhaseRuntime(out var phaseRuntime);
-            bool hasPlayers = TryResolvePhasePlayers(out var players);
+            bool hasParticipation = TryResolveParticipation(out var participation);
 
             string sessionState = hasSession ? DescribeSessionContext(sessionContext) : "missing";
             string phaseState = hasPhase ? DescribePhaseRuntime(phaseRuntime) : "missing";
-            string playersState = hasPlayers ? DescribePhasePlayers(players) : "missing";
+            string participationState = hasParticipation ? DescribeParticipation(participation) : "missing";
             string relation = DescribeSessionPhaseRelation(hasSession, hasPhase, sessionContext, phaseRuntime);
-            string playersRelation = DescribePhasePlayersRelation(hasPhase, hasPlayers, phaseRuntime, players);
+            string participationRelation = DescribeParticipationRelation(hasPhase, hasParticipation, phaseRuntime, participation);
 
             DebugUtility.Log(typeof(GameplaySessionFlowSmokeReporter),
-                $"[OBS][GameplaySessionFlow][Smoke] stage='{normalizedStage}' reason='{normalizedReason}' sessionContext='{sessionState}' phaseRuntime='{phaseState}' players='{playersState}' relation='{relation}' playersRelation='{playersRelation}'.",
+                $"[OBS][GameplaySessionFlow][Smoke] stage='{normalizedStage}' reason='{normalizedReason}' sessionContext='{sessionState}' phaseRuntime='{phaseState}' participation='{participationState}' relation='{relation}' participationRelation='{participationRelation}'.",
                 DebugUtility.Colors.Info);
 
-            return hasSession || hasPhase || hasPlayers;
+            return hasSession || hasPhase || hasParticipation;
         }
 
         public static void ClearCurrentState(string reason = null)
@@ -603,9 +1042,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 phaseService.Clear(normalizedReason);
             }
 
-            if (TryResolvePhasePlayersService(out var playersService))
+            if (TryResolveParticipationService(out var participationService))
             {
-                playersService.Clear(normalizedReason);
+                participationService.Clear(normalizedReason);
             }
 
             DebugUtility.Log(typeof(GameplaySessionFlowSmokeReporter),
@@ -625,10 +1064,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             return TryResolvePhaseRuntimeService(out var service) && service.TryGetCurrent(out snapshot);
         }
 
-        private static bool TryResolvePhasePlayers(out GameplayPhasePlayerParticipationSnapshot snapshot)
+        private static bool TryResolveParticipation(out ParticipationSnapshot snapshot)
         {
-            snapshot = GameplayPhasePlayerParticipationSnapshot.Empty;
-            return TryResolvePhasePlayersService(out var service) && service.TryGetCurrent(out snapshot);
+            snapshot = ParticipationSnapshot.Empty;
+            return TryResolveParticipationService(out var service) && service.TryGetCurrent(out snapshot);
         }
 
         private static bool TryResolveSessionContextService(out IGameplaySessionContextService service)
@@ -647,7 +1086,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                    service != null;
         }
 
-        private static bool TryResolvePhasePlayersService(out IGameplayPhasePlayerParticipationService service)
+        private static bool TryResolveParticipationService(out IGameplayParticipationFlowService service)
         {
             service = null;
             return DependencyManager.Provider != null &&
@@ -669,10 +1108,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 : "empty";
         }
 
-        private static string DescribePhasePlayers(GameplayPhasePlayerParticipationSnapshot snapshot)
+        private static string DescribeParticipation(ParticipationSnapshot snapshot)
         {
             return snapshot.IsValid
-                ? $"filled participationSignature='{snapshot.ParticipationSignature}' phaseSignature='{snapshot.PhaseRuntime.PhaseRuntimeSignature}' mode='{snapshot.ParticipationMode}' count='{snapshot.ParticipatingPlayerCount}' primaryId='{snapshot.PrimaryParticipantId}'"
+                ? $"filled participationSignature='{snapshot.Signature}' phaseSignature='{snapshot.PhaseSignature}' readiness='{snapshot.Readiness.State}' count='{snapshot.ParticipantCount}' primaryId='{snapshot.PrimaryParticipantId}' localId='{snapshot.LocalParticipantId}'"
                 : "empty";
         }
 
@@ -702,28 +1141,28 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 : "mismatch";
         }
 
-        private static string DescribePhasePlayersRelation(
+        private static string DescribeParticipationRelation(
             bool hasPhase,
-            bool hasPlayers,
+            bool hasParticipation,
             GameplayPhaseRuntimeSnapshot phaseRuntime,
-            GameplayPhasePlayerParticipationSnapshot players)
+            ParticipationSnapshot participation)
         {
-            if (!hasPhase && !hasPlayers)
+            if (!hasPhase && !hasParticipation)
             {
                 return "both_empty";
             }
 
-            if (hasPhase && !hasPlayers)
+            if (hasPhase && !hasParticipation)
             {
-                return "phase_filled_players_empty";
+                return "phase_filled_participation_empty";
             }
 
-            if (!hasPhase && hasPlayers)
+            if (!hasPhase && hasParticipation)
             {
-                return "players_without_phase";
+                return "participation_without_phase";
             }
 
-            return string.Equals(phaseRuntime.PhaseRuntimeSignature, players.PhaseRuntime.PhaseRuntimeSignature, StringComparison.Ordinal)
+            return string.Equals(phaseRuntime.PhaseRuntimeSignature, participation.PhaseSignature, StringComparison.Ordinal)
                 ? "linked"
                 : "mismatch";
         }

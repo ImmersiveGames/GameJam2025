@@ -12,11 +12,15 @@ O dominio de players hoje esta espalhado entre `Phase.Players`, `GameplayPhaseFl
 
 Esse arranjo funciona no baseline atual, mas nao e suficiente como contrato semantico para a sessao jogavel. Falta um owner claro para participacao, lifecycle de participante, identidade separada de `ActorId`, ownership kind em runtime e binding hints para consumo adjacente por `InputModes`.
 
-O objetivo deste ADR e congelar o desenho do bloco semantico de participacao como evolucao do shape atual de `GameplaySessionFlow`, sem transforma-lo em `Phase.Players 2.0`.
+O problema nao e apenas ownership semantico. Ha tambem uma questao de posicao no pipeline: o bloco de participacao nasce no layer acima do baseline e entra como parte da preparacao semantica da sessao jogavel, antes da liberacao efetiva do gameplay.
+
+O objetivo deste ADR e congelar o desenho do bloco semantico de participacao como evolucao do shape atual de `GameplaySessionFlow`, sem transforma-lo em `Phase.Players 2.0` nem absorver a etapa posterior de binding/interacao com o palco ja composto.
 
 ## 2. Decisao
 
 Adota-se um bloco semantico de participacao de players e actors, integrado ao `GameplaySessionFlow` como owner do roster semantico da sessao jogavel.
+
+Esse bloco pertence ao layer semantico acima do baseline e participa do fluxo de preparacao da sessao jogavel.
 
 Esse bloco:
 
@@ -26,7 +30,8 @@ Esse bloco:
 - centraliza ownership kind em runtime
 - centraliza readiness semantica do proprio bloco
 - publica binding hints para seams adjacentes
-- expõe snapshot e assinatura de participacao para observabilidade e gating
+- expoe snapshot e assinatura de participacao para observabilidade e gating
+- responde por quem participa, nao por como o palco conecta esses participantes
 
 Esse bloco nao:
 
@@ -36,6 +41,7 @@ Esse bloco nao:
 - nao e owner de movement/gameplay behavior
 - nao substitui `ActorRegistry`
 - nao assume multiplayer completo como requisito de implementacao imediata
+- nao resolve wiring de gameplay com o palco ja montado
 
 ## 3. Source of truth
 
@@ -66,7 +72,7 @@ Ele nao e inferido por `ActorId`, por spawn ou por registry.
 
 Ownership kind e contrato runtime do bloco de participacao.
 
-Ele nao deve ficar implcito em `ActorKind` nem em `PhasePlayerRole` sozinho.
+Ele nao deve ficar implicito em `ActorKind` nem em `PhasePlayerRole` sozinho.
 
 ## 4. Lifecycle
 
@@ -120,6 +126,13 @@ Readiness do bloco e a condicao semantica de participacao estar consistente para
 
 Ela nao substitui `GameReadinessService` nem `GameplayStateGate`.
 
+`ParticipationReadinessState.NotReady` existe como parte do contrato, mas sua politica operacional ainda nao esta congelada.
+
+Ate decisao explicita posterior, `Ready` e `NoContent` sao os estados liberadores do gameplay.
+`NotReady` nao deve adquirir semantica operacional implicita por interpretacao local, fallback ou compatibilidade.
+
+Qualquer decisao futura de usar `NotReady` como bloqueio, warning, fallback ou outro gate exige atualizacao explicita deste ADR.
+
 ### 5.4 Binding hint
 
 Binding hint e uma pista semantica para consumo adjacente por `InputModes`.
@@ -132,19 +145,35 @@ A relacao entre participante e actor e uma associacao de materializacao operacio
 
 `ActorRegistry` confirma a existencia concreta do actor, mas nao define a verdade semantica do participante.
 
+### 5.6 Distincao conceitual
+
+Este ADR separa explicitamente dois problemas:
+
+- participacao semantica: quem participa, com que identidade, ownership, readiness semantica e binding hints
+- gameplay interaction / binders: como os participantes se conectam ao palco ja composto por objetos, spawn points e anchors
+
+A participacao prepara o roster e seus sinais semanticos.
+O binding/interacao de gameplay lida com a conexao operacional posterior ao palco montado.
+
 ## 6. Relacao com outros dominios
 
 ### 6.1 GameplaySessionFlow
 
 `GameplaySessionFlow` continua sendo o owner da orquestracao da sessao.
 
-O bloco de participacao vive dentro dele ou imediatamente ao lado dele como subdominio semantico.
+O bloco de participacao vive dentro dele ou imediatamente ao lado dele como subdominio semantico, e esta antes da liberacao efetiva do gameplay.
+
+Ele nao substitui a fase posterior de binding/interacao com o palco ja composto.
 
 ### 6.2 Phase
 
 `Phase` continua sendo a fonte autoral de configuracao.
 
+`Phase` continua compondo o palco e o conteudo da phase.
+
 `Phase.Players` nao e a fronteira runtime final; e apenas a entrada autoral para derivacao da participacao.
+
+A participacao semantica nao e o mesmo problema que binders, spawn points ou anchors vindos do conteudo da phase.
 
 ### 6.3 ActorRegistry
 
@@ -156,7 +185,7 @@ Ele nao deve ser rebaixado a roster semantico nem promovido a owner de participa
 
 Spawn e despawn continuam sendo owners operacionais.
 
-O bloco de participacao pode informar expectativa e binding, mas nao executa materializacao.
+O bloco de participacao pode informar expectativa e binding hints, mas nao executa materializacao nem resolve conexao com o palco.
 
 ### 6.5 Reset
 
@@ -166,7 +195,7 @@ O bloco de participacao pode fornecer scoping semantico, mas nao executa reset.
 
 ### 6.6 InputModes
 
-`InputModes` e o seam adjacente de binding concreto.
+`InputModes` e um seam adjacente de binding concreto.
 
 Ele consome `BindingHint` e ownership semantico, mas nao vira owner do roster nem do lifecycle de participante.
 
@@ -193,13 +222,17 @@ Este bloco nao e:
 - registry de device
 - registry de input global
 - regra de pausa, readiness tecnica ou gate de `GameLoop`
+- owner de spawn points do palco
+- owner de anchors do palco
+- owner de binders de objetos de gameplay
+- owner de wiring do cenario ja composto
+- substituto de um futuro grupo de gameplay interaction/binders
 
 ## 9. Migracao de alto nivel
 
-1. manter `Phase.Players` como entrada autoral
-2. extrair a derivacao runtime de participacao para o novo bloco
+1. consolidar a participacao semantica no novo bloco
+2. manter `Phase.Players` como entrada autoral
 3. fazer `GameplayPhaseFlowService` consumir e publicar o snapshot do bloco
 4. manter bridges temporarias para reset, spawn e input
-5. migrar consumidores para `ParticipantId`, `OwnershipKind` e `BindingHint`
-6. apos estabilizacao, reduzir o uso direto de `Phase.Players` nos consumidores runtime
-
+5. depois introduzir o grupo de binding/interacao de gameplay, se necessario
+6. somente entao reduzir o uso direto de `Phase.Players` nos consumidores runtime

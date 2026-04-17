@@ -44,6 +44,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
             RegisterPhaseCatalogNavigationService();
             RegisterPhaseDefinitionSelectionService();
             RegisterRestartContextService();
+            EnsureGameplayParticipationFlowOwner();
             EnsureGameplayPhaseFlowOwner();
             RegisterPhaseContentUnloadSupplementProvider();
             RegisterPhaseContentCompletionCleaner();
@@ -250,6 +251,23 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
 
             DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
                 "[OBS][PhaseDefinition][PhaseFlow] GameplayPhaseFlowService registrado no DI global como owner explicito phase-side.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureGameplayParticipationFlowOwner()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameplayParticipationFlowService>(out var existingOwner) && existingOwner != null)
+            {
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][Participation] GameplayParticipationFlowService ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            new GameplayParticipationFlowService();
+
+            DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                "[OBS][PhaseDefinition][Participation] GameplayParticipationFlowService registrado no DI global como owner explicito phase-side.",
                 DebugUtility.Colors.Info);
         }
 

@@ -44,6 +44,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         [Inject] private IPhaseNextPhaseService _phaseNavigationService;
         [Inject] private IPhaseDefinitionCatalog _phaseDefinitionCatalog;
         [Inject] private IGameLoopService _gameLoopService;
+        [Inject] private IGameplayParticipationFlowService _participationFlowService;
 
         private EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
         private EventBinding<PhaseContentAppliedEvent> _phaseContentAppliedBinding;
@@ -59,6 +60,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         private bool _buttonClickablePrevious;
         private string _operationalStateReason = string.Empty;
         private string _phaseLabel = string.Empty;
+        private string _participationLabel = string.Empty;
         private string _specificPhaseId = string.Empty;
         private Vector2 _scrollPosition = Vector2.zero;
         private GUIStyle _wrappedLabelStyle;
@@ -123,6 +125,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
                 GUILayout.Height(ContentHeight));
 
             GUILayout.Label(_phaseLabel, _wrappedLabelStyle, GUILayout.ExpandHeight(true));
+            GUILayout.Space(6f);
+            GUILayout.Label(_participationLabel, _wrappedLabelStyle, GUILayout.ExpandHeight(false));
 
             GUILayout.EndScrollView();
 
@@ -477,9 +481,11 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
         {
             PhaseDefinitionAsset selectedPhase = null;
             GameplayPhaseRuntimeSnapshot runtimeSnapshot = GameplayPhaseRuntimeSnapshot.Empty;
+            ParticipationSnapshot participationSnapshot = ParticipationSnapshot.Empty;
 
             bool hasSelection = _phaseSelectionService != null && _phaseSelectionService.TryGetCurrent(out selectedPhase);
             bool hasRuntime = _phaseRuntimeService != null && _phaseRuntimeService.TryGetCurrent(out runtimeSnapshot);
+            bool hasParticipation = _participationFlowService != null && _participationFlowService.TryGetCurrent(out participationSnapshot);
 
             PhaseDefinitionAsset currentPhase = ResolveCurrentPhase(
                 hasSelection ? selectedPhase : null,
@@ -487,13 +493,15 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
 
             _phaseLabel = BuildPhaseLabel(
                 currentPhase,
-                hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty);
+                hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty,
+                hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty);
+            _participationLabel = BuildParticipationLabel(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty);
             UpdateInteractionState(
                 currentPhase,
                 hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty);
 
             DebugUtility.Log<PhaseNavigationQaPanel>(
-                $"[OBS][QA][PhaseNavigation] PhaseQaViewUpdated phaseId='{DescribePhaseId(currentPhase != null ? currentPhase.PhaseId : default)}' contentId='{DescribeContentId(currentPhase, hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty)}' index='{DescribeCatalogIndex(currentPhase != null ? currentPhase.PhaseId : default)}' hasNextInCatalog='{(_hasNextInCatalog ? "true" : "false")}' hasPreviousInCatalog='{(_hasPreviousInCatalog ? "true" : "false")}' isExecuting='{(_isExecutingRequest ? "true" : "false")}' buttonClickableNext='{(_buttonClickableNext ? "true" : "false")}' buttonClickablePrevious='{(_buttonClickablePrevious ? "true" : "false")}' isOperationallyReadyForQa='{(_isOperationallyReadyForQa ? "true" : "false")}' reason='{_operationalStateReason}'.",
+                $"[OBS][QA][PhaseNavigation] PhaseQaViewUpdated phaseId='{DescribePhaseId(currentPhase != null ? currentPhase.PhaseId : default)}' contentId='{DescribeContentId(currentPhase, hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty)}' index='{DescribeCatalogIndex(currentPhase != null ? currentPhase.PhaseId : default)}' participationSignature='{DescribeParticipationSignature(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty)}' participationReadiness='{DescribeParticipationReadiness(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty)}' hasNextInCatalog='{(_hasNextInCatalog ? "true" : "false")}' hasPreviousInCatalog='{(_hasPreviousInCatalog ? "true" : "false")}' isExecuting='{(_isExecutingRequest ? "true" : "false")}' buttonClickableNext='{(_buttonClickableNext ? "true" : "false")}' buttonClickablePrevious='{(_buttonClickablePrevious ? "true" : "false")}' isOperationallyReadyForQa='{(_isOperationallyReadyForQa ? "true" : "false")}' reason='{_operationalStateReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -650,13 +658,15 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             }
         }
 
-        private string BuildPhaseLabel(PhaseDefinitionAsset selectedPhase, GameplayPhaseRuntimeSnapshot runtimeSnapshot)
+        private string BuildPhaseLabel(PhaseDefinitionAsset selectedPhase, GameplayPhaseRuntimeSnapshot runtimeSnapshot, ParticipationSnapshot participationSnapshot)
         {
             PhaseDefinitionAsset currentPhase = ResolveCurrentPhase(selectedPhase, runtimeSnapshot);
             var builder = new System.Text.StringBuilder();
             builder.AppendLine($"Id: {DescribePhaseId(currentPhase != null ? currentPhase.PhaseId : default)}");
             builder.AppendLine($"Content: {DescribeContentId(currentPhase, runtimeSnapshot)}");
             builder.AppendLine($"Index: {DescribeCatalogIndex(currentPhase != null ? currentPhase.PhaseId : default)}");
+            builder.AppendLine($"Participation: {DescribeParticipationSignature(participationSnapshot)}");
+            builder.AppendLine($"Participation Ready: {DescribeParticipationReadiness(participationSnapshot)}");
             builder.AppendLine($"Loop: {DescribeLoopCount()}");
             builder.AppendLine($"Next/Prev: {(_hasNextInCatalog ? "Y" : "N")}/{(_hasPreviousInCatalog ? "Y" : "N")}");
             builder.AppendLine($"Ready: {(_isOperationallyReadyForQa ? "Y" : "N")} ({_operationalStateReason})");
@@ -674,6 +684,28 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             string catalogName = DescribeCatalog();
 
             return $"Catalog: {catalogName} | Phase: {currentPhaseId} | Index: {currentIndex} | Loop: {loopCount}";
+        }
+
+        private static string BuildParticipationLabel(ParticipationSnapshot snapshot)
+        {
+            if (!snapshot.IsValid)
+            {
+                return "Participation: <empty>";
+            }
+
+            return $"Participation: sig={snapshot.Signature.Value} | readiness={snapshot.Readiness.State} | primary={snapshot.PrimaryParticipantId} | local={snapshot.LocalParticipantId} | count={snapshot.ParticipantCount}";
+        }
+
+        private static string DescribeParticipationSignature(ParticipationSnapshot snapshot)
+        {
+            return snapshot.IsValid ? snapshot.Signature.Value : "<empty>";
+        }
+
+        private static string DescribeParticipationReadiness(ParticipationSnapshot snapshot)
+        {
+            return snapshot.IsValid
+                ? $"{snapshot.Readiness.State}:{snapshot.Readiness.Reason}"
+                : "<empty>";
         }
 
         private static string DescribePhaseId(PhaseDefinitionId phaseId)

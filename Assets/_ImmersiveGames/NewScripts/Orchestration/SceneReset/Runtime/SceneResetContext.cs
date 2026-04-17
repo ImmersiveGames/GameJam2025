@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
             IActorRegistry actorRegistry,
+            IGameplayParticipationFlowService participationFlowService,
             IDependencyProvider provider,
             string sceneName,
             SceneResetHookRegistry hookRegistry,
@@ -32,6 +34,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         {
             SpawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             ActorRegistry = actorRegistry;
+            ParticipationFlowService = participationFlowService;
             _sceneName = string.IsNullOrWhiteSpace(sceneName) ? "<unknown>" : sceneName;
             ResetContext = resetContext;
             StartLog = startLog ?? string.Empty;
@@ -48,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         /// </summary>
         public IReadOnlyList<IWorldSpawnService> SpawnServices { get; }
         public IActorRegistry ActorRegistry { get; }
+        public IGameplayParticipationFlowService ParticipationFlowService { get; }
         public WorldResetContext? ResetContext { get; }
         public string StartLog { get; }
         public string CompletionLog { get; }
@@ -73,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             }
 
             DebugUtility.Log(typeof(SceneResetPipeline),
-                $"ActorRegistry count at '{label}': {ActorRegistry.Count}");
+                $"ActorRegistry count at '{label}': {ActorRegistry.Count}{DescribeParticipationSuffix()}");
         }
 
         public void AcquireGateIfNeeded()
@@ -133,6 +137,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             _hookCatalog.ClearActorHookCacheForCycle();
         }
 
+        public bool TryGetCurrentParticipationSnapshot(out ParticipationSnapshot snapshot)
+        {
+            snapshot = ParticipationSnapshot.Empty;
+
+            if (ParticipationFlowService == null)
+            {
+                return false;
+            }
+
+            return ParticipationFlowService.TryGetCurrent(out snapshot);
+        }
+
         public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
         {
             // Participantes de reset sao bridges de execucao, nao owners do actor.
@@ -188,6 +204,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         private static int GetHookOrder(object hook)
         {
             return SceneResetHookOrdering.GetHookOrder(hook);
+        }
+
+        private string DescribeParticipationSuffix()
+        {
+            if (!TryGetCurrentParticipationSnapshot(out ParticipationSnapshot snapshot))
+            {
+                return string.Empty;
+            }
+
+            return $" participationSignature='{snapshot.Signature}' participationReadiness='{snapshot.Readiness.State}'";
         }
     }
 }

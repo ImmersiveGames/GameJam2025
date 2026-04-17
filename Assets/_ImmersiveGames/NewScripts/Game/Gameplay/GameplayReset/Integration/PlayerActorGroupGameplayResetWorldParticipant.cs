@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
@@ -15,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
     public sealed class PlayerActorGroupGameplayResetWorldParticipant : IActorGroupGameplayResetWorldParticipant
     {
         private IActorGroupGameplayResetOrchestrator _actorGroupGameplayReset;
+        private IGameplayParticipationFlowService _participationFlowService;
         private string _sceneName = string.Empty;
         private bool _dependenciesResolved;
 
@@ -30,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
                 : context.Reason;
 
             DebugUtility.Log(typeof(PlayerActorGroupGameplayResetWorldParticipant),
-                $"[IActorGroupGameplayResetWorldBridge] Bridge start => ActorGroupGameplayReset ByActorKind(Player) (reason='{reason}')");
+                $"[IActorGroupGameplayResetWorldBridge] Bridge start => ActorGroupGameplayReset ByActorKind(Player) (reason='{reason}'){DescribeParticipation()}");
 
             if (_actorGroupGameplayReset == null)
             {
@@ -44,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
             await _actorGroupGameplayReset.RequestResetAsync(request);
 
             DebugUtility.Log(typeof(PlayerActorGroupGameplayResetWorldParticipant),
-                $"[IActorGroupGameplayResetWorldBridge] Bridge end => ActorGroupGameplayReset ByActorKind(Player) (reason='{reason}')");
+                $"[IActorGroupGameplayResetWorldBridge] Bridge end => ActorGroupGameplayReset ByActorKind(Player) (reason='{reason}'){DescribeParticipation()}");
         }
 
         private void EnsureDependencies()
@@ -61,8 +63,25 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
             var provider = DependencyManager.Provider;
 
             provider.TryGetForScene(_sceneName, out _actorGroupGameplayReset);
+            provider.TryGetGlobal<IGameplayParticipationFlowService>(out _participationFlowService);
 
             _dependenciesResolved = true;
+        }
+
+        private string DescribeParticipation()
+        {
+            if (_participationFlowService == null || !_participationFlowService.TryGetCurrent(out var snapshot))
+            {
+                return string.Empty;
+            }
+
+            string localBinding = "<none>";
+            if (snapshot.TryGetLocalBindingCandidate(out var localParticipant))
+            {
+                localBinding = localParticipant.BindingHint.ToString();
+            }
+
+            return $" participationSignature='{snapshot.Signature}' readiness='{snapshot.Readiness.State}' localBinding='{localBinding}'";
         }
     }
 }

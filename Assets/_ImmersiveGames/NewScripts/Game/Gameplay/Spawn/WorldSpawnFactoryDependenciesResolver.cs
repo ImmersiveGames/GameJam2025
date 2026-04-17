@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Worlds.Config;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
     /// <summary>
@@ -59,12 +60,14 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 
             // Serviço opcional: Player/Eater podem usar quando disponível.
             provider.TryGetGlobal(out IGameplayStateGate stateService);
+            provider.TryGetGlobal(out IGameplayParticipationFlowService participationFlowService);
 
             dependencies = new WorldSpawnFactoryDependencies(
                 uniqueIdFactory,
                 actorRegistry,
                 context,
-                stateService);
+                stateService,
+                participationFlowService);
 
             return true;
         }
@@ -76,12 +79,14 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
-            IGameplayStateGate gameplayStateService)
+            IGameplayStateGate gameplayStateService,
+            IGameplayParticipationFlowService participationFlowService)
         {
             UniqueIdFactory = uniqueIdFactory;
             ActorRegistry = actorRegistry;
             Context = context;
             GameplayStateService = gameplayStateService;
+            ParticipationFlowService = participationFlowService;
         }
 
         public IUniqueIdFactory UniqueIdFactory { get; }
@@ -91,5 +96,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
         public IWorldSpawnContext Context { get; }
 
         public IGameplayStateGate GameplayStateService { get; }
+
+        public IGameplayParticipationFlowService ParticipationFlowService { get; }
     }
 }
