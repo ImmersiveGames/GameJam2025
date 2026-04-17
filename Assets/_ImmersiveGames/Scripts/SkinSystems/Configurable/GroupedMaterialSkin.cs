@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
@@ -26,12 +26,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             base.Start();
             InitializeGroups();
-            
+
             if (applyOnStart)
             {
                 ApplyGroupedMaterials();
             }
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Initialized with {materialSlots.Length} slots");
@@ -126,7 +126,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                     slot.ApplyRandomMaterial();
                 }
             }
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied random materials to {materialSlots.Length} slots");
@@ -169,13 +169,13 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 slot.ApplyRandomMaterial();
             }
 
-            if (showDebugLogs) 
+            if (showDebugLogs)
             {
                 string[] materialsUsed = _groupedSlots[group]
                     .Select(s => s.CurrentAppliedMaterial?.name ?? "None")
                     .Distinct()
                     .ToArray();
-                
+
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Randomized group '{group.GroupName}' - {materialsUsed.Length} different materials used: {string.Join(", ", materialsUsed)}");
             }
         }
@@ -196,14 +196,14 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 RandomizeGroup(group);
             }
 
-            if (showDebugLogs) 
+            if (showDebugLogs)
             {
                 int totalMaterialsUsed = materialSlots
                     .Where(s => s != null && s.CurrentAppliedMaterial != null)
                     .Select(s => s.CurrentAppliedMaterial.name)
                     .Distinct()
                     .Count();
-                
+
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"Randomized all {_groupedSlots.Count} groups - {totalMaterialsUsed} different materials used across all slots");
             }
         }
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                     .Select(s => s.CurrentAppliedMaterial.name)
                     .Distinct()
                     .ToArray();
-                
+
                 groupStates.Add(new GroupState
                 {
                     group = group,
@@ -373,7 +373,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             SlotInfo[] slotInfos = GetAllSlotInfos();
             DebugUtility.LogVerbose<GroupedMaterialSkin>($"Detailed Slot Info ({slotInfos.Length} slots):");
-            
+
             foreach (var info in slotInfos)
             {
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"  - {info}");
@@ -385,10 +385,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             RandomizeAllGroups();
             var state = GetGroupedMaterialState();
-            
+
             DebugUtility.LogVerbose<GroupedMaterialSkin>($"Randomization Test:");
             DebugUtility.LogVerbose<GroupedMaterialSkin>($"Total slots: {state.totalSlots}, Valid: {state.validSlots}");
-            
+
             foreach (var groupState in state.groupStates)
             {
                 DebugUtility.LogVerbose<GroupedMaterialSkin>($"  - {groupState.group.GroupName}: {groupState.slotCount} slots, {groupState.uniqueMaterialsCount} unique materials");

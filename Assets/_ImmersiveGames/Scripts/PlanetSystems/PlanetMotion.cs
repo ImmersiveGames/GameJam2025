@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-60)]
-    
+
     public sealed class PlanetMotion : MonoBehaviour
     {
         [Header("Orbit Configuration")]

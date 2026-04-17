@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {

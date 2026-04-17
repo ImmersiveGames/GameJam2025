@@ -1,5 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
@@ -9,7 +9,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
     /// <summary>
     /// Parte da implementação do Eater focada em recursos, AutoFlow e cura.
-    /// 
+    ///
     /// OBS: Nesta etapa, todos os métodos continuam em EaterBehavior.Core.cs.
     /// Este arquivo partial existe para permitir uma futura migração organizada.
     /// </summary>
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         private bool _missingResourceSystemLogged;
         private IDamageReceiver _selfDamageReceiver;
         private bool _missingSelfDamageReceiverLogged;
-        
+
         internal bool TryApplySelfHealing(RuntimeAttributeType runtimeAttributeType, float amount,
             DamageType healDamageType = DamageType.Pure)
         {
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             damageReceiver = _selfDamageReceiver;
             return damageReceiver != null;
         }
-        
+
         internal bool ResumeAutoFlow(string reason)
         {
             if (!TryEnsureAutoFlowBridge())
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                     : $"Falha ao pausar AutoFlow ({reason}).");
             return paused;
         }
-        
+
          private bool TryEnsureAutoFlowBridge()
         {
             if (_autoFlowBridge != null)
@@ -188,7 +188,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 LogAutoFlowIssue(
                     "RuntimeAttributeAutoFlowBridge não encontrado para recuperar recursos manualmente.",
                     ref _missingAutoFlowBridgeLogged);
-           
+
 
             return false;
             }

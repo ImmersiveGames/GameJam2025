@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 namespace _ImmersiveGames.Scripts.SkinSystems.Events

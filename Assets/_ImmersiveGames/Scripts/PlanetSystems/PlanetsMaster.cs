@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;

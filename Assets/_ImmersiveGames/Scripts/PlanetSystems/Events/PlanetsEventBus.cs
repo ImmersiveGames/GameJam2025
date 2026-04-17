@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;

@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems
         {
             EventBus<StateChangedEvent>.Unregister(_stateChangedEvent);
         }
-        
+
         private void OnStateChanged(StateChangedEvent evt)
         {
             _isGameActive = evt.isGameActive;

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    
+
     public class LifetimeManager : PersistentSingleton<LifetimeManager>
     {
         private readonly Dictionary<IPoolable, float> _objectLifetimes = new();
@@ -14,13 +14,13 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             _objectsToRemove.Clear();
 
-            // Usar ToList() para criar snapshot e evitar exceções de modificação durante iteração
+            // Usar ToList() para criar snapshot e evitar exceï¿½ï¿½es de modificaï¿½ï¿½o durante iteraï¿½ï¿½o
             var poolableEntries = new List<KeyValuePair<IPoolable, float>>(_objectLifetimes);
 
             foreach ((var poolable, float f) in poolableEntries)
             {
 
-                // Se o poolable foi destruído (mas a referência ainda existe), remove da lista
+                // Se o poolable foi destruï¿½do (mas a referï¿½ncia ainda existe), remove da lista
                 if (IsPoolableDestroyed(poolable))
                 {
                     _objectsToRemove.Add(poolable);
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
             {
                 if (IsPoolableDestroyed(poolable))
                 {
-                    // Para objetos nulos/destruídos, apenas remove do dicionário
+                    // Para objetos nulos/destruï¿½dos, apenas remove do dicionï¿½rio
                     _objectLifetimes.Remove(poolable);
                 }
             }
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         }
 
         /// <summary>
-        /// Trata corretamente referências destruídas (UnityEngine.Object) mesmo quando tipadas como interface.
+        /// Trata corretamente referï¿½ncias destruï¿½das (UnityEngine.Object) mesmo quando tipadas como interface.
         /// </summary>
         private static bool IsPoolableDestroyed(IPoolable poolable)
         {

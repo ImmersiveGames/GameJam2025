@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
-    
+
     public class DetectorService
     {
         private readonly List<Sensor> _sensors = new();

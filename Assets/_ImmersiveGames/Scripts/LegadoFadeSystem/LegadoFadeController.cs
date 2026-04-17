@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.LegadoFadeSystem
 {

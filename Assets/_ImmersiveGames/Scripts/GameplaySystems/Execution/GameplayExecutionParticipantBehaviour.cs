@@ -1,8 +1,7 @@
-
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 {

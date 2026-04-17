@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.Events

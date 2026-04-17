@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
 {
@@ -142,7 +142,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges
                 return;
             }
             var targetRotation = Quaternion.LookRotation(directionToCamera);
-                
+
             // Aplicar offset de rota��o
             if (rotationOffset != Vector3.zero)
             {

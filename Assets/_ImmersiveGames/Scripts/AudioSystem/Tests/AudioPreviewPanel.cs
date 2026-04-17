@@ -1,5 +1,5 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
@@ -9,11 +9,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
     /// Painel simples de preview de �udio em runtime.
-    /// 
+    ///
     /// - Use arrays de SoundData (SFX e BGM) configurados no Inspector.
     /// - Permite selecionar e tocar SFX via IAudioSfxService.
     /// - Permite selecionar e tocar BGM via IBgmAudioService.
-    /// 
+    ///
     /// Controles:
     /// - Tecla F10: liga/desliga o painel.
     /// - Bot�es na UI: Anterior / Play / Pr�ximo.

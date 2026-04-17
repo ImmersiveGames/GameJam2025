@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
-using _ImmersiveGames.NewScripts.Core.Validation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Validation;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;

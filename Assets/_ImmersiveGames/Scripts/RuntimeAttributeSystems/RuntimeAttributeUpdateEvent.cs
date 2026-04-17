@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems

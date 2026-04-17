@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Tags

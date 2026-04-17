@@ -1,0 +1,18 @@
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
+{
+    public static class AudioCompositionDescriptor
+    {
+        public static ICompositionModuleDescriptor Descriptor { get; } =
+            new CompositionModuleDescriptor(
+                moduleId: "Audio",
+                installerDependencies: new[] { "RuntimePolicy" },
+                bootstrapDependencies: new[] { "Preferences" },
+                installer: AudioInstaller.Install,
+                bootstrap: AudioRuntimeComposer.ComposeRuntime,
+                installerEntry: "AudioInstaller.Install",
+                runtimeComposerEntry: "AudioRuntimeComposer.ComposeRuntime",
+                description: "Audio core runtime, thin bridges and explicit cue playback wiring.");
+    }
+}
+

@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;

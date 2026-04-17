@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
-    
+
     public class EntityDebugUtility : MonoBehaviour, IInjectableComponent
     {
         private const string TestsMenuRoot = "Tests/";

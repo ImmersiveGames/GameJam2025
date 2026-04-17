@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.SceneManagement.Configs;
 using UnityEngine;
 using UnityEngine.SceneManagement;

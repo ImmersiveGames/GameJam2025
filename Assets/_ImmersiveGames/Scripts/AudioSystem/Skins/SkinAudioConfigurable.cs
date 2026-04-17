@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.SkinSystems.Configurable;
 using _ImmersiveGames.Scripts.SkinSystems.Data;

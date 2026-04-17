@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;

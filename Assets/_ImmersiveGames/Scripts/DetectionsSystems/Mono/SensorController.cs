@@ -1,11 +1,11 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
-    
+
     public class SensorController : MonoBehaviour
     {
         [SerializeField] private SensorCollection collection;

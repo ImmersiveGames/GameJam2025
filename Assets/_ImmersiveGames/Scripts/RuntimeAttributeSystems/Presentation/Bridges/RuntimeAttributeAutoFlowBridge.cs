@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using UnityEngine;

@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 
         private Vector3 _finalScale;
         private bool _finalScaleCaptured;
-        
+
 
         private Vector3 _planetCenter;
         private Vector3 _orbitPosition;
@@ -355,7 +355,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
                         profileV2.SnapFacingOnChaseStart,
                         profileV2.ChaseRotationLerpFactor);
                 }
-                
+
 
                 DebugUtility.LogVerbose<DefenseMinionController>(
                     $"[Profile] {name} aplicou profile v2 '{profileV2.VariantId}': " +

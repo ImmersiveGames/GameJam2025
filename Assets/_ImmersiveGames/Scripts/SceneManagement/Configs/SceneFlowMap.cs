@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SceneManagement.Configs
 {
     /// <summary>
     /// Mapa lógico de grupos de cena.
-    /// 
+    ///
     /// Objetivos:
     /// - Centralizar quais SceneGroupProfile representam:
     ///   - Menu padrão;
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
     ///   - Outros grupos nomeados (Boss_01, Cutscene_Intro, Hub, etc.).
     /// - Permitir que o código de alto nível peça transições usando chaves lógicas
     ///   em vez de nomes de cenas ou enums fixos.
-    /// 
+    ///
     /// Não conhece OldSceneTransitionService, GameManager, etc.
     /// É puramente dado.
     /// </summary>
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.SceneManagement.Configs
         fileName = "SceneFlowMap",
         menuName = "ImmersiveGames/Legacy/SceneManagement/Scene Flow Map",
         order = 2)]
-   [DebugLevel(DebugLevel.Verbose)] 
+   [DebugLevel(DebugLevel.Verbose)]
     public class SceneFlowMap : ScriptableObject
     {
         [Header("Grupos Padrão")]

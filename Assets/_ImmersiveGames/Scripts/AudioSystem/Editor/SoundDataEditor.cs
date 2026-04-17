@@ -1,5 +1,5 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using UnityEditor;
 using UnityEngine;
 
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Editor
 
         public override void OnInspectorGUI()
         {
-            DrawDefaultInspector(); // Mantém inspector padrão
+            DrawDefaultInspector(); // Mantï¿½m inspector padrï¿½o
 
             var data = target as SoundData;
 
@@ -115,7 +115,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Editor
                 return;
             }
 
-            // Configurações-base do AudioSource respeitando SoundData
+            // Configuraï¿½ï¿½es-base do AudioSource respeitando SoundData
             source.hideFlags = HideFlags.HideAndDontSave;
             source.clip = data.clip;
             source.outputAudioMixerGroup = data.mixerGroup;
@@ -124,11 +124,11 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Editor
             source.loop = data.loop;
             source.playOnAwake = false; // Preview sempre inicia manualmente
 
-            // Configurações de espacialização
+            // Configuraï¿½ï¿½es de espacializaï¿½ï¿½o
             source.spatialBlend = data.spatialBlend;
             source.maxDistance = data.maxDistance;
 
-            // Pitch aleatório quando configurado
+            // Pitch aleatï¿½rio quando configurado
             source.pitch = 1f;
             if (data.randomPitch)
             {

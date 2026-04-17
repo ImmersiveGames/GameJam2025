@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Validation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Validation;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public class OldStateMachine {

@@ -1,5 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
-
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 namespace _ImmersiveGames.Scripts.EaterSystem.Events
 {
     /// <summary>

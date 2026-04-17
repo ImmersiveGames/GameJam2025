@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
-    
+
     public class CanvasDebugUtility : MonoBehaviour
     {
         [Inject] private IRuntimeAttributeOrchestrator _orchestrator;

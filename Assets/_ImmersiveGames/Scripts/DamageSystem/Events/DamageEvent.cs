@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.DamageSystem.Events
@@ -11,7 +11,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Events
         public readonly RuntimeAttributeType runtimeAttributeType;
         public readonly DamageType damageType;
         public Vector3 hitPosition;
-    
+
         public DamageEvent(string attackerId, string targetId, float finalDamage,
             RuntimeAttributeType runtimeAttributeType, DamageType damageType, Vector3 hitPosition)
         {

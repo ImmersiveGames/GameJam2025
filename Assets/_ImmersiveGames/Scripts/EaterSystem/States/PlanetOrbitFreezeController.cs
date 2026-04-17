@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
 

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
@@ -11,12 +11,12 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
     /// Auditor em runtime para o sistema de �udio.
-    /// 
+    ///
     /// Mostra:
     /// - Estado do BGM (clip atual, volume, playing/paused).
     /// - Estat�sticas de SFX (quantidade de SoundEmitter, quantos tocando).
     /// - Lista resumida dos SFX ativos (nome do objeto, clip, posi��o).
-    /// 
+    ///
     /// Use a tecla configurada (F9 por padr�o) para ligar/desligar o overlay.
     /// Opcionalmente, pode registrar um resumo peri�dico no Console.
     /// </summary>

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;

@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.Utils.PoolSystems
         {
             if (lifetime < 0)
             {
-                DebugUtility.LogWarning<PoolableObjectData>($"Lifetime não pode ser negativo em {name}. Definindo como 0.", this);
+                DebugUtility.LogWarning<PoolableObjectData>($"Lifetime nï¿½o pode ser negativo em {name}. Definindo como 0.", this);
                 lifetime = 0;
             }
         }
