@@ -5,6 +5,7 @@
 - Data: 2026-04-17
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canonica deste contrato: este ADR.
+- Nota de fechamento: a leitura composta da `Base 1.0` foi implementada e validada por smoke/runtime no ciclo incremental F1-F7.
 
 ## 1. Contexto
 
@@ -77,3 +78,8 @@ A composicao dessas camadas e a forma oficial de interpretar o runtime daqui par
 - `ADR-0056` continua owner do papel do baseline.
 - Este ADR nao substitui nenhum dos dois. Ele apenas congela a leitura sistemica composta que os une.
 - `ADR-0044`, `ADR-0045`, `ADR-0047` e `ADR-0052` continuam como antecedentes canonicos que alimentam essa composicao.
+
+## 8. Fechamento documental
+
+A `Base 1.0` pode ser lida como fundacao estabilizada para evolucoes futuras por eixos novos, sem reabrir a topologia deste ciclo.
+O trabalho seguinte deixa de ser refatorar a base e passa a ser evoluir sobre ela.

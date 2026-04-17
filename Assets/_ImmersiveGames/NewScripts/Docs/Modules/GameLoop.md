@@ -3,8 +3,8 @@
 ## Status documental
 
 - O root fisico atual e `Orchestration/GameLoop`.
-- O loop continua sendo owner do estado `Paused` e da coordenacao de handoff, mas nao do fim de run semanticamente central.
-- `LevelFlow` e `PostRun` sao nomes historicos; o canon atual separa IntroStage, Runtime phase e RunDecision.
+- O loop continua sendo executor operacional de `Paused` e da coordenacao de handoff, mas nao o owner semantico do fim de run.
+- `LevelFlow` e `PostRun` sao nomes historicos; o canon atual separa IntroStage, runtime da phase e RunDecision.
 
 ## Estrutura atual
 

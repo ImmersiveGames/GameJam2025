@@ -5,6 +5,7 @@
 - Data: 2026-04-17
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canonica deste contrato: este ADR.
+- Nota de fechamento: implementacao principal concluida e validada por smoke/runtime no ciclo incremental F1-F7.
 
 ## 1. Contexto
 
@@ -212,3 +213,5 @@ O que este ADR adiciona e a fronteira explicita que faltava entre esses owners e
 
 Isso nao e um workaround transitivo.
 E a fronteira que permite que `GameplaySessionFlow`, `SceneFlow`, `InputModes`, spawn, reset e `ActorRegistry` evoluam sem concentrar a costura em bootstraps oportunistas.
+
+Validacao registrada: a area foi materializada como seam real e entrou em uso operacional no fluxo estabilizado da `Base 1.0`.

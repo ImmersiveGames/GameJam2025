@@ -12,7 +12,7 @@
 | Camada | ADR | Papel |
 | --- | --- | --- |
 | Leitura composta do sistema | `ADR-0057` | referencia operacional primaria |
-| Baseline tecnico fino | `ADR-0056` | owner do baseline |
+| Baseline tecnico fino | `ADR-0056` | owner tecnico fino do baseline |
 | Session Integration | `ADR-0055` | seam explicito acima do baseline |
 | Antecedentes semanticos e de composicao | `ADR-0045`, `ADR-0046`, `ADR-0047`, `ADR-0052` | base de leitura para gameplay composition e session transition |
 
@@ -33,9 +33,10 @@
 - `Gameplay/PhaseDefinition`: composicao semantica do gameplay, selecao de phase, runtime materializado e handoff de fase.
 - `Orchestration/SessionIntegration`: seam operacional de sessao, com bridges, translators e request publishers finos.
 - `Orchestration/SessionIntegration` tambem e o emissor canonico de intencao para seams adjacentes da sessao, incluindo `InputModes`.
+- `Orchestration/SessionIntegration` tambem e o ponto de crescimento preparado para futuros eixos como `Actors`, `BindersAndInteractions`, expansao de `SessionTransition` e novos blocos semanticos acima do baseline.
 - `Orchestration/SceneFlow`: transicao macro, route policy, loading e completion gate.
 - `Orchestration/Navigation`: dispatch macro de intents.
-- `Orchestration/GameLoop`: loop, pause, intro handoff e outcome terminal.
+- `Orchestration/GameLoop`: executor operacional do loop, pause, intro handoff e outcome terminal.
 - `Experience/PostRun`: rail de `RunResultStage` e `RunDecision` com presentation local.
 - `Game/Gameplay/State`: `Core`, `RuntimeSignals` e `Gate`.
 - `Game/Gameplay/GameplayReset`: `Coordination`, `Policy`, `Discovery` e `Execution`.
@@ -48,7 +49,7 @@
 - `LevelFlow`, `LevelLifecycle`, `LevelManager` e `ContentSwap` sao nomes historicos.
 - `SceneResetFacade` e `FilteredEventBus.Legacy` continuam como compat historica quando o runtime ainda precisa deles.
 - `Experience/Save` continua como superficie de hooks e contratos estaveis; `Progression` e `Checkpoint` ainda nao sao features finais.
-- `Session Integration` agora existe como area de runtime real e continua sendo um seam explicito da arquitetura, nao um owner semantico.
+- `Session Integration` continua sendo o seam explicito da arquitetura, nao um owner semantico.
 - `InputModeCoordinator` e apenas o rail operacional de request/dedupe/apply; a legitimidade de emissao session-side ficou concentrada em `Session Integration`.
 
 ## Historico fisico separado

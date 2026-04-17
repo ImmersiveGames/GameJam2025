@@ -5,6 +5,7 @@
 - Data: 2026-04-17
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canonica deste contrato: este ADR.
+- Nota de fechamento: implementacao principal concluida e validada por smoke/runtime no ciclo incremental F1-F7.
 
 ## 1. Contexto
 
@@ -123,3 +124,5 @@ Ele operacionaliza o canon ja congelado por:
 
 O baseline 4.0 passa a ser lido como executor tecnico fino, e nao como centro semantico do gameplay.
 Toda costura acima dessa fronteira deve morar em `GameplaySessionFlow`, `Session Transition` ou `Session Integration`.
+
+Validacao registrada: o baseline foi enxugado e estabilizado no papel tecnico definido por este ADR.

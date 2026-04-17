@@ -11,26 +11,13 @@ Quando dois ADRs falarem da mesma superficie, vale a regra:
 3. quando existir um ADR canonico de consolidacao, ele passa a ser a leitura operacional primaria;
 4. ADRs movidos para `Obsolete/` permanecem apenas como historico.
 
-## Baseline canônica atual - eixo SceneFlow / LevelFlow
-
-A partir desta reorganizacao, o eixo SceneFlow/LevelFlow deve ser lido principalmente por estes ADRs:
-
-| ADR | Papel canonico atual |
-|---|---|
-| `ADR-0030` | fronteiras modulares canonicas entre `Navigation`, `SceneFlow`, `SceneRoute`, `LevelFlow`, `WorldReset/ResetInterop`, `Loading` e `Fade` |
-| `ADR-0031` | pipeline macro canonico de transicao |
-| `ADR-0032` | semantica canonica de route, level, reset e dedupe |
-| `ADR-0033` | politica canonica de resiliencia de fade e loading |
-
-Para a camada acima do baseline de transformacao composta de sessao/runtime, a leitura canonica e `ADR-0052`. Para `PhaseDefinition`, a leitura documental canonica continua sendo `ADR-0048`. Para o fim de run, a leitura documental canonica e `ADR-0049`. Para IntroStage, a leitura operacional principal e `ADR-0050`. O `ADR-0027` e historico / superseded. Para hooks oficiais, use `ADR-0037`; o `ADR-0012` e historico / superseded.
-
 ## Base 1.0
 
 | Camada | ADR | Papel |
 | --- | --- | --- |
 | Leitura composta do sistema | `ADR-0057` | referencia operacional primaria |
-| Baseline tecnico fino | `ADR-0056` | owner do baseline |
-| Session Integration | `ADR-0055` | owner do seam explicito acima do baseline |
+| Baseline tecnico fino | `ADR-0056` | executor tecnico fino |
+| Session Integration | `ADR-0055` | seam explicito acima do baseline |
 | Antecedentes semanticos e de composicao | `ADR-0045`, `ADR-0046`, `ADR-0047`, `ADR-0052` | base de leitura para gameplay composition e session transition |
 
 Para a leitura composta do sistema entre baseline tecnico, integracao semantica de sessao e camadas semanticas acima, use `ADR-0057` como entrada operacional primaria. `ADR-0056` e `ADR-0055` continuam como os owners diretos das duas camadas abaixo dessa leitura, enquanto `ADR-0045`, `ADR-0046`, `ADR-0047` e `ADR-0052` permanecem como antecedentes semanticos e de composicao.
@@ -38,7 +25,7 @@ Para a leitura composta do sistema entre baseline tecnico, integracao semantica 
 Leitura operacional resumida do trilho de phase:
 
 - `ADR-0050`: entrada local da phase, `IntroStage`, reentrada monotonica e lifecycle local
-- `ADR-0051`: saida local da phase, `RunResultStage`, handoff canônico para `RunDecision` e continuidade macro pos-fechamento
+- `ADR-0051`: saida local da phase, `RunResultStage`, handoff canonico para `RunDecision` e continuidade macro pos-fechamento
 - `ADR-0052`: camada acima do baseline, cobrindo `SessionTransition` e o handoff macro para o pipeline local da phase
 
 ## Leitura minima recomendada para entender o modulo

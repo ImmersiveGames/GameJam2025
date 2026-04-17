@@ -2,19 +2,27 @@
 
 ## Status
 
-- Runtime seam explicit between the technical baseline and the semantic layers above it.
-- Thin by design: this area composes session-side context, translators and request publishers without taking semantic ownership.
+- Seam canonico entre o baseline tecnico fino e as camadas semanticas acima dele.
+- Fino por desenho: esta area compoe contexto, translators e request publishers sem assumir ownership semantico.
 
 ## Current scope
 
-- Session-side bridges.
-- Snapshot/state translators.
-- Canonical session-side request publishers for adjacent seams such as `InputModes`.
-- Thin coordinators only when the seam really needs them.
+- Bridges de lado de sessao.
+- Translators de snapshot/estado.
+- Request publishers canonicos para seams adjacentes da sessao, como `InputModes`.
+- Coordinators finos apenas quando o seam realmente precisa deles.
 
 ## Boundaries
 
-- Does not own `GameplaySessionFlow`.
-- Does not own `Session Transition`.
-- Does not execute spawn or reset.
-- Does not replace bootstrap ownership.
+- Nao e owner de `GameplaySessionFlow`.
+- Nao e owner de `Session Transition`.
+- Nao executa spawn ou reset.
+- Nao substitui ownership de bootstrap.
+
+## Future extension points
+
+- `Actors`: crescimento futuro deve entrar por este seam, nao por wiring de baseline.
+- `BindersAndInteractions`: futuros binders/interactions devem consumir o seam como adapters finos.
+- `SessionTransitionExpansion`: futuros eixos de session-transition devem permanecer declarativos e reutilizar a vocabulario existente.
+- `SemanticBlocksAboveBaseline`: novos blocos semanticos devem entrar por seams compostos, nao por logica oportunista de bootstrap.
+- A lista canonica de anchors vive em `SessionIntegrationExtensionPoints` para code e docs referenciarem de forma consistente.

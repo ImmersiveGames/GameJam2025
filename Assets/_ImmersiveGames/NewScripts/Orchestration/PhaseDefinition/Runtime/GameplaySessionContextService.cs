@@ -224,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public GameplayPhaseRuntimeService()
         {
             DebugUtility.LogVerbose<GameplayPhaseRuntimeService>(
-                "[OBS][GameplaySessionFlow][PhaseRuntime] GameplayPhaseRuntimeService registrado como owner do runtime da fase.");
+                "[OBS][GameplaySessionFlow][PhaseRuntime] owner='GameplayPhaseRuntimeService' executor='GameplayPhaseRuntimeService' role='technical-fine-runtime'.");
         }
 
         public GameplayPhaseRuntimeSnapshot Current
@@ -257,7 +257,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 _last = snapshot;
 
                 DebugUtility.Log<GameplayPhaseRuntimeService>(
-                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseId='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.PhaseId : PhaseDefinitionId.None)}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
+                    $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated owner='GameplayPhaseRuntimeService' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseId='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.PhaseId : PhaseDefinitionId.None)}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
                 DebugUtility.Colors.Info);
 
                 return _current;
@@ -294,7 +294,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayPhaseRuntimeService>(
-                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeCleared keepLast='true' lastPhaseSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeCleared owner='GameplayPhaseRuntimeService' keepLast='true' lastPhaseSignature='{Normalize(lastSignature)}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -323,7 +323,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameplayParticipationFlowService :
         IGameplayParticipationFlowService,
-        IGameplayPhasePlayerParticipationService,
         IDisposable
     {
         private readonly object _sync = new();
@@ -337,7 +336,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             RegisterSelfInGlobalDi();
 
             DebugUtility.LogVerbose<GameplayParticipationFlowService>(
-                "[OBS][GameplaySessionFlow][Participation] GameplayParticipationFlowService registrado como owner do roster semantico.",
+                "[OBS][GameplaySessionFlow][Participation] owner='GameplayParticipationFlowService' executor='GameplayParticipationFlowService' role='semantic-roster-owner'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -432,65 +431,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         {
         }
 
-        GameplayPhasePlayerParticipationSnapshot IGameplayPhasePlayerParticipationService.Current
-        {
-            get
-            {
-                lock (_sync)
-                {
-                    return ToLegacySnapshot(_current, _currentPhaseRuntime);
-                }
-            }
-        }
-
-        bool IGameplayPhasePlayerParticipationService.TryGetCurrent(out GameplayPhasePlayerParticipationSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                if (!_current.IsValid)
-                {
-                    snapshot = GameplayPhasePlayerParticipationSnapshot.Empty;
-                    return false;
-                }
-
-                snapshot = ToLegacySnapshot(_current, _currentPhaseRuntime);
-                return true;
-            }
-        }
-
-        bool IGameplayPhasePlayerParticipationService.TryGetLast(out GameplayPhasePlayerParticipationSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                if (!_last.IsValid)
-                {
-                    snapshot = GameplayPhasePlayerParticipationSnapshot.Empty;
-                    return false;
-                }
-
-                snapshot = ToLegacySnapshot(_last, _lastPhaseRuntime);
-                return true;
-            }
-        }
-
-        GameplayPhasePlayerParticipationSnapshot IGameplayPhasePlayerParticipationService.Update(GameplayPhasePlayerParticipationSnapshot snapshot)
-        {
-            HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
-                "[FATAL][H1][GameplaySessionFlow] Legacy player-participation write path is not owned by GameplayParticipationFlowService.");
-            return GameplayPhasePlayerParticipationSnapshot.Empty;
-        }
-
-        GameplayPhasePlayerParticipationSnapshot IGameplayPhasePlayerParticipationService.UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
-        {
-            ParticipationSnapshot updated = UpdateFromPhaseDefinitionSelectedEvent(evt);
-            return ToLegacySnapshot(updated, _currentPhaseRuntime);
-        }
-
-        void IGameplayPhasePlayerParticipationService.Clear(string reason)
-        {
-            Clear(reason);
-        }
-
         private static ParticipationSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
             if (evt.PhaseDefinitionRef == null)
@@ -537,7 +477,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayParticipationFlowService>(
-                $"[OBS][GameplaySessionFlow][Participation] ParticipationUpdated owner='GameplayParticipationFlowService' source='{source}' sessionSignature='{snapshot.SessionSignature}' phaseSignature='{snapshot.PhaseSignature}' participantCount='{snapshot.ParticipantCount}' primaryId='{snapshot.PrimaryParticipantId}' readinessState='{snapshot.Readiness.State}' readinessCanEnter='{snapshot.Readiness.CanEnterGameplay}' signature='{snapshot.Signature}'.",
+                $"[OBS][GameplaySessionFlow][Participation] ParticipationUpdated owner='GameplayParticipationFlowService' executor='GameplayParticipationFlowService' source='{source}' sessionSignature='{snapshot.SessionSignature}' phaseSignature='{snapshot.PhaseSignature}' participantCount='{snapshot.ParticipantCount}' primaryId='{snapshot.PrimaryParticipantId}' readinessState='{snapshot.Readiness.State}' readinessCanEnter='{snapshot.Readiness.CanEnterGameplay}' signature='{snapshot.Signature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<ParticipationSnapshotChangedEvent>.Raise(
@@ -673,42 +613,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             return ParticipantId.None;
         }
 
-        private static GameplayPhasePlayerParticipationSnapshot ToLegacySnapshot(ParticipationSnapshot snapshot, GameplayPhaseRuntimeSnapshot phaseRuntime)
-        {
-            if (!snapshot.IsValid || !phaseRuntime.IsValid)
-            {
-                return GameplayPhasePlayerParticipationSnapshot.Empty;
-            }
-
-            int participatingPlayerCount = snapshot.ParticipantCount;
-            string primaryParticipantId = snapshot.PrimaryParticipantId.IsValid ? snapshot.PrimaryParticipantId.Value : string.Empty;
-            string primaryParticipantLabel = "Player";
-
-            if (snapshot.HasPrimaryParticipant)
-            {
-                for (int index = 0; index < snapshot.Participants.Length; index += 1)
-                {
-                    if (snapshot.Participants[index].IsPrimary)
-                    {
-                        primaryParticipantLabel = snapshot.Participants[index].Kind.ToString();
-                        break;
-                    }
-                }
-            }
-
-            GameplayPhasePlayerParticipationMode participationMode =
-                participatingPlayerCount == 1
-                    ? GameplayPhasePlayerParticipationMode.SoloCanonical
-                    : GameplayPhasePlayerParticipationMode.ConfiguredRoster;
-
-            return new GameplayPhasePlayerParticipationSnapshot(
-                phaseRuntime,
-                participationMode,
-                participatingPlayerCount,
-                primaryParticipantId,
-                primaryParticipantLabel);
-        }
-
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
@@ -724,7 +628,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             RegisterOwnerBinding<GameplayParticipationFlowService>(this);
             RegisterOwnerBinding<IGameplayParticipationFlowService>(this);
-            RegisterOwnerBinding<IGameplayPhasePlayerParticipationService>(this);
         }
 
         private static void RegisterOwnerBinding<T>(T instance)

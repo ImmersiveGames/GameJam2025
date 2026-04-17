@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime
             ParticipationService = participationService ?? throw new ArgumentNullException(nameof(participationService));
 
             DebugUtility.LogVerbose<SessionIntegrationContextService>(
-                "[OBS][GameplaySessionFlow][SessionIntegration] SessionIntegrationContextService registrado como seam operacional de integracao de sessao.",
+                "[OBS][GameplaySessionFlow][SessionIntegration] seam='SessionIntegration' executor='SessionIntegrationContextService' role='canonical-session-integration-seam'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime
             }
 
             DebugUtility.LogVerbose<SessionIntegrationContextService>(
-                $"[OBS][GameplaySessionFlow][SessionIntegration] SessionIntegrationContextCleared reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][SessionIntegration] SessionIntegrationContextCleared seam='SessionIntegration' executor='SessionIntegrationContextService' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime
             string normalizedContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
 
             DebugUtility.Log(typeof(SessionIntegrationContextService),
-                $"[OBS][SessionIntegration][InputModes] Request kind='{kind}' reason='{normalizedReason}' semanticSource='{normalizedSemanticSource}' contextSignature='{normalizedContextSignature}'.",
+                $"[OBS][SessionIntegration][InputModes] requestPublisher='SessionIntegrationContextService' seam='SessionIntegration' target='InputModeCoordinator' kind='{kind}' reason='{normalizedReason}' semanticSource='{normalizedSemanticSource}' contextSignature='{normalizedContextSignature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<InputModeRequestEvent>.Raise(
@@ -135,5 +135,76 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime
                     "SessionIntegration",
                     normalizedContextSignature));
         }
+    }
+
+    /// <summary>
+    /// Eixos futuros que devem crescer acima do baseline sem reintroduzir ownership semantico nele.
+    /// </summary>
+    public enum SessionIntegrationExtensionPointKind
+    {
+        Actors = 0,
+        BindersAndInteractions = 1,
+        SessionTransitionExpansion = 2,
+        SemanticBlocksAboveBaseline = 3,
+    }
+
+    /// <summary>
+    /// Contrato minimo para nomear pontos de crescimento futuros do seam de SessionIntegration.
+    /// Nao executa nada; apenas explicita a topologia de extensao esperada.
+    /// </summary>
+    public readonly struct SessionIntegrationExtensionPoint
+    {
+        public SessionIntegrationExtensionPoint(
+            SessionIntegrationExtensionPointKind kind,
+            string anchorModule,
+            string entryPoint,
+            string description)
+        {
+            Kind = kind;
+            AnchorModule = string.IsNullOrWhiteSpace(anchorModule) ? string.Empty : anchorModule.Trim();
+            EntryPoint = string.IsNullOrWhiteSpace(entryPoint) ? string.Empty : entryPoint.Trim();
+            Description = string.IsNullOrWhiteSpace(description) ? string.Empty : description.Trim();
+        }
+
+        public SessionIntegrationExtensionPointKind Kind { get; }
+        public string AnchorModule { get; }
+        public string EntryPoint { get; }
+        public string Description { get; }
+
+        public override string ToString()
+        {
+            return $"Kind='{Kind}', AnchorModule='{AnchorModule}', EntryPoint='{EntryPoint}', Description='{Description}'";
+        }
+    }
+
+    public static class SessionIntegrationExtensionPoints
+    {
+        public static SessionIntegrationExtensionPoint Actors =>
+            new(
+                SessionIntegrationExtensionPointKind.Actors,
+                anchorModule: "Game/Gameplay/Actors",
+                entryPoint: "SessionIntegration",
+                description: "Future actor growth should consume the session seam before touching baseline wiring.");
+
+        public static SessionIntegrationExtensionPoint BindersAndInteractions =>
+            new(
+                SessionIntegrationExtensionPointKind.BindersAndInteractions,
+                anchorModule: "Experience/Gameplay and Experience/Frontend",
+                entryPoint: "SessionIntegration",
+                description: "Future binders/interactions should enter as thin adapters that consume the session seam.");
+
+        public static SessionIntegrationExtensionPoint SessionTransitionExpansion =>
+            new(
+                SessionIntegrationExtensionPointKind.SessionTransitionExpansion,
+                anchorModule: "Orchestration/SessionTransition",
+                entryPoint: "SessionIntegration",
+                description: "Future session-transition axes should stay declarative above the baseline and reuse the existing transition vocabulary.");
+
+        public static SessionIntegrationExtensionPoint SemanticBlocksAboveBaseline =>
+            new(
+                SessionIntegrationExtensionPointKind.SemanticBlocksAboveBaseline,
+                anchorModule: "Orchestration/GameplaySessionFlow",
+                entryPoint: "SessionIntegration",
+                description: "New semantic blocks should enter through a composed seam, not through bootstrap opportunism or baseline ownership.");
     }
 }
