@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime
                     emitsPhaseLocalEntryReady: false,
                     SessionTransitionHandoffAction.GoToMenu,
                     SessionTransitionAxisId.Continuity),
-                RunContinuationKind.EndRun => BuildPlan(
+                RunContinuationKind.TerminateRun => BuildPlan(
                     context,
                     BuildContinuityShape(
                         preservation: SessionTransitionPreservationMask.SessionState,
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime
                         SessionTransitionReconstructionKind.None,
                         SessionTransitionResetScopeKind.None),
                     new SessionTransitionAxisMap(
-                        continuity: RunContinuationKind.EndRun,
+                        continuity: RunContinuationKind.TerminateRun,
                         phaseTransition: SessionTransitionPhaseAction.None,
                         worldReset: SessionTransitionResetAction.None,
                         reconstruction: false,

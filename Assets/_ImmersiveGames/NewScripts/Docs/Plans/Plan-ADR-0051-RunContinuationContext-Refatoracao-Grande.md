@@ -46,7 +46,7 @@ Contratos/nomes congelados:
 - owner canonico: `RunContinuationOwnershipService`
 - contexto canonico: `RunContinuationContext`
 - enum minimo: `RunContinuationKind`
-- continuidades v1: `AdvancePhase`, `RestartCurrentPhase`, `ExitToMenu`, `EndRun`
+- continuidades v1: `AdvancePhase`, `RestartCurrentPhase`, `ExitToMenu`, `TerminateRun`
 
 Regras de boundary:
 

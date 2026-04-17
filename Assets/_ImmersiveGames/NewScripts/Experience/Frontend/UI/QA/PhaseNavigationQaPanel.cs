@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseNavigationQaPanel : MonoBehaviour
     {
-        private const string AdvancePhaseReason = "QA/PhaseNavigation/AdvancePhase";
+        private const string NextPhaseReason = "QA/PhaseNavigation/NextPhase";
         private const string GoToSpecificPhaseReason = "QA/PhaseNavigation/GoToSpecificPhase";
         private const string RestartCatalogReason = "QA/PhaseNavigation/RestartCatalog";
         private const float PanelWidth = 960f;
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
 
             if (GUILayout.Button("Next", _buttonStyle, GUILayout.Height(42f)))
             {
-                _ = ExecuteCanonicalNextPhaseAsync(AdvancePhaseReason);
+                _ = ExecuteCanonicalNextPhaseAsync(NextPhaseReason);
             }
 
             if (GUILayout.Button("Restart Cat", _buttonStyle, GUILayout.Height(42f)))
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             if (_isExecutingRequest)
             {
                 DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' guard_ignored='true' reason='{reason}'.",
+                    $"[OBS][QA][PhaseNavigation][Execute] action='NextPhaseCanonical' guard_ignored='true' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -182,8 +182,8 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             if (!_isOperationallyReadyForQa)
             {
                 DebugUtility.LogWarning<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' outcome='RejectedNotReady' reason='{reason}'.");
-                RefreshView("AdvancePhaseCanonical/RejectedNotReady");
+                    $"[OBS][QA][PhaseNavigation][Execute] action='NextPhaseCanonical' outcome='RejectedNotReady' reason='{reason}'.");
+                RefreshView("NextPhaseCanonical/RejectedNotReady");
                 return;
             }
 
@@ -199,26 +199,26 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
             try
             {
                 DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' stage='PhaseNavigationRequested' currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' reason='{reason}'.",
+                    $"[OBS][QA][PhaseNavigation][Execute] action='NextPhaseCanonical' stage='PhaseNavigationRequested' currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
                 PhaseNavigationResult result = await _phaseNavigationService.NextPhaseAsync(reason, CancellationToken.None);
 
                 DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='AdvancePhaseCanonical' outcome='{result.Outcome}' reason='{reason}'.",
+                    $"[OBS][QA][PhaseNavigation][Execute] action='NextPhaseCanonical' outcome='{result.Outcome}' reason='{reason}'.",
                     result.IsBlockedAtBoundary ? DebugUtility.Colors.Warning : DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogWarning<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation] action='AdvancePhaseCanonical' failed reason='{reason}' notes='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[OBS][QA][PhaseNavigation] action='NextPhaseCanonical' failed reason='{reason}' notes='{ex.GetType().Name}: {ex.Message}'.");
 
-                RefreshView("AdvancePhaseCanonical/Failed");
+                RefreshView("NextPhaseCanonical/Failed");
             }
             finally
             {
                 _isExecutingRequest = false;
-                RefreshView("AdvancePhaseCanonical/Finished");
+                RefreshView("NextPhaseCanonical/Finished");
             }
         }
 

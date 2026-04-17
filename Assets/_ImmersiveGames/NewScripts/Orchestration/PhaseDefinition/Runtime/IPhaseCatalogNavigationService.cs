@@ -10,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         int LoopCount { get; }
 
         PhaseCatalogNavigationPlan ResolveNext(string reason = null);
+        // Alias de compatibilidade; preferir ResolveNext no rail local.
         PhaseCatalogNavigationPlan AdvancePhase(string reason = null);
         PhaseCatalogNavigationPlan ResolvePrevious(string reason = null);
         PhaseCatalogNavigationPlan ResolveSpecificPhase(string phaseId, string reason = null);

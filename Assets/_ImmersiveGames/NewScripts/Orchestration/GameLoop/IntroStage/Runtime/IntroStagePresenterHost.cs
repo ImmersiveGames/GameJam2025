@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
 {
@@ -82,26 +81,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                     return true;
                 }
 
-                if (session.IntroPresenterPrefab == null)
-                {
-                    LogNoContentSkip(session, source, "missing_presenter_prefab");
-                    return false;
-                }
-
-                if (!TryCreatePresenterInstanceLocked(session, source, out presenter))
-                {
-                    return false;
-                }
-
-                if (!IsCurrentPresenterQueryable(session.SessionSignature))
-                {
-                    HardFailFastH1.Trigger(typeof(IntroStagePresenterHost),
-                        $"[FATAL][H1][IntroStage] Intro presenter contract not queryable after adoption/bind. source='{source}' contentName='{DescribeSessionContentName(session)}' signature='{session.SessionSignature}' registered='{(_currentPresenter != null).ToString().ToLowerInvariant()}' queryable='{(_currentPresenter != null && _currentPresenter.CanServe(session.SessionSignature)).ToString().ToLowerInvariant()}' presenterSignature='{Normalize(_currentPresenter?.PresenterSignature ?? string.Empty)}' currentSignature='{_currentSessionSignature}'.");
-                    return false;
-                }
-
-                presenter = _currentPresenter!;
-                return true;
+                LogNoContentSkip(session, source, "missing_scene_local_presenter");
+                return false;
             }
         }
 
@@ -158,73 +139,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             }
 
             return false;
-        }
-
-        private bool TryCreatePresenterInstanceLocked(IntroStageSession session, string source, out IIntroStagePresenter presenter)
-        {
-            presenter = null!;
-
-            if (session.IntroPresenterPrefab == null)
-            {
-                LogNoContentSkip(session, source, "missing_presenter_prefab");
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "missing_presenter_prefab");
-                return false;
-            }
-
-            GameObject? prefab = session.IntroPresenterPrefab;
-            if (prefab == null)
-            {
-                LogNoContentSkip(session, source, "missing_presenter_prefab");
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "missing_presenter_prefab");
-                return false;
-            }
-
-            GameObject instance = UnityEngine.Object.Instantiate(prefab);
-            Scene activeScene = SceneManager.GetActiveScene();
-            SceneManager.MoveGameObjectToScene(instance, activeScene);
-
-            if (!TryFindPresentersOnObject(instance, out List<IIntroStagePresenter> presenters))
-            {
-                UnityEngine.Object.Destroy(instance);
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "prefab_missing_presenter");
-                LogNoContentSkip(session, source, "prefab_missing_presenter");
-                return false;
-            }
-
-            if (presenters.Count > 1)
-            {
-                UnityEngine.Object.Destroy(instance);
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "prefab_multiple_presenters");
-                HardFailFastH1.Trigger(typeof(IntroStagePresenterHost),
-                    $"[FATAL][H1][IntroStage] Intro presenter prefab exposes multiple IIntroStagePresenter components. source='{source}' contentName='{DescribeSessionContentName(session)}' signature='{session.SessionSignature}' presenters='{DescribePresenters(presenters)}'.");
-                return false;
-            }
-
-            IIntroStagePresenter createdPresenter = presenters[0];
-            if (createdPresenter is not MonoBehaviour presenterComponent)
-            {
-                UnityEngine.Object.Destroy(instance);
-                ClearCurrentPresenterLocked(destroyOwnedInstance: false, reason: "prefab_non_monobehaviour");
-                HardFailFastH1.Trigger(typeof(IntroStagePresenterHost),
-                    $"[FATAL][H1][IntroStage] Intro presenter prefab does not derive from MonoBehaviour. source='{source}' contentName='{DescribeSessionContentName(session)}' signature='{session.SessionSignature}' presenterType='{createdPresenter.GetType().FullName}'.");
-                return false;
-            }
-
-            AdoptPresenterLocked(createdPresenter, session, source, ownedByHost: true, presenterComponent.gameObject);
-
-            if (!IsCurrentPresenterQueryable(session.SessionSignature))
-            {
-                HardFailFastH1.Trigger(typeof(IntroStagePresenterHost),
-                    $"[FATAL][H1][IntroStage] Intro presenter prefab bound but not queryable. source='{source}' contentName='{DescribeSessionContentName(session)}' signature='{session.SessionSignature}' presenterType='{createdPresenter.GetType().Name}'.");
-                return false;
-            }
-
-            DebugUtility.Log<IntroStagePresenterHost>(
-                $"[OBS][IntroStage] IntroStagePresenterSpawned source='{source}' contentName='{DescribeSessionContentName(session)}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' presenterType='{createdPresenter.GetType().Name}' scope='scene_local'.",
-                DebugUtility.Colors.Info);
-
-            presenter = _currentPresenter!;
-            return true;
         }
 
         private void DestroyCurrentPresenter(string reason)

@@ -421,7 +421,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                     traversalMode),
                 _ => normalizedRequest.Direction == PhaseNavigationDirection.Previous
                     ? catalogNavigationService.ResolvePrevious(normalizedReason)
-                    : catalogNavigationService.AdvancePhase(normalizedReason)
+                    : catalogNavigationService.ResolveNext(normalizedReason)
             };
 
             if (navigationPlan.Outcome == PhaseNavigationOutcome.Changed)

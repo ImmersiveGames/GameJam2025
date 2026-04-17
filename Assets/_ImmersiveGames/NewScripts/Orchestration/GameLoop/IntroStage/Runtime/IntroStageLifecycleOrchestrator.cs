@@ -307,7 +307,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 session.SelectionVersion,
                 session.PhaseLocalEntrySequence,
                 session.SessionSignature,
-                null,
                 hasIntroStage: false,
                 hasRunResultStage: session.HasRunResultStage,
                 entrySignature: session.EntrySignature);

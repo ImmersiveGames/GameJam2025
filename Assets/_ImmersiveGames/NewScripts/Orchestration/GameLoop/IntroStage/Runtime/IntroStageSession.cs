@@ -13,7 +13,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             int selectionVersion,
             int phaseLocalEntrySequence,
             string sessionSignature,
-            GameObject? introPresenterPrefab = null,
             bool hasIntroStage = false,
             bool hasRunResultStage = false,
             string? entrySignature = null)
@@ -27,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             EntrySignature = string.IsNullOrWhiteSpace(entrySignature)
                 ? $"{SessionSignature}|entry:{PhaseLocalEntrySequence}"
                 : entrySignature.Trim();
-            IntroPresenterPrefab = introPresenterPrefab;
             HasIntroStage = hasIntroStage;
             HasRunResultStage = hasRunResultStage;
         }
@@ -39,13 +37,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
         public int PhaseLocalEntrySequence { get; }
         public string SessionSignature { get; }
         public string EntrySignature { get; }
-        public GameObject? IntroPresenterPrefab { get; }
-        public GameObject? PresenterPrefab => IntroPresenterPrefab;
         public bool HasIntroStage { get; }
         public bool HasRunResultStage { get; }
 
         public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
-        public bool HasPresenterPrefab => IntroPresenterPrefab != null;
         public bool IsValid => HasPhaseDefinitionRef;
 
         public static IntroStageSession Empty => default;

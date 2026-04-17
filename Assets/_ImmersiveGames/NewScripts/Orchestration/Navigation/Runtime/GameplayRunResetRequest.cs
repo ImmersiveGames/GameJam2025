@@ -1,35 +1,30 @@
 using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
 {
-    public enum GameplayRunResetTargetPolicy
-    {
-        Unknown = 0,
-        FirstCatalogPhase = 1,
-        CurrentCatalogPhase = 2,
-    }
-
     public readonly struct GameplayRunResetRequest
     {
-        public GameplayRunResetRequest(RunContinuationSelection selection)
+        public GameplayRunResetRequest(
+            RunContinuationSelection selection,
+            PhaseDefinitionAsset targetPhaseRef,
+            string reason)
         {
             Selection = selection;
-            Kind = selection.SelectedContinuation;
-            TargetPolicy = Kind switch
-            {
-                RunContinuationKind.ResetRun => GameplayRunResetTargetPolicy.FirstCatalogPhase,
-                RunContinuationKind.Retry => GameplayRunResetTargetPolicy.CurrentCatalogPhase,
-                _ => GameplayRunResetTargetPolicy.Unknown,
-            };
+            TargetPhaseRef = targetPhaseRef;
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
         }
 
         public RunContinuationSelection Selection { get; }
-        public RunContinuationKind Kind { get; }
-        public string Reason => Selection.Reason;
-        public GameplayRunResetTargetPolicy TargetPolicy { get; }
+        public RunContinuationKind Kind => Selection.SelectedContinuation;
+        public PhaseDefinitionAsset TargetPhaseRef { get; }
+        public string Reason { get; }
         public bool IsValid =>
             Selection.IsValid &&
             (Kind == RunContinuationKind.ResetRun || Kind == RunContinuationKind.Retry) &&
-            TargetPolicy != GameplayRunResetTargetPolicy.Unknown;
+            TargetPhaseRef != null &&
+            TargetPhaseRef.PhaseId.IsValid &&
+            !string.IsNullOrWhiteSpace(Reason);
     }
 }

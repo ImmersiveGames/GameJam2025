@@ -37,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 PhaseNavigationDirection.Next);
         }
 
+        // Alias mantido apenas para compatibilidade com consumidores legados.
         public PhaseCatalogNavigationPlan AdvancePhase(string reason = null)
         {
             return ResolveNext(reason);

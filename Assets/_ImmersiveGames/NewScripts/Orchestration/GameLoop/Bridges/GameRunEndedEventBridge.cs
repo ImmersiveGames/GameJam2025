@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
@@ -137,10 +138,16 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 return;
             }
 
-            GameplayRunResetRequest request = new GameplayRunResetRequest(selection);
+            PhaseDefinitionAsset targetPhaseRef = ResolveRunResetTargetPhaseOrFail(selection);
+            if (targetPhaseRef == null)
+            {
+                return;
+            }
+
+            GameplayRunResetRequest request = new GameplayRunResetRequest(selection, targetPhaseRef, selection.Reason);
 
             DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetRoutedFromRunDecision kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' reason='{request.Reason}' nextState='{selection.NextState}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetRoutedFromRunDecision kind='{request.Kind}' reason='{request.Reason}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
                 DebugUtility.Colors.Info);
 
             _ = runResetService.AcceptAsync(request);
@@ -220,6 +227,31 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                     runResult,
                     phaseRuntime.HasRunResultStage));
 
+                string phaseEntrySignature = phaseRuntime.SessionContext.HasSessionSignature
+                    ? phaseRuntime.SessionContext.SessionSignature
+                    : phaseRuntime.PhaseRuntimeSignature;
+                PhaseCompleted phaseCompleted = new PhaseCompleted(
+                    phaseRuntime,
+                    intent,
+                    evt.Outcome,
+                    phaseRuntime.HasRunResultStage,
+                    nameof(GameRunEndedEventBridge),
+                    phaseRuntime.HasPhaseDefinitionRef ? phaseRuntime.SessionContext.SelectionVersion : 0,
+                    phaseEntrySignature);
+
+                if (!phaseCompleted.IsValid)
+                {
+                    DebugUtility.LogError<GameRunEndedEventBridge>(
+                        "[FATAL][GameplaySessionFlow] PhaseCompleted invalido montado a partir de GameRunEndedEvent.");
+                    return;
+                }
+
+                DebugUtility.Log<GameRunEndedEventBridge>(
+                    $"[OBS][GameplaySessionFlow][PhaseCompleted] PhaseCompletedCanonical source='{phaseCompleted.Source}' phaseSignature='{phaseCompleted.PhaseSignature}' outcome='{phaseCompleted.RunOutcome}' hasRunResultStage='{phaseCompleted.HasRunResultStage}' entrySequence='{phaseCompleted.PhaseLocalEntrySequence}' entrySignature='{phaseCompleted.EntrySignature}' reason='{phaseCompleted.RunEndIntent.Reason}'.",
+                    DebugUtility.Colors.Info);
+
+                EventBus<PhaseCompleted>.Raise(phaseCompleted);
+
                 DebugUtility.Log<GameRunEndedEventBridge>(
                     $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageDispatchRequested outcome='{evt?.Outcome}' result='{runResult}' reason='{reason}' scene='{sceneName}' frame={Time.frameCount} isGameplayScene='{isGameplayScene}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.",
                     DebugUtility.Colors.Info);
@@ -272,6 +304,49 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
             };
 
             return result != RunResult.Unknown;
+        }
+
+        private static PhaseDefinitionAsset ResolveRunResetTargetPhaseOrFail(RunContinuationSelection selection)
+        {
+            if (selection.SelectedContinuation == RunContinuationKind.ResetRun)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var phaseDefinitionCatalog) || phaseDefinitionCatalog == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
+                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de reset recebida mas IPhaseDefinitionCatalog nao foi encontrado no escopo global.");
+                }
+
+                return phaseDefinitionCatalog.ResolveInitialOrFail();
+            }
+
+            if (selection.SelectedContinuation == RunContinuationKind.Retry)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var phaseCatalogRuntimeStateService) || phaseCatalogRuntimeStateService == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
+                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de retry recebida mas IPhaseCatalogRuntimeStateService nao foi encontrado no escopo global.");
+                }
+
+                PhaseDefinitionAsset currentCommitted = phaseCatalogRuntimeStateService.CurrentCommitted;
+                if (currentCommitted == null || !currentCommitted.PhaseId.IsValid)
+                {
+                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
+                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de retry recebida mas o committed current phase e invalido.");
+                }
+
+                return currentCommitted;
+            }
+
+            HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
+                $"[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection invalida para reset. selectedContinuation='{selection.SelectedContinuation}'.");
+            return null;
+        }
+
+        private static string DescribePhase(PhaseDefinitionAsset phaseDefinition)
+        {
+            return phaseDefinition != null && phaseDefinition.PhaseId.IsValid
+                ? phaseDefinition.PhaseId.Value
+                : "<none>";
         }
     }
 }

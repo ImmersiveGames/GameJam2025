@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Config;
-using _ImmersiveGames.NewScripts.Game.Content.Definitions.Levels.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEngine;
 
@@ -56,33 +54,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             Reference = 4,
         }
 
-        public enum PhaseClosureResultKind
-        {
-            Unknown = 0,
-            Completed = 1,
-            Failed = 2,
-            Aborted = 3,
-            Branched = 4,
-        }
-
-        public enum PhaseContinuityPolicyKind
-        {
-            Unknown = 0,
-            None = 1,
-            Stay = 2,
-            Menu = 3,
-            Restart = 4,
-            NextPhase = 5,
-            Custom = 6,
-        }
-
-        [Serializable]
-        public sealed class PhaseParameterEntry
-        {
-            public string key = string.Empty;
-            public string value = string.Empty;
-        }
-
         [Serializable]
         public sealed class PhaseIdentityBlock
         {
@@ -103,7 +74,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             public string localId = string.Empty;
             public SceneKeyAsset sceneRef;
             public PhaseSceneRole role;
-            public List<string> tags = new();
         }
 
         [Serializable]
@@ -131,7 +101,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         {
             public string localId = string.Empty;
             public PhaseRuleKind ruleKind;
-            public List<PhaseParameterEntry> parameters = new();
         }
 
         [Serializable]
@@ -139,7 +108,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         {
             public string localId = string.Empty;
             public PhaseObjectiveKind objectiveKind;
-            public List<PhaseParameterEntry> parameters = new();
         }
 
         [Serializable]
@@ -152,21 +120,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public sealed class PhaseRunResultStageBlock
         {
             public bool hasRunResultStage = false;
-            public List<PhaseParameterEntry> parameters = new();
-        }
-
-        [Serializable]
-        public sealed class PhaseIntroBlock
-        {
-            public bool hasIntroStage = false;
-            public GameObject introPresenterPrefab;
-        }
-
-        [Serializable]
-        public sealed class PhaseSwapBlock
-        {
-            public GameplayContentManifest contentManifest = new();
-            public List<SceneBuildIndexRef> additiveScenes = new();
         }
 
         [Serializable]
@@ -174,15 +127,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         {
             public string localId = string.Empty;
             public PhaseInitialStateKind stateKind;
-            public List<PhaseParameterEntry> parameters = new();
-        }
-
-        [Serializable]
-        public sealed class PhaseClosureBlock
-        {
-            public PhaseClosureResultKind resultKind;
-            public PhaseContinuityPolicyKind continuityPolicyKind;
-            public List<PhaseParameterEntry> parameters = new();
         }
 
         [Header("Identity")]
@@ -203,27 +147,14 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Header("Run Result Stage")]
         [SerializeField] private PhaseRunResultStageBlock runResultStage = new();
 
-        [Header("Intro")]
-        [SerializeField] private PhaseIntroBlock intro = new();
-
-        [Header("Swap")]
-        [SerializeField] private PhaseSwapBlock swap = new();
-
-        [Header("Closure")]
-        [SerializeField] private PhaseClosureBlock closure = new();
-
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
         public PhasePlayersBlock Players => players;
         public PhaseRulesObjectivesBlock RulesObjectives => rulesObjectives;
         public PhaseInitialStateBlock InitialState => initialState;
         public PhaseRunResultStageBlock RunResultStage => runResultStage;
-        public PhaseIntroBlock Intro => intro;
-        public PhaseSwapBlock Swap => swap;
-        public PhaseClosureBlock Closure => closure;
 
         public bool HasRunResultStage => runResultStage != null && runResultStage.hasRunResultStage;
-        public bool HasIntroStage => intro != null && intro.hasIntroStage;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -255,9 +186,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidateRulesObjectivesBlock(assetOwner);
             ValidateInitialStateBlock(assetOwner);
             ValidateRunResultStageBlock(assetOwner);
-            ValidateIntroBlock(assetOwner);
-            ValidateSwapBlock(assetOwner);
-            ValidateClosureBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -332,8 +260,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                     {
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Rule entry missing ruleKind. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
-
-                    ValidateParameters(entry.parameters, assetOwner, "rule", entry.localId);
                 });
 
             ValidateEntries(
@@ -347,8 +273,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                     {
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Objective entry missing objectiveKind. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
-
-                    ValidateParameters(entry.parameters, assetOwner, "objective", entry.localId);
                 });
         }
 
@@ -370,8 +294,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                     {
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] InitialState entry missing stateKind. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
-
-                    ValidateParameters(entry.parameters, assetOwner, "initialState", entry.localId);
                 });
         }
 
@@ -381,93 +303,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             {
                 throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing runResultStage block. asset='{assetOwner}', phaseId='{PhaseId}'.");
             }
-
-            ValidateParameters(runResultStage.parameters, assetOwner, "runResultStage", PhaseId.Value);
-        }
-
-        private void ValidateIntroBlock(string assetOwner)
-        {
-            if (intro == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing intro block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-        }
-
-        private void ValidateSwapBlock(string assetOwner)
-        {
-            if (swap == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing swap block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            if (swap.contentManifest == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing swap.contentManifest. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            swap.contentManifest.ValidateOrFailFast($"PhaseSwap asset='{assetOwner}' phaseId='{PhaseId}'", assetOwner);
-
-            if (swap.additiveScenes == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing swap.additiveScenes. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            if (swap.additiveScenes.Count == 0)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Empty swap.additiveScenes. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            HashSet<int> seenBuildIndexes = new HashSet<int>();
-            HashSet<string> seenSceneNames = new HashSet<string>(StringComparer.Ordinal);
-            for (int i = 0; i < swap.additiveScenes.Count; i++)
-            {
-                SceneBuildIndexRef sceneRef = swap.additiveScenes[i];
-                if (sceneRef == null)
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Null swap additive scene ref. asset='{assetOwner}', phaseId='{PhaseId}', index={i}.");
-                }
-
-                if (sceneRef.BuildIndex < 0)
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Invalid swap additive scene buildIndex. asset='{assetOwner}', phaseId='{PhaseId}', index={i}, buildIndex='{sceneRef.BuildIndex}'.");
-                }
-
-                string sceneName = Normalize(sceneRef.SceneName);
-                if (string.IsNullOrWhiteSpace(sceneName))
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Empty swap additive scene name. asset='{assetOwner}', phaseId='{PhaseId}', index={i}, buildIndex='{sceneRef.BuildIndex}'.");
-                }
-
-                if (!seenBuildIndexes.Add(sceneRef.BuildIndex))
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Duplicate swap additive scene buildIndex='{sceneRef.BuildIndex}'. asset='{assetOwner}', phaseId='{PhaseId}'.");
-                }
-
-                if (!seenSceneNames.Add(sceneName))
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Duplicate swap additive scene name='{sceneName}'. asset='{assetOwner}', phaseId='{PhaseId}'.");
-                }
-            }
-        }
-
-        private void ValidateClosureBlock(string assetOwner)
-        {
-            if (closure == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing closure block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            if (closure.resultKind == PhaseClosureResultKind.Unknown)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing closure.resultKind. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            if (closure.continuityPolicyKind == PhaseContinuityPolicyKind.Unknown)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing closure.continuityPolicyKind. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            ValidateParameters(closure.parameters, assetOwner, "closure", PhaseId.Value);
         }
 
         private static void ValidateEntries<T>(
@@ -494,35 +329,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             }
         }
 
-        private static void ValidateParameters(
-            List<PhaseParameterEntry> parameters,
-            string assetOwner,
-            string blockName,
-            string entryId)
-        {
-            if (parameters == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing parameter list for {blockName}. asset='{assetOwner}', entryId='{entryId}'.");
-            }
-
-            for (int i = 0; i < parameters.Count; i++)
-            {
-                PhaseParameterEntry parameter = parameters[i];
-                if (parameter == null)
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Null parameter in {blockName}. asset='{assetOwner}', entryId='{entryId}', index={i}.");
-                }
-
-                parameter.key = Normalize(parameter.key);
-                parameter.value = Normalize(parameter.value);
-
-                if (string.IsNullOrWhiteSpace(parameter.key))
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Empty parameter key in {blockName}. asset='{assetOwner}', entryId='{entryId}', index={i}.");
-                }
-            }
-        }
-
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -533,36 +339,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             return PhaseId.IsValid
                 ? $"phase-content:{PhaseId.Value}"
                 : "phase-content:default";
-        }
-
-        public string BuildCanonicalSwapContentId()
-        {
-            return PhaseId.IsValid
-                ? $"phase-swap:{PhaseId.Value}"
-                : "phase-swap:default";
-        }
-
-        public IntroStageSession CreateIntroStageSession(
-            string localContentId,
-            string reason,
-            int selectionVersion,
-            int phaseLocalEntrySequence = 0,
-            string phaseSignature = "")
-        {
-            string normalizedContentId = string.IsNullOrWhiteSpace(localContentId)
-                ? BuildCanonicalIntroContentId()
-                : localContentId;
-
-            return new IntroStageSession(
-                this,
-                normalizedContentId,
-                reason,
-                selectionVersion,
-                phaseLocalEntrySequence,
-                phaseSignature,
-                intro != null ? intro.introPresenterPrefab : null,
-                HasIntroStage,
-                HasRunResultStage);
         }
     }
 }

@@ -216,13 +216,13 @@ As continuidades minimas de v1 sao:
 - `AdvancePhase`
 - `RestartCurrentPhase`
 - `ExitToMenu`
-- `EndRun`
+- `TerminateRun`
 
 Leitura canonica:
 
 - `Victory`, `Defeat` e `ExitToMenu` continuam sendo motivos de fechamento, nao destinos automaticos
 - o destino da continuidade e decidido depois do fechamento, por contrato de continuidade
-- `EndRun` representa o encerramento terminal da continuidade, nao um atalho de `PhaseNavigation`
+- `TerminateRun` representa o encerramento terminal da continuidade, nao um atalho de `PhaseNavigation`
 - `RestartCurrentPhase` pode existir como continuidade valida, mas sua execucao resolve para o rail proprio de phase reset
 - `AdvancePhase` pode existir como continuidade valida, mas seu tratamento e editorial explicito e nao vira navegacao pura escondida no contexto amplo
 

@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                 RunContinuationKind.ResetRun,
                 RunContinuationKind.Retry,
                 RunContinuationKind.ExitToMenu,
-                RunContinuationKind.EndRun,
+                RunContinuationKind.TerminateRun,
             };
 
         public bool HasCurrentContext { get; private set; }

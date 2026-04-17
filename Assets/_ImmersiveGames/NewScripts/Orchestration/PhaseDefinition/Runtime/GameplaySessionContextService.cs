@@ -1,7 +1,10 @@
 ﻿using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 {
     public readonly struct GameplayPhaseRuntimeMaterializedEvent : _ImmersiveGames.NewScripts.Core.Events.IEvent
@@ -18,6 +21,47 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public string Source { get; }
         public int PhaseLocalEntrySequence { get; }
         public string EntrySignature { get; }
+    }
+
+    public readonly struct PhaseCompleted : _ImmersiveGames.NewScripts.Core.Events.IEvent
+    {
+        public PhaseCompleted(
+            GameplayPhaseRuntimeSnapshot phaseRuntime,
+            RunEndIntent runEndIntent,
+            GameRunOutcome runOutcome,
+            bool hasRunResultStage,
+            string source,
+            int phaseLocalEntrySequence,
+            string entrySignature)
+        {
+            PhaseRuntime = phaseRuntime;
+            RunEndIntent = runEndIntent;
+            RunOutcome = runOutcome;
+            HasRunResultStage = hasRunResultStage;
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+            PhaseLocalEntrySequence = phaseLocalEntrySequence < 0 ? 0 : phaseLocalEntrySequence;
+            EntrySignature = string.IsNullOrWhiteSpace(entrySignature) ? string.Empty : entrySignature.Trim();
+        }
+
+        public GameplayPhaseRuntimeSnapshot PhaseRuntime { get; }
+        public RunEndIntent RunEndIntent { get; }
+        public GameRunOutcome RunOutcome { get; }
+        public bool HasRunResultStage { get; }
+        public string Source { get; }
+        public int PhaseLocalEntrySequence { get; }
+        public string EntrySignature { get; }
+
+        public PhaseDefinitionAsset PhaseDefinitionRef => PhaseRuntime.PhaseDefinitionRef;
+        public string PhaseSignature => PhaseRuntime.PhaseRuntimeSignature;
+        public bool IsValid =>
+            PhaseRuntime.IsValid &&
+            PhaseDefinitionRef != null &&
+            PhaseDefinitionRef.PhaseId.IsValid &&
+            !string.IsNullOrWhiteSpace(RunEndIntent.Signature) &&
+            !string.IsNullOrWhiteSpace(RunEndIntent.SceneName) &&
+            RunOutcome != GameRunOutcome.Unknown &&
+            !string.IsNullOrWhiteSpace(Source) &&
+            PhaseLocalEntrySequence >= 0;
     }
 
     public readonly struct GameplayPhaseRuntimeSnapshot
@@ -38,8 +82,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             int ruleEntryCount = phaseDefinitionRef.RulesObjectives != null && phaseDefinitionRef.RulesObjectives.rules != null ? phaseDefinitionRef.RulesObjectives.rules.Count : 0;
             int objectiveEntryCount = phaseDefinitionRef.RulesObjectives != null && phaseDefinitionRef.RulesObjectives.objectives != null ? phaseDefinitionRef.RulesObjectives.objectives.Count : 0;
             int initialStateEntryCount = phaseDefinitionRef.InitialState != null && phaseDefinitionRef.InitialState.entries != null ? phaseDefinitionRef.InitialState.entries.Count : 0;
-            UnityEngine.GameObject introPresenterPrefab = phaseDefinitionRef.Intro != null ? phaseDefinitionRef.Intro.introPresenterPrefab : null;
-            bool hasIntroStage = phaseDefinitionRef.HasIntroStage;
+            // A eligibilidade do Intro nao vem mais do asset autoral; a resolucao real acontece no host operacional.
+            bool hasIntroStage = true;
             bool hasRunResultStage = phaseDefinitionRef.HasRunResultStage;
 
             return new GameplayPhaseRuntimeSnapshot(
@@ -51,7 +95,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 ruleEntryCount,
                 objectiveEntryCount,
                 initialStateEntryCount,
-                introPresenterPrefab,
                 hasIntroStage,
                 hasRunResultStage);
         }
@@ -80,7 +123,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 selectionVersion,
                 phaseLocalEntrySequence,
                 phaseSignature,
-                IntroPresenterPrefab,
                 HasIntroStage,
                 HasRunResultStage,
                 entrySignature);
@@ -89,7 +131,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public GameplayPhaseRuntimeSnapshot(
             GameplaySessionContextSnapshot sessionContext,
             IntroStageSession levelSession,
-            UnityEngine.GameObject introPresenterPrefab,
             bool hasIntroStage,
             bool hasRunResultStage)
         {
@@ -101,7 +142,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             RuleEntryCount = 0;
             ObjectiveEntryCount = 0;
             InitialStateEntryCount = 0;
-            IntroPresenterPrefab = introPresenterPrefab;
             HasIntroStage = hasIntroStage;
             HasRunResultStage = hasRunResultStage;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession);
@@ -116,7 +156,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             int ruleEntryCount,
             int objectiveEntryCount,
             int initialStateEntryCount,
-            UnityEngine.GameObject introPresenterPrefab,
             bool hasIntroStage,
             bool hasRunResultStage)
         {
@@ -128,7 +167,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             RuleEntryCount = ruleEntryCount < 0 ? 0 : ruleEntryCount;
             ObjectiveEntryCount = objectiveEntryCount < 0 ? 0 : objectiveEntryCount;
             InitialStateEntryCount = initialStateEntryCount < 0 ? 0 : initialStateEntryCount;
-            IntroPresenterPrefab = introPresenterPrefab;
             HasIntroStage = hasIntroStage;
             HasRunResultStage = hasRunResultStage;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession, phaseDefinitionRef, ContentEntryCount, PlayerEntryCount, RuleEntryCount, ObjectiveEntryCount, InitialStateEntryCount);
@@ -142,7 +180,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public int RuleEntryCount { get; }
         public int ObjectiveEntryCount { get; }
         public int InitialStateEntryCount { get; }
-        public UnityEngine.GameObject IntroPresenterPrefab { get; }
         public bool HasIntroStage { get; }
         public bool HasRunResultStage { get; }
         public string PhaseRuntimeSignature { get; }
@@ -162,7 +199,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             0,
             0,
             0,
-            null,
             false,
             false);
 

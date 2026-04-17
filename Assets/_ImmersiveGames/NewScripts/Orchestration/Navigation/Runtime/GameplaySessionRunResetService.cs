@@ -1,10 +1,8 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.PostRun.Contracts;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Ownership;
-using _ImmersiveGames.NewScripts.Experience.PostRun.Result;
 using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
@@ -18,70 +16,61 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
     {
         private readonly IRestartContextService _restartContextService;
         private readonly IGameNavigationService _navigationService;
-        private readonly IPhaseDefinitionCatalog _phaseDefinitionCatalog;
         private readonly IPhaseCatalogRuntimeStateService _phaseCatalogRuntimeStateService;
-        private readonly IRunContinuationOwnershipService _runContinuationOwnershipService;
-        private readonly IPostRunResultService _postRunResultService;
 
         public GameplaySessionRunResetService(
             IRestartContextService restartContextService,
             IGameNavigationService navigationService,
-            IPhaseDefinitionCatalog phaseDefinitionCatalog,
-            IPhaseCatalogRuntimeStateService phaseCatalogRuntimeStateService,
-            IRunContinuationOwnershipService runContinuationOwnershipService,
-            IPostRunResultService postRunResultService)
+            IPhaseCatalogRuntimeStateService phaseCatalogRuntimeStateService)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
-            _phaseDefinitionCatalog = phaseDefinitionCatalog ?? throw new ArgumentNullException(nameof(phaseDefinitionCatalog));
             _phaseCatalogRuntimeStateService = phaseCatalogRuntimeStateService ?? throw new ArgumentNullException(nameof(phaseCatalogRuntimeStateService));
-            _runContinuationOwnershipService = runContinuationOwnershipService ?? throw new ArgumentNullException(nameof(runContinuationOwnershipService));
-            _postRunResultService = postRunResultService ?? throw new ArgumentNullException(nameof(postRunResultService));
         }
 
         public async Task AcceptAsync(GameplayRunResetRequest request, CancellationToken ct = default)
         {
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetRequestReceived kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' reason='{Normalize(request.Reason)}' selectedContinuation='{request.Selection.SelectedContinuation}' nextState='{Normalize(request.Selection.NextState)}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetRequestReceived kind='{request.Kind}' reason='{Normalize(request.Reason)}' selectedContinuation='{request.Selection.SelectedContinuation}' targetPhase='{DescribePhase(request.TargetPhaseRef)}'.",
                 DebugUtility.Colors.Info);
 
             if (!request.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameplaySessionRunResetService),
-                    $"[FATAL][H1][GameplaySessionFlow][RunReset] Run reset request invalido recebido. kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' reason='{Normalize(request.Reason)}'.");
+                    $"[FATAL][H1][GameplaySessionFlow][RunReset] Run reset request invalido recebido. kind='{request.Kind}' reason='{Normalize(request.Reason)}' targetPhase='{DescribePhase(request.TargetPhaseRef)}'.");
             }
 
             ct.ThrowIfCancellationRequested();
 
             GameplayStartSnapshot baseSnapshot = ResolveBaseSnapshotOrFail(request);
-            PhaseDefinitionAsset targetPhaseRef = ResolveTargetPhaseOrFail(request, baseSnapshot);
+            PhaseDefinitionAsset targetPhaseRef = request.TargetPhaseRef;
             SceneRouteId routeId = ResolveGameplayRouteId(baseSnapshot);
-            string normalizedReason = NormalizeReason(request);
+            string explicitReason = request.Reason;
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetExecutionStarted kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' reason='{normalizedReason}' routeId='{routeId}' currentPhase='{DescribePhase(baseSnapshot.PhaseDefinitionRef)}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetExecutionStarted kind='{request.Kind}' reason='{explicitReason}' routeId='{routeId}' currentPhase='{DescribePhase(baseSnapshot.PhaseDefinitionRef)}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
                 DebugUtility.Colors.Info);
 
-            CloseRunLevelContexts(request, normalizedReason);
+            ClearRestartContext(explicitReason);
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetContextClosed kind='{request.Kind}' reason='{normalizedReason}' currentCleared='true' lastPreserved='true'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetContextClosed kind='{request.Kind}' reason='{explicitReason}' restartContextCleared='true'.",
                 DebugUtility.Colors.Info);
 
-            FreezeTargetPhase(targetPhaseRef, baseSnapshot, normalizedReason);
+            ApplyExplicitTargetPhaseState(targetPhaseRef, baseSnapshot, explicitReason);
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetTargetResolved kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' currentCommitted='{DescribePhase(_phaseCatalogRuntimeStateService.CurrentCommitted)}' pendingTarget='{DescribePhase(_phaseCatalogRuntimeStateService.PendingTarget)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetTargetApplied kind='{request.Kind}' routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' currentCommitted='{DescribePhase(_phaseCatalogRuntimeStateService.CurrentCommitted)}' pendingTarget='{DescribePhase(_phaseCatalogRuntimeStateService.PendingTarget)}' reason='{explicitReason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetGameplayReentryRequested kind='{request.Kind}' routeId='{routeId}' targetScene='GameplayScene' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetGameplayReentryRequested kind='{request.Kind}' routeId='{routeId}' targetScene='GameplayScene' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{explicitReason}'.",
                 DebugUtility.Colors.Info);
 
-            await _navigationService.StartGameplayRouteAsync(routeId, SceneTransitionPayload.Empty, normalizedReason);
+            await _navigationService.StartGameplayRouteAsync(routeId, SceneTransitionPayload.Empty, explicitReason);
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetMacroExecuted kind='{request.Kind}' routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetMacroExecuted kind='{request.Kind}' routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{explicitReason}'.",
                 DebugUtility.Colors.Success);
 
             string completionLabel = request.Kind == RunContinuationKind.ResetRun
@@ -89,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
                 : "RetryCompleted";
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] {completionLabel} routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] {completionLabel} routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{explicitReason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -110,26 +99,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
             return GameplayStartSnapshot.Empty;
         }
 
-        private PhaseDefinitionAsset ResolveTargetPhaseOrFail(GameplayRunResetRequest request, GameplayStartSnapshot snapshot)
-        {
-            PhaseDefinitionAsset targetPhaseRef = request.TargetPolicy switch
-            {
-                GameplayRunResetTargetPolicy.CurrentCatalogPhase => snapshot.PhaseDefinitionRef != null
-                    ? snapshot.PhaseDefinitionRef
-                    : _phaseCatalogRuntimeStateService.CurrentCommitted,
-                GameplayRunResetTargetPolicy.FirstCatalogPhase => _phaseDefinitionCatalog.ResolveInitialOrFail(),
-                _ => null,
-            };
-
-            if (targetPhaseRef == null || !targetPhaseRef.PhaseId.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(GameplaySessionRunResetService),
-                    $"[FATAL][H1][GameplaySessionFlow][RunReset] Could not resolve target phase. kind='{request.Kind}' targetPolicy='{request.TargetPolicy}' reason='{Normalize(request.Reason)}'.");
-            }
-
-            return targetPhaseRef;
-        }
-
         private SceneRouteId ResolveGameplayRouteId(GameplayStartSnapshot snapshot)
         {
             return snapshot.MacroRouteId.IsValid
@@ -137,14 +106,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
                 : _navigationService.ResolveGameplayRouteIdOrFail();
         }
 
-        private void CloseRunLevelContexts(GameplayRunResetRequest request, string normalizedReason)
+        private void ClearRestartContext(string reason)
         {
-            _runContinuationOwnershipService.ClearCurrentContext($"RunReset/{request.Kind}");
-            _postRunResultService.Clear($"RunReset/{request.Kind}");
-            _restartContextService.Clear(normalizedReason);
+            _restartContextService.Clear(reason);
         }
 
-        private void FreezeTargetPhase(PhaseDefinitionAsset targetPhaseRef, GameplayStartSnapshot baseSnapshot, string reason)
+        private void ApplyExplicitTargetPhaseState(PhaseDefinitionAsset targetPhaseRef, GameplayStartSnapshot baseSnapshot, string reason)
         {
             _phaseCatalogRuntimeStateService.SetPendingTarget(targetPhaseRef, reason);
             _phaseCatalogRuntimeStateService.CommitCurrentTarget(targetPhaseRef, reason);
@@ -159,13 +126,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
                 string.Empty);
 
             _restartContextService.UpdateGameplayStartSnapshot(targetSnapshot);
-        }
-
-        private static string NormalizeReason(GameplayRunResetRequest request)
-        {
-            return string.IsNullOrWhiteSpace(request.Reason)
-                ? $"RunDecision/{request.Kind}"
-                : request.Reason.Trim();
         }
 
         private static string DescribePhase(PhaseDefinitionAsset phaseDefinition)

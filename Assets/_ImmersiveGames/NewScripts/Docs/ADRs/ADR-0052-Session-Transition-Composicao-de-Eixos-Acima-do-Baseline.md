@@ -131,7 +131,7 @@ Mapa minimo das continuidades atuais:
 - `AdvancePhase` -> `ContinuityAxis + PhaseTransitionAxis + ContentSpawnAxis + CarryOverAxis`
 - `RestartCurrentPhase` -> `ContinuityAxis + PhaseTransitionAxis + WorldResetAxis + ContentSpawnAxis + CarryOverAxis`
 - `ExitToMenu` -> `ContinuityAxis + Handoff`
-- `EndRun` -> `ContinuityAxis + Terminal`
+- `TerminateRun` -> `ContinuityAxis + Terminal`
 
 Nesta etapa, `ReconstructionAxis` permanece apenas como vocabulário reservado e nao como comportamento novo.
 

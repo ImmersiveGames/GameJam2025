@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
         AdvancePhase = 1,
         RestartCurrentPhase = 2,
         ExitToMenu = 3,
-        EndRun = 4,
+        TerminateRun = 4,
         ResetRun = 5,
         Retry = 6,
     }
