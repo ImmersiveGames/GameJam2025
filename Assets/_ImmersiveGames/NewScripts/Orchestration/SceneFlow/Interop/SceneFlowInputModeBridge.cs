@@ -1,7 +1,9 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Events;
+using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Core.Logging;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Navigation.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition.Runtime;
@@ -19,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Interop
     /// <summary>
     /// OWNER: sincronizacao de intencao de InputMode orientada por eventos de transicao.
     /// NAO E OWNER: execucao da transicao de cena e seus gates.
-    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; publica apenas request events.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; delega a emissao canonica ao SessionIntegration.
     /// Fases tocadas: TransitionStarted e TransitionCompleted.
     /// </summary>
     public sealed class SceneFlowInputModeBridge : IDisposable
@@ -100,8 +102,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Interop
 
             if (TryGetInputModeRequest(evt.context.RouteKind, out var requestKind, out var mode, out var map, out var reason))
             {
-                EventBus<InputModeRequestEvent>.Raise(
-                    new InputModeRequestEvent(requestKind, reason, "SceneFlow", signature));
+                PublishInputModeRequest(requestKind, reason, signature);
 
                 LogObsInputModeApplied(
                     mode: mode,
@@ -116,6 +117,37 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Interop
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
                 $"[InputMode] RouteKind nao reconhecido ('{evt.context.RouteKind}'); input mode nao alterado. targetScene='{evt.context.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void PublishInputModeRequest(
+            InputModeRequestKind requestKind,
+            string reason,
+            string signature)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegration) || sessionIntegration == null)
+            {
+                HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para request de InputMode kind='{requestKind}' reason='{reason}' signature='{signature}'.");
+                return;
+            }
+
+            switch (requestKind)
+            {
+                case InputModeRequestKind.Gameplay:
+                    sessionIntegration.RequestGameplayInputMode(reason, "SceneFlow", signature);
+                    return;
+                case InputModeRequestKind.FrontendMenu:
+                    sessionIntegration.RequestFrontendMenuInputMode(reason, "SceneFlow", signature);
+                    return;
+                case InputModeRequestKind.PauseOverlay:
+                    sessionIntegration.RequestPauseOverlayInputMode(reason, "SceneFlow", signature);
+                    return;
+                case InputModeRequestKind.Unspecified:
+                default:
+                    HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                        $"[FATAL][H1][InputModes] Unsupported request kind '{requestKind}' while delegating SceneFlow input mode.");
+                    return;
+            }
         }
 
         private static bool TryGetInputModeRequest(

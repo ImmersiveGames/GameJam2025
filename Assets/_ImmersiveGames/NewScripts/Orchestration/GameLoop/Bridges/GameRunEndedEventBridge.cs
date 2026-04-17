@@ -11,6 +11,7 @@ using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -168,20 +169,22 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 string sceneName = SceneManager.GetActiveScene().name;
                 bool isGameplayScene = IsGameplayScene();
 
-                if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var phaseRuntimeService) ||
-                    phaseRuntimeService == null)
+                if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegrationService) ||
+                    sessionIntegrationService == null)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IGameplayPhaseRuntimeService nao foi encontrado no escopo global.");
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas ISessionIntegrationContextService nao foi encontrado no escopo global.");
                     return;
                 }
 
-                if (!phaseRuntimeService.TryGetCurrent(out var phaseRuntime) || !phaseRuntime.IsValid)
+                if (!sessionIntegrationService.TryGetCurrent(out var sessionIntegration) || !sessionIntegration.HasCoreContext)
                 {
                     DebugUtility.LogError<GameRunEndedEventBridge>(
-                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas o runtime da phase e invalido.");
+                        "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas o contexto de Session Integration e invalido.");
                     return;
                 }
+
+                GameplayPhaseRuntimeSnapshot phaseRuntime = sessionIntegration.PhaseRuntime;
 
                 if (!DependencyManager.Provider.TryGetGlobal<IPostRunResultService>(out var resultService) || resultService == null)
                 {
@@ -226,15 +229,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                     intent,
                     runResult));
 
-                string phaseEntrySignature = phaseRuntime.SessionContext.HasSessionSignature
-                    ? phaseRuntime.SessionContext.SessionSignature
+                string phaseEntrySignature = sessionIntegration.SessionContext.HasSessionSignature
+                    ? sessionIntegration.SessionContext.SessionSignature
                     : phaseRuntime.PhaseRuntimeSignature;
                 PhaseCompleted phaseCompleted = new PhaseCompleted(
                     phaseRuntime,
                     intent,
                     evt.Outcome,
                     nameof(GameRunEndedEventBridge),
-                    phaseRuntime.HasPhaseDefinitionRef ? phaseRuntime.SessionContext.SelectionVersion : 0,
+                    phaseRuntime.HasPhaseDefinitionRef ? sessionIntegration.SessionContext.SelectionVersion : 0,
                     phaseEntrySignature);
 
                 if (!phaseCompleted.IsValid)

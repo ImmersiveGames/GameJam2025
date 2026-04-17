@@ -4,12 +4,8 @@ using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Experience.Frontend.UI.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges;
-using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
-using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
-using _ImmersiveGames.NewScripts.Orchestration.SessionTransition.Bootstrap;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
 {
@@ -39,9 +35,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
             }
 
             EnsureNavigationCoreComposition();
-            EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
-            EnsureGameplaySessionRunResetService();
-            SessionTransitionBootstrap.ComposeRuntime();
             NavigationAdaptersBootstrap.ComposeRuntime(bootstrapConfig);
             EnsureNavigationModuleComposition();
 
@@ -100,96 +93,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] IFrontendQuitService missing from global DI before module composition checkpoint.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var continuityService) || continuityService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameplaySessionFlowContinuityService missing from global DI before module composition checkpoint.");
-            }
-
             DebugUtility.Log(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters + GameplaySessionFlow continuity seam'.",
+                "[OBS][NavigationCore][Operational] Runtime composition consolidated. scope='NavigationCore + NavigationAdapters'.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void EnsureGameplaySessionFlowContinuityService(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
-            }
-
-            IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService);
-            IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
-
-            var service = new GameplaySessionFlowContinuityService(
-                navigationService,
-                restartContextService,
-                phaseResetExecutor,
-                phaseDefinitionCatalog);
-
-            DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);
-
-            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore][Operational] IGameplaySessionFlowContinuityService registrado como continuity seam canonical.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void EnsureGameplaySessionRunResetService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionRunResetService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var phaseCatalogRuntimeStateService) || phaseCatalogRuntimeStateService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationCore] IPhaseCatalogRuntimeStateService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
-            }
-
-            var service = new GameplaySessionRunResetService(
-                restartContextService,
-                navigationService,
-                phaseCatalogRuntimeStateService);
-
-            DependencyManager.Provider.RegisterGlobal<IGameplaySessionRunResetService>(service);
-
-            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
-                "[OBS][NavigationCore][Operational] IGameplaySessionRunResetService registrado como run-reset seam canonical.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static IPhaseDefinitionCatalog ResolveOptionalPhaseDefinitionCatalog(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (bootstrapConfig?.NavigationCatalog is not GameNavigationCatalogAsset navigationCatalog)
-            {
-                return null;
-            }
-
-            if (!navigationCatalog.IsGameplayPhaseEnabledOrFail())
-            {
-                return null;
-            }
-
-            return navigationCatalog.ResolveGameplayPhaseCatalogOrFail();
         }
     }
 }

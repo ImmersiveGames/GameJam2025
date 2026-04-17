@@ -4,6 +4,9 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 
 ## Canon vivo
 
+- `Docs/ADRs/ADR-0057-Base-1.0-Leitura-Sistemica-Composta-entre-Baseline-4.0-Session-Integration-e-Camadas-Semanticas.md`
+- `Docs/ADRs/ADR-0056-Baseline-40-como-executor-tecnico-fino-e-fronteira-com-GameplaySessionFlow.md`
+- `Docs/ADRs/ADR-0055-Seam-de-Integracao-Semantica-de-Sessao-como-area-propria-da-arquitetura.md`
 - `Docs/ADRs/ADR-0052-Session-Transition-Composicao-de-Eixos-Acima-do-Baseline.md`
 - `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`
 - `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md`
@@ -17,9 +20,19 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 - `Docs/ADRs/ADR-0038-Modular-DI-Registration-and-Module-Installers.md`
 - `Docs/ADRs/ADR-0039-Canonical-Scene-Identity-and-Addressables-Seam.md`
 
+## Base 1.0 operacional
+
+| Camada | ADR | Papel |
+| --- | --- | --- |
+| Leitura composta do sistema | `ADR-0057` | referencia operacional primaria |
+| Baseline tecnico fino | `ADR-0056` | executor tecnico fino |
+| Session Integration | `ADR-0055` | seam explicito acima do baseline |
+| Antecedentes semanticos e de composicao | `ADR-0045`, `ADR-0046`, `ADR-0047`, `ADR-0052` | base de leitura para gameplay composition e session transition |
+
 ## Leitura atual
 
-- A camada acima do baseline para transformacao composta de sessao/runtime e `Session Transition`, documentada em `ADR-0052`.
+- A leitura operacional do sistema passa por `Base 1.0`: baseline tecnico fino -> `Session Integration` -> camadas semanticas acima do baseline.
+- A camada acima do baseline para transformacao composta de sessao/runtime continua sendo `Session Transition`, documentada em `ADR-0052`.
 - O centro semantico do gameplay e `Gameplay Runtime Composition`.
 - `GameplaySessionFlow` e o primeiro bloco interno desse centro.
 - `PhaseDefinition` e a fonte de verdade autoral da phase.
@@ -30,9 +43,12 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 
 ## Precedencia documental
 
+- `ADR-0057` governa a leitura composta do sistema.
+- `ADR-0056` governa o baseline tecnico fino.
+- `ADR-0055` governa o seam de `Session Integration`.
+- `ADR-0045`, `ADR-0046`, `ADR-0047` e `ADR-0052` continuam como antecedentes semanticos e de composicao.
 - `ADR-0050` governa a entrada local da phase.
 - `ADR-0051` governa a saida local da phase e a continuidade macro pos-fechamento.
-- `ADR-0052` governa a camada acima do baseline / session transition.
 
 ## Historico e archive
 

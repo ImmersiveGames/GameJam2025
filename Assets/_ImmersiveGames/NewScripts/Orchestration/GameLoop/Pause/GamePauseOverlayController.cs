@@ -14,11 +14,11 @@
 using System;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Pause
@@ -52,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Pause
         [Inject] private IPauseCommands _pauseCommands;
         [Inject] private IPauseStateService _pauseStateService;
         [Inject] private IGameNavigationService _navigationService;
+        [Inject] private ISessionIntegrationContextService _sessionIntegrationContextService;
 
         // Run lifecycle gating (mesma regra do Hotkey)
         private bool _runActive;
@@ -194,9 +195,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Pause
             }
 
             _ = ObserveAsync(_navigationService.GoToMenuAsync(ExitToMenuReason), ExitToMenuReason);
-
-            EventBus<InputModeRequestEvent>.Raise(
-                new InputModeRequestEvent(InputModeRequestKind.FrontendMenu, "PauseOverlay/ReturnToMenuFrontend", "PauseOverlay"));
+            PublishFrontendMenuInputMode("PauseOverlay/ReturnToMenuFrontend");
         }
 
         private static async System.Threading.Tasks.Task ObserveAsync(System.Threading.Tasks.Task task, string reason)
@@ -347,11 +346,38 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Pause
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(GamePauseOverlayController),
-                $"[OBS][InputMode] Request mode='PauseOverlay' map='UI' phase='Pause' reason='{showReason}' source='PauseOverlay'.",
+                $"[OBS][InputMode] Request mode='PauseOverlay' map='UI' phase='Pause' reason='{showReason}' source='SessionIntegration'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<InputModeRequestEvent>.Raise(
-                new InputModeRequestEvent(InputModeRequestKind.PauseOverlay, showReason, "PauseOverlay"));
+            PublishPauseOverlayInputMode(showReason);
+        }
+
+        private void PublishFrontendMenuInputMode(string reason)
+        {
+            EnsureDependenciesInjected();
+
+            if (_sessionIntegrationContextService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para FrontendMenu input mode. reason='{reason}'.");
+                return;
+            }
+
+            _sessionIntegrationContextService.RequestFrontendMenuInputMode(reason, "PauseOverlay");
+        }
+
+        private void PublishPauseOverlayInputMode(string reason)
+        {
+            EnsureDependenciesInjected();
+
+            if (_sessionIntegrationContextService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para PauseOverlay input mode. reason='{reason}'.");
+                return;
+            }
+
+            _sessionIntegrationContextService.RequestPauseOverlayInputMode(reason, "PauseOverlay");
         }
 
         private static bool WasEscapePressedThisFrame()

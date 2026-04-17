@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.SimulationGate;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
@@ -30,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Bindings
         [Inject] private ISimulationGateService _gateService;
         [Inject] private IWorldSpawnServiceRegistry _spawnRegistry;
         [Inject] private IActorRegistry _actorRegistry;
-        [Inject] private IGameplayParticipationFlowService _participationFlowService;
+        [Inject] private ISessionIntegrationContextService _sessionIntegrationContextService;
         [Inject] private SceneResetHookRegistry _hookRegistry;
 
         private readonly SceneResetPipeline _pipeline = SceneResetPipeline.CreateDefault();
@@ -158,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.ResetInterop.Bindings
                     _gateService,
                     _spawnRegistry?.Services,
                     _actorRegistry,
-                    _participationFlowService,
+                    _sessionIntegrationContextService,
                     DependencyManager.Provider,
                     _sceneName,
                     _hookRegistry,

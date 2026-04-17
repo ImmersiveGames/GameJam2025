@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Infrastructure.Config;
 using _ImmersiveGames.NewScripts.Orchestration.Navigation;
-using _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 
@@ -46,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
             RegisterRestartContextService();
             EnsureGameplayParticipationFlowOwner();
             EnsureGameplayPhaseFlowOwner();
+            RegisterSessionIntegrationContextService();
             RegisterPhaseContentUnloadSupplementProvider();
             RegisterPhaseContentCompletionCleaner();
             RegisterPhaseNextPhaseSelectionService();
@@ -218,6 +219,46 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Bootstrap
                     "[OBS][PhaseDefinition][Core] NextPhase composition service registered in global DI.",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private static void RegisterSessionIntegrationContextService()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionContextService>(out var sessionContextService) || sessionContextService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplaySessionContextService missing from global DI before session integration registration.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var phaseRuntimeService) || phaseRuntimeService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayPhaseRuntimeService missing from global DI before session integration registration.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplayParticipationFlowService>(out var participationService) || participationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayParticipationFlowService missing from global DI before session integration registration.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var existingService) || existingService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<ISessionIntegrationContextService>(
+                    new SessionIntegrationContextService(sessionContextService, phaseRuntimeService, participationService));
+
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][SessionIntegration][Core] SessionIntegrationContextService registrado no DI global como seam operacional.",
+                    DebugUtility.Colors.Info);
+                GameplaySessionFlowCompletionGateComposer.ComposeOrValidate();
+                return;
+            }
+
+            if (!ReferenceEquals(existingService.SessionContextService, sessionContextService) ||
+                !ReferenceEquals(existingService.PhaseRuntimeService, phaseRuntimeService) ||
+                !ReferenceEquals(existingService.ParticipationService, participationService))
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][SessionIntegration] SessionIntegrationContextService mismatch between DI binding and phase-side owners.");
+            }
+
+            GameplaySessionFlowCompletionGateComposer.ComposeOrValidate();
         }
 
         private static void RegisterRestartContextService()

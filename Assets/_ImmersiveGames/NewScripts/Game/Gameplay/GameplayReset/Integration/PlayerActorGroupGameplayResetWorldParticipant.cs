@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Core;
-using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
     public sealed class PlayerActorGroupGameplayResetWorldParticipant : IActorGroupGameplayResetWorldParticipant
     {
         private IActorGroupGameplayResetOrchestrator _actorGroupGameplayReset;
-        private IGameplayParticipationFlowService _participationFlowService;
+        private ISessionIntegrationContextService _sessionIntegrationContextService;
         private string _sceneName = string.Empty;
         private bool _dependenciesResolved;
 
@@ -63,14 +63,14 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration
             var provider = DependencyManager.Provider;
 
             provider.TryGetForScene(_sceneName, out _actorGroupGameplayReset);
-            provider.TryGetGlobal<IGameplayParticipationFlowService>(out _participationFlowService);
+            provider.TryGetGlobal<ISessionIntegrationContextService>(out _sessionIntegrationContextService);
 
             _dependenciesResolved = true;
         }
 
         private string DescribeParticipation()
         {
-            if (_participationFlowService == null || !_participationFlowService.TryGetCurrent(out var snapshot))
+            if (_sessionIntegrationContextService == null || !_sessionIntegrationContextService.TryGetCurrentParticipation(out var snapshot))
             {
                 return string.Empty;
             }

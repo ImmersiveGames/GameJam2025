@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -14,9 +15,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneFlow.Readiness.Runtime
         public bool IsGameplayScene()
         {
             if (DependencyManager.Provider != null &&
-                DependencyManager.Provider.TryGetGlobal<IGameplaySessionContextService>(out var sessionContextService) &&
-                sessionContextService != null &&
-                sessionContextService.TryGetCurrent(out GameplaySessionContextSnapshot currentSession) &&
+                DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegrationService) &&
+                sessionIntegrationService != null &&
+                sessionIntegrationService.TryGetCurrentSessionContext(out GameplaySessionContextSnapshot currentSession) &&
                 currentSession.IsValid)
             {
                 return true;

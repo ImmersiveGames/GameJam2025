@@ -1,7 +1,8 @@
 using System;
 using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
-namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
+
+namespace _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime
 {
     public sealed class RestartContextService : IRestartContextService, IDisposable
     {
@@ -70,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
                 {
                     if (incoming == _selectionVersionCounter)
                     {
-                    DebugUtility.Log<RestartContextService>(
+                        DebugUtility.Log<RestartContextService>(
                             $"[OBS][GameplaySessionFlow] GameplayStartSnapshotWrite dedupe reason='same_selection_version' v='{incoming}' routeId='{snapshot.MacroRouteId}' phaseRef='{(snapshot.HasPhaseDefinitionRef ? snapshot.PhaseDefinitionRef.name : "<none>")}' localContentId='{snapshot.LocalContentId}'",
                             DebugUtility.Colors.Info);
                     }

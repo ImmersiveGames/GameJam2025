@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Infrastructure.InputModes.Runtime
 {
     /// <summary>
     /// Coordinator canonico do trilho de requests de InputMode.
-    /// Ele e o unico writer do IInputModeService no runtime canonico.
+    /// Ele e o unico writer do IInputModeService no runtime canonico e opera apenas requests ja canonizados.
     /// </summary>
     public sealed class InputModeCoordinator : IDisposable
     {

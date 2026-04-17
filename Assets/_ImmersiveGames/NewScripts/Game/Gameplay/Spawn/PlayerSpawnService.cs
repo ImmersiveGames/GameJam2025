@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.Game.Gameplay.State.Core;
-using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 {
@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
     public sealed class PlayerSpawnService : ActorSpawnServiceBase
     {
         private readonly IGameplayStateGate _gameplayStateService;
-        private readonly IGameplayParticipationFlowService _participationFlowService;
+        private readonly ISessionIntegrationContextService _sessionIntegrationContextService;
 
         public PlayerSpawnService(
             IUniqueIdFactory uniqueIdFactory,
@@ -21,11 +21,11 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
             IWorldSpawnContext context,
             GameObject prefab,
             IGameplayStateGate gameplayStateService,
-            IGameplayParticipationFlowService participationFlowService)
+            ISessionIntegrationContextService sessionIntegrationContextService)
             : base(uniqueIdFactory, actorRegistry, context, prefab)
         {
             _gameplayStateService = gameplayStateService;
-            _participationFlowService = participationFlowService;
+            _sessionIntegrationContextService = sessionIntegrationContextService;
         }
 
         public override string Name => nameof(PlayerSpawnService);
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.Game.Gameplay.Spawn
 
         private void LogParticipationBridge()
         {
-            if (_participationFlowService == null || !_participationFlowService.TryGetCurrent(out var snapshot))
+            if (_sessionIntegrationContextService == null || !_sessionIntegrationContextService.TryGetCurrentParticipation(out var snapshot))
             {
                 return;
             }

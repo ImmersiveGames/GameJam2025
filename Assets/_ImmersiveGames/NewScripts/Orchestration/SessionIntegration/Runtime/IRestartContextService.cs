@@ -1,6 +1,6 @@
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
 
-namespace _ImmersiveGames.NewScripts.Orchestration.LevelLifecycle.Runtime
+namespace _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime
 {
     public interface IRestartContextService
     {

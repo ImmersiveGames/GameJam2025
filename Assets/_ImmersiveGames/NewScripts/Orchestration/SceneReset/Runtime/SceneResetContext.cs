@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Actors.Core;
 using _ImmersiveGames.NewScripts.Game.Gameplay.GameplayReset.Integration;
 using _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Orchestration.SessionIntegration.Runtime;
 using _ImmersiveGames.NewScripts.Orchestration.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.Game.Gameplay.Spawn;
 using _ImmersiveGames.NewScripts.Orchestration.WorldReset.Domain;
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
             IActorRegistry actorRegistry,
-            IGameplayParticipationFlowService participationFlowService,
+            ISessionIntegrationContextService sessionIntegrationContextService,
             IDependencyProvider provider,
             string sceneName,
             SceneResetHookRegistry hookRegistry,
@@ -34,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         {
             SpawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             ActorRegistry = actorRegistry;
-            ParticipationFlowService = participationFlowService;
+            SessionIntegrationContextService = sessionIntegrationContextService;
             _sceneName = string.IsNullOrWhiteSpace(sceneName) ? "<unknown>" : sceneName;
             ResetContext = resetContext;
             StartLog = startLog ?? string.Empty;
@@ -51,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         /// </summary>
         public IReadOnlyList<IWorldSpawnService> SpawnServices { get; }
         public IActorRegistry ActorRegistry { get; }
-        public IGameplayParticipationFlowService ParticipationFlowService { get; }
+        public ISessionIntegrationContextService SessionIntegrationContextService { get; }
         public WorldResetContext? ResetContext { get; }
         public string StartLog { get; }
         public string CompletionLog { get; }
@@ -141,12 +142,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.SceneReset.Runtime
         {
             snapshot = ParticipationSnapshot.Empty;
 
-            if (ParticipationFlowService == null)
+            if (SessionIntegrationContextService == null)
             {
                 return false;
             }
 
-            return ParticipationFlowService.TryGetCurrent(out snapshot);
+            return SessionIntegrationContextService.TryGetCurrentParticipation(out snapshot);
         }
 
         public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
