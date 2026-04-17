@@ -1,4 +1,4 @@
-# ADR-0058 - Actors como bloco semantico acima da Base 1.0
+# ADR-0058 - ActorSystem como modulo semantico proprio acima da Base 1.0
 
 ## Status
 - Estado: Aceito
@@ -8,189 +8,154 @@
 
 ## 1. Contexto
 
-`ADR-0055` congela `Session Integration` como seam explicito acima do baseline.
-`ADR-0056` congela o Baseline 4.0 como executor tecnico fino.
-`ADR-0057` congela a `Base 1.0` como leitura sistemica composta entre baseline tecnico, `Session Integration` e camadas semanticas acima.
+`ADR-0055` define `SessionIntegration` como seam explicito entre semantica de sessao e operacao adjacente.
+`ADR-0056` define baseline tecnico fino.
+`ADR-0057` define `Base 1.0` como leitura sistemica em camadas.
 
-Dentro dessa leitura composta, o eixo de `Actors` ja existe de forma real, mas ainda esta fisicamente espalhado entre:
-
-- `Game/Gameplay/Actors`
-- `Spawn`
-- `GameplayReset`
-- `SessionIntegration`
-- `Experience/GameplayCamera`
-- `InputModes`
-- `Infrastructure/Composition`
-
-O sistema nao precisa de uma nova arquitetura base.
-Precisa de um bloco semantico explicito para que o eixo de `Actors` pare de ser lido como costura oportunista entre owners operacionais e semanticos.
+A topologia modular de `NewScripts` esta congelada e operacional. Dentro dela, o eixo de actors ja possui massa arquitetural suficiente (identidade, role, relevancia e mapeamento de participacao), mas ainda cruza modulos sem uma fronteira formal unica.
 
 ## 2. Problema
 
-Sem um bloco semantico proprio, `Actors` tende a ser confundido com:
+Sem um modulo proprio para o eixo de actors, o sistema tende a confundir semantica com execucao operacional:
 
-- registry operacional de vivos
-- spawn e despawn
+- `ActorRegistry` como se fosse owner semantico
+- `Spawn` como se definisse significado
+- reset operacional como se definisse presenca semantica
+- binding de input/camera como se fosse semantica de actor
+
+Isso reduz auditabilidade de ownership e reabre acoplamentos indevidos.
+
+## 3. Decisao central
+
+Adota-se `ActorSystem` como **modulo proprio**, **fino** e **nao-executor**, com seams explicitos.
+
+Formula oficial:
+- `ActorSystem` e um modulo semantico proprio.
+- `ActorSystem` consome contexto semantico de `SessionFlow`.
+- `ActorSystem` conversa com `GameplayRuntime` via ports/contratos explicitos.
+- `ActorSystem` pode colaborar com `ResetFlow` e `InputModes` sem absorver execucao.
+
+## 4. Fronteira arquitetural
+
+### 4.1 O que entra no `ActorSystem`
+
+- semantica de identidade de actor
+- semantica de role e relevancia
+- mapeamento participacao -> actor-alvo
+- contratos de entrada/saida para leitura semantica
+- read model semantico (snapshots/queries)
+
+### 4.2 O que fica fora do `ActorSystem`
+
+- spawn/despawn
 - reset operacional
-- binding de input e camera
-- bootstrap de cena
-- infraestrutura genérica de ids
+- input binding
+- camera binding
+- ownership de `SceneFlow`
+- infraestrutura neutra
 
-Essa mistura reabre leituras erradas como:
+### 4.3 O que continua nos modulos adjacentes
 
-- `ActorRegistry` como owner semantico
-- spawn como definidor de significado
-- reset como owner de presencia
-- `SessionIntegration` como dono do bloco de actors
-- input/camera como semantica de actor
+- `SessionFlow`: contexto semantico de sessao e participacao.
+- `GameplayRuntime`: execucao concreta de presenca operacional; `ActorRegistry` e `Spawn` permanecem aqui.
+- `ResetFlow`: pipeline de reset operacional.
+- `InputModes`: binding operacional de input.
+- `Foundation`: base neutra transversal; nao e owner do eixo de actors.
 
-O resultado e um eixo que existe, mas nao tem fronteira arquitetural formal.
+## 5. Shape recomendado
 
-## 3. Decisao
+```text
+ActorSystem
+├── Semantic
+│   ├── Identity
+│   ├── Roles
+│   ├── Relevance
+│   └── ParticipationMapping
+├── Contracts
+│   ├── Inbound
+│   └── Outbound
+├── ReadModel
+│   ├── Snapshots
+│   └── Queries
+└── Integration
+    ├── SessionFlow
+    ├── GameplayRuntime
+    ├── ResetFlow
+    └── InputModes
+```
 
-Adota-se **Actors** como um **bloco semantico proprio acima da Base 1.0**.
+Regras do shape:
+- modulo fino; sem subpastas de execucao operacional.
+- `Integration` existe para seams explicitos, nao para absorver ownership dos modulos vizinhos.
 
-O bloco de `Actors` responde por:
+## 6. Relacao com modulos adjacentes
 
-- identidade de actor
-- tipo / role de actor
-- presenca semantica
-- mapeamento participacao -> actor
-- regras canonicas de leitura sobre quem e o actor relevante
+### SessionFlow
+- fornece contexto semantico (sessao/participacao).
+- `ActorSystem` consome esse contexto para resolver actor relevante.
 
-O bloco de `Actors` nao e um novo executor operacional.
-Ele e o lugar onde a leitura semantica do eixo fica canonica e auditavel.
+### GameplayRuntime
+- segue owner de materializacao e presenca operacional.
+- `ActorRegistry` continua em `GameplayRuntime`.
+- `Spawn` continua em `GameplayRuntime`.
 
-## 4. O que `Actors` nao e
+### ResetFlow
+- permanece owner de reset operacional.
+- `ActorSystem` apenas fornece criterio semantico quando necessario.
 
-`Actors` nao e owner de:
+### InputModes
+- permanece owner de input binding.
+- `ActorSystem` nao executa binding.
 
-- spawn
-- reset
-- input
-- camera
-- `ActorRegistry`
-- bootstrap de cena
-- infraestrutura genérica de ids
+### Foundation
+- permanece neutra e transversal.
+- nao absorve semantica de actor.
 
-`Actors` pode conversar com esses dominios, mas nao deve absorve-los.
+## 7. Consequencias
 
-## 5. Ownerships e boundaries
+Positivas:
+- ownership do eixo de actors fica explicito e auditavel.
+- separacao semantico vs operacional fica preservada.
+- reduz risco de `ActorRegistry`/`Spawn` virarem pseudo-owners semanticos.
 
-### Ownerships que permanecem
+Trade-offs:
+- requer disciplina de contratos entre modulos.
+- evita atalhos de consolidar execucao dentro de `ActorSystem`.
 
-- `GameplayParticipationFlowService` continua sendo owner semantico de `who participates`, `primary participant` e `local participant`.
-- `ActorRegistry` continua sendo source of truth operacional de atores vivos na cena.
-- spawn services continuam sendo owners operacionais de criacao, destruicao e registro de actors.
-- reset continua sendo operacional.
-- `SessionIntegration` continua sendo o seam canonico de entrada e conversa entre semantica e execucao.
-- input e camera continuam sendo binders/locators operacionais.
+## 8. Plano curto de materializacao
 
-### Fronteira do novo bloco
+1. Criar raiz fisica `ActorSystem` com o shape recomendado (sem mover execucao).
+2. Extrair/centralizar contratos semanticos minimos em `ActorSystem/Contracts`.
+3. Conectar `SessionFlow` -> `ActorSystem` por inbound contracts.
+4. Conectar `ActorSystem` -> `GameplayRuntime` por outbound ports read-oriented.
+5. Ajustar colaboracoes com `ResetFlow` e `InputModes` sem mover ownership operacional.
+6. Validar compile + smoke do fluxo principal sem reabrir topologia macro.
 
-`Actors` fica acima do baseline e abaixo dos consumidores operacionais adjacentes.
+## 9. Uso como padrao (nao template obrigatorio)
 
-Ele:
+Este ADR registra um padrao util de consolidacao semantica com seams explicitos.
 
-- consome `SessionIntegration`
-- orienta semanticamente spawn e reset
-- usa `ActorRegistry` como truth source operacional
-- nao executa spawn/reset diretamente
-- nao assume ownership de input/camera
+Regra formal:
+- pode servir como **modelo de referencia** para outros eixos com problemas equivalentes de ownership;
+- **nao** e template automatico obrigatorio para todos os modulos.
 
-## 6. Relacao com os modulos adjacentes
-
-### Participation
-
-Participacao continua definida em `GameplayParticipationFlowService`.
-`Actors` consome essa verdade para resolver quem e o actor relevante em cada contexto.
-
-### `SessionIntegration`
-
-`SessionIntegration` e a porta correta de entrada/conversa.
-Ele transporta contexto canonico entre semantica e operacao.
-`Actors` nao substitui esse seam e nao deve virar o seam.
-
-### Spawn
-
-Spawn materializa.
-`Actors` pode orientar semanticamente quem deve ser materializado, mas a execucao continua no layer de spawn.
-
-### Reset
-
-Reset reorganiza o estado operacional do conjunto de actors.
-`Actors` define a leitura semantica que pode alimentar reset, mas nao executa a pipeline.
-
-### `ActorRegistry`
-
-`ActorRegistry` e o registro operacional de atores vivos.
-Ele e consultado por `Actors`, mas nao define significado semantico.
-
-### Input
-
-Input continua sendo ponte operacional para o actor vivo.
-`PlayerInputLocator` permanece no lado operacional.
-
-### Camera
-
-Camera continua sendo binding operacional por actor/player.
-`GameplayCameraBinder` permanece do lado operacional.
-
-### Futuros binders / interactions
-
-Futuros binders e interactions devem entrar como adaptadores ou extensoes do bloco `Actors`, desde que nao assumam ownership de spawn, reset ou do seam `SessionIntegration`.
-
-## 7. Misturas atuais que este ADR quer corrigir
-
-O bloco de `Actors` existe hoje de forma espalhada e alguns pontos ainda carregam ambiguidade:
-
-- `PlayerSpawnService` mistura spawn com leitura de participacao como bridge operacional
-- `PlayerActorGroupGameplayResetWorldParticipant` mistura reset de `Players` com bridge semantico-operacional
-- `ActorGroupGameplayResetSceneScanDiscoveryStrategy` ainda funciona como fallback operacional historico e nao deve ser lido como shape principal
-
-Esses pontos nao sao erros por si mesmos.
-Eles sao sinais de que falta a fronteira semantica formal de `Actors`.
-
-## 8. Consequencias
-
-### Positivas
-
-- O eixo de `Actors` passa a ter leitura arquitetural propria.
-- `ActorRegistry` deixa de ser confundido com owner semantico.
-- Spawn, reset, input e camera permanecem no lugar certo.
-- Fica mais facil auditar quem e o actor relevante em cada fluxo.
-- Fica mais facil abrir a proxima frente funcional sem reabrir a Base 1.0.
-
-### Trade-offs
-
-- A consolidacao fisica do eixo ainda pode continuar espalhada por um tempo.
-- Este ADR nao exige mover tudo para um unico bucket operacional.
-- Alguns bridges e fallback operacionais continuam existindo ate haver substitutos claros.
-
-## 9. Ordem recomendada de evolucao
-
-1. Formalizar a fronteira semantica de `Actors`.
-2. Definir o contrato canonico de leitura entre `SessionIntegration` e `Actors`.
-3. Consolidar a ponte spawn/reset em torno desse contrato.
-4. Revisar binders adjacentes apenas se houver ganho real.
-5. Manter `ActorGroupGameplayResetSceneScanDiscoveryStrategy` como fallback ate existir substituto claro.
+Cada caso futuro deve justificar massa semantica real antes de criar modulo proprio.
 
 ## 10. Relacao com ADRs anteriores
 
-Este ADR nao substitui os contratos anteriores.
-Ele os consome e os estende na fronteira correta:
+Este ADR especializa, sem substituir:
 
-- `ADR-0055`: continua owner do seam de integracao semantica de sessao
-- `ADR-0056`: continua owner do baseline tecnico fino
-- `ADR-0057`: continua owner da leitura sistemica composta da Base 1.0
+- `ADR-0055`: seam de sessao permanece canonico.
+- `ADR-0056`: baseline tecnico fino permanece intacto.
+- `ADR-0057`: leitura sistemica da Base 1.0 permanece valida.
 
-`ADR-0058` adiciona apenas o bloco semantico faltante para o eixo de `Actors`.
+`ADR-0058` formaliza o modulo `ActorSystem` dentro dessa base.
 
 ## 11. Fechamento
 
-`Actors` passa a ser lido como bloco semantico proprio acima da Base 1.0.
-`ActorRegistry` continua operacional.
-`SessionIntegration` continua sendo o seam de entrada.
-Spawn, reset, input e camera continuam operacionais.
+`ActorSystem` passa a ser decisao arquitetural oficial: modulo semantico proprio, fino e nao-executor.
 
-O objetivo deste ADR e impedir que o eixo de `Actors` volte a ser interpretado como costura difusa entre ownerships adjacentes.
+`ActorRegistry` e `Spawn` permanecem em `GameplayRuntime`.
+`ResetFlow`, `InputModes`, `SceneFlow` e `Foundation` mantem seus boundaries.
+
+Este contrato fecha a evolucao do eixo de actors sem colapsar ownership operacional.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.ActorSystem.Integration.Bootstrap;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
@@ -69,6 +70,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SessionIntegrationCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(ActorSystemCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(RunEndRailCompositionDescriptor.Descriptor),

@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.ActorSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
@@ -76,7 +77,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             try
             {
-                var playerInputLocator = new PlayerInputLocator();
+                provider.TryGetGlobal<IActorSystemReadModelService>(out var actorSystemReadModelService);
+                var playerInputLocator = new PlayerInputLocator(actorSystemReadModelService);
                 var inputModeService = new InputModeService(playerInputLocator, playerMapName, menuMapName);
                 provider.RegisterGlobal<IPlayerInputLocator>(playerInputLocator);
                 provider.RegisterGlobal<IInputModeService>(inputModeService);
@@ -85,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 if (logVerbose)
                 {
                     DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                        $"[InputMode] IInputModeService registrado no DI global (playerMap='{playerMapName}', menuMap='{menuMapName}').",
+                        $"[InputMode] IInputModeService registrado no DI global (playerMap='{playerMapName}', menuMap='{menuMapName}', actorSystem='{(actorSystemReadModelService != null ? "connected" : "not_connected")}').",
                         DebugUtility.Colors.Info);
                 }
             }
