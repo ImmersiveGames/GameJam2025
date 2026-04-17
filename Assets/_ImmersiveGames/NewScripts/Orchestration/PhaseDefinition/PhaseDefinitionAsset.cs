@@ -117,12 +117,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         }
 
         [Serializable]
-        public sealed class PhaseRunResultStageBlock
-        {
-            public bool hasRunResultStage = false;
-        }
-
-        [Serializable]
         public sealed class PhaseInitialStateEntry
         {
             public string localId = string.Empty;
@@ -144,17 +138,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Header("Initial State")]
         [SerializeField] private PhaseInitialStateBlock initialState = new();
 
-        [Header("Run Result Stage")]
-        [SerializeField] private PhaseRunResultStageBlock runResultStage = new();
-
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
         public PhasePlayersBlock Players => players;
         public PhaseRulesObjectivesBlock RulesObjectives => rulesObjectives;
         public PhaseInitialStateBlock InitialState => initialState;
-        public PhaseRunResultStageBlock RunResultStage => runResultStage;
-
-        public bool HasRunResultStage => runResultStage != null && runResultStage.hasRunResultStage;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -185,7 +173,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             ValidatePlayersBlock(assetOwner);
             ValidateRulesObjectivesBlock(assetOwner);
             ValidateInitialStateBlock(assetOwner);
-            ValidateRunResultStageBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -297,14 +284,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                 });
         }
 
-        private void ValidateRunResultStageBlock(string assetOwner)
-        {
-            if (runResultStage == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing runResultStage block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-        }
-
         private static void ValidateEntries<T>(
             List<T> entries,
             string assetOwner,
@@ -334,11 +313,5 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
-        public string BuildCanonicalIntroContentId()
-        {
-            return PhaseId.IsValid
-                ? $"phase-content:{PhaseId.Value}"
-                : "phase-content:default";
-        }
     }
 }

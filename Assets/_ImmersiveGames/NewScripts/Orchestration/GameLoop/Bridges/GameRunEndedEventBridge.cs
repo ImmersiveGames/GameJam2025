@@ -224,8 +224,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
 
                 continuationOwner.AcceptTerminalFact(new RunContinuationTerminalFact(
                     intent,
-                    runResult,
-                    phaseRuntime.HasRunResultStage));
+                    runResult));
 
                 string phaseEntrySignature = phaseRuntime.SessionContext.HasSessionSignature
                     ? phaseRuntime.SessionContext.SessionSignature
@@ -234,7 +233,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                     phaseRuntime,
                     intent,
                     evt.Outcome,
-                    phaseRuntime.HasRunResultStage,
                     nameof(GameRunEndedEventBridge),
                     phaseRuntime.HasPhaseDefinitionRef ? phaseRuntime.SessionContext.SelectionVersion : 0,
                     phaseEntrySignature);
@@ -247,7 +245,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.Bridges
                 }
 
                 DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow][PhaseCompleted] PhaseCompletedCanonical source='{phaseCompleted.Source}' phaseSignature='{phaseCompleted.PhaseSignature}' outcome='{phaseCompleted.RunOutcome}' hasRunResultStage='{phaseCompleted.HasRunResultStage}' entrySequence='{phaseCompleted.PhaseLocalEntrySequence}' entrySignature='{phaseCompleted.EntrySignature}' reason='{phaseCompleted.RunEndIntent.Reason}'.",
+                    $"[OBS][GameplaySessionFlow][PhaseCompleted] PhaseCompletedCanonical source='{phaseCompleted.Source}' phaseSignature='{phaseCompleted.PhaseSignature}' outcome='{phaseCompleted.RunOutcome}' entrySequence='{phaseCompleted.PhaseLocalEntrySequence}' entrySignature='{phaseCompleted.EntrySignature}' reason='{phaseCompleted.RunEndIntent.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 EventBus<PhaseCompleted>.Raise(phaseCompleted);

@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             _isPresentationAttached = true;
 
             DebugUtility.Log<IntroStagePresenter>(
-                $"[OBS][IntroStage] IntroStagePresenterAttached presenter='{DescribePresenterLabel()}' scene='{gameObject.scene.name}' signature='{_presenterSignature}' introStage='{contract.HasIntroStage}' runResultStage='{contract.HasRunResultStage}' phase='{DescribePhaseName()}' source='scene_local'.",
+                $"[OBS][IntroStage] IntroStagePresenterAttached presenter='{DescribePresenterLabel()}' scene='{gameObject.scene.name}' signature='{_presenterSignature}' introStage='{contract.HasIntroStage}' phase='{DescribePhaseName()}' source='scene_local'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -108,7 +108,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             GUILayout.Label($"phase: {DescribePhaseName()}", _bodyStyle!);
             GUILayout.Label($"signature: {_presenterSignature}", _bodyStyle!);
             GUILayout.Label($"intro: {_contract.HasIntroStage}", _bodyStyle!);
-            GUILayout.Label($"runResult: {_contract.HasRunResultStage}", _bodyStyle!);
             GUILayout.Space(10f);
             GUILayout.FlexibleSpace();
 

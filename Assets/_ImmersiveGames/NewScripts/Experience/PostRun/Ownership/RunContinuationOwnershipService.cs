@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
             HasCurrentContext = true;
 
             DebugUtility.Log<RunContinuationOwnershipService>(
-                $"[OBS][GameplaySessionFlow][RunContinuation] RunContinuationContextMaterialized owner='RunContinuationOwnershipService' signature='{CurrentContext.Signature}' scene='{CurrentContext.SceneName}' frame={CurrentContext.Frame} result='{CurrentContext.Result}' allowedContinuations='[{string.Join(",", CurrentContext.AllowedContinuations)}]' requiresDecision='{CurrentContext.RequiresPlayerDecision}' hasRunResultStage='{CurrentContext.HasRunResultStage}'.",
+                $"[OBS][GameplaySessionFlow][RunContinuation] RunContinuationContextMaterialized owner='RunContinuationOwnershipService' signature='{CurrentContext.Signature}' scene='{CurrentContext.SceneName}' frame={CurrentContext.Frame} result='{CurrentContext.Result}' allowedContinuations='[{string.Join(",", CurrentContext.AllowedContinuations)}]' requiresDecision='{CurrentContext.RequiresPlayerDecision}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<RunContinuationContextMaterializedEvent>.Raise(new RunContinuationContextMaterializedEvent(CurrentContext));
@@ -90,8 +90,7 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
                 terminalFact.Intent,
                 terminalFact.Result,
                 DefaultAllowedContinuations,
-                requiresPlayerDecision,
-                terminalFact.HasRunResultStage);
+                requiresPlayerDecision);
         }
 
         private static string Normalize(string value)

@@ -18,16 +18,14 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
 
     public readonly struct RunContinuationTerminalFact
     {
-        public RunContinuationTerminalFact(RunEndIntent intent, RunResult result, bool hasRunResultStage)
+        public RunContinuationTerminalFact(RunEndIntent intent, RunResult result)
         {
             Intent = intent;
             Result = result;
-            HasRunResultStage = hasRunResultStage;
         }
 
         public RunEndIntent Intent { get; }
         public RunResult Result { get; }
-        public bool HasRunResultStage { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(Intent.Signature) &&
@@ -66,21 +64,18 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
             RunEndIntent intent,
             RunResult result,
             IReadOnlyList<RunContinuationKind> allowedContinuations,
-            bool requiresPlayerDecision,
-            bool hasRunResultStage)
+            bool requiresPlayerDecision)
         {
             Intent = intent;
             Result = result;
             AllowedContinuations = allowedContinuations ?? Array.Empty<RunContinuationKind>();
             RequiresPlayerDecision = requiresPlayerDecision;
-            HasRunResultStage = hasRunResultStage;
         }
 
         public RunEndIntent Intent { get; }
         public RunResult Result { get; }
         public IReadOnlyList<RunContinuationKind> AllowedContinuations { get; }
         public bool RequiresPlayerDecision { get; }
-        public bool HasRunResultStage { get; }
 
         public string Signature => Intent.Signature;
         public string SceneName => Intent.SceneName;

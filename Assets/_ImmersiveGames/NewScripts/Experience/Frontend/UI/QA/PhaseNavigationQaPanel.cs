@@ -712,7 +712,7 @@ namespace _ImmersiveGames.NewScripts.Experience.Frontend.UI.QA
                 ? runtimeSnapshot.PhaseDefinitionRef
                 : selectedPhase;
 
-            return phase != null ? phase.BuildCanonicalIntroContentId() : "<none>";
+            return phase != null ? PhaseDefinitionId.BuildCanonicalIntroContentId(phase.PhaseId) : "<none>";
         }
 
         private static PhaseDefinitionAsset ResolveCurrentPhase(PhaseDefinitionAsset selectedPhase, GameplayPhaseRuntimeSnapshot runtimeSnapshot)

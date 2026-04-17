@@ -222,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             }
 
             DebugUtility.Log<IntroStageLifecycleStateService>(
-                $"[OBS][IntroStage] IntroStageDeferred source='{evt.Source}' contentName='{DescribeSessionContentName(evt.Session)}' v='{evt.Session.SelectionVersion}' hasIntroStage='{evt.Session.HasIntroStage}' hasRunResultStage='{evt.Session.HasRunResultStage}' reason='{Normalize(evt.Session.Reason)}' sessionSignature='{Normalize(evt.Session.SessionSignature)}' gate='SceneTransitionCompletedEvent'.",
+                $"[OBS][IntroStage] IntroStageDeferred source='{evt.Source}' contentName='{DescribeSessionContentName(evt.Session)}' v='{evt.Session.SelectionVersion}' hasIntroStage='{evt.Session.HasIntroStage}' reason='{Normalize(evt.Session.Reason)}' sessionSignature='{Normalize(evt.Session.SessionSignature)}' gate='SceneTransitionCompletedEvent'.",
                 DebugUtility.Colors.Info);
         }
     }
@@ -249,7 +249,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             if (!session.HasIntroStage)
             {
                 DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' reason='{reason}' sessionSignature='{session.SessionSignature}'.",
+                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}'.",
                     DebugUtility.Colors.Info);
 
                 IntroStageSession noContentSession = CreateNoContentSession(session);
@@ -261,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
             {
                 DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' reason='{reason}' sessionSignature='{session.SessionSignature}' detail='presenter_unavailable'.",
+                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}' detail='presenter_unavailable'.",
                     DebugUtility.Colors.Info);
 
                 IntroStageSession noContentSession = CreateNoContentSession(session);
@@ -271,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             }
 
             DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                $"[OBS][IntroStage] IntroStageStartRequested source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' reason='{reason}' sessionSignature='{session.SessionSignature}'.",
+                $"[OBS][IntroStage] IntroStageStartRequested source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}'.",
                 DebugUtility.Colors.Info);
 
             RunIntroStage(session, routeKind, activeSceneName, reason);
@@ -308,7 +308,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 session.PhaseLocalEntrySequence,
                 session.SessionSignature,
                 hasIntroStage: false,
-                hasRunResultStage: session.HasRunResultStage,
                 entrySignature: session.EntrySignature);
         }
 

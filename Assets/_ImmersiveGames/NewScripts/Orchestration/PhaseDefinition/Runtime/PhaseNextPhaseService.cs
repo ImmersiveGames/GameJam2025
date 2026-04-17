@@ -337,7 +337,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public bool ForceFullReload { get; }
 
         public int SelectionVersion => PhaseSelectedEvent.SelectionVersion;
-        public string TargetIntroContentId => TargetPhaseRef != null ? TargetPhaseRef.BuildCanonicalIntroContentId() : string.Empty;
+        public string TargetIntroContentId => TargetPhaseRef != null ? PhaseDefinitionId.BuildCanonicalIntroContentId(TargetPhaseRef.PhaseId) : string.Empty;
         public bool IsValid =>
             CurrentSnapshot.IsValid &&
             TargetPhaseRef != null &&
@@ -601,7 +601,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             string introDispatchSource = "PhaseDefinitionNavigation";
 
             DebugUtility.Log<PhaseNextPhaseEntryHandoffService>(
-                $"[OBS][PhaseFlow][Handoff] PhaseNavigationIntroSessionResolved owner='IntroStageSessionService' direction='{PhaseNextPhaseServiceSupport.DescribeDirection(selectionContext.Direction)}' targetPhaseRef='{targetPhaseName}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' signature='{introSession.SessionSignature}' hasIntroStage='{introSession.HasIntroStage}' hasRunResultStage='{introSession.HasRunResultStage}'.",
+                $"[OBS][PhaseFlow][Handoff] PhaseNavigationIntroSessionResolved owner='IntroStageSessionService' direction='{PhaseNextPhaseServiceSupport.DescribeDirection(selectionContext.Direction)}' targetPhaseRef='{targetPhaseName}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' signature='{introSession.SessionSignature}' hasIntroStage='{introSession.HasIntroStage}'.",
                 DebugUtility.Colors.Info);
 
             using var introWaitCts = CancellationTokenSource.CreateLinkedTokenSource(ct);

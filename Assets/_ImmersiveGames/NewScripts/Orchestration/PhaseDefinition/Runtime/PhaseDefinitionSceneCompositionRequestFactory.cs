@@ -22,11 +22,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             phaseDefinitionRef.ValidateOrFail($"PhaseDefinitionSceneCompositionRequestFactory/Apply correlationId='{correlationId}'");
 
-            IReadOnlyList<string> scenesToLoad = BuildSceneListOrFail(phaseDefinitionRef, correlationId, reason, out string contentMainScene);
+            IReadOnlyList<string> scenesToLoad = BuildSceneListOrFail(phaseDefinitionRef, correlationId, reason, out int resolvedSceneCount);
             IReadOnlyList<string> scenesToUnload = BuildSceneUnloadListOrFail(correlationId, reason, scenesToLoad, forceFullReload);
 
             DebugUtility.Log(typeof(PhaseDefinitionSceneCompositionRequestFactory),
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentTranslated phaseId='{phaseDefinitionRef.PhaseId}' phaseRef='{phaseDefinitionRef.name}' scenesToLoad=[{string.Join(",", scenesToLoad)}] scenesToUnload=[{string.Join(",", scenesToUnload)}] contentMainScene='{contentMainScene}' correlationId='{correlationId}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionContentTranslated phaseId='{phaseDefinitionRef.PhaseId}' phaseRef='{phaseDefinitionRef.name}' resolvedSceneCount='{resolvedSceneCount}' scenesToLoad=[{string.Join(",", scenesToLoad)}] scenesToUnload=[{string.Join(",", scenesToUnload)}] correlationId='{correlationId}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return new SceneCompositionRequest(
@@ -59,11 +59,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             PhaseDefinitionAsset phaseDefinitionRef,
             string correlationId,
             string reason,
-            out string contentMainScene)
+            out int resolvedSceneCount)
         {
             List<string> sceneNames = new List<string>();
             HashSet<string> seenSceneNames = new HashSet<string>(StringComparer.Ordinal);
-            string resolvedMainScene = string.Empty;
             IReadOnlyList<PhaseDefinitionAsset.PhaseContentEntry> entries = phaseDefinitionRef.Content?.entries;
 
             if (entries == null || entries.Count == 0)
@@ -95,27 +94,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                         $"[FATAL][H1][PhaseDefinition] Phase '{phaseDefinitionRef.name}' has duplicate scene name='{sceneName}' at index='{i}'. phaseId='{phaseDefinitionRef.PhaseId}' correlationId='{correlationId}' reason='{reason}'.");
                 }
 
-                if (entry.role == PhaseDefinitionAsset.PhaseSceneRole.Main)
-                {
-                    if (!string.IsNullOrWhiteSpace(resolvedMainScene))
-                    {
-                        HardFailFastH1.Trigger(typeof(PhaseDefinitionSceneCompositionRequestFactory),
-                            $"[FATAL][H1][PhaseDefinition] Phase '{phaseDefinitionRef.name}' has more than one Main scene. previousMainScene='{resolvedMainScene}' duplicateScene='{sceneName}' phaseId='{phaseDefinitionRef.PhaseId}' correlationId='{correlationId}' reason='{reason}'.");
-                    }
-
-                    resolvedMainScene = sceneName;
-                }
-
                 sceneNames.Add(sceneName);
+
             }
 
-            if (string.IsNullOrWhiteSpace(resolvedMainScene))
-            {
-                HardFailFastH1.Trigger(typeof(PhaseDefinitionSceneCompositionRequestFactory),
-                    $"[FATAL][H1][PhaseDefinition] Phase '{phaseDefinitionRef.name}' has no Main scene to anchor the local composition. phaseId='{phaseDefinitionRef.PhaseId}' correlationId='{correlationId}' reason='{reason}'.");
-            }
-
-            contentMainScene = resolvedMainScene;
+            resolvedSceneCount = sceneNames.Count;
             return sceneNames;
         }
 

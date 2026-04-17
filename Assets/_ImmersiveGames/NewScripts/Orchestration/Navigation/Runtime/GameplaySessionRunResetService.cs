@@ -120,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.Navigation.Runtime
                 targetPhaseRef,
                 baseSnapshot.MacroRouteId,
                 baseSnapshot.MacroRouteRef,
-                targetPhaseRef.BuildCanonicalIntroContentId(),
+                PhaseDefinitionId.BuildCanonicalIntroContentId(targetPhaseRef.PhaseId),
                 reason,
                 0,
                 string.Empty);

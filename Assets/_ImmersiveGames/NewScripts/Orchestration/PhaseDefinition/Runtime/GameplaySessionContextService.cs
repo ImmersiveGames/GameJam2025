@@ -29,7 +29,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             GameplayPhaseRuntimeSnapshot phaseRuntime,
             RunEndIntent runEndIntent,
             GameRunOutcome runOutcome,
-            bool hasRunResultStage,
             string source,
             int phaseLocalEntrySequence,
             string entrySignature)
@@ -37,7 +36,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             PhaseRuntime = phaseRuntime;
             RunEndIntent = runEndIntent;
             RunOutcome = runOutcome;
-            HasRunResultStage = hasRunResultStage;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
             PhaseLocalEntrySequence = phaseLocalEntrySequence < 0 ? 0 : phaseLocalEntrySequence;
             EntrySignature = string.IsNullOrWhiteSpace(entrySignature) ? string.Empty : entrySignature.Trim();
@@ -46,7 +44,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public GameplayPhaseRuntimeSnapshot PhaseRuntime { get; }
         public RunEndIntent RunEndIntent { get; }
         public GameRunOutcome RunOutcome { get; }
-        public bool HasRunResultStage { get; }
         public string Source { get; }
         public int PhaseLocalEntrySequence { get; }
         public string EntrySignature { get; }
@@ -84,7 +81,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             int initialStateEntryCount = phaseDefinitionRef.InitialState != null && phaseDefinitionRef.InitialState.entries != null ? phaseDefinitionRef.InitialState.entries.Count : 0;
             // A eligibilidade do Intro nao vem mais do asset autoral; a resolucao real acontece no host operacional.
             bool hasIntroStage = true;
-            bool hasRunResultStage = phaseDefinitionRef.HasRunResultStage;
 
             return new GameplayPhaseRuntimeSnapshot(
                 sessionContext,
@@ -95,8 +91,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 ruleEntryCount,
                 objectiveEntryCount,
                 initialStateEntryCount,
-                hasIntroStage,
-                hasRunResultStage);
+                hasIntroStage);
         }
 
         public IntroStageSession CreateIntroStageSession(
@@ -114,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             string normalizedContentId = string.IsNullOrWhiteSpace(localContentId)
-                ? PhaseDefinitionRef.BuildCanonicalIntroContentId()
+                ? PhaseDefinitionId.BuildCanonicalIntroContentId(PhaseDefinitionRef.PhaseId)
                 : localContentId.Trim();
             return new IntroStageSession(
                 PhaseDefinitionRef,
@@ -124,15 +119,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 phaseLocalEntrySequence,
                 phaseSignature,
                 HasIntroStage,
-                HasRunResultStage,
                 entrySignature);
         }
 
         public GameplayPhaseRuntimeSnapshot(
             GameplaySessionContextSnapshot sessionContext,
             IntroStageSession levelSession,
-            bool hasIntroStage,
-            bool hasRunResultStage)
+            bool hasIntroStage)
         {
             SessionContext = sessionContext;
             IntroStageSession = levelSession;
@@ -143,7 +136,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             ObjectiveEntryCount = 0;
             InitialStateEntryCount = 0;
             HasIntroStage = hasIntroStage;
-            HasRunResultStage = hasRunResultStage;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession);
         }
 
@@ -156,8 +148,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             int ruleEntryCount,
             int objectiveEntryCount,
             int initialStateEntryCount,
-            bool hasIntroStage,
-            bool hasRunResultStage)
+            bool hasIntroStage)
         {
             SessionContext = sessionContext;
             IntroStageSession = levelSession;
@@ -168,7 +159,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             ObjectiveEntryCount = objectiveEntryCount < 0 ? 0 : objectiveEntryCount;
             InitialStateEntryCount = initialStateEntryCount < 0 ? 0 : initialStateEntryCount;
             HasIntroStage = hasIntroStage;
-            HasRunResultStage = hasRunResultStage;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession, phaseDefinitionRef, ContentEntryCount, PlayerEntryCount, RuleEntryCount, ObjectiveEntryCount, InitialStateEntryCount);
         }
 
@@ -181,7 +171,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         public int ObjectiveEntryCount { get; }
         public int InitialStateEntryCount { get; }
         public bool HasIntroStage { get; }
-        public bool HasRunResultStage { get; }
         public string PhaseRuntimeSignature { get; }
 
         public bool IsValid =>
@@ -199,13 +188,12 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             0,
             0,
             0,
-            false,
             false);
 
         public override string ToString()
         {
             string phaseName = PhaseDefinitionRef != null ? PhaseDefinitionRef.name : "<none>";
-            return $"sessionContext='{SessionContext}', phaseRef='{phaseName}', contentCount='{ContentEntryCount}', playerCount='{PlayerEntryCount}', ruleCount='{RuleEntryCount}', objectiveCount='{ObjectiveEntryCount}', initialStateCount='{InitialStateEntryCount}', introStage='{HasIntroStage}', runResultStage='{HasRunResultStage}', phaseRuntimeSignature='{(string.IsNullOrWhiteSpace(PhaseRuntimeSignature) ? "<none>" : PhaseRuntimeSignature)}'";
+            return $"sessionContext='{SessionContext}', phaseRef='{phaseName}', contentCount='{ContentEntryCount}', playerCount='{PlayerEntryCount}', ruleCount='{RuleEntryCount}', objectiveCount='{ObjectiveEntryCount}', initialStateCount='{InitialStateEntryCount}', introStage='{HasIntroStage}', phaseRuntimeSignature='{(string.IsNullOrWhiteSpace(PhaseRuntimeSignature) ? "<none>" : PhaseRuntimeSignature)}'";
         }
 
         private static string BuildPhaseRuntimeSignature(
@@ -291,7 +279,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 _last = snapshot;
 
                 DebugUtility.Log<GameplayPhaseRuntimeService>(
-                    $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseId='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.PhaseId : PhaseDefinitionId.None)}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' runResultStage='{snapshot.HasRunResultStage}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseId='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.PhaseId : PhaseDefinitionId.None)}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
                     DebugUtility.Colors.Info);
 
                 return _current;
@@ -745,7 +733,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         private static string DescribePhaseRuntime(GameplayPhaseRuntimeSnapshot snapshot)
         {
             return snapshot.IsValid
-                ? $"filled signature='{snapshot.PhaseRuntimeSignature}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' runResultStage='{snapshot.HasRunResultStage}'"
+                ? $"filled signature='{snapshot.PhaseRuntimeSignature}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}'"
                 : "empty";
         }
 

@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Core.Identifiers;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
@@ -45,5 +46,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         public static implicit operator string(PhaseDefinitionId id) => id.Value;
 
         public static PhaseDefinitionId None => default;
+
+        public static string BuildCanonicalIntroContentId(PhaseDefinitionId phaseId)
+        {
+            string phaseToken = phaseId.IsValid ? phaseId.Value : string.Empty;
+            return UniqueIdFactory.ComposeId("phase-content", phaseToken, "default");
+        }
     }
 }

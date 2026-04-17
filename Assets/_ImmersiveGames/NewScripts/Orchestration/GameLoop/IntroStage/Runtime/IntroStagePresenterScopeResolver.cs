@@ -56,12 +56,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                     continue;
                 }
 
-                if (entry.role != PhaseDefinitionAsset.PhaseSceneRole.Main &&
-                    entry.role != PhaseDefinitionAsset.PhaseSceneRole.Additive)
-                {
-                    continue;
-                }
-
                 Scene loadedScene = SceneManager.GetSceneByName(entry.sceneRef.SceneName);
                 if (!loadedScene.IsValid() || !loadedScene.isLoaded)
                 {

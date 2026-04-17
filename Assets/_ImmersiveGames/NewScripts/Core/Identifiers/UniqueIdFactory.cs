@@ -61,6 +61,29 @@ namespace _ImmersiveGames.NewScripts.Core.Identifiers
             return idCore;
         }
 
+        public static string ComposeId(string prefix, string value, string fallback = "")
+        {
+            string normalizedPrefix = NormalizeToken(prefix);
+            string normalizedValue = NormalizeToken(value);
+            string normalizedFallback = NormalizeToken(fallback);
+
+            string payload = !string.IsNullOrWhiteSpace(normalizedValue)
+                ? normalizedValue
+                : normalizedFallback;
+
+            if (string.IsNullOrWhiteSpace(normalizedPrefix))
+            {
+                return payload;
+            }
+
+            if (string.IsNullOrWhiteSpace(payload))
+            {
+                return normalizedPrefix;
+            }
+
+            return $"{normalizedPrefix}:{payload}";
+        }
+
         public int GetInstanceCount(string actorName)
         {
             if (string.IsNullOrEmpty(actorName))
@@ -108,6 +131,11 @@ namespace _ImmersiveGames.NewScripts.Core.Identifiers
             }
 
             return written == 0 ? string.Empty : new string(buffer[..written]);
+        }
+
+        private static string NormalizeToken(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

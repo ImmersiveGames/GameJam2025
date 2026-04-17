@@ -47,15 +47,13 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             string sessionSignature,
             int selectionVersion,
             string localContentId,
-            bool hasIntroStage,
-            bool hasRunResultStage)
+            bool hasIntroStage)
         {
             PhaseDefinitionRef = phaseDefinitionRef;
             SessionSignature = string.IsNullOrWhiteSpace(sessionSignature) ? string.Empty : sessionSignature.Trim();
             SelectionVersion = selectionVersion < 0 ? 0 : selectionVersion;
             LocalContentId = string.IsNullOrWhiteSpace(localContentId) ? string.Empty : localContentId.Trim();
             HasIntroStage = hasIntroStage;
-            HasRunResultStage = hasRunResultStage;
         }
 
         public PhaseDefinitionAsset PhaseDefinitionRef { get; }
@@ -63,7 +61,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
         public int SelectionVersion { get; }
         public string LocalContentId { get; }
         public bool HasIntroStage { get; }
-        public bool HasRunResultStage { get; }
 
         public bool IsValid => PhaseDefinitionRef != null;
     }
@@ -144,9 +141,8 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 return;
             }
 
-            string localContentId = phaseDefinitionRef.BuildCanonicalIntroContentId();
+            string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(phaseDefinitionRef.PhaseId);
             bool hasIntroStage = runtime.HasIntroStage;
-            bool hasRunResultStage = runtime.HasRunResultStage;
 
             if (!hasIntroStage)
             {
@@ -169,15 +165,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             }
 
             DebugUtility.Log<IntroStageSessionService>(
-                $"[OBS][IntroStage] IntroStageContractMaterialized contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' source='GameplayPhaseRuntime'.",
+                $"[OBS][IntroStage] IntroStageContractMaterialized contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' source='GameplayPhaseRuntime'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<IntroStageSessionService>(
-                $"[OBS][RunResultStage] RunResultStageContractMaterialized contentName='{phaseName}' hasRunResultStage='{hasRunResultStage}' source='GameplayPhaseRuntime'.",
-                DebugUtility.Colors.Info);
-
-            DebugUtility.Log<IntroStageSessionService>(
-                $"[OBS][IntroStage] IntroStageSessionUpdated rail='phase' contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' hasRunResultStage='{session.HasRunResultStage}' v='{session.SelectionVersion}' entrySeq='{session.PhaseLocalEntrySequence}' signature='{session.SessionSignature}' entrySignature='{session.EntrySignature}' reason='{session.Reason}' source='{evt.Source}'.",
+                $"[OBS][IntroStage] IntroStageSessionUpdated rail='phase' contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' v='{session.SelectionVersion}' entrySeq='{session.PhaseLocalEntrySequence}' signature='{session.SessionSignature}' entrySignature='{session.EntrySignature}' reason='{session.Reason}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
         }
     }

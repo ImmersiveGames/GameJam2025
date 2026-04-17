@@ -39,7 +39,6 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Contracts
         public int Frame => Intent.Frame;
         public string Reason => Intent.Reason;
         public bool IsGameplayScene => Intent.IsGameplayScene;
-        public bool HasRunResultStage => ContinuationContext.HasRunResultStage;
     }
 
     public readonly struct RunResultStageCompletion

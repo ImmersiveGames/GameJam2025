@@ -571,7 +571,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated owner='GameplayPhaseFlowService' source='{source}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' runResultStage='{snapshot.HasRunResultStage}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated owner='GameplayPhaseFlowService' source='{source}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
                 DebugUtility.Colors.Info);
 
             return snapshot;
@@ -716,7 +716,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             if (shouldQueueIntro)
             {
                 string sessionSignature = BuildPhaseSignature(selectionEvent);
-                string localContentId = selectionEvent.PhaseDefinitionRef.BuildCanonicalIntroContentId();
+                string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(selectionEvent.PhaseDefinitionRef.PhaseId);
                 IntroStageSession introSession = phaseRuntime.CreateIntroStageSession(
                     localContentId,
                     selectionEvent.Reason,
@@ -726,7 +726,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                     entrySignature);
 
                 DebugUtility.Log<GameplayPhaseFlowService>(
-                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageQueued owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{phaseLocalEntrySequence}' reason='{selectionEvent.Reason}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' entrySignature='{entrySignature}' hasIntroStage='{introSession.HasIntroStage}' hasRunResultStage='{introSession.HasRunResultStage}'.",
+                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageQueued owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{phaseLocalEntrySequence}' reason='{selectionEvent.Reason}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' entrySignature='{entrySignature}' hasIntroStage='{introSession.HasIntroStage}'.",
                     DebugUtility.Colors.Info);
 
                 EventBus<IntroStageEntryEvent>.Raise(new IntroStageEntryEvent(
@@ -748,7 +748,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 evt.PhaseDefinitionRef,
                 evt.MacroRouteId,
                 evt.MacroRouteRef,
-                evt.PhaseDefinitionRef.BuildCanonicalIntroContentId(),
+                PhaseDefinitionId.BuildCanonicalIntroContentId(evt.PhaseDefinitionRef.PhaseId),
                 evt.Reason,
                 evt.SelectionVersion,
                 evt.SelectionSignature);

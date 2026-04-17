@@ -49,29 +49,6 @@ namespace _ImmersiveGames.NewScripts.Experience.PostRun.Ownership
 
             CurrentStage = new RunResultStage(continuationContext);
 
-            if (!continuationContext.HasRunResultStage)
-            {
-                var handoff = new RunResultStageToRunDecisionHandoff(
-                    continuationContext,
-                    new RunResultStageCompletion(RunResultStageCompletionKind.Continue, "no_content"),
-                    RunLocalExitDisposition.SkippedLocalExitNoContent,
-                    nameof(RunResultStageOwnershipService));
-
-                DebugUtility.Log<RunResultStageOwnershipService>(
-                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageSkipped reason='no_content' disposition='skipped_local_exit_no_content' signature='{Normalize(CurrentStage.Signature)}' scene='{Normalize(CurrentStage.SceneName)}' result='{CurrentStage.Result}' reasonText='{Normalize(CurrentStage.Reason)}'.",
-                    DebugUtility.Colors.Info);
-
-                CurrentStage = default;
-                IsActive = false;
-                HasCompleted = true;
-                DebugUtility.Log<RunResultStageOwnershipService>(
-                    $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageToRunDecisionHandoffIssued disposition='skipped_local_exit_no_content' signature='{Normalize(handoff.ContinuationContext.Signature)}' scene='{Normalize(handoff.ContinuationContext.SceneName)}' frame={handoff.ContinuationContext.Frame} result='{handoff.ContinuationContext.Result}' source='{handoff.Source}'.",
-                    DebugUtility.Colors.Info);
-
-                _runDecisionOwnershipService.EnterRunDecision(handoff);
-                return;
-            }
-
             if (!_presenterHost.TryEnsureCurrentPresenter(CurrentStage, this, nameof(RunResultStageOwnershipService), out IRunResultStagePresenter presenter) ||
                 presenter == null)
             {

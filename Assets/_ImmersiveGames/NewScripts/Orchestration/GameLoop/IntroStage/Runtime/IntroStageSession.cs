@@ -14,7 +14,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             int phaseLocalEntrySequence,
             string sessionSignature,
             bool hasIntroStage = false,
-            bool hasRunResultStage = false,
             string? entrySignature = null)
         {
             PhaseDefinitionRef = phaseDefinitionRef;
@@ -27,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
                 ? $"{SessionSignature}|entry:{PhaseLocalEntrySequence}"
                 : entrySignature.Trim();
             HasIntroStage = hasIntroStage;
-            HasRunResultStage = hasRunResultStage;
         }
 
         public PhaseDefinitionAsset? PhaseDefinitionRef { get; }
@@ -38,7 +36,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
         public string SessionSignature { get; }
         public string EntrySignature { get; }
         public bool HasIntroStage { get; }
-        public bool HasRunResultStage { get; }
 
         public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
         public bool IsValid => HasPhaseDefinitionRef;

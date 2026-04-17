@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
             try
             {
                 DebugUtility.Log<IntroStageCoordinator>(
-                    $"[OBS][IntroStageCoordinator] IntroStageStarted signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' hasIntroStage='{context.Session.HasIntroStage}' hasRunResultStage='{context.Session.HasRunResultStage}'.",
+                    $"[OBS][IntroStageCoordinator] IntroStageStarted signature='{signature}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' hasIntroStage='{context.Session.HasIntroStage}'.",
                     DebugUtility.Colors.Info);
 
                 if (!context.HasIntroStage)

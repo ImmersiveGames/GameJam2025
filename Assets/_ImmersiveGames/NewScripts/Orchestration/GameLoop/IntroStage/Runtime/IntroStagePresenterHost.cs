@@ -247,12 +247,11 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.IntroStage.Runtime
         private static IntroStagePresentationContract BuildPresentationContract(IntroStageSession session)
         {
             return new IntroStagePresentationContract(
-                session.PhaseDefinitionRef,
+                session.PhaseDefinitionRef!,
                 session.SessionSignature,
                 session.SelectionVersion,
                 session.LocalContentId,
-                session.HasIntroStage,
-                session.HasRunResultStage);
+                session.HasIntroStage);
         }
 
         private void DetachCurrentPresenterLocked(string reason)

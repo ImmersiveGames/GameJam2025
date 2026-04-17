@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 evt.PhaseDefinitionRef,
                 evt.MacroRouteId,
                 evt.MacroRouteRef,
-                evt.PhaseDefinitionRef.BuildCanonicalIntroContentId(),
+                PhaseDefinitionId.BuildCanonicalIntroContentId(evt.PhaseDefinitionRef.PhaseId),
                 evt.Reason,
                 evt.SelectionVersion,
                 evt.SelectionSignature);
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             if (phaseDefinitionRef != null)
             {
-                return phaseDefinitionRef.BuildCanonicalIntroContentId();
+                return PhaseDefinitionId.BuildCanonicalIntroContentId(phaseDefinitionRef.PhaseId);
             }
 
             return string.Empty;
