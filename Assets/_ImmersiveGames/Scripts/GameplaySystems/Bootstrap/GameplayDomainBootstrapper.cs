@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
+using ImmersiveGames.GameJam2025.Core.Logging;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Bootstrap

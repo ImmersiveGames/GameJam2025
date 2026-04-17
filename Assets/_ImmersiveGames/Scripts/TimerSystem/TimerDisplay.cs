@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;

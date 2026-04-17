@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         protected override void Start()
         {
             base.Start();
-            
+
             if (randomizeOnStart)
             {
                 RandomizeRing();
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                 // Aplica o estado atual
                 UpdateRingVisibility();
             }
-            
+
             _ringInitialized = true;
             if (showDebugLogs)
             {
@@ -97,12 +97,12 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             {
                 bool wasActive = ringObject.activeSelf;
                 ringObject.SetActive(_hasRing);
-                
+
                 if (_hasRing && enableRandomRotation)
                 {
                     ApplyRingRotation();
                 }
-                
+
                 if (showDebugLogs && wasActive != _hasRing)
                 {
                     DebugUtility.LogVerbose<RingActivationSkin>($"Ring visibility changed: {wasActive} -> {_hasRing}");
@@ -123,7 +123,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             var ringTransform = ringObject.transform;
             ringTransform.localRotation = Quaternion.Euler(0f, _currentRotation, 0f);
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RingActivationSkin>($"Applied rotation: {_currentRotation}�");
@@ -139,7 +139,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             _hasRing = visible;
             UpdateRingVisibility();
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RingActivationSkin>($"Ring visibility set to: {visible}");
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             _hasRing = Random.value < ringChance;
             _currentRotation = enableRandomRotation ? Random.Range(rotationRange.x, rotationRange.y) : 0f;
             UpdateRingVisibility();
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RingActivationSkin>($"Randomized - HasRing: {_hasRing}, Rotation: {_currentRotation}�");
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             {
                 ApplyRingRotation();
             }
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RingActivationSkin>($"Rotation set to: {rotation}�");
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         {
             _hasRing = !_hasRing;
             UpdateRingVisibility();
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RingActivationSkin>($"Ring toggled to: {_hasRing}");

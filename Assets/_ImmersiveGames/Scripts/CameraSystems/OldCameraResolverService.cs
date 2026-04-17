@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.CameraSystems

@@ -1,9 +1,8 @@
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.CompassSystems
 {
@@ -80,9 +79,9 @@ namespace _ImmersiveGames.Scripts.CompassSystems
             _reviveBinding ??= new EventBinding<ReviveEvent>(OnReviveEvent);
             _resetBinding ??= new EventBinding<ResetEvent>(OnResetEvent);
 
-            FilteredEventBus<DeathEvent>.Register(_deathBinding, _entityId);
-            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _entityId);
-            FilteredEventBus<ResetEvent>.Register(_resetBinding, _entityId);
+            //FilteredEventBus<DeathEvent>.Register(_deathBinding, _entityId);
+            //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, _entityId);
+            //FilteredEventBus<ResetEvent>.Register(_resetBinding, _entityId);
 
             _eventsRegistered = true;
 
@@ -98,9 +97,9 @@ namespace _ImmersiveGames.Scripts.CompassSystems
                 return;
             }
 
-            FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _entityId);
-            FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _entityId);
-            FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _entityId);
+            //FilteredEventBus<DeathEvent>.Unregister(_deathBinding, _entityId);
+            //FilteredEventBus<ReviveEvent>.Unregister(_reviveBinding, _entityId);
+           // FilteredEventBus<ResetEvent>.Unregister(_resetBinding, _entityId);
 
             _eventsRegistered = false;
         }

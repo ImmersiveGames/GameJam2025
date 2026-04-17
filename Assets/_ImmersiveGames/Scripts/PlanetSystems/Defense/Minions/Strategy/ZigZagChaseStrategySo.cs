@@ -1,7 +1,7 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
 using DG.Tweening;
 using DG.Tweening.Core;
 using DG.Tweening.Plugins.Options;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
 {

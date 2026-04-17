@@ -1,8 +1,8 @@
 using System;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using DG.Tweening;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions
 {

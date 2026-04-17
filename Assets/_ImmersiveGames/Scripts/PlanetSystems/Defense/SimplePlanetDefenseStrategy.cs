@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
+using ImmersiveGames.GameJam2025.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {

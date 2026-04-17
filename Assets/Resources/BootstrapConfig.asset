@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: BootstrapConfig
   m_EditorClassIdentifier: 
   navigationCatalog: {fileID: 11400000, guid: 199efb62d31d34e4f8862069f922a7a3, type: 2}
+  phaseDefinitionCatalog: {fileID: 11400000, guid: 89c160ee6bc342d1974c05b7be372e79, type: 2}
+  selectedPhaseDefinitionRef: {fileID: 11400000, guid: 65c3655b7e7045088c702354dde6d671, type: 2}
   startupTransitionStyleRef: {fileID: 11400000, guid: 6c2ac27ef4a14f24a8f9d6ef8a0d1001, type: 2}
   fadeSceneKey: {fileID: 11400000, guid: 7983f5c5a711411887b7d73dd12c6702, type: 2}
   loadingHudSceneKey: {fileID: 11400000, guid: c4d7b5c1f4a24d6e9d7b9b3f2c6a1e88, type: 2}

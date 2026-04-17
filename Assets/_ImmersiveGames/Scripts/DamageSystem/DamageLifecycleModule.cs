@@ -1,5 +1,3 @@
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
-using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 
@@ -39,7 +37,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                     return;
                 }
                 IsDead = false;
-                FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
+                //FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
                 return;
             }
 
@@ -48,9 +46,8 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 return;
             }
             IsDead = true;
-            FilteredEventBus<DeathEvent>.RaiseFiltered(
-                new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),
-                _entityId);
+            //FilteredEventBus<DeathEvent>.RaiseFiltered(
+                //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
         }
 
         public void RevertDeathState(bool previousState, RuntimeAttributeType runtimeAttributeType)
@@ -64,20 +61,19 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
             if (IsDead)
             {
-                FilteredEventBus<DeathEvent>.RaiseFiltered(
-                    new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),
-                    _entityId);
+                //FilteredEventBus<DeathEvent>.RaiseFiltered(
+                    //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
             }
             else
             {
-                FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
+                //FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
             }
         }
 
         public void Clear()
         {
             IsDead = false;
-            FilteredEventBus<ResetEvent>.RaiseFiltered(new ResetEvent(_entityId), _entityId);
+            //FilteredEventBus<ResetEvent>.RaiseFiltered(new ResetEvent(_entityId), _entityId);
         }
     }
 }

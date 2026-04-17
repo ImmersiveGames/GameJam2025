@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using ImmersiveGames.GameJam2025.Core.Logging;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 using UnityEngine.InputSystem;
 

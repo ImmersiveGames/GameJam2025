@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using ImmersiveGames.GameJam2025.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 {

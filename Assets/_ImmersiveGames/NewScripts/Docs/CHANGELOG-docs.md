@@ -1,5 +1,12 @@
 # Changelog Docs
 
+## 2026-04-02
+- Congelado o vocabulário ativo de conclusao de run para `IntroStage`, `Run`, `RunOutcome`, `PostRun` e `RunDecision`.
+- Alinhados `ADR-0012`, `Modules/PostRun`, `Modules/LevelFlow`, `README` e `Reports/Evidence/LATEST.md` ao log funcional observado nesta conversa.
+- Criado o snapshot canonico `Docs/Reports/Evidence/2026-04-02/RunOutcome-PostRun-RunDecision-Snapshot.md`.
+- Registrado no snapshot que `PostRun` local conclui antes de `RunDecision` e que `LevelPostRunHookPresenterCompleted`/`Dismissed` antecedem `RunDecisionEntered`.
+- Registrado no snapshot que `Save` em `GameRunEnded` salva `PreferencesAndProgression`, `SceneTransitionCompleted` gameplay faz `no_op` delegado ao `WorldReset` e `WorldResetCompleted` de nivel executa save.
+
 ## 2026-04-01
 - Added `Docs/Reports/Audits/2026-04-01/Round-2-Freeze-Object-Lifecycle.md` as the canonical freeze snapshot for round 2.
 - Marked round 2 as concluded in `Docs/Plans/Plan-Round-2-Object-Lifecycle.md`.

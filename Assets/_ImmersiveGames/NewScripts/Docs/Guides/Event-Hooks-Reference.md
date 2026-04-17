@@ -1,58 +1,54 @@
-# Event Hooks Reference
+# Event-Hooks-Reference
 
-## Status documental
+## Escopo
 
-- Referencia operacional dos hooks ativos.
-- `LevelFlow` e nome historico de fronteira; a camada ativa e `LevelLifecycle`.
-- Use hooks operacionais primeiro e hooks tecnicos so quando o ponto do pipeline realmente importar.
+- Referencia de hooks publicos e observaveis do baseline.
+- Nao use como lista historica de compat residual.
 
-## Regra curta
+## Canon de leitura
 
-- Declaracao nao e runtime.
-- Runtime nao e operacao.
-- Operacional e o que UI, bridges e systems usam para reagir ou pedir acao.
+- O contrato canonico vigente do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md`, `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`, `Docs/ADRs/ADR-0049-Fluxo-Canonico-de-Fim-de-Run-e-PostRun.md` e `Docs/ADRs/ADR-0050-IntroStage-Canonical-Content-Presenter-Hook.md`.
+- O fim de run canonico e `RunEndIntent -> RunResultStage` opcional -> `RunDecision -> Overlay`.
+- `IntroStage` e scene-local e so pode ser resolvida depois de `SceneTransitionCompletedEvent`.
 
-## Hooks canonicos e aplicacao
+## Hooks de gameplay / phase
 
-| Se voce quer... | Use este hook | Publisher atual | Aplicacao pratica |
-|---|---|---|---|
-| iniciar o handshake de start-plan do bootstrap | `BootStartPlanRequestedEvent` | `Orchestration/GameLoop/Bridges` | ligar `SceneFlow` e `GameLoop` no arranque |
-| expressar Play do usuario | `GamePlayRequestedEvent` | `Experience/Frontend/UI` | pedir entrada em gameplay via backbone |
-| saber que a transicao macro terminou | `SceneTransitionCompletedEvent` | `Orchestration/SceneFlow` | UI e systems que dependem da rota aplicada |
-| saber que o reset do mundo terminou | `WorldResetCompletedEvent` | `Orchestration/WorldReset` | systems que dependem do mundo pronto |
-| saber que a run ficou ativa | `GameRunStartedEvent` | `Orchestration/GameLoop/RunLifecycle` | ligar comportamento de gameplay ativo |
-| saber que a run terminou | `GameRunEndedEvent` | `Orchestration/GameLoop/RunOutcome` | iniciar o handoff de pos-run e save |
-| observar pedido de fim de run | `GameRunEndRequestedEvent` | `Orchestration/GameLoop/RunOutcome` | auditoria, telemetria e bridges |
-| observar pedido de restart | `GameResetRequestedEvent` | `Orchestration/GameLoop/Commands` | reagir a intencao de restart |
-| observar saida para menu | `GameExitToMenuRequestedEvent` | `Orchestration/GameLoop/Commands` | reagir a intencao de exit |
-| saber que um level foi selecionado | `LevelSelectedEvent` | `Orchestration/LevelLifecycle` | atualizar estado do level atual |
-| saber que o swap local foi aplicado | `LevelSwapLocalAppliedEvent` | `Orchestration/LevelLifecycle` | atualizar HUD, cameras e dependentes |
-| saber que o level entrou no fluxo | `LevelEnteredEvent` | `Orchestration/LevelLifecycle` | seams level-owned, incluindo intro |
-| saber que a intro terminou | `LevelIntroCompletedEvent` | `Orchestration/LevelLifecycle` e `Orchestration/GameLoop/IntroStage` | handoff de level para gameplay |
-| saber que o pause vai entrar | `PauseWillEnterEvent` | `Orchestration/GameLoop/Pause` | reagir antes da entrada final em pause |
-| saber que o pause vai sair | `PauseWillExitEvent` | `Orchestration/GameLoop/Pause` | reagir antes da saida final de pause |
-| saber que o pause mudou de estado | `PauseStateChangedEvent` | `Orchestration/GameLoop/Pause` | observar o estado final de pause |
-| iniciar o PostStage | `PostStageStartRequestedEvent` | `Experience/PostRun/Handoff` | validar o pos-run depois do outcome |
-| assumir o PostStage | `PostStageStartedEvent` | `Experience/PostRun/Handoff` | mostrar presenter opcional da cena atual |
-| concluir o PostStage | `PostStageCompletedEvent` | `Experience/PostRun/Handoff` | liberar o handoff final do pos-run |
-| entrar no PostRun | `PostRunEnteredEvent` | `Experience/PostRun/Ownership` | abrir overlay e aplicar ownership do pos-game |
-| integrar save no fim da run | `ISaveOrchestrationService.TryHandleGameRunEnded(...)` | `Experience/Save` | persistir progression e preferences quando cabivel |
-| integrar save apos reset do mundo | `ISaveOrchestrationService.TryHandleWorldResetCompleted(...)` | `Experience/Save` | atualizar rail de save apos reset completo |
-| integrar save apos transicao concluida | `ISaveOrchestrationService.TryHandleSceneTransitionCompleted(...)` | `Experience/Save` | registrar save quando a transicao macro fecha |
+| Objetivo | Hook / sinal | Camada |
+| --- | --- | --- |
+| saber que o gameplay iniciou | `GameplaySessionStartedEvent` | `GameplaySessionFlow` |
+| saber que a phase foi selecionada | `PhaseDefinitionSelectedEvent` | `GameplaySessionFlow` |
+| saber que a composicao foi aplicada | `PhaseContentAppliedEvent` | `GameplaySessionFlow` |
+| saber que a derivacao foi concluida | `PhaseDerivationCompletedEvent` | `GameplaySessionFlow` |
+| saber que a transicao macro concluiu | `SceneTransitionCompletedEvent` | `SceneFlow` |
+| saber que a IntroStage foi liberada | `IntroStageReleasedOnSceneTransitionCompleted` | `GameLoop` / host scene-local |
+| saber que a IntroStage foi pulada | `IntroStageSkipped` | `GameLoop` / host scene-local |
+| saber que o gameplay entrou em Playing | `GameplaySimulationUnblocked` | `GameLoop` |
 
-## Hooks tecnicos do pipeline
+## Hooks de fim de run
 
-- `SceneTransitionStartedEvent`
-- `SceneTransitionFadeInCompletedEvent`
-- `SceneTransitionScenesReadyEvent`
-- `SceneTransitionBeforeFadeOutEvent`
-- `InputModeRequestEvent`
+| Objetivo | Hook / sinal | Camada |
+| --- | --- | --- |
+| saber que a run terminou | `GameRunEndedEvent` | `GameLoop` |
+| saber que `RunResultStage` foi despachado | `RunResultStageDispatchRequested` | `Experience/PostRun` |
+| saber que o presenter do resultado foi adotado | `RunResultStagePresenterAdopted` | `Experience/PostRun` |
+| saber que `RunResultStage` entrou | `RunResultStageEntered` | `Experience/PostRun` |
+| saber que `RunDecision` entrou | `RunDecisionEnteredEvent` | `Experience/PostRun` |
+| saber que o overlay final foi aberto | `RunDecisionOverlayOpenedEvent` | `Experience/PostRun` |
 
-Use estes apenas quando o caso depender do ponto tecnico exato da pipeline.
+## Hooks historicos / alias
 
-## O que nao usar como contrato principal
+- `LevelSelectedEvent`
+- `LevelSwapLocalAppliedEvent`
+- `LevelEnteredEvent`
+- `LevelIntroCompletedEvent`
+- `PostRunEnteredEvent`
+- `PostRunCompletedEvent`
+- `LevelPostRunHookStartedEvent`
+- `LevelPostRunHookCompletedEvent`
 
-- Nao use `LevelFlow` como owner principal do level ativo.
-- Nao use hooks tecnicos para integrar UI, gameplay ou systems por padrao.
-- Nao trate `Save` como placeholder estreito; ele ja e runtime concreto.
-- Nao invente hook operacional para spawn, registry, reset ou materializacao de gameplay. Isso nao pertence ao manifesto por level.
+## Regras de leitura
+
+- O baseline atual nao deve usar hooks historicos como fonte primária de ownership.
+- IntroStage e scene-local, depois de `SceneTransitionCompletedEvent`.
+- RunResultStage e RunDecision sao rails distintos.
+- Se um hook historico ainda existir no runtime, ele deve ser lido como compatibilidade ou observabilidade, nao como owner final.

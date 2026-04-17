@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         }
     }
 
-    
+
     public class RuntimeAttributeAutoFlowService : IDisposable
     {
         private readonly RuntimeAttributeContext _runtimeAttributeContext;

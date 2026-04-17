@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
@@ -11,6 +10,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DamageSystem

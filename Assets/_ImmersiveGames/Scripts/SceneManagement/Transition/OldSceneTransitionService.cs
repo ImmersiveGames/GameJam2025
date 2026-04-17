@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.LegadoFadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.Scripts.SceneManagement.Transition
 {

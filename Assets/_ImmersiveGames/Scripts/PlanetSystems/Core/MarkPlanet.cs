@@ -1,8 +1,8 @@
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Tags;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core

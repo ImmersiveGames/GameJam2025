@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             // Criar chave �nica para este evento
             string eventKey = $"ENTER_{enterEvent.Detector.GetHashCode()}_{enterEvent.DetectionType.GetHashCode()}";
-            
+
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
             {
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             // Criar chave �nica para este evento
             string eventKey = $"EXIT_{exitEvent.Detector.GetHashCode()}_{exitEvent.DetectionType.GetHashCode()}";
-            
+
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
             {
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             // Remove eventos com mais de 1 frame de idade
             var oldEvents = _processedEvents.Where(kvp => kvp.Value < Time.frameCount - 1)
                                           .Select(kvp => kvp.Key).ToList();
-            
+
             foreach (string key in oldEvents)
             {
                 _processedEvents.Remove(key);

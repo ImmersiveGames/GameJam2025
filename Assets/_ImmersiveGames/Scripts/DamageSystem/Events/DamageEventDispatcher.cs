@@ -1,5 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
+using ImmersiveGames.GameJam2025.Core.Events;
 namespace _ImmersiveGames.Scripts.DamageSystem.Events
 {
     public static class DamageEventDispatcher
@@ -9,12 +8,12 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Events
         {
             if (!string.IsNullOrEmpty(targetId))
             {
-                FilteredEventBus<TEvent>.RaiseFiltered(payload, targetId);
+                //FilteredEventBus<TEvent>.RaiseFiltered(payload, targetId);
             }
 
             if (!string.IsNullOrEmpty(attackerId))
             {
-                FilteredEventBus<TEvent>.RaiseFiltered(payload, attackerId);
+                //FilteredEventBus<TEvent>.RaiseFiltered(payload, attackerId);
             }
         }
     }

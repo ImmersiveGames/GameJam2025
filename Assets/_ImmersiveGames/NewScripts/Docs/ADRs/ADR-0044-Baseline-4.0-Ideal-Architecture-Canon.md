@@ -12,6 +12,8 @@ O ADR-0043 estabeleceu o Baseline 4.0 como realinhamento conceitual + adequacao 
 
 O documento `Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md` consolida a arquitetura ideal do Baseline 4.0 a partir dessas bases e passa a ser a referencia principal de arquitetura-alvo.
 
+Este ADR funciona como canon guarda-chuva. Os ADRs `ADR-0045`, `ADR-0046` e `ADR-0047` refinam depois a semantica de composicao da gameplay sem rebaixar o papel estrutural deste baseline.
+
 O codigo atual continua valioso como inventario de comportamento e reaproveitamento, mas nao define o contrato final da arquitetura.
 
 ## Decisao
@@ -20,7 +22,8 @@ O Baseline 4.0 passa a adotar como referencia canonica de arquitetura:
 
 - a espinha conceitual do ADR-0001;
 - a direcao estrutural do ADR-0043;
-- a arquitetura ideal consolidada no blueprint do Baseline 4.0.
+- a arquitetura ideal consolidada no blueprint do Baseline 4.0;
+- a leitura de composicao da gameplay refinada pelos ADRs `ADR-0045`, `ADR-0046` e `ADR-0047`.
 
 ## Coluna dorsal conceitual
 
@@ -39,32 +42,46 @@ O dominio deve ser lido a partir dos seguintes conceitos canonicos:
 
 - `Gameplay` e o `Contexto Macro`.
 - `Level` e o `Contexto Local de Conteudo`.
+- `PhaseDefinitionAsset` responde por "o que a phase e".
+- `PhaseDefinitionCatalogAsset` responde por "como as phases se encadeiam".
 - `EnterStage` e `ExitStage` sao `Estagios Locais`.
 - `Playing` e o `Estado de Fluxo`.
 - `Victory` / `Defeat` sao `Resultado da Run`.
-- `PostRunMenu` e `Contexto Local Visual`.
+- `Overlay` / visual de `RunDecision` e `Contexto Local Visual`.
 - `Restart` / `ExitToMenu` sao `Intencoes Derivadas`.
 - `Pause` e `Estado Transversal`.
+
+A leitura canonica do runtime de gameplay abaixo e intencionalmente de alto nivel. A composicao semantica fina da sessao jogavel e detalhada depois por `ADR-0045`, `ADR-0046` e `ADR-0047`, sem reatribuir ao backbone o centro do significado do gameplay. A progressao entre phases fica no catalogo; a phase individual nao assume ownership de ordem, initial, next ou previous. Para o fim de run, `ADR-0049` e o owner documental canonico.
 
 ## Coluna dorsal do runtime
 
 Sequencia canonica do runtime:
 
-`Gameplay -> Level -> EnterStage -> Playing -> ExitStage -> RunResult -> PostRunMenu -> Restart / ExitToMenu -> Navigation primary dispatch -> Audio contextual reactions`
+`Gameplay -> Level -> EnterStage -> Playing -> ExitStage -> RunEndIntent -> RunResultStage -> RunDecision -> Overlay -> Restart / ExitToMenu -> Navigation primary dispatch -> Audio contextual reactions`
 
 ## Dominios-alvo
 
 ### GameLoop
 - Estado de fluxo, run e pausa.
 - Nao deve possuir ownership de pos-run visual, route dispatch ou audio precedence.
+- Nao e eixo semantico primario concorrente ao `Gameplay Runtime Composition`.
 
-### PostRun
-- Ownership do pos-run, projecao do resultado e contexto visual local.
-- Nao deve possuir a maquina de estados do gameplay nem a politica primara de navegacao.
+### RunResultStage / RunDecision
+- `RunResultStage` e phase-owned e simetrico ao `IntroStage`.
+- `IntroStage` e o espelho de entrada; `RunResultStage` e o espelho de saida da phase.
+- `RunDecision` e macro-route-owned / macro-stage-owned e representa a decisao downstream.
+- `RunEndIntent` e a intencao com `reason` que inicia a trilha de fim de run.
+- `RunResultStage` pode variar o conteudo conforme a `reason`.
+- `RunResultStage` sai apenas por acao explicita de encerramento.
+- `RunResultStage` nao depende de `Task` como semantica de negocio.
+- `Overlay` e apenas projecao visual de `RunDecision`.
+- `PostRun` permanece apenas como alias historico de compatibilidade.
 
 ### LevelFlow
 - Conteudo local do gameplay, restart context e acoes pos-level.
+- `Continuity`, quando lida no gameplay runtime, e downstream semantico de fechamento; a ordem entre phases nao nasce aqui.
 - Nao deve possuir resultado terminal, ownership pos-run ou dispatch global.
+- Nao e eixo primario concorrente ao `Gameplay Runtime Composition`.
 
 ### Navigation
 - Resolucao de intent para route/style e dispatch primario.

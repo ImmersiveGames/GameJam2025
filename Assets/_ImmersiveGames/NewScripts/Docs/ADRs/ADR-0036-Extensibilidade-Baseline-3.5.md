@@ -155,7 +155,7 @@ A baseline deve evoluir para ter hooks oficiais por categoria, por exemplo:
 - lifecycle de run
 - reset
 - level
-- postgame
+- PostRun
 - actor/domain
 - integrações externas
 

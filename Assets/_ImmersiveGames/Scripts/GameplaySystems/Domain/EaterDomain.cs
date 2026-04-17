@@ -1,6 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
+using ImmersiveGames.GameJam2025.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         bool UnregisterEater(IActor actor);
         void Clear();
     }
-    
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class EaterDomain : IEaterDomain
     {

@@ -1,11 +1,10 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Events;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
@@ -116,16 +115,16 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             _skinUpdateBinding ??= new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinInstancesBinding ??= new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
 
-            FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _ownerActor);
-            FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _ownerActor);
+            //FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _ownerActor);
+            //FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _ownerActor);
         }
 
         protected virtual void UnregisterGlobalEvents()
         {
             if (_ownerActor != null)
             {
-                FilteredEventBus<SkinEvents>.Unregister(_ownerActor);
-                FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_ownerActor);
+                //FilteredEventBus<SkinEvents>.Unregister(_ownerActor);
+                //FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_ownerActor);
             }
         }
 

@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    
+
     public class ObjectPool : MonoBehaviour
     {
         private readonly Queue<IPoolable> _pool = new();

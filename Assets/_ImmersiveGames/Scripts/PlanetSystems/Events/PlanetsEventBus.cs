@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
+using ImmersiveGames.GameJam2025.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Events
 {

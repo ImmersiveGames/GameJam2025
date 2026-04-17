@@ -1,7 +1,7 @@
-using _ImmersiveGames.NewScripts.Core.Fsm;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.StateMachineSystems;
+using ImmersiveGames.GameJam2025.Core.Fsm;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {

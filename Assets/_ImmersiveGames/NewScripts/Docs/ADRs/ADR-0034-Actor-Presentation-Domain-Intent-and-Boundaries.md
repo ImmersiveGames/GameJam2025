@@ -68,7 +68,7 @@ Antes de qualquer consolidação maior, o domínio precisa de um limite canônic
     - UI global;
     - ownership de transições globais;
     - loading global;
-    - postgame global;
+    - PostRun global;
     - reset macro;
     - state machine de game loop.
 
@@ -146,7 +146,7 @@ Este domínio **não** é owner de:
 | Reset / WorldReset | pode limpar estado global e recriar contexto | reset macro permanece fora de `Actor Presentation` |
 | SceneReset | pode acionar cleanup/recriação local de cena/ator | pipeline local de reset permanece fora do domínio |
 | Loading | pode coexistir visualmente e consumir estado de loading | loading global permanece owner de loading |
-| PostRun | pode reagir ao estado terminal da run | semântica de postgame permanece em `PostRun` |
+| PostRun | pode reagir ao estado terminal da run | semântica de encerramento permanece em `RunOutcome` |
 | IntroStage | pode consumir contratos do level ou do ator para projeção de entrada | fluxo de intro permanece fora do domínio |
 | Audio global | pode coexistir e tocar cues globais | ownership global de áudio permanece fora |
 | VFX global | pode coexistir com apresentação do ator | ownership global de VFX permanece fora |
@@ -169,7 +169,7 @@ Este domínio **não** é owner de:
 - Callers externos passam a consumir o domínio em vez de definir sua semântica.
 - O runtime state da apresentação ganha owner local mais claro por ator.
 - Boundaries com fluxos globais ficam explícitos e auditáveis.
-- Fica mais fácil separar apresentação do ator de loading, intro, postgame e reset.
+- Fica mais fácil separar apresentação do ator de loading, intro, PostRun e reset.
 
 ### Negativas / Trade-offs
 - A implementação atual ainda pode permanecer espalhada por algum tempo.

@@ -5,17 +5,17 @@
 - Use `Installer` quando o modulo so registra contratos, providers, factories e configuracao pre-runtime.
 - Use `Installer + Bootstrap` quando o modulo tambem compoe runtime operacional.
 - Nao crie trilho novo se a camada atual ja tem owner claro.
+- Se o contexto tocar gameplay/session, leia a topologia via `Base 1.0` antes de decidir o boundary.
 
 ## Onde isso se aplica hoje
 
 - `GameLoop`
 - `SceneFlow`
 - `Navigation`
-- `LevelLifecycle`
 - `Save`
 
 `LevelFlow` aparece apenas como nome historico do boundary de conteudo.
-Quando o assunto e fluxo ativo de level, o owner real esta em `LevelLifecycle`.
+Quando o assunto e fluxo ativo de level, a leitura operacional deve passar por `Base 1.0` e `GameplaySessionFlow`; `LevelLifecycle` nao deve ser tratado como owner semantico final.
 
 ## Arquivos obrigatorios
 

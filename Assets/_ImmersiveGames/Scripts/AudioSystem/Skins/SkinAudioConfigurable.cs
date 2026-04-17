@@ -1,7 +1,7 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.SkinSystems.Configurable;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Skins

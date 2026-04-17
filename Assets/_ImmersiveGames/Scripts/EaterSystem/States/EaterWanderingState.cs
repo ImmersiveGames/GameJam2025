@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using ImprovedTimers;
 using UnityEngine;
 

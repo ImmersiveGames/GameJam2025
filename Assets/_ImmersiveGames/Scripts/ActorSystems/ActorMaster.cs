@@ -1,12 +1,11 @@
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.Extensions;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.ActorSystems
@@ -47,10 +46,10 @@ namespace _ImmersiveGames.Scripts.ActorSystems
             _reviveBinding = new EventBinding<ReviveEvent>(OnRevive);
             _resetBinding = new EventBinding<ResetEvent>(OnReset);
 
-            FilteredEventBus<DeathEvent>.Register(_deathBinding, ActorId);
-            FilteredEventBus<DamageEvent>.Register(_damageBinding, ActorId);
-            FilteredEventBus<ReviveEvent>.Register(_reviveBinding, ActorId);
-            FilteredEventBus<ResetEvent>.Register(_resetBinding, ActorId);
+            //FilteredEventBus<DeathEvent>.Register(_deathBinding, ActorId);
+            //FilteredEventBus<DamageEvent>.Register(_damageBinding, ActorId);
+            //FilteredEventBus<ReviveEvent>.Register(_reviveBinding, ActorId);
+            //FilteredEventBus<ResetEvent>.Register(_resetBinding, ActorId);
         }
 
         private void OnDeath(DeathEvent e)

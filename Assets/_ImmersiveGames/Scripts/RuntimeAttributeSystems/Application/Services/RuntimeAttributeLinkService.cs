@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
         float ProcessLinkedDrain(string actorId, RuntimeAttributeType runtimeAttributeType, float desiredDrain, RuntimeAttributeContext runtimeAttributeContext, RuntimeAttributeChangeSource source = RuntimeAttributeChangeSource.Manual);
     }
 
-    
+
     public class RuntimeAttributeLinkService : IRuntimeAttributeLinkService, IDisposable
     {
         private readonly Dictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeLinkConfig>> _links = new();

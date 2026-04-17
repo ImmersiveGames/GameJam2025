@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 using UnityUtils;
 
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
-    
+
     public class PoolManager : PersistentSingleton<PoolManager>
     {
         private readonly Dictionary<string, ObjectPool> _pools = new();

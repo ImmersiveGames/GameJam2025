@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Events.Legacy;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
 using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Events;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
@@ -92,8 +91,8 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             _skinUpdateBinding = new EventBinding<SkinEvents>(OnGlobalSkinUpdate);
             _skinInstancesBinding = new EventBinding<SkinInstancesCreatedEvent>(OnGlobalSkinInstancesCreated);
 
-            FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _actor);
-            FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _actor);
+            //FilteredEventBus<SkinEvents>.Register(_skinUpdateBinding, _actor);
+            //FilteredEventBus<SkinInstancesCreatedEvent>.Register(_skinInstancesBinding, _actor);
 
             _listenersRegistered = true;
         }
@@ -109,12 +108,12 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
             {
                 if (_skinUpdateBinding != null)
                 {
-                    FilteredEventBus<SkinEvents>.Unregister(_skinUpdateBinding, _actor);
+                    //FilteredEventBus<SkinEvents>.Unregister(_skinUpdateBinding, _actor);
                 }
 
                 if (_skinInstancesBinding != null)
                 {
-                    FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_skinInstancesBinding, _actor);
+                    //FilteredEventBus<SkinInstancesCreatedEvent>.Unregister(_skinInstancesBinding, _actor);
                 }
             }
 

@@ -69,6 +69,94 @@ Domínio de apresentação, adaptação e conexão na borda do sistema. Inclui U
 - o glossário continua sendo a fonte de significado dos termos
 - a taxonomia adiciona uma leitura de ownership arquitetural para orientar módulos, arquivos e decisões futuras
 
+## Camada de composição da sessão jogável
+
+Esta camada não cria um novo domínio taxonômico.
+Ela é uma leitura semântica interna do `Game Domain` para explicar como a sessão jogável é composta no runtime atual e no `GameplaySessionFlow`.
+
+Ela precisa coexistir com o glossário estrutural:
+- o glossário estrutural define o vocabulário base
+- a composição da sessão jogável define como esse vocabulário é montado durante a gameplay ativa
+
+Os termos centrais dessa camada são:
+
+### 1. `SessionContext`
+
+**SessionContext** é o contexto semântico da sessão de gameplay ativa.
+
+Ele liga a run corrente ao conteúdo, ao runtime local e à participação ativa daquela fase.
+
+Não é:
+- Contexto Macro
+- Contexto Local de Conteúdo
+- Estado de Fluxo
+- Resultado da Run
+
+Ele representa o contexto de sessão dentro do `Gameplay Runtime Composition`.
+
+### 2. `PhaseRuntime`
+
+**PhaseRuntime** é a abreviação canônica de `phase / level runtime`.
+
+Ele representa o runtime local da fase ou do level ativo dentro de uma sessão.
+
+Não é:
+- Contexto Macro
+- Rota Macro
+- Contexto Local de Conteúdo em si
+- Resultado da Run
+
+Ele é a leitura ativa do level/fase enquanto a sessão está em montagem ou execução.
+
+### 3. `Players`
+
+**Players** é o conjunto de participantes canônicos da fase/sessão ativa.
+
+Na V1, esse conjunto pode começar em forma `solo-first`, desde que a forma do contrato continue compatível com evolução posterior.
+
+Ele não substitui:
+- identidade do ator
+- entidades individuais
+- regras de spawn por si só
+
+Ele define a participação semântica da sessão jogável.
+
+### 4. `Rules/Objectives`
+
+**Rules/Objectives** eram um eixo do shape antigo da phase, mas foram removidos do canônico atual de `Phase`.
+
+Hoje esse termo fica apenas como referência histórica do que já existiu no pipeline antigo.
+
+### 5. `InitialState`
+
+**InitialState** era o eixo de seeding do shape antigo da phase, mas foi removido do canônico atual de `Phase`.
+
+Hoje esse termo fica apenas como referência histórica do pipeline antigo.
+
+### Relação com gameplay, level e fluxo
+
+- `Gameplay` é o **Contexto Macro** da experiência jogável.
+- `Level` é o **Contexto Local de Conteúdo** hospedado dentro de `Gameplay`.
+- `EnterStage` e `ExitStage` são estágios locais do conteúdo que preparam entrada e saída da fase.
+- `Playing` é o **Estado de Fluxo** principal da sessão jogável depois da preparação semântica e da liberação operacional.
+- `RunResult` é o mesmo conceito de `Resultado da Run`: a consolidação final do que aconteceu na run.
+- `RunEndIntent` é a intencao de encerrar a run atual e carrega a `reason`.
+- `RunResultStage` e o **Estagio Local** / phase-owned do fim da run, quando presente, estruturalmente espelhado ao `IntroStage`, como saida posterior a `Playing` e anterior a `RunDecision`.
+- `RunDecision` e a etapa distinta macro-route-owned que vem depois do `RunResultStage`.
+- `Overlay` e o contexto local visual downstream de `RunDecision`; `PostRunMenu` e nomenclatura historica desse visual.
+- `PostRun` e um alias historico do rail final antigo, nao o conceito central do fim de run.
+- `RunRestart` e `ExitToMenu` são **Intenções Derivadas** emitidas depois que o resultado já foi consolidado.
+
+### Relação prática com `GameplaySessionFlow`
+
+- `SessionContext` organiza a sessão ativa.
+- `PhaseRuntime` organiza o level/fase ativa dentro da sessão.
+- `Players` registra quem participa daquela fase.
+- `Rules/Objectives` e `InitialState` ficaram fora do canônico atual de `Phase`.
+- `EnterStage` leva o conteúdo local até o momento em que `Playing` pode ser liberado.
+
+Essa camada de composição é a base semântica que `ADR-0047` detalha para a fase jogável.
+
 ---
 
 ## Definições fundamentais
@@ -239,7 +327,7 @@ Ele responde à pergunta:
 
 Exemplos:
 - `PauseMenu`
-- `PostRunMenu`
+- overlay de `RunDecision`
 - overlays
 - painéis locais
 - menus locais
@@ -274,7 +362,7 @@ O domínio dono do momento é quem ativa o **Contexto Local Visual** corresponde
 
 Exemplos:
 - `Pause` pode ativar `PauseMenu`
-- o resultado de run pode ativar `PostRunMenu`
+- o resultado de run pode ativar o overlay de `RunDecision`
 - o frontend local pode ativar painéis e abas
 
 Isso não deve ser responsabilidade do core de navegação.
@@ -392,6 +480,8 @@ Exemplos:
 - `Victory`
 - `Defeat`
 
+No runtime e nos documentos de fluxo, esse conceito pode aparecer como `RunResult`.
+
 Resultado da Run não é:
 - Contexto Macro
 - Contexto Local
@@ -403,6 +493,43 @@ Ele é a consolidação final do que aconteceu na run.
 
 ---
 
+## Encerramento de Run
+
+### 14.5 RunEndIntent
+
+**RunEndIntent** e a intencao de encerrar a run atual depois que o resultado terminal foi aceito e carrega a `reason`.
+
+Ela nao e:
+- Resultado da Run
+- Estagio Local
+- Intencao Derivada
+- Contexto Local Visual
+
+Ela representa a transicao semantica que leva do fim operacional da run para o rail final de decisao.
+
+### 14.6 RunResultStage
+
+**RunResultStage** e o estagio local phase-owned possivel do fim da run.
+
+Ele e:
+- simetrico ao `IntroStage` quando ambos estiverem presentes
+- parte do contrato canonico do fim de run da phase quando presente
+- decidido pela `PhaseDefinition` quando presente
+- executado antes de `RunDecision`
+
+Ele nao e:
+- o resultado da run em si
+- o overlay
+- a decisao final
+- um conceito obrigatorio em toda phase
+
+Quando `RunResultStage` nao existir, o lifecycle deve tratar a ausencia como `skip/no-content` explicito, sem invalidar a phase autoral.
+
+`RunDecision` nao e phase-owned; e macro-route-owned / macro-stage-owned.
+`RunResultStage` nao depende de `Task` como semantica de negocio.
+
+---
+
 ## Intenções Derivadas
 
 ### 15. Intenção Derivada
@@ -410,10 +537,10 @@ Ele é a consolidação final do que aconteceu na run.
 **Intenção Derivada** é uma decisão emitida depois de um estado ou resultado já consolidado.
 
 Exemplos:
-- `Restart`
+- `RunRestart`
 - `ExitToMenu`
 
-No caso de gameplay, essas intenções podem surgir a partir de um contexto visual local como `PostRunMenu`, depois que o Resultado da Run já foi definido.
+No caso de gameplay, essas intenções surgem depois de `RunDecision`, a partir do contexto visual local correspondente ao `Overlay`.
 
 ---
 
@@ -440,8 +567,11 @@ A leitura conceitual preferida é:
 
 1. `ExitStage`
 2. consolidação do `Resultado da Run`
-3. ativação do contexto visual local de pós-run, como `PostRunMenu`
-4. emissão de intenções derivadas, como `Restart` ou `ExitToMenu`
+3. `RunEndIntent`
+4. `RunResultStage`
+5. `RunDecision`
+6. `Overlay`
+7. emissão de intenções derivadas, como `RunRestart` ou `ExitToMenu`
 
 ---
 
@@ -483,9 +613,10 @@ O termo **slot** não entra como conceito central do domínio.
 Se existir no projeto, ele deve ser tratado apenas como detalhe técnico ou de configuração, e não como parte principal do vocabulário arquitetural.
 
 ### Exclusão 2
-`PostPlay` / `PostRun`, quando usados apenas como forma global de se referir ao resultado da run, não devem ser tratados como fase própria de domínio.
+`PostPlay` permanece histórico.
+`PostRun` e `PostRunMenu` permanecem como aliases historicos do modelo antigo; nao devem ser usados como conceito central nem como nome do rail canônico.
 
-Se existirem no código atual, devem ser lidos como nomenclatura técnica legado ou conveniência de implementação, e não como conceito central do glossário.
+Se existirem no código atual, devem ser lidos conforme essa distinção e não como conveniência de implementação que apague a fronteira entre pós-run local e decisão final.
 
 ---
 
@@ -494,7 +625,7 @@ Se existirem no código atual, devem ser lidos como nomenclatura técnica legado
 ### Positivas
 - reduz ambiguidades conceituais
 - facilita discutir ownership entre módulos
-- melhora a leitura de Navigation, Audio, SceneFlow, LevelFlow, GameLoop, PostRun e Frontend
+- melhora a leitura de Navigation, Audio, SceneFlow, LevelFlow, GameLoop, RunResultStage e Frontend
 - reduz o risco de usar termos diferentes para o mesmo problema
 - separa com mais clareza conteúdo, interface, fluxo, resultado e intenção derivada
 
@@ -512,5 +643,5 @@ Se existirem no código atual, devem ser lidos como nomenclatura técnica legado
 - usar este ADR como base para revisar os ADRs de Navigation, Audio, SceneFlow, LevelFlow, GameLoop e PostRun
 - validar se os contratos e assets atuais respeitam essa separação conceitual
 - revisar onde o projeto ainda mistura Contexto Macro, Contexto Local, Rota, Resultado e Intenção Derivada
-- revisar nomenclaturas técnicas que ainda escondem o papel real de elementos como `Victory`, `Defeat`, `Restart`, `ExitToMenu`, `Pause`, `EnterStage` e `ExitStage`
+- revisar nomenclaturas técnicas que ainda escondem o papel real de elementos como `Victory`, `Defeat`, `RunRestart`, `ExitToMenu`, `Pause`, `EnterStage` e `ExitStage`
 

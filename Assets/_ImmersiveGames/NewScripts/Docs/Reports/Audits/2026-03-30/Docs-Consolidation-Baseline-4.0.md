@@ -29,12 +29,12 @@ Consolidar `Assets/_ImmersiveGames/NewScripts/Docs` depois da estabilização do
 | `Docs/Guides/How-To-Add-A-New-Module-To-Composition.md` | Guide | Keep Active | guia operacional de composicao |
 | `Docs/Modules/README.md` | Index | Keep Active | indice operacional dos modulos ativos |
 | `Docs/Modules/GameLoop.md` | Module | Keep Active | leitura atual do owner de run lifecycle |
-| `Docs/Modules/LevelFlow.md` | Module | Keep Active | leitura operacional de level lifecycle |
+| `Docs/Archive/Modules/LevelFlow.md` | Module | Archive | leitura operacional de level lifecycle |
 | `Docs/Modules/SceneReset.md` | Module | Keep Active | referencia do executor local de reset |
 | `Docs/Modules/WorldReset.md` | Module | Keep Active | owner do reset macro |
 | `Docs/Modules/ResetInterop.md` | Module | Keep Active | ponte entre SceneFlow e WorldReset |
 | `Docs/Modules/Save.md` | Module | Keep Active | superficie oficial de hooks e contratos |
-| `Docs/Modules/PostRun.md` | Module | Keep Active | borda de pos-run ainda em uso |
+| `Docs/Archive/Modules/PostRun.md` | Module | Archive | borda de pos-run ainda em uso |
 | `Docs/Modules/Navigation.md` | Module | Keep Active | dispatch macro e intents de navegacao |
 | `Docs/Modules/Gameplay.md` | Module | Keep Active | leitura de gameplay/state/GameplayReset |
 | `Docs/Modules/InputModes.md` | Module | Keep Active | contrato ativo de input mode |
@@ -73,9 +73,9 @@ Consolidar `Assets/_ImmersiveGames/NewScripts/Docs` depois da estabilização do
 - `Docs/Modules/GameLoop.md`
 - `Docs/Modules/Gameplay.md`
 - `Docs/Modules/InputModes.md`
-- `Docs/Modules/LevelFlow.md`
+- `Docs/Archive/Modules/LevelFlow.md`
 - `Docs/Modules/Navigation.md`
-- `Docs/Modules/PostRun.md`
+- `Docs/Archive/Modules/PostRun.md`
 - `Docs/Modules/ResetInterop.md`
 - `Docs/Modules/Save.md`
 - `Docs/Modules/SceneFlow.md`

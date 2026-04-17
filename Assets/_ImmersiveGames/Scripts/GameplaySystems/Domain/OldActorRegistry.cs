@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
+using ImmersiveGames.GameJam2025.Core.Logging;
 
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
@@ -19,7 +19,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
         bool UnregisterById(string actorId);
         void Clear();
     }
-    
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class OldActorRegistry : IOldActorRegistry
     {

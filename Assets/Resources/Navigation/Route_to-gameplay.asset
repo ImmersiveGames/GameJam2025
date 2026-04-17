@@ -23,4 +23,4 @@ MonoBehaviour:
   targetActiveSceneKey: {fileID: 11400000, guid: 3a529321c385413f91f700ea60a5faba, type: 2}
   routeKind: 2
   requiresWorldReset: 1
-  levelCollection: {fileID: 11400000, guid: 51d90acd69baebf40911e012b5797c2a, type: 2}
+  phaseDefinitionCatalog: {fileID: 11400000, guid: 89c160ee6bc342d1974c05b7be372e79, type: 2}
