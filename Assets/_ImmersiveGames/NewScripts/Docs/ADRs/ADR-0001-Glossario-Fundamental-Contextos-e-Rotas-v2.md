@@ -151,7 +151,7 @@ Não é:
 - `Playing` é o **Estado de Fluxo** principal da sessão jogável depois da preparação semântica e da liberação operacional.
 - `RunResult` é o mesmo conceito de `Resultado da Run`: a consolidação final do que aconteceu na run.
 - `RunEndIntent` é a intencao de encerrar a run atual e carrega a `reason`.
-- `RunResultStage` e o **Estagio Local** / phase-owned do fim da run, quando presente, estruturalmente equivalente ao `IntroStage`.
+- `RunResultStage` e o **Estagio Local** / phase-owned do fim da run, quando presente, estruturalmente espelhado ao `IntroStage`, como saida posterior a `Playing` e anterior a `RunDecision`.
 - `RunDecision` e a etapa distinta macro-route-owned que vem depois do `RunResultStage`.
 - `Overlay` e o contexto local visual downstream de `RunDecision`; `PostRunMenu` e nomenclatura historica desse visual.
 - `PostRun` e um alias historico do rail final antigo, nao o conceito central do fim de run.

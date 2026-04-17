@@ -12,6 +12,7 @@
 
 Este ADR congela o contrato positivo da IntroStage como rail post-reveal de apresentacao local e liberacao operacional para `Playing`.
 `IntroStage` acontece depois de `SceneTransitionCompleted` e antes de `Playing`, quando a phase fornece intro concreta. A ausencia de intro nao invalida a phase nem reclassifica o rail; nesse caso, o lifecycle faz `skip/no-content` explicito.
+`IntroStage` e o espelho de entrada da phase; `RunResultStage` e o espelho de saida, conforme o contrato canonico de fim de run.
 
 ## 2. Escopo
 

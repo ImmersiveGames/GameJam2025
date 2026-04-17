@@ -68,6 +68,7 @@ Sequencia canonica do runtime:
 
 ### RunResultStage / RunDecision
 - `RunResultStage` e phase-owned e simetrico ao `IntroStage`.
+- `IntroStage` e o espelho de entrada; `RunResultStage` e o espelho de saida da phase.
 - `RunDecision` e macro-route-owned / macro-stage-owned e representa a decisao downstream.
 - `RunEndIntent` e a intencao com `reason` que inicia a trilha de fim de run.
 - `RunResultStage` pode variar o conteudo conforme a `reason`.

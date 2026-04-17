@@ -15,7 +15,7 @@ O termo `PostRun` neste ADR e historico/compatibilidade de nomenclatura. O contr
 
 Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacional, separando o fim de run da IntroStage e da montagem inicial da fase.
 
-`RunResultStage` e `phase-owned` quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
+`RunResultStage` e o espelho de saida de `IntroStage`: um stage local `phase-owned`, quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
 
 `RunDecision` e `macro-owned` e decide a acao downstream final, sem absorver `RunRestart` como ownership semantico.
 
@@ -68,7 +68,7 @@ Esse fluxo preserva a transicao entre o encerramento local da phase e a decisao 
 
 `RunResultStage` recebe a reason do fim de run, executa o fechamento local da phase e termina por `Continue`.
 
-O presenter local de `RunResultStage`, quando presente, existe como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto.
+O presenter local de `RunResultStage`, quando presente, existe como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto. Ele e a projecao concreta do stage, nao a prova da existencia do stage.
 
 Lifecycle:
 
@@ -129,6 +129,7 @@ Este contrato estabiliza o fim de run como uma sequencia clara entre phase e mac
 
 Consequencias principais:
 
+- `IntroStage` e o espelho de entrada da phase; `RunResultStage` e o espelho de saida
 - o resultado local da run permanece phase-owned
 - o fechamento local da run termina por `Continue` e segue para a decisao macro
 - a decisao final permanece macro-owned
