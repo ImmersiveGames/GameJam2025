@@ -16,8 +16,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         IGameplaySessionContextService,
         IGameplayPhaseRuntimeService,
         IGameplayPhasePlayerParticipationService,
-        IGameplayPhaseRulesObjectivesService,
-        IGameplayPhaseInitialStateService,
         IDisposable
     {
         private readonly object _sync = new();
@@ -34,10 +32,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         private GameplayPhaseRuntimeSnapshot _lastPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
         private GameplayPhasePlayerParticipationSnapshot _currentPhasePlayers = GameplayPhasePlayerParticipationSnapshot.Empty;
         private GameplayPhasePlayerParticipationSnapshot _lastPhasePlayers = GameplayPhasePlayerParticipationSnapshot.Empty;
-        private GameplayPhaseRulesObjectivesSnapshot _currentPhaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
-        private GameplayPhaseRulesObjectivesSnapshot _lastPhaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
-        private GameplayPhaseInitialStateSnapshot _currentPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
-        private GameplayPhaseInitialStateSnapshot _lastPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
         private int _phaseLocalEntrySequence;
         private bool _disposed;
 
@@ -148,8 +142,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 _currentSessionContext = GameplaySessionContextSnapshot.Empty;
                 _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
                 _currentPhasePlayers = GameplayPhasePlayerParticipationSnapshot.Empty;
-                _currentPhaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
-                _currentPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
             }
 
             DebugUtility.Log<GameplayPhaseFlowService>(
@@ -219,68 +211,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             return UpdatePhasePlayers(GameplayPhasePlayerParticipationSnapshot.FromPhaseDefinitionSelectedEvent(evt), source: "phase_selected_event");
         }
 
-        public GameplayPhaseRulesObjectivesSnapshot CurrentPhaseRulesObjectives => GetSnapshot(_currentPhaseRulesObjectives);
-        GameplayPhaseRulesObjectivesSnapshot IGameplayPhaseRulesObjectivesService.Current => CurrentPhaseRulesObjectives;
-
-        public bool TryGetCurrent(out GameplayPhaseRulesObjectivesSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                snapshot = _currentPhaseRulesObjectives;
-                return _currentPhaseRulesObjectives.IsValid;
-            }
-        }
-
-        public bool TryGetLast(out GameplayPhaseRulesObjectivesSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                snapshot = _lastPhaseRulesObjectives;
-                return _lastPhaseRulesObjectives.IsValid;
-            }
-        }
-
-        public GameplayPhaseRulesObjectivesSnapshot Update(GameplayPhaseRulesObjectivesSnapshot snapshot)
-        {
-            return UpdateRulesObjectives(snapshot, source: "manual_update");
-        }
-
-        GameplayPhaseRulesObjectivesSnapshot IGameplayPhaseRulesObjectivesService.UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
-        {
-            return UpdateRulesObjectives(GameplayPhaseRulesObjectivesSnapshot.FromPhaseDefinitionSelectedEvent(evt), source: "phase_selected_event");
-        }
-
-        public GameplayPhaseInitialStateSnapshot CurrentPhaseInitialState => GetSnapshot(_currentPhaseInitialState);
-        GameplayPhaseInitialStateSnapshot IGameplayPhaseInitialStateService.Current => CurrentPhaseInitialState;
-
-        public bool TryGetCurrent(out GameplayPhaseInitialStateSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                snapshot = _currentPhaseInitialState;
-                return _currentPhaseInitialState.IsValid;
-            }
-        }
-
-        public bool TryGetLast(out GameplayPhaseInitialStateSnapshot snapshot)
-        {
-            lock (_sync)
-            {
-                snapshot = _lastPhaseInitialState;
-                return _lastPhaseInitialState.IsValid;
-            }
-        }
-
-        public GameplayPhaseInitialStateSnapshot Update(GameplayPhaseInitialStateSnapshot snapshot)
-        {
-            return UpdateInitialState(snapshot, source: "manual_update");
-        }
-
-        GameplayPhaseInitialStateSnapshot IGameplayPhaseInitialStateService.UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
-        {
-            return UpdateInitialState(GameplayPhaseInitialStateSnapshot.FromPhaseDefinitionSelectedEvent(evt), source: "phase_selected_event");
-        }
-
         public void Dispose()
         {
             if (_disposed)
@@ -308,8 +238,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             RegisterOwnerBinding<IGameplaySessionContextService>(this);
             RegisterOwnerBinding<IGameplayPhaseRuntimeService>(this);
             RegisterOwnerBinding<IGameplayPhasePlayerParticipationService>(this);
-            RegisterOwnerBinding<IGameplayPhaseRulesObjectivesService>(this);
-            RegisterOwnerBinding<IGameplayPhaseInitialStateService>(this);
         }
 
         private static void RegisterOwnerBinding<T>(T instance)
@@ -354,10 +282,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
                 _lastPhasePlayers = _currentPhasePlayers;
                 _currentPhasePlayers = GameplayPhasePlayerParticipationSnapshot.Empty;
-                _lastPhaseRulesObjectives = _currentPhaseRulesObjectives;
-                _currentPhaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
-                _lastPhaseInitialState = _currentPhaseInitialState;
-                _currentPhaseInitialState = GameplayPhaseInitialStateSnapshot.Empty;
             }
 
             SyncRestartContextFromPhaseSelection(evt);
@@ -506,7 +430,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
                 $"[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' cachedVersion='{selectionEvent.SelectionVersion}' entryPhase='{(evt.Session.PhaseDefinitionRef != null ? evt.Session.PhaseDefinitionRef.PhaseId.Value : "<none>")}' entryVersion='{evt.Session.SelectionVersion}'.");
             }
 
-            if (!_currentPhaseRuntime.IsValid || !_currentPhasePlayers.IsValid || !_currentPhaseRulesObjectives.IsValid || !_currentPhaseInitialState.IsValid)
+            if (!_currentPhaseRuntime.IsValid || !_currentPhasePlayers.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
                     $"[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent received before phase derivation completed. phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}'.");
@@ -571,7 +495,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
             }
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated owner='GameplayPhaseFlowService' source='{source}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' initialStateCount='{snapshot.InitialStateEntryCount}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseRuntime] PhaseRuntimeUpdated owner='GameplayPhaseFlowService' source='{source}' sessionSignature='{snapshot.SessionContext.SessionSignature}' phaseRef='{(snapshot.PhaseDefinitionRef != null ? snapshot.PhaseDefinitionRef.name : "<none>")}' contentCount='{snapshot.ContentEntryCount}' playerCount='{snapshot.PlayerEntryCount}' phaseSignature='{snapshot.PhaseRuntimeSignature}'.",
                 DebugUtility.Colors.Info);
 
             return snapshot;
@@ -593,48 +517,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
 
             DebugUtility.Log<GameplayPhaseFlowService>(
                 $"[OBS][GameplaySessionFlow][Players] PlayersUpdated owner='GameplayPhaseFlowService' source='{source}' phaseSignature='{snapshot.PhaseRuntime.PhaseRuntimeSignature}' participationMode='{snapshot.ParticipationMode}' participantCount='{snapshot.ParticipatingPlayerCount}' primaryId='{snapshot.PrimaryParticipantId}' participationSignature='{snapshot.ParticipationSignature}'.",
-                DebugUtility.Colors.Info);
-
-            return snapshot;
-        }
-
-        private GameplayPhaseRulesObjectivesSnapshot UpdateRulesObjectives(GameplayPhaseRulesObjectivesSnapshot snapshot, string source)
-        {
-            lock (_sync)
-            {
-                if (!snapshot.IsValid)
-                {
-                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                        "[FATAL][H1][GameplaySessionFlow] Invalid gameplay phase rules/objectives snapshot received by explicit phase owner.");
-                }
-
-                _lastPhaseRulesObjectives = _currentPhaseRulesObjectives;
-                _currentPhaseRulesObjectives = snapshot;
-            }
-
-            DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][RulesObjectives] RulesObjectivesUpdated owner='GameplayPhaseFlowService' source='{source}' phaseSignature='{snapshot.PhaseRuntime.PhaseRuntimeSignature}' ruleCount='{snapshot.RuleEntryCount}' objectiveCount='{snapshot.ObjectiveEntryCount}' primaryObjectiveId='{snapshot.PrimaryObjectiveId}' rulesSignature='{snapshot.RulesSignature}' objectivesSignature='{snapshot.ObjectivesSignature}'.",
-                DebugUtility.Colors.Info);
-
-            return snapshot;
-        }
-
-        private GameplayPhaseInitialStateSnapshot UpdateInitialState(GameplayPhaseInitialStateSnapshot snapshot, string source)
-        {
-            lock (_sync)
-            {
-                if (!snapshot.IsValid)
-                {
-                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                        "[FATAL][H1][GameplaySessionFlow] Invalid gameplay phase initial state snapshot received by explicit phase owner.");
-                }
-
-                _lastPhaseInitialState = _currentPhaseInitialState;
-                _currentPhaseInitialState = snapshot;
-            }
-
-            DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][InitialState] InitialStateUpdated owner='GameplayPhaseFlowService' source='{source}' phaseSignature='{snapshot.PhaseRuntime.PhaseRuntimeSignature}' seedSource='{snapshot.SeedSource}' rulesSignature='{snapshot.RulesObjectives.RulesSignature}' objectivesSignature='{snapshot.RulesObjectives.ObjectivesSignature}' initialStateSignature='{snapshot.InitialStateSignature}'.",
                 DebugUtility.Colors.Info);
 
             return snapshot;
@@ -694,20 +576,15 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition.Runtime
         {
             GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
             GameplayPhasePlayerParticipationSnapshot phasePlayers = GameplayPhasePlayerParticipationSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-            GameplayPhaseRulesObjectivesSnapshot phaseRulesObjectives = GameplayPhaseRulesObjectivesSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
 
             UpdatePhaseRuntime(phaseRuntime, source: operationLabel);
             UpdatePhasePlayers(phasePlayers, source: operationLabel);
-            UpdateRulesObjectives(phaseRulesObjectives, source: operationLabel);
-
-            GameplayPhaseInitialStateSnapshot phaseInitialState = GameplayPhaseInitialStateSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-            UpdateInitialState(phaseInitialState, source: operationLabel);
 
             int phaseLocalEntrySequence = ResolveNextPhaseLocalEntrySequence();
             string entrySignature = ResolveNextPhaseLocalEntrySequenceSignature(selectionEvent, source, phaseLocalEntrySequence);
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] {operationLabel} owner='GameplayPhaseFlowService' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' sessionSignature='{sessionContext.SessionSignature}' playersSignature='{phasePlayers.ParticipationSignature}' rulesSignature='{phaseRulesObjectives.RulesSignature}' initialStateSignature='{phaseInitialState.InitialStateSignature}' source='{source}' activeScene='{activeSceneName}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] {operationLabel} owner='GameplayPhaseFlowService' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' sessionSignature='{sessionContext.SessionSignature}' playersSignature='{phasePlayers.ParticipationSignature}' source='{source}' activeScene='{activeSceneName}'.",
                 DebugUtility.Colors.Success);
 
             EventBus<GameplayPhaseRuntimeMaterializedEvent>.Raise(

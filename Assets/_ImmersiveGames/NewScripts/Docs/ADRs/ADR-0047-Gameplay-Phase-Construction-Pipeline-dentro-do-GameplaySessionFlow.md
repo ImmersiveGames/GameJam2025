@@ -23,8 +23,10 @@ Este ADR cobre o fluxo de montagem da fase em `GameplaySessionFlow`, incluindo:
 - o reveal canonico via `SceneTransitionCompleted`
 - a entrada operacional da `IntroStage`
 - a liberacao para `Playing`
-- a derivacao de `SessionContext`, `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState`
+- a derivacao de `SessionContext`, `PhaseRuntime` e `Players`
 - a leitura de `PhaseDefinition` ja resolvida
+
+Os eixos `Rules/Objectives` e `InitialState` foram removidos do canônico atual de `Phase` e nao fazem mais parte deste pipeline.
 
 ## 3. Estrutura do pipeline
 
@@ -32,7 +34,7 @@ O pipeline canonico da phase e estruturado em uma sequencia unica:
 
 1. `PhaseSelected`
 2. `ContentApplied`
-3. derivacao de `SessionContext`, `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState`
+3. derivacao de `SessionContext`, `PhaseRuntime` e `Players`
 4. `SceneTransitionCompleted`
 5. `IntroStage`
 6. `Playing`
@@ -53,7 +55,7 @@ O fluxo canonico de montagem ocorre assim:
 
 1. `PhaseSelected`
 2. `ContentApplied`
-3. derivacao de `SessionContext`, `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState`
+3. derivacao de `SessionContext`, `PhaseRuntime` e `Players`
 4. `SceneTransitionCompleted`
 5. `IntroStage`
 6. `Playing`

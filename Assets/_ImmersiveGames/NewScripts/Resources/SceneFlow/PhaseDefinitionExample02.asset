@@ -50,15 +50,6 @@ MonoBehaviour:
     entries:
     - localId: solo_player
       role: 1
-  rulesObjectives:
-    rules:
-    - localId: solo_constraint
-      ruleKind: 1
-      parameters: []
-    objectives:
-    - localId: primary_objective
-      objectiveKind: 1
-      parameters: []
   initialState:
     entries:
     - localId: phase_ready

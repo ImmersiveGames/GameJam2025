@@ -94,26 +94,7 @@ Leitura canonica:
 - cada participante possui papel / tipo de participacao forte
 - o eixo e declarativo e nao operacional
 
-### 5.4 Rules/Objectives
-
-Esse eixo declara o que vale e o que precisa ser alcancado na phase.
-
-Leitura canonica:
-
-- `Rules/Objectives` e um bloco declarativo unico
-- internamente, `Rules` e `Objectives` sao distinguidos por listas separadas
-- cada item comeca com id local, tipo forte e parametros declarativos
-- a simplicidade do V1 preserva leitura clara e evolucao futura
-
-### 5.5 Initial State
-
-Esse eixo declara como a phase nasce semanticamente.
-
-Leitura canonica:
-
-- `InitialState` e um bloco declarativo unico
-- internamente, o eixo e organizado como lista de entradas de estado inicial
-- cada entrada comeca com id local, tipo forte e parametros declarativos
+`Rules/Objectives` e `InitialState` foram removidos do canônico atual de `Phase` e nao compoem mais este asset.
 
 ### 5.6 Fechamento da fase
 
@@ -178,7 +159,7 @@ Leitura canonica:
 - a entrada principal do `GameplaySessionFlow` e a propria `PhaseDefinition` ja resolvida
 - o runtime nao muta o asset autoral
 - `SessionContext` nasce em `PhaseSelected`
-- `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState` nascem em `ContentApplied`
+- `PhaseRuntime` e `Players` nascem em `ContentApplied`
 - `IntroStage`, quando presente, acontece antes de `Playing`
 - `RunResultStage`, quando presente, acontece depois de `Playing`
 - `RunResult` acontece depois de `Playing`

@@ -23,6 +23,7 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 - O centro semantico do gameplay e `Gameplay Runtime Composition`.
 - `GameplaySessionFlow` e o primeiro bloco interno desse centro.
 - `PhaseDefinition` e a fonte de verdade autoral da phase.
+- O shape canônico atual da phase fica centrado em `content` e `players`; `InitialState` e `Rules/Objectives` foram removidos do canônico de `Phase`.
 - `IntroStage` e a entrada local da phase, phase-owned, com reentrada monotonica.
 - `RunResultStage` e a saida local da phase.
 - `RunDecision` e a continuidade macro/gameplay, e entra apenas por `RunResultStageToRunDecisionHandoff`.

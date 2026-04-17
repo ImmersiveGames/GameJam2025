@@ -29,31 +29,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             Shared = 4,
         }
 
-        public enum PhaseRuleKind
-        {
-            Unknown = 0,
-            Constraint = 1,
-            Gate = 2,
-            Modifier = 3,
-        }
-
-        public enum PhaseObjectiveKind
-        {
-            Unknown = 0,
-            Primary = 1,
-            Secondary = 2,
-            Optional = 3,
-        }
-
-        public enum PhaseInitialStateKind
-        {
-            Unknown = 0,
-            Flag = 1,
-            Counter = 2,
-            Value = 3,
-            Reference = 4,
-        }
-
         [Serializable]
         public sealed class PhaseIdentityBlock
         {
@@ -89,40 +64,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
             public PhasePlayerRole role;
         }
 
-        [Serializable]
-        public sealed class PhaseRulesObjectivesBlock
-        {
-            public List<PhaseRuleEntry> rules = new();
-            public List<PhaseObjectiveEntry> objectives = new();
-        }
-
-        [Serializable]
-        public sealed class PhaseRuleEntry
-        {
-            public string localId = string.Empty;
-            public PhaseRuleKind ruleKind;
-        }
-
-        [Serializable]
-        public sealed class PhaseObjectiveEntry
-        {
-            public string localId = string.Empty;
-            public PhaseObjectiveKind objectiveKind;
-        }
-
-        [Serializable]
-        public sealed class PhaseInitialStateBlock
-        {
-            public List<PhaseInitialStateEntry> entries = new();
-        }
-
-        [Serializable]
-        public sealed class PhaseInitialStateEntry
-        {
-            public string localId = string.Empty;
-            public PhaseInitialStateKind stateKind;
-        }
-
         [Header("Identity")]
         [SerializeField] private PhaseIdentityBlock identity = new();
 
@@ -132,17 +73,9 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
         [Header("Players")]
         [SerializeField] private PhasePlayersBlock players = new();
 
-        [Header("Rules/Objectives")]
-        [SerializeField] private PhaseRulesObjectivesBlock rulesObjectives = new();
-
-        [Header("Initial State")]
-        [SerializeField] private PhaseInitialStateBlock initialState = new();
-
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
         public PhasePlayersBlock Players => players;
-        public PhaseRulesObjectivesBlock RulesObjectives => rulesObjectives;
-        public PhaseInitialStateBlock InitialState => initialState;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -171,8 +104,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
 
             ValidateContentBlock(assetOwner);
             ValidatePlayersBlock(assetOwner);
-            ValidateRulesObjectivesBlock(assetOwner);
-            ValidateInitialStateBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -225,61 +156,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.PhaseDefinition
                     if (entry.role == PhasePlayerRole.Unknown)
                     {
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Player entry missing role. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
-                    }
-                });
-        }
-
-        private void ValidateRulesObjectivesBlock(string assetOwner)
-        {
-            if (rulesObjectives == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing rulesObjectives block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            ValidateEntries(
-                rulesObjectives.rules,
-                assetOwner,
-                "rulesObjectives.rules",
-                entry =>
-                {
-                    entry.localId = Normalize(entry.localId);
-                    if (entry.ruleKind == PhaseRuleKind.Unknown)
-                    {
-                        throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Rule entry missing ruleKind. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
-                    }
-                });
-
-            ValidateEntries(
-                rulesObjectives.objectives,
-                assetOwner,
-                "rulesObjectives.objectives",
-                entry =>
-                {
-                    entry.localId = Normalize(entry.localId);
-                    if (entry.objectiveKind == PhaseObjectiveKind.Unknown)
-                    {
-                        throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Objective entry missing objectiveKind. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
-                    }
-                });
-        }
-
-        private void ValidateInitialStateBlock(string assetOwner)
-        {
-            if (initialState == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing initialState block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            ValidateEntries(
-                initialState.entries,
-                assetOwner,
-                "initialState",
-                entry =>
-                {
-                    entry.localId = Normalize(entry.localId);
-                    if (entry.stateKind == PhaseInitialStateKind.Unknown)
-                    {
-                        throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] InitialState entry missing stateKind. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
                 });
         }

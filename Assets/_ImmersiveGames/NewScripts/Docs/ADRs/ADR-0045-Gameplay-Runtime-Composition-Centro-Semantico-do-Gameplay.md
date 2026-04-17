@@ -29,8 +29,6 @@ Esse subsistema e o ponto de leitura canonica para o V1 ja consolidado:
 - `SessionContext`
 - `PhaseRuntime`
 - `Players`
-- `Rules/Objectives`
-- `InitialState`
 - `Prepare`
 - `Intro`
 - `Playing`
@@ -67,8 +65,6 @@ Sobem para o novo centro semantico ja consolidado no V1:
 - `SessionContext`
 - `PhaseRuntime`
 - `Players`
-- `Rules/Objectives`
-- `InitialState`
 - `Prepare`
 - `Intro`
 - `Playing`
@@ -85,6 +81,7 @@ Passam a ser lidos como historicos, transitivos ou de menor peso semantico:
 - `LevelManager` como eixo separado de mesmo peso
 - linguagem central baseada em swap de conteudo
 - reset como capacidade de execucao do backbone/orchestration; restart como intencao downstream do gameplay runtime
+- `Rules/Objectives` e `InitialState` nao fazem mais parte do canônico de `Phase`.
 
 ## Consequencias praticas
 

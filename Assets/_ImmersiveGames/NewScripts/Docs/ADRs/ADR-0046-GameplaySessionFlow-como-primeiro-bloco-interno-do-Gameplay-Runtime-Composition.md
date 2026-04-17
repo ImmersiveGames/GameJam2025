@@ -56,8 +56,8 @@ O V1 ja consolidado fecha estes eixos semanticos obrigatorios:
 - `SessionContext`
 - `PhaseRuntime`
 - `Players`
-- `Rules/Objectives`
-- `InitialState`
+
+`Rules/Objectives` e `InitialState` nao fazem mais parte do canônico atual de `Phase`.
 
 Esses eixos sao o minimo necessario para dizer que a fase foi montada em termos de conjunto, e nao apenas preparada em termos tecnicos.
 Eles fazem parte da montagem semantica protegida da phase antes de `SceneTransitionCompleted`.
@@ -85,11 +85,11 @@ O backbone continua como executor tecnico e dono do fluxo macro, mas nao como do
 Relacao futura com os eixos internos:
 - `level runtime`: passa a ser parte interna do `GameplaySessionFlow`, nao eixo separado de mesmo peso
 - `players`: entram como participantes da sessao ativa, com ownership semantico do bloco
-- `objetivos/estado de fase`: ficam sob a composicao da sessao, incluindo resultado e progresso local
+- os eixos removidos do canônico de `Phase` nao voltam a ser tratados como ownership estrutural deste bloco
 - `continuity` e lida como downstream semantico do fechamento da sessao, nao como motor de progressao entre phases
 
 As pecas listadas acima sao meios de execucao e transicao do corte atual, nao a definicao canonica do bloco.
-O cleanup explicito de `Rules/Objectives` e `InitialState` no fim da run tambem faz parte do bloco consolidado.
+O cleanup explicito dos eixos removidos do canônico de `Phase` nao faz mais parte deste contrato.
 
 ## 7. Bridges transitorias
 

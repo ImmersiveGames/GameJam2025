@@ -67,12 +67,14 @@ O fluxo canonico ocorre assim:
 
 1. `PhaseSelected`
 2. `ContentApplied`
-3. derivacao de `SessionContext`, `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState`
+3. derivacao de `SessionContext`, `PhaseRuntime` e `Players`
 4. `SceneTransitionCompleted`
 5. `IntroStage`
 6. `Playing`
 
 Esse fluxo descreve a montagem semantica protegida da phase antes do reveal e a entrada post-reveal da `IntroStage` para liberacao operacional do gameplay.
+
+`Rules/Objectives` e `InitialState` foram removidos do canônico atual de `Phase` e nao fazem mais parte deste fluxo.
 
 O sucesso da entrada da phase ocorre quando o conteudo local foi aplicado e o runtime minimo ja existe; os contratos de `Intro` e `RunResult`, quando presentes, seguem o rail tipado/canonico.
 Por isso, `IntroStage` e parte do lifecycle da phase, mas nao a fronteira unica nem obrigatoria de sucesso.

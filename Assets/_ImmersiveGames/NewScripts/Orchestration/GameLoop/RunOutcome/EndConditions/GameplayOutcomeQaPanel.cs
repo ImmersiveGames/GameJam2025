@@ -24,8 +24,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
         [Inject] private IGameplaySessionContextService _sessionContextService;
         [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
         [Inject] private IGameplayPhasePlayerParticipationService _phasePlayersService;
-        [Inject] private IGameplayPhaseRulesObjectivesService _phaseRulesObjectivesService;
-        [Inject] private IGameplayPhaseInitialStateService _phaseInitialStateService;
 
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
@@ -164,16 +162,6 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             {
                 DependencyManager.Provider.TryGetGlobal(out _phasePlayersService);
             }
-
-            if (_phaseRulesObjectivesService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _phaseRulesObjectivesService);
-            }
-
-            if (_phaseInitialStateService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _phaseInitialStateService);
-            }
         }
 
         private void EnsurePanelBounds()
@@ -277,14 +265,10 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
             GameplaySessionContextSnapshot session = GameplaySessionContextSnapshot.Empty;
             GameplayPhaseRuntimeSnapshot phase = GameplayPhaseRuntimeSnapshot.Empty;
             GameplayPhasePlayerParticipationSnapshot players = GameplayPhasePlayerParticipationSnapshot.Empty;
-            GameplayPhaseRulesObjectivesSnapshot rulesObjectives = GameplayPhaseRulesObjectivesSnapshot.Empty;
-            GameplayPhaseInitialStateSnapshot initialState = GameplayPhaseInitialStateSnapshot.Empty;
 
             bool hasSession = _sessionContextService != null && _sessionContextService.TryGetCurrent(out session);
             bool hasPhase = _phaseRuntimeService != null && _phaseRuntimeService.TryGetCurrent(out phase);
             bool hasPlayers = _phasePlayersService != null && _phasePlayersService.TryGetCurrent(out players);
-            bool hasRulesObjectives = _phaseRulesObjectivesService != null && _phaseRulesObjectivesService.TryGetCurrent(out rulesObjectives);
-            bool hasInitialState = _phaseInitialStateService != null && _phaseInitialStateService.TryGetCurrent(out initialState);
 
             string sessionLabel = hasSession
                 ? $"Session: {session.PhaseId} v{session.SelectionVersion}"
@@ -298,30 +282,18 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
                 ? $"Players: {players.ParticipationMode} x{players.ParticipatingPlayerCount} primary={players.PrimaryParticipantId}"
                 : "Players: empty";
 
-            string rulesObjectivesLabel = hasRulesObjectives
-                ? $"Rules: {rulesObjectives.RuleEntryCount} Obj: {rulesObjectives.ObjectiveEntryCount} primary={rulesObjectives.PrimaryObjectiveId}"
-                : "Rules/Objectives: empty";
+            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasPlayers, session, phase, players);
 
-            string initialStateLabel = hasInitialState
-                ? $"InitialState: {initialState.SeedSource}"
-                : "InitialState: empty";
-
-            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasPlayers, hasRulesObjectives, hasInitialState, session, phase, players, rulesObjectives, initialState);
-
-            return $"{sessionLabel} | {phaseLabel}\n{playersLabel} | {rulesObjectivesLabel} | {initialStateLabel}\n{linkLabel}";
+            return $"{sessionLabel} | {phaseLabel}\n{playersLabel}\n{linkLabel}";
         }
 
         private static string BuildLinkSummary(
             bool hasSession,
             bool hasPhase,
             bool hasPlayers,
-            bool hasRulesObjectives,
-            bool hasInitialState,
             GameplaySessionContextSnapshot session,
             GameplayPhaseRuntimeSnapshot phase,
-            GameplayPhasePlayerParticipationSnapshot players,
-            GameplayPhaseRulesObjectivesSnapshot rulesObjectives,
-            GameplayPhaseInitialStateSnapshot initialState)
+            GameplayPhasePlayerParticipationSnapshot players)
         {
             string sessionPhase = hasSession && hasPhase
                 ? string.Equals(session.SessionSignature, phase.SessionContext.SessionSignature, System.StringComparison.Ordinal)
@@ -335,19 +307,7 @@ namespace _ImmersiveGames.NewScripts.Orchestration.GameLoop.RunOutcome.EndCondit
                     : "P-Players: mismatch"
                 : "P-Players: empty";
 
-            string phaseRules = hasPhase && hasRulesObjectives
-                ? string.Equals(phase.PhaseRuntimeSignature, rulesObjectives.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
-                    ? "P-Rules: linked"
-                    : "P-Rules: mismatch"
-                : "P-Rules: empty";
-
-            string rulesInitial = hasRulesObjectives && hasInitialState
-                ? string.Equals(rulesObjectives.RulesSignature, initialState.RulesObjectives.RulesSignature, System.StringComparison.Ordinal)
-                    ? "Rules-Initial: linked"
-                    : "Rules-Initial: mismatch"
-                : "Rules-Initial: empty";
-
-            return $"{sessionPhase} | {phasePlayers} | {phaseRules} | {rulesInitial}";
+            return $"{sessionPhase} | {phasePlayers}";
         }
     }
 }

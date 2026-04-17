@@ -123,25 +123,15 @@ Ele define a participação semântica da sessão jogável.
 
 ### 4. `Rules/Objectives`
 
-**Rules/Objectives** são as regras e os objetivos do conjunto jogável.
+**Rules/Objectives** eram um eixo do shape antigo da phase, mas foram removidos do canônico atual de `Phase`.
 
-Eles definem o que vale para a fase atual como conjunto, incluindo condições de sucesso, falha e progresso.
-
-Não são:
-- definição authoring isolada
-- resultado final da run
-- contexto visual
+Hoje esse termo fica apenas como referência histórica do que já existiu no pipeline antigo.
 
 ### 5. `InitialState`
 
-**InitialState** é o estado inicial seeding da fase.
+**InitialState** era o eixo de seeding do shape antigo da phase, mas foi removido do canônico atual de `Phase`.
 
-Ele define o ponto de partida operacional e semântico da fase antes da entrada em `Playing`.
-
-Não é:
-- resultado da run
-- persistência definitiva
-- estado transversal
+Hoje esse termo fica apenas como referência histórica do pipeline antigo.
 
 ### Relação com gameplay, level e fluxo
 
@@ -162,8 +152,7 @@ Não é:
 - `SessionContext` organiza a sessão ativa.
 - `PhaseRuntime` organiza o level/fase ativa dentro da sessão.
 - `Players` registra quem participa daquela fase.
-- `Rules/Objectives` fecham o conjunto jogável.
-- `InitialState` sementeia o ponto de partida.
+- `Rules/Objectives` e `InitialState` ficaram fora do canônico atual de `Phase`.
 - `EnterStage` leva o conteúdo local até o momento em que `Playing` pode ser liberado.
 
 Essa camada de composição é a base semântica que `ADR-0047` detalha para a fase jogável.
