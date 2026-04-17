@@ -1,85 +1,151 @@
-# ADR-0057 - Base 1.0 como leitura sistemica composta entre Baseline 4.0, Session Integration e camadas semanticas
+# ADR-0057 - Base 1.0 como leitura sistemica composta com ownership explicito
 
 ## Status
 - Estado: Aceito
 - Data: 2026-04-17
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canonica deste contrato: este ADR.
-- Nota de fechamento: a leitura composta da `Base 1.0` foi implementada e validada por smoke/runtime no ciclo incremental F1-F7.
+- Leitura normativa principal do sistema: este ADR, em conjunto com `ADR-0056` e `ADR-0055`.
 
 ## 1. Contexto
 
-`ADR-0055` congela `Session Integration` como seam explicito acima do baseline.
-`ADR-0056` congela o Baseline 4.0 como executor tecnico fino.
-`ADR-0044` mantem o guarda-chuva do Baseline 4.0 ideal.
-`ADR-0045`, `ADR-0046`, `ADR-0047` e `ADR-0052` definem as camadas semanticas e a transformacao acima do baseline.
+`ADR-0056` congela o baseline como executor tecnico/macro fino.
+`ADR-0055` congela `Session Integration` como seam explicito entre semantica e operacao adjacente.
 
-Esses documentos nao sao concorrentes. Eles descrevem partes complementares do mesmo sistema.
+Faltava congelar, de forma unica e normativa, a leitura composta do sistema inteiro para evitar regressao de ownership por conveniencia operacional.
 
-Nome canonico recomendado para o sistema composto: **Base 1.0**.
-
-`Baseline 4.0` continua sendo o nome da camada tecnica. `Base 1.0` e o nome da leitura sistemica que agrega baseline, integracao e semantica.
+Esta decisao formaliza a **Base 1.0** como leitura estrutural canonica do runtime.
 
 ## 2. Problema
 
-Sem uma leitura composta, o projeto volta a ser organizado por dominio isolado e nao por topologia arquitetural.
-Isso reabre espacos para:
+Sem leitura sistemica unica, o projeto tende a voltar para uma leitura difusa onde ownership e decidido por gravidade de runtime:
 
-- bootstrap bloat
-- bridges oportunistas
-- costura semantica por conveniencia
-- multiplas fontes de intencao
-- buckets misturando contracts, runtime, compat e adapters
-- regressao de ownership do gameplay para o baseline
+- quem executa passa a ser tratado como owner semantico
+- bootstrap/composition absorvem costura de dominio
+- seams viram orquestradores concretos
+- camadas semanticas sao puxadas para baixo por conveniencia
+- `InputModes`, spawn, `ActorRegistry`, reset e adjacentes passam a parecer owners por executarem o trilho
 
-Tratar `ADR-0055` e `ADR-0056` como decisoes independentes e insuficiente.
-A arquitetura precisa ser lida como um sistema unico com fronteiras complementares.
+Essa leitura e incorreta para a arquitetura alvo.
 
 ## 3. Decisao
 
-Adota-se `Base 1.0` como o nome canonico da leitura sistemica composta.
+Adota-se a **Base 1.0** como sistema composto de ownership explicito, com quatro papeis arquiteturais distintos:
 
-A leitura canonica passa a ser de tres camadas complementares:
+1. **Camada semantica acima** (significado, composicao, politica, ordem)
+2. **Seam de integracao explicito** (`Session Integration`)
+3. **Baseline tecnico/macro fino**
+4. **Dominios operacionais consumidores/executores**
 
-1. baseline tecnico fino
-2. `Session Integration`
-3. camadas semanticas acima do baseline
+Esta decisao substitui a leitura generica de "tres camadas" por uma leitura **normativa de ownership**.
 
-A composicao dessas camadas e a forma oficial de interpretar o runtime daqui para frente.
-`Base 1.0` nao substitui `ADR-0055` nem `ADR-0056`; ela congela como eles se encaixam.
+## 4. Estrutura normativa da Base 1.0
 
-## 4. Camadas do sistema
-
-| Camada | Papel | Nao deve fazer |
+| Papel arquitetural | Responsabilidade canonica | Nao deve fazer |
 |---|---|---|
-| Baseline tecnico fino | executar boot, dependency root, `SceneFlow` macro, loading/fade, gates tecnicos, `WorldReset`/`SceneReset`/`ResetInterop`, dispatch macro, `InputModes` request/apply, materializacao e reset operacional | semantica da sessao, selecao de phase, ownership de participacao, politica de continuidade |
-| `Session Integration` | consumir verdade semantica canonica e emitir intencao operacional canonica para dominios adjacentes | ownership semantico, execucao concreta de spawn/reset, virar bootstrap por conveniencia |
-| Camadas semanticas acima | definir significado, politicas e ordem: `GameplayRuntimeComposition`, `GameplaySessionFlow`, `Session Transition`, phase composition, participation e futuros blocos semanticos | colapsar para o baseline ou para integracao operacional |
+| Camada semantica acima | definir significado, composicao, politica e ordem da sessao/runtime | executar materializacao concreta, virar binder operacional, colapsar para bootstrap |
+| `Session Integration` (seam) | traduzir verdade semantica canonica em intencao operacional canonica | virar owner semantico, executar spawn/reset/input concretos |
+| Baseline tecnico/macro | executar trilho tecnico e macro (boot, scene macro, loading/fade, gates tecnicos, dispatch macro, rails tecnicos) | definir semantica, decidir ownership de dominio por conveniencia |
+| Dominios operacionais | consumir intencao canonica e executar comportamento concreto | reivindicar ownership semantico apenas porque executam runtime |
 
-## 5. Relacao entre as camadas
+## 5. Papel do baseline
 
-- O baseline serve as camadas acima fornecendo infraestrutura tecnica e rails operacionais, nao significado.
-- `Session Integration` consome a verdade semantica canonica e emite intencao operacional canonica para `InputModes`, spawn/reset e consumidores de `ActorRegistry`.
-- `GameplayRuntimeComposition`, `GameplaySessionFlow`, `Session Transition` e os demais blocos semanticos permanecem acima do baseline como fonte de verdade e de politica.
-- Nenhuma dessas camadas deve voltar para bootstraps por conveniencia historica.
+O baseline e executor tecnico e macro.
+Ele serve o sistema com infraestrutura e rails de execucao.
 
-## 6. Consequencias
+Regra normativa:
+- baseline **nao define semantica**
+- baseline **nao decide ownership de dominio** por executar runtime
+- baseline **nao absorve significado** de sessao, phase, participacao ou politicas de continuidade
 
-- Futuras refatoracoes devem respeitar a leitura em tres camadas.
-- Novos seams nao devem nascer em bootstraps por conveniencia.
-- Bootstraps e installers devem permanecer finos e sem costura semantica.
-- O baseline nao pode recuperar ownership do gameplay.
-- Baseline, integracao e camadas semanticas devem evoluir de forma coordenada.
-- Analises futuras de estado atual vs. ideal devem usar `Base 1.0` como referencia estrutural.
+## 6. Papel do seam (`Session Integration`)
 
-## 7. Relacao com `ADR-0055` e `ADR-0056`
+`Session Integration` e costura explicita entre semantica e operacao.
 
-- `ADR-0055` continua owner da area de integracao.
-- `ADR-0056` continua owner do papel do baseline.
-- Este ADR nao substitui nenhum dos dois. Ele apenas congela a leitura sistemica composta que os une.
-- `ADR-0044`, `ADR-0045`, `ADR-0047` e `ADR-0052` continuam como antecedentes canonicos que alimentam essa composicao.
+Regra normativa:
+- consome verdade semantica canonica
+- emite intencao operacional canonica
+- nao vira owner semantico
+- nao vira executor concreto por conveniencia
 
-## 8. Fechamento documental
+## 7. Papel das camadas semanticas acima
 
-A `Base 1.0` pode ser lida como fundacao estabilizada para evolucoes futuras por eixos novos, sem reabrir a topologia deste ciclo.
-O trabalho seguinte deixa de ser refatorar a base e passa a ser evoluir sobre ela.
+As camadas semanticas acima existem para definir:
+- significado
+- composicao
+- politica
+- ordem
+
+Regra normativa:
+- nao devem ser puxadas para o baseline por gravidade operacional
+- nao devem ser confundidas com binders, registries ou executores concretos
+
+## 8. Papel dos dominios operacionais consumidores
+
+`InputModes`, spawn, `ActorRegistry`, reset e adjacentes devem ser lidos como dominios operacionais consumidores/executores do sistema composto.
+
+Regra normativa:
+- executar nao implica ownership semantico
+- ownership segue topologia arquitetural da Base 1.0, nao conveniencia de runtime
+
+## 9. Regra normativa de leitura e decisao de ownership
+
+Ownership no projeto **nao** e decidido por "quem roda o codigo".
+Ownership e decidido pelo papel arquitetural dentro da Base 1.0.
+
+Toda decisao deve classificar explicitamente o elemento em um destes papeis:
+
+1. semantica (fonte de significado/politica)
+2. seam/traducao (integracao semantica -> intencao operacional)
+3. execucao tecnica/macro (baseline)
+4. execucao operacional concreta (consumidores operacionais)
+
+Se um componente mistura mais de um papel sem justificativa explicita, ha desvio de shape.
+
+## 10. Reflexo estrutural canonico
+
+A leitura canonica da Base 1.0 deve refletir explicitamente:
+
+- camada semantica acima (owner do significado)
+- seam de integracao explicito (costura e traducao)
+- baseline tecnico/macro fino (infra e trilho tecnico)
+- dominios operacionais como consumidores/executores
+
+Esta e a referencia correta para evitar leitura difusa por acoplamento acidental.
+
+## 11. Consequencias praticas
+
+Esta leitura passa a ser filtro obrigatorio para decisoes futuras de ownership:
+
+- nao decidir ownership por conveniencia operacional
+- nao ressuscitar leitura onde semantica colapsa em spawn/reset/registry/bootstrap
+- nao permitir que bootstrap/composition virem owner por concentrar wiring
+- explicitar sempre quem e semantica, quem e seam e quem e executor
+
+## 12. Relacao com ADRs anteriores
+
+- `ADR-0056` permanece owner do baseline tecnico fino.
+- `ADR-0055` permanece owner do seam de integracao.
+- Este ADR e a leitura sistemica principal que organiza os dois em um sistema unico.
+- `ADR-0052` e `ADR-0054` permanecem como camadas semanticas adjacentes a esta leitura.
+- `ADR-0058` permanece como especializacao do eixo de actors acima desta base.
+
+Este ADR nao reabre ADRs antigos nesta etapa.
+
+## 13. Fechamento
+
+A **Base 1.0** passa a ser a leitura canonica estrutural do sistema.
+
+Toda discussao futura de modulo, boundary e ownership deve partir desta leitura:
+- semantica acima
+- seam explicito de traducao
+- baseline tecnico/macro fino
+- execucao operacional concreta como consumo
+
+Decisoes que contrariem essa leitura devem ser tratadas como desvio arquitetural e nao como variacao aceitavel de implementacao.
+
+
+Imagens de referencia
+![ChatGPT Image 17 de abr. de 2026, 10_05_10.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_05_10.png)
+![ChatGPT Image 17 de abr. de 2026, 10_30_59.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_30_59.png)
+![ChatGPT Image 17 de abr. de 2026, 10_46_07.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_46_07.png)

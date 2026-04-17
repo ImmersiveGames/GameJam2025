@@ -1,5 +1,8 @@
 # GameplaySessionFlow como primeiro bloco interno do Gameplay Runtime Composition
 
+> STATUS NORMATIVO: HISTORICO - ANTECEDENTE DA BASE 1.0, NAO FONTE NORMATIVA PRIMARIA.
+> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
+
 ## 1. Resumo executivo
 
 `GameplaySessionFlow` e o primeiro bloco semantico interno acima do backbone dentro de `Gameplay Runtime Composition`.

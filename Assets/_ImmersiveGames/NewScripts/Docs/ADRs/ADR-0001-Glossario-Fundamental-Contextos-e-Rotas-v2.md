@@ -1,5 +1,8 @@
 ﻿# ADR-0001 — Glossário Fundamental de Contextos, Rotas e Fluxos
 
+> STATUS NORMATIVO: CONFLITANTE COM A BASE 1.0 - OBSOLETO PARA LEITURA DE OWNERSHIP.
+> Nao usar como fonte normativa atual de topologia/ownership. Manter apenas como historico de vocabulario.
+
 ## Status
 - Estado: Canônico atual
 - Data: 2026-03-28

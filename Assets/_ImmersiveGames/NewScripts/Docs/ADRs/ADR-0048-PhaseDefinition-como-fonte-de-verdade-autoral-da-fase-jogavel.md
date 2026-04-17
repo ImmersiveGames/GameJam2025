@@ -1,5 +1,8 @@
 ﻿# ADR-0048 - PhaseDefinition como fonte de verdade autoral da fase jogavel
 
+> STATUS NORMATIVO: HISTORICO - ANTECEDENTE DA BASE 1.0, NAO FONTE NORMATIVA PRIMARIA.
+> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
+
 ## Status
 - Estado: Aceito
 - Data: 2026-04-03

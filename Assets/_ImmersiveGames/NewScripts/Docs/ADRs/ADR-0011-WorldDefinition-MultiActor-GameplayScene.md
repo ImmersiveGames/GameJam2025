@@ -1,5 +1,8 @@
 ﻿# ADR-0011 â€” WorldDefinition multi-actor para GameplayScene (NewScripts)
 
+> STATUS NORMATIVO: CONFLITANTE COM A BASE 1.0 - OBSOLETO PARA LEITURA DE OWNERSHIP.
+> Nao usar como fonte normativa semantica. Manter apenas como historico de implementacao operacional de spawn.
+
 ## Status
 
 - Estado: Implementado

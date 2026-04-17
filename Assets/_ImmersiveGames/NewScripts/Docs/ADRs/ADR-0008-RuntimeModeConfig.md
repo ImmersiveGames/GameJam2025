@@ -1,5 +1,8 @@
 # ADR-0008: RuntimeModeConfig (Strict/Release + Degraded)
 
+> STATUS NORMATIVO: HISTORICO - NAO NORMATIVO PARA DECISOES DE OWNERSHIP DA BASE 1.0.
+> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
+
 ## Status
 
 - Estado: **Implementado**

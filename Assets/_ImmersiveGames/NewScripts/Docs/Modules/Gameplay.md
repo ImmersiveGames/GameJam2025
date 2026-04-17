@@ -1,64 +1,72 @@
 # Gameplay
 
-## Status documental
+## Status normativo
 
-- O canon vivo do gameplay esta em `Docs/ADRs/ADR-0045-Gameplay-Runtime-Composition-Centro-Semantico-do-Gameplay.md`, `Docs/ADRs/ADR-0046-GameplaySessionFlow-como-primeiro-bloco-interno-do-Gameplay-Runtime-Composition.md`, `Docs/ADRs/ADR-0047-Gameplay-Phase-Construction-Pipeline-dentro-do-GameplaySessionFlow.md`, `Docs/ADRs/ADR-0049-Fluxo-Canonico-de-Fim-de-Run-e-PostRun.md` e `Docs/ADRs/ADR-0050-IntroStage-Canonical-Content-Presenter-Hook.md`.
-- `Gameplay` ainda concentra setup de mundo, spawn, state, GameplayReset e apoio de camera.
-- A camera de gameplay saiu para `Experience/GameplayCamera`.
+Este documento esta alinhado com a Base 1.0 e deve ser lido junto com:
 
-## Estrutura atual
+- `Docs/ADRs/ADR-0057-Base-1.0-Leitura-Sistemica-Composta-entre-Baseline-4.0-Session-Integration-e-Camadas-Semanticas.md`
+- `Docs/ADRs/ADR-0056-Baseline-40-como-executor-tecnico-fino-e-fronteira-com-GameplaySessionFlow.md`
+- `Docs/ADRs/ADR-0055-Seam-de-Integracao-Semantica-de-Sessao-como-area-propria-da-arquitetura.md`
+- `Docs/ADRs/ADR-0054-Participacao-Semantica-de-Players-e-Actors-no-GameplaySessionFlow.md`
+- `Docs/ADRs/ADR-0058-Actors-Bloco-Semantico-Above-Base-1.0.md`
 
-- `Spawn`: definicoes, contexto, registry e factories de spawn do mundo.
-- `State/Core`: snapshot e contrato de estado jogavel.
-- `State/RuntimeSignals`: adaptador de sinais do runtime.
-- `State/Gate`: gate de execucao e logs de decisao.
-- `GameplayReset/Coordination`: orchestrador do GameplayReset local.
-- `GameplayReset/Policy`: policy do GameplayReset.
-- `GameplayReset/Discovery`: resolucao de alvos.
-- `GameplayReset/Execution`: aplicacao concreta do GameplayReset.
+## Papel arquitetural
 
-## Responsabilidades atuais
+`Gameplay` nao e um owner unico de tudo que "acontece durante gameplay".  
+Na Base 1.0, o eixo e separado por papel:
 
-- `Game/Content/Definitions/Worlds/WorldDefinition.asset` e `Game/Content/Definitions/Worlds/Config/WorldDefinition` definem o authoring do conjunto de atores e o setup inicial do mundo.
-- `GameplayStateGate` bloqueia e libera acoes de gameplay conforme estado e readiness.
-- `ActorGroupGameplayResetOrchestrator` coordena o GameplayReset local.
-- `PlayerActorGroupGameplayResetWorldParticipant` e a ponte de GameplayReset de players para `ByActorKind(Player)`.
-- `Experience/GameplayCamera` resolve a camera gameplay fora do owner de gameplay.
+- semantica acima (sessao, participacao, politica)
+- seam de traducao (`Session Integration`)
+- baseline tecnico/macro
+- execucao operacional concreta
 
-## Dependencias e limites
+`Gameplay` aparece principalmente no lado operacional (estado, spawn, reset local e integracoes runtime).
 
-- `SceneReset` e `WorldReset` continuam sendo o trilho material de reset.
-- `ActorGroupGameplayReset` depende de `ActorKind` e `ActorIdSet`.
-- `Game/Content/Definitions/Levels` guarda definitions/content de level; `Gameplay` nao e owner desse boundary.
-- `GameplaySessionFlow` e o bloco interno que organiza a composicao da sessao e o handoff para phase.
+## Boundaries
+
+### O que pertence ao eixo operacional de gameplay
+
+- materializacao operacional de atores (`Spawn`)
+- presenca operacional e registro de vivos (`ActorRegistry`)
+- estado/gates operacionais de gameplay
+- reset local de gameplay (quando acionado pelos trilhos de reset)
+- integracoes runtime de atores concretos
+
+### O que nao pertence a `Gameplay` como ownership semantico
+
+- semantica de sessao
+- ownership de participacao semantica
+- politica de continuidade macro
+- ownership de transicao macro (`SceneFlow`, `Navigation`)
+- ownership do seam de traducao (`Session Integration`)
+
+## Spawn, Registry e WorldDefinition
+
+- `Spawn` e executor operacional de materializacao/desmaterializacao.
+- `ActorRegistry` e diretorio operacional de atores vivos; nao e source of truth semantica.
+- `WorldDefinition` deve ser lido como authoring operacional de materializacao por cena; nao como fonte semantica principal.
+
+Regra pratica:
+- executar runtime nao implica ownership semantico.
+
+## Relacao com camadas acima
+
+- Camadas semanticas definem "o que significa" e "qual politica vale".
+- `Session Integration` traduz isso em intencao operacional.
+- O operacional de gameplay executa a intencao recebida.
+
+Se a execucao local precisar decidir significado por conta propria, ha desvio de shape.
 
 ## Fora de escopo
 
-- Nao e owner de `SceneFlow`.
-- Nao e owner de `Navigation`.
-- Nao e owner de `GameLoop`.
-- Nao e owner de `PostRun`.
-
-## Limites conhecidos
-
-- O nome `Gameplay` ainda cobre mais de uma camada.
-- O GameplayReset continua sendo um caminho operacional dentro da area de gameplay.
-- `WorldLifecycle` e termo historico; o runtime presente usa `WorldReset` e `SceneReset`.
-
-## Hooks / contratos publicos
-
-- `ActorGroupGameplayResetOrchestrator`
-- `GameplayStateGate`
-- `WorldDefinition`
-
-## Regras praticas
-
-- Prefira `ByActorKind` como trilho principal.
-- Use `ActorIdSet` apenas quando a selecao tecnica explicita for necessaria.
-- `GameplaySessionFlow` e a leitura canonica para composicao da sessao; `Gameplay` nao e owner de phase.
+- `Gameplay` nao e owner de `SceneFlow`.
+- `Gameplay` nao e owner de `Navigation`.
+- `Gameplay` nao e owner da semantica de sessao.
+- `Gameplay` nao substitui `Session Integration`.
 
 ## Leitura cruzada
 
-- `Docs/ADRs/ADR-0014-GameplayReset-Targets-Grupos.md`
 - `Docs/Modules/SceneReset.md`
 - `Docs/Modules/WorldReset.md`
+- `Docs/Modules/ResetInterop.md`
+- `Docs/Modules/InputModes.md`
