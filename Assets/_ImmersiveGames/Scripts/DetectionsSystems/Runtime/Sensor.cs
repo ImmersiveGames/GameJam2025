@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
-    
+
     public class Sensor
     {
         private readonly Collider[] _results = new Collider[5];
@@ -18,11 +18,11 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
         private readonly List<IDetectable> _cleanupBuffer = new(); // Buffer reaproveitado para evitar GC por frame
         private readonly Transform _origin;
         private readonly IDetector _detector;
-        
+
         // Cache por objeto por frame - mais espec�fico
         private readonly Dictionary<IDetectable, int> _enterEventFrameCache = new();
         private readonly Dictionary<IDetectable, int> _exitEventFrameCache = new();
-        
+
         private float _timer;
         private bool _isEnabled = true;
 

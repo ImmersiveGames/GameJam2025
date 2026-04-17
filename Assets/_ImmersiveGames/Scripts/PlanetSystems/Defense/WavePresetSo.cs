@@ -1,6 +1,6 @@
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 using UnityEngine.Serialization;
 

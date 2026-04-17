@@ -1,21 +1,21 @@
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Events;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using ImmersiveGames.GameJam2025.Core.Events;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
-    
+
     public abstract class AbstractDetector : MonoBehaviour, IDetector
     {
         private IActor _owner;
         private EventBinding<DetectionEnterEvent> _enterBinding;
         private EventBinding<DetectionExitEvent> _exitBinding;
         private readonly HashSet<IDetectable> _detectedItems = new();
-        
+
         // Cache por evento por frame para evitar duplica��o
         private readonly Dictionary<string, int> _processedEvents = new();
 
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             // Criar chave �nica para este evento
             string eventKey = $"ENTER_{enterEvent.Detectable.GetHashCode()}_{enterEvent.DetectionType.GetHashCode()}";
-            
+
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
             {
@@ -77,7 +77,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                 $"como {enterEvent.DetectionType.TypeName}, Novo: {added}, Cache: {_detectedItems.Count} em {gameObject.name}");
 
             // Chama m�todo abstrato apenas se foi uma nova detec��o
-            if (added) 
+            if (added)
             {
                 OnDetected(enterEvent.Detectable, enterEvent.DetectionType);
             }
@@ -95,7 +95,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 
             // Criar chave �nica para este evento
             string eventKey = $"EXIT_{exitEvent.Detectable.GetHashCode()}_{exitEvent.DetectionType.GetHashCode()}";
-            
+
             // Verificar se j� processamos este evento neste frame
             if (_processedEvents.TryGetValue(eventKey, out int lastFrame) && lastFrame == Time.frameCount)
             {
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
                 $"{exitEvent.DetectionType.TypeName}, Removido: {removed}, Cache: {_detectedItems.Count} em {gameObject.name}");
 
             // Chama m�todo abstrato apenas se o item estava no cache
-            if (removed) 
+            if (removed)
             {
                 OnLost(exitEvent.Detectable, exitEvent.DetectionType);
             }
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             // Remove eventos com mais de 1 frame de idade
             var oldEvents = _processedEvents.Where(kvp => kvp.Value < Time.frameCount - 1)
                                           .Select(kvp => kvp.Key).ToList();
-            
+
             foreach (string key in oldEvents)
             {
                 _processedEvents.Remove(key);

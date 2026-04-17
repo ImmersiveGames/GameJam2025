@@ -1,5 +1,5 @@
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
+using ImmersiveGames.GameJam2025.Core.Events;
 namespace _ImmersiveGames.Scripts.DetectionsSystems
 {
     public struct DetectionEnterEvent : IEvent

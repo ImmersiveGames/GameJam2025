@@ -1,5 +1,5 @@
-using _ImmersiveGames.NewScripts.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
+using ImmersiveGames.GameJam2025.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.GameManagerSystems.Events
 {

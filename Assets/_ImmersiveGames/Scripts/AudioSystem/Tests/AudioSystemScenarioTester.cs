@@ -1,22 +1,22 @@
 using System.Collections;
-using _ImmersiveGames.NewScripts.Infrastructure.Composition;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.System;
+using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 {
     /// <summary>
     /// Runner de cen�rios de teste para o sistema de �udio.
-    /// 
+    ///
     /// Coloque este script em um GameObject vazio em uma cena de teste,
     /// arraste os SoundData no Inspector e d� Play.
-    /// 
+    ///
     /// - Etapa 4: testa SFX avan�ados (spatial/non-spatial, random pitch, fade-in, stress).
     /// - Etapa 5: testa BGM (play/stop, troca de faixa, pause/resume, volume).
-    /// 
+    ///
     /// Controles:
     /// - T:  dispara novamente o cen�rio completo de SFX.
     /// - Y:  dispara novamente o cen�rio completo de BGM.

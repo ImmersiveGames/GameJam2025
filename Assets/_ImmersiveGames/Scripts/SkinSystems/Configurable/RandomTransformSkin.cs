@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
-using _ImmersiveGames.NewScripts.Core.Logging;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
+using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
@@ -31,7 +31,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
         private readonly Dictionary<GameObject, Vector3> _originalScales = new();
         private readonly Dictionary<GameObject, Quaternion> _originalRotations = new();
-        
+
         private Vector3 _currentRandomScale;
         private Vector3 _currentRandomRotation;
 
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         protected override void Start()
         {
             base.Start();
-            
+
             if (applyScaleOnStart || applyRotationOnStart)
             {
                 ApplyRandomTransform();
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
 
             CacheOriginalTransforms(instances);
-            
+
             if (randomizeOnSkinInstances)
             {
                 ApplyRandomTransform();
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             GenerateRandomScale();
             GenerateRandomRotation();
             ApplyTransformToInstances();
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RandomTransformSkin>($"Applied transform - Scale: {_currentRandomScale}, Rotation: {_currentRandomRotation}");
@@ -160,7 +160,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         private void ApplyTransformToInstances()
         {
             List<GameObject> instances = GetSkinInstances();
-            if (instances == null) 
+            if (instances == null)
             {
                 if (showDebugLogs)
                 {
@@ -294,7 +294,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
                     kvp.Key.transform.localRotation = kvp.Value;
                 }
             }
-            
+
             if (showDebugLogs)
             {
                 DebugUtility.LogVerbose<RandomTransformSkin>("[Reset to original transform");
