@@ -15,7 +15,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         private readonly EventBinding<InputModeRequestEvent> _requestBinding;
         private int _lastRequestFrame = -1;
         private string _lastRequestKey = string.Empty;
-        private bool _missingInputModeServiceWarned;
 
         public InputModeCoordinator()
         {
@@ -48,17 +47,11 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             if (!DependencyManager.HasInstance || DependencyManager.Provider == null ||
                 !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) || service == null)
             {
-                if (!_missingInputModeServiceWarned)
-                {
-                    _missingInputModeServiceWarned = true;
-                    DebugUtility.LogWarning(typeof(InputModeCoordinator),
-                        $"[WARN][InputModes] Request ignored; IInputModeService missing key='{requestKey}' contextSignature='{contextSignature}'.");
-                }
-
+                HardFailFastH1.Trigger(typeof(InputModeCoordinator),
+                    $"[FATAL][H1][InputModes] Canonical trail broken: IInputModeService missing key='{requestKey}' contextSignature='{contextSignature}'.");
                 return;
             }
 
-            _missingInputModeServiceWarned = false;
             ApplyRequest(service, evt, requestKey, contextSignature);
             _lastRequestFrame = Time.frameCount;
             _lastRequestKey = requestKey;

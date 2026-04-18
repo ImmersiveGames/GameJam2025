@@ -131,9 +131,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public sealed class InputModesSettings
         {
             /// <summary>
-            /// Se verdadeiro, habilita o módulo InputModes (registro do IInputModeService no DI global).
+            /// Deve permanecer verdadeiro para manter o trilho canonico do InputModes.
             /// </summary>
-            [Tooltip("Habilita o módulo InputModes (registro do IInputModeService no DI global).")]
+            [Tooltip("Deve permanecer habilitado. Quando falso, o boot falha por quebrar o trilho canonico de InputModes.")]
             public bool enableInputModes = true;
 
             /// <summary>

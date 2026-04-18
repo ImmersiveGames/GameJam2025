@@ -33,8 +33,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             var steps = GetCompositionPipelineSteps(bootstrapConfig);
             CompositionPipelineExecutor.ExecuteInstallers(steps, bootstrapConfig);
-
-            RegisterInputModesFromRuntimeConfig();
         }
 
         private static void ExecuteBootstrapPipeline(BootstrapConfigAsset bootstrapConfig)
