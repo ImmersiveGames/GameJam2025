@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro
 {
     /// <summary>
@@ -232,6 +233,91 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             }
 
             return entry.StyleRef.ToDefinitionOrFail(nameof(GameNavigationService), $"routeId='{entry.RouteId}'");
+        }
+    }
+
+    public sealed class SessionIntegrationNavigationHandoffService : ISessionIntegrationNavigationHandoffService
+    {
+        private readonly IGameNavigationService _navigationService;
+
+        public SessionIntegrationNavigationHandoffService(IGameNavigationService navigationService)
+        {
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+        }
+
+        public SceneRouteId ResolveGameplayRouteIdOrFail(string reason, string source)
+        {
+            string normalizedReason = NormalizeReason(reason);
+            string normalizedSource = NormalizeSource(source);
+
+            SceneRouteId routeId = _navigationService.ResolveGameplayRouteIdOrFail();
+            if (!routeId.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionIntegrationNavigationHandoffService),
+                    $"[FATAL][H1][SessionIntegration] Navigation handoff returned invalid gameplay routeId. source='{normalizedSource}' reason='{normalizedReason}'.");
+            }
+
+            DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
+                $"[OBS][SessionIntegration][Handoff] GameplayRouteResolved target='Navigation' source='{normalizedSource}' routeId='{routeId}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            return routeId;
+        }
+
+        public async Task RequestStartGameplayRouteAsync(
+            SceneRouteId routeId,
+            string reason,
+            string source,
+            CancellationToken ct = default)
+        {
+            string normalizedReason = NormalizeReason(reason);
+            string normalizedSource = NormalizeSource(source);
+
+            if (!routeId.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionIntegrationNavigationHandoffService),
+                    $"[FATAL][H1][SessionIntegration] Navigation handoff received invalid gameplay routeId. source='{normalizedSource}' reason='{normalizedReason}'.");
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
+                $"[OBS][SessionIntegration][Handoff] StartGameplayRouteAccepted target='Navigation' source='{normalizedSource}' routeId='{routeId}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            await _navigationService.StartGameplayRouteAsync(routeId, SceneTransitionPayload.Empty, normalizedReason);
+
+            DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
+                $"[OBS][SessionIntegration][Handoff] StartGameplayRouteCompleted target='Navigation' source='{normalizedSource}' routeId='{routeId}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        public async Task RequestExitToMenuAsync(string reason, string source, CancellationToken ct = default)
+        {
+            string normalizedReason = NormalizeReason(reason);
+            string normalizedSource = NormalizeSource(source);
+
+            ct.ThrowIfCancellationRequested();
+
+            DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
+                $"[OBS][SessionIntegration][Handoff] ExitToMenuAccepted target='Navigation' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            await _navigationService.GoToMenuAsync(normalizedReason);
+
+            DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
+                $"[OBS][SessionIntegration][Handoff] ExitToMenuCompleted target='Navigation' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private static string NormalizeReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+        }
+
+        private static string NormalizeSource(string source)
+        {
+            return string.IsNullOrWhiteSpace(source) ? "<none>" : source.Trim();
         }
     }
 }

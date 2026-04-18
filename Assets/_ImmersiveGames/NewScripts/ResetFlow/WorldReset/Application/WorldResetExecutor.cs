@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 {
@@ -92,6 +94,47 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             }
 
             return leftObject.GetInstanceID().CompareTo(rightObject.GetInstanceID());
+        }
+    }
+
+    /// <summary>
+    /// Executor operacional do handoff de phase-reset.
+    /// Mantem o efeito final fora do SessionIntegration.
+    /// </summary>
+    public sealed class PhaseResetOperationalHandoffService : IPhaseResetOperationalHandoffService
+    {
+        private readonly WorldResetExecutor _executor;
+
+        public PhaseResetOperationalHandoffService(IWorldResetLocalExecutorRegistry localExecutorRegistry)
+        {
+            _executor = new WorldResetExecutor(localExecutorRegistry ?? throw new System.ArgumentNullException(nameof(localExecutorRegistry)));
+        }
+
+        public async Task ExecuteAsync(PhaseResetHandoffRequest request, CancellationToken ct)
+        {
+            if (!request.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(PhaseResetOperationalHandoffService),
+                    $"[FATAL][H1][PhaseReset] Invalid phase-reset handoff request. scene='{request.ActiveScene}' reason='{request.Reason}' source='{request.Source}'.");
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            if (!_executor.TryResolveExecutors(request.ActiveScene, out var executors) || executors.Count == 0)
+            {
+                HardFailFastH1.Trigger(typeof(PhaseResetOperationalHandoffService),
+                    $"[FATAL][H1][PhaseReset] No local reset executor found for scene='{request.ActiveScene}'. reason='{request.Reason}' source='{request.Source}'.");
+            }
+
+            DebugUtility.Log<PhaseResetOperationalHandoffService>(
+                $"[OBS][PhaseReset][Operational] HandoffAccepted source='{request.Source}' scene='{request.ActiveScene}' reason='{request.Reason}' executors='{executors.Count}'.",
+                DebugUtility.Colors.Info);
+
+            await _executor.ExecuteAsync(executors, request.Reason);
+
+            DebugUtility.Log<PhaseResetOperationalHandoffService>(
+                $"[OBS][PhaseReset][Operational] HandoffCompleted source='{request.Source}' scene='{request.ActiveScene}' reason='{request.Reason}'.",
+                DebugUtility.Colors.Success);
         }
     }
 }

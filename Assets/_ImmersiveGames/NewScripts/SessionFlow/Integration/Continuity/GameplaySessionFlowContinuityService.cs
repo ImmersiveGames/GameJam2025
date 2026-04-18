@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
@@ -18,18 +17,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
     public sealed class GameplaySessionFlowContinuityService : IGameplaySessionFlowContinuityService
     {
         private readonly IRestartContextService _restartContextService;
-        private readonly IGameNavigationService _navigationService;
+        private readonly ISessionIntegrationNavigationHandoffService _navigationHandoffService;
         private readonly IPhaseResetExecutor _phaseResetExecutor;
         private readonly IPhaseDefinitionCatalog _phaseDefinitionCatalog;
 
         public GameplaySessionFlowContinuityService(
-            IGameNavigationService navigationService,
+            ISessionIntegrationNavigationHandoffService navigationHandoffService,
             IRestartContextService restartContextService,
             IPhaseResetExecutor phaseResetExecutor,
             IPhaseDefinitionCatalog phaseDefinitionCatalog = null)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _navigationHandoffService = navigationHandoffService ?? throw new ArgumentNullException(nameof(navigationHandoffService));
             _phaseResetExecutor = phaseResetExecutor ?? throw new ArgumentNullException(nameof(phaseResetExecutor));
             _phaseDefinitionCatalog = phaseDefinitionCatalog;
         }
@@ -61,12 +60,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             ct.ThrowIfCancellationRequested();
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='RestartGameplay' scope='current_phase' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffDispatch action='RestartGameplay' scope='current_phase' reason='{normalizedReason}' target='Navigation'.",
                 DebugUtility.Colors.Info);
             await RestartLastGameplayOrDefaultAsync(normalizedReason, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='RestartGameplay' scope='current_phase' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='RestartGameplay' scope='current_phase' reason='{normalizedReason}' target='Navigation'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -88,13 +87,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             ct.ThrowIfCancellationRequested();
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='RestartFromFirstPhase' scope='first_phase' initialPhaseRef='{initialPhaseDefinitionRef.name}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffDispatch action='RestartFromFirstPhase' scope='first_phase' initialPhaseRef='{initialPhaseDefinitionRef.name}' reason='{normalizedReason}' target='Navigation'.",
                 DebugUtility.Colors.Info);
             _restartContextService.Clear(normalizedReason);
             await StartGameplayDefaultAsync(normalizedReason, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='RestartFromFirstPhase' scope='first_phase' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='RestartFromFirstPhase' scope='first_phase' reason='{normalizedReason}' target='Navigation'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -109,12 +108,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             ct.ThrowIfCancellationRequested();
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='ResetCurrentPhase' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffDispatch action='ResetCurrentPhase' reason='{normalizedReason}' target='PhaseResetOperational'.",
                 DebugUtility.Colors.Info);
             await ResetCurrentPhaseInternalAsync(normalizedReason, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='ResetCurrentPhase' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='ResetCurrentPhase' reason='{normalizedReason}' target='PhaseResetOperational'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -146,13 +145,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             IPhaseNextPhaseService nextPhaseService = ResolveRequiredPhaseNextPhaseService(normalizedReason);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorStarted action='{action}' rail='phase-local' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffDispatch action='{action}' rail='phase-local' reason='{normalizedReason}' target='PhaseNextPhaseService'.",
                 DebugUtility.Colors.Info);
 
             PhaseNavigationResult result = await nextPhaseService.NavigateAsync(normalizedRequest, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted outcome='{result.Outcome}' action='{action}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted outcome='{result.Outcome}' action='{action}' reason='{normalizedReason}' target='PhaseNextPhaseService'.",
                 result.Outcome == PhaseNavigationOutcome.Changed ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
             return result;
         }
@@ -169,18 +168,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             await DispatchExitToMenuHandoffAsync(normalizedReason, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] ExecutorCompleted action='GoToMenuAsync' reason='{normalizedReason}' handoff='Navigation'.",
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='ExitToMenu' reason='{normalizedReason}' handoff='Navigation'.",
                 DebugUtility.Colors.Success);
         }
 
         private async Task DispatchExitToMenuHandoffAsync(string reason, CancellationToken ct)
         {
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Handoff] ExitToMenuDispatch action='GoToMenuAsync' reason='{reason}' target='Navigation'.",
+                $"[OBS][GameplaySessionFlow][Handoff] ExitToMenuDispatch action='ExitToMenu' reason='{reason}' target='Navigation'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
-            await _navigationService.GoToMenuAsync(reason);
+            await _navigationHandoffService.RequestExitToMenuAsync(reason, nameof(GameplaySessionFlowContinuityService), ct);
         }
 
         private async Task RestartLastGameplayOrDefaultAsync(string reason, CancellationToken ct)
@@ -189,7 +188,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 snapshot.IsValid &&
                 snapshot.MacroRouteId.IsValid)
             {
-                await _navigationService.StartGameplayRouteAsync(snapshot.MacroRouteId, SceneTransitionPayload.Empty, reason);
+                await _navigationHandoffService.RequestStartGameplayRouteAsync(
+                    snapshot.MacroRouteId,
+                    reason,
+                    nameof(GameplaySessionFlowContinuityService),
+                    ct);
                 return;
             }
 
@@ -200,14 +203,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
         {
             ct.ThrowIfCancellationRequested();
 
-            SceneRouteId gameplayRouteId = _navigationService.ResolveGameplayRouteIdOrFail();
+            SceneRouteId gameplayRouteId = _navigationHandoffService.ResolveGameplayRouteIdOrFail(reason, nameof(GameplaySessionFlowContinuityService));
             if (!gameplayRouteId.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
                     $"[FATAL][H1][GameplaySessionFlow] Canonical gameplay route resolution returned an invalid routeId. reason='{reason}'.");
             }
 
-            await _navigationService.StartGameplayRouteAsync(gameplayRouteId, SceneTransitionPayload.Empty, reason);
+            await _navigationHandoffService.RequestStartGameplayRouteAsync(
+                gameplayRouteId,
+                reason,
+                nameof(GameplaySessionFlowContinuityService),
+                ct);
         }
 
         private async Task ResetCurrentPhaseInternalAsync(string reason, CancellationToken ct)

@@ -13,13 +13,17 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using CanonicalRunEndIntent = _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts.RunEndIntent;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
 {
+    public interface IRunContinuationOperationalHandoffService
+    {
+        Task DispatchAsync(RunContinuationSelection selection);
+    }
+
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunEndedEventBridge : MonoBehaviour
@@ -114,21 +118,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var planResolver) || planResolver == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOperationalHandoffService>(out var handoffService) || handoffService == null)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida mas SessionTransitionPlanResolver nao foi encontrado no escopo global.");
+                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida mas IRunContinuationOperationalHandoffService nao foi encontrado no escopo global.");
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var orchestrator) || orchestrator == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida mas SessionTransitionOrchestrator nao foi encontrado no escopo global.");
-                return;
-            }
+            DebugUtility.Log<GameRunEndedEventBridge>(
+                $"[OBS][GameplaySessionFlow][Seam] translated continuation='{evt.Selection.SelectedContinuation}' reason='{evt.Selection.Reason}' nextState='{evt.Selection.NextState}'.",
+                DebugUtility.Colors.Info);
 
-            _ = ExecuteTransitionAsync(planResolver, orchestrator, evt.Selection);
+            DebugUtility.Log<GameRunEndedEventBridge>(
+                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='RunContinuationOperational' continuation='{evt.Selection.SelectedContinuation}' reason='{evt.Selection.Reason}' nextState='{evt.Selection.NextState}'.",
+                DebugUtility.Colors.Info);
+
+            _ = DispatchRunContinuationHandoffAsync(handoffService, evt.Selection);
         }
 
         private static void RouteRunResetSelection(RunContinuationSelection selection)
@@ -268,21 +273,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
             }
         }
 
-        private static async Task ExecuteTransitionAsync(
-            SessionTransitionPlanResolver planResolver,
-            SessionTransitionOrchestrator orchestrator,
+        private static async Task DispatchRunContinuationHandoffAsync(
+            IRunContinuationOperationalHandoffService handoffService,
             RunContinuationSelection selection)
         {
             try
             {
-                SessionTransitionContext context = new SessionTransitionContext(selection);
-                SessionTransitionPlan plan = planResolver.Resolve(context);
-                await orchestrator.ExecuteAsync(plan);
+                await handoffService.DispatchAsync(selection);
+
+                DebugUtility.Log<GameRunEndedEventBridge>(
+                    $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='RunContinuationOperational' continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
+                    DebugUtility.Colors.Success);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][GameplaySessionFlow] Falha inesperada ao executar SessionTransition. ex='{ex.GetType().Name}: {ex.Message}'.");
+                    $"[FATAL][GameplaySessionFlow] Falha inesperada no handoff operacional de RunContinuation. ex='{ex.GetType().Name}: {ex.Message}'.");
             }
         }
 

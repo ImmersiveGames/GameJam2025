@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Installers.Bootstrap
 {
@@ -34,6 +35,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                 DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(continuityService));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] SessionTransitionOrchestrator registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOperationalHandoffService>(out var existingHandoff) || existingHandoff == null)
+            {
+                if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var resolver) || resolver == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] SessionTransitionPlanResolver missing from global DI before run continuation handoff composition.");
+                }
+
+                if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var orchestrator) || orchestrator == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] SessionTransitionOrchestrator missing from global DI before run continuation handoff composition.");
+                }
+
+                DependencyManager.Provider.RegisterGlobal<IRunContinuationOperationalHandoffService>(
+                    new RunContinuationOperationalHandoffService(resolver, orchestrator));
+
+                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                    "[OBS][GameplaySessionFlow][SessionTransition] IRunContinuationOperationalHandoffService registered in global DI.",
                     DebugUtility.Colors.Info);
             }
 

@@ -2,10 +2,10 @@
 
 ## Status
 - Estado: Aceito
-- Data: 2026-04-17
+- Data: 2026-04-18
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canonica deste contrato: este ADR.
-- Nota de fechamento: implementacao principal concluida e validada por smoke/runtime no ciclo incremental F1-F7.
+- Nota de fechamento: implementacao principal concluida e validada por smoke/runtime no ciclo incremental F1-F7, com fechamento final de pureza do seam e restauracao do rail canonicamente correto de IntroStage.
 
 ## 1. Contexto
 
@@ -49,7 +49,7 @@ Esses blocos sao apenas sintomas do vazio arquitetural entre:
 
 ## 3. Decisao
 
-Adota-se uma area propria chamada **Session Integration** para ser o seam canonico de integracao semantica de sessao.
+Adota-se uma area propria chamada **Session Integration** para ser o seam canonico de integracao semantica de sessao, no arquétipo de **seam explicito puro**.
 
 Nome recomendado em codigo:
 
@@ -64,26 +64,27 @@ Ela nao substitui `GameplaySessionFlow`.
 Ela tambem nao substitui `Session Transition` como camada acima do baseline.
 
 O papel desta area e ser a fronteira explicita que traduz estado semantico canonico de sessao em intencao operacional canonica para dominios adjacentes.
+O seam encerra no handoff operacional canonicamente definido.
 
 Em termos arquiteturais:
 
 - `GameplaySessionFlow` produz a verdade semantica da sessao
 - `Session Integration` consome essa verdade e emite intencoes operacionais canonicas
 - os dominios operacionais executam essas intencoes
+- `Session Integration` nao executa efeito final concreto nem absorve ownership semantico/macro de outro eixo
 
 O seam deve ser uma area modular propria, nao um bootstrap, nao um workaround e nao uma classe unica que acumula tudo.
 
 ## 4. O que entra no seam
 
-Entra no seam tudo o que faz a traducao entre semantica de sessao e operacao adjacente:
+Entra no seam tudo o que faz a traducao/correlacao entre semantica de sessao e operacao adjacente:
 
 - bridges semanticas de sessao
 - traducao de snapshots canonicos em intencao operacional
-- integracao canonica com `InputModes`
-- integracao canonica com spawn e reset
-- integracao canonica com `ActorRegistry`
+- dispatch/handoff canonico para continuidade, run-reset, phase-reset e continuidade pos-run
+- request canonico para `InputModes`
 - coordenacao de sinais correlatos da sessao
-- adaptacao para futuros blocos semanticos que precisem conversar com dominios operacionais
+- adaptacao para futuros blocos semanticos que precisem conversar com dominios operacionais, sem executar efeitos finais
 
 O seam pode conter bridges, pequenos translators, request publishers e coordinators finos.
 O que nao pode e perder a fronteira de ownership.
@@ -97,6 +98,8 @@ Fica fora do seam:
 - `SceneTransitionService`
 - execucao concreta de spawn
 - execucao concreta de reset
+- execucao concreta de navegacao
+- execucao concreta de phase prepare/composition
 - `ActorRegistry` como source of truth operacional de participacao
 - presenter local de `IntroStage`
 - `InputModes` como aplicador efetivo de map
@@ -133,6 +136,10 @@ O seam e o emissor canonico de intencao adjacente para session-side concerns.
 Spawn e reset continuam sendo operacao.
 O seam pode emitir requests, planos ou pistas de integracao, mas nao executa spawn nem reset.
 
+Navegacao concreta permanece no owner de `Navigation/SceneFlow`.
+Reset concreto permanece no owner de `ResetFlow`.
+Contrato de handoff de reset pertence ao owner `ResetFlow` (nao ao `Session Integration`).
+
 ### `ActorRegistry`
 
 `ActorRegistry` continua sendo registry operacional de atores vivos.
@@ -143,6 +150,7 @@ O seam pode correlacionar, observar ou compor sinais com ele, mas nao delega par
 
 O seam consome a phase ja resolvida.
 Ele nao seleciona phase, nao autoriza autoria da phase e nao substitui `PhaseDefinition`.
+No caso de prepare de phase, o seam despacha handoff; a materializacao operacional ocorre fora do seam.
 
 ### baseline / layer acima do baseline
 
@@ -171,7 +179,48 @@ Em particular:
 - cada intencao downstream deve ter um emissor canonico claro
 - `ParticipationReadinessState.NotReady` continua pedindo politica operacional explicita, sem fallback silencioso e sem ser absorvido por dedupe local
 
-## 8. Ordem de migracao e implicacoes
+## 8. Trincheiras canonicas de saida do seam
+
+As saidas oficiais do `Session Integration` sao:
+
+- continuidade (`IGameplaySessionFlowContinuityService`)
+- run-reset (`IGameplaySessionRunResetService`)
+- phase-reset (consumindo contrato de handoff do owner `ResetFlow`)
+- sceneflow prepare handoff (prepare operacional fora do seam)
+- run continuation handoff (dispatch para trilho operacional de continuacao)
+- input mode request (request canonico para rail de `InputModes`)
+
+Regra normativa:
+- o seam publica/despacha
+- consumidores operacionais executam
+- o seam nao executa efeito final concreto
+
+## 9. Regra canonica da ligacao com IntroStage
+
+O prepare operacional pode materializar phase/conteudo.
+Ele nao pode substituir o rail da `IntroStage`.
+
+A entrada da `IntroStage` deve retornar ao ponto canonico consumido pelo owner do rail:
+
+- `GameplayPhaseFlowService` como owner de queue/ready (`PhaseIntroStageQueued`, `PhaseIntroStageReady`)
+- `IntroStageLifecycleOrchestrator` como owner de defer/release/start request (`IntroStageDeferred`, `IntroStageReleasedOnSceneTransitionCompleted`, `IntroStageStartRequested`)
+- `IntroStageCoordinator` como owner de started/completed/gameplay unblock (`IntroStageStarted` e desbloqueio para gameplay)
+
+Quando `PhaseContentApplied` for parte do contrato que arma o rail, o metadado/contract `source` canonico exigido pelo owner downstream deve ser preservado.
+Alterar esse metadado sem contrato explicito/documentado e desvio arquitetural.
+
+## 10. Anti-padroes explicitos
+
+Sao anti-padroes neste eixo:
+
+- seam executando navegacao concreta
+- seam executando reset concreto
+- seam coordenando macro owner de outro eixo por conveniencia
+- owner operacional dependendo de contratos definidos dentro do seam
+- prepare operacional absorvendo o rail da `IntroStage`
+- mudanca de metadado/contract `source` quebrando owner downstream sem documentacao
+
+## 11. Ordem de migracao e implicacoes
 
 A adocao deste seam deve preceder ou reorganizar os proximos passos do plano de participacao.
 
@@ -194,7 +243,7 @@ O mesmo seam vira base para analises e refatoracoes futuras em:
 
 Este ADR tambem habilita uma leitura futura mais limpa do baseline, inclusive comparando estado atual versus shape ideal sem confundir integracao com ownership semantico.
 
-## 9. Relacao com ADRs anteriores
+## 12. Relacao com ADRs anteriores
 
 Este ADR nao substitui os seguintes contratos; ele os organiza na fronteira correta:
 
@@ -207,7 +256,19 @@ Este ADR nao substitui os seguintes contratos; ele os organiza na fronteira corr
 
 O que este ADR adiciona e a fronteira explicita que faltava entre esses owners e os dominios operacionais.
 
-## 10. Fechamento
+## 13. Estado atual validado
+
+Smoke recente validou:
+
+- handoff puro no `Session Integration` (sem execucao final concreta)
+- navegacao concreta no owner de navegacao
+- reset concreto no owner de reset, com contrato de handoff pertencendo a `ResetFlow`
+- `Integration/SceneFlow` e `GameRunEndedEventBridge` encerrando em handoff operacional canonicamente definido
+- prepare operacional fora do seam, com retorno ao owner canonico do rail de `IntroStage`
+- trilho completo da `IntroStage` restaurado (queue -> ready -> deferred -> release -> start request -> started)
+- `GameLoop` chegando em `Playing` pelo trilho correto apos confirmacao da intro
+
+## 14. Fechamento
 
 `Session Integration` passa a ser a area propria da arquitetura responsavel por fazer a costura canonica entre semantica de sessao e operacao adjacente.
 

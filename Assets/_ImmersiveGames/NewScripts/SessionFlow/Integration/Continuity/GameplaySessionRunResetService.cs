@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
@@ -15,16 +14,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
     public sealed class GameplaySessionRunResetService : IGameplaySessionRunResetService
     {
         private readonly IRestartContextService _restartContextService;
-        private readonly IGameNavigationService _navigationService;
+        private readonly ISessionIntegrationNavigationHandoffService _navigationHandoffService;
         private readonly IPhaseCatalogRuntimeStateService _phaseCatalogRuntimeStateService;
 
         public GameplaySessionRunResetService(
             IRestartContextService restartContextService,
-            IGameNavigationService navigationService,
+            ISessionIntegrationNavigationHandoffService navigationHandoffService,
             IPhaseCatalogRuntimeStateService phaseCatalogRuntimeStateService)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _navigationHandoffService = navigationHandoffService ?? throw new ArgumentNullException(nameof(navigationHandoffService));
             _phaseCatalogRuntimeStateService = phaseCatalogRuntimeStateService ?? throw new ArgumentNullException(nameof(phaseCatalogRuntimeStateService));
         }
 
@@ -48,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             string explicitReason = request.Reason;
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetExecutionStarted kind='{request.Kind}' reason='{explicitReason}' routeId='{routeId}' currentPhase='{DescribePhase(baseSnapshot.PhaseDefinitionRef)}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetHandoffDispatch kind='{request.Kind}' reason='{explicitReason}' routeId='{routeId}' currentPhase='{DescribePhase(baseSnapshot.PhaseDefinitionRef)}' targetPhase='{DescribePhase(targetPhaseRef)}' target='Navigation'.",
                 DebugUtility.Colors.Info);
 
             ClearRestartContext(explicitReason);
@@ -67,10 +66,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 $"[OBS][GameplaySessionFlow][RunReset] RunResetGameplayReentryRequested kind='{request.Kind}' routeId='{routeId}' targetScene='GameplayScene' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{explicitReason}'.",
                 DebugUtility.Colors.Info);
 
-            await _navigationService.StartGameplayRouteAsync(routeId, SceneTransitionPayload.Empty, explicitReason);
+            await _navigationHandoffService.RequestStartGameplayRouteAsync(
+                routeId,
+                explicitReason,
+                nameof(GameplaySessionRunResetService),
+                ct);
 
             DebugUtility.Log<GameplaySessionRunResetService>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetMacroExecuted kind='{request.Kind}' routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{explicitReason}'.",
+                $"[OBS][GameplaySessionFlow][RunReset] RunResetHandoffCompleted kind='{request.Kind}' routeId='{routeId}' targetPhase='{DescribePhase(targetPhaseRef)}' reason='{explicitReason}' target='Navigation'.",
                 DebugUtility.Colors.Success);
 
             string completionLabel = request.Kind == RunContinuationKind.ResetRun
@@ -103,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
         {
             return snapshot.MacroRouteId.IsValid
                 ? snapshot.MacroRouteId
-                : _navigationService.ResolveGameplayRouteIdOrFail();
+                : _navigationHandoffService.ResolveGameplayRouteIdOrFail("GameplaySessionFlow/RunResetFallbackRoute", nameof(GameplaySessionRunResetService));
         }
 
         private void ClearRestartContext(string reason)

@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
@@ -19,14 +18,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
     public sealed class PhaseResetExecutor : IPhaseResetExecutor
     {
         private readonly IRestartContextService _restartContextService;
-        private readonly WorldResetExecutor _localExecutor;
+        private readonly IPhaseResetOperationalHandoffService _operationalHandoffService;
 
         public PhaseResetExecutor(
             IRestartContextService restartContextService,
-            IWorldResetLocalExecutorRegistry localExecutorRegistry)
+            IPhaseResetOperationalHandoffService operationalHandoffService)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
-            _localExecutor = new WorldResetExecutor(localExecutorRegistry ?? throw new ArgumentNullException(nameof(localExecutorRegistry)));
+            _operationalHandoffService = operationalHandoffService ?? throw new ArgumentNullException(nameof(operationalHandoffService));
         }
 
         public async Task ResetPhaseAsync(PhaseResetContext resetContext, string reason, CancellationToken ct)
@@ -74,15 +73,24 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 FailFastConfig($"ResetPhaseAsync could not resolve active scene name. reason='{normalizedReason}'.");
             }
 
-            if (!_localExecutor.TryResolveExecutors(activeScene, out var executors) || executors.Count == 0)
+            var handoffRequest = new PhaseResetHandoffRequest(
+                resetContext,
+                activeScene,
+                normalizedReason,
+                nameof(PhaseResetExecutor));
+            if (!handoffRequest.IsValid)
             {
-                FailFastConfig($"ResetPhaseAsync found no local reset executor for scene='{activeScene}'. reason='{normalizedReason}'.");
+                FailFastConfig($"ResetPhaseAsync produced invalid handoff request. activeScene='{activeScene}' reason='{normalizedReason}'.");
             }
 
-            await _localExecutor.ExecuteAsync(executors, normalizedReason);
+            DebugUtility.Log<PhaseResetExecutor>(
+                $"[OBS][PhaseReset] HandoffDispatch target='PhaseResetOperational' scene='{activeScene}' phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.PhaseSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            await _operationalHandoffService.ExecuteAsync(handoffRequest, ct);
 
             DebugUtility.Log<PhaseResetExecutor>(
-                $"[OBS][PhaseReset] ResetPhaseCompleted phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.PhaseSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
+                $"[OBS][PhaseReset] HandoffCompleted target='PhaseResetOperational' scene='{activeScene}' phaseRef='{resetContext.PhaseDefinitionRef.name}' routeId='{resetContext.MacroRouteId}' phaseSignature='{resetContext.PhaseSignature}' resetSignature='{resetContext.ResetSignature}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
 
             EventBus<PhaseResetCompletedEvent>.Raise(

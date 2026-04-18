@@ -30,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
             }
 
             RegisterLocalExecutorRegistry();
+            RegisterPhaseResetOperationalHandoff();
             RegisterWorldResetService();
             RegisterWorldResetCommands();
             RegisterSceneFlowWorldResetDriver();
@@ -66,6 +67,15 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
                 "[WorldReset] WorldResetService registrado no DI global.");
         }
 
+        private static void RegisterPhaseResetOperationalHandoff()
+        {
+            RegisterIfMissing<IPhaseResetOperationalHandoffService>(
+                () => new PhaseResetOperationalHandoffService(
+                    ResolveRequired<IWorldResetLocalExecutorRegistry>("IWorldResetLocalExecutorRegistry")),
+                "[WorldReset] IPhaseResetOperationalHandoffService ja registrado no DI global.",
+                "[WorldReset] IPhaseResetOperationalHandoffService registrado no DI global.");
+        }
+
         private static void RegisterWorldResetCommands()
         {
             RegisterIfMissing<IWorldResetCommands>(
@@ -100,6 +110,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
             ResolveRequired<IWorldResetRequestService>("IWorldResetRequestService");
             ResolveRequired<SceneFlowWorldResetDriver>("SceneFlowWorldResetDriver");
             ResolveRequired<IWorldResetLocalExecutorRegistry>("IWorldResetLocalExecutorRegistry");
+            ResolveRequired<IPhaseResetOperationalHandoffService>("IPhaseResetOperationalHandoffService");
 
             DebugUtility.Log(typeof(WorldResetInstaller),
                 "[OBS][WorldReset] Runtime composition consolidada. scope='reset lifecycle macro + local executor registry + SceneFlow handoff'.",
@@ -185,4 +196,3 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
         }
     }
 }
-
