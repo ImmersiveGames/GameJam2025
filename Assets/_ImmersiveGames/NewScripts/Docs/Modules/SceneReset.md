@@ -25,6 +25,7 @@ Na Base 1.0:
 - fases concretas de cleanup/restore/rebind/spawn local
 - hooks locais de reset
 - coordenacao operacional de ciclo local de cena
+- bindings locais concretos (`SceneResetController`, queue e runtime factory)
 
 `SceneReset` nao e owner de:
 - reset macro (`WorldReset`)

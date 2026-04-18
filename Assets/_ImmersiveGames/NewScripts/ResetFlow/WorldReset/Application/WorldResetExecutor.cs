@@ -10,17 +10,24 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
     /// </summary>
     public sealed class WorldResetExecutor
     {
+        private readonly IWorldResetLocalExecutorRegistry _localExecutorRegistry;
+
+        public WorldResetExecutor(IWorldResetLocalExecutorRegistry localExecutorRegistry)
+        {
+            _localExecutorRegistry = localExecutorRegistry ?? throw new System.ArgumentNullException(nameof(localExecutorRegistry));
+        }
+
         public bool TryResolveExecutors(
             string targetScene,
             out IReadOnlyList<IWorldResetLocalExecutor> executors)
         {
-            executors = WorldResetLocalExecutorLocator.FindExecutorsForScene(targetScene);
+            executors = _localExecutorRegistry.GetExecutorsForScene(targetScene);
             return executors != null && executors.Count > 0;
         }
 
         public async Task<bool> TryExecuteAsync(string targetScene, string reason)
         {
-            IReadOnlyList<IWorldResetLocalExecutor> executors = WorldResetLocalExecutorLocator.FindExecutorsForScene(targetScene);
+            IReadOnlyList<IWorldResetLocalExecutor> executors = _localExecutorRegistry.GetExecutorsForScene(targetScene);
             if (executors == null || executors.Count == 0)
             {
                 return false;

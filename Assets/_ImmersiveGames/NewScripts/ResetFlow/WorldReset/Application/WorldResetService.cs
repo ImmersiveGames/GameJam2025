@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
@@ -23,10 +22,16 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
         private readonly object _lock = new();
         private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
         private readonly Dictionary<string, long> _recentCompleted = new(StringComparer.Ordinal);
-        private readonly WorldResetLifecyclePublisher _lifecyclePublisher = new();
+        private readonly WorldResetLifecyclePublisher _lifecyclePublisher;
+        private readonly WorldResetOrchestrator _orchestrator;
 
-        private bool _dependenciesResolved;
-        private WorldResetOrchestrator? _orchestrator;
+        public WorldResetService(
+            WorldResetOrchestrator orchestrator,
+            WorldResetLifecyclePublisher lifecyclePublisher)
+        {
+            _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
+            _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
+        }
 
         public async Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason)
         {
@@ -45,8 +50,6 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
-            EnsureDependencies();
-
             string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;
             string rsn = string.IsNullOrWhiteSpace(request.Reason) ? string.Empty : request.Reason;
 
@@ -68,9 +71,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             WorldResetResult result = WorldResetResult.Failed;
             try
             {
-                WorldResetOrchestrator orchestrator = _orchestrator
-                    ?? throw new InvalidOperationException("WorldResetOrchestrator was not initialized.");
-                result = await orchestrator.ExecuteAsync(request);
+                result = await _orchestrator.ExecuteAsync(request);
                 return result;
             }
             catch (Exception ex)
@@ -96,16 +97,6 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                     }
                 }
             }
-        }
-
-        public void PublishResetCompleted(WorldResetRequest request, WorldResetOutcome outcome, string detail)
-        {
-            DebugUtility.LogVerbose<WorldResetService>(
-                $"[OBS][WorldReset][Completion] lifecycle='canonical' outcome='{outcome}' signature='{request.ContextSignature}' routeId='{request.MacroRouteId}' targetScene='{request.TargetScene}' detail='{detail}'.",
-                outcome == WorldResetOutcome.Completed || outcome == WorldResetOutcome.SkippedByPolicy || outcome == WorldResetOutcome.SkippedValidation
-                    ? DebugUtility.Colors.Success
-                    : DebugUtility.Colors.Info);
-            _lifecyclePublisher.PublishCompleted(request, outcome, detail);
         }
 
         private bool IsRecentlyCompletedLocked(string contextSignature)
@@ -139,19 +130,6 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             }
 
             _recentCompleted.Clear();
-        }
-
-        private void EnsureDependencies()
-        {
-            if (_dependenciesResolved)
-            {
-                return;
-            }
-
-            IDependencyProvider provider = DependencyManager.Provider;
-            _orchestrator = WorldResetOrchestrator.CreateDefault(provider, _lifecyclePublisher);
-
-            _dependenciesResolved = true;
         }
 
         private static void LogLifecycleDedupe(string dedupeKind, string contextSignature, string reason)

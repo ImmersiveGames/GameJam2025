@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Guards;
@@ -50,44 +48,23 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
         }
 
-        public static WorldResetOrchestrator CreateDefault(
-            IDependencyProvider provider,
-            WorldResetLifecyclePublisher lifecyclePublisher)
-        {
-            if (provider == null)
-            {
-                throw new InvalidOperationException("IDependencyProvider is required to build the WorldResetOrchestrator.");
-            }
-
-            provider.TryGetGlobal(out IWorldResetPolicy policy);
-            provider.TryGetGlobal(out ISimulationGateService gateService);
-
-            var guards = new List<IWorldResetGuard>(1)
-            {
-                new SimulationGateWorldResetGuard(gateService)
-            };
-
-            var validators = new List<IWorldResetValidator>(1)
-            {
-                new WorldResetSignatureValidator()
-            };
-
-            WorldResetValidationPipeline validationPipeline = new WorldResetValidationPipeline(validators);
-            WorldResetExecutor executor = new WorldResetExecutor();
-            WorldResetPostResetValidator postResetValidator = new WorldResetPostResetValidator(provider);
-
-            return new WorldResetOrchestrator(
-                policy,
-                guards,
-                validationPipeline,
-                executor,
-                postResetValidator,
-                lifecyclePublisher);
-        }
-
         public async Task<WorldResetResult> ExecuteAsync(WorldResetRequest request)
         {
             LogLifecycleCheckpoint(LifecycleCheckpoint.Dispatch, request, "received");
+
+            if (!request.ShouldExecute)
+            {
+                WorldResetOutcome skippedOutcome = request.HasSignature
+                    ? WorldResetOutcome.SkippedByPolicy
+                    : WorldResetOutcome.SkippedInvalidContext;
+                string skippedDetail = request.HasSignature ? string.Empty : "ContextSignatureEmpty";
+
+                _lifecyclePublisher.PublishCompleted(request, skippedOutcome, skippedDetail);
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Completion, request, skippedOutcome.ToString());
+                LogCompletionFlow(skippedOutcome.ToString(), request, skippedDetail);
+                return WorldResetResult.Completed;
+            }
+
             ResetDecision decision = EvaluateGuards(request);
             if (!decision.ShouldProceed)
             {

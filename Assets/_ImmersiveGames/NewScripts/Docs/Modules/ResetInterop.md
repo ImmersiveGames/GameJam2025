@@ -7,14 +7,13 @@
 ## Estado atual
 - `ResetInterop` concentra a ponte entre `SceneFlow` e `WorldReset` no trilho macro.
 - O modulo reune driver, gate e tokens publicos de correlacao para a transicao macro.
-- `ResetInterop/Bindings` concentra os entrypoints de cena que acionam o reset local observavel.
+- A execucao local concreta fica em `SceneReset/Bindings`; `ResetInterop` nao executa reset local.
 - `SceneResetFacade` continua em `SceneReset`, como compat historica separada.
 
 ## Ownership
 - `SceneFlowWorldResetDriver`: handoff `SceneFlow/ScenesReady -> WorldResetService` com guard/dedupe de assinatura.
 - `WorldResetCompletionGate`: gate de completion consumido pelo pipeline macro do `SceneFlow`.
 - `WorldResetTokens`: tokens publicos de reset.
-- `ResetInterop/Bindings`: controller, runner e factory da borda local de reset.
 - Eventos de contrato consumidos/publicados no trilho: `WorldResetStartedEvent` e `WorldResetCompletedEvent`.
 
 ## Regras praticas

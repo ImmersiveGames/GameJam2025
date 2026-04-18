@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
 {
     internal sealed class SceneResetRequestQueue
     {

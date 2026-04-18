@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Installers.Bootstrap;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap
 {
     public static class SessionIntegrationBootstrap
@@ -68,7 +69,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
-            IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService);
+            if (!DependencyManager.Provider.TryGetGlobal<IWorldResetLocalExecutorRegistry>(out var localExecutorRegistry) || localExecutorRegistry == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IWorldResetLocalExecutorRegistry ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+            }
+
+            IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService, localExecutorRegistry);
             IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
 
             var service = new GameplaySessionFlowContinuityService(

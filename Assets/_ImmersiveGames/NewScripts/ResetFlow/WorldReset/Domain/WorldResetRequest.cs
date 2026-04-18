@@ -16,7 +16,8 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
             string reason,
             string targetScene,
             WorldResetOrigin origin,
-            string sourceSignature = null)
+            string sourceSignature = null,
+            bool shouldExecute = true)
             : this(
                 kind,
                 contextSignature,
@@ -25,7 +26,8 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
                 origin,
                 SceneRouteId.None,
                 PhaseContextSignature.Empty,
-                sourceSignature)
+                sourceSignature,
+                shouldExecute)
         {
         }
 
@@ -37,7 +39,8 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
             WorldResetOrigin origin,
             SceneRouteId macroRouteId,
             PhaseContextSignature phaseSignature,
-            string sourceSignature = null)
+            string sourceSignature = null,
+            bool shouldExecute = true)
         {
             Kind = kind;
             ContextSignature = contextSignature ?? string.Empty;
@@ -47,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
             MacroRouteId = macroRouteId;
             PhaseSignature = phaseSignature;
             SourceSignature = sourceSignature ?? string.Empty;
+            ShouldExecute = shouldExecute;
             CreatedUtc = DateTime.UtcNow;
         }
 
@@ -58,13 +62,14 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
         public WorldResetOrigin Origin { get; }
         public SceneRouteId MacroRouteId { get; }
         public PhaseContextSignature PhaseSignature { get; }
+        public bool ShouldExecute { get; }
         public DateTime CreatedUtc { get; }
 
         public bool HasSignature => !string.IsNullOrWhiteSpace(ContextSignature);
 
         public override string ToString()
         {
-            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', PhaseSignature='{PhaseSignature}')";
+            return $"WorldResetRequest(Kind='{Kind}', Signature='{ContextSignature}', Reason='{Reason}', Target='{TargetScene}', Origin={Origin}, Route='{MacroRouteId}', PhaseSignature='{PhaseSignature}', ShouldExecute='{ShouldExecute}')";
         }
     }
 }

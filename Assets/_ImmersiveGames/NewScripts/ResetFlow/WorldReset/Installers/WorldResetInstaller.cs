@@ -1,20 +1,20 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
 using _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Guards;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Validation;
 namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
 {
     /// <summary>
-    /// Installer do WorldReset.
-    ///
-    /// Responsabilidade:
-    /// - registrar contratos, servicos e bridges do reset macro no boot;
-    /// - nao compor runtime operacional nem depender de bootstrap posterior;
-    /// - falhar cedo se contratos estruturais obrigatorios estiverem ausentes.
+    /// Installer do WorldReset com composição explícita do eixo.
+    /// Fail-fast para contratos estruturais obrigatórios.
     /// </summary>
     public static class WorldResetInstaller
     {
@@ -22,11 +22,14 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
 
         public static void Install(BootstrapConfigAsset bootstrapConfig)
         {
+            _ = bootstrapConfig;
+
             if (_installed)
             {
                 return;
             }
 
+            RegisterLocalExecutorRegistry();
             RegisterWorldResetService();
             RegisterWorldResetCommands();
             RegisterSceneFlowWorldResetDriver();
@@ -40,9 +43,17 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
                 DebugUtility.Colors.Info);
         }
 
+        private static void RegisterLocalExecutorRegistry()
+        {
+            RegisterIfMissing<IWorldResetLocalExecutorRegistry>(
+                () => new WorldResetLocalExecutorRegistry(),
+                "[WorldReset] IWorldResetLocalExecutorRegistry ja registrado no DI global.",
+                "[WorldReset] IWorldResetLocalExecutorRegistry registrado no DI global.");
+        }
+
         private static void RegisterWorldResetService()
         {
-            var service = ResolveOrCreateWorldResetService();
+            WorldResetService service = BuildWorldResetService();
 
             RegisterIfMissing<IWorldResetService>(
                 () => service,
@@ -58,15 +69,15 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
         private static void RegisterWorldResetCommands()
         {
             RegisterIfMissing<IWorldResetCommands>(
-                () => new WorldResetCommands(),
+                () => new WorldResetCommands(ResolveRequired<IWorldResetService>("IWorldResetService")),
                 "[WorldReset] IWorldResetCommands ja registrado no DI global.",
-                "[WorldReset] WorldResetCommands registrado no DI global.");
+                "[WorldReset] IWorldResetCommands registrado no DI global.");
         }
 
         private static void RegisterSceneFlowWorldResetDriver()
         {
             RegisterIfMissing(
-                () => new SceneFlowWorldResetDriver(ResolveRequiredWorldResetService()),
+                () => new SceneFlowWorldResetDriver(ResolveRequired<IWorldResetService>("IWorldResetService")),
                 "[ResetInterop] SceneFlowWorldResetDriver ja registrado no DI global.",
                 "[ResetInterop] SceneFlowWorldResetDriver registrado no DI global.");
         }
@@ -74,69 +85,81 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
         private static void RegisterWorldResetRequestService()
         {
             RegisterIfMissing<IWorldResetRequestService>(
-                () => new WorldResetRequestService(ResolveSimulationGateServiceOrFail()),
+                () => new WorldResetRequestService(
+                    ResolveRequired<IWorldResetService>("IWorldResetService"),
+                    ResolveRequired<ISimulationGateService>("ISimulationGateService")),
                 "[WorldReset] IWorldResetRequestService ja registrado no DI global.",
-                "[WorldReset] WorldResetRequestService registrado no DI global.");
+                "[WorldReset] IWorldResetRequestService registrado no DI global.");
         }
 
         private static void EnsureWorldResetModuleComposition()
         {
-            ResolveRequiredWorldResetService();
+            ResolveRequired<IWorldResetService>("IWorldResetService");
+            ResolveRequired<WorldResetService>("WorldResetService");
             ResolveRequired<IWorldResetCommands>("IWorldResetCommands");
             ResolveRequired<IWorldResetRequestService>("IWorldResetRequestService");
             ResolveRequired<SceneFlowWorldResetDriver>("SceneFlowWorldResetDriver");
+            ResolveRequired<IWorldResetLocalExecutorRegistry>("IWorldResetLocalExecutorRegistry");
 
             DebugUtility.Log(typeof(WorldResetInstaller),
-                "[OBS][WorldReset] Runtime composition consolidada. scope='reset lifecycle -> dispatch/skip/dedupe/completion -> SceneFlow handoff'.",
+                "[OBS][WorldReset] Runtime composition consolidada. scope='reset lifecycle macro + local executor registry + SceneFlow handoff'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static WorldResetService ResolveOrCreateWorldResetService()
+        private static WorldResetService BuildWorldResetService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<WorldResetService>(out var existingConcrete) && existingConcrete != null)
+            if (DependencyManager.Provider.TryGetGlobal<WorldResetService>(out WorldResetService existingConcrete) && existingConcrete != null)
             {
                 return existingConcrete;
             }
 
-            if (DependencyManager.Provider.TryGetGlobal<IWorldResetService>(out var existingInterface) && existingInterface is WorldResetService existingService)
+            if (DependencyManager.Provider.TryGetGlobal<IWorldResetService>(out IWorldResetService existingInterface) && existingInterface is WorldResetService existingService)
             {
                 return existingService;
             }
 
-            return new WorldResetService();
-        }
+            IDependencyProvider provider = ResolveRequired<IDependencyProvider>("IDependencyProvider");
+            IWorldResetPolicy policy = ResolveRequired<IWorldResetPolicy>("IWorldResetPolicy");
+            ISimulationGateService gateService = ResolveRequired<ISimulationGateService>("ISimulationGateService");
+            IWorldResetLocalExecutorRegistry localExecutorRegistry = ResolveRequired<IWorldResetLocalExecutorRegistry>("IWorldResetLocalExecutorRegistry");
 
-        private static WorldResetService ResolveRequiredWorldResetService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<WorldResetService>(out var service) && service != null)
+            var guards = new List<IWorldResetGuard>(1)
             {
-                return service;
-            }
+                new SimulationGateWorldResetGuard(gateService)
+            };
 
-            if (DependencyManager.Provider.TryGetGlobal<IWorldResetService>(out var existingInterface) && existingInterface is WorldResetService existingService)
+            var validators = new List<IWorldResetValidator>(1)
             {
-                return existingService;
-            }
+                new WorldResetSignatureValidator()
+            };
 
-            throw new InvalidOperationException("[FATAL][Config][WorldReset] IWorldResetService obrigatorio ausente no DI global antes de registrar o SceneFlowWorldResetDriver.");
-        }
+            WorldResetLifecyclePublisher lifecyclePublisher = new WorldResetLifecyclePublisher();
+            WorldResetValidationPipeline validationPipeline = new WorldResetValidationPipeline(validators);
+            WorldResetExecutor executor = new WorldResetExecutor(localExecutorRegistry);
+            WorldResetPostResetValidator postResetValidator = new WorldResetPostResetValidator(provider);
+            WorldResetOrchestrator orchestrator = new WorldResetOrchestrator(
+                policy,
+                guards,
+                validationPipeline,
+                executor,
+                postResetValidator,
+                lifecyclePublisher);
 
-        private static ISimulationGateService ResolveSimulationGateServiceOrFail()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) && gateService != null)
-            {
-                return gateService;
-            }
-
-            throw new InvalidOperationException("[FATAL][Config][WorldReset] ISimulationGateService obrigatorio ausente no DI global.");
+            return new WorldResetService(orchestrator, lifecyclePublisher);
         }
 
         private static T ResolveRequired<T>(string serviceName)
             where T : class
         {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var service) && service != null)
+            if (DependencyManager.Provider.TryGetGlobal<T>(out T service) && service != null)
             {
                 return service;
+            }
+
+            if (typeof(T) == typeof(IDependencyProvider))
+            {
+                return DependencyManager.Provider as T
+                    ?? throw new InvalidOperationException("[FATAL][Config][WorldReset] DependencyManager.Provider obrigatorio ausente para compor o WorldReset runtime.");
             }
 
             throw new InvalidOperationException($"[FATAL][Config][WorldReset] {serviceName} obrigatorio ausente para compor o WorldReset runtime.");
@@ -145,13 +168,13 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)
             where T : class
         {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<T>(out T existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(WorldResetInstaller), alreadyRegisteredMessage, DebugUtility.Colors.Info);
                 return;
             }
 
-            var instance = factory();
+            T instance = factory();
             if (instance == null)
             {
                 throw new InvalidOperationException($"Factory returned null while registering {typeof(T).Name}.");

@@ -5,7 +5,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
-namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
 {
     internal sealed class SceneResetRuntimeFactory
     {
@@ -34,22 +34,17 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
 
         public void LogOptionalDependencies(bool verboseLogs)
         {
-            if (_hookRegistry == null)
-            {
-                DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"SceneResetHookRegistry não encontrado para a cena '{_sceneName}'. Hooks via registry ficarão desativados.");
-            }
-
             if (_gateService == null)
             {
                 DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"ISimulationGateService não injetado para a cena '{_sceneName}'. Reset seguirá sem gate.");
+                    $"ISimulationGateService nao injetado para a cena '{_sceneName}'. Reset seguira sem gate.");
             }
 
-            if (verboseLogs && _hookRegistry != null)
+            if (verboseLogs)
             {
+                int hooksCount = _hookRegistry?.Hooks.Count ?? 0;
                 DebugUtility.LogVerbose(typeof(SceneResetController),
-                    $"SceneReset runtime pronto. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'.");
+                    $"SceneReset runtime pronto. scene='{_sceneName}', hooksCount='{hooksCount}'.");
             }
         }
 
@@ -57,17 +52,31 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
         {
             bool valid = true;
 
+            if (_provider == null)
+            {
+                DebugUtility.LogError(typeof(SceneResetController),
+                    $"Sem IDependencyProvider para a cena '{_sceneName}'. Runtime local de reset nao pode compor hooks/participants de cena.");
+                valid = false;
+            }
+
+            if (_hookRegistry == null)
+            {
+                DebugUtility.LogError(typeof(SceneResetController),
+                    $"Sem SceneResetHookRegistry para a cena '{_sceneName}'. Ciclo de reset local nao pode continuar sem hooks registry.");
+                valid = false;
+            }
+
             if (_spawnRegistry == null)
             {
                 DebugUtility.LogError(typeof(SceneResetController),
-                    $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
+                    $"Sem IWorldSpawnServiceRegistry para a cena '{_sceneName}'. Ciclo de vida nao pode continuar.");
                 valid = false;
             }
 
             if (_actorRegistry == null)
             {
                 DebugUtility.LogError(typeof(SceneResetController),
-                    $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida não pode continuar.");
+                    $"Sem IActorRegistry para a cena '{_sceneName}'. Ciclo de vida nao pode continuar.");
                 valid = false;
             }
 
@@ -83,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
                     if (verboseLogs)
                     {
                         DebugUtility.Log(typeof(SceneResetController),
-                            $"Limpando SceneResetHookRegistry na destruição do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
+                            $"Limpando SceneResetHookRegistry na destruicao do controller. scene='{_sceneName}', hooksCount='{_hookRegistry.Hooks.Count}'");
                     }
 
                     _hookRegistry.Clear();
@@ -91,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
                 catch (Exception ex)
                 {
                     DebugUtility.LogWarning(typeof(SceneResetController),
-                        $"Falha ao limpar SceneResetHookRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                        $"Falha ao limpar SceneResetHookRegistry na destruicao do controller. scene='{_sceneName}'. {ex}");
                 }
             }
 
@@ -102,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
                     if (verboseLogs)
                     {
                         DebugUtility.Log(typeof(SceneResetController),
-                            $"Limpando IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
+                            $"Limpando IWorldSpawnServiceRegistry na destruicao do controller. scene='{_sceneName}', servicesCount='{_spawnRegistry.Services.Count}'");
                     }
 
                     _spawnRegistry.Clear();
@@ -110,10 +119,9 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Bindings
                 catch (Exception ex)
                 {
                     DebugUtility.LogWarning(typeof(SceneResetController),
-                        $"Falha ao limpar IWorldSpawnServiceRegistry na destruição do controller. scene='{_sceneName}'. {ex}");
+                        $"Falha ao limpar IWorldSpawnServiceRegistry na destruicao do controller. scene='{_sceneName}'. {ex}");
                 }
             }
         }
     }
 }
-

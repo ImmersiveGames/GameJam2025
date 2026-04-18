@@ -19,11 +19,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
     public sealed class PhaseResetExecutor : IPhaseResetExecutor
     {
         private readonly IRestartContextService _restartContextService;
-        private readonly WorldResetExecutor _localExecutor = new();
+        private readonly WorldResetExecutor _localExecutor;
 
-        public PhaseResetExecutor(IRestartContextService restartContextService)
+        public PhaseResetExecutor(
+            IRestartContextService restartContextService,
+            IWorldResetLocalExecutorRegistry localExecutorRegistry)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
+            _localExecutor = new WorldResetExecutor(localExecutorRegistry ?? throw new ArgumentNullException(nameof(localExecutorRegistry)));
         }
 
         public async Task ResetPhaseAsync(PhaseResetContext resetContext, string reason, CancellationToken ct)
