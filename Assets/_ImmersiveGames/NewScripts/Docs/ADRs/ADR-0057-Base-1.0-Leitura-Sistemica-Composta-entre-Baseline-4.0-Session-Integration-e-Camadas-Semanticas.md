@@ -166,6 +166,7 @@ Para `GameplayParticipationFlowService`, fica normativo que:
 - saida semantica canonica por `ParticipationSnapshot` + `ParticipationSnapshotChangedEvent`
 - composicao externa (sem auto-bootstrap/composition root interno)
 - consumidores operacionais reagem fora da peca
+- a projecao legacy de participation (`GameplayPhasePlayerParticipation*`) nao faz parte do trilho canonico
 
 
 Imagens de referencia

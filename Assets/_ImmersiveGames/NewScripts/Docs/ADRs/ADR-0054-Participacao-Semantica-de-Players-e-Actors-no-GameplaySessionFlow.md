@@ -236,3 +236,11 @@ Este bloco nao e:
 4. manter bridges temporarias para reset, spawn e input
 5. depois introduzir o grupo de binding/interacao de gameplay, se necessario
 6. somente entao reduzir o uso direto de `Phase.Players` nos consumidores runtime
+
+## 10. Fechamento curto (estado validado)
+
+- `GameplayParticipationFlowService` e a referencia formal de semantica pura para participation/readiness na Base 1.0.
+- A composicao do owner e externa (sem auto-bootstrap interno do servico).
+- A entrada semantica minima explicita e `ParticipationSemanticInput`.
+- A saida semantica canonica permanece `ParticipationSnapshot` + `ParticipationSnapshotChangedEvent`.
+- A projecao legacy de participation (`GameplayPhasePlayerParticipation*`) foi removida e nao integra mais o trilho canonico.

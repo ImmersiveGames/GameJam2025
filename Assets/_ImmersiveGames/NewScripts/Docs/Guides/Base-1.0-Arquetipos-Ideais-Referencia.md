@@ -223,6 +223,10 @@ Se é possível apontar, sem ambiguidade, qual subpeça é semântica, seam, bas
 - Composição/wiring: externo à peça (a peça não atua como composition root).
 - Consumidores operacionais: reagem fora do owner semântico.
 
+### Fechamento curto do legado de participation
+- A projeção legacy (`GameplayPhasePlayerParticipationService` / `IGameplayPhasePlayerParticipationService` / `GameplayPhasePlayerParticipationSnapshot`) foi removida do trilho canônico.
+- O trilho válido de participation permanece: `GameplayParticipationFlowService` -> `ParticipationSnapshot` -> `ParticipationSnapshotChangedEvent`.
+
 ### Boundaries normativos consolidados para `SceneFlow`
 - Boundary com `ResetFlow`: explícito por handshake macro (`ScenesReady` -> reset handoff + completion gate).
 - Boundary com `Session Integration` e camadas acima: explícito por publicação nos checkpoints macro canônicos (`ScenesReady`, `TransitionCompleted`).
