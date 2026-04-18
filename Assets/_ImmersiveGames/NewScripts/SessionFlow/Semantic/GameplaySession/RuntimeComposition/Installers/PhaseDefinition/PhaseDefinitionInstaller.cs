@@ -15,7 +15,6 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
@@ -59,7 +58,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
             EnsureGameplayParticipationFlowOwner();
             EnsureGameplayPhaseFlowOwner();
             RegisterSessionIntegrationContextService();
-            RegisterGameplayPhasePlayerParticipationCompatibilityService();
             RegisterPhaseContentUnloadSupplementProvider();
             RegisterPhaseContentCompletionCleaner();
             RegisterPhaseNextPhaseSelectionService();
@@ -337,45 +335,24 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 return;
             }
 
-            new GameplayParticipationFlowService();
+            if (DependencyManager.Provider.TryGetGlobal<GameplayParticipationFlowService>(out var existingConcreteOwner) &&
+                existingConcreteOwner != null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IGameplayParticipationFlowService>(existingConcreteOwner);
+
+                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
+                    "[OBS][PhaseDefinition][Participation] owner='GameplayParticipationFlowService' composition='external' role='semantic-roster-owner'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            var owner = new GameplayParticipationFlowService();
+            DependencyManager.Provider.RegisterGlobal<GameplayParticipationFlowService>(owner);
+            DependencyManager.Provider.RegisterGlobal<IGameplayParticipationFlowService>(owner);
 
             DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
-                "[OBS][PhaseDefinition][Participation] owner='GameplayParticipationFlowService' executor='GameplayParticipationFlowService' role='semantic-roster-owner'.",
+                "[OBS][PhaseDefinition][Participation] owner='GameplayParticipationFlowService' composition='external' role='semantic-roster-owner'.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterGameplayPhasePlayerParticipationCompatibilityService()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplayParticipationFlowService>(out var participationFlowService) || participationFlowService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IGameplayParticipationFlowService missing from global DI before legacy participation compatibility registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var phaseRuntimeService) || phaseRuntimeService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IGameplayPhaseRuntimeService missing from global DI before legacy participation compatibility registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhasePlayerParticipationService>(out var existingService) || existingService == null)
-            {
-                var compatibilityService = new GameplayPhasePlayerParticipationService(participationFlowService, phaseRuntimeService);
-                DependencyManager.Provider.RegisterGlobal<IGameplayPhasePlayerParticipationService>(compatibilityService);
-
-                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
-                    "[OBS][PhaseDefinition][ParticipationLegacy] compat='residual' executor='GameplayPhasePlayerParticipationService' role='legacy-participation-projection'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (existingService is GameplayPhasePlayerParticipationService)
-            {
-                DebugUtility.LogVerbose(typeof(PhaseDefinitionInstaller),
-                    "[OBS][PhaseDefinition][ParticipationLegacy] compat='residual' executor='GameplayPhasePlayerParticipationService' role='legacy-participation-projection'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            throw new InvalidOperationException("[FATAL][Config][PhaseDefinition] IGameplayPhasePlayerParticipationService mismatch: global DI already contains a non-residual implementation.");
         }
 
         private static void RegisterPhaseContentUnloadSupplementProvider()

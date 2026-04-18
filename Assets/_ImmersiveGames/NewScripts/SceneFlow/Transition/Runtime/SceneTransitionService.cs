@@ -157,12 +157,14 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
                 LogLifecycleEvent("SceneTransitionScenesReadyEvent", transitionId, signature, context);
                 EventBus<SceneTransitionScenesReadyEvent>.Raise(new SceneTransitionScenesReadyEvent(context));
                 LogBoundaryHandshake("Navigation", "scene_composition_committed", transitionId, signature, context);
+                LogBoundaryHandshake("Reset", "world_reset_handoff_dispatched", transitionId, signature, context);
+                LogBoundaryHandshake("SessionIntegration", "scenes_ready_published_for_upper_layers", transitionId, signature, context);
 
                 DebugUtility.Log<SceneTransitionService>(
                     $"[SceneFlow] ScenesReady id={transitionId} signature='{signature}' routeId='{context.RouteId}', style='{context.StyleLabel}', profile='{context.TransitionProfileName}'.",
                     DebugUtility.Colors.Info);
 
-                await AwaitCompletionGateAsync(context);
+                await AwaitCompletionGateAsync(context, transitionId, signature);
                 LogMacroCheckpoint(MacroTransitionCheckpoint.BeforeFadeOut, transitionId, signature, context);
                 LogBoundaryHandshake("Loading-Fade", "fade_out_requested", transitionId, signature, context);
                 LogLifecycleEvent("SceneTransitionBeforeFadeOutEvent", transitionId, signature, context);
@@ -172,6 +174,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
                 LogBoundaryHandshake("Loading-Fade", "fade_out_completed", transitionId, signature, context);
                 LogLifecycleEvent("SceneTransitionCompletedEvent", transitionId, signature, context);
                 EventBus<SceneTransitionCompletedEvent>.Raise(new SceneTransitionCompletedEvent(context));
+                LogBoundaryHandshake("SessionIntegration", "transition_completed_published_for_upper_layers", transitionId, signature, context);
                 MarkCompleted(signature);
 
                 DebugUtility.Log<SceneTransitionService>(
@@ -351,25 +354,33 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
             _lastCompletedSignature = signature ?? string.Empty;
         }
 
-        private async Task AwaitCompletionGateAsync(SceneTransitionContext context)
+        private async Task AwaitCompletionGateAsync(SceneTransitionContext context, long transitionId, string? signature)
         {
+            string normalizedSignature = string.IsNullOrWhiteSpace(signature)
+                ? SceneTransitionSignature.Compute(context)
+                : signature;
+
             try
             {
-                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
+                LogBoundaryHandshake("Reset", "completion_gate_wait_started", transitionId, normalizedSignature, context);
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Aguardando completion gate antes do FadeOut. signature='{normalizedSignature}'.");
                 await _completionGate.AwaitBeforeFadeOutAsync(context);
-                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Completion gate concluido. Prosseguindo para FadeOut. signature='{SceneTransitionSignature.Compute(context)}'.");
+                LogBoundaryHandshake("Reset", "completion_gate_released", transitionId, normalizedSignature, context);
+                DebugUtility.LogVerbose<SceneTransitionService>($"[SceneFlow] Completion gate concluido. Prosseguindo para FadeOut. signature='{normalizedSignature}'.");
             }
             catch (Exception ex)
             {
                 if (IsFatalH1Exception(ex))
                 {
+                    LogBoundaryHandshake("Reset", "completion_gate_fail_fast_h1", transitionId, normalizedSignature, context);
                     DebugUtility.LogError<SceneTransitionService>($"[SceneFlow] Completion gate abortado por fail-fast H1. Interrompendo transicao. ex={ex.GetType().Name}: {ex.Message}");
                     throw;
                 }
 
                 DebugUtility.LogWarning<SceneTransitionService>($"[SceneFlow] Completion gate falhou/abortou. Prosseguindo com FadeOut. ex={ex.GetType().Name}: {ex.Message}");
                 string fallbackReason = ResolveCompletionGateFallbackReason(ex);
-                DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] CompletionGateFallback applied='true' reason='{fallbackReason}' signature='{SceneTransitionSignature.Compute(context)}'.", DebugUtility.Colors.Info);
+                LogBoundaryHandshake("Reset", $"completion_gate_fallback_{fallbackReason}", transitionId, normalizedSignature, context);
+                DebugUtility.Log<SceneTransitionService>($"[OBS][SceneFlow] CompletionGateFallback applied='true' reason='{fallbackReason}' signature='{normalizedSignature}'.", DebugUtility.Colors.Info);
             }
         }
 

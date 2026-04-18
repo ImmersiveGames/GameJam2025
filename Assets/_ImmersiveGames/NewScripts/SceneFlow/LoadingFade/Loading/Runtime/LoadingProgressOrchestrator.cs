@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
@@ -19,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
         private readonly EventBinding<SceneFlowRouteLoadingProgressEvent> _routeProgressBinding;
         private readonly EventBinding<WorldResetStartedEvent> _resetStartedBinding;
         private readonly EventBinding<WorldResetCompletedEvent> _resetCompletedBinding;
-        private readonly EventBinding<PhaseDefinitionSelectedEvent> _phaseSelectedBinding;
 
         private ILoadingPresentationService _presentationService;
         private ActiveLoadingProgress _active;
@@ -38,7 +36,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
             _routeProgressBinding = new EventBinding<SceneFlowRouteLoadingProgressEvent>(OnRouteProgress);
             _resetStartedBinding = new EventBinding<WorldResetStartedEvent>(OnResetStarted);
             _resetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnResetCompleted);
-            _phaseSelectedBinding = new EventBinding<PhaseDefinitionSelectedEvent>(OnPhaseSelected);
 
             EnsureRegistered();
         }
@@ -62,7 +59,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
             EventBus<SceneFlowRouteLoadingProgressEvent>.Register(_routeProgressBinding);
             EventBus<WorldResetStartedEvent>.Register(_resetStartedBinding);
             EventBus<WorldResetCompletedEvent>.Register(_resetCompletedBinding);
-            EventBus<PhaseDefinitionSelectedEvent>.Register(_phaseSelectedBinding);
 
             _isRegistered = true;
 
@@ -87,7 +83,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
                 EventBus<SceneFlowRouteLoadingProgressEvent>.Unregister(_routeProgressBinding);
                 EventBus<WorldResetStartedEvent>.Unregister(_resetStartedBinding);
                 EventBus<WorldResetCompletedEvent>.Unregister(_resetCompletedBinding);
-                EventBus<PhaseDefinitionSelectedEvent>.Unregister(_phaseSelectedBinding);
                 _isRegistered = false;
 
                 DebugUtility.LogVerbose<LoadingProgressOrchestrator>(
@@ -134,23 +129,12 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
             }
 
             _active.RouteProgress = 1f;
+            if (_active.RouteKind == SceneRouteKind.Gameplay)
+            {
+                _active.PrepareProgress = 1f;
+            }
             _active.StepLabel = _active.RouteKind == SceneRouteKind.Gameplay ? "Preparing gameplay" : "Finalizing route";
             LogProgressEvent("SceneTransitionScenesReadyEvent", signature, evt.context.RouteKind, evt.context.RequiresWorldReset, evt.context.Reason, _active.StepLabel);
-            PublishCurrent();
-        }
-
-        private void OnPhaseSelected(PhaseDefinitionSelectedEvent evt)
-        {
-            if (_active == null || _active.RouteKind != SceneRouteKind.Gameplay)
-            {
-                LogIgnoredProgress("PhaseDefinitionSelectedEvent", _active?.Signature ?? string.Empty, "inactive_or_non_gameplay_route");
-                return;
-            }
-
-            _active.PrepareProgress = 1f;
-            string phaseName = evt.PhaseDefinitionRef != null ? evt.PhaseDefinitionRef.name : "current phase";
-            _active.StepLabel = $"Preparing phase: {phaseName}";
-            LogProgressEvent("PhaseDefinitionSelectedEvent", _active.Signature, _active.RouteKind, _active.RequiresWorldReset, _active.Reason, _active.StepLabel);
             PublishCurrent();
         }
 

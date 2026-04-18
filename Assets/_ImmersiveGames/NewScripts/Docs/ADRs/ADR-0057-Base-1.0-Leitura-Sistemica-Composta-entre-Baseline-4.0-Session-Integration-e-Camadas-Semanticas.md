@@ -144,6 +144,29 @@ Toda discussao futura de modulo, boundary e ownership deve partir desta leitura:
 
 Decisoes que contrariem essa leitura devem ser tratadas como desvio arquitetural e nao como variacao aceitavel de implementacao.
 
+## 14. Alinhamento de referencia formal (estado atual validado)
+
+Com base no estado runtime validado em smoke interativo recente, registra-se o seguinte quadro formal de referencia da Base 1.0:
+
+- `InputModes` = executor operacional puro
+- `ResetFlow` = peca composta saudavel
+- `Session Integration` = seam explicito puro
+- `SceneFlow` = baseline tecnico/macro fino
+- `GameplayParticipationFlowService` = semantica pura
+
+Para `SceneFlow`, fica normativo que:
+- o bootstrap permanece estritamente de wiring tecnico/macro
+- loading/fade/gates/checkpoints macro permanecem no owner tecnico
+- boundaries com `ResetFlow` e camadas acima ficam explicitos por handshakes/publicacoes macro canonicos
+- semantica de sessao/participacao/phase/continuidade nao pertence ao owner `SceneFlow`
+
+Para `GameplayParticipationFlowService`, fica normativo que:
+- owner de truth semantica de participation/readiness
+- entrada semantica minima explicita por `ParticipationSemanticInput`
+- saida semantica canonica por `ParticipationSnapshot` + `ParticipationSnapshotChangedEvent`
+- composicao externa (sem auto-bootstrap/composition root interno)
+- consumidores operacionais reagem fora da peca
+
 
 Imagens de referencia
 ![ChatGPT Image 17 de abr. de 2026, 10_05_10.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_05_10.png)

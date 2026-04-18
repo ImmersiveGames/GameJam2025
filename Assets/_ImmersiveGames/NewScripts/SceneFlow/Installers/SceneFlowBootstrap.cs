@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
@@ -11,8 +10,6 @@ using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 {
     /// <summary>
@@ -26,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
     {
         private static bool _runtimeComposed;
         private static SceneFlowInputModeBridge _inputModeBridge;
-        private static GameplayParticipationInputModeBridge _participationInputModeBridge;
         private static LoadingHudOrchestrator _loadingHudOrchestrator;
         private static LoadingProgressOrchestrator _loadingProgressOrchestrator;
 
@@ -46,7 +42,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 
             EnsureSceneTransitionService();
             EnsureInputModeBridge();
-            EnsureParticipationInputModeBridge();
             EnsureLoadingOrchestrators();
             EnsureFadeReadyAsync();
             EnsureSceneFlowModuleComposition();
@@ -121,23 +116,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             DependencyManager.Provider.RegisterGlobal(_inputModeBridge);
         }
 
-        private static void EnsureParticipationInputModeBridge()
-        {
-            if (_participationInputModeBridge != null)
-            {
-                return;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<GameplayParticipationInputModeBridge>(out var existing) && existing != null)
-            {
-                _participationInputModeBridge = existing;
-                return;
-            }
-
-            _participationInputModeBridge = new GameplayParticipationInputModeBridge();
-            DependencyManager.Provider.RegisterGlobal(_participationInputModeBridge);
-        }
-
         private static void EnsureLoadingOrchestrators()
         {
             ResolveRequired<ILoadingPresentationService>();
@@ -201,7 +179,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             ResolveRequired<ILoadingHudService>();
             ResolveRequired<IFadeService>();
             ResolveRequired<SceneFlowInputModeBridge>();
-            ResolveRequired<GameplayParticipationInputModeBridge>();
             ResolveRequired<LoadingHudOrchestrator>();
             ResolveRequired<LoadingProgressOrchestrator>();
 
@@ -218,114 +195,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             }
 
             throw new InvalidOperationException($"[FATAL][Config][SceneFlow] {typeof(T).Name} obrigatorio ausente no DI global antes da composicao runtime.");
-        }
-    }
-
-    /// <summary>
-    /// Thin bridge from semantic participation to concrete input mode requests.
-    /// It does not own roster derivation or concrete binding state.
-    /// </summary>
-    public sealed class GameplayParticipationInputModeBridge : IDisposable
-    {
-        private readonly EventBinding<ParticipationSnapshotChangedEvent> _participationBinding;
-        private bool _disposed;
-        private string _lastProcessedSignature = string.Empty;
-
-        public GameplayParticipationInputModeBridge()
-        {
-            _participationBinding = new EventBinding<ParticipationSnapshotChangedEvent>(OnParticipationChanged);
-            EventBus<ParticipationSnapshotChangedEvent>.Register(_participationBinding);
-
-            DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
-                "[InputMode] GameplayParticipationInputModeBridge registered as semantic bridge.",
-                DebugUtility.Colors.Info);
-        }
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            _disposed = true;
-            EventBus<ParticipationSnapshotChangedEvent>.Unregister(_participationBinding);
-        }
-
-        private void OnParticipationChanged(ParticipationSnapshotChangedEvent evt)
-        {
-            if (_disposed || !evt.IsValid)
-            {
-                return;
-            }
-
-            if (evt.IsCleared)
-            {
-                _lastProcessedSignature = string.Empty;
-                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
-                    $"[InputMode][Participation] Cleared event observed source='{evt.Source}' reason='{evt.Reason}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            ParticipationSnapshot snapshot = evt.Snapshot;
-            string signature = snapshot.Signature.Value;
-
-            if (!string.IsNullOrWhiteSpace(signature)
-                && string.Equals(_lastProcessedSignature, signature, StringComparison.Ordinal))
-            {
-                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
-                    $"[InputMode][Participation] Duplicate snapshot ignored signature='{signature}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            _lastProcessedSignature = signature;
-
-            if (!snapshot.Readiness.CanEnterGameplay)
-            {
-                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
-                    $"[InputMode][Participation] Snapshot not liberating input mode readinessState='{snapshot.Readiness.State}' signature='{signature}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!snapshot.TryGetLocalBindingCandidate(out ParticipantSnapshot localParticipant))
-            {
-                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
-                    $"[InputMode][Participation] No local binding candidate found signature='{signature}' readinessState='{snapshot.Readiness.State}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            PublishGameplayInputModeRequest(snapshot, localParticipant, signature);
-
-            DebugUtility.Log(typeof(GameplayParticipationInputModeBridge),
-                $"[OBS][InputModes][Participation] Gameplay requested from participation signature='{signature}' localParticipantId='{localParticipant.ParticipantId}' bindingHint='{localParticipant.BindingHint}' ownership='{localParticipant.OwnershipKind}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void PublishGameplayInputModeRequest(
-            ParticipationSnapshot snapshot,
-            ParticipantSnapshot localParticipant,
-            string signature)
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegration) || sessionIntegration == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayParticipationInputModeBridge),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para InputMode gameplay. signature='{signature}' readinessState='{snapshot.Readiness.State}'.");
-                return;
-            }
-
-            sessionIntegration.RequestGameplayInputMode(
-                BuildReason(snapshot, localParticipant),
-                "GameplayParticipation",
-                signature);
-        }
-
-        private static string BuildReason(ParticipationSnapshot snapshot, ParticipantSnapshot participant)
-        {
-            return $"Participation/{snapshot.Readiness.State}/local={participant.ParticipantId}";
         }
     }
 }

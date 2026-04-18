@@ -7,7 +7,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Diagnostic
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome.EndConditions
 {
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
         [Inject] private IGameLoopService _gameLoopService;
         [Inject] private IGameplaySessionContextService _sessionContextService;
         [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
-        [Inject] private IGameplayPhasePlayerParticipationService _phasePlayersService;
+        [Inject] private IGameplayParticipationFlowService _participationFlowService;
 
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
@@ -162,9 +162,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
                 DependencyManager.Provider.TryGetGlobal(out _phaseRuntimeService);
             }
 
-            if (_phasePlayersService == null)
+            if (_participationFlowService == null)
             {
-                DependencyManager.Provider.TryGetGlobal(out _phasePlayersService);
+                DependencyManager.Provider.TryGetGlobal(out _participationFlowService);
             }
         }
 
@@ -268,11 +268,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
         {
             GameplaySessionContextSnapshot session = GameplaySessionContextSnapshot.Empty;
             GameplayPhaseRuntimeSnapshot phase = GameplayPhaseRuntimeSnapshot.Empty;
-            GameplayPhasePlayerParticipationSnapshot players = GameplayPhasePlayerParticipationSnapshot.Empty;
+            ParticipationSnapshot participation = ParticipationSnapshot.Empty;
 
             bool hasSession = _sessionContextService != null && _sessionContextService.TryGetCurrent(out session);
             bool hasPhase = _phaseRuntimeService != null && _phaseRuntimeService.TryGetCurrent(out phase);
-            bool hasPlayers = _phasePlayersService != null && _phasePlayersService.TryGetCurrent(out players);
+            bool hasParticipation = _participationFlowService != null && _participationFlowService.TryGetCurrent(out participation);
 
             string sessionLabel = hasSession
                 ? $"Session: {session.PhaseId} v{session.SelectionVersion}"
@@ -282,11 +282,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
                 ? $"Phase: {(phase.PhaseDefinitionRef != null ? phase.PhaseDefinitionRef.name : "<none>")} v{phase.SessionContext.SelectionVersion}"
                 : "Phase: empty";
 
-            string playersLabel = hasPlayers
-                ? $"Players: {players.ParticipationMode} x{players.ParticipatingPlayerCount} primary={players.PrimaryParticipantId}"
+            string playersLabel = hasParticipation
+                ? $"Players: x{participation.ParticipantCount} primary={participation.PrimaryParticipantId} readiness={participation.Readiness.State}"
                 : "Players: empty";
 
-            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasPlayers, session, phase, players);
+            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasParticipation, session, phase, participation);
 
             return $"{sessionLabel} | {phaseLabel}\n{playersLabel}\n{linkLabel}";
         }
@@ -294,10 +294,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
         private static string BuildLinkSummary(
             bool hasSession,
             bool hasPhase,
-            bool hasPlayers,
+            bool hasParticipation,
             GameplaySessionContextSnapshot session,
             GameplayPhaseRuntimeSnapshot phase,
-            GameplayPhasePlayerParticipationSnapshot players)
+            ParticipationSnapshot participation)
         {
             string sessionPhase = hasSession && hasPhase
                 ? string.Equals(session.SessionSignature, phase.SessionContext.SessionSignature, System.StringComparison.Ordinal)
@@ -305,8 +305,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
                     : "S-P: mismatch"
                 : "S-P: empty";
 
-            string phasePlayers = hasPhase && hasPlayers
-                ? string.Equals(phase.PhaseRuntimeSignature, players.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
+            string phasePlayers = hasPhase && hasParticipation
+                ? string.Equals(phase.PhaseRuntimeSignature, participation.PhaseSignature, System.StringComparison.Ordinal)
                     ? "P-Players: linked"
                     : "P-Players: mismatch"
                 : "P-Players: empty";

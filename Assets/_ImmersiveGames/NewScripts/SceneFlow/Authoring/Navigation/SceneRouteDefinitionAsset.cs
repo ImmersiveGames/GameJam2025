@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
                 $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{nameof(scenesToUnloadKeys)}' scenes=[{FormatSceneDetails(unload)}].",
                 DebugUtility.Colors.Info);
 
-            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog);
+            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog != null);
         }
 
         public void ValidateRoutePolicyOrFailFast()

@@ -202,3 +202,27 @@ Se é possível apontar, sem ambiguidade, qual subpeça é semântica, seam, bas
 4. Marcar sinais de desvio e o anti-padrão dominante.
 5. Separar problema de boundary (papel) de problema de implementação (execução).
 6. Priorizar primeiro as peças com mistura de papéis e ownership por conveniência operacional.
+
+---
+
+## Estado atual das referências formais (Base 1.0)
+
+| Peça | Arquétipo formal atual | Registro normativo curto |
+|---|---|---|
+| `InputModes` | Executor operacional puro | Owner de execução de modo de input; não define semântica de sessão. |
+| `ResetFlow` | Peça composta saudável | Composição explícita entre seam (`ResetInterop`), macro owner (`WorldReset`) e execução local (`SceneReset`). |
+| `Session Integration` | Seam explícito puro | Traduz/correlaciona e encerra em handoff operacional canônico; não executa efeito final. |
+| `SceneFlow` | Baseline técnico/macro fino | Owner de transição macro, loading/fade, gates técnicos, checkpoints/handshakes macro e dispatch macro de rota; não é owner de truth semântica, participation, phase selection ou continuidade. |
+| `GameplayParticipationFlowService` | Semântica pura | Owner da truth semântica de participation/readiness, com snapshot canônico e evento semântico; composição externa e consumidores operacionais fora da peça. |
+
+### Boundary normativo consolidado para `GameplayParticipationFlowService`
+- Entrada semântica mínima: `ParticipationSemanticInput`.
+- Saída semântica canônica: `ParticipationSnapshot` + `ParticipationSnapshotChangedEvent` + observabilidade de readiness/truth.
+- Papel de ownership: truth semântica de participation/readiness.
+- Não é owner de: handoff operacional, navegação, reset, loading/fade, gates técnicos, input executor, actor materialization, intro/game loop execution.
+- Composição/wiring: externo à peça (a peça não atua como composition root).
+- Consumidores operacionais: reagem fora do owner semântico.
+
+### Boundaries normativos consolidados para `SceneFlow`
+- Boundary com `ResetFlow`: explícito por handshake macro (`ScenesReady` -> reset handoff + completion gate).
+- Boundary com `Session Integration` e camadas acima: explícito por publicação nos checkpoints macro canônicos (`ScenesReady`, `TransitionCompleted`).

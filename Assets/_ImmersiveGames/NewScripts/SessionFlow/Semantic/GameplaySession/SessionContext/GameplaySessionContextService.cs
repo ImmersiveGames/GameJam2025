@@ -318,8 +318,51 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         bool TryGetCurrentReadiness(out ParticipationReadinessSnapshot readiness);
         bool TryGetLast(out ParticipationSnapshot snapshot);
         ParticipationSnapshot Update(ParticipationSnapshot snapshot);
+        ParticipationSnapshot UpdateFromSemanticInput(ParticipationSemanticInput input);
         ParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
+    }
+
+    public readonly struct ParticipationSemanticInput
+    {
+        public ParticipationSemanticInput(
+            string sessionSignature,
+            string phaseSignature,
+            PhaseDefinitionAsset phaseDefinitionRef,
+            PhaseDefinitionId phaseId)
+        {
+            SessionSignature = string.IsNullOrWhiteSpace(sessionSignature) ? string.Empty : sessionSignature.Trim();
+            PhaseSignature = string.IsNullOrWhiteSpace(phaseSignature) ? string.Empty : phaseSignature.Trim();
+            PhaseDefinitionRef = phaseDefinitionRef;
+            PhaseId = phaseId;
+        }
+
+        public string SessionSignature { get; }
+        public string PhaseSignature { get; }
+        public PhaseDefinitionAsset PhaseDefinitionRef { get; }
+        public PhaseDefinitionId PhaseId { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(SessionSignature) &&
+            !string.IsNullOrWhiteSpace(PhaseSignature) &&
+            PhaseDefinitionRef != null &&
+            PhaseId.IsValid;
+
+        public static ParticipationSemanticInput FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            if (!evt.IsValid || evt.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(ParticipationSemanticInput),
+                    "[FATAL][H1][GameplaySessionFlow] Invalid PhaseDefinitionSelectedEvent received while building semantic participation input.");
+            }
+
+            GameplaySessionContextSnapshot sessionContext = GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt);
+            return new ParticipationSemanticInput(
+                sessionContext.SessionSignature,
+                evt.SelectionSignature,
+                evt.PhaseDefinitionRef,
+                evt.PhaseId);
+        }
     }
 
     [DebugLevel(DebugLevel.Verbose)]
@@ -330,15 +373,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         private readonly object _sync = new();
         private ParticipationSnapshot _current = ParticipationSnapshot.Empty;
         private ParticipationSnapshot _last = ParticipationSnapshot.Empty;
-        private GameplayPhaseRuntimeSnapshot _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
-        private GameplayPhaseRuntimeSnapshot _lastPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
 
         public GameplayParticipationFlowService()
         {
-            RegisterSelfInGlobalDi();
-
             DebugUtility.LogVerbose<GameplayParticipationFlowService>(
-                "[OBS][GameplaySessionFlow][Participation] owner='GameplayParticipationFlowService' executor='GameplayParticipationFlowService' role='semantic-roster-owner'.",
+                "[OBS][GameplaySessionFlow][Participation] owner='GameplayParticipationFlowService' role='semantic-roster-owner' boundary='semantic-only/no-operational-executor'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -393,13 +432,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
 
         public ParticipationSnapshot Update(ParticipationSnapshot snapshot)
         {
-            return UpdateInternal(snapshot, GameplayPhaseRuntimeSnapshot.Empty, source: "manual_update");
+            return UpdateInternal(snapshot, source: "manual_update");
+        }
+
+        public ParticipationSnapshot UpdateFromSemanticInput(ParticipationSemanticInput input)
+        {
+            return UpdateInternal(FromSemanticInput(input), source: "semantic_input");
         }
 
         public ParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
-            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt);
-            return UpdateInternal(FromPhaseDefinitionSelectedEvent(evt), phaseRuntime, source: "phase_selected_event");
+            return UpdateFromSemanticInput(ParticipationSemanticInput.FromPhaseDefinitionSelectedEvent(evt));
         }
 
         public void Clear(string reason = null)
@@ -411,9 +454,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             lock (_sync)
             {
                 _last = _current;
-                _lastPhaseRuntime = _currentPhaseRuntime;
                 _current = clearedSnapshot;
-                _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
                 lastSignature = _last.Signature.Value;
             }
 
@@ -433,18 +474,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         {
         }
 
-        private static ParticipationSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
+        private static ParticipationSnapshot FromSemanticInput(ParticipationSemanticInput input)
         {
-            if (evt.PhaseDefinitionRef == null)
+            if (!input.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] PhaseDefinitionSelectedEvent requires a valid phaseDefinitionRef to build participation.");
+                    "[FATAL][H1][GameplaySessionFlow] Invalid ParticipationSemanticInput received while building participation snapshot.");
             }
 
-            string sessionSignature = GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt).SessionSignature;
-            string phaseSignature = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(evt).PhaseRuntimeSignature;
-
-            ParticipantSnapshot[] participants = BuildParticipants(evt);
+            ParticipantSnapshot[] participants = BuildParticipants(input);
             bool hasParticipants = participants.Length > 0;
             ParticipantId primaryParticipantId = ResolveParticipantId(participants, participant => participant.IsPrimary);
 
@@ -455,14 +493,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                 primaryParticipantId);
 
             return new ParticipationSnapshot(
-                sessionSignature,
-                phaseSignature,
+                input.SessionSignature,
+                input.PhaseSignature,
                 participants,
                 readiness,
                 ParticipationPublicationMode.SnapshotOnly);
         }
 
-        private ParticipationSnapshot UpdateInternal(ParticipationSnapshot snapshot, GameplayPhaseRuntimeSnapshot phaseRuntime, string source)
+        private ParticipationSnapshot UpdateInternal(ParticipationSnapshot snapshot, string source)
         {
             lock (_sync)
             {
@@ -472,14 +510,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                         "[FATAL][H1][GameplaySessionFlow] Invalid participation snapshot received by participation owner.");
                 }
 
-                _lastPhaseRuntime = _currentPhaseRuntime;
-                _currentPhaseRuntime = phaseRuntime;
                 _last = _current;
                 _current = snapshot;
             }
 
             DebugUtility.Log<GameplayParticipationFlowService>(
-                $"[OBS][GameplaySessionFlow][Participation] ParticipationUpdated owner='GameplayParticipationFlowService' executor='GameplayParticipationFlowService' source='{source}' sessionSignature='{snapshot.SessionSignature}' phaseSignature='{snapshot.PhaseSignature}' participantCount='{snapshot.ParticipantCount}' primaryId='{snapshot.PrimaryParticipantId}' readinessState='{snapshot.Readiness.State}' readinessCanEnter='{snapshot.Readiness.CanEnterGameplay}' signature='{snapshot.Signature}'.",
+                $"[OBS][GameplaySessionFlow][Participation] ParticipationTruthUpdated owner='GameplayParticipationFlowService' source='{source}' sessionSignature='{snapshot.SessionSignature}' phaseSignature='{snapshot.PhaseSignature}' participantCount='{snapshot.ParticipantCount}' primaryId='{snapshot.PrimaryParticipantId}' readinessState='{snapshot.Readiness.State}' readinessCanEnter='{snapshot.Readiness.CanEnterGameplay}' signature='{snapshot.Signature}'.",
                 DebugUtility.Colors.Info);
 
             EventBus<ParticipationSnapshotChangedEvent>.Raise(
@@ -491,9 +527,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             return snapshot;
         }
 
-        private static ParticipantSnapshot[] BuildParticipants(PhaseDefinitionSelectedEvent evt)
+        private static ParticipantSnapshot[] BuildParticipants(ParticipationSemanticInput input)
         {
-            PhaseDefinitionAsset.PhasePlayersBlock playersBlock = evt.PhaseDefinitionRef.Players;
+            PhaseDefinitionAsset.PhasePlayersBlock playersBlock = input.PhaseDefinitionRef.Players;
             if (playersBlock == null || playersBlock.entries == null || playersBlock.entries.Count == 0)
             {
                 return Array.Empty<ParticipantSnapshot>();
@@ -515,7 +551,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                 ParticipantKind participantKind = ParticipantKind.Player;
                 OwnershipKind ownershipKind = ResolveOwnershipKind(entry.role);
                 BindingHint bindingHint = ResolveBindingHint(entry.role, isPrimary);
-                string participantIdValue = ResolveParticipantIdValue(evt.PhaseId, entry, index);
+                string participantIdValue = ResolveParticipantIdValue(input.PhaseId, entry, index);
 
                 participants.Add(new ParticipantSnapshot(
                     new ParticipantId(participantIdValue),
@@ -618,35 +654,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
-        }
-
-        private void RegisterSelfInGlobalDi()
-        {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] DependencyManager.Provider unavailable while registering participation owner.");
-            }
-
-            RegisterOwnerBinding<GameplayParticipationFlowService>(this);
-            RegisterOwnerBinding<IGameplayParticipationFlowService>(this);
-        }
-
-        private static void RegisterOwnerBinding<T>(T instance)
-            where T : class
-        {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
-            {
-                if (!ReferenceEquals(existing, instance))
-                {
-                    HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
-                        $"[FATAL][H1][GameplaySessionFlow] Conflicting global binding for '{typeof(T).Name}' while registering participation owner.");
-                }
-
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal<T>(instance);
         }
     }
 
