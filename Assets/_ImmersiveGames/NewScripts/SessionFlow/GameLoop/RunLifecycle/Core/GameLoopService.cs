@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
@@ -15,6 +16,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         private readonly GameLoopStateTransitionEffects _stateTransitionEffects;
         private string _pendingPauseWillEnterReason;
         private string _pendingPauseWillExitReason;
+        private SynchronizationContext _mainThreadContext;
+        private int _mainThreadId = -1;
+        private int _startHandoffPosted;
 
         public GameLoopService()
         {
@@ -38,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 DebugUtility.Colors.Info);
 
             _signals.MarkStart();
+            TryConsumeStartHandoffImmediately();
         }
 
         public void RequestPause(string reason = null)
@@ -88,6 +93,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             }
 
             _stateMachine = new GameLoopStateMachine(_signals, this);
+            _mainThreadContext = SynchronizationContext.Current;
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+            _startHandoffPosted = 0;
             _initialized = true;
 
             DebugUtility.LogVerbose<GameLoopService>("[GameLoop] Initialized.");
@@ -99,6 +107,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             {
                 return;
             }
+
+            CaptureMainThreadIdentity();
 
             _stateMachine.Update();
 
@@ -114,6 +124,71 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             _signals.ResetTransientSignals();
         }
 
+        private void CaptureMainThreadIdentity()
+        {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+
+            var currentContext = SynchronizationContext.Current;
+            if (currentContext != null)
+            {
+                _mainThreadContext = currentContext;
+            }
+        }
+
+        private void TryConsumeStartHandoffImmediately()
+        {
+            if (!_initialized || _stateMachine == null)
+            {
+                return;
+            }
+
+            if (IsMainThread())
+            {
+                Interlocked.Exchange(ref _startHandoffPosted, 0);
+                ConsumeStartHandoffCore();
+                return;
+            }
+
+            // Se o start vier de fluxo async fora da main thread, repostamos para a thread Unity.
+            // Isso evita callbacks/eventos de UI fora da main thread sem perder o handoff imediato.
+            if (_mainThreadContext == null)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _startHandoffPosted, 1, 0) != 0)
+            {
+                return;
+            }
+
+            _mainThreadContext.Post(_ =>
+            {
+                Interlocked.Exchange(ref _startHandoffPosted, 0);
+                if (!_initialized || _stateMachine == null)
+                {
+                    return;
+                }
+
+                ConsumeStartHandoffCore();
+            }, null);
+        }
+
+        private void ConsumeStartHandoffCore()
+        {
+            _stateMachine.Update();
+
+            if (_signals.StartRequested &&
+                _stateMachine.Current == GameLoopStateId.Ready)
+            {
+                _stateMachine.Update();
+            }
+        }
+
+        private bool IsMainThread()
+        {
+            return _mainThreadId > 0 && Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+        }
+
         public void Dispose()
         {
             _initialized = false;
@@ -121,6 +196,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             CurrentStateIdName = string.Empty;
             _pendingPauseWillEnterReason = null;
             _pendingPauseWillExitReason = null;
+            _mainThreadContext = null;
+            _mainThreadId = -1;
+            _startHandoffPosted = 0;
 
             _runStartedEmittedThisRun = false;
 

@@ -164,7 +164,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Diagno
                 return "participation_without_phase";
             }
 
-            return string.Equals(phaseRuntime.PhaseRuntimeSignature, participation.PhaseSignature, StringComparison.Ordinal)
+            if (string.Equals(phaseRuntime.PhaseRuntimeSignature, participation.PhaseSignature, StringComparison.Ordinal))
+            {
+                return "linked";
+            }
+
+            // Participation usa assinatura semantica de fase (selection/session rail),
+            // enquanto PhaseRuntimeSignature pode carregar sufixo tecnico de runtime.
+            // Se o eixo semantico base bate, consideramos coerente.
+            return string.Equals(phaseRuntime.SessionContext.SessionSignature, participation.PhaseSignature, StringComparison.Ordinal)
                 ? "linked"
                 : "mismatch";
         }

@@ -62,6 +62,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
             public PhasePlayerRole role;
         }
 
+        [Serializable]
+        public sealed class PhaseIntroBlock
+        {
+            public bool hasIntroStage;
+            public GameObject introPresenterPrefab;
+        }
+
         [Header("Identity")]
         [SerializeField] private PhaseIdentityBlock identity = new();
 
@@ -71,9 +78,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
         [Header("Players")]
         [SerializeField] private PhasePlayersBlock players = new();
 
+        [Header("Intro")]
+        [SerializeField] private PhaseIntroBlock intro = new();
+
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
         public PhasePlayersBlock Players => players;
+        public PhaseIntroBlock Intro => intro;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 

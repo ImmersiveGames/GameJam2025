@@ -260,9 +260,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
             if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
             {
-                DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}' detail='presenter_unavailable'.",
-                    DebugUtility.Colors.Info);
+                DebugUtility.LogWarning<IntroStageLifecycleDispatchService>(
+                    $"[WARN][OBS][IntroStage] IntroStageSkipped reason='presenter_unavailable' skipReason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}' detail='scene_local_presenter_not_found'.");
 
                 IntroStageSession noContentSession = CreateNoContentSession(session);
                 PublishIntroStageCompleted(noContentSession, "GameplaySessionFlow", wasSkipped: true, reason: "no_content");

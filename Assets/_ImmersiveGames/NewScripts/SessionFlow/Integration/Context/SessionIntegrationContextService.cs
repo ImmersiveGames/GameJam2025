@@ -58,7 +58,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 InputModeRequestKind.Gameplay,
                 reason,
                 semanticSource,
-                contextSignature);
+                contextSignature,
+                ComposeCurrentSnapshot());
         }
 
         public void RequestFrontendMenuInputMode(string reason, string semanticSource, string contextSignature = "")
@@ -67,7 +68,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 InputModeRequestKind.FrontendMenu,
                 reason,
                 semanticSource,
-                contextSignature);
+                contextSignature,
+                ComposeCurrentSnapshot());
         }
 
         public void RequestPauseOverlayInputMode(string reason, string semanticSource, string contextSignature = "")
@@ -76,7 +78,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 InputModeRequestKind.PauseOverlay,
                 reason,
                 semanticSource,
-                contextSignature);
+                contextSignature,
+                ComposeCurrentSnapshot());
         }
 
         public void Clear(string reason = null)
@@ -113,7 +116,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             InputModeRequestKind kind,
             string reason,
             string semanticSource,
-            string contextSignature)
+            string contextSignature,
+            SessionIntegrationContextSnapshot snapshot)
         {
             if (kind == InputModeRequestKind.Unspecified)
             {
@@ -124,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             string normalizedSemanticSource = string.IsNullOrWhiteSpace(semanticSource) ? "<none>" : semanticSource.Trim();
-            string normalizedContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
+            string normalizedContextSignature = ResolveContextSignature(contextSignature, snapshot);
 
             DebugUtility.Log(typeof(SessionIntegrationContextService),
                 $"[OBS][SessionIntegration][InputModes] requestPublisher='SessionIntegrationContextService' seam='SessionIntegration' target='InputModeCoordinator' kind='{kind}' reason='{normalizedReason}' semanticSource='{normalizedSemanticSource}' contextSignature='{normalizedContextSignature}'.",
@@ -136,6 +140,31 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                     normalizedReason,
                     "SessionIntegration",
                     normalizedContextSignature));
+        }
+
+        private static string ResolveContextSignature(string explicitContextSignature, SessionIntegrationContextSnapshot snapshot)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitContextSignature))
+            {
+                return explicitContextSignature.Trim();
+            }
+
+            if (snapshot.Participation.IsValid && snapshot.Participation.Signature.IsValid)
+            {
+                return snapshot.Participation.Signature.ToString();
+            }
+
+            if (snapshot.PhaseRuntime.IsValid && snapshot.PhaseRuntime.HasPhaseRuntimeSignature)
+            {
+                return snapshot.PhaseRuntime.PhaseRuntimeSignature;
+            }
+
+            if (snapshot.SessionContext.IsValid && snapshot.SessionContext.HasSessionSignature)
+            {
+                return snapshot.SessionContext.SessionSignature;
+            }
+
+            return string.Empty;
         }
     }
 

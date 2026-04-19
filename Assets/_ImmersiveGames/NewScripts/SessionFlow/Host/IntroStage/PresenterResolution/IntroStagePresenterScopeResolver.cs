@@ -26,8 +26,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolu
 
             if (resolvedPresenters.Count == 0)
             {
-                DebugUtility.LogWarning<IntroStagePresenterScopeResolver>(
-                    $"[WARN][OBS][IntroStage] No scene-local presenter could be resolved. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' activeScene='{SceneManager.GetActiveScene().name}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}'.");
+                if (session.HasIntroStage)
+                {
+                    DebugUtility.LogWarning<IntroStagePresenterScopeResolver>(
+                        $"[WARN][OBS][IntroStage] No scene-local presenter could be resolved. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' activeScene='{SceneManager.GetActiveScene().name}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' hasIntroStage='true' detail='presenter_unavailable'.");
+                }
+                else
+                {
+                    DebugUtility.Log<IntroStagePresenterScopeResolver>(
+                        $"[OBS][IntroStage] No scene-local presenter resolved (expected for no-intro contract). phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' activeScene='{SceneManager.GetActiveScene().name}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' hasIntroStage='false' outcome='no_content'.",
+                        DebugUtility.Colors.Info);
+                }
+
                 presenters = new List<IIntroStagePresenter>();
                 return false;
             }

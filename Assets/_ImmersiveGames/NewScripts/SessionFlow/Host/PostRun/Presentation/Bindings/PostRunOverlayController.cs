@@ -120,11 +120,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
         /// <summary>
         /// Alias de compatibilidade para bindings antigos de restart.
-        /// O trilho canonico agora deve usar Retry (run-level).
+        /// Restart deve mapear para ResetRun (phase inicial do catalogo).
         /// </summary>
         public void OnClickRestart()
         {
-            OnClickRetry();
+            OnClickResetRun();
         }
 
         public void OnClickRetry()
