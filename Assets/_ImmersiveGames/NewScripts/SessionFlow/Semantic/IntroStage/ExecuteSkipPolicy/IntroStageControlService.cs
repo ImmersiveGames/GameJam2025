@@ -66,11 +66,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                     DebugUtility.LogWarning<IntroStageControlService>(
                         $"[OBS][IntroStageControlService] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Intro antiga sera superseded signature='{NormalizeValue(previousContext.ContextSignature)}'.");
 
+                string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource("GameplaySessionFlow");
+                string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason("superseded", wasSkipped: true);
                 EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                     previousContext.Session,
-                    "GameplaySessionFlow",
+                    canonicalSource,
                     wasSkipped: true,
-                    "superseded"));
+                    canonicalReason));
             }
         }
 
@@ -149,15 +151,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
                 if (context.IsValid)
                 {
+                    string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource("GameplaySessionFlow");
+                    string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason(normalizedReason, wasSkipped);
+
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='GameplaySessionFlow' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='{canonicalSource}' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{canonicalReason}'.",
                         DebugUtility.Colors.Info);
 
                     EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                         context.Session,
-                        "GameplaySessionFlow",
+                        canonicalSource,
                         wasSkipped,
-                        normalizedReason));
+                        canonicalReason));
                 }
             }
             catch (Exception ex)

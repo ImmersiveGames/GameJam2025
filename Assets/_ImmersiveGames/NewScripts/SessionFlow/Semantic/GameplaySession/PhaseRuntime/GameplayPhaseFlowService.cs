@@ -68,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                     "[FATAL][H1][GameplaySessionFlow] Invalid PhaseDefinitionSelectedEvent requested for phase-owned publication.");
             }
 
-            EventBus<PhaseDefinitionSelectedEvent>.Raise(evt);
+            PublishPhaseSelectionEvent(evt);
         }
         public PhaseDefinitionSelectedEvent PublishPhaseDefinitionSelected(
             PhaseDefinitionAsset phaseDefinitionRef,
@@ -90,11 +90,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                     "[FATAL][H1][GameplaySessionFlow] Invalid phase selection requested for phase-owned publication.");
             }
 
-            DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelectedCanonical rail='phase' owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' signature='{evt.SelectionSignature}'.",
-                DebugUtility.Colors.Info);
-
-            EventBus<PhaseDefinitionSelectedEvent>.Raise(evt);
+            LogCanonicalPhaseSelection(evt);
+            PublishPhaseSelectionEvent(evt);
             return evt;
         }
 
@@ -254,29 +251,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 return;
             }
 
-            if (!evt.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] Invalid PhaseDefinitionSelectedEvent received by explicit phase owner.");
-            }
-
-            GameplaySessionContextSnapshot sessionContext = GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt);
-
-            lock (_sync)
-            {
-                _lastSelectionEvent = _currentSelectionEvent;
-                _currentSelectionEvent = evt;
-                _lastSessionContext = _currentSessionContext;
-                _currentSessionContext = sessionContext;
-                _lastPhaseRuntime = _currentPhaseRuntime;
-                _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
-            }
-
-            _participationFlowService.Clear("phase_selected");
-            SyncRestartContextFromPhaseSelection(evt);
-
+            PhaseSelectionProcessingContext context = ConsumePhaseSelectionOrFail(evt);
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseSelectedConsumed owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' sessionSignature='{sessionContext.SessionSignature}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseSelectedConsumed owner='GameplayPhaseFlowService' phaseId='{context.SelectionEvent.PhaseId}' routeId='{context.SelectionEvent.MacroRouteId}' v='{context.SelectionEvent.SelectionVersion}' reason='{context.SelectionEvent.Reason}' sessionSignature='{context.SessionContext.SessionSignature}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -285,12 +262,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
             if (_disposed)
             {
                 return;
-            }
-
-            if (evt.PhaseDefinitionRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] Invalid PhaseContentAppliedEvent received by explicit phase owner.");
             }
 
             PhaseDefinitionSelectedEvent selectionEvent;
@@ -302,17 +273,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 sessionContext = _currentSessionContext;
             }
 
-            if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] PhaseContentAppliedEvent received before a valid phase selection was cached.");
-            }
-
-            if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.PhaseDefinitionRef))
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    $"[FATAL][H1][GameplaySessionFlow] PhaseContentAppliedEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' appliedPhase='{evt.PhaseDefinitionRef.PhaseId}' source='{evt.Source}'.");
-            }
+            GameplayPhaseFlowCompatibilityValidator.ValidatePhaseContentAppliedAgainstSelectionOrFail(evt, selectionEvent);
 
             HandlePhaseRearm(
                 selectionEvent,
@@ -330,24 +291,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 return;
             }
 
-            if (!evt.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] Invalid PhaseResetCompletedEvent received by explicit phase owner.");
-            }
-
-            if (!TryResolveRestartContextService(out var restartContextService) ||
-                restartContextService == null ||
-                !restartContextService.TryGetCurrent(out GameplayStartSnapshot restartSnapshot) ||
-                !restartSnapshot.IsValid ||
-                !restartSnapshot.HasPhaseDefinitionRef ||
-                restartSnapshot.PhaseDefinitionRef == null ||
-                !ReferenceEquals(restartSnapshot.PhaseDefinitionRef, evt.ResetContext.PhaseDefinitionRef) ||
-                restartSnapshot.MacroRouteId != evt.ResetContext.MacroRouteId)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    $"[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent received with stale or mismatched restart snapshot. phaseRef='{evt.ResetContext.PhaseDefinitionRef?.name ?? "<none>"}' routeId='{evt.ResetContext.MacroRouteId}' resetSignature='{evt.ResetContext.ResetSignature}' reason='{evt.Reason}'.");
-            }
+            GameplayStartSnapshot restartSnapshot = GameplayStartSnapshot.Empty;
+            bool hasValidRestartSnapshot =
+                TryResolveRestartContextService(out var restartContextService) &&
+                restartContextService != null &&
+                restartContextService.TryGetCurrent(out restartSnapshot) &&
+                restartSnapshot.IsValid;
 
             PhaseDefinitionSelectedEvent selectionEvent;
             GameplaySessionContextSnapshot sessionContext;
@@ -358,18 +307,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 sessionContext = _currentSessionContext;
             }
 
-            if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent received before a valid phase selection was cached.");
-            }
-
-            if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.ResetContext.PhaseDefinitionRef) ||
-                selectionEvent.MacroRouteId != evt.ResetContext.MacroRouteId)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    $"[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' cachedVersion='{selectionEvent.SelectionVersion}' resetPhase='{evt.ResetContext.PhaseDefinitionRef?.PhaseId.Value ?? "<none>"}' resetRouteId='{evt.ResetContext.MacroRouteId}'.");
-            }
+            GameplayPhaseFlowCompatibilityValidator.ValidatePhaseResetCompletedAgainstSelectionOrFail(
+                evt,
+                hasValidRestartSnapshot,
+                restartSnapshot,
+                selectionEvent);
 
             DebugUtility.Log<GameplayPhaseFlowService>(
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseResetRearmConsumed owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}' resetSignature='{evt.ResetContext.ResetSignature}' source='{evt.Source}'.",
@@ -391,12 +333,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 return;
             }
 
-            if (!evt.Session.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] Invalid IntroStageEntryEvent received by explicit phase owner.");
-            }
-
             PhaseDefinitionSelectedEvent selectionEvent;
             GameplaySessionContextSnapshot sessionContext;
 
@@ -406,35 +342,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 sessionContext = _currentSessionContext;
             }
 
-            if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    "[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent received before a valid phase selection was cached.");
-            }
-
-            if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.Session.PhaseDefinitionRef) ||
-                selectionEvent.SelectionVersion != evt.Session.SelectionVersion)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                $"[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' cachedVersion='{selectionEvent.SelectionVersion}' entryPhase='{(evt.Session.PhaseDefinitionRef != null ? evt.Session.PhaseDefinitionRef.PhaseId.Value : "<none>")}' entryVersion='{evt.Session.SelectionVersion}'.");
-            }
-
-            bool hasParticipationSnapshot = _participationFlowService.TryGetCurrent(out ParticipationSnapshot participationSnapshot);
-            bool hasParticipationReadiness = _participationFlowService.TryGetCurrentReadiness(out ParticipationReadinessSnapshot participationReadiness);
-            if (!_currentPhaseRuntime.IsValid ||
-                !hasParticipationSnapshot ||
-                !hasParticipationReadiness ||
-                !participationSnapshot.IsValid ||
-                !participationReadiness.IsValid ||
-                !participationReadiness.CanEnterGameplay)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    $"[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent received before participation readiness was semantically available. phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}' readinessState='{participationReadiness.State}' readinessCanEnter='{participationReadiness.CanEnterGameplay}'.");
-            }
+            GameplayPhaseFlowCompatibilityValidator.ValidateIntroStageEntryAgainstSelectionOrFail(evt, selectionEvent);
+            IntroReadinessContext introReadiness = ResolveIntroReadinessContextOrFail(selectionEvent);
 
             DebugUtility.Log<GameplayPhaseFlowService>(
-                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageReady owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{evt.Session.PhaseLocalEntrySequence}' reason='{selectionEvent.Reason}' sessionSignature='{sessionContext.SessionSignature}' entrySource='{evt.Source}' entrySignature='{evt.Session.EntrySignature}' phaseSignature='{_currentPhaseRuntime.PhaseRuntimeSignature}' participationSignature='{participationSnapshot.Signature}' participationReadiness='{participationReadiness.State}' canEnterGameplay='{participationReadiness.CanEnterGameplay}'.",
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageReady owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{evt.Session.PhaseLocalEntrySequence}' reason='{selectionEvent.Reason}' sessionSignature='{sessionContext.SessionSignature}' entrySource='{evt.Source}' entrySignature='{evt.Session.EntrySignature}' phaseSignature='{_currentPhaseRuntime.PhaseRuntimeSignature}' participationSignature='{introReadiness.ParticipationSnapshot.Signature}' participationReadiness='{introReadiness.ParticipationReadiness.State}' canEnterGameplay='{introReadiness.ParticipationReadiness.CanEnterGameplay}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private IntroReadinessContext ResolveIntroReadinessContextOrFail(PhaseDefinitionSelectedEvent selectionEvent)
+        {
+            bool hasParticipationSnapshot = _participationFlowService.TryGetCurrent(out ParticipationSnapshot participationSnapshot);
+            bool hasParticipationReadiness = _participationFlowService.TryGetCurrentReadiness(out ParticipationReadinessSnapshot participationReadiness);
+            GameplayPhaseFlowCompatibilityValidator.ValidateIntroStageReadinessOrFail(
+                selectionEvent,
+                _currentPhaseRuntime,
+                hasParticipationSnapshot,
+                participationSnapshot,
+                hasParticipationReadiness,
+                participationReadiness);
+
+            return new IntroReadinessContext(participationSnapshot, participationReadiness);
         }
 
         private void OnSessionTransitionPhaseLocalEntryReady(SessionTransitionPhaseLocalEntryReadyEvent evt)
@@ -453,6 +381,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
             DebugUtility.Log<GameplayPhaseFlowService>(
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseLocalEntryReady owner='GameplayPhaseFlowService' phaseLocalEntryReady='{evt.Plan.EmitsPhaseLocalEntryReady}' continuation='{evt.Plan.ResolvedContinuation}' phaseIntent='{evt.Plan.Composition.PhaseIntent}' worldResetIntent='{evt.Plan.Composition.WorldResetIntent}' continuityShape='{evt.Plan.Composition.ContinuityShape}' reconstructionShape='{evt.Plan.Composition.ReconstructionShape}' composition='{evt.Plan.Composition}' execution='{evt.Plan.Execution}' reason='{evt.Plan.Reason}' nextState='{evt.Plan.NextState}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private PhaseSelectionProcessingContext ConsumePhaseSelectionOrFail(PhaseDefinitionSelectedEvent evt)
+        {
+            if (!evt.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Invalid PhaseDefinitionSelectedEvent received by explicit phase owner.");
+            }
+
+            GameplaySessionContextSnapshot sessionContext = GameplaySessionContextSnapshot.FromPhaseDefinitionSelectedEvent(evt);
+
+            lock (_sync)
+            {
+                _lastSelectionEvent = _currentSelectionEvent;
+                _currentSelectionEvent = evt;
+                _lastSessionContext = _currentSessionContext;
+                _currentSessionContext = sessionContext;
+                _lastPhaseRuntime = _currentPhaseRuntime;
+                _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
+            }
+
+            _participationFlowService.Clear("phase_selected");
+            SyncRestartContextFromPhaseSelection(evt);
+
+            return new PhaseSelectionProcessingContext(evt, sessionContext);
         }
 
         private GameplaySessionContextSnapshot UpdateSessionContext(GameplaySessionContextSnapshot snapshot, string source)
@@ -474,6 +428,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 DebugUtility.Colors.Info);
 
             return snapshot;
+        }
+
+        private static void LogCanonicalPhaseSelection(PhaseDefinitionSelectedEvent evt)
+        {
+            DebugUtility.Log<GameplayPhaseFlowService>(
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseDefinitionSelectedCanonical rail='phase' owner='GameplayPhaseFlowService' phaseId='{evt.PhaseId}' routeId='{evt.MacroRouteId}' v='{evt.SelectionVersion}' reason='{evt.Reason}' signature='{evt.SelectionSignature}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void PublishPhaseSelectionEvent(PhaseDefinitionSelectedEvent evt)
+        {
+            EventBus<PhaseDefinitionSelectedEvent>.Raise(evt);
         }
 
         private GameplayPhaseRuntimeSnapshot UpdatePhaseRuntime(GameplayPhaseRuntimeSnapshot snapshot, string source)
@@ -549,13 +515,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
             string operationLabel,
             bool shouldQueueIntro)
         {
-            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
-            ParticipationSnapshot participationSnapshot = _participationFlowService.UpdateFromPhaseDefinitionSelectedEvent(selectionEvent);
-            if (!participationSnapshot.Readiness.IsValid || !participationSnapshot.Readiness.CanEnterGameplay)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
-                    $"[FATAL][H1][GameplaySessionFlow] Participation snapshot produced an invalid semantic readiness state during rearm. phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' readinessState='{participationSnapshot.Readiness.State}' readinessCanEnter='{participationSnapshot.Readiness.CanEnterGameplay}'.");
-            }
+            PhaseRearmMaterializationContext rearmContext = MaterializePhaseRearmOrFail(selectionEvent);
+            GameplayPhaseRuntimeSnapshot phaseRuntime = rearmContext.PhaseRuntime;
+            ParticipationSnapshot participationSnapshot = rearmContext.ParticipationSnapshot;
 
             UpdatePhaseRuntime(phaseRuntime, source: operationLabel);
 
@@ -571,25 +533,90 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
 
             if (shouldQueueIntro)
             {
-                string sessionSignature = BuildPhaseSignature(selectionEvent);
-                string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(selectionEvent.PhaseDefinitionRef.PhaseId);
-                IntroStageSession introSession = phaseRuntime.CreateIntroStageSession(
-                    localContentId,
-                    selectionEvent.Reason,
-                    selectionEvent.SelectionVersion,
-                    phaseLocalEntrySequence,
-                    sessionSignature,
-                    entrySignature);
-
-                DebugUtility.Log<GameplayPhaseFlowService>(
-                    $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageQueued owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{phaseLocalEntrySequence}' reason='{selectionEvent.Reason}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' entrySignature='{entrySignature}' hasIntroStage='{introSession.HasIntroStage}'.",
-                    DebugUtility.Colors.Info);
-
-                EventBus<IntroStageEntryEvent>.Raise(new IntroStageEntryEvent(
-                    introSession,
-                    source,
-                    selectionEvent.MacroRouteRef != null ? selectionEvent.MacroRouteRef.RouteKind : default));
+                QueueIntroStageForRearm(selectionEvent, phaseRuntime, source, phaseLocalEntrySequence, entrySignature);
             }
+        }
+
+        private PhaseRearmMaterializationContext MaterializePhaseRearmOrFail(PhaseDefinitionSelectedEvent selectionEvent)
+        {
+            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
+            ParticipationSnapshot participationSnapshot = _participationFlowService.UpdateFromPhaseDefinitionSelectedEvent(selectionEvent);
+            if (!participationSnapshot.Readiness.IsValid || !participationSnapshot.Readiness.CanEnterGameplay)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    $"[FATAL][H1][GameplaySessionFlow] Participation snapshot produced an invalid semantic readiness state during rearm. phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' readinessState='{participationSnapshot.Readiness.State}' readinessCanEnter='{participationSnapshot.Readiness.CanEnterGameplay}'.");
+            }
+
+            return new PhaseRearmMaterializationContext(phaseRuntime, participationSnapshot);
+        }
+
+        private void QueueIntroStageForRearm(
+            PhaseDefinitionSelectedEvent selectionEvent,
+            GameplayPhaseRuntimeSnapshot phaseRuntime,
+            string source,
+            int phaseLocalEntrySequence,
+            string entrySignature)
+        {
+            string sessionSignature = BuildPhaseSignature(selectionEvent);
+            string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(selectionEvent.PhaseDefinitionRef.PhaseId);
+            IntroStageSession introSession = phaseRuntime.CreateIntroStageSession(
+                localContentId,
+                selectionEvent.Reason,
+                selectionEvent.SelectionVersion,
+                phaseLocalEntrySequence,
+                sessionSignature,
+                entrySignature);
+
+            DebugUtility.Log<GameplayPhaseFlowService>(
+                $"[OBS][GameplaySessionFlow][PhaseDefinition] PhaseIntroStageQueued owner='GameplayPhaseFlowService' phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' entrySeq='{phaseLocalEntrySequence}' reason='{selectionEvent.Reason}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' entrySignature='{entrySignature}' hasIntroStage='{introSession.HasIntroStage}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<IntroStageEntryEvent>.Raise(new IntroStageEntryEvent(
+                introSession,
+                source,
+                selectionEvent.MacroRouteRef != null ? selectionEvent.MacroRouteRef.RouteKind : default));
+        }
+
+        private readonly struct PhaseSelectionProcessingContext
+        {
+            public PhaseSelectionProcessingContext(
+                PhaseDefinitionSelectedEvent selectionEvent,
+                GameplaySessionContextSnapshot sessionContext)
+            {
+                SelectionEvent = selectionEvent;
+                SessionContext = sessionContext;
+            }
+
+            public PhaseDefinitionSelectedEvent SelectionEvent { get; }
+            public GameplaySessionContextSnapshot SessionContext { get; }
+        }
+
+        private readonly struct PhaseRearmMaterializationContext
+        {
+            public PhaseRearmMaterializationContext(
+                GameplayPhaseRuntimeSnapshot phaseRuntime,
+                ParticipationSnapshot participationSnapshot)
+            {
+                PhaseRuntime = phaseRuntime;
+                ParticipationSnapshot = participationSnapshot;
+            }
+
+            public GameplayPhaseRuntimeSnapshot PhaseRuntime { get; }
+            public ParticipationSnapshot ParticipationSnapshot { get; }
+        }
+
+        private readonly struct IntroReadinessContext
+        {
+            public IntroReadinessContext(
+                ParticipationSnapshot participationSnapshot,
+                ParticipationReadinessSnapshot participationReadiness)
+            {
+                ParticipationSnapshot = participationSnapshot;
+                ParticipationReadiness = participationReadiness;
+            }
+
+            public ParticipationSnapshot ParticipationSnapshot { get; }
+            public ParticipationReadinessSnapshot ParticipationReadiness { get; }
         }
 
         private static void SyncRestartContextFromPhaseSelection(PhaseDefinitionSelectedEvent evt)
@@ -655,6 +682,112 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
 
             return DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out restartContextService) &&
                    restartContextService != null;
+        }
+
+        private static class GameplayPhaseFlowCompatibilityValidator
+        {
+            public static void ValidatePhaseContentAppliedAgainstSelectionOrFail(
+                PhaseContentAppliedEvent evt,
+                PhaseDefinitionSelectedEvent selectionEvent)
+            {
+                if (evt.PhaseDefinitionRef == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] Invalid PhaseContentAppliedEvent received by explicit phase owner.");
+                }
+
+                if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] PhaseContentAppliedEvent received before a valid phase selection was cached.");
+                }
+
+                if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.PhaseDefinitionRef))
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        $"[FATAL][H1][GameplaySessionFlow] PhaseContentAppliedEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' appliedPhase='{evt.PhaseDefinitionRef.PhaseId}' source='{evt.Source}'.");
+                }
+            }
+
+            public static void ValidatePhaseResetCompletedAgainstSelectionOrFail(
+                PhaseResetCompletedEvent evt,
+                bool hasValidRestartSnapshot,
+                GameplayStartSnapshot restartSnapshot,
+                PhaseDefinitionSelectedEvent selectionEvent)
+            {
+                if (!evt.IsValid)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] Invalid PhaseResetCompletedEvent received by explicit phase owner.");
+                }
+
+                if (!hasValidRestartSnapshot ||
+                    !restartSnapshot.HasPhaseDefinitionRef ||
+                    restartSnapshot.PhaseDefinitionRef == null ||
+                    !ReferenceEquals(restartSnapshot.PhaseDefinitionRef, evt.ResetContext.PhaseDefinitionRef) ||
+                    restartSnapshot.MacroRouteId != evt.ResetContext.MacroRouteId)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        $"[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent received with stale or mismatched restart snapshot. phaseRef='{evt.ResetContext.PhaseDefinitionRef?.name ?? "<none>"}' routeId='{evt.ResetContext.MacroRouteId}' resetSignature='{evt.ResetContext.ResetSignature}' reason='{evt.Reason}'.");
+                }
+
+                if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent received before a valid phase selection was cached.");
+                }
+
+                if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.ResetContext.PhaseDefinitionRef) ||
+                    selectionEvent.MacroRouteId != evt.ResetContext.MacroRouteId)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        $"[FATAL][H1][GameplaySessionFlow] PhaseResetCompletedEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' cachedVersion='{selectionEvent.SelectionVersion}' resetPhase='{evt.ResetContext.PhaseDefinitionRef?.PhaseId.Value ?? "<none>"}' resetRouteId='{evt.ResetContext.MacroRouteId}'.");
+                }
+            }
+
+            public static void ValidateIntroStageEntryAgainstSelectionOrFail(
+                IntroStageEntryEvent evt,
+                PhaseDefinitionSelectedEvent selectionEvent)
+            {
+                if (!evt.Session.IsValid)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] Invalid IntroStageEntryEvent received by explicit phase owner.");
+                }
+
+                if (!selectionEvent.IsValid || selectionEvent.PhaseDefinitionRef == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        "[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent received before a valid phase selection was cached.");
+                }
+
+                if (!ReferenceEquals(selectionEvent.PhaseDefinitionRef, evt.Session.PhaseDefinitionRef) ||
+                    selectionEvent.SelectionVersion != evt.Session.SelectionVersion)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        $"[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent mismatch with cached selection. cachedPhase='{selectionEvent.PhaseId}' cachedVersion='{selectionEvent.SelectionVersion}' entryPhase='{(evt.Session.PhaseDefinitionRef != null ? evt.Session.PhaseDefinitionRef.PhaseId.Value : "<none>")}' entryVersion='{evt.Session.SelectionVersion}'.");
+                }
+            }
+
+            public static void ValidateIntroStageReadinessOrFail(
+                PhaseDefinitionSelectedEvent selectionEvent,
+                GameplayPhaseRuntimeSnapshot currentPhaseRuntime,
+                bool hasParticipationSnapshot,
+                ParticipationSnapshot participationSnapshot,
+                bool hasParticipationReadiness,
+                ParticipationReadinessSnapshot participationReadiness)
+            {
+                if (!currentPhaseRuntime.IsValid ||
+                    !hasParticipationSnapshot ||
+                    !hasParticipationReadiness ||
+                    !participationSnapshot.IsValid ||
+                    !participationReadiness.IsValid ||
+                    !participationReadiness.CanEnterGameplay)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                        $"[FATAL][H1][GameplaySessionFlow] IntroStageEntryEvent received before participation readiness was semantically available. phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' reason='{selectionEvent.Reason}' readinessState='{participationReadiness.State}' readinessCanEnter='{participationReadiness.CanEnterGameplay}'.");
+                }
+            }
         }
     }
 }
