@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             new CompositionModuleDescriptor(
                 moduleId: "GameLoop",
                 installerDependencies: System.Array.Empty<string>(),
-                bootstrapDependencies: new[] { "SceneFlow" },
+                bootstrapDependencies: new[] { "SceneFlow", "SessionIntegration" },
                 installer: _ => GameLoopInstaller.Install(),
                 bootstrap: bootstrapConfig => GameLoopBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "GameLoopInstaller.Install",

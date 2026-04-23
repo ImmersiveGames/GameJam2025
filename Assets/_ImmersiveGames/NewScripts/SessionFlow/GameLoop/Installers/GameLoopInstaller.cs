@@ -177,7 +177,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
             RegisterIntroStageLifecycleStateService();
+            RegisterIntroStageExecutionDecisionService();
             RegisterIntroStageLifecycleDispatchService();
+            RegisterPhaseNextPhaseHandoffFinalizationService();
             RegisterPhaseNextPhaseEntryHandoffService();
             RegisterPhaseNextPhaseService();
             RegisterGameplaySceneClassifier();
@@ -275,9 +277,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterIfMissing<IIntroStageLifecycleDispatchService>(
                 () =>
                 {
-                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
+                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStageExecutionDecisionService>(out var executionDecisionService) || executionDecisionService == null)
                     {
-                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStagePresenterRegistry ausente ao registrar IntroStageLifecycleDispatchService.");
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageExecutionDecisionService ausente ao registrar IntroStageLifecycleDispatchService.");
                     }
 
                     if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var coordinator) || coordinator == null)
@@ -285,10 +287,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                         throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageCoordinator ausente ao registrar IntroStageLifecycleDispatchService.");
                     }
 
-                    return new IntroStageLifecycleDispatchService(presenterRegistry, coordinator);
+                    return new IntroStageLifecycleDispatchService(executionDecisionService, coordinator);
                 },
                 "[GameLoop] IIntroStageLifecycleDispatchService ja registrado no DI global.",
                 "[GameLoop] IntroStageLifecycleDispatchService registrado no DI global como seam operacional de despacho/no-content.");
+        }
+
+        private static void RegisterIntroStageExecutionDecisionService()
+        {
+            RegisterIfMissing<IIntroStageExecutionDecisionService>(
+                () =>
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStagePresenterRegistry ausente ao registrar IIntroStageExecutionDecisionService.");
+                    }
+
+                    return new IntroStageExecutionDecisionService(presenterRegistry);
+                },
+                "[GameLoop] IIntroStageExecutionDecisionService ja registrado no DI global.",
+                "[GameLoop] IntroStageExecutionDecisionService registrado no DI global como seam de policy execute/skip.");
         }
 
         private static void RegisterPhaseNextPhaseEntryHandoffService()
@@ -319,10 +337,40 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageLifecycleDispatchService missing from global DI before next-phase entry handoff registration.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseHandoffFinalizationService>(out var handoffFinalizationService) || handoffFinalizationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IPhaseNextPhaseHandoffFinalizationService missing from global DI before next-phase entry handoff registration.");
+            }
+
             DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseEntryHandoffService>(
-                new PhaseNextPhaseEntryHandoffService(introStageSessionService, introStageLifecycleDispatchService));
+                new PhaseNextPhaseEntryHandoffService(introStageSessionService, introStageLifecycleDispatchService, handoffFinalizationService));
             DebugUtility.LogVerbose(typeof(GameLoopInstaller),
                 "[GameLoop] PhaseNextPhaseEntryHandoffService registrado no DI global como bridge estreito de next-phase.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void RegisterPhaseNextPhaseHandoffFinalizationService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseHandoffFinalizationService>(out var existing) && existing != null)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                    "[OBS][GameLoop][Operational] IPhaseNextPhaseHandoffFinalizationService ja registrado no DI global.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var phaseNextPhaseSelectionService) || phaseNextPhaseSelectionService == null)
+            {
+                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                    "[OBS][GameLoop][Operational] NextPhase handoff finalization skipped because phase rail is not active yet.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseHandoffFinalizationService>(
+                new PhaseNextPhaseHandoffFinalizationService());
+            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
+                "[GameLoop] PhaseNextPhaseHandoffFinalizationService registrado no DI global como seam de finalizacao de handoff.",
                 DebugUtility.Colors.Info);
         }
 

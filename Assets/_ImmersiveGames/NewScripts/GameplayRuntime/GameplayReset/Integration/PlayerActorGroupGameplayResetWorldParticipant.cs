@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration
     public sealed class PlayerActorGroupGameplayResetWorldParticipant : IActorGroupGameplayResetWorldParticipant
     {
         private IActorGroupGameplayResetOrchestrator _actorGroupGameplayReset;
-        private ISessionIntegrationContextService _sessionIntegrationContextService;
+        private ISpawnResetParticipationReadPort _participationReadPort;
         private string _sceneName = string.Empty;
         private bool _dependenciesResolved;
 
@@ -63,25 +63,25 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration
             var provider = DependencyManager.Provider;
 
             provider.TryGetForScene(_sceneName, out _actorGroupGameplayReset);
-            provider.TryGetGlobal<ISessionIntegrationContextService>(out _sessionIntegrationContextService);
+            provider.TryGetGlobal<ISpawnResetParticipationReadPort>(out _participationReadPort);
 
             _dependenciesResolved = true;
         }
 
         private string DescribeParticipation()
         {
-            if (_sessionIntegrationContextService == null || !_sessionIntegrationContextService.TryGetCurrentParticipation(out var snapshot))
+            if (_participationReadPort == null || !_participationReadPort.TryGetCurrent(out var snapshot))
             {
                 return string.Empty;
             }
 
             string localBinding = "<none>";
-            if (snapshot.TryGetLocalBindingCandidate(out var localParticipant))
+            if (!string.IsNullOrWhiteSpace(snapshot.LocalBindingHint))
             {
-                localBinding = localParticipant.BindingHint.ToString();
+                localBinding = snapshot.LocalBindingHint;
             }
 
-            return $" participationSignature='{snapshot.Signature}' readiness='{snapshot.Readiness.State}' localBinding='{localBinding}'";
+            return $" participationSignature='{snapshot.Signature}' readiness='{snapshot.ReadinessState}' localBinding='{localBinding}'";
         }
     }
 }

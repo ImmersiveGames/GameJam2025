@@ -9,7 +9,9 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SessionIntegrationContextService : ISessionIntegrationContextService
+    public sealed class SessionIntegrationContextService :
+        ISessionIntegrationContextService,
+        ISessionIntegrationInputModeEmitter
     {
         public SessionIntegrationContextService(
             IGameplaySessionContextService sessionContextService,
@@ -165,6 +167,40 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             }
 
             return string.Empty;
+        }
+    }
+
+    public sealed class SpawnResetParticipationReadPortAdapter : ISpawnResetParticipationReadPort
+    {
+        private readonly ISessionIntegrationContextService _sessionIntegrationContextService;
+
+        public SpawnResetParticipationReadPortAdapter(ISessionIntegrationContextService sessionIntegrationContextService)
+        {
+            _sessionIntegrationContextService = sessionIntegrationContextService ?? throw new ArgumentNullException(nameof(sessionIntegrationContextService));
+        }
+
+        public bool TryGetCurrent(out SpawnResetParticipationSnapshot snapshot)
+        {
+            if (!_sessionIntegrationContextService.TryGetCurrentParticipation(out var participation))
+            {
+                snapshot = SpawnResetParticipationSnapshot.Empty;
+                return false;
+            }
+
+            string localBindingHint = string.Empty;
+            if (participation.TryGetLocalBindingCandidate(out var localParticipant))
+            {
+                localBindingHint = localParticipant.BindingHint.ToString();
+            }
+
+            snapshot = new SpawnResetParticipationSnapshot(
+                participation.Signature.ToString(),
+                participation.Readiness.State.ToString(),
+                participation.PrimaryParticipantId.ToString(),
+                participation.LocalParticipantId.ToString(),
+                localBindingHint);
+
+            return snapshot.HasSignature;
         }
     }
 

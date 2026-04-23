@@ -139,3 +139,13 @@ Consequencias principais:
 - o fluxo pos-run fica separado da IntroStage
 - a tipagem de resultado e decisao fica isolada por contrato
 - o fim de run pode evoluir sem reabrir a entrada da phase
+
+## 11. Estado incremental consolidado (2026-04-22)
+
+Sem alterar a decisao deste ADR, fica registrado como wiring canonico atual:
+
+- `GameRunEndedEventBridge` depende explicitamente de `IRunEndMaterializationService`.
+- composicao do bridge exige composicao previa de `RunEndBridgeRuntimeComposer` no bootstrap do `GameLoop`.
+- ausencia desses contratos continua fail-fast explicito, sem fallback silencioso.
+
+Esse ajuste e estrutural de ordem de composicao, nao mudanca de semantica do rail de run-end.

@@ -198,3 +198,13 @@ Depois das Etapas 1-5 do cleanup, o trilho ordinal phase-local ficou consolidado
 Este ADR nao resolve o tema de "phase terminou e precisa mostrar result/final stage antes de decidir o proximo destino".
 
 Esse fechamento pertence a `PostRun` e sera tratado em auditoria/plano proprio.
+
+## 14. Estado incremental consolidado (2026-04-22)
+
+No handoff canonico de navegacao entre phases, permanece congelado:
+
+- `PhaseNextPhaseEntryHandoffService` faz handoff de IntroStage no trilho canonical (`DispatchIntroStage` + espera de `IntroStageCompletedEvent`).
+- o resultado de IntroStage conclui o handoff sem abrir ownership paralelo de navegacao.
+- quando `GameLoop` ja esta em `Playing`, eventual `RequestStart` no fim da IntroStage permanece idempotente e nao muda o resultado funcional da navegacao.
+
+Esse ultimo ponto e registrado como ruido operacional de baixa divida, nao como blocker de boundary do Phase Catalog.

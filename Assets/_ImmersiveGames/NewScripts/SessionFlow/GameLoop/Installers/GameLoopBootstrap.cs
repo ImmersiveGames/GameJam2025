@@ -17,6 +17,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
 using UnityEngine;
@@ -60,8 +61,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
             EnsureOutcomeEventInputBridge();
+            EnsureRunEndBridgeRuntimeServices();
             EnsureRunEndEventBridge();
             EnsureDriver();
+            EnsureSceneFlowSyncDecisionService();
             EnsureSceneFlowSyncCoordinator(bootstrapConfig, gameLoopService);
             EnsureGameLoopModuleComposition();
 
@@ -174,6 +177,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             DontDestroyOnLoad(go);
         }
 
+        private static void EnsureRunEndBridgeRuntimeServices()
+        {
+            RunEndBridgeRuntimeComposer.ComposeOrFail();
+        }
+
         private static void EnsureDriver()
         {
             if (FindFirstObjectByType<GameLoopInputDriver>() != null)
@@ -204,6 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             var bootStartRoute = ResolveBootStartRouteOrFailFast(bootstrapConfig);
             StartupTransitionResolution startup = ResolveRequiredStartupTransition(bootstrapConfig);
             IFadeService fadeService = startup.UseFade ? ResolveRequiredFadeService() : null;
+            IGameLoopSceneFlowSyncDecisionService syncDecisionService = ResolveRequiredSceneFlowSyncDecisionService();
 
             var startPlan = new SceneTransitionRequest(
                 bootStartRoute.ToDefinition(),
@@ -216,11 +225,36 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 reason: "Boot/StartPlan",
                 resolvedRouteRef: bootStartRoute);
 
-            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, startPlan);
+            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, syncDecisionService, startPlan);
 
             DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
                 $"[GameLoopSceneFlow][Operational] Coordinator composto para boot/start-plan canonical rail (routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSceneFlowSyncDecisionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameLoopSceneFlowSyncDecisionService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IGameLoopSceneFlowSyncDecisionService>(
+                new GameLoopSceneFlowSyncDecisionService());
+
+            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
+                "[OBS][GameLoopSceneFlow][Operational] Sync decision service registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static IGameLoopSceneFlowSyncDecisionService ResolveRequiredSceneFlowSyncDecisionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameLoopSceneFlowSyncDecisionService>(out var syncDecisionService) && syncDecisionService != null)
+            {
+                return syncDecisionService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopSceneFlowSyncDecisionService ausente no DI global antes de compor o SceneFlow sync.");
         }
 
         private static void EnsureGameLoopModuleComposition()

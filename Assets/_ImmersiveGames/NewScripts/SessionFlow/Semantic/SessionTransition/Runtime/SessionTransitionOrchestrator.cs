@@ -7,14 +7,60 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
+    public interface ISessionTransitionExecutionPort
+    {
+        Task<bool> DispatchAsync(SessionTransitionPlan plan, CancellationToken ct = default);
+    }
+
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SessionTransitionOrchestrator
+    public sealed class SessionTransitionExecutionPort : ISessionTransitionExecutionPort
     {
         private readonly IGameplaySessionFlowContinuityService _continuityService;
 
-        public SessionTransitionOrchestrator(IGameplaySessionFlowContinuityService continuityService)
+        public SessionTransitionExecutionPort(IGameplaySessionFlowContinuityService continuityService)
         {
             _continuityService = continuityService ?? throw new ArgumentNullException(nameof(continuityService));
+        }
+
+        public async Task<bool> DispatchAsync(SessionTransitionPlan plan, CancellationToken ct = default)
+        {
+            string normalizedReason = Normalize(plan.Reason);
+
+            if (plan.Execution.Kind == SessionTransitionExecutionKind.ResetCurrentPhase)
+            {
+                await _continuityService.ResetCurrentPhaseAsync(normalizedReason, ct);
+                return true;
+            }
+
+            if (plan.Execution.Kind == SessionTransitionExecutionKind.NextPhase)
+            {
+                await _continuityService.NextPhaseAsync(normalizedReason, ct);
+                return true;
+            }
+
+            if (plan.Execution.Kind == SessionTransitionExecutionKind.ExitToMenu)
+            {
+                await _continuityService.ExitToMenuAsync(normalizedReason, ct);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class SessionTransitionOrchestrator
+    {
+        private readonly ISessionTransitionExecutionPort _executionPort;
+
+        public SessionTransitionOrchestrator(ISessionTransitionExecutionPort executionPort)
+        {
+            _executionPort = executionPort ?? throw new ArgumentNullException(nameof(executionPort));
         }
 
         public async Task ExecuteAsync(SessionTransitionPlan plan, CancellationToken ct = default)
@@ -40,27 +86,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     new SessionTransitionPhaseLocalEntryReadyEvent(plan, nameof(SessionTransitionOrchestrator)));
             }
 
-            if (plan.Execution.Kind == SessionTransitionExecutionKind.ResetCurrentPhase)
+            bool executed = await _executionPort.DispatchAsync(plan, ct);
+            if (executed)
             {
-                await _continuityService.ResetCurrentPhaseAsync(normalizedReason, ct);
-                DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Success);
-                return;
-            }
-
-            if (plan.Execution.Kind == SessionTransitionExecutionKind.NextPhase)
-            {
-                await _continuityService.NextPhaseAsync(normalizedReason, ct);
-                DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Success);
-                return;
-            }
-
-            if (plan.Execution.Kind == SessionTransitionExecutionKind.ExitToMenu)
-            {
-                await _continuityService.ExitToMenuAsync(normalizedReason, ct);
                 DebugUtility.Log<SessionTransitionOrchestrator>(
                     $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Success);

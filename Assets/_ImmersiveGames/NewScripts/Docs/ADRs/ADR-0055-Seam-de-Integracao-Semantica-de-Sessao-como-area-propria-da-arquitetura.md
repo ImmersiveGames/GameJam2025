@@ -276,3 +276,14 @@ Isso nao e um workaround transitivo.
 E a fronteira que permite que `GameplaySessionFlow`, `SceneFlow`, `InputModes`, spawn, reset e `ActorRegistry` evoluam sem concentrar a costura em bootstraps oportunistas.
 
 Validacao registrada: a area foi materializada como seam real e entrou em uso operacional no fluxo estabilizado da `Base 1.0`.
+
+## 15. Hardening incremental consolidado (2026-04-22)
+
+Sem reabrir o contrato deste ADR, ficam congelados os seguintes pontos de hardening no seam:
+
+- gate de prepare (`GameplaySessionFlowPrepareCompletionGate`) com dependencia explicita de handoff operacional, removendo service locator do caminho quente.
+- composicao do run-end bridge exigindo `RunEndBridgeRuntimeComposer.ComposeOrFail()` antes de instanciar `GameRunEndedEventBridge`.
+- contratos menores de integracao de sessao estabilizados como superficie do seam, sem mover ownership para bootstrap.
+- read-port minimo (`ISpawnResetParticipationReadPort`) mantido como contrato oficial de leitura para spawn/reset.
+
+Esses ajustes sao refinamento mecanico de wiring/contrato, sem mudanca de ownership semantico.

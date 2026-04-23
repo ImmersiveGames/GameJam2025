@@ -3,19 +3,10 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using CanonicalRunEndIntent = _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts.RunEndIntent;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
 {
@@ -28,8 +19,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunEndedEventBridge : MonoBehaviour
     {
-        private readonly IRunEndMaterializationService _runEndMaterializationService = new RunEndMaterializationService();
-        private readonly IRunContinuationSelectionRoutingService _runContinuationSelectionRoutingService = new RunContinuationSelectionRoutingService();
+        private IRunEndMaterializationService _runEndMaterializationService;
+        private IRunContinuationSelectionRoutingService _runContinuationSelectionRoutingService;
+        private IRunContinuationOwnershipService _runContinuationOwnershipService;
         private EventBinding<GameRunEndedEvent> _binding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<RunContinuationSelectionResolvedEvent> _runContinuationSelectionResolvedBinding;
@@ -38,6 +30,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
 
         private void Awake()
         {
+            _runEndMaterializationService = ResolveRequired<IRunEndMaterializationService>(
+                "[FATAL][Config][GameplaySessionFlow] IRunEndMaterializationService ausente no DI global antes de compor GameRunEndedEventBridge.");
+            _runContinuationSelectionRoutingService = ResolveRequired<IRunContinuationSelectionRoutingService>(
+                "[FATAL][Config][GameplaySessionFlow] IRunContinuationSelectionRoutingService ausente no DI global antes de compor GameRunEndedEventBridge.");
+            _runContinuationOwnershipService = ResolveRequired<IRunContinuationOwnershipService>(
+                "[FATAL][Config][GameplaySessionFlow] IRunContinuationOwnershipService ausente no DI global antes de compor GameRunEndedEventBridge.");
+
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
             _runContinuationSelectionResolvedBinding = new EventBinding<RunContinuationSelectionResolvedEvent>(OnRunContinuationSelectionResolved);
@@ -93,12 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
         private void OnGameRunStarted(GameRunStartedEvent evt)
         {
             _postStagePending = false;
-
-            if (DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var continuationOwner) &&
-                continuationOwner != null)
-            {
-                continuationOwner.ClearCurrentContext("GameRunStarted");
-            }
+            _runContinuationOwnershipService?.ClearCurrentContext("GameRunStarted");
         }
 
         private void OnRunContinuationSelectionResolved(RunContinuationSelectionResolvedEvent evt)
@@ -130,6 +124,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
                 _postStagePending = false;
             }
         }
+
+        private static T ResolveRequired<T>(string errorMessage)
+            where T : class
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
+            {
+                throw new InvalidOperationException(errorMessage);
+            }
+
+            return service;
+        }
     }
 
     public interface IRunContinuationSelectionRoutingService
@@ -137,255 +142,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
         void RouteSelection(RunContinuationSelection selection);
     }
 
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class RunContinuationSelectionRoutingService : IRunContinuationSelectionRoutingService
-    {
-        public void RouteSelection(RunContinuationSelection selection)
-        {
-            if (selection.SelectedContinuation is RunContinuationKind.ResetRun or RunContinuationKind.Retry)
-            {
-                RouteRunResetSelection(selection);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOperationalHandoffService>(out var handoffService) || handoffService == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] RunContinuationSelection recebida mas IRunContinuationOperationalHandoffService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][Seam] translated continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
-                DebugUtility.Colors.Info);
-
-            DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='RunContinuationOperational' continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
-                DebugUtility.Colors.Info);
-
-            _ = DispatchRunContinuationHandoffAsync(handoffService, selection);
-        }
-
-        private static void RouteRunResetSelection(RunContinuationSelection selection)
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionRunResetService>(out var runResetService) || runResetService == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] RunContinuationSelection de reset recebida mas IGameplaySessionRunResetService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            PhaseDefinitionAsset targetPhaseRef = ResolveRunResetTargetPhaseOrFail(selection);
-            if (targetPhaseRef == null)
-            {
-                return;
-            }
-
-            GameplayRunResetRequest request = new GameplayRunResetRequest(selection, targetPhaseRef, selection.Reason);
-
-            DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetRoutedFromRunDecision kind='{request.Kind}' reason='{request.Reason}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
-                DebugUtility.Colors.Info);
-
-            _ = runResetService.AcceptAsync(request);
-        }
-
-        private static async Task DispatchRunContinuationHandoffAsync(
-            IRunContinuationOperationalHandoffService handoffService,
-            RunContinuationSelection selection)
-        {
-            try
-            {
-                await handoffService.DispatchAsync(selection);
-
-                DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='RunContinuationOperational' continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
-                    DebugUtility.Colors.Success);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][GameplaySessionFlow] Falha inesperada no handoff operacional de RunContinuation. ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
-        }
-
-        private static PhaseDefinitionAsset ResolveRunResetTargetPhaseOrFail(RunContinuationSelection selection)
-        {
-            if (selection.SelectedContinuation == RunContinuationKind.ResetRun)
-            {
-                if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionCatalog>(out var phaseDefinitionCatalog) || phaseDefinitionCatalog == null)
-                {
-                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
-                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de reset recebida mas IPhaseDefinitionCatalog nao foi encontrado no escopo global.");
-                }
-
-                return phaseDefinitionCatalog.ResolveInitialOrFail();
-            }
-
-            if (selection.SelectedContinuation == RunContinuationKind.Retry)
-            {
-                if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var phaseCatalogRuntimeStateService) || phaseCatalogRuntimeStateService == null)
-                {
-                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
-                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de retry recebida mas IPhaseCatalogRuntimeStateService nao foi encontrado no escopo global.");
-                }
-
-                PhaseDefinitionAsset currentCommitted = phaseCatalogRuntimeStateService.CurrentCommitted;
-                if (currentCommitted == null || !currentCommitted.PhaseId.IsValid)
-                {
-                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
-                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de retry recebida mas o committed current phase e invalido.");
-                }
-
-                return currentCommitted;
-            }
-
-            HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
-                $"[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection invalida para reset. selectedContinuation='{selection.SelectedContinuation}'.");
-            return null;
-        }
-
-        private static string DescribePhase(PhaseDefinitionAsset phaseDefinition)
-        {
-            return phaseDefinition != null && phaseDefinition.PhaseId.IsValid
-                ? phaseDefinition.PhaseId.Value
-                : "<none>";
-        }
-    }
-
     public interface IRunEndMaterializationService
     {
         void MaterializeAndDispatch(GameRunEndedEvent evt, string source);
     }
-
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class RunEndMaterializationService : IRunEndMaterializationService
-    {
-        public void MaterializeAndDispatch(GameRunEndedEvent evt, string source)
-        {
-            if (!TryMapToRunResult(evt?.Outcome ?? GameRunOutcome.Unknown, out RunResult runResult))
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido com outcome nao terminal='{evt?.Outcome}' reason='{GameLoopReasonFormatter.Format(evt?.Reason)}'.");
-                return;
-            }
-
-            string reason = GameLoopReasonFormatter.Format(evt?.Reason);
-            string sceneName = SceneManager.GetActiveScene().name;
-            bool isGameplayScene = IsGameplayScene();
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegrationService) ||
-                sessionIntegrationService == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas ISessionIntegrationContextService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            if (!sessionIntegrationService.TryGetCurrent(out var sessionIntegration) || !sessionIntegration.HasCoreContext)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas o contexto de Session Integration e invalido.");
-                return;
-            }
-
-            GameplayPhaseRuntimeSnapshot phaseRuntime = sessionIntegration.PhaseRuntime;
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPostRunResultService>(out var resultService) || resultService == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IPostRunResultService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunEndIntentOwnershipService>(out var runEndIntentOwner) || runEndIntentOwner == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunEndIntentOwnershipService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunResultStageOwnershipService>(out var runResultStageOwner) || runResultStageOwner == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunResultStageOwnershipService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            var intent = new CanonicalRunEndIntent(
-                signature: phaseRuntime.PhaseRuntimeSignature,
-                sceneName: sceneName,
-                profile: string.Empty,
-                frame: Time.frameCount,
-                reason: reason,
-                isGameplayScene: isGameplayScene);
-
-            resultService.TrySetRunOutcome(evt.Outcome, reason);
-            runEndIntentOwner.AcceptRunEndIntent(intent);
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var continuationOwner) || continuationOwner == null)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] GameRunEndedEvent recebido mas IRunContinuationOwnershipService nao foi encontrado no escopo global.");
-                return;
-            }
-
-            continuationOwner.AcceptTerminalFact(new RunContinuationTerminalFact(
-                intent,
-                runResult));
-
-            string phaseEntrySignature = sessionIntegration.SessionContext.HasSessionSignature
-                ? sessionIntegration.SessionContext.SessionSignature
-                : phaseRuntime.PhaseRuntimeSignature;
-            PhaseCompleted phaseCompleted = new PhaseCompleted(
-                phaseRuntime,
-                intent,
-                evt.Outcome,
-                source,
-                phaseRuntime.HasPhaseDefinitionRef ? sessionIntegration.SessionContext.SelectionVersion : 0,
-                phaseEntrySignature);
-
-            if (!phaseCompleted.IsValid)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    "[FATAL][GameplaySessionFlow] PhaseCompleted invalido montado a partir de GameRunEndedEvent.");
-                return;
-            }
-
-            DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][PhaseCompleted] PhaseCompletedCanonical source='{phaseCompleted.Source}' phaseSignature='{phaseCompleted.PhaseSignature}' outcome='{phaseCompleted.RunOutcome}' entrySequence='{phaseCompleted.PhaseLocalEntrySequence}' entrySignature='{phaseCompleted.EntrySignature}' reason='{phaseCompleted.RunEndIntent.Reason}'.",
-                DebugUtility.Colors.Info);
-
-            EventBus<PhaseCompleted>.Raise(phaseCompleted);
-
-            DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][RunResultStage] RunResultStageDispatchRequested outcome='{evt?.Outcome}' result='{runResult}' reason='{reason}' scene='{sceneName}' frame={Time.frameCount} isGameplayScene='{isGameplayScene}' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}'.",
-                DebugUtility.Colors.Info);
-
-            runResultStageOwner.EnterRunResultStage(continuationOwner.CurrentContext);
-        }
-
-        private static bool IsGameplayScene()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySceneClassifier>(out var classifier) && classifier != null)
-            {
-                return classifier.IsGameplayScene();
-            }
-
-            return false;
-        }
-
-        private static bool TryMapToRunResult(GameRunOutcome outcome, out RunResult result)
-        {
-            result = outcome switch
-            {
-                GameRunOutcome.Victory => RunResult.Victory,
-                GameRunOutcome.Defeat => RunResult.Defeat,
-                _ => RunResult.Unknown,
-            };
-
-            return result != RunResult.Unknown;
-        }
-    }
 }
-

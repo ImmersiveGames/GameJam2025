@@ -5,6 +5,9 @@ using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
+using System;
+using System.Collections.Generic;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -16,8 +19,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
     /// <summary>
     /// Contexto visual local de RunDecision.
     ///
-    /// Consome a proje��o can�nica de resultado do PostRun e emite intents downstream.
-    /// Gate, ownership e proje��o de resultado ficam fora da camada visual.
+    /// Consome a projeção canônica de resultado do PostRun e emite intents downstream.
+    /// Gate, ownership e projeção de resultado ficam fora da camada visual.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
@@ -50,15 +53,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
         private bool _registered;
         private bool _isVisible;
         private bool _actionRequested;
+        private readonly Queue<Action> _mainThreadActions = new();
+        private readonly object _mainThreadActionsSync = new();
+        private int _mainThreadId = -1;
 
         public string PresenterSignature { get; private set; } = string.Empty;
 
-        public bool IsReady => gameObject != null &&
-                               gameObject.activeInHierarchy &&
-                               !string.IsNullOrWhiteSpace(PresenterSignature);
+        public bool IsReady => !string.IsNullOrWhiteSpace(PresenterSignature);
 
         private void Awake()
         {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+
             if (rootCanvasGroup == null)
             {
                 rootCanvasGroup = GetComponent<CanvasGroup>();
@@ -81,6 +87,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
             EnsureDependenciesInjected();
         }
 
+        private void Update()
+        {
+            DrainMainThreadActions();
+        }
+
+
         private void OnEnable() => RegisterBindings();
 
         private void OnDisable()
@@ -99,28 +111,35 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
         public void BindToRunDecision(RunDecision decision)
         {
-            PresenterSignature = Normalize(decision.Signature);
-            DebugUtility.Log<IRunDecisionStagePresenter>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterAttached presenter='RunDecisionStagePresenter' scene='{gameObject.scene.name}' signature='{PresenterSignature}'.",
-                DebugUtility.Colors.Info);
 
-            ApplyStatus(ResolveRequiredResultService("BindToRunDecision"));
-            Show();
+            RunOnMainThread(() =>
+            {
+                PresenterSignature = Normalize(decision.Signature);
+                DebugUtility.Log<IRunDecisionStagePresenter>(
+                    $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterAttached presenter='RunDecisionStagePresenter' scene='{gameObject.scene.name}' signature='{PresenterSignature}'.",
+                    DebugUtility.Colors.Info);
+
+                ApplyStatus(ResolveRequiredResultService("BindToRunDecision"));
+                Show();
+            });
         }
 
         public void DetachFromRunDecision(string reason)
         {
-            HideImmediate();
-            PresenterSignature = string.Empty;
+            RunOnMainThread(() =>
+            {
+                HideImmediate();
+                PresenterSignature = string.Empty;
 
-            DebugUtility.Log<IRunDecisionStagePresenter>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterDetached presenter='RunDecisionStagePresenter' reason='{Normalize(reason)}'.",
-                DebugUtility.Colors.Info);
+                DebugUtility.Log<IRunDecisionStagePresenter>(
+                    $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterDetached presenter='RunDecisionStagePresenter' reason='{Normalize(reason)}'.",
+                    DebugUtility.Colors.Info);
+            });
         }
 
         /// <summary>
-        /// Alias de compatibilidade para bindings antigos de restart.
-        /// Restart deve mapear para ResetRun (phase inicial do catalogo).
+        /// Atalho de compatibilidade para bindings antigos de restart.
+        /// Restart deve mapear para ResetRun (phase inicial do catálogo).
         /// </summary>
         public void OnClickRestart()
         {
@@ -239,8 +258,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
                 "[OBS][GameplaySessionFlow][RunDecision] GameRunStartedEvent recebido. Ocultando contexto visual local.",
                 DebugUtility.Colors.Info);
 
-            _actionRequested = false;
-            HideImmediate();
+            RunOnMainThread(() =>
+            {
+                _actionRequested = false;
+                HideImmediate();
+            });
         }
 
         private void OnRunDecisionEntered(NewRunDecisionEnteredEvent evt)
@@ -254,8 +276,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
                 "[OBS][GameplaySessionFlow][RunDecision] RunDecisionEnteredEvent recebido. Exibindo contexto visual local.",
                 DebugUtility.Colors.Info);
 
-            BindToRunDecision(evt.Decision);
-            LogOverlayOpened("RunDecisionEntered");
+            RunOnMainThread(() =>
+            {
+                BindToRunDecision(evt.Decision);
+                LogOverlayOpened("RunDecisionEntered");
+            });
         }
 
         private void OnRunDecisionCompleted(NewRunDecisionCompletedEvent evt)
@@ -264,8 +289,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
                 "[OBS][GameplaySessionFlow][RunDecision] RunDecisionCompletedEvent recebido. Ocultando contexto visual.",
                 DebugUtility.Colors.Info);
 
-            _actionRequested = false;
-            HideImmediate();
+            RunOnMainThread(() =>
+            {
+                _actionRequested = false;
+                HideImmediate();
+            });
         }
 
         private void ApplyStatus(IPostRunResultService resultService)
@@ -477,6 +505,49 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
             {
                 DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] exitToMenuButton nao configurado no Inspector.");
             }
+        }
+
+        private void RunOnMainThread(Action action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            if (IsMainThread())
+            {
+                action();
+                return;
+            }
+
+            lock (_mainThreadActionsSync)
+            {
+                _mainThreadActions.Enqueue(action);
+            }
+        }
+
+        private void DrainMainThreadActions()
+        {
+            while (true)
+            {
+                Action nextAction = null;
+                lock (_mainThreadActionsSync)
+                {
+                    if (_mainThreadActions.Count == 0)
+                    {
+                        break;
+                    }
+
+                    nextAction = _mainThreadActions.Dequeue();
+                }
+
+                nextAction?.Invoke();
+            }
+        }
+
+        private bool IsMainThread()
+        {
+            return _mainThreadId > 0 && Thread.CurrentThread.ManagedThreadId == _mainThreadId;
         }
 
         private static string Normalize(string value)

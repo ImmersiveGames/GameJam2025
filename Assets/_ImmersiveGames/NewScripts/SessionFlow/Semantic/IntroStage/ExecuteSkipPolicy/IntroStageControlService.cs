@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkipPolicy
 {
     /// <summary>
@@ -66,8 +67,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                     DebugUtility.LogWarning<IntroStageControlService>(
                         $"[OBS][IntroStageControlService] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Intro antiga sera superseded signature='{NormalizeValue(previousContext.ContextSignature)}'.");
 
-                string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource("GameplaySessionFlow");
-                string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason("superseded", wasSkipped: true);
+                string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource(PhaseFlowSignalVocabulary.GameplaySessionFlowSource);
+                string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason(PhaseFlowSignalVocabulary.SupersededReason, wasSkipped: true);
                 EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                     previousContext.Session,
                     canonicalSource,
@@ -151,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
                 if (context.IsValid)
                 {
-                    string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource("GameplaySessionFlow");
+                    string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource(PhaseFlowSignalVocabulary.GameplaySessionFlowSource);
                     string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason(normalizedReason, wasSkipped);
 
                     DebugUtility.Log<IntroStageControlService>(

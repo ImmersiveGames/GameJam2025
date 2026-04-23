@@ -73,6 +73,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationContextService precisa ser o seam canonico SessionIntegrationContextService.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var emitter) || emitter == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationInputModeEmitter ausente no DI global antes de compor SessionIntegration runtime.");
+            }
+
             DebugUtility.LogVerbose(typeof(SessionIntegrationSeamRuntimeComposition),
                 "[OBS][SessionIntegration][Core] SessionIntegration seam availability validated before runtime composition.",
                 DebugUtility.Colors.Info);
@@ -293,10 +298,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
             ParticipantSnapshot localParticipant,
             string signature)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegration) || sessionIntegration == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) || sessionIntegration == null)
             {
                 HardFailFastH1.Trigger(typeof(GameplayParticipationInputModeBridge),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para InputMode gameplay. signature='{signature}' readinessState='{snapshot.Readiness.State}'.");
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para InputMode gameplay. signature='{signature}' readinessState='{snapshot.Readiness.State}'.");
                 return;
             }
 

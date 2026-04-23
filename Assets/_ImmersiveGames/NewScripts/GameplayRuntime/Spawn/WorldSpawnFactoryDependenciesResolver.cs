@@ -60,14 +60,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
             // Serviço opcional: Player/Eater podem usar quando disponível.
             provider.TryGetGlobal(out IGameplayStateGate stateService);
-            provider.TryGetGlobal(out ISessionIntegrationContextService sessionIntegrationContextService);
+            provider.TryGetGlobal(out ISpawnResetParticipationReadPort participationReadPort);
 
             dependencies = new WorldSpawnFactoryDependencies(
                 uniqueIdFactory,
                 actorRegistry,
                 context,
                 stateService,
-                sessionIntegrationContextService);
+                participationReadPort);
 
             return true;
         }
@@ -80,13 +80,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
             IGameplayStateGate gameplayStateService,
-            ISessionIntegrationContextService sessionIntegrationContextService)
+            ISpawnResetParticipationReadPort participationReadPort)
         {
             UniqueIdFactory = uniqueIdFactory;
             ActorRegistry = actorRegistry;
             Context = context;
             GameplayStateService = gameplayStateService;
-            SessionIntegrationContextService = sessionIntegrationContextService;
+            ParticipationReadPort = participationReadPort;
         }
 
         public IUniqueIdFactory UniqueIdFactory { get; }
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public IGameplayStateGate GameplayStateService { get; }
 
-        public ISessionIntegrationContextService SessionIntegrationContextService { get; }
+        public ISpawnResetParticipationReadPort ParticipationReadPort { get; }
     }
 }
 

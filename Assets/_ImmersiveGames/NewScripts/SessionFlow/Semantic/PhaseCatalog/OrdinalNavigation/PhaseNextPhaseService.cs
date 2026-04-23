@@ -473,6 +473,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
         Task CompleteIntroHandoffAsync(PhaseNavigationCompositionContext compositionContext, CancellationToken ct);
     }
 
+    public interface IPhaseNextPhaseHandoffFinalizationService
+    {
+        void FinalizeHandoff(PhaseNavigationSelectionContext selectionContext, IntroStageCompletedEvent introCompletedEvent);
+    }
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseNextPhaseSelectionService : IPhaseNextPhaseSelectionService
     {
@@ -641,7 +646,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
                 selectionContext.TargetPhaseRef,
                 applyRequest.ScenesToLoad,
                 applyRequest.ActiveScene,
-                source: "PhaseDefinitionNavigation");
+                source: PhaseFlowSignalVocabulary.PhaseDefinitionNavigationSource);
 
             DebugUtility.Log<PhaseNextPhaseCompositionService>(
                 $"[OBS][PhaseFlow][Composition] PhaseNavigationCompositionReadModelCommitted owner='PhaseContentSceneRuntimeApplier' phaseId='{targetPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' reason='{selectionContext.Reason}'.",
@@ -660,13 +665,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
     {
         private readonly IIntroStageSessionService _introStageSessionService;
         private readonly IIntroStageLifecycleDispatchService _introStageLifecycleDispatchService;
+        private readonly IPhaseNextPhaseHandoffFinalizationService _handoffFinalizationService;
 
         public PhaseNextPhaseEntryHandoffService(
             IIntroStageSessionService introStageSessionService,
-            IIntroStageLifecycleDispatchService introStageLifecycleDispatchService)
+            IIntroStageLifecycleDispatchService introStageLifecycleDispatchService,
+            IPhaseNextPhaseHandoffFinalizationService handoffFinalizationService)
         {
             _introStageSessionService = introStageSessionService ?? throw new ArgumentNullException(nameof(introStageSessionService));
             _introStageLifecycleDispatchService = introStageLifecycleDispatchService ?? throw new ArgumentNullException(nameof(introStageLifecycleDispatchService));
+            _handoffFinalizationService = handoffFinalizationService ?? throw new ArgumentNullException(nameof(handoffFinalizationService));
         }
 
         public async Task CompleteIntroHandoffAsync(PhaseNavigationCompositionContext compositionContext, CancellationToken ct)
@@ -696,7 +704,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             }
 
             string targetPhaseName = selectionContext.TargetPhaseRef.name;
-            string introDispatchSource = "PhaseDefinitionNavigation";
+            string introDispatchSource = PhaseFlowSignalVocabulary.PhaseDefinitionNavigationSource;
 
             DebugUtility.Log<PhaseNextPhaseEntryHandoffService>(
                 $"[OBS][PhaseFlow][Handoff] PhaseNavigationIntroSessionResolved owner='IntroStageSessionService' direction='{PhaseNextPhaseServiceSupport.DescribeDirection(selectionContext.Direction)}' targetPhaseRef='{targetPhaseName}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' signature='{introSession.SessionSignature}' hasIntroStage='{introSession.HasIntroStage}'.",
@@ -714,21 +722,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
                 selectionContext.Reason);
 
             IntroStageCompletedEvent introCompletedEvent = await introCompletionTask;
-
-            string targetPhaseId = selectionContext.TargetPhaseRef.PhaseId.Value;
-            ClearPendingCatalogTarget(selectionContext.Reason);
-            DebugUtility.Log<PhaseNextPhaseEntryHandoffService>(
-                $"[OBS][PhaseFlow][Handoff] PhaseNavigationHandoffCompleted current='{targetPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' introSkipped='{introCompletedEvent.WasSkipped.ToString().ToLowerInvariant()}' introReason='{PhaseNextPhaseServiceSupport.NormalizeReason(introCompletedEvent.Reason)}' source='{introCompletedEvent.Source}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void ClearPendingCatalogTarget(string reason)
-        {
-            IPhaseCatalogRuntimeStateService runtimeStateService = PhaseNextPhaseServiceSupport.ResolveRequiredGlobal<IPhaseCatalogRuntimeStateService>(
-                "IPhaseCatalogRuntimeStateService");
-
-            // O pending so e limpo depois do handoff canonico concluir.
-            runtimeStateService.ClearPendingTarget(reason);
+            _handoffFinalizationService.FinalizeHandoff(selectionContext, introCompletedEvent);
         }
 
         private static async Task<IntroStageCompletedEvent> WaitForIntroCompletionAsync(
@@ -745,7 +739,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
                     return;
                 }
 
-                if (!string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal))
+                if (!PhaseFlowSignalVocabulary.IsGameplaySessionFlowSource(evt.Source))
                 {
                     return;
                 }
@@ -776,6 +770,30 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
                 cancellationRegistration.Dispose();
                 EventBus<IntroStageCompletedEvent>.Unregister(binding);
             }
+        }
+    }
+
+    [DebugLevel(DebugLevel.Verbose)]
+    public sealed class PhaseNextPhaseHandoffFinalizationService : IPhaseNextPhaseHandoffFinalizationService
+    {
+        public void FinalizeHandoff(PhaseNavigationSelectionContext selectionContext, IntroStageCompletedEvent introCompletedEvent)
+        {
+            if (!selectionContext.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(PhaseNextPhaseHandoffFinalizationService),
+                    "[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Invalid selection context received by handoff finalization service.");
+            }
+
+            IPhaseCatalogRuntimeStateService runtimeStateService = PhaseNextPhaseServiceSupport.ResolveRequiredGlobal<IPhaseCatalogRuntimeStateService>(
+                "IPhaseCatalogRuntimeStateService");
+
+            // O pending so e limpo depois do handoff canonico concluir.
+            runtimeStateService.ClearPendingTarget(selectionContext.Reason);
+
+            string targetPhaseId = selectionContext.TargetPhaseRef.PhaseId.Value;
+            DebugUtility.Log<PhaseNextPhaseHandoffFinalizationService>(
+                $"[OBS][PhaseFlow][Handoff] PhaseNavigationHandoffCompleted current='{targetPhaseId}' routeId='{selectionContext.CurrentSnapshot.MacroRouteId}' v='{selectionContext.SelectionVersion}' reason='{selectionContext.Reason}' introSkipped='{introCompletedEvent.WasSkipped.ToString().ToLowerInvariant()}' introReason='{PhaseNextPhaseServiceSupport.NormalizeReason(introCompletedEvent.Reason)}' source='{introCompletedEvent.Source}'.",
+                DebugUtility.Colors.Info);
         }
     }
 
@@ -837,4 +855,3 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
         }
     }
 }
-

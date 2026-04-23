@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime;
@@ -30,13 +31,29 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             var fallbackGate = new WorldResetCompletionGate(timeoutMs: 20000);
             var composedGate = new GameplaySessionFlowCompletionGate(fallbackGate);
-            composedGate.ConfigureGameplaySessionFlowGate(new GameplaySessionFlowPrepareCompletionGate());
+            IGameplaySessionFlowPrepareOperationalHandoffService handoffService = ResolveRequiredPrepareHandoffService();
+            composedGate.ConfigureGameplaySessionFlowGate(new GameplaySessionFlowPrepareCompletionGate(handoffService));
 
             DependencyManager.Provider.RegisterGlobal<ISceneTransitionCompletionGate>(composedGate, allowOverride: true);
 
             DebugUtility.LogVerbose(typeof(GameplaySessionFlowCompletionGateComposer),
                 "[OBS][SessionIntegration][SceneFlow] GameplaySessionFlowCompletionGate registrado como gate canonico.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static IGameplaySessionFlowPrepareOperationalHandoffService ResolveRequiredPrepareHandoffService()
+        {
+            if (DependencyManager.Provider == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] DependencyManager.Provider indisponivel ao compor GameplaySessionFlowPrepareCompletionGate.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowPrepareOperationalHandoffService>(out var handoffService) || handoffService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplaySessionFlowPrepareOperationalHandoffService ausente no DI global ao compor GameplaySessionFlowPrepareCompletionGate.");
+            }
+
+            return handoffService;
         }
     }
 }

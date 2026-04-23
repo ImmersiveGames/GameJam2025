@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
 
             SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
 
-            const string canonicalPhaseContentAppliedSource = "GameplaySessionFlow";
+            const string canonicalPhaseContentAppliedSource = PhaseFlowSignalVocabulary.GameplaySessionFlowSource;
 
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
                 $"[OBS][GameplaySessionFlow][Operational] handoff_dispatch target='GameplayPhaseFlowService/IntroStageRail' source='{canonicalPhaseContentAppliedSource}' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",

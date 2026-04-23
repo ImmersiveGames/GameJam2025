@@ -1,34 +1,77 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Bindings;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
 {
     /// <summary>
-    /// Implementacao padrao: contexto canonico de gameplay da sessao, com fallback compatível por marker.
+    /// Implementacao padrao: caminho canonico por contexto de sessao valido.
+    /// Fallback por marker e restrito ao trilho explicito de QA/dev.
     /// </summary>
     public sealed class DefaultGameplaySceneClassifier : IGameplaySceneClassifier
     {
         public bool IsGameplayScene()
         {
-            if (DependencyManager.Provider != null &&
-                DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegrationService) &&
-                sessionIntegrationService != null &&
-                sessionIntegrationService.TryGetCurrentSessionContext(out GameplaySessionContextSnapshot currentSession) &&
-                currentSession.IsValid)
+            if (TryResolveCanonicalSessionContext(out bool isGameplayScene))
             {
-                return true;
+                return isGameplayScene;
             }
 
-            var activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.IsValid())
+            return ResolveQaDevMarkerFallback();
+        }
+
+        private static bool TryResolveCanonicalSessionContext(out bool isGameplayScene)
+        {
+            isGameplayScene = false;
+
+            if (DependencyManager.Provider == null)
             {
                 return false;
             }
 
-            return HasMarkerInScene(activeScene);
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegrationService) ||
+                sessionIntegrationService == null)
+            {
+                return false;
+            }
+
+            if (!sessionIntegrationService.TryGetCurrentSessionContext(out GameplaySessionContextSnapshot currentSession) ||
+                !currentSession.IsValid)
+            {
+                return false;
+            }
+
+            isGameplayScene = true;
+            return true;
+        }
+
+        private static bool ResolveQaDevMarkerFallback()
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            var activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid())
+            {
+                DebugUtility.LogVerbose<DefaultGameplaySceneClassifier>(
+                    "[OBS][Readiness][QA] MarkerFallbackIgnored reason='active_scene_invalid'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
+            bool hasMarker = HasMarkerInScene(activeScene);
+            if (hasMarker)
+            {
+                DebugUtility.LogWarning<DefaultGameplaySceneClassifier>(
+                    $"[OBS][Readiness][QA] MarkerFallbackApplied scene='{activeScene.name}' path='qa-dev-non-canonical'.");
+            }
+
+            return hasMarker;
+#else
+            return false;
+#endif
         }
 
         private static bool HasMarkerInScene(Scene scene)
@@ -56,4 +99,3 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
         }
     }
 }
-

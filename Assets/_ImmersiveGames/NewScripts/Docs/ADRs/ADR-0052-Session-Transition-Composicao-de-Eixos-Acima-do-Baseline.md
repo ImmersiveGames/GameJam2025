@@ -201,6 +201,14 @@ O custo depois e refatorar contratos ja consumidos por varios eixos ao mesmo tem
 - `SessionTransitionPhaseLocalEntryReadyEvent` continua sendo o seam pequeno validado pelo smoke atual.
 - Nao houve introducao de runtime novo em reset; o shape ficou declarativo, sem reabrir `WorldReset`, `SceneResetPipeline` ou `GameplayReset`.
 
+## 10.3 Incremento de wiring relacionado (2026-04-22)
+
+Sem alterar o ownership deste ADR, fica registrado:
+
+- bridges de sync/prepare relacionados ao handoff de fase seguem como executores finos com decisao/policy extraida para seams dedicados.
+- a camada `Session Transition` permanece sem absorver policy de sync do `GameLoopSceneFlowSyncCoordinator` nem handoff operacional de prepare.
+- contratos macro de `SessionTransition` nao foram alterados por esses slices.
+
 
 ## 11. Veredito
 

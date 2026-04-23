@@ -173,3 +173,26 @@ Imagens de referencia
 ![ChatGPT Image 17 de abr. de 2026, 10_05_10.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_05_10.png)
 ![ChatGPT Image 17 de abr. de 2026, 10_30_59.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_30_59.png)
 ![ChatGPT Image 17 de abr. de 2026, 10_46_07.png](../Plans/ChatGPT%20Image%2017%20de%20abr.%20de%202026%2C%2010_46_07.png)
+
+## 15. Estado congelado incremental (2026-04-22)
+
+Sem abrir nova decisao de shape, fica registrado como estado consolidado da Base 1.0:
+
+- `GameplaySessionFlowPrepareCompletionGate` com dependencia explicita de handoff operacional (sem service locator no hot path).
+- `GameRunEndedEventBridge` dependente de composicao previa obrigatoria de `RunEndBridgeRuntimeComposer` no bootstrap do `GameLoop`.
+- `SessionIntegration` com contratos menores estabilizados e seam de traducao preservado.
+- `ISpawnResetParticipationReadPort` como leitura minima oficial para spawn/reset.
+- `ActorSystem` com refresh separado por participacao e por presenca runtime de spawn.
+- `ActorSystem` com policy de ator relevante separada do read model (`resolver` dedicado).
+- `SceneFlow/Readiness` com caminho canonico por contexto de sessao valido; trilhas marker/manual ficam somente como QA/dev fora do caminho principal.
+- `GameLoopSceneFlowSyncCoordinator` mantendo bind/unbind e estado transitorio, com decisao de sync extraida para seam puro.
+
+Esses pontos sao consolidacao de implementacao, nao reabertura de arquitetura.
+
+## 16. Residuos conhecidos de baixa divida
+
+Registra-se como residuo operacional de baixa divida (nao blocker):
+
+- log `RequestStart ignored (already active)` no handoff de next-phase quando `IntroStageCoordinator` solicita start com loop ja em `Playing` (comportamento idempotente).
+- co-localizacao temporaria de algumas interfaces/implementacoes extraidas em slices curtos.
+- ajustes futuros de organizacao fisica (arquivo/pasta) sem impacto de boundary.

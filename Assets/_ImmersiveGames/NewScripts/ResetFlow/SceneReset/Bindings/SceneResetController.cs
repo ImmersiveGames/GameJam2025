@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
         private ISimulationGateService _gateService;
         private IWorldSpawnServiceRegistry _spawnRegistry;
         private IActorRegistry _actorRegistry;
-        private ISessionIntegrationContextService _sessionIntegrationContextService;
+        private ISpawnResetParticipationReadPort _participationReadPort;
         private SceneResetHookRegistry _hookRegistry;
         private IWorldResetLocalExecutorRegistry _localExecutorRegistry;
         private IDependencyProvider _provider;
@@ -172,7 +172,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                     _gateService,
                     _spawnRegistry?.Services,
                     _actorRegistry,
-                    _sessionIntegrationContextService,
+                    _participationReadPort,
                     _provider,
                     _sceneName,
                     _hookRegistry,
@@ -294,9 +294,9 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                 _provider.TryGetGlobal(out _localExecutorRegistry);
             }
 
-            if (_sessionIntegrationContextService == null)
+            if (_participationReadPort == null)
             {
-                _provider.TryGetGlobal(out _sessionIntegrationContextService);
+                _provider.TryGetGlobal(out _participationReadPort);
             }
         }
 

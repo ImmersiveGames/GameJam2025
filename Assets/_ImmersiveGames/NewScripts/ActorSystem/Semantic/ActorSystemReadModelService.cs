@@ -14,15 +14,18 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Semantic
     {
         private readonly IActorSystemSemanticContextProvider _contextProvider;
         private readonly IActorPresenceReadPort _presenceReadPort;
+        private readonly IActorSystemRelevantActorResolver _relevantActorResolver;
         private readonly List<ActorRuntimePresenceSnapshot> _buffer = new(32);
         private ActorSystemReadModelSnapshot _current = ActorSystemReadModelSnapshot.Empty;
 
         public ActorSystemReadModelService(
             IActorSystemSemanticContextProvider contextProvider,
-            IActorPresenceReadPort presenceReadPort)
+            IActorPresenceReadPort presenceReadPort,
+            IActorSystemRelevantActorResolver relevantActorResolver)
         {
             _contextProvider = contextProvider ?? throw new ArgumentNullException(nameof(contextProvider));
             _presenceReadPort = presenceReadPort ?? throw new ArgumentNullException(nameof(presenceReadPort));
+            _relevantActorResolver = relevantActorResolver ?? throw new ArgumentNullException(nameof(relevantActorResolver));
 
             DebugUtility.Log(typeof(ActorSystemReadModelService),
                 "[OBS][ActorSystem] ReadModelService registrado (thin semantic, non-executor).",
@@ -75,65 +78,12 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Semantic
             _buffer.Clear();
             _presenceReadPort.TryGetAll(_buffer);
 
-            string relevantActorId = ResolveRelevantActorId(context, _buffer);
+            string relevantActorId = _relevantActorResolver.Resolve(context, _buffer);
             return new ActorSystemReadModelSnapshot(
                 context,
                 relevantActorId,
                 _buffer.Count,
                 string.IsNullOrWhiteSpace(relevantActorId) ? "no-runtime-match" : "resolved");
-        }
-
-        private static string ResolveRelevantActorId(
-            ActorSystemSemanticContext context,
-            List<ActorRuntimePresenceSnapshot> runtimeActors)
-        {
-            if (runtimeActors == null || runtimeActors.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            if (context.HasPrimaryParticipant)
-            {
-                for (int index = 0; index < runtimeActors.Count; index += 1)
-                {
-                    ActorRuntimePresenceSnapshot candidate = runtimeActors[index];
-                    if (candidate.IsValid && string.Equals(candidate.ActorId, context.PrimaryParticipantId, StringComparison.Ordinal))
-                    {
-                        return candidate.ActorId;
-                    }
-                }
-            }
-
-            if (context.HasLocalParticipant)
-            {
-                for (int index = 0; index < runtimeActors.Count; index += 1)
-                {
-                    ActorRuntimePresenceSnapshot candidate = runtimeActors[index];
-                    if (candidate.IsValid && string.Equals(candidate.ActorId, context.LocalParticipantId, StringComparison.Ordinal))
-                    {
-                        return candidate.ActorId;
-                    }
-                }
-            }
-
-            for (int index = 0; index < runtimeActors.Count; index += 1)
-            {
-                ActorRuntimePresenceSnapshot candidate = runtimeActors[index];
-                if (candidate.IsValid && candidate.IsActive)
-                {
-                    return candidate.ActorId;
-                }
-            }
-
-            for (int index = 0; index < runtimeActors.Count; index += 1)
-            {
-                if (runtimeActors[index].IsValid)
-                {
-                    return runtimeActors[index].ActorId;
-                }
-            }
-
-            return string.Empty;
         }
     }
 }

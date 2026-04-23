@@ -71,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 dependencies.Context,
                 entry.Prefab,
                 dependencies.GameplayStateService,
-                dependencies.SessionIntegrationContextService);
+                dependencies.ParticipationReadPort);
         }
 
         private static IWorldSpawnService CreateEater(

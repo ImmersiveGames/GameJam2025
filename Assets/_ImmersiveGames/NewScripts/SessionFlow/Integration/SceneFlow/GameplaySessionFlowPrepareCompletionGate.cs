@@ -1,6 +1,5 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
@@ -14,26 +13,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameplaySessionFlowPrepareCompletionGate : ISceneTransitionCompletionGate
     {
+        private readonly IGameplaySessionFlowPrepareOperationalHandoffService _handoffService;
+
+        public GameplaySessionFlowPrepareCompletionGate(IGameplaySessionFlowPrepareOperationalHandoffService handoffService)
+        {
+            _handoffService = handoffService
+                ?? throw new System.InvalidOperationException("[FATAL][Config][SceneFlow] GameplaySessionFlowPrepareCompletionGate requer IGameplaySessionFlowPrepareOperationalHandoffService.");
+        }
+
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
-            if (!context.RouteId.IsValid)
+            if (!ShouldAcceptGameplayPrepareRail(context))
             {
-                return;
-            }
-
-            if (context.RouteRef == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
-                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' reason='routeRef_missing'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
-            {
-                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
-                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' reason='non_gameplay_route'.",
-                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -46,42 +37,50 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 $"[OBS][GameplaySessionFlow][Seam] received rail='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            IGameplaySessionFlowPrepareOperationalHandoffService handoffService = ResolveRequiredHandoffService(context);
-
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
                 $"[OBS][GameplaySessionFlow][Seam] translated rail='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
+            await DispatchOperationalHandoffAsync(context, signature, reason);
+        }
+
+        private async Task DispatchOperationalHandoffAsync(SceneTransitionContext context, string signature, string reason)
+        {
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
                 $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            await handoffService.ExecuteAsync(context);
+            await _handoffService.ExecuteAsync(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
                 $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
         }
 
-        private static IGameplaySessionFlowPrepareOperationalHandoffService ResolveRequiredHandoffService(SceneTransitionContext context)
+        private static bool ShouldAcceptGameplayPrepareRail(SceneTransitionContext context)
         {
-            if (DependencyManager.Provider == null)
+            if (!context.RouteId.IsValid)
             {
-                FailFastConfig(context, "DependencyManager.Provider unavailable.");
+                return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowPrepareOperationalHandoffService>(out var handoffService) || handoffService == null)
+            if (context.RouteRef == null)
             {
-                FailFastConfig(context, "IGameplaySessionFlowPrepareOperationalHandoffService missing.");
+                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' reason='routeRef_missing'.",
+                    DebugUtility.Colors.Info);
+                return false;
             }
 
-            return handoffService;
-        }
+            if (context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' reason='non_gameplay_route'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
 
-        private static void FailFastConfig(SceneTransitionContext context, string detail)
-        {
-            HardFailFastH1.Trigger(typeof(GameplaySessionFlowPrepareCompletionGate),
-                $"[FATAL][H1][SceneFlow] GameplaySessionFlow completion gate misconfigured: {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+            return true;
         }
     }
 }

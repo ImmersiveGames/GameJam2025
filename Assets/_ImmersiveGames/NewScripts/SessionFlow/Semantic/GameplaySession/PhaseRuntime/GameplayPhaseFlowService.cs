@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 source: evt.Source,
                 activeSceneName: evt.ActiveSceneName,
                 operationLabel: "PhaseContentApplied",
-                shouldQueueIntro: string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal));
+                shouldQueueIntro: PhaseFlowSignalVocabulary.IsGameplaySessionFlowSource(evt.Source));
         }
 
         private void OnPhaseResetCompleted(PhaseResetCompletedEvent evt)

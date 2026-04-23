@@ -17,10 +17,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 "[OBS][InputMode] Request mode='Gameplay' map='Player' phase='Playing' reason='GameLoop/Playing' source='SessionIntegration'.",
                 DebugUtility.Colors.Info);
 
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegration) || sessionIntegration == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) || sessionIntegration == null)
             {
                 HardFailFastH1.Trigger(typeof(GameLoopStateTransitionEffects),
-                    "[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para aplicar input mode gameplay do GameLoop.");
+                    "[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para aplicar input mode gameplay do GameLoop.");
                 return;
             }
 

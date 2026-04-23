@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using UnityEngine.SceneManagement;
 
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkipPolicy
 {
     public sealed class IntroStageLifecycleOrchestrator : IDisposable
@@ -101,6 +102,99 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
         public IntroStageSession Session { get; }
         public string Source { get; }
         public string Reason { get; }
+    }
+
+    public enum IntroStageExecutionDecisionKind
+    {
+        Execute = 0,
+        SkipNoContent = 1,
+        SkipPresenterUnavailable = 2
+    }
+
+    public readonly struct IntroStageExecutionDecision
+    {
+        private IntroStageExecutionDecision(
+            IntroStageExecutionDecisionKind kind,
+            bool warning,
+            string logReason,
+            string skipReason,
+            string detail,
+            string completionReason)
+        {
+            Kind = kind;
+            Warning = warning;
+            LogReason = logReason;
+            SkipReason = skipReason;
+            Detail = detail;
+            CompletionReason = completionReason;
+        }
+
+        public IntroStageExecutionDecisionKind Kind { get; }
+        public bool Warning { get; }
+        public string LogReason { get; }
+        public string SkipReason { get; }
+        public string Detail { get; }
+        public string CompletionReason { get; }
+        public bool ShouldSkip => Kind != IntroStageExecutionDecisionKind.Execute;
+
+        public static IntroStageExecutionDecision Execute()
+            => new(
+                IntroStageExecutionDecisionKind.Execute,
+                warning: false,
+                logReason: string.Empty,
+                skipReason: string.Empty,
+                detail: string.Empty,
+                completionReason: string.Empty);
+
+        public static IntroStageExecutionDecision SkipNoContent()
+            => new(
+                IntroStageExecutionDecisionKind.SkipNoContent,
+                warning: false,
+                logReason: PhaseFlowSignalVocabulary.NoContentReason,
+                skipReason: PhaseFlowSignalVocabulary.NoContentReason,
+                detail: string.Empty,
+                completionReason: PhaseFlowSignalVocabulary.NoContentReason);
+
+        public static IntroStageExecutionDecision SkipPresenterUnavailable()
+            => new(
+                IntroStageExecutionDecisionKind.SkipPresenterUnavailable,
+                warning: true,
+                logReason: PhaseFlowSignalVocabulary.PresenterUnavailableReason,
+                skipReason: PhaseFlowSignalVocabulary.PresenterUnavailableReason,
+                detail: "scene_local_presenter_not_found",
+                completionReason: PhaseFlowSignalVocabulary.PresenterUnavailableReason);
+    }
+
+    public interface IIntroStageExecutionDecisionService
+    {
+        IntroStageExecutionDecision Decide(IntroStageSession session, string source, string reason);
+    }
+
+    public sealed class IntroStageExecutionDecisionService : IIntroStageExecutionDecisionService
+    {
+        private readonly IIntroStagePresenterRegistry _presenterRegistry;
+
+        public IntroStageExecutionDecisionService(IIntroStagePresenterRegistry presenterRegistry)
+        {
+            _presenterRegistry = presenterRegistry ?? throw new ArgumentNullException(nameof(presenterRegistry));
+        }
+
+        public IntroStageExecutionDecision Decide(IntroStageSession session, string source, string reason)
+        {
+            _ = reason;
+
+            if (!session.HasIntroStage)
+            {
+                return IntroStageExecutionDecision.SkipNoContent();
+            }
+
+            if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
+            {
+                return IntroStageExecutionDecision.SkipPresenterUnavailable();
+            }
+
+            return IntroStageExecutionDecision.Execute();
+        }
     }
 
     [DebugLevel(DebugLevel.Verbose)]
@@ -219,32 +313,33 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
     public sealed class IntroStageLifecycleDispatchService : IIntroStageLifecycleDispatchService
     {
         private readonly IIntroStageCoordinator _introStageCoordinator;
-        private readonly IntroStageDispatchEligibilityPolicy _eligibilityPolicy;
+        private readonly IIntroStageExecutionDecisionService _executionDecisionService;
         private readonly IntroStageLifecycleTelemetry _telemetry = new();
         private readonly IIntroStageCompletionSignalingService _completionSignalingService;
 
         public IntroStageLifecycleDispatchService(
-            IIntroStagePresenterRegistry presenterRegistry,
+            IIntroStageExecutionDecisionService executionDecisionService,
             IIntroStageCoordinator introStageCoordinator)
         {
             _introStageCoordinator = introStageCoordinator ?? throw new ArgumentNullException(nameof(introStageCoordinator));
-            _eligibilityPolicy = new IntroStageDispatchEligibilityPolicy(
-                presenterRegistry ?? throw new ArgumentNullException(nameof(presenterRegistry)));
+            _executionDecisionService = executionDecisionService ?? throw new ArgumentNullException(nameof(executionDecisionService));
             _completionSignalingService = new IntroStageCompletionSignalingService(_telemetry);
         }
 
         public void DispatchIntroStage(string source, IntroStageSession session, SceneRouteKind routeKind, string reason)
         {
             string activeSceneName = SceneManager.GetActiveScene().name;
-            IntroStageDispatchEligibilityDecision decision = _eligibilityPolicy.Evaluate(session, source, reason);
+            IntroStageExecutionDecision decision = _executionDecisionService.Decide(session, source, reason);
 
             if (decision.ShouldSkip)
             {
-                IntroStageSession noContentSession = CreateNoContentSession(session);
-                _telemetry.LogSkipped(decision, source, noContentSession, reason);
+                IntroStageSession completionSession = decision.Kind == IntroStageExecutionDecisionKind.SkipNoContent
+                    ? CreateNoContentSession(session)
+                    : session;
+                _telemetry.LogSkipped(decision, source, completionSession, reason);
 
-                _completionSignalingService.Publish(noContentSession, source, wasSkipped: true, reason: decision.CompletionReason);
-                RunIntroStage(noContentSession, routeKind, activeSceneName, reason);
+                _completionSignalingService.Publish(completionSession, source, wasSkipped: true, reason: decision.CompletionReason);
+                RunIntroStage(CreateNoContentSession(session), routeKind, activeSceneName, reason);
                 return;
             }
 
@@ -283,68 +378,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
         public bool ShouldDeferGameplayIntro(IntroStageEntryEvent evt)
         {
             return evt.RouteKind == SceneRouteKind.Gameplay
-                   && string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal);
+                   && PhaseFlowSignalVocabulary.IsGameplaySessionFlowSource(evt.Source);
         }
-    }
-
-    internal sealed class IntroStageDispatchEligibilityPolicy
-    {
-        private readonly IIntroStagePresenterRegistry _presenterRegistry;
-
-        public IntroStageDispatchEligibilityPolicy(IIntroStagePresenterRegistry presenterRegistry)
-        {
-            _presenterRegistry = presenterRegistry ?? throw new ArgumentNullException(nameof(presenterRegistry));
-        }
-
-        public IntroStageDispatchEligibilityDecision Evaluate(IntroStageSession session, string source, string reason)
-        {
-            if (!session.HasIntroStage)
-            {
-                return IntroStageDispatchEligibilityDecision.SkipNoContent();
-            }
-
-            if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
-            {
-                return IntroStageDispatchEligibilityDecision.SkipPresenterUnavailable();
-            }
-
-            return IntroStageDispatchEligibilityDecision.Execute();
-        }
-    }
-
-    internal readonly struct IntroStageDispatchEligibilityDecision
-    {
-        private IntroStageDispatchEligibilityDecision(
-            bool shouldSkip,
-            bool warning,
-            string logReason,
-            string skipReason,
-            string detail,
-            string completionReason)
-        {
-            ShouldSkip = shouldSkip;
-            Warning = warning;
-            LogReason = logReason;
-            SkipReason = skipReason;
-            Detail = detail;
-            CompletionReason = completionReason;
-        }
-
-        public bool ShouldSkip { get; }
-        public bool Warning { get; }
-        public string LogReason { get; }
-        public string SkipReason { get; }
-        public string Detail { get; }
-        public string CompletionReason { get; }
-
-        public static IntroStageDispatchEligibilityDecision Execute()
-            => new(false, false, string.Empty, string.Empty, string.Empty, string.Empty);
-
-        public static IntroStageDispatchEligibilityDecision SkipNoContent()
-            => new(true, false, "no_content", "no_content", string.Empty, "no_content");
-
-        public static IntroStageDispatchEligibilityDecision SkipPresenterUnavailable()
-            => new(true, true, "presenter_unavailable", "no_content", "scene_local_presenter_not_found", "presenter_unavailable");
     }
 
     internal interface IIntroStageCompletionSignalingService
@@ -373,63 +408,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
     internal static class IntroStageCompletionSignalPolicy
     {
-        private const string GameplaySessionFlowSource = "GameplaySessionFlow";
-        private const string PhaseDefinitionNavigationSource = "PhaseDefinitionNavigation";
-
         public static string CanonicalizeSource(string source)
         {
-            string normalized = NormalizeToken(source);
-            if (string.IsNullOrEmpty(normalized))
-            {
-                return GameplaySessionFlowSource;
-            }
-
-            if (string.Equals(normalized, GameplaySessionFlowSource, StringComparison.OrdinalIgnoreCase))
-            {
-                return GameplaySessionFlowSource;
-            }
-
-            if (string.Equals(normalized, PhaseDefinitionNavigationSource, StringComparison.OrdinalIgnoreCase))
-            {
-                return GameplaySessionFlowSource;
-            }
-
-            return normalized;
+            return PhaseFlowSignalVocabulary.CanonicalizeCompletionSource(source);
         }
 
         public static string CanonicalizeReason(string reason, bool wasSkipped)
         {
-            string normalized = NormalizeToken(reason);
-            if (string.IsNullOrEmpty(normalized))
-            {
-                return wasSkipped ? "no_content" : "<none>";
-            }
-
-            if (string.Equals(normalized, "no_content", StringComparison.OrdinalIgnoreCase))
-            {
-                return "no_content";
-            }
-
-            if (string.Equals(normalized, "presenter_unavailable", StringComparison.OrdinalIgnoreCase))
-            {
-                return "presenter_unavailable";
-            }
-
-            if (string.Equals(normalized, "IntroStage/ContinueButton", StringComparison.OrdinalIgnoreCase))
-            {
-                return "IntroStage/ContinueButton";
-            }
-
-            if (string.Equals(normalized, "superseded", StringComparison.OrdinalIgnoreCase))
-            {
-                return "superseded";
-            }
-
-            return normalized;
+            return PhaseFlowSignalVocabulary.CanonicalizeCompletionReason(reason, wasSkipped);
         }
-
-        private static string NormalizeToken(string value)
-            => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     internal sealed class IntroStageLifecycleTelemetry
@@ -453,7 +440,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 DebugUtility.Colors.Info);
         }
 
-        public void LogSkipped(IntroStageDispatchEligibilityDecision decision, string source, IntroStageSession session, string reason)
+        public void LogSkipped(IntroStageExecutionDecision decision, string source, IntroStageSession session, string reason)
         {
             string message = decision.Warning
                 ? $"[WARN][OBS][IntroStage] IntroStageSkipped reason='{decision.LogReason}' skipReason='{decision.SkipReason}' source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{Normalize(reason)}' sessionSignature='{Normalize(session.SessionSignature)}' detail='{decision.Detail}'."

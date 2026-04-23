@@ -70,16 +70,21 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
                 return;
             }
 
+            string normalizedReason = reason ?? string.Empty;
+
+            DebugUtility.LogWarning<GameReadinessService>(
+                $"[OBS][Readiness][QA] ManualReadinessOverride path='qa-dev-non-canonical' gameplayReady={gameplayReady} reason='{normalizedReason}'.");
+
             _gameplayReady = gameplayReady;
 
             LogReadinessState(
                 gameplayReady ? "GameplayReadySet" : "GameplayNotReadySet",
-                reason,
+                normalizedReason,
                 gateOpen: _gateService?.IsOpen ?? true,
                 activeTokens: _gateService?.ActiveTokenCount ?? 0);
 
             // Manual/QA: sempre publica (mesmo se valor repetido), por ser uma intenção explícita.
-            PublishSnapshot(reason, force: true);
+            PublishSnapshot(normalizedReason, force: true);
         }
 
         public void Dispose()

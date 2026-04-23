@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorSystem.Contracts.Outbound;
+using _ImmersiveGames.NewScripts.ActorSystem.Semantic;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 
 namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.GameplayRuntime
 {
@@ -100,6 +103,48 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.GameplayRuntime
             }
 
             return true;
+        }
+    }
+
+    /// <summary>
+    /// Thin runtime bridge that refreshes ActorSystem read model on spawn completion.
+    /// </summary>
+    public sealed class ActorSystemRuntimePresenceRefreshBridge : IDisposable
+    {
+        private readonly IActorSystemReadModelService _readModelService;
+        private readonly EventBinding<ActorSpawnCompletedEvent> _spawnCompletedBinding;
+        private bool _disposed;
+
+        public ActorSystemRuntimePresenceRefreshBridge(IActorSystemReadModelService readModelService)
+        {
+            _readModelService = readModelService ?? throw new ArgumentNullException(nameof(readModelService));
+            _spawnCompletedBinding = new EventBinding<ActorSpawnCompletedEvent>(OnActorSpawnCompleted);
+            EventBus<ActorSpawnCompletedEvent>.Register(_spawnCompletedBinding);
+
+            DebugUtility.LogVerbose(typeof(ActorSystemRuntimePresenceRefreshBridge),
+                "[OBS][ActorSystem][GameplayRuntime] Runtime presence refresh bridge registrado.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            EventBus<ActorSpawnCompletedEvent>.Unregister(_spawnCompletedBinding);
+        }
+
+        private void OnActorSpawnCompleted(ActorSpawnCompletedEvent evt)
+        {
+            if (_disposed || string.IsNullOrWhiteSpace(evt.ActorId))
+            {
+                return;
+            }
+
+            _readModelService.Refresh();
         }
     }
 }

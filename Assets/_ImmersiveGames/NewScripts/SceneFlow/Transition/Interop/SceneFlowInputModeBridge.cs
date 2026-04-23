@@ -124,10 +124,10 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
             string reason,
             string signature)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegration) || sessionIntegration == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) || sessionIntegration == null)
             {
                 HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para request de InputMode kind='{requestKind}' reason='{reason}' signature='{signature}'.");
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para request de InputMode kind='{requestKind}' reason='{reason}' signature='{signature}'.");
                 return;
             }
 

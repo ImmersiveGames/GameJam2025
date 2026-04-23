@@ -12,8 +12,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
     {
         public static void RegisterAll()
         {
-            RegisterSessionIntegrationContextService();
             RegisterGameplaySessionFlowPrepareOperationalHandoffService();
+            RegisterSessionIntegrationContextService();
         }
 
         private static void RegisterSessionIntegrationContextService()
@@ -35,8 +35,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
 
             if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var existingService) || existingService == null)
             {
-                DependencyManager.Provider.RegisterGlobal<ISessionIntegrationContextService>(
-                    new SessionIntegrationContextService(sessionContextService, phaseRuntimeService, participationService));
+                var sessionIntegrationService = new SessionIntegrationContextService(sessionContextService, phaseRuntimeService, participationService);
+                DependencyManager.Provider.RegisterGlobal<ISessionIntegrationContextService>(sessionIntegrationService);
+                DependencyManager.Provider.RegisterGlobal<ISessionIntegrationInputModeEmitter>(sessionIntegrationService);
+                DependencyManager.Provider.RegisterGlobal<ISpawnResetParticipationReadPort>(
+                    new SpawnResetParticipationReadPortAdapter(sessionIntegrationService));
 
                 DebugUtility.LogVerbose(typeof(PhaseDefinitionSeamRegistration),
                     "[OBS][SessionIntegration][Core] seam='SessionIntegration' executor='SessionIntegrationContextService' role='canonical-session-integration-seam'.",
@@ -51,6 +54,39 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
             {
                 throw new InvalidOperationException(
                     "[FATAL][Config][SessionIntegration] SessionIntegrationContextService mismatch between DI binding and phase-side owners.");
+            }
+
+            if (existingService is not ISessionIntegrationInputModeEmitter contextEmitter)
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][SessionIntegration] ISessionIntegrationContextService binding does not implement ISessionIntegrationInputModeEmitter.");
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var existingEmitter) && existingEmitter != null)
+            {
+                if (!ReferenceEquals(existingEmitter, contextEmitter))
+                {
+                    throw new InvalidOperationException(
+                        "[FATAL][Config][SessionIntegration] ISessionIntegrationInputModeEmitter mismatch against canonical SessionIntegrationContextService binding.");
+                }
+            }
+            else
+            {
+                DependencyManager.Provider.RegisterGlobal<ISessionIntegrationInputModeEmitter>(contextEmitter);
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<ISpawnResetParticipationReadPort>(out var existingReadPort) && existingReadPort != null)
+            {
+                if (existingReadPort is not SpawnResetParticipationReadPortAdapter)
+                {
+                    throw new InvalidOperationException(
+                        "[FATAL][Config][SessionIntegration] ISpawnResetParticipationReadPort mismatch against canonical SessionIntegrationContextService binding.");
+                }
+            }
+            else
+            {
+                DependencyManager.Provider.RegisterGlobal<ISpawnResetParticipationReadPort>(
+                    new SpawnResetParticipationReadPortAdapter(existingService));
             }
 
             GameplaySessionFlowCompletionGateComposer.ComposeOrValidate();

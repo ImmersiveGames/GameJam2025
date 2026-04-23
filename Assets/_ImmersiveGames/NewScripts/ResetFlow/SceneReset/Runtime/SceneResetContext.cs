@@ -11,7 +11,6 @@ using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
@@ -25,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
             IActorRegistry actorRegistry,
-            ISessionIntegrationContextService sessionIntegrationContextService,
+            ISpawnResetParticipationReadPort participationReadPort,
             IDependencyProvider provider,
             string sceneName,
             SceneResetHookRegistry hookRegistry,
@@ -36,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
         {
             SpawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             ActorRegistry = actorRegistry;
-            SessionIntegrationContextService = sessionIntegrationContextService;
+            ParticipationReadPort = participationReadPort;
             _sceneName = string.IsNullOrWhiteSpace(sceneName) ? "<unknown>" : sceneName;
             ResetContext = resetContext;
             StartLog = startLog ?? string.Empty;
@@ -53,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
         /// </summary>
         public IReadOnlyList<IWorldSpawnService> SpawnServices { get; }
         public IActorRegistry ActorRegistry { get; }
-        public ISessionIntegrationContextService SessionIntegrationContextService { get; }
+        public ISpawnResetParticipationReadPort ParticipationReadPort { get; }
         public WorldResetContext? ResetContext { get; }
         public string StartLog { get; }
         public string CompletionLog { get; }
@@ -139,16 +138,16 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
             _hookCatalog.ClearActorHookCacheForCycle();
         }
 
-        public bool TryGetCurrentParticipationSnapshot(out ParticipationSnapshot snapshot)
+        public bool TryGetCurrentParticipationSnapshot(out SpawnResetParticipationSnapshot snapshot)
         {
-            snapshot = ParticipationSnapshot.Empty;
+            snapshot = SpawnResetParticipationSnapshot.Empty;
 
-            if (SessionIntegrationContextService == null)
+            if (ParticipationReadPort == null)
             {
                 return false;
             }
 
-            return SessionIntegrationContextService.TryGetCurrentParticipation(out snapshot);
+            return ParticipationReadPort.TryGetCurrent(out snapshot);
         }
 
         public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
@@ -210,12 +209,12 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 
         private string DescribeParticipationSuffix()
         {
-            if (!TryGetCurrentParticipationSnapshot(out ParticipationSnapshot snapshot))
+            if (!TryGetCurrentParticipationSnapshot(out SpawnResetParticipationSnapshot snapshot))
             {
                 return string.Empty;
             }
 
-            return $" participationSignature='{snapshot.Signature}' participationReadiness='{snapshot.Readiness.State}'";
+            return $" participationSignature='{snapshot.Signature}' participationReadiness='{snapshot.ReadinessState}'";
         }
     }
 }

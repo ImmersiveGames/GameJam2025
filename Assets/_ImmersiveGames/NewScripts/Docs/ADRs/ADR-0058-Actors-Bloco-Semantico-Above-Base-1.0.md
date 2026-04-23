@@ -62,9 +62,10 @@ Regra central:
 - recipes canonicas do conjunto;
 - identity/role/relevance;
 - presence canonica;
-- registry do eixo (contrato e ownership arquitetural);
+- registry do eixo como boundary arquitetural (contrato e ownership do eixo);
 - materialization plan/spec canonica em alto nivel;
 - descricao canonica dos objetos de actor.
+- governanca do conjunto a partir de definitions do eixo, participacao semantica ja derivada e policies do proprio eixo.
 
 ### 4.2 Fica fora de `ActorsSystem`
 
@@ -96,8 +97,10 @@ Regra central:
 `ActorRegistry` sobe para o eixo de `ActorsSystem` em termos arquiteturais.
 
 Regra:
+- o registry do eixo e boundary arquitetural, nao detalhe de runtime;
 - participa da presenca canonica do conjunto;
-- pode ter implementacoes/adapters operacionais no runtime;
+- implementacoes/adapters operacionais de runtime podem existir abaixo desse boundary;
+- runtime registry operacional, isoladamente, nao cumpre sozinho o papel arquitetural do registry do eixo;
 - ownership arquitetural do conceito de registry deixa de ser detalhe externo.
 
 ## 7. Destino de `WorldDefinition`
@@ -117,6 +120,7 @@ Esta decisao e compativel com a Base 1.0:
 - seam (`Session Integration`) permanece explicito;
 - baseline permanece tecnico/macro fino;
 - `Spawn` e demais dominios continuam como consumidores/executores operacionais.
+- participacao semantica continua no bloco semantico owner proprio; `ActorsSystem` nao absorve esse ownership.
 
 Leitura obrigatoria:
 - `ActorsSystem` acima da execucao operacional;
@@ -129,16 +133,19 @@ Shape conceitual minimo (nao prescritivo de pasta literal):
 ```text
 ActorsSystem
 |- Definitions
-|- Recipes
+|- RosterEnsemble
+|- IdentityRoles
 |- Presence
 |- Registry
-|- Materialization
+|- MaterializationPlanSpec
 `- Integration
 ```
 
 Regras:
 - manter modulo fino no sentido de nao executar lifecycle fisico;
 - permitir adapters operacionais sem deslocar ownership do eixo.
+- governar quem existe, quem participa (a partir da participacao semantica ja derivada), quem importa/relevancia e quem deve ser materializado;
+- nao colapsar identidade semantica, presenca canonica e materializacao concreta no mesmo bloco operacional.
 
 ## 10. Relacao com a versao anterior do ADR
 
@@ -172,3 +179,55 @@ Futuras decisoes de actors devem partir desta leitura:
 - ownership nunca decidido por "quem executa hoje".
 
 Decisoes baseadas em gravidade operacional sao desvio arquitetural.
+
+## 13. Estado incremental consolidado (2026-04-22)
+
+Sem alterar a decisao central deste ADR, fica congelado como shape implementado:
+
+- refresh runtime separado em dois trilhos explicitos: participacao semantica e presenca runtime de spawn.
+- read model de actors preservado como projecao, sem absorver policy de selecao.
+- policy de ator relevante extraida para resolver dedicado (`primary/local/active/first`) separado do `ActorSystemReadModelService`.
+- este shape validado e **transitorio** e fica abaixo da ambicao completa deste ADR.
+- o `ActorSystem` atual deve ser lido como peca de projecao/consolidacao/read model, nao como owner final do conjunto.
+
+Esses pontos reforcam a regra deste ADR: semantica/policy do conjunto de actors nao deve colapsar no executor operacional.
+
+## 14. Leitura normativa do estado atual
+
+O `ActorSystem` atualmente implementado nao representa o shape final normativo deste ADR.
+
+Leitura correta do estado atual:
+- leitura de participacao semantica (entrada);
+- leitura de presenca runtime (entrada);
+- resolucao de ator relevante (policy);
+- manutencao de snapshot/read model (projecao).
+- esse papel atual e de projection/read-model service com suporte de consistency/observation.
+
+Leitura proibida:
+- confundir essa peca com ownership completo do conjunto de actors.
+
+## 15. Intencao de migracao arquitetural
+
+Direcao normativa:
+- nao expandir indefinidamente o `ActorSystem` atual por acumulo;
+- estruturar um novo `ActorsSystem` como centro semantico do eixo;
+- rebaixar o `ActorSystem` atual para papel auxiliar subordinado ao novo eixo.
+
+Mudanca de centro arquitetural:
+- sair de "validar o que existe no runtime";
+- ir para "governar o conjunto de actors" acima da execucao operacional.
+
+## 16. Reposicionamento do shape atual
+
+A peca atual pode permanecer no target, subordinada ao owner do eixo, com escopo objetivo:
+- projection/read-model service;
+- consistency/observation support.
+
+Ela nao deve ser tratada como centro semantico do eixo.
+
+## 17. Anti-leitura proibida
+
+E desvio arquitetural:
+- tratar o modulo atual de projecao como cumprimento completo do ADR-0058;
+- permitir que `Spawn` ou runtime registry retomem ownership do conjunto por gravidade operacional;
+- colapsar identidade semantica, presenca canonica e materializacao concreta em um unico bloco operacional.

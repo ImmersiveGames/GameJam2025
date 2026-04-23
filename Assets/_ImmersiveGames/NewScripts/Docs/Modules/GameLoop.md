@@ -14,6 +14,8 @@
 - `Bridges`: adaptadores entre `GameLoop`, `SceneFlow`, o rail historico do fim de run e input.
 - `Pause`: overlay reativo e hooks de pausa.
 - `IntroStage`: handoff canonico post-reveal da intro scene-local.
+- `Integration/SceneFlow`: coordinator de sync e gate de prepare com seams explicitos de decisao/handoff.
+- `Integration/RunReset`: bridge de run-end com runtime composer obrigatorio antes da composicao do bridge.
 
 ## Objetivo
 
@@ -38,7 +40,14 @@
 - O fluxo canonico atual e `RunEndIntent -> RunResultStage` opcional -> `RunDecision -> Overlay`.
 - `GameLoop` consome o handoff final, mas nao conhece presenter ou overlay do rail final.
 - `IntroStageCompletedEvent` libera a passagem para `Playing`; o timing da intro continua scene-local.
+- `GameLoopSceneFlowSyncCoordinator` mantem bind/unbind e estado transitorio; decisao de sync vive em seam puro dedicado.
+- `GameplaySessionFlowPrepareCompletionGate` usa dependencia explicita de handoff operacional (sem service locator no hot path).
 - `Restart` e `ExitToMenu` seguem intencao de contexto; a execucao concreta fica em `GameplaySessionFlow`, `Navigation` e `SceneFlow`.
+
+## Residuo conhecido (baixa divida)
+
+- `RequestStart ignored (already active)` pode aparecer durante next-phase quando IntroStage conclui com loop ja em `Playing`.
+- Leitura canonica: ruida idempotente sem impacto funcional no rail.
 
 ## Compatibilidade historica fora do caminho canonico
 

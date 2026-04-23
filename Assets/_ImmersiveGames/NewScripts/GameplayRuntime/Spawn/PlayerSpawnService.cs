@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
     public sealed class PlayerSpawnService : ActorSpawnServiceBase
     {
         private readonly IGameplayStateGate _gameplayStateService;
-        private readonly ISessionIntegrationContextService _sessionIntegrationContextService;
+        private readonly ISpawnResetParticipationReadPort _participationReadPort;
 
         public PlayerSpawnService(
             IUniqueIdFactory uniqueIdFactory,
@@ -22,11 +22,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             IWorldSpawnContext context,
             GameObject prefab,
             IGameplayStateGate gameplayStateService,
-            ISessionIntegrationContextService sessionIntegrationContextService)
+            ISpawnResetParticipationReadPort participationReadPort)
             : base(uniqueIdFactory, actorRegistry, context, prefab)
         {
             _gameplayStateService = gameplayStateService;
-            _sessionIntegrationContextService = sessionIntegrationContextService;
+            _participationReadPort = participationReadPort;
         }
 
         public override string Name => nameof(PlayerSpawnService);
@@ -66,13 +66,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         private void LogParticipationBridge()
         {
-            if (_sessionIntegrationContextService == null || !_sessionIntegrationContextService.TryGetCurrentParticipation(out var snapshot))
+            if (_participationReadPort == null || !_participationReadPort.TryGetCurrent(out var snapshot))
             {
                 return;
             }
 
             DebugUtility.Log(typeof(PlayerSpawnService),
-                $"[OBS][Gameplay][SpawnBridge] Player spawn consumed participation signature='{snapshot.Signature}' readiness='{snapshot.Readiness.State}' localParticipantId='{snapshot.LocalParticipantId}' primaryParticipantId='{snapshot.PrimaryParticipantId}'.");
+                $"[OBS][Gameplay][SpawnBridge] Player spawn consumed participation signature='{snapshot.Signature}' readiness='{snapshot.ReadinessState}' localParticipantId='{snapshot.LocalParticipantId}' primaryParticipantId='{snapshot.PrimaryParticipantId}'.");
         }
     }
 }

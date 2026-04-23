@@ -15,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.Bootstrap
         private static bool _installerComposed;
         private static bool _runtimeComposed;
         private static ActorSystemParticipationRefreshBridge _refreshBridge;
+        private static ActorSystemRuntimePresenceRefreshBridge _runtimePresenceRefreshBridge;
 
         public static void ComposeInstallerPhase()
         {
@@ -26,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.Bootstrap
             EnsureRequiredDependenciesOrFail();
             EnsureInboundContextProvider();
             EnsureOutboundPresencePort();
+            EnsureRelevantActorResolver();
             EnsureReadModelService();
 
             _installerComposed = true;
@@ -44,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.Bootstrap
             }
 
             EnsureRefreshBridge();
+            EnsureRuntimePresenceRefreshBridge();
             PrimeReadModel();
 
             _runtimeComposed = true;
@@ -112,8 +115,28 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][ActorSystem] IActorPresenceReadPort ausente no DI global antes de registrar IActorSystemReadModelService.");
             }
 
-            var readModelService = new ActorSystemReadModelService(contextProvider, presenceReadPort);
+            if (!DependencyManager.Provider.TryGetGlobal<IActorSystemRelevantActorResolver>(out var relevantActorResolver) || relevantActorResolver == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][ActorSystem] IActorSystemRelevantActorResolver ausente no DI global antes de registrar IActorSystemReadModelService.");
+            }
+
+            var readModelService = new ActorSystemReadModelService(contextProvider, presenceReadPort, relevantActorResolver);
             DependencyManager.Provider.RegisterGlobal<IActorSystemReadModelService>(readModelService);
+        }
+
+        private static void EnsureRelevantActorResolver()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IActorSystemRelevantActorResolver>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IActorSystemRelevantActorResolver>(
+                new ActorSystemDefaultRelevantActorResolver());
+
+            DebugUtility.LogVerbose(typeof(ActorSystemBootstrap),
+                "[OBS][ActorSystem] Relevant actor resolver default registrado.",
+                DebugUtility.Colors.Info);
         }
 
         private static void EnsureRefreshBridge()
@@ -136,6 +159,28 @@ namespace _ImmersiveGames.NewScripts.ActorSystem.Integration.Bootstrap
 
             _refreshBridge = new ActorSystemParticipationRefreshBridge(readModelService);
             DependencyManager.Provider.RegisterGlobal(_refreshBridge);
+        }
+
+        private static void EnsureRuntimePresenceRefreshBridge()
+        {
+            if (_runtimePresenceRefreshBridge != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<ActorSystemRuntimePresenceRefreshBridge>(out var existingBridge) && existingBridge != null)
+            {
+                _runtimePresenceRefreshBridge = existingBridge;
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IActorSystemReadModelService>(out var readModelService) || readModelService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][ActorSystem] IActorSystemReadModelService ausente no DI global antes de registrar ActorSystemRuntimePresenceRefreshBridge.");
+            }
+
+            _runtimePresenceRefreshBridge = new ActorSystemRuntimePresenceRefreshBridge(readModelService);
+            DependencyManager.Provider.RegisterGlobal(_runtimePresenceRefreshBridge);
         }
 
         private static void PrimeReadModel()

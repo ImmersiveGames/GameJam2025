@@ -154,3 +154,17 @@ Consequencias principais:
 
 Se no futuro houver skip ou resumo de intro, o contrato de sucesso da phase continua valido desde que o conteudo local tenha sido aplicado, o runtime minimo exista e os registros de lifecycle tenham sido feitos.
 O presenter/hook local continua sendo a projecao concreta da entrada, nao o owner da phase.
+
+## 13. Residuo operacional conhecido (baixa divida)
+
+No handoff de navegacao entre phases, pode aparecer no log:
+
+- `GameLoopService RequestStart ignored (already active). state=Playing`
+
+Leitura normativa:
+
+- nao e quebra de contrato da IntroStage;
+- nao e blocker de lifecycle;
+- e ruida operacional idempotente quando `RequestStart()` chega com loop ja ativo.
+
+Tratamento: manter como residuo conhecido de baixa divida, sem reabrir o shape canonico da IntroStage.
