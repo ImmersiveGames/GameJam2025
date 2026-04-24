@@ -24,6 +24,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         Task SpawnAsync();
 
+        Task SpawnAsync(ActorSpawnRequest request);
+
         Task DespawnAsync();
     }
 }

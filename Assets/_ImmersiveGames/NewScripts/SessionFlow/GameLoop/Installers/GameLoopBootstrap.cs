@@ -19,6 +19,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
@@ -169,12 +170,51 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
         {
             if (FindFirstObjectByType<GameRunEndedEventBridge>() != null)
             {
-                return;
+                throw new InvalidOperationException(
+                    "[FATAL][Config][GameLoop] GameRunEndedEventBridge must not be placed in a scene/prefab or created outside GameLoopBootstrap. Use the canonical composition path only.");
             }
 
+            EnsureRunEndBridgeRuntimeServices();
+
             var go = new GameObject(RunEndBridgeObjectName);
+            go.SetActive(false);
             go.AddComponent<GameRunEndedEventBridge>();
+            InitializeRunEndEventBridge(go);
             DontDestroyOnLoad(go);
+            go.SetActive(true);
+        }
+
+        private static void InitializeRunEndEventBridge(GameObject bridgeObject)
+        {
+            if (bridgeObject == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] RunEnd bridge GameObject ausente ao inicializar GameRunEndedEventBridge.");
+            }
+
+            if (!bridgeObject.TryGetComponent<GameRunEndedEventBridge>(out var bridge) || bridge == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] GameRunEndedEventBridge ausente no GameObject de composição.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunEndMaterializationService>(out var runEndMaterializationService) || runEndMaterializationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunEndMaterializationService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationSelectionRoutingService>(out var runContinuationSelectionRoutingService) || runContinuationSelectionRoutingService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunContinuationSelectionRoutingService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var runContinuationOwnershipService) || runContinuationOwnershipService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunContinuationOwnershipService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
+            }
+
+            bridge.Initialize(
+                runEndMaterializationService,
+                runContinuationSelectionRoutingService,
+                runContinuationOwnershipService);
         }
 
         private static void EnsureRunEndBridgeRuntimeServices()

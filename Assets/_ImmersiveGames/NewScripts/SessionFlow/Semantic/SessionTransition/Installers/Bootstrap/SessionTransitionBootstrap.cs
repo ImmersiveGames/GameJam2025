@@ -46,7 +46,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     throw new InvalidOperationException("[FATAL][Config][SessionTransition] ISessionTransitionExecutionPort missing from global DI before SessionTransitionOrchestrator composition.");
                 }
 
-                DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(executionPort));
+                if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var planResolver) || planResolver == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] SessionTransitionPlanResolver missing from global DI before SessionTransitionOrchestrator composition.");
+                }
+
+                DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(planResolver, executionPort));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] SessionTransitionOrchestrator registered in global DI.",
                     DebugUtility.Colors.Info);

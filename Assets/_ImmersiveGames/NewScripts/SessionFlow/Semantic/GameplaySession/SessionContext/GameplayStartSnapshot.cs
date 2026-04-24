@@ -398,9 +398,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                 return entry.localId.Trim();
             }
 
-            string phaseToken = phaseId.IsValid ? phaseId.Value : "<no-phase>";
+            _ = phaseId;
             string roleToken = entry != null ? entry.role.ToString() : "Unknown";
-            return $"{phaseToken}:participant:{roleToken}:{index + 1}";
+            return $"participant:{roleToken}:{index + 1}";
         }
 
         private static OwnershipKind ResolveOwnershipKind(PhaseDefinitionAsset.PhasePlayerRole role)

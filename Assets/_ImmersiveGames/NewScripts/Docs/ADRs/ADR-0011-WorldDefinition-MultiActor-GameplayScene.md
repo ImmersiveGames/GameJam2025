@@ -154,4 +154,19 @@ EvidÃªncia canÃ´nica mostra:
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawn/PlayerSpawnService.cs`
 - `Assets/_ImmersiveGames/NewScripts/Modules/Gameplay/Spawn/EaterSpawnService.cs`
 
+## Aditivo normativo de arquivamento (2026-04-23)
+
+Este ADR permanece arquivado como historico operacional de um trilho legado de spawn.
+
+Leitura normativa obrigatoria:
+
+- nao usar este ADR para decidir ownership canonico do eixo de actors;
+- nao usar `WorldDefinition` como fonte canonica de legitimidade de actor;
+- nao usar `WorldDefinition` como shape final de recipe/prefab do eixo.
+
+Compatibilidade transitoria permitida:
+
+- `WorldDefinition` pode existir apenas como ponte temporaria enquanto a migracao material para `ActorSpec` no `ActorsSystem` nao termina.
+- route/phase/runtime no shape alvo devem referenciar `actorSpecId`/`ActorSetRef`, nunca prefab direto.
+
 

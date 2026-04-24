@@ -44,7 +44,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 DebugUtility.LogVerbose(typeof(PhaseDefinitionSeamRegistration),
                     "[OBS][SessionIntegration][Core] seam='SessionIntegration' executor='SessionIntegrationContextService' role='canonical-session-integration-seam'.",
                     DebugUtility.Colors.Info);
-                GameplaySessionFlowCompletionGateComposer.ComposeOrValidate();
+
+                // ✅ Resolve handoff service explicitly before passing to composer
+                if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowPrepareOperationalHandoffService>(out var handoffService) || handoffService == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplaySessionFlowPrepareOperationalHandoffService should be registered by RegisterGameplaySessionFlowPrepareOperationalHandoffService().");
+                }
+                GameplaySessionFlowCompletionGateComposer.ComposeOrValidate(handoffService);
                 return;
             }
 
@@ -89,7 +95,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                     new SpawnResetParticipationReadPortAdapter(existingService));
             }
 
-            GameplaySessionFlowCompletionGateComposer.ComposeOrValidate();
+            // ✅ Resolve handoff service explicitly before passing to composer
+            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowPrepareOperationalHandoffService>(out var handoffService2) || handoffService2 == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplaySessionFlowPrepareOperationalHandoffService should be registered by RegisterGameplaySessionFlowPrepareOperationalHandoffService().");
+            }
+            GameplaySessionFlowCompletionGateComposer.ComposeOrValidate(handoffService2);
         }
 
         private static void RegisterGameplaySessionFlowPrepareOperationalHandoffService()

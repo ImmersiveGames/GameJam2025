@@ -2,8 +2,8 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using UnityEngine;
@@ -15,6 +15,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
         Task DispatchAsync(RunContinuationSelection selection);
     }
 
+    /// <summary>
+    /// Bridge que reage a eventos de fim de run e coordena transição pós-run.
+    ///
+    /// ⚠️ INICIALIZAÇÃO OBRIGATÓRIA:
+    /// - NÃO inicializa automaticamente em Awake
+    /// - DEVE ser inicializado explicitamente via Initialize(...)
+    /// - Validação: se Initialize() não foi chamado, Awake() lança InvalidOperationException
+    ///
+    /// DEPENDÊNCIAS (recebidas via Initialize, não resolvidas do DI global):
+    /// - IRunEndMaterializationService
+    /// - IRunContinuationSelectionRoutingService
+    /// - IRunContinuationOwnershipService
+    /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunEndedEventBridge : MonoBehaviour
@@ -27,23 +40,54 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
         private EventBinding<RunContinuationSelectionResolvedEvent> _runContinuationSelectionResolvedBinding;
         private bool _registered;
         private bool _postStagePending;
+        private bool _initialized;
 
-        private void Awake()
+        /// <summary>
+        /// ✅ Explicit initialization with all dependencies.
+        /// Must be called after RunEndBridgeRuntimeComposer.ComposeOrFail() and before activation.
+        /// </summary>
+        public void Initialize(
+            IRunEndMaterializationService runEndMaterializationService,
+            IRunContinuationSelectionRoutingService runContinuationSelectionRoutingService,
+            IRunContinuationOwnershipService runContinuationOwnershipService)
         {
-            _runEndMaterializationService = ResolveRequired<IRunEndMaterializationService>(
-                "[FATAL][Config][GameplaySessionFlow] IRunEndMaterializationService ausente no DI global antes de compor GameRunEndedEventBridge.");
-            _runContinuationSelectionRoutingService = ResolveRequired<IRunContinuationSelectionRoutingService>(
-                "[FATAL][Config][GameplaySessionFlow] IRunContinuationSelectionRoutingService ausente no DI global antes de compor GameRunEndedEventBridge.");
-            _runContinuationOwnershipService = ResolveRequired<IRunContinuationOwnershipService>(
-                "[FATAL][Config][GameplaySessionFlow] IRunContinuationOwnershipService ausente no DI global antes de compor GameRunEndedEventBridge.");
+            if (runEndMaterializationService == null)
+                throw new ArgumentNullException(nameof(runEndMaterializationService));
+            if (runContinuationSelectionRoutingService == null)
+                throw new ArgumentNullException(nameof(runContinuationSelectionRoutingService));
+            if (runContinuationOwnershipService == null)
+                throw new ArgumentNullException(nameof(runContinuationOwnershipService));
+
+            _runEndMaterializationService = runEndMaterializationService;
+            _runContinuationSelectionRoutingService = runContinuationSelectionRoutingService;
+            _runContinuationOwnershipService = runContinuationOwnershipService;
 
             _binding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
             _runContinuationSelectionResolvedBinding = new EventBinding<RunContinuationSelectionResolvedEvent>(OnRunContinuationSelectionResolved);
-            RegisterBinding();
+
+            _initialized = true;
         }
 
-        private void OnEnable() => RegisterBinding();
+        private void Awake()
+        {
+            if (!RunEndBridgeRuntimeComposer.IsComposed)
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][GameplaySessionFlow] GameRunEndedEventBridge requires RunEndBridgeRuntimeComposer.ComposeOrFail() before the component is instantiated.");
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (!_initialized)
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][GameplaySessionFlow] GameRunEndedEventBridge activated before explicit initialization.");
+            }
+
+            RegisterBinding();
+        }
 
         private void OnDisable() => UnregisterBinding();
 
@@ -125,16 +169,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
             }
         }
 
-        private static T ResolveRequired<T>(string errorMessage)
-            where T : class
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
-            {
-                throw new InvalidOperationException(errorMessage);
-            }
-
-            return service;
-        }
     }
 
     public interface IRunContinuationSelectionRoutingService

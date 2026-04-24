@@ -2,13 +2,8 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -21,19 +16,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionSelectionService>(out var phaseSelectionService) || phaseSelectionService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var orchestrator) || orchestrator == null)
             {
-                FailFastOperational(context, "IPhaseDefinitionSelectionService missing.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<GameplayPhaseFlowService>(out var gameplayPhaseFlowService) || gameplayPhaseFlowService == null)
-            {
-                FailFastOperational(context, "GameplayPhaseFlowService missing.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneCompositionExecutor>(out var sceneCompositionExecutor) || sceneCompositionExecutor == null)
-            {
-                FailFastOperational(context, "ISceneCompositionExecutor missing.");
+                FailFastOperational(context, "SessionTransitionOrchestrator missing.");
             }
 
             string reason = string.IsNullOrWhiteSpace(context.Reason)
@@ -42,38 +27,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
             string signature = SceneTransitionSignature.Compute(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] handoff_accepted rail='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_received rail='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            PhaseDefinitionAsset selectedPhaseDefinitionRef = phaseSelectionService.ResolveOrFail();
-            PhaseDefinitionSelectedEvent phaseSelectedEvent = gameplayPhaseFlowService.PublishPhaseDefinitionSelected(
-                selectedPhaseDefinitionRef,
-                context.RouteId,
-                context.RouteRef,
-                reason);
-
-            SceneCompositionRequest phaseCompositionRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
-                selectedPhaseDefinitionRef,
-                reason,
-                phaseSelectedEvent.SelectionSignature,
-                forceFullReload: false);
-
-            SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
-
-            const string canonicalPhaseContentAppliedSource = PhaseFlowSignalVocabulary.GameplaySessionFlowSource;
-
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] handoff_dispatch target='GameplayPhaseFlowService/IntroStageRail' source='{canonicalPhaseContentAppliedSource}' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_delegated target='SessionTransitionOrchestrator' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
-                selectedPhaseDefinitionRef,
-                phaseCompositionRequest.ScenesToLoad,
-                phaseCompositionRequest.ActiveScene,
-                canonicalPhaseContentAppliedSource);
+            await orchestrator.ExecuteAsync(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] execution_completed rail='GameplaySessionPrepare' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' routeId='{context.RouteId}' signature='{signature}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_accepted target='SessionTransitionOrchestrator' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
         }
 

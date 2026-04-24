@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             try
             {
                 await _executor.ExecuteAsync(executors, request.Reason);
-                _postResetValidator.ValidateEssentialActors(request.TargetScene, _policy);
+                _postResetValidator.ValidateEssentialActors(request.TargetScene, _policy, request.Origin);
             }
             catch (Exception ex)
             {

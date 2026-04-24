@@ -41,6 +41,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             }
 
             EnsureSceneTransitionService();
+            EnsureRouteActorSetRefContext();
             EnsureInputModeBridge();
             EnsureLoadingOrchestrators();
             EnsureFadeReadyAsync();
@@ -116,6 +117,22 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             DependencyManager.Provider.RegisterGlobal(_inputModeBridge);
         }
 
+        private static void EnsureRouteActorSetRefContext()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var existingContext) && existingContext != null)
+            {
+                return;
+            }
+
+            var service = new SceneFlowRouteActorSetRefService();
+            DependencyManager.Provider.RegisterGlobal<ISceneFlowRouteActorSetRefContext>(service);
+            DependencyManager.Provider.RegisterGlobal(service);
+
+            DebugUtility.Log(typeof(SceneFlowBootstrap),
+                "[OBS][ActorsExecution] Route actor-set context composed (SceneFlow owner).",
+                DebugUtility.Colors.Info);
+        }
+
         private static void EnsureLoadingOrchestrators()
         {
             ResolveRequired<ILoadingPresentationService>();
@@ -175,6 +192,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             ResolveRequired<INavigationPolicy>();
             ResolveRequired<IRouteGuard>();
             ResolveRequired<IRouteResetPolicy>();
+            ResolveRequired<ISceneFlowRouteActorSetRefContext>();
             ResolveRequired<ILoadingPresentationService>();
             ResolveRequired<ILoadingHudService>();
             ResolveRequired<IFadeService>();

@@ -1,10 +1,13 @@
+using System;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
@@ -48,8 +51,17 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public Task SpawnAsync()
         {
+            return SpawnAsync(ActorSpawnRequest.CreateLegacy(
+                SpawnedActorKind,
+                Name,
+                _context?.SceneName ?? string.Empty,
+                IsRequiredForWorldReset));
+        }
+
+        public Task SpawnAsync(ActorSpawnRequest request)
+        {
             DebugUtility.LogVerbose(GetType(),
-                $"SpawnAsync iniciado (scene={_context?.SceneName ?? "<unknown>"}).");
+                $"SpawnAsync iniciado request='{request}' scene={_context?.SceneName ?? "<unknown>"}.");
 
             if (uniqueIdFactory == null || _actorRegistry == null)
             {
@@ -76,6 +88,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             {
                 DebugUtility.LogWarning(GetType(), "Spawn chamado mais de uma vez; ignorando.");
                 return Task.CompletedTask;
+            }
+
+            if (request.IsValid && request.ActorKind != ActorKind.Unknown && request.ActorKind != SpawnedActorKind)
+            {
+                DebugUtility.LogWarning(GetType(),
+                    $"Request de spawn com actorKind divergente requestActorKind='{request.ActorKind}' serviceActorKind='{SpawnedActorKind}' request='{request}'.");
+            }
+
+            bool isCanonicalSpawnRequest = !string.Equals(request.Source, "legacy-spawn", StringComparison.Ordinal);
+            if (isCanonicalSpawnRequest)
+            {
+                if (!request.HasAxisActorId || !request.HasActorSpecId || !request.HasActorSetRef || (SpawnedActorKind == ActorKind.Player && !request.HasSemanticParticipantId))
+                {
+                    DebugUtility.LogError(GetType(),
+                        $"Spawn canônico incompleto; abortando antes da instanciação. actorKind='{SpawnedActorKind}' axisActorId='{request.AxisActorId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' semanticParticipantId='{request.SemanticParticipantId}' source='{request.Source}'.");
+                    return Task.CompletedTask;
+                }
             }
 
             var instance = Object.Instantiate(_prefab, _context.WorldRoot);
@@ -121,14 +150,92 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 return Task.CompletedTask;
             }
 
+            RuntimeActorId runtimeActorId = new RuntimeActorId(_spawnedActor.ActorId);
+            if (!runtimeActorId.IsValid)
+            {
+                DebugUtility.LogError(GetType(),
+                    $"ActorId gerado invalido para runtime canonical; abortando spawn. ActorId={_spawnedActor.ActorId}");
+                Object.Destroy(_spawnedObject);
+                _spawnedObject = null;
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
+
+            AxisActorId axisActorId = request.HasAxisActorId ? request.AxisActorId : AxisActorId.None;
+            if (request.IsValid && request.HasAxisActorId && !axisActorId.IsValid)
+            {
+                DebugUtility.LogError(GetType(),
+                    $"AxisActorId invalido no request canonico; abortando spawn. request='{request}'");
+                Object.Destroy(_spawnedObject);
+                _spawnedObject = null;
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
+
+            string semanticParticipantId = ResolveSemanticParticipantId(_spawnedActor, request);
+            ActorSpawnCompletedEvent completedEvent = new ActorSpawnCompletedEvent(
+                _spawnedActor,
+                SpawnedActorKind,
+                axisActorId,
+                runtimeActorId,
+                _spawnedActor.ActorId,
+                request.ActorSpecId,
+                request.ActorSetRef,
+                semanticParticipantId,
+                request.OperationalRecipeKind,
+                Name,
+                _context.SceneName,
+                request.Source,
+                request.Reason,
+                request.ExecutionSignature,
+                IsRequiredForWorldReset);
+
+            if (request.HasActorSpecId && string.IsNullOrWhiteSpace(completedEvent.ActorSpecId))
+            {
+                DebugUtility.LogError(GetType(),
+                    $"ActorSpawnCompletedEvent canonico sem ActorSpecId apos spawn. request='{request}'");
+                Object.Destroy(_spawnedObject);
+                _spawnedObject = null;
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
+
+            if (request.HasActorSetRef && string.IsNullOrWhiteSpace(completedEvent.ActorSetRef))
+            {
+                DebugUtility.LogError(GetType(),
+                    $"ActorSpawnCompletedEvent canonico sem ActorSetRef apos spawn. request='{request}'");
+                Object.Destroy(_spawnedObject);
+                _spawnedObject = null;
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
+
+            if (request.HasAxisActorId && !completedEvent.HasAxisActorId)
+            {
+                DebugUtility.LogError(GetType(),
+                    $"ActorSpawnCompletedEvent canonico sem AxisActorId apos spawn. request='{request}'");
+                Object.Destroy(_spawnedObject);
+                _spawnedObject = null;
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
+
+            if (request.HasSemanticParticipantId && !completedEvent.HasSemanticParticipantId)
+            {
+                DebugUtility.LogError(GetType(),
+                    $"ActorSpawnCompletedEvent canonico sem SemanticParticipantId apos spawn. request='{request}'");
+                Object.Destroy(_spawnedObject);
+                _spawnedObject = null;
+                _spawnedActor = null;
+                return Task.CompletedTask;
+            }
+
             EventBus<ActorSpawnCompletedEvent>.Raise(
-                new ActorSpawnCompletedEvent(
-                    _spawnedActor,
-                    SpawnedActorKind,
-                    _spawnedActor.ActorId,
-                    Name,
-                    _context.SceneName,
-                    IsRequiredForWorldReset));
+                completedEvent);
+
+            DebugUtility.Log(GetType(),
+                $"[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent published actorSpecId='{completedEvent.ActorSpecId}' actorSetRef='{completedEvent.ActorSetRef}' axisActorId='{completedEvent.AxisActorId}' runtimeActorId='{completedEvent.RuntimeActorId}' semanticParticipantId='{AsText(completedEvent.SemanticParticipantId)}' source='{AsText(completedEvent.Source)}' executionSignature='{AsText(completedEvent.ExecutionSignature)}'.",
+                DebugUtility.Colors.Info);
 
             string prefabName = _prefab != null ? _prefab.name : "<null>";
             string instanceName = _spawnedObject != null ? _spawnedObject.name : "<null>";
@@ -229,7 +336,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         /// <summary>
         /// Hook chamado logo apos a instanciação do prefab. Usado para garantir stack de movimento, injecao de servicos, etc.
         /// </summary>
+        protected virtual string ResolveSemanticParticipantId(IActor actor, in ActorSpawnRequest request)
+        {
+            _ = actor;
+            if (request.HasSemanticParticipantId)
+            {
+                return request.SemanticParticipantId;
+            }
+
+            return string.Empty;
+        }
+
         protected virtual void OnPostInstantiate(GameObject instance) { }
+
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        }
     }
 }
 

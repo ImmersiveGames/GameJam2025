@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
@@ -72,6 +73,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
         private static void EnsureCanonicalInputModeService(string playerMapName, string menuMapName)
         {
+            IActorsOperationalBindingQueryPort operationalBindingQueryPort = ResolveOperationalBindingQueryPortOrFail();
+
             if (DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var existingService) && existingService != null)
             {
                 if (existingService is not InputModeService)
@@ -87,7 +90,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
                 if (!DependencyManager.Provider.TryGetGlobal<IPlayerInputLocator>(out var existingLocator) || existingLocator == null)
                 {
-                    DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(new PlayerInputLocator());
+                    DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(new PlayerInputLocator(operationalBindingQueryPort));
                 }
 
                 DebugUtility.LogVerbose(typeof(InputModesInstaller),
@@ -96,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 return;
             }
 
-            var playerInputLocator = new PlayerInputLocator();
+            var playerInputLocator = new PlayerInputLocator(operationalBindingQueryPort);
             var inputModeService = new InputModeService(playerInputLocator, playerMapName, menuMapName);
 
             DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(playerInputLocator);
@@ -107,6 +110,17 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             DebugUtility.LogVerbose(typeof(InputModesInstaller),
                 $"[OBS][InputModes][Installer] Canonical IInputModeService registered playerMap='{playerMapName}' menuMap='{menuMapName}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static IActorsOperationalBindingQueryPort ResolveOperationalBindingQueryPortOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IActorsOperationalBindingQueryPort>(out var queryPort) && queryPort != null)
+            {
+                return queryPort;
+            }
+
+            throw new InvalidOperationException(
+                "[FATAL][Config][InputModes] IActorsOperationalBindingQueryPort obrigatorio ausente no DI global antes de instalar InputModes.");
         }
     }
 }

@@ -86,7 +86,12 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 
     internal sealed class SceneResetSpawnOwnerExecutor
     {
-        public async Task ExecuteAsync(SceneResetContext context, string stepName, Func<IWorldSpawnService, Task> stepAction)
+        public async Task ExecuteAsync(
+            SceneResetContext context,
+            string stepName,
+            Func<IWorldSpawnService, Task> stepAction,
+            Func<IWorldSpawnService, bool> shouldExecuteService = null,
+            string skipReason = null)
         {
             if (context == null)
             {
@@ -124,6 +129,13 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
                 {
                     DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                         $"{stepName} service skipped by scope filter: {service.Name}");
+                    continue;
+                }
+
+                if (shouldExecuteService != null && !shouldExecuteService(service))
+                {
+                    DebugUtility.LogVerbose(typeof(SceneResetPipeline),
+                        $"{stepName} service skipped by policy: {service.Name} reason='{(string.IsNullOrWhiteSpace(skipReason) ? "<none>" : skipReason)}'");
                     continue;
                 }
 

@@ -14,6 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers
     {
         private static bool _composed;
 
+        public static bool IsComposed => _composed;
+
         public static void ComposeOrFail()
         {
             if (_composed)

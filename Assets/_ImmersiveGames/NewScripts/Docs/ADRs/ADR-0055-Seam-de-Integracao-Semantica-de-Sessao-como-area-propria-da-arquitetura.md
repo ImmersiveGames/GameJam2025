@@ -287,3 +287,17 @@ Sem reabrir o contrato deste ADR, ficam congelados os seguintes pontos de harden
 - read-port minimo (`ISpawnResetParticipationReadPort`) mantido como contrato oficial de leitura para spawn/reset.
 
 Esses ajustes sao refinamento mecanico de wiring/contrato, sem mudanca de ownership semantico.
+
+## 16. Congelamento do handoff do eixo Actors (2026-04-23)
+
+Sem alterar o papel do seam, fica congelado:
+
+- route/macro, phase e runtime dinamico entregam contexto e referencia (`actorSpecId`/`ActorSetRef`), nao prefab direto.
+- a execucao operacional de actors consome `ActorSpec`/`ActorSetRef` como entrada canonica.
+- `WorldDefinition` nao e fonte normativa de prefab/body no shape final.
+
+Regra de boundary:
+
+- `Session Integration` traduz e despacha;
+- executores operacionais realizam (`Spawn`, `RegisterExisting`, `Preserve`, `Rematerialize`);
+- legitimidade e definicao de actor permanecem no `ActorsSystem`.

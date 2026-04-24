@@ -244,3 +244,16 @@ Este bloco nao e:
 - A entrada semantica minima explicita e `ParticipationSemanticInput`.
 - A saida semantica canonica permanece `ParticipationSnapshot` + `ParticipationSnapshotChangedEvent`.
 - A projecao legacy de participation (`GameplayPhasePlayerParticipation*`) foi removida e nao integra mais o trilho canonico.
+
+## 11. Congelamento da relacao participacao x origem de actor (2026-04-23)
+
+Fica congelado:
+
+- participacao continua originando actors `ParticipationDerived`.
+- participacao nao e source universal do conjunto completo de actors.
+- actors `AutonomousCanonical`, `PhaseExclusive` e `SceneAttached` nao dependem de participacao para existir semanticamente.
+
+Regra de integracao:
+
+- participacao informa contexto semantico quando aplicavel;
+- legitimidade canonicamente vem do `ActorsSystem` por `ActorSpec`.

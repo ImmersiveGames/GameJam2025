@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
@@ -14,19 +13,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
     public sealed class PlayerSpawnService : ActorSpawnServiceBase
     {
         private readonly IGameplayStateGate _gameplayStateService;
-        private readonly ISpawnResetParticipationReadPort _participationReadPort;
 
         public PlayerSpawnService(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
             GameObject prefab,
-            IGameplayStateGate gameplayStateService,
-            ISpawnResetParticipationReadPort participationReadPort)
+            IGameplayStateGate gameplayStateService)
             : base(uniqueIdFactory, actorRegistry, context, prefab)
         {
             _gameplayStateService = gameplayStateService;
-            _participationReadPort = participationReadPort;
         }
 
         public override string Name => nameof(PlayerSpawnService);
@@ -37,6 +33,22 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         protected override IActor ResolveActor(GameObject instance) =>
             PlayerSpawnActorResolver.ResolvePlayerActor(instance);
+
+        protected override string ResolveSemanticParticipantId(IActor actor, in ActorSpawnRequest request)
+        {
+            _ = actor;
+
+            if (request.HasSemanticParticipantId)
+            {
+                DebugUtility.Log(typeof(PlayerSpawnService),
+                    $"[OBS][Gameplay][SpawnBridge] Player spawn consumed semanticParticipantId from ActorSpawnRequest semanticParticipantId='{request.SemanticParticipantId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' source='{request.Source}'.");
+                return request.SemanticParticipantId;
+            }
+
+            HardFailFastH1.Trigger(typeof(PlayerSpawnService),
+                $"[FATAL][H1][Gameplay][SpawnBridge] Player spawn canônico sem semanticParticipantId no ActorSpawnRequest actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' source='{request.Source}'.");
+            return string.Empty;
+        }
 
         protected override void OnPostInstantiate(GameObject instance)
         {
@@ -66,13 +78,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         private void LogParticipationBridge()
         {
-            if (_participationReadPort == null || !_participationReadPort.TryGetCurrent(out var snapshot))
-            {
-                return;
-            }
-
-            DebugUtility.Log(typeof(PlayerSpawnService),
-                $"[OBS][Gameplay][SpawnBridge] Player spawn consumed participation signature='{snapshot.Signature}' readiness='{snapshot.ReadinessState}' localParticipantId='{snapshot.LocalParticipantId}' primaryParticipantId='{snapshot.PrimaryParticipantId}'.");
+            // F2-D remove a redescoberta de participação; neste ponto só registramos
+            // que o spawn do player consumiu o semanticParticipantId do request canônico.
         }
     }
 }

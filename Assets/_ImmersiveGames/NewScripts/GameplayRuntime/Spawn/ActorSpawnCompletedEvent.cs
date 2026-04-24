@@ -1,5 +1,7 @@
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
@@ -11,16 +13,34 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public ActorSpawnCompletedEvent(
             IActor actor,
             ActorKind actorKind,
+            AxisActorId axisActorId,
+            RuntimeActorId runtimeActorId,
             string actorId,
+            string actorSpecId,
+            string actorSetRef,
+            string semanticParticipantId,
+            ActorOperationalRecipeKind operationalRecipeKind,
             string spawnServiceName,
             string sceneName,
+            string source,
+            string reason,
+            string executionSignature,
             bool requiredForWorldReset)
         {
             Actor = actor;
             ActorKind = actorKind;
+            AxisActorId = axisActorId;
+            RuntimeActorId = runtimeActorId;
             ActorId = string.IsNullOrWhiteSpace(actorId) ? string.Empty : actorId.Trim();
+            ActorSpecId = string.IsNullOrWhiteSpace(actorSpecId) ? string.Empty : actorSpecId.Trim();
+            ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
+            SemanticParticipantId = string.IsNullOrWhiteSpace(semanticParticipantId) ? string.Empty : semanticParticipantId.Trim();
+            OperationalRecipeKind = operationalRecipeKind;
             SpawnServiceName = string.IsNullOrWhiteSpace(spawnServiceName) ? string.Empty : spawnServiceName.Trim();
             SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+            Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
             RequiredForWorldReset = requiredForWorldReset;
         }
 
@@ -28,15 +48,47 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public ActorKind ActorKind { get; }
 
+        public AxisActorId AxisActorId { get; }
+
+        public RuntimeActorId RuntimeActorId { get; }
+
         public string ActorId { get; }
+
+        public string ActorSpecId { get; }
+
+        public string ActorSetRef { get; }
+
+        public string SemanticParticipantId { get; }
+
+        public ActorOperationalRecipeKind OperationalRecipeKind { get; }
 
         public string SpawnServiceName { get; }
 
         public string SceneName { get; }
 
+        public string Source { get; }
+
+        public string Reason { get; }
+
+        public string ExecutionSignature { get; }
+
         public bool RequiredForWorldReset { get; }
 
         public bool HasActor => Actor != null;
+        public bool HasAxisActorId => AxisActorId.IsValid;
+        public bool HasRuntimeActorId => RuntimeActorId.IsValid;
+        public bool HasActorSpecId => !string.IsNullOrWhiteSpace(ActorSpecId);
+        public bool HasActorSetRef => !string.IsNullOrWhiteSpace(ActorSetRef);
+        public bool HasSemanticParticipantId => !string.IsNullOrWhiteSpace(SemanticParticipantId);
+        public bool HasCanonicalPayload =>
+            HasAxisActorId &&
+            HasRuntimeActorId &&
+            HasActorSpecId &&
+            HasActorSetRef &&
+            !string.IsNullOrWhiteSpace(SpawnServiceName) &&
+            !string.IsNullOrWhiteSpace(SceneName) &&
+            !string.IsNullOrWhiteSpace(Source) &&
+            !string.IsNullOrWhiteSpace(ExecutionSignature) &&
+            (ActorKind != ActorKind.Player || HasSemanticParticipantId);
     }
 }
-

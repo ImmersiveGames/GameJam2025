@@ -1,39 +1,108 @@
 using System;
-using System.Linq;
-using UnityEngine;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using UnityEngine.InputSystem;
-using Object = UnityEngine.Object;
 
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     internal sealed class PlayerInputLocator : IPlayerInputLocator
     {
+        private readonly IActorsOperationalBindingQueryPort _bindingQueryPort;
+        private readonly List<ActorsOperationalBindingEntry> _entries = new(16);
+
+        public PlayerInputLocator(IActorsOperationalBindingQueryPort bindingQueryPort)
+        {
+            _bindingQueryPort = bindingQueryPort ?? throw new ArgumentNullException(nameof(bindingQueryPort));
+        }
+
         public PlayerInput[] GetActivePlayerInputs()
         {
-            PlayerInput[] all = Object.FindObjectsByType<PlayerInput>(FindObjectsSortMode.None);
-            if (all == null || all.Length == 0)
+            _entries.Clear();
+            if (!_bindingQueryPort.TryGetAll(_entries) || _entries.Count == 0)
             {
                 return Array.Empty<PlayerInput>();
             }
 
-            int count = all.Count(pi => pi != null && pi.enabled && pi.gameObject.activeInHierarchy);
-            if (count == 0)
-            {
-                return Array.Empty<PlayerInput>();
-            }
+            var resolvedInputs = new List<PlayerInput>(_entries.Count);
+            var seenInstanceIds = new HashSet<int>();
 
-            var result = new PlayerInput[count];
-            int idx = 0;
-            foreach (var pi in all)
+            for (int i = 0; i < _entries.Count; i += 1)
             {
-                if (pi != null && pi.enabled && pi.gameObject.activeInHierarchy)
+                ActorsOperationalBindingEntry entry = _entries[i];
+                if (!IsOperationallyBindable(entry))
                 {
-                    result[idx++] = pi;
+                    continue;
+                }
+
+                if (!TryResolvePlayerInput(entry.UnityHandles, out PlayerInput playerInput))
+                {
+                    continue;
+                }
+
+                if (playerInput == null || !playerInput.enabled || !playerInput.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                int instanceId = playerInput.GetInstanceID();
+                if (!seenInstanceIds.Add(instanceId))
+                {
+                    continue;
+                }
+
+                resolvedInputs.Add(playerInput);
+            }
+
+            if (resolvedInputs.Count == 0)
+            {
+                return Array.Empty<PlayerInput>();
+            }
+
+            var result = resolvedInputs.ToArray();
+            Array.Sort(result, CompareByInstanceId);
+            return result;
+        }
+
+        private static bool IsOperationallyBindable(ActorsOperationalBindingEntry entry)
+        {
+            if (entry.FlowStep != ActorsOperationalBindingFlowStep.UnityOperationalBound)
+            {
+                return false;
+            }
+
+            if (entry.State != ActorsOperationalBindingState.Bound && entry.State != ActorsOperationalBindingState.Active)
+            {
+                return false;
+            }
+
+            return entry.UnityHandles.HasPlayerIndex;
+        }
+
+        private static bool TryResolvePlayerInput(ActorsUnityOperationalHandles handles, out PlayerInput playerInput)
+        {
+            playerInput = null;
+            if (!handles.HasPlayerIndex)
+            {
+                return false;
+            }
+
+            playerInput = PlayerInput.GetPlayerByIndex(handles.PlayerIndex.Value);
+            if (playerInput == null)
+            {
+                return false;
+            }
+
+            if (handles.HasInputUserId)
+            {
+                ulong actualUserId = (ulong)playerInput.user.id;
+                if (actualUserId != handles.InputUserId.Value)
+                {
+                    return false;
                 }
             }
 
-            Array.Sort(result, CompareByInstanceId);
-            return result;
+            return true;
         }
 
         private static int CompareByInstanceId(PlayerInput left, PlayerInput right)

@@ -231,3 +231,30 @@ E desvio arquitetural:
 - tratar o modulo atual de projecao como cumprimento completo do ADR-0058;
 - permitir que `Spawn` ou runtime registry retomem ownership do conjunto por gravidade operacional;
 - colapsar identidade semantica, presenca canonica e materializacao concreta em um unico bloco operacional.
+
+## 18. Congelamento normativo do shape canonico (2026-04-23)
+
+Para remover ambiguidade de ownership durante a migracao, fica congelado:
+
+- `ActorSpec` e o contrato autoral unico do eixo no `ActorsSystem`.
+- Todo actor canonico deve existir por `ActorSpec`; descoberta runtime nao legitima actor.
+- O consumo cross-eixo deve referenciar `actorSpecId` ou `ActorSetRef`; prefab direto fora desse shape e proibido.
+
+Campos minimos obrigatorios de `ActorSpec`:
+
+- `actorSpecId`
+- `sourceKind` (`ParticipationDerived`, `AutonomousCanonical`, `PhaseExclusive`, `SceneAttached`)
+- `roleGroup`
+- `operationalRecipeKind`
+- `placeholderBodyRef`
+- `integrationStage` (`RouteMacro`, `PhaseEntry`, `RuntimeDynamic`)
+- `realizationMode` (`Spawn`, `RegisterExisting`, `Preserve`, `Rematerialize`)
+- `continuityResetPolicy`
+
+Regras normativas complementares:
+
+- `sourceKind` define origem semantica, nao modo operacional.
+- `integrationStage` define quando entra no elenco canonico.
+- `realizationMode` define como realiza no mundo, sem reabrir legitimidade.
+- `continuityResetPolicy` governa reset/reentry sem retornar ownership para trilho legado.
+- `WorldDefinition` nao e owner canonico desses campos; quando presente, e apenas compat temporaria.

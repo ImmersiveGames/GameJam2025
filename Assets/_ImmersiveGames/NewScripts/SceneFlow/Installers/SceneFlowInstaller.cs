@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
@@ -39,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             RegisterNavigationPolicy();
             RegisterRouteGuard();
             RegisterRouteResetPolicy();
+            RegisterRouteActorSetRefContext();
             RegisterLoadingServices(bootstrapConfig);
 
             _installed = true;
@@ -92,6 +94,22 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
                 () => new SceneRouteResetPolicy(),
                 "[SceneFlow] IRouteResetPolicy ja registrado no DI global.",
                 "[SceneFlow] IRouteResetPolicy registrado no DI global (SceneRouteResetPolicy).");
+        }
+
+        private static void RegisterRouteActorSetRefContext()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var existingContext) && existingContext != null)
+            {
+                return;
+            }
+
+            var service = new SceneFlowRouteActorSetRefService();
+            DependencyManager.Provider.RegisterGlobal<ISceneFlowRouteActorSetRefContext>(service);
+            DependencyManager.Provider.RegisterGlobal(service);
+
+            DebugUtility.Log(typeof(SceneFlowInstaller),
+                "[OBS][ActorsExecution] Route actor-set context composed during SceneFlow installer phase.",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterLoadingServices(BootstrapConfigAsset bootstrapConfig)

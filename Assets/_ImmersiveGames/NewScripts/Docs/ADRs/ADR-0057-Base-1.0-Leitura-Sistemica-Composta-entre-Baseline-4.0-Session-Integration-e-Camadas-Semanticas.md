@@ -196,3 +196,19 @@ Registra-se como residuo operacional de baixa divida (nao blocker):
 - log `RequestStart ignored (already active)` no handoff de next-phase quando `IntroStageCoordinator` solicita start com loop ja em `Playing` (comportamento idempotente).
 - co-localizacao temporaria de algumas interfaces/implementacoes extraidas em slices curtos.
 - ajustes futuros de organizacao fisica (arquivo/pasta) sem impacto de boundary.
+
+## 17. Congelamento de ownership do eixo Actors (2026-04-23)
+
+Sem reabrir a Base 1.0, fica congelado:
+
+- `ActorsSystem` e owner do elenco canonico e do shape autoral de actor.
+- materializacao concreta consome `ActorSpec`/`ActorSetRef`.
+- `WorldDefinition` nao e owner canonico do eixo de actors.
+- reset e reentry do eixo seguem `continuityResetPolicy` de `ActorSpec`.
+
+Regra de leitura obrigatoria:
+
+- semantica e legitimidade no `ActorsSystem`;
+- traducao/handoff no `Session Integration`;
+- execucao concreta em spawn/register/preserve/rematerialize;
+- ownership nunca volta para rails legados por conveniencia de runtime.

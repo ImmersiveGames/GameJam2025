@@ -1,11 +1,52 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SessionTransitionPlanResolver
     {
+        public SessionTransitionPlan Resolve(SceneTransitionContext context)
+        {
+            if (!context.RouteId.IsValid || context.RouteRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
+                    "[FATAL][H1][SessionTransition] SceneTransitionContext invalido recebido pelo resolver de gameplay prepare.");
+            }
+
+            RunContinuationKind selectedContinuation = ResolveGameplayPrepareContinuation(context);
+            string normalizedReason = Normalize(context.Reason);
+            string signature = SceneTransitionSignature.Compute(context);
+            string sceneName = ResolveGameplaySceneName(context);
+            RunDecisionCompletion completion = new RunDecisionCompletion(
+                ResolveGameplayCompletionKind(context),
+                normalizedReason,
+                sceneName);
+
+            RunEndIntent intent = new RunEndIntent(
+                signature,
+                sceneName,
+                Normalize(context.TransitionProfileName),
+                0,
+                normalizedReason,
+                context.RouteKind == SceneRouteKind.Gameplay);
+
+            RunContinuationContext continuationContext = new RunContinuationContext(
+                intent,
+                RunResult.Exit,
+                new[] { selectedContinuation },
+                requiresPlayerDecision: false);
+
+            RunContinuationSelection selection = new RunContinuationSelection(
+                continuationContext,
+                selectedContinuation,
+                completion);
+
+            return Resolve(new SessionTransitionContext(selection));
+        }
+
         public SessionTransitionPlan Resolve(SessionTransitionContext context)
         {
             if (!context.IsValid)
@@ -150,6 +191,54 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             SessionTransitionResetScopeKind resetBoundary)
         {
             return new SessionTransitionReconstructionShape(kind, resetBoundary);
+        }
+
+        private static RunContinuationKind ResolveGameplayPrepareContinuation(SceneTransitionContext context)
+        {
+            if (context.RouteKind == SceneRouteKind.Frontend)
+            {
+                return RunContinuationKind.ExitToMenu;
+            }
+
+            if (context.RouteKind != SceneRouteKind.Gameplay)
+            {
+                return RunContinuationKind.TerminateRun;
+            }
+
+            if (context.RequiresWorldReset || ContainsRetryOrResetReason(context.Reason) || ContainsRetryOrResetReason(context.ResetDecisionReason) || ContainsRetryOrResetReason(context.ResetDecisionSource))
+            {
+                return RunContinuationKind.RestartCurrentPhase;
+            }
+
+            return RunContinuationKind.AdvancePhase;
+        }
+
+        private static RunDecisionCompletionKind ResolveGameplayCompletionKind(SceneTransitionContext context)
+        {
+            return context.RouteKind == SceneRouteKind.Frontend
+                ? RunDecisionCompletionKind.Menu
+                : RunDecisionCompletionKind.Macro;
+        }
+
+        private static string ResolveGameplaySceneName(SceneTransitionContext context)
+        {
+            if (!string.IsNullOrWhiteSpace(context.TargetActiveScene))
+            {
+                return context.TargetActiveScene.Trim();
+            }
+
+            return context.RouteId.Value ?? string.Empty;
+        }
+
+        private static bool ContainsRetryOrResetReason(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return value.IndexOf("retry", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   value.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string Normalize(string value)
