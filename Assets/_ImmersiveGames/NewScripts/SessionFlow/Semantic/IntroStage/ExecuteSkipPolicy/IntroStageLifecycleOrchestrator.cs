@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
@@ -107,8 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
     public enum IntroStageExecutionDecisionKind
     {
         Execute = 0,
-        SkipNoContent = 1,
-        SkipPresenterUnavailable = 2
+        SkipNoContent = 1
     }
 
     public readonly struct IntroStageExecutionDecision
@@ -154,15 +154,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 skipReason: PhaseFlowSignalVocabulary.NoContentReason,
                 detail: string.Empty,
                 completionReason: PhaseFlowSignalVocabulary.NoContentReason);
-
-        public static IntroStageExecutionDecision SkipPresenterUnavailable()
-            => new(
-                IntroStageExecutionDecisionKind.SkipPresenterUnavailable,
-                warning: true,
-                logReason: PhaseFlowSignalVocabulary.PresenterUnavailableReason,
-                skipReason: PhaseFlowSignalVocabulary.PresenterUnavailableReason,
-                detail: "scene_local_presenter_not_found",
-                completionReason: PhaseFlowSignalVocabulary.PresenterUnavailableReason);
     }
 
     public interface IIntroStageExecutionDecisionService
@@ -190,7 +181,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
             if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
             {
-                return IntroStageExecutionDecision.SkipPresenterUnavailable();
+                // Ausencia de contrato operacional/presenter no escopo da phase e no-content explicito.
+                return IntroStageExecutionDecision.SkipNoContent();
             }
 
             return IntroStageExecutionDecision.Execute();
@@ -336,19 +328,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 IntroStageSession completionSession = decision.Kind == IntroStageExecutionDecisionKind.SkipNoContent
                     ? CreateNoContentSession(session)
                     : session;
+
+                ValidateGameplayCompletionPayload(routeKind, completionSession, decision.CompletionReason);
                 _telemetry.LogSkipped(decision, source, completionSession, reason);
 
                 _completionSignalingService.Publish(completionSession, source, wasSkipped: true, reason: decision.CompletionReason);
-                RunIntroStage(CreateNoContentSession(session), routeKind, activeSceneName, reason);
+                RunIntroStage(completionSession, routeKind, activeSceneName, reason, source);
                 return;
             }
 
             _telemetry.LogStartRequested(source, session, reason);
 
-            RunIntroStage(session, routeKind, activeSceneName, reason);
+            RunIntroStage(session, routeKind, activeSceneName, reason, source);
         }
 
-        private void RunIntroStage(IntroStageSession session, SceneRouteKind routeKind, string activeSceneName, string reason)
+        private void RunIntroStage(
+            IntroStageSession session,
+            SceneRouteKind routeKind,
+            string activeSceneName,
+            string reason,
+            string source)
         {
             var context = new IntroStageContext(
                 session: session,
@@ -356,7 +355,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 targetScene: activeSceneName,
                 reason: reason);
 
-            _ = _introStageCoordinator.RunIntroStageAsync(context);
+            _ = ObserveIntroStageDispatchAsync(context, source);
+        }
+
+        private async Task ObserveIntroStageDispatchAsync(IntroStageContext context, string source)
+        {
+            try
+            {
+                DebugUtility.Log<IntroStageLifecycleDispatchService>(
+                    BuildIntroStageDispatchLogMessage(context, source, "started", null),
+                    DebugUtility.Colors.Info);
+
+                await _introStageCoordinator.RunIntroStageAsync(context);
+
+                DebugUtility.Log<IntroStageLifecycleDispatchService>(
+                    BuildIntroStageDispatchLogMessage(context, source, "completed", null),
+                    DebugUtility.Colors.Success);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<IntroStageLifecycleDispatchService>(
+                    BuildIntroStageDispatchLogMessage(context, source, "failed", ex));
+
+                HardFailFastH1.Trigger(typeof(IntroStageLifecycleDispatchService),
+                    $"[FATAL][H1][IntroStage] IntroStage dispatch failed. operation='IntroStageDispatch' status='failed' reason='{NormalizeForLog(context.Reason)}' targetScene='{NormalizeForLog(context.TargetScene)}' routeKind='{context.RouteKind}' contextSignature='{NormalizeForLog(context.ContextSignature)}' executionSignature='{NormalizeForLog(context.ExecutionSignature)}' phaseLocalEntrySequence='{context.Session.PhaseLocalEntrySequence}' entrySignature='{NormalizeForLog(context.Session.EntrySignature)}' sourcePath='{NormalizeForLog(source)}' exceptionType='{ex.GetType().Name}' exceptionMessage='{NormalizeForLog(ex.Message)}'.",
+                    ex);
+            }
         }
 
         private static IntroStageSession CreateNoContentSession(IntroStageSession session)
@@ -369,8 +393,46 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 session.PhaseLocalEntrySequence,
                 session.SessionSignature,
                 hasIntroStage: false,
-                entrySignature: session.EntrySignature);
+                entrySignature: session.EntrySignature,
+                phaseRuntimeSignature: session.PhaseRuntimeSignature);
         }
+
+        private static void ValidateGameplayCompletionPayload(
+            SceneRouteKind routeKind,
+            IntroStageSession session,
+            string reason)
+        {
+            if (routeKind != SceneRouteKind.Gameplay)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.SessionSignature) &&
+                !string.IsNullOrWhiteSpace(session.PhaseRuntimeSignature) &&
+                !string.IsNullOrWhiteSpace(session.EntrySignature))
+            {
+                return;
+            }
+
+            HardFailFastH1.Trigger(typeof(IntroStageLifecycleDispatchService),
+                $"[FATAL][H1][IntroStage] Invalid IntroStageCompleted payload for Gameplay route. reason='{NormalizeForLog(reason)}' hasSessionSignature='{(!string.IsNullOrWhiteSpace(session.SessionSignature)).ToString().ToLowerInvariant()}' hasPhaseRuntimeSignature='{(!string.IsNullOrWhiteSpace(session.PhaseRuntimeSignature)).ToString().ToLowerInvariant()}' hasEntrySignature='{(!string.IsNullOrWhiteSpace(session.EntrySignature)).ToString().ToLowerInvariant()}'.");
+        }
+
+        private static string BuildIntroStageDispatchLogMessage(
+            IntroStageContext context,
+            string source,
+            string status,
+            Exception? exception)
+        {
+            string exceptionFields = exception == null
+                ? string.Empty
+                : $" exceptionType='{exception.GetType().Name}' exceptionMessage='{NormalizeForLog(exception.Message)}'";
+
+            return $"[OBS][IntroStage] intro_stage_dispatch_{status} operation='IntroStageDispatch' status='{status}' reason='{NormalizeForLog(context.Reason)}' targetScene='{NormalizeForLog(context.TargetScene)}' routeKind='{context.RouteKind}' contextSignature='{NormalizeForLog(context.ContextSignature)}' executionSignature='{NormalizeForLog(context.ExecutionSignature)}' phaseLocalEntrySequence='{context.Session.PhaseLocalEntrySequence}' entrySignature='{NormalizeForLog(context.Session.EntrySignature)}' sourcePath='{NormalizeForLog(source)}' hasIntroStage='{context.HasIntroStage.ToString().ToLowerInvariant()}' selectionVersion='{context.Session.SelectionVersion}'{exceptionFields}.";
+        }
+
+        private static string NormalizeForLog(string value)
+            => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     internal sealed class IntroStageLifecycleDeferPolicy
@@ -465,7 +527,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
         public void LogCompletedPublished(string source, IntroStageSession session, bool wasSkipped, string reason)
         {
             DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                $"[OBS][IntroStage] IntroStageCompletedPublished source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' signature='{session.SessionSignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
+                $"[OBS][IntroStage] IntroStageCompletedPublished source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' sessionSignature='{session.SessionSignature}' phaseRuntimeSignature='{session.PhaseRuntimeSignature}' entrySignature='{session.EntrySignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

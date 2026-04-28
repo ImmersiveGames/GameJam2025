@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
+using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
@@ -176,11 +179,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         IDisposable
     {
         private readonly object _sync = new();
+        private readonly ISceneFlowRouteActorSetRefContext _routeActorSetContext;
+        private readonly IActorSetSelectionService _actorSetSelectionService;
         private ParticipationSnapshot _current = ParticipationSnapshot.Empty;
         private ParticipationSnapshot _last = ParticipationSnapshot.Empty;
 
-        public GameplayParticipationFlowService()
+        public GameplayParticipationFlowService(
+            ISceneFlowRouteActorSetRefContext routeActorSetContext,
+            IActorSetSelectionService actorSetSelectionService)
         {
+            _routeActorSetContext = routeActorSetContext ?? throw new ArgumentNullException(nameof(routeActorSetContext));
+            _actorSetSelectionService = actorSetSelectionService ?? throw new ArgumentNullException(nameof(actorSetSelectionService));
+
             DebugUtility.LogVerbose<GameplayParticipationFlowService>(
                 "[OBS][GameplaySessionFlow][Participation] owner='GameplayParticipationFlowService' role='semantic-roster-owner' boundary='semantic-only/no-operational-executor'.",
                 DebugUtility.Colors.Info);
@@ -279,7 +289,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         {
         }
 
-        private static ParticipationSnapshot FromSemanticInput(ParticipationSemanticInput input)
+        private ParticipationSnapshot FromSemanticInput(ParticipationSemanticInput input)
         {
             if (!input.IsValid)
             {
@@ -293,7 +303,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
 
             ParticipationReadinessSnapshot readiness = new(
                 hasParticipants ? ParticipationReadinessState.Ready : ParticipationReadinessState.NoContent,
-                hasParticipants ? "phase_players_derived" : "phase_players_empty",
+                hasParticipants ? "actor_set_derived" : "actor_set_empty",
                 participants.Length,
                 primaryParticipantId);
 
@@ -332,31 +342,52 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             return snapshot;
         }
 
-        private static ParticipantSnapshot[] BuildParticipants(ParticipationSemanticInput input)
+        private ParticipantSnapshot[] BuildParticipants(ParticipationSemanticInput input)
         {
-            PhaseDefinitionAsset.PhasePlayersBlock playersBlock = input.PhaseDefinitionRef.Players;
-            if (playersBlock == null || playersBlock.entries == null || playersBlock.entries.Count == 0)
+            _ = input;
+
+            if (_routeActorSetContext == null || _actorSetSelectionService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Participation dependencies are missing while building the canonical roster.");
+            }
+
+            if (!_routeActorSetContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string routeSource))
+            {
+                HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] Route actor-set context unavailable while building the canonical roster.");
+            }
+
+            if (routeKind != SceneRouteKind.Gameplay || !actorSetRef.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayParticipationFlowService),
+                    $"[FATAL][H1][GameplaySessionFlow] Canonical gameplay participation requires a valid gameplay actorSetRef. routeKind='{routeKind}' actorSetRef='{actorSetRef.Value}' source='{Normalize(routeSource)}'.");
+            }
+
+            if (!_actorSetSelectionService.TryResolve(actorSetRef, out ActorSetResolvedSelection selection) || !selection.HasEntries)
             {
                 return Array.Empty<ParticipantSnapshot>();
             }
 
-            var participants = new List<ParticipantSnapshot>(playersBlock.entries.Count);
-            int primaryIndex = ResolvePrimaryIndex(playersBlock.entries);
+            var participants = new List<ParticipantSnapshot>(selection.Count);
+            int primaryIndex = ResolvePrimaryIndex(selection.OrderedSpecs);
 
-            for (int index = 0; index < playersBlock.entries.Count; index += 1)
+            for (int index = 0; index < selection.OrderedSpecs.Length; index += 1)
             {
-                PhaseDefinitionAsset.PhasePlayerEntry entry = playersBlock.entries[index];
-                if (entry == null)
+                ActorSpecRecord spec = selection.OrderedSpecs[index];
+                if (!spec.IsValid || spec.RoleGroup != ActorSpecRoleGroup.Player)
                 {
                     continue;
                 }
 
                 bool isPrimary = index == primaryIndex;
-                bool isLocal = entry.role == PhaseDefinitionAsset.PhasePlayerRole.Local;
+                bool isLocal = isPrimary;
                 ParticipantKind participantKind = ParticipantKind.Player;
-                OwnershipKind ownershipKind = ResolveOwnershipKind(entry.role);
-                BindingHint bindingHint = ResolveBindingHint(entry.role, isPrimary);
-                string participantIdValue = ResolveParticipantIdValue(input.PhaseId, entry, index);
+                OwnershipKind ownershipKind = isPrimary ? OwnershipKind.Local : OwnershipKind.Shared;
+                BindingHint bindingHint = isPrimary
+                    ? new BindingHint(BindingHintKind.LocalPrimary)
+                    : new BindingHint(BindingHintKind.Shared);
+                string participantIdValue = ResolveParticipantIdValue(spec, index);
 
                 participants.Add(new ParticipantSnapshot(
                     new ParticipantId(participantIdValue),
@@ -366,13 +397,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                     ParticipantLifecycleState.Expected,
                     isPrimary,
                     isLocal,
-                    entry.localId));
+                    spec.ActorSpecId));
             }
 
             return participants.ToArray();
         }
 
-        private static int ResolvePrimaryIndex(IReadOnlyList<PhaseDefinitionAsset.PhasePlayerEntry> entries)
+        private static int ResolvePrimaryIndex(IReadOnlyList<ActorSpecRecord> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -381,8 +412,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
 
             for (int index = 0; index < entries.Count; index += 1)
             {
-                PhaseDefinitionAsset.PhasePlayerEntry entry = entries[index];
-                if (entry != null && entry.role == PhaseDefinitionAsset.PhasePlayerRole.Local)
+                ActorSpecRecord entry = entries[index];
+                if (entry.IsValid && entry.RoleGroup == ActorSpecRoleGroup.Player)
                 {
                     return index;
                 }
@@ -391,50 +422,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             return 0;
         }
 
-        private static string ResolveParticipantIdValue(PhaseDefinitionId phaseId, PhaseDefinitionAsset.PhasePlayerEntry entry, int index)
+        private static string ResolveParticipantIdValue(ActorSpecRecord entry, int index)
         {
-            if (entry != null && !string.IsNullOrWhiteSpace(entry.localId))
+            if (entry.IsValid && !string.IsNullOrWhiteSpace(entry.ActorSpecId))
             {
-                return entry.localId.Trim();
+                return entry.ActorSpecId.Trim();
             }
 
-            _ = phaseId;
-            string roleToken = entry != null ? entry.role.ToString() : "Unknown";
-            return $"participant:{roleToken}:{index + 1}";
-        }
-
-        private static OwnershipKind ResolveOwnershipKind(PhaseDefinitionAsset.PhasePlayerRole role)
-        {
-            switch (role)
-            {
-                case PhaseDefinitionAsset.PhasePlayerRole.Local:
-                    return OwnershipKind.Local;
-                case PhaseDefinitionAsset.PhasePlayerRole.Remote:
-                    return OwnershipKind.Remote;
-                case PhaseDefinitionAsset.PhasePlayerRole.Shared:
-                    return OwnershipKind.Shared;
-                case PhaseDefinitionAsset.PhasePlayerRole.Bot:
-                    return OwnershipKind.Authoring;
-                default:
-                    return OwnershipKind.Unknown;
-            }
-        }
-
-        private static BindingHint ResolveBindingHint(PhaseDefinitionAsset.PhasePlayerRole role, bool isPrimary)
-        {
-            switch (role)
-            {
-                case PhaseDefinitionAsset.PhasePlayerRole.Local:
-                    return new BindingHint(isPrimary ? BindingHintKind.LocalPrimary : BindingHintKind.LocalSecondary);
-                case PhaseDefinitionAsset.PhasePlayerRole.Remote:
-                    return new BindingHint(BindingHintKind.Remote);
-                case PhaseDefinitionAsset.PhasePlayerRole.Shared:
-                    return new BindingHint(BindingHintKind.Shared);
-                case PhaseDefinitionAsset.PhasePlayerRole.Bot:
-                    return new BindingHint(BindingHintKind.Custom, "bot");
-                default:
-                    return BindingHint.None;
-            }
+            return $"participant:{index + 1}";
         }
 
         private static ParticipantId ResolveParticipantId(ParticipantSnapshot[] participants, Func<ParticipantSnapshot, bool> predicate)

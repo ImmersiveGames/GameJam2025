@@ -6,6 +6,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         None = 0,
         NextPhase = 1,
         StayOnCurrentPhase = 2,
+        RestartFromFirstPhase = 3,
     }
 
     public enum SessionTransitionResetAction
@@ -36,17 +37,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         public SessionTransitionComposition Composition { get; }
         public SessionTransitionExecution Execution { get; }
         public bool EmitsPhaseLocalEntryReady => Composition.EmitsPhaseLocalEntryReady;
+        public SessionTransitionOrigin Origin => Context.Origin;
+        public SessionTransitionIntentKind IntentKind => Context.IntentKind;
+        public bool HasRunContinuationSelection => Context.HasRunContinuationSelection;
         public RunContinuationSelection ResolvedSelection => Context.ResolvedSelection;
         public RunContinuationContext ContinuationContext => Context.ContinuationContext;
         public RunContinuationKind ResolvedContinuation => Context.ResolvedContinuation;
+        public RunContinuationKind LegacyRunContinuation => Composition.LegacyRunContinuation;
+        public string ContextSignature => Context.ContextSignature;
         public string Reason => Context.Reason;
         public string NextState => Context.NextState;
-        public bool IsValid => Context.IsValid && ResolvedContinuation != RunContinuationKind.Unknown;
+        public bool IsValid =>
+            Context.IsValid &&
+            Composition.IntentKind == IntentKind &&
+            (Execution.Kind != SessionTransitionExecutionKind.NoOp ||
+             IntentKind == SessionTransitionIntentKind.TerminateRun);
 
         public override string ToString()
         {
-            return $"Continuation='{ResolvedContinuation}', Composition='{Composition}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
+            return $"Origin='{Origin}', Intent='{IntentKind}', LegacyContinuation='{ResolvedContinuation}', Composition='{Composition}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
         }
     }
 }
-

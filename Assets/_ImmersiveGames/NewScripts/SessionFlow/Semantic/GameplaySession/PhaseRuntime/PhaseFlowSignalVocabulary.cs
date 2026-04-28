@@ -8,7 +8,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
         public const string PhaseDefinitionNavigationSource = "PhaseDefinitionNavigation";
 
         public const string NoContentReason = "no_content";
-        public const string PresenterUnavailableReason = "presenter_unavailable";
         public const string ContinueButtonReason = "IntroStage/ContinueButton";
         public const string SupersededReason = "superseded";
 
@@ -49,10 +48,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 return NoContentReason;
             }
 
-            if (string.Equals(normalized, PresenterUnavailableReason, StringComparison.OrdinalIgnoreCase))
-            {
-                return PresenterUnavailableReason;
-            }
 
             if (string.Equals(normalized, ContinueButtonReason, StringComparison.OrdinalIgnoreCase))
             {

@@ -23,8 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership
             {
                 RunContinuationKind.AdvancePhase,
                 RunContinuationKind.RestartCurrentPhase,
-                RunContinuationKind.ResetRun,
-                RunContinuationKind.Retry,
+                RunContinuationKind.RestartFromFirstPhase,
                 RunContinuationKind.ExitToMenu,
                 RunContinuationKind.TerminateRun,
             };

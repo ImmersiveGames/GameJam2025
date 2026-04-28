@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             RegisterNavigationPolicy();
             RegisterRouteGuard();
             RegisterRouteResetPolicy();
-            RegisterRouteActorSetRefContext();
+            EnsureRouteActorSetRefContext();
             RegisterLoadingServices(bootstrapConfig);
 
             _installed = true;
@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
                 "[SceneFlow] IRouteResetPolicy registrado no DI global (SceneRouteResetPolicy).");
         }
 
-        private static void RegisterRouteActorSetRefContext()
+        public static void EnsureRouteActorSetRefContext()
         {
             if (DependencyManager.Provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var existingContext) && existingContext != null)
             {

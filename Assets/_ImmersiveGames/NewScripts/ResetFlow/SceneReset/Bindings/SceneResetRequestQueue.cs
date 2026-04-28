@@ -111,15 +111,13 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                     }
 
                     await request.Runner();
+                    request.TryComplete();
                 }
                 catch (Exception ex)
                 {
                     DebugUtility.LogError(typeof(SceneResetController),
                         $"Exception while processing reset queue item (label='{request.Label}', scene='{_sceneName}'): {ex}");
-                }
-                finally
-                {
-                    request.TryComplete();
+                    request.TrySetException(ex);
                 }
             }
         }
@@ -144,6 +142,11 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                 _tcs.TrySetResult(true);
             }
 
+
+            public void TrySetException(Exception ex)
+            {
+                _tcs.TrySetException(ex ?? new InvalidOperationException("Reset queue item failed."));
+            }
             public void TryCancel()
             {
                 _tcs.TrySetCanceled();

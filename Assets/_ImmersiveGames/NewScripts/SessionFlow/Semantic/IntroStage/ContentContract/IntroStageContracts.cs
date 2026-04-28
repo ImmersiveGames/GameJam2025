@@ -1,5 +1,4 @@
 #nullable enable
-using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
@@ -13,6 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentCont
     {
         public IntroStageSession Session { get; }
         public string ContextSignature { get; }
+        public string ExecutionSignature { get; }
         public SceneRouteKind RouteKind { get; }
         public string TargetScene { get; }
         public string Reason { get; }
@@ -27,16 +27,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentCont
         {
             Session = session;
             ContextSignature = session.SessionSignature;
+            ExecutionSignature = session.EntrySignature;
             RouteKind = routeKind;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;
         }
-    }
-
-    public interface IIntroStageStep
-    {
-        bool HasContent { get; }
-        Task RunAsync(IntroStageContext context, CancellationToken cancellationToken);
     }
 
     public interface IIntroStageCoordinator
@@ -64,14 +59,4 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentCont
             WasSkipped = wasSkipped;
         }
     }
-
-    public sealed class NoOpIntroStageStep : IIntroStageStep
-    {
-        public bool HasContent => false;
-
-        public Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
-            => Task.CompletedTask;
-    }
 }
-
-

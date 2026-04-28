@@ -68,6 +68,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
     {
         public static GameplayPhaseRuntimeSnapshot FromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt)
         {
+            return FromPhaseDefinitionSelectedEvent(evt, 0);
+        }
+
+        public static GameplayPhaseRuntimeSnapshot FromPhaseDefinitionSelectedEvent(
+            PhaseDefinitionSelectedEvent evt,
+            int playerEntryCount)
+        {
             if (evt.PhaseDefinitionRef == null)
             {
                 HardFailFastH1.Trigger(typeof(GameplayPhaseRuntimeSnapshot),
@@ -78,15 +85,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             PhaseDefinitionAsset phaseDefinitionRef = evt.PhaseDefinitionRef;
 
             int contentEntryCount = phaseDefinitionRef.Content != null && phaseDefinitionRef.Content.entries != null ? phaseDefinitionRef.Content.entries.Count : 0;
-            int playerEntryCount = phaseDefinitionRef.Players != null && phaseDefinitionRef.Players.entries != null ? phaseDefinitionRef.Players.entries.Count : 0;
-            bool hasIntroStage = phaseDefinitionRef.Intro != null && phaseDefinitionRef.Intro.hasIntroStage;
+            int normalizedPlayerEntryCount = playerEntryCount < 0 ? 0 : playerEntryCount;
+            // HasIntroStage is determined by operational contract resolution, not content count.
+            // The resolver will inspect presenter/hook availability and set HasIntroStage explicitly.
+            bool hasIntroStage = false;
 
             return new GameplayPhaseRuntimeSnapshot(
                 sessionContext,
                 IntroStageSession.Empty,
                 phaseDefinitionRef,
                 contentEntryCount,
-                playerEntryCount,
+                normalizedPlayerEntryCount,
                 hasIntroStage);
         }
 
@@ -95,7 +104,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             string reason,
             int selectionVersion,
             int phaseLocalEntrySequence,
-            string phaseSignature,
+            string sessionSignature,
+            string phaseRuntimeSignature,
             string entrySignature = "")
         {
             if (PhaseDefinitionRef == null)
@@ -113,9 +123,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                 reason,
                 selectionVersion,
                 phaseLocalEntrySequence,
-                phaseSignature,
+                sessionSignature,
                 HasIntroStage,
-                entrySignature);
+                entrySignature,
+                phaseRuntimeSignature);
         }
 
         public GameplayPhaseRuntimeSnapshot(

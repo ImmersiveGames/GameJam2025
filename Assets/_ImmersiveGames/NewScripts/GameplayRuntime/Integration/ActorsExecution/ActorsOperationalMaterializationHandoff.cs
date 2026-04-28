@@ -1,16 +1,99 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 {
+    public enum ActorsOperationalMaterializationDispatchMode
+    {
+        Unknown = 0,
+        PhaseLocalEntryReady = 1,
+        PhaseRuntimeMaterialized = 2
+    }
+
+    public enum ActorsOperationalMaterializationSourceKind
+    {
+        Unknown = 0,
+        SessionTransitionPhaseLocalEntryReady = 1,
+        GameplayRuntime = 2
+    }
+
+    public static class ActorsOperationalMaterializationDispatchModeExtensions
+    {
+        public static string ToLogToken(this ActorsOperationalMaterializationDispatchMode dispatchMode)
+        {
+            return dispatchMode switch
+            {
+                ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady => "phase-local-entry-ready",
+                ActorsOperationalMaterializationDispatchMode.PhaseRuntimeMaterialized => "phase-runtime-materialized",
+                _ => "unknown"
+            };
+        }
+    }
+
+    public readonly struct ActorsOperationalMaterializationCycleState
+    {
+        public ActorsOperationalMaterializationCycleState(
+            ActorsOperationalMaterializationDispatchMode dispatchMode,
+            ActorsOperationalMaterializationSourceKind sourceKind,
+            string sourceId,
+            SceneRouteId routeId,
+            SceneRouteKind routeKind,
+            string sceneName,
+            string actorSetRef,
+            string cycleSignature,
+            string executionSignature,
+            ActorKind[] expectedActorKinds)
+        {
+            DispatchMode = dispatchMode;
+            SourceKind = sourceKind;
+            SourceId = string.IsNullOrWhiteSpace(sourceId) ? string.Empty : sourceId.Trim();
+            RouteId = routeId;
+            RouteKind = routeKind;
+            SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+            ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
+            CycleSignature = string.IsNullOrWhiteSpace(cycleSignature) ? string.Empty : cycleSignature.Trim();
+            ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
+            ExpectedActorKinds = expectedActorKinds == null ? Array.Empty<ActorKind>() : (ActorKind[])expectedActorKinds.Clone();
+        }
+
+        public ActorsOperationalMaterializationDispatchMode DispatchMode { get; }
+        public ActorsOperationalMaterializationSourceKind SourceKind { get; }
+        public string SourceId { get; }
+        public SceneRouteId RouteId { get; }
+        public SceneRouteKind RouteKind { get; }
+        public string SceneName { get; }
+        public string ActorSetRef { get; }
+        public string CycleSignature { get; }
+        public string ExecutionSignature { get; }
+        public ActorKind[] ExpectedActorKinds { get; }
+
+        public int ExpectedActorKindCount => ExpectedActorKinds?.Length ?? 0;
+        public bool HasCanonicalPayload =>
+            DispatchMode != ActorsOperationalMaterializationDispatchMode.Unknown &&
+            SourceKind != ActorsOperationalMaterializationSourceKind.Unknown &&
+            !string.IsNullOrWhiteSpace(SourceId) &&
+            RouteId.IsValid &&
+            RouteKind != SceneRouteKind.Unspecified &&
+            !string.IsNullOrWhiteSpace(SceneName) &&
+            !string.IsNullOrWhiteSpace(ActorSetRef) &&
+            !string.IsNullOrWhiteSpace(CycleSignature) &&
+            !string.IsNullOrWhiteSpace(ExecutionSignature) &&
+            ExpectedActorKindCount > 0;
+        public bool IsValid => HasCanonicalPayload;
+    }
+
     public interface IActorsMaterializationExecutionCycleContext
     {
         bool TryGetCurrent(out ActorsMaterializationExecutionCycle cycle);
-        IDisposable OpenScope(ActorsMaterializationExecutionCycle cycle, string source);
+        IDisposable OpenScope(ActorsMaterializationExecutionCycle cycle, ActorsOperationalMaterializationCycleState state, string source);
+        void RecordCompletedActor(ActorsOperationalMaterializationCompletedEvent evt);
+        bool TryBuildCycleCompletedEvent(out ActorsOperationalMaterializationCycleCompletedEvent evt);
     }
 
     /// <summary>
@@ -20,6 +103,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
     {
         private ActorsMaterializationExecutionCycle _current;
         private int _scopeDepth;
+        private ActorsOperationalMaterializationCycleState _currentState;
+        private readonly List<ActorsOperationalMaterializationCompletedEvent> _completedActors = new();
+        private readonly HashSet<string> _completedActorKeys = new(StringComparer.Ordinal);
+        private bool _hasActorSetMismatch;
 
         public bool TryGetCurrent(out ActorsMaterializationExecutionCycle cycle)
         {
@@ -27,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             return _current.IsValid;
         }
 
-        public IDisposable OpenScope(ActorsMaterializationExecutionCycle cycle, string source)
+        public IDisposable OpenScope(ActorsMaterializationExecutionCycle cycle, ActorsOperationalMaterializationCycleState state, string source)
         {
             if (!cycle.IsValid)
             {
@@ -35,9 +122,83 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     $"[FATAL][ActorsExecution] Ciclo operacional invalido para abrir contexto source='{AsText(source)}'.");
             }
 
+            if (!state.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][ActorsExecution] Estado operacional invalido para abrir contexto source='{AsText(source)}' dispatchMode='{state.DispatchMode.ToLogToken()}'.");
+            }
+
             _scopeDepth += 1;
             _current = cycle;
+            _currentState = state;
+            _completedActors.Clear();
+            _completedActorKeys.Clear();
+            _hasActorSetMismatch = false;
             return new Scope(this, source);
+        }
+
+        public void RecordCompletedActor(ActorsOperationalMaterializationCompletedEvent evt)
+        {
+            if (!TryGetCurrent(out ActorsMaterializationExecutionCycle cycle) || !evt.IsValid)
+            {
+                return;
+            }
+
+            if (!string.Equals(cycle.ToStampKey(), evt.ExecutionCycle.ToStampKey(), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!evt.HasCanonicalPayload)
+            {
+                DebugUtility.LogWarning(typeof(ActorsMaterializationExecutionCycleContext),
+                    $"[OBS][ActorsExecution][CycleContext] Actor completion ignorada reason='missing_canonical_payload' actorKind='{evt.ActorKind}' actorSpecId='{AsText(evt.ActorSpecId)}' actorSetRef='{AsText(evt.ActorSetRef)}' runtimeActorId='{evt.RuntimeActorId}' executionSignature='{AsText(evt.ExecutionSignature)}'.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_currentState.ActorSetRef) &&
+                !string.Equals(_currentState.ActorSetRef, evt.ActorSetRef, StringComparison.Ordinal))
+            {
+                _hasActorSetMismatch = true;
+                DebugUtility.LogWarning(typeof(ActorsMaterializationExecutionCycleContext),
+                    $"[OBS][ActorsExecution][CycleContext] Actor completion ignorada reason='actor_set_ref_mismatch' expectedActorSetRef='{AsText(_currentState.ActorSetRef)}' actorSetRef='{AsText(evt.ActorSetRef)}' actorKind='{evt.ActorKind}' runtimeActorId='{evt.RuntimeActorId}' executionSignature='{AsText(evt.ExecutionSignature)}'.");
+                return;
+            }
+
+            string completionKey = BuildCompletedActorKey(evt);
+            if (_completedActorKeys.Contains(completionKey))
+            {
+                return;
+            }
+
+            _completedActorKeys.Add(completionKey);
+            _completedActors.Add(evt);
+        }
+
+        public bool TryBuildCycleCompletedEvent(out ActorsOperationalMaterializationCycleCompletedEvent evt)
+        {
+            evt = default;
+
+            if (!TryGetCurrent(out ActorsMaterializationExecutionCycle cycle) || !_currentState.IsValid)
+            {
+                return false;
+            }
+
+            evt = new ActorsOperationalMaterializationCycleCompletedEvent(
+                _currentState.SceneName,
+                cycle,
+                _currentState.DispatchMode,
+                _currentState.SourceKind,
+                _currentState.SourceId,
+                _currentState.RouteId,
+                _currentState.RouteKind,
+                _currentState.ActorSetRef,
+                _currentState.CycleSignature,
+                _currentState.ExecutionSignature,
+                _currentState.ExpectedActorKinds,
+                _completedActors.ToArray(),
+                _hasActorSetMismatch);
+            return true;
         }
 
         private void CloseScope(string source)
@@ -49,9 +210,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
 
             _current = default;
+            _currentState = default;
+            _completedActors.Clear();
+            _completedActorKeys.Clear();
+            _hasActorSetMismatch = false;
             DebugUtility.LogVerbose(typeof(ActorsMaterializationExecutionCycleContext),
                 $"[OBS][ActorsExecution][CycleContext] Escopo operacional finalizado source='{AsText(source)}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static string BuildCompletedActorKey(ActorsOperationalMaterializationCompletedEvent evt)
+        {
+            if (evt.HasRuntimeActorId)
+            {
+                return evt.RuntimeActorId.ToString();
+            }
+
+            return $"{evt.ExecutionSignature}|{evt.ActorKind}|{AsText(evt.ActorId)}";
         }
 
         private static string AsText(string value)
@@ -159,21 +334,241 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public ActorsOperationalMaterializationCycleCompletedEvent(
             string sceneName,
             ActorsMaterializationExecutionCycle executionCycle,
-            string source,
-            string executionSignature)
+            ActorsOperationalMaterializationDispatchMode dispatchMode,
+            ActorsOperationalMaterializationSourceKind sourceKind,
+            string sourceId,
+            SceneRouteId routeId,
+            SceneRouteKind routeKind,
+            string actorSetRef,
+            string cycleSignature,
+            string executionSignature,
+            ActorKind[] expectedActorKinds,
+            ActorsOperationalMaterializationCompletedEvent[] completedActors,
+            bool hasActorSetMismatch)
         {
             SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
             ExecutionCycle = executionCycle;
-            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+            DispatchMode = dispatchMode;
+            SourceKind = sourceKind;
+            SourceId = string.IsNullOrWhiteSpace(sourceId) ? string.Empty : sourceId.Trim();
+            RouteId = routeId;
+            RouteKind = routeKind;
+            ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
+            CycleSignature = string.IsNullOrWhiteSpace(cycleSignature) ? string.Empty : cycleSignature.Trim();
             ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
+            ExpectedActorKinds = expectedActorKinds == null ? Array.Empty<ActorKind>() : (ActorKind[])expectedActorKinds.Clone();
+            CompletedActors = completedActors == null ? Array.Empty<ActorsOperationalMaterializationCompletedEvent>() : (ActorsOperationalMaterializationCompletedEvent[])completedActors.Clone();
+            HasActorSetMismatch = hasActorSetMismatch;
+            MaterializedActorKinds = BuildMaterializedActorKinds(CompletedActors);
+            HasCanonicalPayload = BuildHasCanonicalPayload(
+                SceneName,
+                ExecutionCycle,
+                DispatchMode,
+                SourceKind,
+                SourceId,
+                RouteId,
+                RouteKind,
+                ActorSetRef,
+                CycleSignature,
+                ExecutionSignature,
+                ExpectedActorKinds,
+                CompletedActors,
+                HasActorSetMismatch);
+            IsGameplayOperationalReady = BuildIsGameplayOperationalReady(
+                HasCanonicalPayload,
+                HasActorSetMismatch,
+                DispatchMode,
+                RouteKind,
+                ExpectedActorKinds,
+                CompletedActors,
+                out string readinessReason);
+            ReadinessReason = readinessReason;
         }
 
         public string SceneName { get; }
         public ActorsMaterializationExecutionCycle ExecutionCycle { get; }
-        public string Source { get; }
+        public ActorsOperationalMaterializationDispatchMode DispatchMode { get; }
+        public ActorsOperationalMaterializationSourceKind SourceKind { get; }
+        public string SourceId { get; }
+        public SceneRouteId RouteId { get; }
+        public SceneRouteKind RouteKind { get; }
+        public string ActorSetRef { get; }
+        public string CycleSignature { get; }
         public string ExecutionSignature { get; }
+        public ActorKind[] ExpectedActorKinds { get; }
+        public ActorKind[] MaterializedActorKinds { get; }
+        public ActorsOperationalMaterializationCompletedEvent[] CompletedActors { get; }
+        public bool HasActorSetMismatch { get; }
+        public bool HasCanonicalPayload { get; }
+        public bool IsGameplayOperationalReady { get; }
+        public string ReadinessReason { get; }
 
-        public bool IsValid => !string.IsNullOrWhiteSpace(SceneName) && ExecutionCycle.IsValid;
+        public string Source => SourceId;
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(SceneName) &&
+            ExecutionCycle.IsValid &&
+            DispatchMode != ActorsOperationalMaterializationDispatchMode.Unknown &&
+            SourceKind != ActorsOperationalMaterializationSourceKind.Unknown &&
+            !string.IsNullOrWhiteSpace(SourceId) &&
+            RouteId.IsValid &&
+            RouteKind != SceneRouteKind.Unspecified &&
+            !string.IsNullOrWhiteSpace(ActorSetRef) &&
+            !string.IsNullOrWhiteSpace(CycleSignature) &&
+            !string.IsNullOrWhiteSpace(ExecutionSignature);
+
+        private static bool BuildHasCanonicalPayload(
+            string sceneName,
+            ActorsMaterializationExecutionCycle executionCycle,
+            ActorsOperationalMaterializationDispatchMode dispatchMode,
+            ActorsOperationalMaterializationSourceKind sourceKind,
+            string sourceId,
+            SceneRouteId routeId,
+            SceneRouteKind routeKind,
+            string actorSetRef,
+            string cycleSignature,
+            string executionSignature,
+            ActorKind[] expectedActorKinds,
+            ActorsOperationalMaterializationCompletedEvent[] completedActors,
+            bool hasActorSetMismatch)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName) ||
+                !executionCycle.IsValid ||
+                dispatchMode == ActorsOperationalMaterializationDispatchMode.Unknown ||
+                sourceKind == ActorsOperationalMaterializationSourceKind.Unknown ||
+                string.IsNullOrWhiteSpace(sourceId) ||
+                !routeId.IsValid ||
+                routeKind == SceneRouteKind.Unspecified ||
+                string.IsNullOrWhiteSpace(actorSetRef) ||
+                string.IsNullOrWhiteSpace(cycleSignature) ||
+                string.IsNullOrWhiteSpace(executionSignature))
+            {
+                return false;
+            }
+
+            if (expectedActorKinds == null || expectedActorKinds.Length < 1)
+            {
+                return false;
+            }
+
+            if (hasActorSetMismatch)
+            {
+                return false;
+            }
+
+            if (completedActors == null || completedActors.Length < 1)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < completedActors.Length; index += 1)
+            {
+                if (!completedActors[index].HasCanonicalPayload)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool BuildIsGameplayOperationalReady(
+            bool hasCanonicalPayload,
+            bool hasActorSetMismatch,
+            ActorsOperationalMaterializationDispatchMode dispatchMode,
+            SceneRouteKind routeKind,
+            ActorKind[] expectedActorKinds,
+            ActorsOperationalMaterializationCompletedEvent[] completedActors,
+            out string readinessReason)
+        {
+            if (!hasCanonicalPayload)
+            {
+                readinessReason = "missing_canonical_payload";
+                return false;
+            }
+
+            if (hasActorSetMismatch)
+            {
+                readinessReason = "actor_set_ref_mismatch";
+                return false;
+            }
+
+            if (dispatchMode != ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
+            {
+                readinessReason = "dispatch_mode_not_phase_local_entry_ready";
+                return false;
+            }
+
+            if (routeKind != SceneRouteKind.Gameplay)
+            {
+                readinessReason = "route_kind_not_gameplay";
+                return false;
+            }
+
+            if (!HasActorKind(ActorKind.Player, completedActors))
+            {
+                readinessReason = "player_not_materialized";
+                return false;
+            }
+
+            for (int index = 0; index < expectedActorKinds.Length; index += 1)
+            {
+                ActorKind expectedKind = expectedActorKinds[index];
+                if (expectedKind == ActorKind.Unknown)
+                {
+                    continue;
+                }
+
+                if (!HasActorKind(expectedKind, completedActors))
+                {
+                    readinessReason = $"missing_expected_actor_kind:{expectedKind}";
+                    return false;
+                }
+            }
+
+            readinessReason = "GameplayOperationalReady";
+            return true;
+        }
+
+        private static ActorKind[] BuildMaterializedActorKinds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        {
+            if (completedActors == null || completedActors.Length == 0)
+            {
+                return Array.Empty<ActorKind>();
+            }
+
+            var materializedKinds = new List<ActorKind>(completedActors.Length);
+            for (int index = 0; index < completedActors.Length; index += 1)
+            {
+                ActorKind actorKind = completedActors[index].ActorKind;
+                if (actorKind == ActorKind.Unknown || materializedKinds.Contains(actorKind))
+                {
+                    continue;
+                }
+
+                materializedKinds.Add(actorKind);
+            }
+
+            return materializedKinds.ToArray();
+        }
+
+        private static bool HasActorKind(ActorKind kind, ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        {
+            if (kind == ActorKind.Unknown || completedActors == null || completedActors.Length == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < completedActors.Length; index += 1)
+            {
+                if (completedActors[index].ActorKind == kind)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -215,15 +610,18 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 return;
             }
 
+            var completedEvent = new ActorsOperationalMaterializationCompletedEvent(
+                evt,
+                cycle,
+                source: "GameplayRuntime/ActorsOperationalMaterializationHandoff");
+
             DebugUtility.Log(typeof(ActorsOperationalMaterializationHandoffBridge),
                 $"[OBS][ActorsExecution][Operational] ActorSpawnCompleted forward-only actorSpecId='{AsText(evt.ActorSpecId)}' actorSetRef='{AsText(evt.ActorSetRef)}' axisActorId='{evt.AxisActorId}' runtimeActorId='{evt.RuntimeActorId}' semanticParticipantId='{AsText(evt.SemanticParticipantId)}' source='{AsText(evt.Source)}' executionSignature='{AsText(evt.ExecutionSignature)}'.",
                 DebugUtility.Colors.Info);
 
+            _cycleContext.RecordCompletedActor(completedEvent);
             EventBus<ActorsOperationalMaterializationCompletedEvent>.Raise(
-                new ActorsOperationalMaterializationCompletedEvent(
-                    evt,
-                    cycle,
-                    source: "GameplayRuntime/ActorsOperationalMaterializationHandoff"));
+                completedEvent);
         }
 
         private static string AsText(string value)

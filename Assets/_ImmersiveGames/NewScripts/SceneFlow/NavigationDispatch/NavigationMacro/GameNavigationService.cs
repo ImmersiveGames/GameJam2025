@@ -51,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             return gameplayEntry.RouteId;
         }
 
-        public async Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null)
+        public async Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload, string reason = null)
         {
             if (!routeId.IsValid)
             {
@@ -66,17 +66,18 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             }
 
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "Navigation/StartGameplayRoute" : reason.Trim();
+            SceneTransitionPayload normalizedPayload = ValidateGameplayRoutePayloadOrFail(routeId, payload, normalizedReason);
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
                 "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched using canonical phase catalog runtime state; GameplaySessionFlow consome pendingTarget/currentCommitted no prepare phase-side.",
                 DebugUtility.Colors.Info);
 
-            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, payload ?? SceneTransitionPayload.Empty, gameplayEntry.RouteRef);
+            var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, normalizedPayload, gameplayEntry.RouteRef);
             TransitionStyleDefinition definition = ResolveStyle(routeEntry);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][NavigationCore][Operational] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}'.",
+                $"[OBS][NavigationCore][Operational] StartGameplayRouteRequested routeId='{routeId}', reason='{normalizedReason}', style='{routeEntry.StyleLabel}', profile='{definition.ProfileLabel}', profileAsset='{(definition.Profile != null ? definition.Profile.name : "<null>")}' gameplayEntryKind='{routeEntry.Payload.GameplayEntryKind}'.",
                 DebugUtility.Colors.Info);
 
             await ExecuteEntryAsync(GetCoreIntentId(GameNavigationIntentKind.Gameplay), routeEntry, normalizedReason);
@@ -102,6 +103,11 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
                 if (!TryResolveCoreEntry(intent, out GameNavigationEntry entry) || !entry.IsValid)
                 {
                 throw new InvalidOperationException($"[FATAL][Config][NavigationCore] Missing core intent entry '{intentId}'.");
+                }
+
+                if (intent == GameNavigationIntentKind.Gameplay)
+                {
+                    entry = CreateGameplayInitialEntry(entry, intentId, reason);
                 }
 
                 await ExecuteEntryAsync(intentId, entry, reason);
@@ -153,12 +159,15 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             }
 
             SceneRouteDefinition routeDefinition = entry.RouteRef.ToDefinition();
+            SceneTransitionPayload dispatchPayload = entry.RouteRef.RouteKind == SceneRouteKind.Gameplay
+                ? ValidateGameplayDispatchPayloadOrFail(entry, intentId, reason)
+                : entry.Payload ?? SceneTransitionPayload.Empty;
 
             var request = new SceneTransitionRequest(
                 routeDefinition,
                 entry.RouteId,
                 entry.StyleRef,
-                entry.Payload ?? SceneTransitionPayload.Empty,
+                dispatchPayload,
                 definition.Profile,
                 useFade: definition.UseFade,
                 requestedBy: reason,
@@ -167,10 +176,62 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
 
             string signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][NavigationCore] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"[OBS][NavigationCore] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', gameplayEntryKind='{request.Payload.GameplayEntryKind}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
+        }
+
+
+        private static GameNavigationEntry CreateGameplayInitialEntry(GameNavigationEntry entry, string intentId, string reason)
+        {
+            if (entry.RouteRef == null || entry.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][NavigationCore] Initial gameplay entry requires direct Gameplay routeRef. intentId='{intentId}' routeId='{entry.RouteId}' reason='{reason ?? "<null>"}'.");
+            }
+
+            return new GameNavigationEntry(
+                entry.RouteId,
+                entry.StyleRef,
+                SceneTransitionPayload.GameplayInitialEntry,
+                entry.RouteRef);
+        }
+
+        private static SceneTransitionPayload ValidateGameplayRoutePayloadOrFail(SceneRouteId routeId, SceneTransitionPayload payload, string reason)
+        {
+            SceneTransitionPayload normalizedPayload = payload ?? SceneTransitionPayload.Empty;
+            if (normalizedPayload.GameplayEntryKind == SceneTransitionGameplayEntryKind.None)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][NavigationCore] StartGameplayRouteAsync requires explicit gameplay entry payload. routeId='{routeId}' reason='{reason}'.");
+            }
+
+            if (!normalizedPayload.IsGameplayReentry)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][NavigationCore] StartGameplayRouteAsync is reserved for gameplay reentry. routeId='{routeId}' gameplayEntryKind='{normalizedPayload.GameplayEntryKind}' reason='{reason}'.");
+            }
+
+            return normalizedPayload;
+        }
+
+        private static SceneTransitionPayload ValidateGameplayDispatchPayloadOrFail(GameNavigationEntry entry, string intentId, string reason)
+        {
+            SceneTransitionPayload payload = entry.Payload ?? SceneTransitionPayload.Empty;
+            if (payload.GameplayEntryKind == SceneTransitionGameplayEntryKind.None)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][NavigationCore] Gameplay dispatch requires explicit gameplay entry payload. intentId='{intentId}' routeId='{entry.RouteId}' reason='{reason ?? "<null>"}'.");
+            }
+
+            if (!payload.IsGameplayInitialEntry && !payload.IsGameplayReentry)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][NavigationCore] Gameplay dispatch received unsupported entry kind. intentId='{intentId}' routeId='{entry.RouteId}' gameplayEntryKind='{payload.GameplayEntryKind}' reason='{reason ?? "<null>"}'.");
+            }
+
+            return payload;
         }
 
         private void ValidateOfficialGameplayPhaseCatalogOrFail(string intentId, GameNavigationEntry entry, string reason)
@@ -282,13 +343,13 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             ct.ThrowIfCancellationRequested();
 
             DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
-                $"[OBS][SessionIntegration][Handoff] StartGameplayRouteAccepted target='Navigation' source='{normalizedSource}' routeId='{routeId}' reason='{normalizedReason}'.",
+                $"[OBS][SessionIntegration][Handoff] StartGameplayRouteAccepted target='Navigation' source='{normalizedSource}' routeId='{routeId}' gameplayEntryKind='Reentry' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            await _navigationService.StartGameplayRouteAsync(routeId, SceneTransitionPayload.Empty, normalizedReason);
+            await _navigationService.StartGameplayRouteAsync(routeId, SceneTransitionPayload.GameplayReentry, normalizedReason);
 
             DebugUtility.Log<SessionIntegrationNavigationHandoffService>(
-                $"[OBS][SessionIntegration][Handoff] StartGameplayRouteCompleted target='Navigation' source='{normalizedSource}' routeId='{routeId}' reason='{normalizedReason}'.",
+                $"[OBS][SessionIntegration][Handoff] StartGameplayRouteCompleted target='Navigation' source='{normalizedSource}' routeId='{routeId}' gameplayEntryKind='Reentry' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 

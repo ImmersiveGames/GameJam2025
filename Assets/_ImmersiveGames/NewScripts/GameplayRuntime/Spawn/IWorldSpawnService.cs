@@ -22,8 +22,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         /// </summary>
         bool IsRequiredForWorldReset { get; }
 
-        Task SpawnAsync();
-
         Task SpawnAsync(ActorSpawnRequest request);
 
         Task DespawnAsync();

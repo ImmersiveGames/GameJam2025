@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
     /// Nao sincroniza estado de GameLoop diretamente.
     ///
     /// Semantica:
-    /// - Gameplay: solicita InputMode de gameplay.
+    /// - Gameplay: nao solicita InputMode; readiness operacional pertence a ActorsExecution.
     /// - Startup/Frontend: solicita InputMode de menu.
     /// </summary>
     /// <summary>
@@ -100,6 +100,12 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
 
             _lastProcessedSignature = dedupeKey;
 
+            if (evt.context.RouteKind == SceneRouteKind.Gameplay)
+            {
+                LogGameplayInputModeDeferred(signature, activeScene, evt.context.RouteKind);
+                return;
+            }
+
             if (TryGetInputModeRequest(evt.context.RouteKind, out var requestKind, out var mode, out var map, out var reason))
             {
                 PublishInputModeRequest(requestKind, reason, signature);
@@ -134,7 +140,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
             switch (requestKind)
             {
                 case InputModeRequestKind.Gameplay:
-                    sessionIntegration.RequestGameplayInputMode(reason, "SceneFlow", signature);
+                    HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                        $"[FATAL][H1][InputModes] SceneFlowInputModeBridge nao e owner de Gameplay input. reason='{reason}' signature='{signature}'.");
                     return;
                 case InputModeRequestKind.FrontendMenu:
                     sessionIntegration.RequestFrontendMenuInputMode(reason, "SceneFlow", signature);
@@ -159,12 +166,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
         {
             switch (routeKind)
             {
-                case SceneRouteKind.Gameplay:
-                    requestKind = InputModeRequestKind.Gameplay;
-                    mode = "Gameplay";
-                    map = InputModesDefaults.PlayerActionMapName;
-                    reason = "SceneFlow/Completed:Gameplay";
-                    return true;
                 case SceneRouteKind.Frontend:
                     requestKind = InputModeRequestKind.FrontendMenu;
                     mode = "FrontendMenu";
@@ -178,6 +179,16 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
                     reason = string.Empty;
                     return false;
             }
+        }
+
+        private static void LogGameplayInputModeDeferred(
+            string signature,
+            string scene,
+            SceneRouteKind routeKind)
+        {
+            DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
+                $"[OBS][InputMode] Gameplay input request deferred owner='ActorsExecution' event='SceneTransitionCompletedEvent' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' routeKind='{routeKind}' reason='SceneFlow macro readiness is not operational input readiness'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogObsInputModeApplied(

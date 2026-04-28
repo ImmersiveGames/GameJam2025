@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
@@ -81,6 +82,22 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             {
                 _hasCanonicalGameplayEntryContext = false;
                 _canonicalGameplayEntryContext = default;
+            }
+        }
+
+        public bool TryGetCurrentCanonicalGameplayEntry(out CanonicalGameplayEntrySnapshot snapshot)
+        {
+            snapshot = default;
+
+            lock (_canonicalGameplayEntrySync)
+            {
+                if (!_hasCanonicalGameplayEntryContext)
+                {
+                    return false;
+                }
+
+                snapshot = new CanonicalGameplayEntrySnapshot(_canonicalGameplayEntryContext);
+                return snapshot.IsValid;
             }
         }
 
@@ -478,7 +495,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             return $"actor-set-definitions|routeKind:{routeKind}|actorSetRef:{actorSetRef.Value}|source:{AsText(source)}|participation:{AsText(participationSignature)}|cycle:{AsText(cycleSignature)}|count:{count}";
         }
 
-        private readonly struct CanonicalGameplayEntryContext
+        public readonly struct CanonicalGameplayEntryContext
         {
             public CanonicalGameplayEntryContext(
                 SceneRouteId routeId,
@@ -519,6 +536,52 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             {
                 return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
             }
+        }
+
+        public readonly struct CanonicalGameplayEntrySnapshot
+        {
+            public CanonicalGameplayEntrySnapshot(CanonicalGameplayEntryContext context)
+            {
+                RouteId = context.RouteId;
+                RouteKind = context.RouteKind;
+                SceneName = context.SceneName;
+                Reason = context.Reason;
+                SessionSignature = context.SessionSignature;
+                PhaseSignature = context.PhaseSignature;
+                ParticipationSignature = context.ParticipationSignature;
+                ActorSetRef = context.ActorSetRef;
+                CycleSignature = context.CycleSignature;
+                SourceKind = ActorsOperationalMaterializationSourceKind.SessionTransitionPhaseLocalEntryReady;
+                SourceId = context.Source;
+            }
+
+            public SceneRouteId RouteId { get; }
+            public SceneRouteKind RouteKind { get; }
+            public string SceneName { get; }
+            public string Reason { get; }
+            public string SessionSignature { get; }
+            public string PhaseSignature { get; }
+            public string ParticipationSignature { get; }
+            public string ActorSetRef { get; }
+            public string CycleSignature { get; }
+            public ActorsOperationalMaterializationSourceKind SourceKind { get; }
+            public string SourceId { get; }
+
+            public bool HasCanonicalPayload =>
+                RouteId.IsValid &&
+                RouteKind == SceneRouteKind.Gameplay &&
+                !string.IsNullOrWhiteSpace(SceneName) &&
+                !string.IsNullOrWhiteSpace(Reason) &&
+                !string.IsNullOrWhiteSpace(SessionSignature) &&
+                !string.IsNullOrWhiteSpace(PhaseSignature) &&
+                !string.IsNullOrWhiteSpace(ParticipationSignature) &&
+                !string.IsNullOrWhiteSpace(ActorSetRef) &&
+                !string.IsNullOrWhiteSpace(CycleSignature) &&
+                !string.IsNullOrWhiteSpace(SourceId);
+
+            public bool IsValid =>
+                HasCanonicalPayload &&
+                SourceKind != ActorsOperationalMaterializationSourceKind.Unknown;
         }
 
         private static string AsText(string value)

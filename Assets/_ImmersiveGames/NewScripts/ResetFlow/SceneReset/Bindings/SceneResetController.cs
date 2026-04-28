@@ -80,7 +80,8 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                 return;
             }
 
-            _ = InitializeWorldAsync();
+            // Unity Start nao pode retornar Task; o wrapper observa o resultado e promove falhas.
+            InitializeWorldFromStartAsync();
         }
 
         private void OnEnable()
@@ -106,11 +107,23 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
             _runtimeFactory?.Cleanup(verboseLogs);
         }
 
-        public Task ResetWorldAsync(string reason)
+        public async Task<WorldResetLocalExecutionResult> ResetWorldAsync(string reason)
         {
-            return EnqueueReset(
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+            WorldResetLocalExecutionResult result = WorldResetLocalExecutionResult.Unconfirmed(
+                _sceneName,
+                normalizedReason,
+                nameof(SceneResetController),
+                "Reset was queued but did not produce an execution result.");
+
+            await EnqueueReset(
                 label: $"WorldReset(reason='{reason ?? "<null>"}')",
-                runner: () => RunWorldResetAsync(reason));
+                runner: async () =>
+                {
+                    result = await RunWorldResetAsync(normalizedReason);
+                });
+
+            return result;
         }
 
         public Task ResetPlayersAsync(string reason = "PlayersSoftReset")
@@ -120,9 +133,47 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                 runner: () => RunPlayersResetAsync(reason));
         }
 
-        private Task InitializeWorldAsync()
+        private async void InitializeWorldFromStartAsync()
+        {
+            try
+            {
+                WorldResetLocalExecutionResult result = await InitializeWorldAsync();
+                LogAutoInitializeResult(result);
+
+                if (!result.Succeeded)
+                {
+                    HardFailFastH1.Trigger(typeof(SceneResetController),
+                        $"[FATAL][H1][SceneReset] AutoInitializeOnStart produziu resultado invalido. {result}");
+                }
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(SceneResetController),
+                    $"[FATAL][SceneReset] AutoInitializeOnStart falhou com excecao nao observada. scene='{_sceneName}', exception='{ex}'",
+                    this);
+
+                HardFailFastH1.Trigger(typeof(SceneResetController),
+                    $"[FATAL][H1][SceneReset] AutoInitializeOnStart falhou com excecao nao observada. scene='{_sceneName}', exception='{ex.GetType().Name}: {ex.Message}'");
+            }
+        }
+
+        private Task<WorldResetLocalExecutionResult> InitializeWorldAsync()
         {
             return ResetWorldAsync("AutoInitialize/Start");
+        }
+
+        private void LogAutoInitializeResult(WorldResetLocalExecutionResult result)
+        {
+            if (result.Succeeded)
+            {
+                DebugUtility.Log(typeof(SceneResetController),
+                    $"[OBS][SceneReset] AutoInitializeOnStart result observed. {result}");
+                return;
+            }
+
+            DebugUtility.LogError(typeof(SceneResetController),
+                $"[FATAL][SceneReset] AutoInitializeOnStart result invalid. {result}",
+                this);
         }
 
         private Task EnqueueReset(string label, Func<Task> runner)
@@ -130,9 +181,10 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
             return _requestQueue.Enqueue(label, runner);
         }
 
-        private async Task RunWorldResetAsync(string reason)
+        private Task<WorldResetLocalExecutionResult> RunWorldResetAsync(string reason)
         {
-            await RunResetInternalAsync(
+            return RunResetInternalAsync(
+                reason: reason,
                 startLog: $"Reset iniciado. reason='{reason}', scene='{_sceneName}'.",
                 endLog: $"Reset concluido. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during world reset in scene '{_sceneName}' (reason='{reason}'): ",
@@ -143,6 +195,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
         private async Task RunPlayersResetAsync(string reason)
         {
             await RunResetInternalAsync(
+                reason: reason,
                 startLog: $"Soft reset (Players) iniciado. reason='{reason}', scene='{_sceneName}'.",
                 endLog: $"Soft reset (Players) concluido. reason='{reason}', scene='{_sceneName}'.",
                 exceptionLog: $"Exception during players soft reset in scene '{_sceneName}' (reason='{reason}'): ",
@@ -153,19 +206,26 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                 gateToken: SimulationGateTokens.SoftReset);
         }
 
-        private async Task RunResetInternalAsync(
+        private async Task<WorldResetLocalExecutionResult> RunResetInternalAsync(
+            string reason,
             string startLog,
             string endLog,
             string exceptionLog,
             WorldResetContext? resetContext,
             string gateToken)
         {
+            string normalizedReason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
+
             try
             {
                 EnsureDependenciesInjected();
                 if (!HasCriticalDependencies())
                 {
-                    return;
+                    return WorldResetLocalExecutionResult.Unconfirmed(
+                        _sceneName,
+                        normalizedReason,
+                        nameof(SceneResetController),
+                        $"Critical dependencies unavailable for scene='{_sceneName}'.");
                 }
 
                 var context = new SceneResetContext(
@@ -182,17 +242,35 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                     endLog);
 
                 await _pipeline.ExecuteAsync(context, default);
+                return WorldResetLocalExecutionResult.Completed(
+                    _sceneName,
+                    normalizedReason,
+                    nameof(SceneResetController),
+                    $"Scene reset pipeline completed for scene='{_sceneName}'.");
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(typeof(SceneResetController),
                     $"{exceptionLog}{ex}",
                     this);
+
+                return WorldResetLocalExecutionResult.Failed(
+                    _sceneName,
+                    normalizedReason,
+                    nameof(SceneResetController),
+                    $"Scene reset pipeline failed with {ex.GetType().Name}: {ex.Message}");
             }
         }
 
         private void EnsureDependenciesInjected()
         {
+            // Diagnostic: surface early info to help QA understand why SceneReset may be inactive
+            if (verboseLogs)
+            {
+                DebugUtility.LogVerbose(typeof(SceneResetController),
+                    $"[DIAGNOSTIC][SceneReset] EnsureDependenciesInjected start | providerPresent={(DependencyManager.Provider != null ? "true" : "false")} | sceneScopeReady={IsSceneScopeReady()} | scene='{_sceneName}'",
+                    DebugUtility.Colors.Info);
+            }
             if (_dependenciesInjected && HasCriticalDependencies())
             {
                 return;

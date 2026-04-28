@@ -5,6 +5,10 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
@@ -44,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             return RestartCurrentGameplayInternalAsync(normalizedReason, ct);
         }
 
-        public Task RestartFromFirstPhaseAsync(string reason = null, CancellationToken ct = default)
+        public Task<PhaseResetExecutionResult> RestartFromFirstPhaseAsync(string reason = null, CancellationToken ct = default)
         {
             return RestartFromFirstPhaseInternalAsync(reason, ct);
         }
@@ -69,35 +73,94 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 DebugUtility.Colors.Success);
         }
 
-        private async Task RestartFromFirstPhaseInternalAsync(string reason, CancellationToken ct)
+        private async Task<PhaseResetExecutionResult> RestartFromFirstPhaseInternalAsync(string reason, CancellationToken ct)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "GameplaySessionFlow/RestartFromFirstPhase" : reason.Trim();
-            if (_phaseDefinitionCatalog == null)
+            GameplayStartSnapshot currentSnapshot = GameplayStartSnapshot.Empty;
+            PhaseDefinitionSelectedEvent phaseSelectedEvent = default;
+            PhaseDefinitionAsset targetPhaseRef = null;
+            string catalogSignature = "<none>";
+
+            try
             {
-                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
-                    $"[FATAL][H1][GameplaySessionFlow] RestartFromFirstPhase requires PhaseDefinitionCatalog on a phase-enabled route/context. reason='{normalizedReason}'.");
+                ct.ThrowIfCancellationRequested();
+
+                currentSnapshot = ResolveCurrentGameplayStartSnapshotOrFail(normalizedReason, "RestartFromFirstPhase");
+
+                DebugUtility.Log<GameplaySessionFlowContinuityService>(
+                    $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_requested operation='RestartFromFirstPhase' source='SessionTransitionExecutionPort' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' semantic='FirstPhaseRunRestart' legacy='false' target='RunContinuationOperational' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(currentSnapshot.PhaseDefinitionRef != null ? currentSnapshot.PhaseDefinitionRef.name : string.Empty)}'.",
+                    DebugUtility.Colors.Info);
+
+                IPhaseCatalogNavigationService catalogNavigationService = ResolveRequiredGlobal<IPhaseCatalogNavigationService>(nameof(IPhaseCatalogNavigationService), normalizedReason);
+                PhaseCatalogNavigationPlan catalogPlan = catalogNavigationService.RestartCatalog(normalizedReason);
+                if (!catalogPlan.IsValid || !catalogPlan.IsChanged || catalogPlan.TargetPhaseRef == null || !catalogPlan.TargetPhaseRef.PhaseId.IsValid)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
+                        $"[FATAL][H1][GameplaySessionFlow] RestartFromFirstPhase requires a valid changed catalog plan. outcome='{catalogPlan.Outcome}' reason='{normalizedReason}'.");
+                }
+
+                targetPhaseRef = catalogPlan.TargetPhaseRef;
+                catalogNavigationService.Commit(catalogPlan);
+                catalogSignature = PhaseNextPhaseServiceSupport.DescribeCatalog(catalogNavigationService.Catalog);
+
+                DebugUtility.Log<GameplaySessionFlowContinuityService>(
+                    $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_catalog_resolved operation='RestartFromFirstPhase' source='{nameof(IPhaseCatalogNavigationService)}' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' targetPhase='{DescribePhase(targetPhaseRef)}' phaseIndex='<none>' catalogSignature='{AsText(catalogSignature)}' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(targetPhaseRef != null ? targetPhaseRef.name : string.Empty)}'.",
+                    DebugUtility.Colors.Info);
+
+                GameplayPhaseFlowService phaseFlowService = ResolveRequiredGlobal<GameplayPhaseFlowService>(nameof(GameplayPhaseFlowService), normalizedReason);
+                phaseSelectedEvent = phaseFlowService.PublishPhaseDefinitionSelected(
+                    targetPhaseRef,
+                    currentSnapshot.MacroRouteId,
+                    currentSnapshot.MacroRouteRef,
+                    normalizedReason);
+
+                ISceneCompositionExecutor sceneCompositionExecutor = ResolveRequiredGlobal<ISceneCompositionExecutor>(nameof(ISceneCompositionExecutor), normalizedReason);
+                SceneCompositionRequest applyRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
+                    targetPhaseRef,
+                    normalizedReason,
+                    phaseSelectedEvent.SelectionSignature,
+                    forceFullReload: true);
+
+                DebugUtility.Log<GameplaySessionFlowContinuityService>(
+                    $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_handoff_started operation='RestartFromFirstPhase' source='GameplaySessionFlowContinuityService' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' targetPhase='{DescribePhase(targetPhaseRef)}' phaseIndex='<none>' catalogSignature='{AsText(catalogSignature)}' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' executionSignature='{AsText(phaseSelectedEvent.SelectionSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(applyRequest.ActiveScene)}' scenesToLoad=[{string.Join(",", applyRequest.ScenesToLoad)}] scenesToUnload=[{string.Join(",", applyRequest.ScenesToUnload)}].",
+                    DebugUtility.Colors.Info);
+
+                SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(applyRequest, ct);
+                if (!compositionResult.Success)
+                {
+                    HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
+                        $"[FATAL][H1][GameplaySessionFlow] RestartFromFirstPhase scene composition failed. targetPhase='{DescribePhase(targetPhaseRef)}' reason='{normalizedReason}' correlationId='{applyRequest.CorrelationId}'.");
+                }
+
+                PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
+                    targetPhaseRef,
+                    applyRequest.ScenesToLoad,
+                    applyRequest.ActiveScene,
+                    PhaseFlowSignalVocabulary.PhaseDefinitionNavigationSource);
+
+                PhaseResetExecutionResult resetResult = await ResetCurrentPhaseInternalAsync(normalizedReason, ct);
+                if (resetResult.Succeeded && resetResult.AllowsPhaseLocalEntryReady)
+                {
+                    DebugUtility.Log<GameplaySessionFlowContinuityService>(
+                        $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_handoff_completed operation='RestartFromFirstPhase' source='GameplaySessionFlowContinuityService' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' targetPhase='{DescribePhase(targetPhaseRef)}' phaseIndex='<none>' catalogSignature='{AsText(catalogSignature)}' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' executionSignature='{AsText(phaseSelectedEvent.SelectionSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(applyRequest.ActiveScene)}' result='{resetResult}'.",
+                        DebugUtility.Colors.Success);
+                }
+
+                return resetResult;
             }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<GameplaySessionFlowContinuityService>(
+                    $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_handoff_failed operation='RestartFromFirstPhase' source='GameplaySessionFlowContinuityService' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' targetPhase='{DescribePhase(targetPhaseRef)}' phaseIndex='<none>' catalogSignature='{AsText(catalogSignature)}' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' executionSignature='{AsText(phaseSelectedEvent.SelectionSignature)}' routeId='{(currentSnapshot.IsValid ? currentSnapshot.MacroRouteId.ToString() : "<none>")}' routeKind='{(currentSnapshot.IsValid ? currentSnapshot.MacroRouteRef.RouteKind.ToString() : "<none>")}' scene='{AsText(targetPhaseRef != null ? targetPhaseRef.name : string.Empty)}' exceptionType='{ex.GetType().Name}' exceptionMessage='{AsText(ex.Message)}'.");
 
-            PhaseDefinitionAsset initialPhaseDefinitionRef = _phaseDefinitionCatalog.ResolveInitialOrFail();
-
-            DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] IntentReceived action='RestartFromFirstPhase' scope='first_phase' initialPhaseId='{initialPhaseDefinitionRef.PhaseId}' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Info);
-
-            ct.ThrowIfCancellationRequested();
-
-            DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] HandoffDispatch action='RestartFromFirstPhase' scope='first_phase' initialPhaseRef='{initialPhaseDefinitionRef.name}' reason='{normalizedReason}' target='Navigation'.",
-                DebugUtility.Colors.Info);
-            _restartContextService.Clear(normalizedReason);
-            await StartGameplayDefaultAsync(normalizedReason, ct);
-
-            DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='RestartFromFirstPhase' scope='first_phase' reason='{normalizedReason}' target='Navigation'.",
-                DebugUtility.Colors.Success);
+                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
+                    $"[FATAL][H1][GameplaySessionFlow] RestartFromFirstPhase failed. reason='{normalizedReason}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
+                    ex);
+                throw;
+            }
         }
 
-        public async Task ResetCurrentPhaseAsync(string reason = null, CancellationToken ct = default)
+        public async Task<PhaseResetExecutionResult> ResetCurrentPhaseAsync(string reason = null, CancellationToken ct = default)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? "GameplaySessionFlow/ResetCurrentPhase" : reason.Trim();
 
@@ -110,11 +173,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
                 $"[OBS][GameplaySessionFlow][Continuity] HandoffDispatch action='ResetCurrentPhase' reason='{normalizedReason}' target='PhaseResetOperational'.",
                 DebugUtility.Colors.Info);
-            await ResetCurrentPhaseInternalAsync(normalizedReason, ct);
+            PhaseResetExecutionResult result = await ResetCurrentPhaseInternalAsync(normalizedReason, ct);
 
             DebugUtility.Log<GameplaySessionFlowContinuityService>(
-                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='ResetCurrentPhase' reason='{normalizedReason}' target='PhaseResetOperational'.",
-                DebugUtility.Colors.Success);
+                $"[OBS][GameplaySessionFlow][Continuity] HandoffCompleted action='ResetCurrentPhase' reason='{normalizedReason}' target='PhaseResetOperational' result='{result}'.",
+                result.Succeeded ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+
+            return result;
         }
 
         public Task<PhaseNavigationResult> NextPhaseAsync(string reason = null, CancellationToken ct = default)
@@ -217,7 +282,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 ct);
         }
 
-        private async Task ResetCurrentPhaseInternalAsync(string reason, CancellationToken ct)
+        private async Task<PhaseResetExecutionResult> ResetCurrentPhaseInternalAsync(string reason, CancellationToken ct)
         {
             if (!_restartContextService.TryGetCurrent(out GameplayStartSnapshot snapshot) ||
                 !snapshot.IsValid ||
@@ -241,7 +306,54 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 new PhaseContextSignature(snapshot.PhaseSignature),
                 snapshot.PhaseSignature);
 
-            await _phaseResetExecutor.ResetPhaseAsync(resetContext, reason, ct);
+            return await _phaseResetExecutor.ResetPhaseAsync(resetContext, reason, ct);
+        }
+
+        private GameplayStartSnapshot ResolveCurrentGameplayStartSnapshotOrFail(string reason, string operation)
+        {
+            if (!_restartContextService.TryGetCurrent(out GameplayStartSnapshot snapshot) ||
+                !snapshot.IsValid ||
+                !snapshot.HasPhaseDefinitionRef ||
+                snapshot.PhaseDefinitionRef == null ||
+                snapshot.MacroRouteRef == null ||
+                !snapshot.MacroRouteId.IsValid ||
+                string.IsNullOrWhiteSpace(snapshot.PhaseSignature))
+            {
+                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
+                    $"[FATAL][H1][GameplaySessionFlow] {operation} requires a valid current gameplay snapshot. reason='{reason}'.");
+            }
+
+            return snapshot;
+        }
+
+        private static T ResolveRequiredGlobal<T>(string label, string reason)
+            where T : class
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
+                    $"[FATAL][H1][GameplaySessionFlow] DependencyManager.Provider is null while resolving '{label}'. reason='{reason}'.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
+                    $"[FATAL][H1][GameplaySessionFlow] Missing required global service '{label}'. reason='{reason}'.");
+            }
+
+            return service;
+        }
+
+        private static string DescribePhase(PhaseDefinitionAsset phaseDefinitionRef)
+        {
+            return phaseDefinitionRef != null && phaseDefinitionRef.PhaseId.IsValid
+                ? phaseDefinitionRef.PhaseId.Value
+                : "<none>";
+        }
+
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
 
         private static IPhaseNextPhaseService ResolveRequiredPhaseNextPhaseService(string reason)

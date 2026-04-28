@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
                 gateOpen: gateOpen);
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SceneTransitionCompleted → token de transicao liberado; fase tecnica {readinessPhase} marcada; gateGlobal={(gateOpen ? "Open" : "Closed")}. consumer='GameReadinessService' gameplayReady={_gameplayReady}. Context={evt.context}");
+                $"[SceneFlowReadiness] SceneTransitionCompleted → token de transicao liberado; fase tecnica {readinessPhase} marcada; gateGlobal={(gateOpen ? "Open" : "Closed")}. consumer='GameReadinessService' technicalSceneReady={_gameplayReady}. Context={evt.context}");
 
             PublishSnapshot(
                 isGameplayTransition
@@ -237,7 +237,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
             EventBus<ReadinessChangedEvent>.Raise(new ReadinessChangedEvent(snapshot));
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] Snapshot publicado. gameplayReady={snapshot.GameplayReady}, gateOpen={snapshot.GateOpen}, activeTokens={snapshot.ActiveTokens}, reason='{snapshot.Reason}'.");
+                $"[SceneFlowReadiness] Snapshot publicado. technicalSceneReady={snapshot.GameplayReady}, gateOpen={snapshot.GateOpen}, activeTokens={snapshot.ActiveTokens}, reason='{snapshot.Reason}'.");
         }
 
         private static void LogReadinessState(string label, string reason, bool gateOpen, int activeTokens)
@@ -250,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
         private static void LogReadinessTransition(string label, string eventName, SceneTransitionContext context, bool gateOpen)
         {
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] {label} event='{eventName}' signature='{SceneTransitionSignature.Compute(context)}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' gateOpen={gateOpen} gameplayReady={context.RouteKind == SceneRouteKind.Gameplay}.",
+                $"[SceneFlowReadiness] {label} event='{eventName}' signature='{SceneTransitionSignature.Compute(context)}' routeId='{context.RouteId}' routeKind='{context.RouteKind}' gateOpen={gateOpen} technicalSceneReady={context.RouteKind == SceneRouteKind.Gameplay}.",
                 DebugUtility.Colors.Info);
         }
 

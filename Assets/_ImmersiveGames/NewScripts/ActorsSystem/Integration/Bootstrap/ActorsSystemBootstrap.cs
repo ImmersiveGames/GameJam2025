@@ -53,6 +53,12 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
+        public static void EnsureActorSetSelectionInfrastructure()
+        {
+            EnsureActorSpecsCatalogService();
+            EnsureActorSetSelectionService();
+        }
+
         public static void ComposeRuntime()
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(ActorsSystemBootstrap));

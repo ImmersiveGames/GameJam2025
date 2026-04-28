@@ -2,9 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
 
@@ -23,7 +21,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers
                 return;
             }
 
-            RegisterRunResetTargetPhaseResolver();
             RegisterRunContinuationSelectionRoutingService();
             RegisterRunEndPostMaterializationDispatchService();
             RegisterRunEndMaterializationService();
@@ -44,29 +41,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers
 
             var service = new RunContinuationSelectionRoutingService(
                 ResolveRequired<IRunContinuationOperationalHandoffService>(
-                    "[FATAL][Config][GameplaySessionFlow] IRunContinuationOperationalHandoffService ausente no DI global antes de compor IRunContinuationSelectionRoutingService."),
-                ResolveRequired<IGameplaySessionRunResetService>(
-                    "[FATAL][Config][GameplaySessionFlow] IGameplaySessionRunResetService ausente no DI global antes de compor IRunContinuationSelectionRoutingService."),
-                ResolveRequired<IRunResetTargetPhaseResolver>(
-                    "[FATAL][Config][GameplaySessionFlow] IRunResetTargetPhaseResolver ausente no DI global antes de compor IRunContinuationSelectionRoutingService."));
+                    "[FATAL][Config][GameplaySessionFlow] IRunContinuationOperationalHandoffService ausente no DI global antes de compor IRunContinuationSelectionRoutingService."));
 
             DependencyManager.Provider.RegisterGlobal<IRunContinuationSelectionRoutingService>(service);
-        }
-
-        private static void RegisterRunResetTargetPhaseResolver()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IRunResetTargetPhaseResolver>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            var service = new RunResetTargetPhaseResolver(
-                ResolveRequired<IPhaseDefinitionCatalog>(
-                    "[FATAL][Config][GameplaySessionFlow] IPhaseDefinitionCatalog ausente no DI global antes de compor IRunResetTargetPhaseResolver."),
-                ResolveRequired<IPhaseCatalogRuntimeStateService>(
-                    "[FATAL][Config][GameplaySessionFlow] IPhaseCatalogRuntimeStateService ausente no DI global antes de compor IRunResetTargetPhaseResolver."));
-
-            DependencyManager.Provider.RegisterGlobal<IRunResetTargetPhaseResolver>(service);
         }
 
         private static void RegisterRunEndMaterializationService()

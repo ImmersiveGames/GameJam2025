@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
@@ -19,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
         private static bool _installerPhaseComposed;
         private static bool _runtimeComposed;
         private static GameplayParticipationInputModeBridge _participationInputModeBridge;
+        private static IGameplayInteractionReadinessService _gameplayInteractionReadinessService;
 
         public static void ComposeInstallerPhase()
         {
@@ -48,7 +53,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
 
             SessionIntegrationSeamRuntimeComposition.EnsureComposed();
             SessionIntegrationContinuityRuntimeComposition.EnsureComposed(bootstrapConfig);
-            SessionIntegrationBridgesRuntimeComposition.EnsureComposed(ref _participationInputModeBridge);
+            SessionIntegrationBridgesRuntimeComposition.EnsureComposed(
+                ref _participationInputModeBridge,
+                ref _gameplayInteractionReadinessService);
             SessionIntegrationOperationalHandoffRuntimeComposition.EnsureComposed();
 
             _runtimeComposed = true;
@@ -86,24 +93,63 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
 
     internal static class SessionIntegrationBridgesRuntimeComposition
     {
-        public static void EnsureComposed(ref GameplayParticipationInputModeBridge participationInputModeBridge)
+        public static void EnsureComposed(
+            ref GameplayParticipationInputModeBridge participationInputModeBridge,
+            ref IGameplayInteractionReadinessService gameplayInteractionReadinessService)
         {
-            if (participationInputModeBridge != null)
-            {
-                return;
-            }
+            EnsureParticipationInputModeBridge(ref participationInputModeBridge);
+            EnsureGameplayInteractionReadinessService(ref gameplayInteractionReadinessService);
+        }
 
-            if (DependencyManager.Provider.TryGetGlobal<GameplayParticipationInputModeBridge>(out var existing) && existing != null)
+        private static void EnsureParticipationInputModeBridge(ref GameplayParticipationInputModeBridge participationInputModeBridge)
+        {
+            if (participationInputModeBridge == null)
             {
-                participationInputModeBridge = existing;
-                return;
+                if (DependencyManager.Provider.TryGetGlobal<GameplayParticipationInputModeBridge>(out var existing) && existing != null)
+                {
+                    participationInputModeBridge = existing;
+                }
+                else
+                {
+                    participationInputModeBridge = new GameplayParticipationInputModeBridge();
+                    DependencyManager.Provider.RegisterGlobal(participationInputModeBridge);
+                }
             }
-
-            participationInputModeBridge = new GameplayParticipationInputModeBridge();
-            DependencyManager.Provider.RegisterGlobal(participationInputModeBridge);
 
             DebugUtility.LogVerbose(typeof(SessionIntegrationBridgesRuntimeComposition),
                 "[OBS][SessionIntegration][InputModes] GameplayParticipationInputModeBridge composed in SessionIntegration runtime.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureGameplayInteractionReadinessService(ref IGameplayInteractionReadinessService gameplayInteractionReadinessService)
+        {
+            if (gameplayInteractionReadinessService == null)
+            {
+                if (DependencyManager.Provider.TryGetGlobal<IGameplayInteractionReadinessService>(out var existing) && existing != null)
+                {
+                    gameplayInteractionReadinessService = existing;
+                }
+                else
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<IActorsGameplayOperationalReadinessService>(out var actorsOperationalReadinessService) || actorsOperationalReadinessService == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IActorsGameplayOperationalReadinessService ausente no DI global antes de registrar GameplayInteractionReadinessService.");
+                    }
+
+                    if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var inputModeEmitter) || inputModeEmitter == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationInputModeEmitter ausente no DI global antes de registrar GameplayInteractionReadinessService.");
+                    }
+
+                    gameplayInteractionReadinessService = new GameplayInteractionReadinessService(
+                        actorsOperationalReadinessService,
+                        inputModeEmitter);
+                    DependencyManager.Provider.RegisterGlobal<IGameplayInteractionReadinessService>(gameplayInteractionReadinessService);
+                }
+            }
+
+            DebugUtility.LogVerbose(typeof(SessionIntegrationBridgesRuntimeComposition),
+                "[OBS][SessionIntegration][InputModes] GameplayInteractionReadinessService composed in SessionIntegration runtime.",
                 DebugUtility.Colors.Info);
         }
     }
@@ -121,7 +167,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
         public static void EnsureComposed(BootstrapConfigAsset bootstrapConfig)
         {
             EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
-            EnsureGameplaySessionRunResetService();
         }
 
         private static void EnsureGameplaySessionFlowContinuityService(BootstrapConfigAsset bootstrapConfig)
@@ -162,40 +207,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureGameplaySessionRunResetService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionRunResetService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationNavigationHandoffService>(out var navigationHandoffService) || navigationHandoffService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationNavigationHandoffService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var phaseCatalogRuntimeStateService) || phaseCatalogRuntimeStateService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseCatalogRuntimeStateService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
-            }
-
-            var service = new GameplaySessionRunResetService(
-                restartContextService,
-                navigationHandoffService,
-                phaseCatalogRuntimeStateService);
-
-            DependencyManager.Provider.RegisterGlobal<IGameplaySessionRunResetService>(service);
-
-            DebugUtility.LogVerbose(typeof(SessionIntegrationContinuityRuntimeComposition),
-                "[OBS][SessionIntegration][Operational] IGameplaySessionRunResetService registrado como run-reset seam canonical.",
-                DebugUtility.Colors.Info);
-        }
-
         private static IPhaseDefinitionCatalog ResolveOptionalPhaseDefinitionCatalog(BootstrapConfigAsset bootstrapConfig)
         {
             if (bootstrapConfig?.NavigationCatalog is not GameNavigationCatalogAsset navigationCatalog)
@@ -216,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
 {
     /// <summary>
-    /// Bridge semantico -> request de InputMode via seam oficial de SessionIntegration.
+    /// Observa readiness semantica de Participation sem liberar input operacional.
     /// </summary>
     public sealed class GameplayParticipationInputModeBridge : IDisposable
     {
@@ -290,28 +301,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
                 return;
             }
 
-            PublishGameplayInputModeRequest(snapshot, localParticipant, signature);
+            LogSemanticReadiness(snapshot, localParticipant, signature);
         }
 
-        private static void PublishGameplayInputModeRequest(
+        private static void LogSemanticReadiness(
             ParticipationSnapshot snapshot,
             ParticipantSnapshot localParticipant,
             string signature)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) || sessionIntegration == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplayParticipationInputModeBridge),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para InputMode gameplay. signature='{signature}' readinessState='{snapshot.Readiness.State}'.");
-                return;
-            }
-
-            sessionIntegration.RequestGameplayInputMode(
-                BuildReason(snapshot, localParticipant),
-                "GameplayParticipation",
-                signature);
-
             DebugUtility.Log(typeof(GameplayParticipationInputModeBridge),
-                $"[OBS][SessionIntegration][InputModes] GameplayInputMode requested source='Participation' signature='{signature}' localParticipantId='{localParticipant.ParticipantId}' bindingHint='{localParticipant.BindingHint}'.",
+                $"[OBS][SessionIntegration][InputModes] ParticipationSemanticReady inputModeDeferred='true' owner='ActorsExecution' signature='{signature}' readinessState='{snapshot.Readiness.State}' localParticipantId='{localParticipant.ParticipantId}' bindingHint='{localParticipant.BindingHint}' reason='{BuildReason(snapshot, localParticipant)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -320,5 +319,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
             return $"Participation/{snapshot.Readiness.State}/local={participant.ParticipantId}";
         }
     }
+
 }
 

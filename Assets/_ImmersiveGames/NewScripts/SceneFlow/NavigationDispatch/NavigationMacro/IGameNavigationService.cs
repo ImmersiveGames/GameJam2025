@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
     {
         Task GoToMenuAsync(string reason = null);
         SceneRouteId ResolveGameplayRouteIdOrFail();
-        Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null);
+        Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload, string reason = null);
         Task NavigateAsync(GameNavigationIntentKind intent, string reason = null);
     }
 }

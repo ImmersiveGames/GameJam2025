@@ -539,13 +539,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
 
         private PhaseRearmMaterializationContext MaterializePhaseRearmOrFail(PhaseDefinitionSelectedEvent selectionEvent)
         {
-            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(selectionEvent);
             ParticipationSnapshot participationSnapshot = _participationFlowService.UpdateFromPhaseDefinitionSelectedEvent(selectionEvent);
             if (!participationSnapshot.Readiness.IsValid || !participationSnapshot.Readiness.CanEnterGameplay)
             {
                 HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
                     $"[FATAL][H1][GameplaySessionFlow] Participation snapshot produced an invalid semantic readiness state during rearm. phaseId='{selectionEvent.PhaseId}' routeId='{selectionEvent.MacroRouteId}' v='{selectionEvent.SelectionVersion}' readinessState='{participationSnapshot.Readiness.State}' readinessCanEnter='{participationSnapshot.Readiness.CanEnterGameplay}'.");
             }
+
+            GameplayPhaseRuntimeSnapshot phaseRuntime = GameplayPhaseRuntimeSnapshot.FromPhaseDefinitionSelectedEvent(
+                selectionEvent,
+                participationSnapshot.ParticipantCount);
 
             return new PhaseRearmMaterializationContext(phaseRuntime, participationSnapshot);
         }
@@ -557,14 +560,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
             int phaseLocalEntrySequence,
             string entrySignature)
         {
-            string sessionSignature = BuildPhaseSignature(selectionEvent);
             string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(selectionEvent.PhaseDefinitionRef.PhaseId);
-            IntroStageSession introSession = phaseRuntime.CreateIntroStageSession(
+            IntroStageSession introSession = ResolveCanonicalIntroStageSessionOrFail(
+                selectionEvent,
                 localContentId,
-                selectionEvent.Reason,
-                selectionEvent.SelectionVersion,
                 phaseLocalEntrySequence,
-                sessionSignature,
                 entrySignature);
 
             DebugUtility.Log<GameplayPhaseFlowService>(
@@ -575,6 +575,39 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 introSession,
                 source,
                 selectionEvent.MacroRouteRef != null ? selectionEvent.MacroRouteRef.RouteKind : default));
+        }
+
+        private static IntroStageSession ResolveCanonicalIntroStageSessionOrFail(
+            PhaseDefinitionSelectedEvent selectionEvent,
+            string localContentId,
+            int phaseLocalEntrySequence,
+            string entrySignature)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageSessionService>(out var introStageSessionService) ||
+                introStageSessionService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] IIntroStageSessionService missing while resolving canonical IntroStage session for phase entry.");
+            }
+
+            if (!introStageSessionService.TryGetCurrentSession(out IntroStageSession introSession) || !introSession.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    "[FATAL][H1][GameplaySessionFlow] IntroStageSessionService did not expose the canonical IntroStage session after phase runtime materialization.");
+            }
+
+            if (introSession.PhaseDefinitionRef == null ||
+                !string.Equals(introSession.PhaseDefinitionRef.PhaseId.Value, selectionEvent.PhaseDefinitionRef.PhaseId.Value, StringComparison.Ordinal) ||
+                introSession.SelectionVersion != selectionEvent.SelectionVersion ||
+                introSession.PhaseLocalEntrySequence != phaseLocalEntrySequence ||
+                !string.Equals(introSession.LocalContentId, localContentId, StringComparison.Ordinal) ||
+                !string.Equals(introSession.EntrySignature, entrySignature, StringComparison.Ordinal))
+            {
+                HardFailFastH1.Trigger(typeof(GameplayPhaseFlowService),
+                    $"[FATAL][H1][GameplaySessionFlow] Canonical IntroStageSession mismatch during phase entry. expectedPhaseId='{selectionEvent.PhaseDefinitionRef.PhaseId}' expectedVersion='{selectionEvent.SelectionVersion}' expectedEntrySeq='{phaseLocalEntrySequence}' expectedContentId='{localContentId}' expectedEntrySignature='{entrySignature}' actualPhaseId='{(introSession.PhaseDefinitionRef != null ? introSession.PhaseDefinitionRef.PhaseId.Value : "<none>")}' actualVersion='{introSession.SelectionVersion}' actualEntrySeq='{introSession.PhaseLocalEntrySequence}' actualContentId='{introSession.LocalContentId}' actualEntrySignature='{introSession.EntrySignature}'.");
+            }
+
+            return introSession;
         }
 
         private readonly struct PhaseSelectionProcessingContext
@@ -791,7 +824,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
         }
     }
 }
-
 
 
 

@@ -1,9 +1,16 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
+
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Installers.Bootstrap
 {
     public static class SessionTransitionBootstrap
@@ -17,10 +24,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var continuityService) || continuityService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionTransition] IGameplaySessionFlowContinuityService missing from global DI before session transition composition.");
-            }
+            IGameplaySessionFlowContinuityService continuityService = ResolveGlobalOrFail<IGameplaySessionFlowContinuityService>(
+                "IGameplaySessionFlowContinuityService missing from global DI before session transition composition.");
 
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var existingResolver) || existingResolver == null)
             {
@@ -39,19 +44,35 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     DebugUtility.Colors.Info);
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionTransitionGameplayPrepareExecutionPort>(out var existingGameplayPrepareExecutionPort) || existingGameplayPrepareExecutionPort == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<ISessionTransitionGameplayPrepareExecutionPort>(
+                    new SessionTransitionGameplayPrepareExecutionPort(
+                        ResolveGlobalOrFail<IPhaseDefinitionSelectionService>("IPhaseDefinitionSelectionService missing from global DI before gameplay prepare execution port composition."),
+                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before gameplay prepare execution port composition."),
+                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before gameplay prepare execution port composition."),
+                        ResolveGlobalOrFail<ISceneFlowRouteActorSetRefContext>("ISceneFlowRouteActorSetRefContext missing from global DI before gameplay prepare execution port composition."),
+                        ResolveGlobalOrFail<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService missing from global DI before gameplay prepare execution port composition."),
+                        ResolveGlobalOrFail<IGameplayParticipationFlowService>("IGameplayParticipationFlowService missing from global DI before gameplay prepare execution port composition.")));
+
+                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                    "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionGameplayPrepareExecutionPort registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var existingOrchestrator) || existingOrchestrator == null)
             {
-                if (!DependencyManager.Provider.TryGetGlobal<ISessionTransitionExecutionPort>(out var executionPort) || executionPort == null)
-                {
-                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] ISessionTransitionExecutionPort missing from global DI before SessionTransitionOrchestrator composition.");
-                }
+                ISessionTransitionExecutionPort executionPort = ResolveGlobalOrFail<ISessionTransitionExecutionPort>(
+                    "ISessionTransitionExecutionPort missing from global DI before SessionTransitionOrchestrator composition.");
+                ISessionTransitionGameplayPrepareExecutionPort gameplayPrepareExecutionPort = ResolveGlobalOrFail<ISessionTransitionGameplayPrepareExecutionPort>(
+                    "ISessionTransitionGameplayPrepareExecutionPort missing from global DI before SessionTransitionOrchestrator composition.");
+                SessionTransitionPlanResolver planResolver = ResolveGlobalOrFail<SessionTransitionPlanResolver>(
+                    "SessionTransitionPlanResolver missing from global DI before SessionTransitionOrchestrator composition.");
 
-                if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var planResolver) || planResolver == null)
-                {
-                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] SessionTransitionPlanResolver missing from global DI before SessionTransitionOrchestrator composition.");
-                }
-
-                DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(planResolver, executionPort));
+                DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(
+                    planResolver,
+                    executionPort,
+                    gameplayPrepareExecutionPort));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] SessionTransitionOrchestrator registered in global DI.",
                     DebugUtility.Colors.Info);
@@ -59,15 +80,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
 
             if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOperationalHandoffService>(out var existingHandoff) || existingHandoff == null)
             {
-                if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var resolver) || resolver == null)
-                {
-                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] SessionTransitionPlanResolver missing from global DI before run continuation handoff composition.");
-                }
-
-                if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var orchestrator) || orchestrator == null)
-                {
-                    throw new InvalidOperationException("[FATAL][Config][SessionTransition] SessionTransitionOrchestrator missing from global DI before run continuation handoff composition.");
-                }
+                SessionTransitionPlanResolver resolver = ResolveGlobalOrFail<SessionTransitionPlanResolver>(
+                    "SessionTransitionPlanResolver missing from global DI before run continuation handoff composition.");
+                SessionTransitionOrchestrator orchestrator = ResolveGlobalOrFail<SessionTransitionOrchestrator>(
+                    "SessionTransitionOrchestrator missing from global DI before run continuation handoff composition.");
 
                 DependencyManager.Provider.RegisterGlobal<IRunContinuationOperationalHandoffService>(
                     new RunContinuationOperationalHandoffService(resolver, orchestrator));
@@ -79,6 +95,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
 
             _runtimeComposed = true;
         }
+
+        private static T ResolveGlobalOrFail<T>(string message) where T : class
+        {
+            if (DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionBootstrap),
+                    "[FATAL][Config][SessionTransition] DependencyManager.Provider missing before session transition composition.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<T>(out var value) || value == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionBootstrap),
+                    $"[FATAL][Config][SessionTransition] {message}");
+            }
+
+            return value;
+        }
     }
 }
-

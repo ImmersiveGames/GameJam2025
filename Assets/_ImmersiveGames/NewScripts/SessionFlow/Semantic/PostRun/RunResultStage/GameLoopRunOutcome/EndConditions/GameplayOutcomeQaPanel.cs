@@ -55,6 +55,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
         {
             EnsureDependenciesInjected();
             RegisterBindings();
+            DebugUtility.Log<GameplayOutcomeQaPanel>(
+                "[QA][RunEnd] panel enabled.",
+                DebugUtility.Colors.Info);
             ReportSmoke("OnEnable", "panel_enabled");
         }
 
@@ -85,12 +88,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             GUILayout.Space(8f);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Victory", _buttonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button("Force Victory", _buttonStyle, GUILayout.Height(42f)))
             {
                 RequestOutcome(GameRunOutcome.Victory, VictoryReason);
             }
 
-            if (GUILayout.Button("Defeat", _buttonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button("Force Defeat", _buttonStyle, GUILayout.Height(42f)))
             {
                 RequestOutcome(GameRunOutcome.Defeat, DefeatReason);
             }
@@ -123,16 +126,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             if (_endRequest == null)
             {
                 DebugUtility.LogWarning<GameplayOutcomeQaPanel>(
-                    $"[QA][BaselineV3] Outcome mock ignored: IGameRunEndRequestService unavailable. outcome='{outcome}'.",
+                    $"[QA][RunEnd] service unavailable. force outcome blocked result='{outcome}'.",
                     this);
                 return;
             }
 
             DebugUtility.Log<GameplayOutcomeQaPanel>(
-                $"[QA][BaselineV3] Outcome mock requested. outcome='{outcome}' reason='{reason}'.",
+                $"[QA][RunEnd] force outcome requested result='{outcome}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             _endRequest.RequestRunEnd(outcome, reason);
+
+            DebugUtility.Log<GameplayOutcomeQaPanel>(
+                $"[QA][RunEnd] request dispatched result='{outcome}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private void EnsureDependenciesInjected()

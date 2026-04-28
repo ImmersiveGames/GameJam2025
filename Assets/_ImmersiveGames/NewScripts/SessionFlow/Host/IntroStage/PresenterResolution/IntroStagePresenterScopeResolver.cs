@@ -14,6 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolu
             List<IIntroStagePresenter> resolvedPresenters = new List<IIntroStagePresenter>();
             HashSet<int> seenInstanceIds = new HashSet<int>();
 
+            // Resolve from phase content only.
+            // No fallback to active scene: the scope must be explicit in the phase definition.
             if (session.PhaseDefinitionRef != null && session.PhaseDefinitionRef.Content != null && session.PhaseDefinitionRef.Content.entries != null)
             {
                 ResolveFromPhaseContent(session, resolvedPresenters, seenInstanceIds);
@@ -21,22 +23,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolu
 
             if (resolvedPresenters.Count == 0)
             {
-                ResolveFromActiveScene(resolvedPresenters, seenInstanceIds);
-            }
-
-            if (resolvedPresenters.Count == 0)
-            {
-                if (session.HasIntroStage)
-                {
-                    DebugUtility.LogWarning<IntroStagePresenterScopeResolver>(
-                        $"[WARN][OBS][IntroStage] No scene-local presenter could be resolved. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' activeScene='{SceneManager.GetActiveScene().name}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' hasIntroStage='true' detail='presenter_unavailable'.");
-                }
-                else
-                {
-                    DebugUtility.Log<IntroStagePresenterScopeResolver>(
-                        $"[OBS][IntroStage] No scene-local presenter resolved (expected for no-intro contract). phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' activeScene='{SceneManager.GetActiveScene().name}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' hasIntroStage='false' outcome='no_content'.",
-                        DebugUtility.Colors.Info);
-                }
+                DebugUtility.Log<IntroStagePresenterScopeResolver>(
+                    $"[OBS][IntroStage] No presenter in phase scope. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' outcome='no_content'.",
+                    DebugUtility.Colors.Info);
 
                 presenters = new List<IIntroStagePresenter>();
                 return false;
@@ -76,18 +65,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolu
             }
         }
 
-        private static void ResolveFromActiveScene(
-            List<IIntroStagePresenter> resolvedPresenters,
-            HashSet<int> seenInstanceIds)
-        {
-            Scene activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.IsValid() || !activeScene.isLoaded)
-            {
-                return;
-            }
-
-            AppendPresentersFromScene(activeScene, resolvedPresenters, seenInstanceIds);
-        }
 
         private static void AppendPresentersFromScene(
             Scene loadedScene,

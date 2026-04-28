@@ -1,134 +1,134 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset
 {
-    public interface IRunResetTargetPhaseResolver
-    {
-        PhaseDefinitionAsset ResolveOrFail(RunContinuationSelection selection);
-    }
-
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RunContinuationSelectionRoutingService : IRunContinuationSelectionRoutingService
     {
-        private readonly IRunContinuationOperationalHandoffService _handoffService;
-        private readonly IGameplaySessionRunResetService _runResetService;
-        private readonly IRunResetTargetPhaseResolver _runResetTargetPhaseResolver;
+        private const string RoutingOperation = "RunContinuationSelectionRouting";
+        private const string RoutingSource = nameof(RunContinuationSelectionResolvedEvent);
+        private const string RoutingTarget = "RunContinuationOperational";
 
-        public RunContinuationSelectionRoutingService(
-            IRunContinuationOperationalHandoffService handoffService,
-            IGameplaySessionRunResetService runResetService,
-            IRunResetTargetPhaseResolver runResetTargetPhaseResolver)
+        private readonly IRunContinuationOperationalHandoffService _handoffService;
+
+        public RunContinuationSelectionRoutingService(IRunContinuationOperationalHandoffService handoffService)
         {
             _handoffService = handoffService ?? throw new ArgumentNullException(nameof(handoffService));
-            _runResetService = runResetService ?? throw new ArgumentNullException(nameof(runResetService));
-            _runResetTargetPhaseResolver = runResetTargetPhaseResolver ?? throw new ArgumentNullException(nameof(runResetTargetPhaseResolver));
         }
 
         public void RouteSelection(RunContinuationSelection selection)
         {
-            if (selection.SelectedContinuation is RunContinuationKind.ResetRun or RunContinuationKind.Retry)
-            {
-                RouteRunResetSelection(selection);
-                return;
-            }
+            RunContinuationKind selectedContinuation = selection.SelectedContinuation;
+            RunContinuationSelection routedSelection = NormalizeSelectionForCanonicalRouting(selection);
 
             DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][Seam] translated continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
+                $"[OBS][GameplaySessionFlow][Seam] translated continuation='{routedSelection.SelectedContinuation}' reason='{routedSelection.Reason}' nextState='{routedSelection.NextState}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='RunContinuationOperational' continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
+                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='RunContinuationOperational' continuation='{routedSelection.SelectedContinuation}' reason='{routedSelection.Reason}' nextState='{routedSelection.NextState}'.",
                 DebugUtility.Colors.Info);
 
-            _ = DispatchRunContinuationHandoffAsync(_handoffService, selection);
+            _ = ObserveRouteSelectionAsync(routedSelection, selectedContinuation, RoutingSource);
         }
 
-        private void RouteRunResetSelection(RunContinuationSelection selection)
+        private static RunContinuationSelection NormalizeSelectionForCanonicalRouting(RunContinuationSelection selection)
         {
-            PhaseDefinitionAsset targetPhaseRef = _runResetTargetPhaseResolver.ResolveOrFail(selection);
-            if (targetPhaseRef == null)
+            if (selection.SelectedContinuation != RunContinuationKind.Retry)
             {
-                return;
+                return selection;
             }
 
-            GameplayRunResetRequest request = new GameplayRunResetRequest(selection, targetPhaseRef, selection.Reason);
+            RunContinuationSelection normalizedSelection = new RunContinuationSelection(
+                selection.ContinuationContext,
+                RunContinuationKind.RestartCurrentPhase,
+                selection.Completion);
 
             DebugUtility.Log<GameRunEndedEventBridge>(
-                $"[OBS][GameplaySessionFlow][RunReset] RunResetRoutedFromRunDecision kind='{request.Kind}' reason='{request.Reason}' targetPhase='{DescribePhase(targetPhaseRef)}'.",
-                DebugUtility.Colors.Info);
+                $"[OBS][GameplaySessionFlow][Seam] continuation_normalized from='Retry' to='RestartCurrentPhase' legacy='true' reason='{selection.Reason}' nextState='{selection.NextState}'.",
+                DebugUtility.Colors.Warning);
 
-            _ = _runResetService.AcceptAsync(request);
+            return normalizedSelection;
+        }
+
+        private async Task ObserveRouteSelectionAsync(
+            RunContinuationSelection selection,
+            RunContinuationKind selectedContinuation,
+            string source)
+        {
+            try
+            {
+                DebugUtility.Log<RunContinuationSelectionRoutingService>(
+                    BuildRunContinuationRoutingLogMessage(selection, selectedContinuation, "started", source, null),
+                    DebugUtility.Colors.Info);
+
+                await DispatchRunContinuationHandoffAsync(_handoffService, selection);
+
+                DebugUtility.Log<RunContinuationSelectionRoutingService>(
+                    BuildRunContinuationRoutingLogMessage(selection, selectedContinuation, "completed", source, null),
+                    DebugUtility.Colors.Success);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<RunContinuationSelectionRoutingService>(
+                    BuildRunContinuationRoutingLogMessage(selection, selectedContinuation, "failed", source, ex));
+
+                HardFailFastH1.Trigger(typeof(RunContinuationSelectionRoutingService),
+                    $"[FATAL][H1][GameplaySessionFlow] RunContinuation selection routing failed. operation='{RoutingOperation}' status='failed' continuation='{selection.SelectedContinuation}' selectedContinuation='{selectedContinuation}'{BuildNormalizedContinuationField(selection, selectedContinuation)} semantic='{ResolveRoutingSemantic(selection.SelectedContinuation)}' legacy='false' source='{AsText(source)}' target='{RoutingTarget}' reason='{AsText(selection.Reason)}' nextState='{AsText(selection.NextState)}' exceptionType='{ex.GetType().Name}' exceptionMessage='{AsText(ex.Message)}'.",
+                    ex);
+            }
         }
 
         private static async Task DispatchRunContinuationHandoffAsync(
             IRunContinuationOperationalHandoffService handoffService,
             RunContinuationSelection selection)
         {
-            try
-            {
-                await handoffService.DispatchAsync(selection);
+            await handoffService.DispatchAsync(selection);
 
-                DebugUtility.Log<GameRunEndedEventBridge>(
-                    $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='RunContinuationOperational' continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
-                    DebugUtility.Colors.Success);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError<GameRunEndedEventBridge>(
-                    $"[FATAL][GameplaySessionFlow] Falha inesperada no handoff operacional de RunContinuation. ex='{ex.GetType().Name}: {ex.Message}'.");
-            }
+            DebugUtility.Log<GameRunEndedEventBridge>(
+                $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='RunContinuationOperational' continuation='{selection.SelectedContinuation}' reason='{selection.Reason}' nextState='{selection.NextState}'.",
+                DebugUtility.Colors.Success);
         }
 
-        private static string DescribePhase(PhaseDefinitionAsset phaseDefinition)
+        private static string BuildRunContinuationRoutingLogMessage(
+            RunContinuationSelection selection,
+            RunContinuationKind selectedContinuation,
+            string status,
+            string source,
+            Exception exception)
         {
-            return phaseDefinition != null && phaseDefinition.PhaseId.IsValid
-                ? phaseDefinition.PhaseId.Value
-                : "<none>";
-        }
-    }
+            string exceptionFields = exception == null
+                ? string.Empty
+                : $" exceptionType='{exception.GetType().Name}' exceptionMessage='{AsText(exception.Message)}'";
 
-    [DebugLevel(DebugLevel.Verbose)]
-    public sealed class RunResetTargetPhaseResolver : IRunResetTargetPhaseResolver
-    {
-        private readonly IPhaseDefinitionCatalog _phaseDefinitionCatalog;
-        private readonly IPhaseCatalogRuntimeStateService _phaseCatalogRuntimeStateService;
-
-        public RunResetTargetPhaseResolver(
-            IPhaseDefinitionCatalog phaseDefinitionCatalog,
-            IPhaseCatalogRuntimeStateService phaseCatalogRuntimeStateService)
-        {
-            _phaseDefinitionCatalog = phaseDefinitionCatalog ?? throw new ArgumentNullException(nameof(phaseDefinitionCatalog));
-            _phaseCatalogRuntimeStateService = phaseCatalogRuntimeStateService ?? throw new ArgumentNullException(nameof(phaseCatalogRuntimeStateService));
+            return $"[OBS][GameplaySessionFlow][Seam] run_continuation_routing_{status} operation='{RoutingOperation}' status='{status}' continuation='{selection.SelectedContinuation}' selectedContinuation='{selectedContinuation}'{BuildNormalizedContinuationField(selection, selectedContinuation)} semantic='{ResolveRoutingSemantic(selection.SelectedContinuation)}' legacy='false' source='{AsText(source)}' target='{RoutingTarget}' reason='{AsText(selection.Reason)}' nextState='{AsText(selection.NextState)}'{exceptionFields}.";
         }
 
-        public PhaseDefinitionAsset ResolveOrFail(RunContinuationSelection selection)
+        private static string BuildNormalizedContinuationField(
+            RunContinuationSelection selection,
+            RunContinuationKind selectedContinuation)
         {
-            if (selection.SelectedContinuation == RunContinuationKind.ResetRun)
+            return selection.SelectedContinuation == selectedContinuation
+                ? string.Empty
+                : $" normalizedContinuation='{selection.SelectedContinuation}'";
+        }
+
+        private static string ResolveRoutingSemantic(RunContinuationKind continuation)
+        {
+            return continuation switch
             {
-                return _phaseDefinitionCatalog.ResolveInitialOrFail();
-            }
+                RunContinuationKind.RestartCurrentPhase => "CurrentPhaseRestart",
+                RunContinuationKind.RestartFromFirstPhase => "FirstPhaseRunRestart",
+                _ => "<none>",
+            };
+        }
 
-            if (selection.SelectedContinuation == RunContinuationKind.Retry)
-            {
-                PhaseDefinitionAsset currentCommitted = _phaseCatalogRuntimeStateService.CurrentCommitted;
-                if (currentCommitted == null || !currentCommitted.PhaseId.IsValid)
-                {
-                    HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
-                        "[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection de retry recebida mas o committed current phase e invalido.");
-                }
-
-                return currentCommitted;
-            }
-
-            HardFailFastH1.Trigger(typeof(GameRunEndedEventBridge),
-                $"[FATAL][H1][GameplaySessionFlow][RunReset] RunContinuationSelection invalida para reset. selectedContinuation='{selection.SelectedContinuation}'.");
-            return null;
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
     }
 }

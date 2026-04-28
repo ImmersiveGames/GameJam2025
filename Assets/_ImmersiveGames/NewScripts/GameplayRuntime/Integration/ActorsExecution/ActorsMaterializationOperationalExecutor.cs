@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         bool TryBeginPhaseLocalEntryReadyDispatch(ActorsMaterializationExecutionCycle cycle, out string status);
         void ReleasePhaseLocalEntryReadyDispatch(ActorsMaterializationExecutionCycle cycle);
         void PrimeCanonicalGameplayEntry(SessionTransitionPhaseLocalEntryReadyEvent evt);
-        Task ExecuteCurrentAsync(string source, ActorsMaterializationExecutionCycle cycle, string preferredSceneName = null);
+        Task ExecuteCurrentAsync(ActorsOperationalMaterializationDispatchMode dispatchMode, string sourceId, ActorsMaterializationExecutionCycle cycle, string preferredSceneName = null);
     }
 
     /// <summary>
@@ -164,13 +164,24 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
         }
 
-        public async Task ExecuteCurrentAsync(string source, ActorsMaterializationExecutionCycle cycle, string preferredSceneName = null)
+        public async Task ExecuteCurrentAsync(ActorsOperationalMaterializationDispatchMode dispatchMode, string sourceId, ActorsMaterializationExecutionCycle cycle, string preferredSceneName = null)
         {
             if (_executionInProgress)
             {
                 DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
-                    $"[OBS][ActorsExecution][Operational] Execucao ignorada (ja em progresso) source='{AsText(source)}' cycle='{cycle.ToStampKey()}'.",
+                    $"[OBS][ActorsExecution][Operational] Execucao ignorada (ja em progresso) sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' cycle='{cycle.ToStampKey()}'.",
                     DebugUtility.Colors.Info);
+
+                if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
+                {
+                    ClearCanonicalGameplayEntryContextIfAvailable();
+                    ReleasePhaseLocalEntryReadyDispatch(cycle);
+
+                    DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
+                        $"[OBS][ActorsExecution][Operational] PhaseLocalEntryReady dispatch rejected reason='busy_in_progress' contextCleared='true' sourceId='{AsText(sourceId)}' cycle='{cycle.ToStampKey()}'.",
+                        DebugUtility.Colors.Info);
+                }
+
                 return;
             }
 
@@ -181,23 +192,22 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 if (string.IsNullOrWhiteSpace(sceneName))
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Cena alvo ausente para executar directives source='{AsText(source)}'.");
+                        $"[OBS][ActorsExecution][Operational] Cena alvo ausente para executar directives sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}'.");
                     return;
                 }
 
                 if (!cycle.IsValid)
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Ciclo operacional invalido para executar directives source='{AsText(source)}' scene='{sceneName}'.");
+                        $"[OBS][ActorsExecution][Operational] Ciclo operacional invalido para executar directives sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' scene='{sceneName}'.");
                     return;
                 }
 
-                string dispatchMode = ResolveDispatchMode(source);
                 ActorsMaterializationExecutionSnapshot snapshot = _executionPolicyService.Refresh();
                 if (!snapshot.IsValid)
                 {
                     DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Snapshot invalido source='{AsText(source)}' scene='{sceneName}'.",
+                        $"[OBS][ActorsExecution][Operational] Snapshot invalido sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' scene='{sceneName}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -205,7 +215,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 if (AlreadyExecuted(sceneName, dispatchMode, cycle, snapshot.ExecutionSignature))
                 {
                     DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Dispatch ja executado source='{AsText(source)}' dispatchMode='{dispatchMode}' scene='{sceneName}' executionSignature='{snapshot.ExecutionSignature}' executionCycle='{cycle.ToStampKey()}'.",
+                        $"[OBS][ActorsExecution][Operational] Dispatch ja executado sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' scene='{sceneName}' executionSignature='{snapshot.ExecutionSignature}' executionCycle='{cycle.ToStampKey()}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -213,42 +223,93 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 if (!_provider.TryGetForScene<IWorldSpawnServiceRegistry>(sceneName, out var spawnRegistry) || spawnRegistry == null)
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] IWorldSpawnServiceRegistry ausente para scene='{sceneName}' source='{AsText(source)}'.");
+                        $"[OBS][ActorsExecution][Operational] IWorldSpawnServiceRegistry ausente para scene='{sceneName}' sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}'.");
                     return;
                 }
 
                 BuildServiceIndex(spawnRegistry);
-                LogDispatchSummary(sceneName, source, dispatchMode, snapshot);
-                using (_cycleContext.OpenScope(cycle, source))
-                {
-                    await DispatchAsync(sceneName, snapshot, source, dispatchMode);
-                }
+                LogDispatchSummary(sceneName, sourceId, dispatchMode, snapshot);
 
-                EventBus<ActorsOperationalMaterializationCycleCompletedEvent>.Raise(
-                    new ActorsOperationalMaterializationCycleCompletedEvent(
-                        sceneName,
-                        cycle,
-                        source,
-                        snapshot.ExecutionSignature));
+                if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
+                {
+                    if (!_provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var adapter) || adapter == null)
+                    {
+                        HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                            "[FATAL][H1][ActorsExecution] SessionFlowActorsSemanticPortsAdapter ausente para compor o ciclo phase-local-entry-ready.");
+                    }
+
+                    if (!adapter.TryGetCurrentCanonicalGameplayEntry(out var canonicalEntry) || !canonicalEntry.IsValid)
+                    {
+                        HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                            "[FATAL][H1][ActorsExecution] Canonical gameplay entry ausente/invalida para compor o ciclo phase-local-entry-ready.");
+                    }
+
+                    ActorsDefinitionsSnapshot definitions = RefreshDefinitionsOrFail();
+                    ActorKind[] expectedActorKinds = BuildExpectedActorKinds(definitions);
+                    if (expectedActorKinds.Length < 1)
+                    {
+                        HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                            $"[FATAL][H1][ActorsExecution] Expected actor kinds vazios para phase-local-entry-ready actorSetRef='{canonicalEntry.ActorSetRef}' scene='{canonicalEntry.SceneName}'.");
+                    }
+
+                    ActorsOperationalMaterializationCycleState cycleState = new ActorsOperationalMaterializationCycleState(
+                        dispatchMode,
+                        canonicalEntry.SourceKind,
+                        canonicalEntry.SourceId,
+                        canonicalEntry.RouteId,
+                        canonicalEntry.RouteKind,
+                        canonicalEntry.SceneName,
+                        canonicalEntry.ActorSetRef,
+                        cycle.EntrySignature,
+                        snapshot.ExecutionSignature,
+                        expectedActorKinds);
+
+                    using (_cycleContext.OpenScope(cycle, cycleState, sourceId))
+                    {
+                        await DispatchAsync(sceneName, snapshot, sourceId, dispatchMode);
+
+                        if (!_cycleContext.TryBuildCycleCompletedEvent(out ActorsOperationalMaterializationCycleCompletedEvent cycleCompletedEvent))
+                        {
+                            HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                                "[FATAL][H1][ActorsExecution] Nao foi possivel compor o evento final do ciclo operacional phase-local-entry-ready.");
+                        }
+
+                        DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
+                            $"[OBS][ActorsExecution][CycleContext] dispatchMode='{cycleCompletedEvent.DispatchMode.ToLogToken()}' actorSetRef='{cycleCompletedEvent.ActorSetRef}' expectedKinds={FormatActorKinds(cycleCompletedEvent.ExpectedActorKinds)} materializedKinds={FormatActorKinds(cycleCompletedEvent.MaterializedActorKinds)} isGameplayOperationalReady='{cycleCompletedEvent.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{cycleCompletedEvent.ReadinessReason}'.",
+                            DebugUtility.Colors.Info);
+
+                        EventBus<ActorsOperationalMaterializationCycleCompletedEvent>.Raise(cycleCompletedEvent);
+                    }
+                }
+                else
+                {
+                    await DispatchAsync(sceneName, snapshot, sourceId, dispatchMode);
+                }
 
                 _lastExecutionStampByScene[sceneName] = BuildExecutionStamp(cycle, snapshot.ExecutionSignature);
                 _lastExecutionStampBySceneAndMode[BuildSceneDispatchKey(sceneName, dispatchMode)] = BuildExecutionStamp(cycle, snapshot.ExecutionSignature);
             }
             finally
             {
-                if (IsPhaseLocalEntryReadySource(source) &&
-                    _provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var adapter) &&
-                    adapter != null)
+                if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
                 {
-                    adapter.ClearCanonicalGameplayEntryContext();
+                    ClearCanonicalGameplayEntryContextIfAvailable();
                 }
 
-                if (IsPhaseLocalEntryReadySource(source))
+                if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
                 {
                     ReleasePhaseLocalEntryReadyDispatch(cycle);
                 }
 
                 _executionInProgress = false;
+            }
+        }
+
+        private void ClearCanonicalGameplayEntryContextIfAvailable()
+        {
+            if (_provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var adapter) && adapter != null)
+            {
+                adapter.ClearCanonicalGameplayEntryContext();
             }
         }
 
@@ -269,9 +330,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                    string.Equals(previous, currentStamp, StringComparison.Ordinal);
         }
 
-        private bool AlreadyExecuted(string sceneName, string dispatchMode, ActorsMaterializationExecutionCycle cycle, string executionSignature)
+        private bool AlreadyExecuted(string sceneName, ActorsOperationalMaterializationDispatchMode dispatchMode, ActorsMaterializationExecutionCycle cycle, string executionSignature)
         {
-            if (string.IsNullOrWhiteSpace(dispatchMode) || string.IsNullOrWhiteSpace(executionSignature))
+            if (dispatchMode == ActorsOperationalMaterializationDispatchMode.Unknown || string.IsNullOrWhiteSpace(executionSignature))
             {
                 return false;
             }
@@ -296,9 +357,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             return $"{cycle.ToStampKey()}|executionSignature:{executionSignature.Trim()}";
         }
 
-        private static string BuildSceneDispatchKey(string sceneName, string dispatchMode)
+        private static string BuildSceneDispatchKey(string sceneName, ActorsOperationalMaterializationDispatchMode dispatchMode)
         {
-            return $"{AsText(sceneName)}|dispatchMode:{AsText(dispatchMode)}";
+            return $"{AsText(sceneName)}|dispatchMode:{dispatchMode.ToLogToken()}";
         }
 
         private static string ResolveSceneName(string preferredSceneName)
@@ -310,22 +371,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
             Scene activeScene = SceneManager.GetActiveScene();
             return activeScene.IsValid() ? activeScene.name : string.Empty;
-        }
-
-        private static string ResolveDispatchMode(string source)
-        {
-            if (IsPhaseLocalEntryReadySource(source))
-            {
-                return "phase-local-entry-ready";
-            }
-
-            return "phase-runtime-materialized";
-        }
-
-        private static bool IsPhaseLocalEntryReadySource(string source)
-        {
-            return !string.IsNullOrWhiteSpace(source) &&
-                   source.IndexOf("PhaseLocalEntryReady", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void BuildServiceIndex(IWorldSpawnServiceRegistry spawnRegistry)
@@ -356,8 +401,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private void LogDispatchSummary(
             string sceneName,
-            string source,
-            string dispatchMode,
+            string sourceId,
+            ActorsOperationalMaterializationDispatchMode dispatchMode,
             ActorsMaterializationExecutionSnapshot snapshot)
         {
             int playerCount = 0;
@@ -405,7 +450,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
 
             DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                $"[OBS][ActorsExecution][Operational] Dispatch iniciado source='{AsText(source)}' dispatchMode='{dispatchMode}' scene='{sceneName}' entries='{entries.Length}' player='{playerCount}' dummy='{dummyCount}' eater='{eaterCount}' materialize='{materializeCount}' rematerialize='{rematerializeCount}' noAction='{noActionCount}' executionSignature='{snapshot.ExecutionSignature}'.",
+                $"[OBS][ActorsExecution][Operational] Dispatch iniciado sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' scene='{sceneName}' entries='{entries.Length}' player='{playerCount}' dummy='{dummyCount}' eater='{eaterCount}' materialize='{materializeCount}' rematerialize='{rematerializeCount}' noAction='{noActionCount}' executionSignature='{snapshot.ExecutionSignature}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -547,7 +592,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             return count;
         }
 
-        private async Task DispatchAsync(string sceneName, ActorsMaterializationExecutionSnapshot snapshot, string source, string dispatchMode)
+        private async Task DispatchAsync(string sceneName, ActorsMaterializationExecutionSnapshot snapshot, string sourceId, ActorsOperationalMaterializationDispatchMode dispatchMode)
         {
             var materializeEntries = new Dictionary<ActorKind, ActorsMaterializationExecutionEntry>();
             var rematerializeEntries = new Dictionary<ActorKind, ActorsMaterializationExecutionEntry>();
@@ -565,7 +610,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 if (!IsDispatchAllowedForMode(dispatchMode, targetKind))
                 {
                     DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Directive ignorada pelo modo de dispatch dispatchMode='{dispatchMode}' actorKind='{targetKind}' axisActorId='{entry.AxisActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' directive='{entry.Directive}'.",
+                        $"[OBS][ActorsExecution][Operational] Directive ignorada pelo modo de dispatch dispatchMode='{dispatchMode.ToLogToken()}' actorKind='{targetKind}' axisActorId='{entry.AxisActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' directive='{entry.Directive}'.",
                         DebugUtility.Colors.Info);
                     continue;
                 }
@@ -596,7 +641,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     case ActorMaterializationExecutionDirective.FlagRuntimeOrphanTolerated:
                     case ActorMaterializationExecutionDirective.FlagRuntimeOrphanProblematic:
                         DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
-                            $"[OBS][ActorsExecution][Operational] Directive sem acao automatica directive='{entry.Directive}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' source='{AsText(source)}'.",
+                            $"[OBS][ActorsExecution][Operational] Directive sem acao automatica directive='{entry.Directive}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.",
                             DebugUtility.Colors.Info);
                         break;
                 }
@@ -609,15 +654,15 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 if (!_serviceByKind.TryGetValue(kind, out IWorldSpawnService service) || service == null)
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Service ausente para rematerializar actorKind='{kind}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' source='{AsText(source)}'.");
+                        $"[OBS][ActorsExecution][Operational] Service ausente para rematerializar actorKind='{kind}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.");
                     continue;
                 }
 
                 await service.DespawnAsync();
-                await service.SpawnAsync(CreateSpawnRequest(sceneName, source, service, entry, snapshot.ExecutionSignature));
+                await service.SpawnAsync(CreateSpawnRequest(sceneName, sourceId, service, entry, snapshot.ExecutionSignature));
 
                 DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                    $"[OBS][ActorsExecution][Operational] Rematerialize executado actorKind='{kind}' service='{service.Name}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' source='{AsText(source)}'.",
+                    $"[OBS][ActorsExecution][Operational] Rematerialize executado actorKind='{kind}' service='{service.Name}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.",
                     DebugUtility.Colors.Info);
             }
 
@@ -628,26 +673,26 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 if (!_serviceByKind.TryGetValue(kind, out IWorldSpawnService service) || service == null)
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Service ausente para materializar actorKind='{kind}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' source='{AsText(source)}'.");
+                        $"[OBS][ActorsExecution][Operational] Service ausente para materializar actorKind='{kind}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.");
                     continue;
                 }
 
-                await service.SpawnAsync(CreateSpawnRequest(sceneName, source, service, entry, snapshot.ExecutionSignature));
+                await service.SpawnAsync(CreateSpawnRequest(sceneName, sourceId, service, entry, snapshot.ExecutionSignature));
 
                 DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                    $"[OBS][ActorsExecution][Operational] Materialize executado actorKind='{kind}' service='{service.Name}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' source='{AsText(source)}'.",
+                    $"[OBS][ActorsExecution][Operational] Materialize executado actorKind='{kind}' service='{service.Name}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.",
                     DebugUtility.Colors.Info);
             }
         }
 
-        private static bool IsDispatchAllowedForMode(string dispatchMode, ActorKind actorKind)
+        private static bool IsDispatchAllowedForMode(ActorsOperationalMaterializationDispatchMode dispatchMode, ActorKind actorKind)
         {
             if (actorKind == ActorKind.Unknown)
             {
                 return false;
             }
 
-            if (string.Equals(dispatchMode, "phase-local-entry-ready", StringComparison.Ordinal))
+            if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
             {
                 return true;
             }
@@ -671,7 +716,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private static ActorSpawnRequest CreateSpawnRequest(
             string sceneName,
-            string source,
+            string sourceId,
             IWorldSpawnService service,
             ActorsMaterializationExecutionEntry entry,
             string executionSignature)
@@ -687,7 +732,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 service.Name,
                 sceneName,
                 service.IsRequiredForWorldReset,
-                source,
+                sourceId,
                 entry.Reason,
                 executionSignature);
         }
@@ -701,6 +746,57 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 ActorOperationalRecipeKind.Eater => ActorKind.Eater,
                 _ => ActorKind.Unknown
             };
+        }
+
+        private static ActorKind[] BuildExpectedActorKinds(ActorsDefinitionsSnapshot snapshot)
+        {
+            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
+            {
+                return Array.Empty<ActorKind>();
+            }
+
+            var expectedKinds = new List<ActorKind>(snapshot.Entries.Length);
+            for (int index = 0; index < snapshot.Entries.Length; index += 1)
+            {
+                ActorDefinitionRecord entry = snapshot.Entries[index];
+                if (!entry.IsValid)
+                {
+                    continue;
+                }
+
+                ActorKind kind = MapRecipeToActorKind(entry.OperationalRecipeKind);
+                if (kind == ActorKind.Unknown || expectedKinds.Contains(kind))
+                {
+                    continue;
+                }
+
+                expectedKinds.Add(kind);
+            }
+
+            return expectedKinds.ToArray();
+        }
+
+        private static string FormatActorKinds(ActorKind[] kinds)
+        {
+            if (kinds == null || kinds.Length == 0)
+            {
+                return "[]";
+            }
+
+            var builder = new System.Text.StringBuilder();
+            builder.Append('[');
+            for (int index = 0; index < kinds.Length; index += 1)
+            {
+                if (index > 0)
+                {
+                    builder.Append(',');
+                }
+
+                builder.Append(kinds[index]);
+            }
+
+            builder.Append(']');
+            return builder.ToString();
         }
 
         private static string AsText(string value)
@@ -793,7 +889,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
 
             SessionTransitionPlan plan = evt.Plan;
-            if (!plan.IsValid || !plan.ContinuationContext.IsValid)
+            // For InitialEntry, ContinuationContext may not be valid; only check plan.IsValid.
+            // ContinuationContext is only valid when HasRunContinuationSelection == true.
+            // Comentário: InitialEntry não permite acesso a ContinuationContext.
+            if (!plan.IsValid)
             {
                 DebugUtility.LogWarning(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
                     "[OBS][ActorsExecution][Operational] SessionTransitionPhaseLocalEntryReady ignorado por contexto invalido.");
@@ -807,13 +906,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 !evt.RouteId.IsValid ||
                 string.IsNullOrWhiteSpace(evt.CycleSignature))
             {
-                DebugUtility.LogWarning(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
-                    $"[OBS][ActorsExecution][Operational] SessionTransitionPhaseLocalEntryReady ignorado por payload canonico ausente routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' actorSetRef='{AsText(evt.ActorSetRef)}' reason='{AsText(evt.Reason)}' cycleSignature='{AsText(evt.CycleSignature)}'.");
+                HardFailFastH1.Trigger(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
+                    $"[FATAL][H1][ActorsExecution] SessionTransitionPhaseLocalEntryReady sem payload canonico obrigatorio para gameplay. routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' actorSetRef='{AsText(evt.ActorSetRef)}' reason='{AsText(evt.Reason)}' cycleSignature='{AsText(evt.CycleSignature)}'.");
                 return;
             }
 
+            // For InitialEntry, frame is always 1. For post-run continuations, use ContinuationContext.
+            // Comentário: frame seguro - não acessa ContinuationContext para InitialEntry.
+            int cycleFrame = plan.HasRunContinuationSelection ? plan.ContinuationContext.Frame : 1;
             ActorsMaterializationExecutionCycle cycle = ActorsMaterializationExecutionCycle.CreateOrFail(
-                Math.Max(1, plan.ContinuationContext.Frame),
+                Math.Max(1, cycleFrame),
                 BuildEntrySignature(evt),
                 nameof(SessionTransitionPhaseLocalEntryReadyEvent));
 
@@ -827,18 +929,66 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
             try
             {
+                // For InitialEntry, frame is always 1. For post-run continuations, use the ContinuationContext frame.
+                // Comentário: frame seguro - não acessa ContinuationContext para InitialEntry.
+                int frameValue = plan.HasRunContinuationSelection ? plan.ContinuationContext.Frame : 1;
+                string frameLabel = plan.HasRunContinuationSelection ? $"'{frameValue}'" : "'1'";
                 DebugUtility.Log(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
-                    $"[OBS][ActorsExecution][Operational] SessionTransitionPhaseLocalEntryReady recebido routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' actorSetRef='{AsText(evt.ActorSetRef)}' continuation='{plan.ResolvedContinuation}' frame='{plan.ContinuationContext.Frame}' reason='{plan.Reason}' source='{evt.Source}' sessionSignature='{AsText(evt.SessionSignature)}' phaseSignature='{AsText(evt.PhaseSignature)}' participationSignature='{AsText(evt.ParticipationSignature)}' entrySignature='{cycle.EntrySignature}'.",
+                    $"[OBS][ActorsExecution][Operational] SessionTransitionPhaseLocalEntryReady recebido routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' actorSetRef='{AsText(evt.ActorSetRef)}' continuation='{plan.ResolvedContinuation}' frame={frameLabel} reason='{plan.Reason}' source='{evt.Source}' sessionSignature='{AsText(evt.SessionSignature)}' phaseSignature='{AsText(evt.PhaseSignature)}' participationSignature='{AsText(evt.ParticipationSignature)}' entrySignature='{cycle.EntrySignature}'.",
                     DebugUtility.Colors.Info);
 
                 _executor.PrimeCanonicalGameplayEntry(evt);
-                _ = _executor.ExecuteCurrentAsync("SessionTransition/PhaseLocalEntryReady", cycle, evt.SceneName);
+                _ = ObservePhaseLocalEntryReadyMaterializationAsync(evt, cycle);
             }
             catch
             {
                 _executor.ReleasePhaseLocalEntryReadyDispatch(cycle);
                 throw;
             }
+        }
+
+        private async Task ObservePhaseLocalEntryReadyMaterializationAsync(
+            SessionTransitionPhaseLocalEntryReadyEvent evt,
+            ActorsMaterializationExecutionCycle cycle)
+        {
+            try
+            {
+                DebugUtility.Log(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
+                    BuildMaterializationDispatchLogMessage(evt, cycle, "started", null),
+                    DebugUtility.Colors.Info);
+
+                await _executor.ExecuteCurrentAsync(
+                    ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady,
+                    evt.Source,
+                    cycle,
+                    evt.SceneName);
+
+                DebugUtility.Log(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
+                    BuildMaterializationDispatchLogMessage(evt, cycle, "completed", null),
+                    DebugUtility.Colors.Success);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
+                    BuildMaterializationDispatchLogMessage(evt, cycle, "failed", ex));
+
+                HardFailFastH1.Trigger(typeof(SessionTransitionPhaseLocalEntryReadyMaterializationBridge),
+                    $"[FATAL][H1][ActorsExecution] PhaseLocalEntryReady actor materialization dispatch failed. operation='PhaseLocalEntryReadyActorMaterialization' source='{AsText(evt.Source)}' reason='{AsText(evt.Reason)}' sceneName='{AsText(evt.SceneName)}' cycleSignature='{AsText(evt.CycleSignature)}' entrySignature='{AsText(cycle.EntrySignature)}' contextSignature='{AsText(evt.SessionSignature)}' executionSignature='{AsText(cycle.EntrySignature)}' phaseLocalEntrySequence='{cycle.PhaseLocalEntrySequence}' dispatchMode='{ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady.ToLogToken()}' exceptionType='{ex.GetType().Name}' exceptionMessage='{AsText(ex.Message)}'.",
+                    ex);
+            }
+        }
+
+        private static string BuildMaterializationDispatchLogMessage(
+            SessionTransitionPhaseLocalEntryReadyEvent evt,
+            ActorsMaterializationExecutionCycle cycle,
+            string status,
+            Exception exception)
+        {
+            string exceptionFields = exception == null
+                ? string.Empty
+                : $" exceptionType='{exception.GetType().Name}' exceptionMessage='{AsText(exception.Message)}'";
+
+            return $"[OBS][ActorsExecution][Operational] materialization_dispatch_{status} operation='PhaseLocalEntryReadyActorMaterialization' source='{AsText(evt.Source)}' reason='{AsText(evt.Reason)}' sceneName='{AsText(evt.SceneName)}' cycleSignature='{AsText(evt.CycleSignature)}' entrySignature='{AsText(cycle.EntrySignature)}' contextSignature='{AsText(evt.SessionSignature)}' executionSignature='{AsText(cycle.EntrySignature)}' phaseLocalEntrySequence='{cycle.PhaseLocalEntrySequence}' dispatchMode='{ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady.ToLogToken()}' status='{status}' routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' actorSetRef='{AsText(evt.ActorSetRef)}' sessionSignature='{AsText(evt.SessionSignature)}' phaseSignature='{AsText(evt.PhaseSignature)}' participationSignature='{AsText(evt.ParticipationSignature)}'{exceptionFields}.";
         }
 
         private static string BuildEntrySignature(SessionTransitionPhaseLocalEntryReadyEvent evt)

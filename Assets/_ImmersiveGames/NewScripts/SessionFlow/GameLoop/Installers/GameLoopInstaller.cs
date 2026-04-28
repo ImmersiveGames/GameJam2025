@@ -183,7 +183,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterPhaseNextPhaseEntryHandoffService();
             RegisterPhaseNextPhaseService();
             RegisterGameplaySceneClassifier();
-            RegisterDefaultIntroStageStep();
             RegisterIntroStageLifecycleOrchestrator();
         }
 
@@ -233,14 +232,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 () => new DefaultGameplaySceneClassifier(),
                 "[GameLoop] IGameplaySceneClassifier ja registrado no DI global.",
                 "[GameLoop] DefaultGameplaySceneClassifier registrado no DI global como support service de GameplaySessionFlow.");
-        }
-
-        private static void RegisterDefaultIntroStageStep()
-        {
-            RegisterIfMissing<IIntroStageStep>(
-                () => new ConfirmToStartIntroStageStep(),
-                "[GameLoop] IIntroStageStep ja registrado no DI global.",
-                "[GameLoop] ConfirmToStartIntroStageStep registrado no DI global como support service de IntroStage.");
         }
 
         private static void RegisterIntroStageLifecycleOrchestrator()

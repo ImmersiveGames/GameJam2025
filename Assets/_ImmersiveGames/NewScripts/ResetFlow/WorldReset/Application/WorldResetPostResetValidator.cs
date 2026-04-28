@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
+using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
-using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
@@ -47,57 +45,16 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             public ActorKind[] ExpectedKinds { get; }
         }
 
-        private sealed class CanonicalCompletion
-        {
-            public CanonicalCompletion(ActorsOperationalMaterializationCompletedEvent evt)
-            {
-                ActorKind = evt.ActorKind;
-                ActorSpecId = evt.ActorSpecId;
-                ActorSetRef = evt.ActorSetRef;
-                SemanticParticipantId = evt.SemanticParticipantId;
-                Source = evt.Source;
-                ExecutionSignature = evt.ExecutionSignature;
-                ActorId = evt.ActorId;
-                AxisActorId = evt.AxisActorId;
-                RuntimeActorId = evt.RuntimeActorId;
-                SceneName = evt.SceneName;
-            }
-
-            public ActorKind ActorKind { get; }
-            public string ActorSpecId { get; }
-            public string ActorSetRef { get; }
-            public string SemanticParticipantId { get; }
-            public string Source { get; }
-            public string ExecutionSignature { get; }
-            public string ActorId { get; }
-            public AxisActorId AxisActorId { get; }
-            public RuntimeActorId RuntimeActorId { get; }
-            public string SceneName { get; }
-
-            public bool HasCanonicalPayload =>
-                AxisActorId.IsValid &&
-                RuntimeActorId.IsValid &&
-                !string.IsNullOrWhiteSpace(ActorSpecId) &&
-                !string.IsNullOrWhiteSpace(ActorSetRef) &&
-                !string.IsNullOrWhiteSpace(Source) &&
-                !string.IsNullOrWhiteSpace(ExecutionSignature);
-        }
-
         private readonly IDependencyProvider _provider;
         private readonly EventBinding<ActorsOperationalMaterializationCycleCompletedEvent> _materializationCycleCompletedBinding;
-        private readonly EventBinding<ActorsOperationalMaterializationCompletedEvent> _materializationCompletedBinding;
         private readonly object _deferredSync = new();
         private readonly List<DeferredValidation> _deferredValidations = new();
-        private readonly object _completionSync = new();
-        private readonly Dictionary<string, List<CanonicalCompletion>> _completedByCycleKey = new(StringComparer.Ordinal);
 
         public WorldResetPostResetValidator(IDependencyProvider provider)
         {
             _provider = provider;
             _materializationCycleCompletedBinding = new EventBinding<ActorsOperationalMaterializationCycleCompletedEvent>(OnMaterializationCycleCompleted);
-            _materializationCompletedBinding = new EventBinding<ActorsOperationalMaterializationCompletedEvent>(OnMaterializationCompleted);
             EventBus<ActorsOperationalMaterializationCycleCompletedEvent>.Register(_materializationCycleCompletedBinding);
-            EventBus<ActorsOperationalMaterializationCompletedEvent>.Register(_materializationCompletedBinding);
         }
 
         public void ValidateEssentialActors(string targetScene, IWorldResetPolicy policy, WorldResetOrigin origin)
@@ -113,107 +70,19 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                 return;
             }
 
-            if (TryResolveCanonicalGameplayExpectation(origin, out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out ActorKind[] expectedKinds, out string expectationSource, out bool canonicalGameplayRoute))
-            {
-                ValidateCanonicalGameplayActors(
-                    sceneName,
-                    policy,
-                    origin,
-                    actorSetRef,
-                    routeKind,
-                    expectedKinds,
-                    expectationSource,
-                    allowDeferredValidation: true);
-                return;
-            }
-
-            if (canonicalGameplayRoute)
+            if (!TryResolveCanonicalGameplayExpectation(origin, out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out ActorKind[] expectedKinds))
             {
                 return;
             }
 
-            ValidateLegacyEssentialActors(sceneName, policy, origin, allowDeferredValidation: true);
-        }
-
-        private void ValidateLegacyEssentialActors(
-            string sceneName,
-            IWorldResetPolicy policy,
-            WorldResetOrigin origin,
-            bool allowDeferredValidation)
-        {
-            if (!_provider.TryGetForScene<IActorRegistry>(sceneName, out var actorRegistry) || actorRegistry == null)
-            {
-                LogDegraded(policy,
-                    $"IActorRegistry nao disponivel para scene='{sceneName}'. Nao e possivel validar presenca minima de actors apos o reset.");
-                return;
-            }
-
-            if (!_provider.TryGetForScene<IWorldSpawnServiceRegistry>(sceneName, out var spawnRegistry) || spawnRegistry == null)
-            {
-                LogDegraded(policy,
-                    $"IWorldSpawnServiceRegistry nao disponivel para scene='{sceneName}'. Nao e possivel validar contratos essenciais de spawn.");
-                return;
-            }
-
-            HashSet<ActorKind> presentActorKinds = CollectPresentActorKinds(actorRegistry);
-            IReadOnlyList<IWorldSpawnService> essentialServices = CollectEssentialSpawnServices(spawnRegistry, sceneName, policy);
-            if (essentialServices.Count == 0)
-            {
-                return;
-            }
-
-            var missingKinds = new List<ActorKind>();
-            for (int i = 0; i < essentialServices.Count; i++)
-            {
-                IWorldSpawnService service = essentialServices[i];
-                ActorKind actorKind = service.SpawnedActorKind;
-
-                if (presentActorKinds.Contains(actorKind))
-                {
-                    DebugUtility.LogVerbose<WorldResetPostResetValidator>(
-                        $"[WorldResetPostResetValidator] Pos-condicao satisfeita. kind={actorKind}, service={DescribeService(service)}",
-                        DebugUtility.Colors.Info);
-                    continue;
-                }
-
-                missingKinds.Add(actorKind);
-            }
-
-            if (missingKinds.Count == 0)
-            {
-                DebugUtility.LogVerbose<WorldResetPostResetValidator>(
-                    $"[OBS][WorldReset] Post-reset essential actor validation passed. scene='{sceneName}', required={essentialServices.Count}, presentKinds={presentActorKinds.Count}.",
-                    DebugUtility.Colors.Success);
-                return;
-            }
-
-            if (allowDeferredValidation && ShouldDeferValidation(origin, SceneRouteKind.Unspecified, ActorSetRef.None, missingKinds))
-            {
-                QueueDeferredValidation(sceneName, policy, ActorSetRef.None, SceneRouteKind.Unspecified, missingKinds.ToArray());
-
-                string deferredKindsText = string.Join(", ", missingKinds.Select(static kind => kind.ToString()));
-                DebugUtility.Log<WorldResetPostResetValidator>(
-                    $"[OBS][WorldReset] Post-reset essential actor validation adiada para ActorsOperationalMaterializationCycleCompleted. scene='{sceneName}', deferredMissingKinds=[{deferredKindsText}], origin='{origin}', owner='ActorsExecution'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            string missingKindsText = string.Join(", ", missingKinds.Select(static kind => kind.ToString()));
-            string detail = $"Hard reset finalizou sem garantir actors essenciais. scene='{sceneName}', missingKinds=[{missingKindsText}]";
-
-            if (policy != null && policy.IsStrict)
-            {
-                policy.ReportDegraded(
-                    ResetFeatureIds.WorldReset,
-                    "MissingEssentialActorsAfterReset",
-                    detail,
-                    signature: sceneName,
-                    profile: policy.Name);
-
-                throw new InvalidOperationException(detail);
-            }
-
-            LogDegraded(policy, detail, reason: "MissingEssentialActorsAfterReset", signature: sceneName, profile: policy?.Name);
+            ValidateCanonicalGameplayActors(
+                sceneName,
+                policy,
+                origin,
+                actorSetRef,
+                routeKind,
+                expectedKinds,
+                allowDeferredValidation: true);
         }
 
         private void ValidateCanonicalGameplayActors(
@@ -223,152 +92,97 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             ActorSetRef actorSetRef,
             SceneRouteKind routeKind,
             IReadOnlyList<ActorKind> expectedKinds,
-            string expectationSource,
             bool allowDeferredValidation)
         {
+            if (!actorSetRef.IsValid || routeKind != SceneRouteKind.Gameplay)
+            {
+                LogDegraded(policy,
+                    $"ActorSet canonico invalido ou nao gameplay para validar actors apos reset. scene='{sceneName}', routeKind='{routeKind}', actorSetRef='{actorSetRef}'.");
+                return;
+            }
+
             if (expectedKinds == null || expectedKinds.Count == 0)
             {
-                LogDegraded(policy,
-                    $"ActorSet canonico sem actors esperados. scene='{sceneName}', actorSetRef='{actorSetRef}', routeKind='{routeKind}', source='{expectationSource}'.");
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, Array.Empty<ActorKind>(), "MissingCanonicalExpectation");
                 return;
             }
 
-            if (!_provider.TryGetForScene<IActorRegistry>(sceneName, out var actorRegistry) || actorRegistry == null)
+            if (!allowDeferredValidation)
             {
-                LogDegraded(policy,
-                    $"IActorRegistry nao disponivel para scene='{sceneName}'. Nao e possivel validar presenca minima de actors canonicos.");
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, expectedKinds, "DeferredValidationDisabled");
                 return;
             }
 
-            HashSet<ActorKind> presentActorKinds = CollectPresentActorKinds(actorRegistry);
-            var missingKinds = new List<ActorKind>();
-            for (int index = 0; index < expectedKinds.Count; index += 1)
-            {
-                ActorKind expectedKind = expectedKinds[index];
-                if (!presentActorKinds.Contains(expectedKind))
-                {
-                    missingKinds.Add(expectedKind);
-                }
-            }
+            QueueDeferredValidation(sceneName, policy, actorSetRef, routeKind, expectedKinds.ToArray());
 
-            if (missingKinds.Count > 0)
-            {
-                if (allowDeferredValidation && ShouldDeferValidation(origin, routeKind, actorSetRef, missingKinds))
-                {
-                    QueueDeferredValidation(sceneName, policy, actorSetRef, routeKind, expectedKinds.ToArray());
-
-                    string deferredKindsText = string.Join(", ", missingKinds.Select(static kind => kind.ToString()));
-                    DebugUtility.Log<WorldResetPostResetValidator>(
-                        $"[OBS][WorldReset] Post-reset essential actor validation adiada para ActorsOperationalMaterializationCycleCompleted. scene='{sceneName}', actorSetRef='{actorSetRef}', deferredMissingKinds=[{deferredKindsText}], origin='{origin}', owner='ActorsExecution'.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
-
-                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, missingKinds, "MissingCanonicalActorsAfterCycle");
-                return;
-            }
-
-            DebugUtility.LogVerbose<WorldResetPostResetValidator>(
-                $"[OBS][WorldReset] Post-reset canonical actors present after reset. scene='{sceneName}', actorSetRef='{actorSetRef}', routeKind='{routeKind}', expectedKinds=[{string.Join(", ", expectedKinds.Select(static kind => kind.ToString()))}], presentKinds={presentActorKinds.Count}.",
-                DebugUtility.Colors.Success);
+            string deferredKindsText = string.Join(", ", expectedKinds.Select(static kind => kind.ToString()));
+            DebugUtility.Log<WorldResetPostResetValidator>(
+                $"[OBS][WorldReset] Post-reset validation deferred for canonical ActorsExecution cycle. scene='{sceneName}', actorSetRef='{actorSetRef}', deferredMissingKinds=[{deferredKindsText}], origin='{origin}', owner='ActorsExecution'.",
+                DebugUtility.Colors.Info);
         }
 
-        private static HashSet<ActorKind> CollectPresentActorKinds(IActorRegistry actorRegistry)
+        private bool TryResolveCanonicalGameplayExpectation(
+            WorldResetOrigin origin,
+            out ActorSetRef actorSetRef,
+            out SceneRouteKind routeKind,
+            out ActorKind[] expectedKinds)
         {
-            var presentKinds = new HashSet<ActorKind>();
-            if (actorRegistry == null)
-            {
-                return presentKinds;
-            }
+            actorSetRef = ActorSetRef.None;
+            routeKind = SceneRouteKind.Unspecified;
+            expectedKinds = Array.Empty<ActorKind>();
 
-            var actorsList = new List<IActor>();
-            actorRegistry.GetActors(actorsList);
-
-            for (int i = 0; i < actorsList.Count; i++)
+            if (!_provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var routeContext) || routeContext == null)
             {
-                IActor actor = actorsList[i];
-                if (actor is not IActorKindProvider kindProvider)
+                if (origin == WorldResetOrigin.SceneFlow)
                 {
-                    continue;
+                    LogDegraded(null,
+                        "ISceneFlowRouteActorSetRefContext ausente para validar actors canonicos de gameplay apos reset.");
                 }
 
-                ActorKind kind = kindProvider.Kind;
-                if (kind == ActorKind.Unknown)
+                return false;
+            }
+
+            if (!routeContext.TryGetCurrent(out actorSetRef, out routeKind, out _) ||
+                !actorSetRef.IsValid ||
+                routeKind != SceneRouteKind.Gameplay)
+            {
+                if (origin == WorldResetOrigin.SceneFlow)
                 {
-                    continue;
+                    LogDegraded(null,
+                        $"ActorSetRef canonico invalido ou nao gameplay para validar actors apos reset. routeKind='{routeKind}', actorSetRef='{actorSetRef}'.");
                 }
 
-                presentKinds.Add(kind);
+                return false;
             }
 
-            return presentKinds;
-        }
-
-        private static IReadOnlyList<IWorldSpawnService> CollectEssentialSpawnServices(
-            IWorldSpawnServiceRegistry spawnRegistry,
-            string sceneName,
-            IWorldResetPolicy policy)
-        {
-            var essentialServices = new List<IWorldSpawnService>();
-            var seenKinds = new HashSet<ActorKind>();
-
-            if (spawnRegistry?.Services == null)
+            if (!_provider.TryGetGlobal<IActorSetSelectionService>(out var selectionService) || selectionService == null)
             {
-                return essentialServices;
+                LogDegraded(null,
+                    $"IActorSetSelectionService ausente para resolver actorSetRef canonico='{actorSetRef}'.");
+                return false;
             }
 
-            for (int i = 0; i < spawnRegistry.Services.Count; i++)
+            if (!selectionService.TryResolve(actorSetRef, out ActorSetResolvedSelection selection) || !selection.HasEntries)
             {
-                IWorldSpawnService service = spawnRegistry.Services[i];
-                if (service == null || !service.IsRequiredForWorldReset)
-                {
-                    continue;
-                }
-
-                ActorKind actorKind = service.SpawnedActorKind;
-                if (actorKind == ActorKind.Unknown)
-                {
-                    LogDegraded(policy,
-                        $"Servico essencial com ActorKind.Unknown detectado em scene='{sceneName}'. service={DescribeService(service)}.");
-                    continue;
-                }
-
-                if (!seenKinds.Add(actorKind))
-                {
-                    LogDegraded(policy,
-                        $"Servicos essenciais duplicados para ActorKind='{actorKind}' em scene='{sceneName}'. service={DescribeService(service)}.");
-                    continue;
-                }
-
-                essentialServices.Add(service);
+                LogDegraded(null,
+                    $"ActorSet canonico sem selecao resolvida. actorSetRef='{actorSetRef}', routeKind='{routeKind}'.");
+                return false;
             }
 
-            if (essentialServices.Count == 0)
+            expectedKinds = ResolveExpectedKinds(selection.OrderedSpecs);
+            if (expectedKinds.Length == 0)
             {
-                LogDegraded(policy,
-                    $"Nenhum servico essencial registrado em scene='{sceneName}'. O hard reset nao conseguira validar presenca minima de actors.");
+                LogDegraded(null,
+                    $"ActorSet canonico sem actors esperados validos. actorSetRef='{actorSetRef}', routeKind='{routeKind}'.");
+                return false;
             }
 
-            return essentialServices;
-        }
-
-        private static string DescribeService(IWorldSpawnService service)
-        {
-            if (service == null)
-            {
-                return "<null>";
-            }
-
-            string serviceName = string.IsNullOrWhiteSpace(service.Name)
-                ? service.GetType().Name
-                : service.Name;
-
-            return $"{serviceName}(kind={service.SpawnedActorKind}, required={service.IsRequiredForWorldReset})";
+            return true;
         }
 
         private void OnMaterializationCycleCompleted(ActorsOperationalMaterializationCycleCompletedEvent evt)
         {
-            if (!evt.IsValid || !IsCanonicalPhaseLocalEntryReadySource(evt.Source))
+            if (!IsCanonicalGameplayCycle(evt))
             {
                 return;
             }
@@ -401,29 +215,210 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                 }
             }
 
-            try
+            for (int index = 0; index < toValidate.Count; index += 1)
             {
-                for (int index = 0; index < toValidate.Count; index += 1)
+                DeferredValidation deferred = toValidate[index];
+                if (deferred == null || string.IsNullOrWhiteSpace(deferred.SceneName))
                 {
-                    DeferredValidation deferred = toValidate[index];
-                    if (deferred == null || string.IsNullOrWhiteSpace(deferred.SceneName))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    ValidateCanonicalCompletedActors(
-                        deferred.SceneName,
-                        deferred.Policy,
-                        deferred.ActorSetRef,
-                        deferred.RouteKind,
-                        deferred.ExpectedKinds,
-                        evt);
+                ValidateCanonicalCompletedActors(
+                    deferred.SceneName,
+                    deferred.Policy,
+                    deferred.ActorSetRef,
+                    deferred.RouteKind,
+                    deferred.ExpectedKinds,
+                    evt);
+            }
+        }
+
+        private void ValidateCanonicalCompletedActors(
+            string sceneName,
+            IWorldResetPolicy policy,
+            ActorSetRef actorSetRef,
+            SceneRouteKind routeKind,
+            IReadOnlyList<ActorKind> expectedKinds,
+            ActorsOperationalMaterializationCycleCompletedEvent cycleCompletedEvent)
+        {
+            if (expectedKinds == null || expectedKinds.Count == 0)
+            {
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, Array.Empty<ActorKind>(), "MissingCanonicalExpectation");
+                return;
+            }
+
+            if (!cycleCompletedEvent.IsValid ||
+                !cycleCompletedEvent.HasCanonicalPayload ||
+                cycleCompletedEvent.DispatchMode != ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady ||
+                cycleCompletedEvent.RouteKind != SceneRouteKind.Gameplay ||
+                !cycleCompletedEvent.ActorSetRef.Equals(actorSetRef.Value, StringComparison.Ordinal))
+            {
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, expectedKinds, "CanonicalCycleMismatch");
+                return;
+            }
+
+            if (!AreActorKindsEquivalent(expectedKinds, cycleCompletedEvent.ExpectedActorKinds))
+            {
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, expectedKinds, "CanonicalExpectedKindsMismatch");
+                return;
+            }
+
+            ActorsOperationalMaterializationCompletedEvent[] completedActors = cycleCompletedEvent.CompletedActors ?? Array.Empty<ActorsOperationalMaterializationCompletedEvent>();
+            for (int index = 0; index < completedActors.Length; index += 1)
+            {
+                ActorsOperationalMaterializationCompletedEvent completion = completedActors[index];
+                if (!TryValidateCanonicalCompletionPayload(completion, out string completionReason))
+                {
+                    EmitCanonicalCompletionFailure(policy, sceneName, actorSetRef, routeKind, completion, completionReason);
+                    return;
                 }
             }
-            finally
+
+            if (!cycleCompletedEvent.IsGameplayOperationalReady)
             {
-                ClearCompletedActors(evt.SceneName, evt.ExecutionCycle);
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, expectedKinds, "CanonicalGameplayCycleNotReady");
+                return;
             }
+
+            if (!TryCollectMissingActorKinds(expectedKinds, cycleCompletedEvent.MaterializedActorKinds, out List<ActorKind> missingKinds))
+            {
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, expectedKinds, "MissingCanonicalActorsAfterCycle");
+                return;
+            }
+
+            if (missingKinds.Count > 0)
+            {
+                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, missingKinds, "MissingCanonicalActorsAfterCycle");
+                return;
+            }
+
+            DebugUtility.Log<WorldResetPostResetValidator>(
+                $"[OBS][WorldReset] validation='PASS' source='ActorsExecution' dispatchMode='{cycleCompletedEvent.DispatchMode.ToLogToken()}' actorSetRef='{actorSetRef}' expectedKinds=[{string.Join(", ", expectedKinds.Select(static kind => kind.ToString()))}] materializedKinds=[{string.Join(", ", cycleCompletedEvent.MaterializedActorKinds.Select(static kind => kind.ToString()))}] scene='{sceneName}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private static bool IsCanonicalGameplayCycle(ActorsOperationalMaterializationCycleCompletedEvent evt)
+        {
+            return evt.DispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady &&
+                   evt.RouteKind == SceneRouteKind.Gameplay;
+        }
+
+        private static bool TryValidateCanonicalCompletionPayload(
+            ActorsOperationalMaterializationCompletedEvent completion,
+            out string reason)
+        {
+            if (!completion.IsValid)
+            {
+                reason = "invalid_completion";
+                return false;
+            }
+
+            if (completion.ActorKind == ActorKind.Unknown)
+            {
+                reason = "missing_actor_kind";
+                return false;
+            }
+
+            if (!completion.AxisActorId.IsValid)
+            {
+                reason = "missing_axis_actor_id";
+                return false;
+            }
+
+            if (!completion.RuntimeActorId.IsValid)
+            {
+                reason = "missing_runtime_actor_id";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(completion.ActorSpecId))
+            {
+                reason = "missing_actor_spec_id";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(completion.ActorSetRef))
+            {
+                reason = "missing_actor_set_ref";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(completion.SceneName))
+            {
+                reason = "missing_scene_name";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(completion.ExecutionSignature))
+            {
+                reason = "missing_execution_signature";
+                return false;
+            }
+
+            if (completion.ActorKind == ActorKind.Player && string.IsNullOrWhiteSpace(completion.SemanticParticipantId))
+            {
+                reason = "missing_semantic_participant_id";
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        private static bool AreActorKindsEquivalent(IReadOnlyList<ActorKind> left, IReadOnlyList<ActorKind> right)
+        {
+            HashSet<ActorKind> leftKinds = BuildActorKindSet(left);
+            HashSet<ActorKind> rightKinds = BuildActorKindSet(right);
+            return leftKinds.SetEquals(rightKinds);
+        }
+
+        private static bool TryCollectMissingActorKinds(
+            IReadOnlyList<ActorKind> expectedKinds,
+            IReadOnlyList<ActorKind> materializedKinds,
+            out List<ActorKind> missingKinds)
+        {
+            missingKinds = new List<ActorKind>();
+            HashSet<ActorKind> materializedSet = BuildActorKindSet(materializedKinds);
+
+            if (expectedKinds == null || expectedKinds.Count == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < expectedKinds.Count; index += 1)
+            {
+                ActorKind expectedKind = expectedKinds[index];
+                if (expectedKind == ActorKind.Unknown || materializedSet.Contains(expectedKind))
+                {
+                    continue;
+                }
+
+                missingKinds.Add(expectedKind);
+            }
+
+            return true;
+        }
+
+        private static HashSet<ActorKind> BuildActorKindSet(IReadOnlyList<ActorKind> kinds)
+        {
+            var set = new HashSet<ActorKind>();
+            if (kinds == null)
+            {
+                return set;
+            }
+
+            for (int index = 0; index < kinds.Count; index += 1)
+            {
+                ActorKind kind = kinds[index];
+                if (kind == ActorKind.Unknown)
+                {
+                    continue;
+                }
+
+                set.Add(kind);
+            }
+
+            return set;
         }
 
         private void QueueDeferredValidation(
@@ -446,286 +441,6 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                 }
 
                 _deferredValidations.Add(new DeferredValidation(sceneName, policy, actorSetRef, routeKind, expectedKinds));
-            }
-        }
-
-        private static bool ShouldDeferValidation(
-            WorldResetOrigin origin,
-            SceneRouteKind routeKind,
-            ActorSetRef actorSetRef,
-            IReadOnlyList<ActorKind> missingKinds)
-        {
-            if (origin != WorldResetOrigin.SceneFlow ||
-                routeKind != SceneRouteKind.Gameplay ||
-                !actorSetRef.IsValid ||
-                missingKinds == null ||
-                missingKinds.Count == 0)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool TryResolveCanonicalGameplayExpectation(
-            WorldResetOrigin origin,
-            out ActorSetRef actorSetRef,
-            out SceneRouteKind routeKind,
-            out ActorKind[] expectedKinds,
-            out string source,
-            out bool canonicalGameplayRoute)
-        {
-            actorSetRef = ActorSetRef.None;
-            routeKind = SceneRouteKind.Unspecified;
-            expectedKinds = Array.Empty<ActorKind>();
-            source = string.Empty;
-            canonicalGameplayRoute = false;
-
-            if (!_provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var routeContext) || routeContext == null)
-            {
-                if (origin == WorldResetOrigin.SceneFlow)
-                {
-                    LogDegraded(null,
-                        "ISceneFlowRouteActorSetRefContext ausente para validar actors canonicos de gameplay apos reset.");
-                    canonicalGameplayRoute = true;
-                }
-
-                return false;
-            }
-
-            if (!routeContext.TryGetCurrent(out actorSetRef, out routeKind, out source) ||
-                !actorSetRef.IsValid ||
-                routeKind != SceneRouteKind.Gameplay)
-            {
-                if (origin == WorldResetOrigin.SceneFlow)
-                {
-                    LogDegraded(null,
-                        $"ActorSetRef canonico invalido ou nao gameplay para validar actors apos reset. routeKind='{routeKind}', actorSetRef='{actorSetRef}', source='{source}'.");
-                    canonicalGameplayRoute = true;
-                }
-
-                return false;
-            }
-
-            canonicalGameplayRoute = true;
-
-            if (!_provider.TryGetGlobal<IActorSetSelectionService>(out var selectionService) || selectionService == null)
-            {
-                LogDegraded(null,
-                    $"IActorSetSelectionService ausente para resolver actorSetRef canonico='{actorSetRef}'.");
-                return false;
-            }
-
-            if (!selectionService.TryResolve(actorSetRef, out ActorSetResolvedSelection selection) || !selection.HasEntries)
-            {
-                LogDegraded(null,
-                    $"ActorSet canonico sem selecao resolvida. actorSetRef='{actorSetRef}', routeKind='{routeKind}', source='{source}'.");
-                canonicalGameplayRoute = true;
-                return false;
-            }
-
-            expectedKinds = ResolveExpectedKinds(selection.OrderedSpecs);
-            return expectedKinds.Length > 0;
-        }
-
-        private void ValidateCanonicalCompletedActors(
-            string sceneName,
-            IWorldResetPolicy policy,
-            ActorSetRef actorSetRef,
-            SceneRouteKind routeKind,
-            IReadOnlyList<ActorKind> expectedKinds,
-            ActorsOperationalMaterializationCycleCompletedEvent cycleCompletedEvent)
-        {
-            if (expectedKinds == null || expectedKinds.Count == 0)
-            {
-                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, Array.Empty<ActorKind>(), "MissingCanonicalExpectation");
-                return;
-            }
-
-            HashSet<ActorKind> presentKinds = CollectPresentActorKindsForScene(sceneName);
-            List<CanonicalCompletion> completions = CollectCompletedActors(sceneName, cycleCompletedEvent.ExecutionCycle);
-
-            var missingKinds = new List<ActorKind>();
-            var materializedKinds = new List<ActorKind>();
-
-            for (int index = 0; index < expectedKinds.Count; index += 1)
-            {
-                ActorKind expectedKind = expectedKinds[index];
-                if (!presentKinds.Contains(expectedKind))
-                {
-                    missingKinds.Add(expectedKind);
-                    continue;
-                }
-
-                if (HasLegacyCompletionForKind(completions, expectedKind, actorSetRef))
-                {
-                    missingKinds.Add(expectedKind);
-                    continue;
-                }
-
-                if (!TryFindCanonicalCompletion(completions, expectedKind, actorSetRef, out CanonicalCompletion completion))
-                {
-                    missingKinds.Add(expectedKind);
-                    continue;
-                }
-
-                if (!completion.HasCanonicalPayload ||
-                    !string.Equals(completion.ActorSetRef, actorSetRef.Value, StringComparison.Ordinal) ||
-                    string.Equals(completion.Source, "legacy-spawn", StringComparison.Ordinal) ||
-                    !IsCanonicalCompletionSource(completion.Source) ||
-                    (expectedKind == ActorKind.Player && string.IsNullOrWhiteSpace(completion.SemanticParticipantId)))
-                {
-                    missingKinds.Add(expectedKind);
-                    continue;
-                }
-
-                materializedKinds.Add(expectedKind);
-            }
-
-            if (missingKinds.Count > 0)
-            {
-                EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, missingKinds, "MissingCanonicalActorsAfterCycle");
-                return;
-            }
-
-            DebugUtility.Log<WorldResetPostResetValidator>(
-                $"[OBS][WorldReset] validation='PASS' actorSetRef='{actorSetRef}' materializedKinds=[{string.Join(", ", materializedKinds.Select(static kind => kind.ToString()))}] source='{cycleCompletedEvent.Source}' scene='{sceneName}'.",
-                DebugUtility.Colors.Success);
-        }
-
-        private HashSet<ActorKind> CollectPresentActorKindsForScene(string sceneName)
-        {
-            if (!_provider.TryGetForScene<IActorRegistry>(sceneName, out var actorRegistry) || actorRegistry == null)
-            {
-                return new HashSet<ActorKind>();
-            }
-
-            return CollectPresentActorKinds(actorRegistry);
-        }
-
-        private List<CanonicalCompletion> CollectCompletedActors(string sceneName, ActorsMaterializationExecutionCycle cycle)
-        {
-            var completions = new List<CanonicalCompletion>();
-            if (!cycle.IsValid)
-            {
-                return completions;
-            }
-
-            string cycleKey = BuildCycleKey(sceneName, cycle);
-            lock (_completionSync)
-            {
-                if (_completedByCycleKey.TryGetValue(cycleKey, out List<CanonicalCompletion> stored) && stored != null)
-                {
-                    completions.AddRange(stored);
-                }
-            }
-
-            return completions;
-        }
-
-        private void ClearCompletedActors(string sceneName, ActorsMaterializationExecutionCycle cycle)
-        {
-            if (!cycle.IsValid)
-            {
-                return;
-            }
-
-            string cycleKey = BuildCycleKey(sceneName, cycle);
-            lock (_completionSync)
-            {
-                _completedByCycleKey.Remove(cycleKey);
-            }
-        }
-
-        private static bool TryFindCanonicalCompletion(
-            IReadOnlyList<CanonicalCompletion> completions,
-            ActorKind expectedKind,
-            ActorSetRef actorSetRef,
-            out CanonicalCompletion completion)
-        {
-            completion = null;
-            if (completions == null || completions.Count == 0)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < completions.Count; index += 1)
-            {
-                CanonicalCompletion candidate = completions[index];
-                if (candidate == null || candidate.ActorKind != expectedKind)
-                {
-                    continue;
-                }
-
-                if (!string.Equals(candidate.ActorSetRef, actorSetRef.Value, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!candidate.HasCanonicalPayload ||
-                    string.Equals(candidate.Source, "legacy-spawn", StringComparison.Ordinal) ||
-                    !IsCanonicalCompletionSource(candidate.Source))
-                {
-                    continue;
-                }
-
-                completion = candidate;
-                return true;
-            }
-
-            return false;
-        }
-
-        private static bool HasLegacyCompletionForKind(
-            IReadOnlyList<CanonicalCompletion> completions,
-            ActorKind expectedKind,
-            ActorSetRef actorSetRef)
-        {
-            if (completions == null || completions.Count == 0)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < completions.Count; index += 1)
-            {
-                CanonicalCompletion candidate = completions[index];
-                if (candidate == null || candidate.ActorKind != expectedKind)
-                {
-                    continue;
-                }
-
-                if (!string.Equals(candidate.ActorSetRef, actorSetRef.Value, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (string.Equals(candidate.Source, "legacy-spawn", StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private void OnMaterializationCompleted(ActorsOperationalMaterializationCompletedEvent evt)
-        {
-            if (!evt.IsValid || string.IsNullOrWhiteSpace(evt.SceneName) || !evt.ExecutionCycle.IsValid)
-            {
-                return;
-            }
-
-            string cycleKey = BuildCycleKey(evt.SceneName, evt.ExecutionCycle);
-            var record = new CanonicalCompletion(evt);
-            lock (_completionSync)
-            {
-                if (!_completedByCycleKey.TryGetValue(cycleKey, out List<CanonicalCompletion> completions) || completions == null)
-                {
-                    completions = new List<CanonicalCompletion>();
-                    _completedByCycleKey[cycleKey] = completions;
-                }
-
-                completions.Add(record);
             }
         }
 
@@ -770,24 +485,6 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             };
         }
 
-        private static string BuildCycleKey(string sceneName, ActorsMaterializationExecutionCycle cycle)
-        {
-            return $"{(string.IsNullOrWhiteSpace(sceneName) ? "<none>" : sceneName.Trim())}|{cycle.ToStampKey()}";
-        }
-
-        private static bool IsCanonicalPhaseLocalEntryReadySource(string source)
-        {
-            return !string.IsNullOrWhiteSpace(source) &&
-                   source.IndexOf("PhaseLocalEntryReady", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        private static bool IsCanonicalCompletionSource(string source)
-        {
-            return !string.IsNullOrWhiteSpace(source) &&
-                   !string.Equals(source, "legacy-spawn", StringComparison.Ordinal) &&
-                   source.IndexOf("PhaseLocalEntryReady", StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
         private static void EmitCanonicalFailure(
             IWorldResetPolicy policy,
             string sceneName,
@@ -798,6 +495,31 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
         {
             string missingKindsText = string.Join(", ", missingKinds.Select(static kind => kind.ToString()));
             string detail = $"Hard reset finalizou sem garantir actors canonicos. scene='{sceneName}', actorSetRef='{actorSetRef}', routeKind='{routeKind}', missingKinds=[{missingKindsText}]";
+
+            if (policy != null && policy.IsStrict)
+            {
+                policy.ReportDegraded(
+                    ResetFeatureIds.WorldReset,
+                    reason,
+                    detail,
+                    signature: sceneName,
+                    profile: policy.Name);
+
+                throw new InvalidOperationException(detail);
+            }
+
+            LogDegraded(policy, detail, reason: reason, signature: sceneName, profile: policy?.Name);
+        }
+
+        private static void EmitCanonicalCompletionFailure(
+            IWorldResetPolicy policy,
+            string sceneName,
+            ActorSetRef actorSetRef,
+            SceneRouteKind routeKind,
+            ActorsOperationalMaterializationCompletedEvent completion,
+            string reason)
+        {
+            string detail = $"Hard reset finalizou com completion canonica invalida. scene='{sceneName}', actorSetRef='{actorSetRef}', routeKind='{routeKind}', actorKind='{completion.ActorKind}', actorSpecId='{completion.ActorSpecId}', axisActorId='{completion.AxisActorId}', runtimeActorId='{completion.RuntimeActorId}', reason='{reason}'";
 
             if (policy != null && policy.IsStrict)
             {

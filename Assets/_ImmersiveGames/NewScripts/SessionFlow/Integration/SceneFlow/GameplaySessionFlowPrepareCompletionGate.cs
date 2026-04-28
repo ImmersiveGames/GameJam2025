@@ -34,11 +34,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             string signature = SceneTransitionSignature.Compute(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
-                $"[OBS][GameplaySessionFlow][Seam] received rail='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Seam] received rail='GameplaySessionPrepare' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
-                $"[OBS][GameplaySessionFlow][Seam] translated rail='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Seam] translated rail='GameplaySessionPrepare' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             await DispatchOperationalHandoffAsync(context, signature, reason);
@@ -47,13 +47,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         private async Task DispatchOperationalHandoffAsync(SceneTransitionContext context, string signature, string reason)
         {
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
-                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             await _handoffService.ExecuteAsync(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
-                $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -76,6 +76,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             {
                 DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
                     $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' reason='non_gameplay_route'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
+            if (!context.IsGameplayInitialEntry)
+            {
+                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' gameplayEntryKind='{context.GameplayEntryKind}' reason='reentry_deferred_to_postcontinuation_rail'.",
                     DebugUtility.Colors.Info);
                 return false;
             }

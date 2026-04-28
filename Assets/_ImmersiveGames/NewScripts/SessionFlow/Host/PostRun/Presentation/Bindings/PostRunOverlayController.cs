@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
     public sealed partial class PostRunOverlayController : MonoBehaviour, IRunDecisionStagePresenter
     {
         private const string RetryReason = "RunDecision/Retry";
-        private const string ResetRunReason = "RunDecision/ResetRun";
+        private const string RestartReason = "RunDecision/Restart";
         private const string ExitToMenuReason = "RunDecision/ExitToMenu";
 
         [Header("Overlay")]
@@ -39,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
         [Header("Buttons")]
         [SerializeField] private Button retryButton;
-        [SerializeField] private Button resetRunButton;
+        [SerializeField] private Button restartButton;
         [SerializeField] private Button exitToMenuButton;
 
         [Inject] private IRunDecisionOwnershipService _runDecisionOwnershipService;
@@ -138,57 +138,64 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
         }
 
         /// <summary>
-        /// Atalho de compatibilidade para bindings antigos de restart.
-        /// Restart deve mapear para ResetRun (phase inicial do catálogo).
+        /// Restart reinicia a run a partir da primeira phase do catalogo.
         /// </summary>
         public void OnClickRestart()
         {
-            OnClickResetRun();
+            RequestRestartFromFirstPhase("Restart", RestartReason);
         }
 
+        /// <summary>
+        /// Retry reinicia somente a phase atual.
+        /// </summary>
         public void OnClickRetry()
+        {
+            RequestRestartCurrentPhase("Retry", RetryReason);
+        }
+
+        private void RequestRestartFromFirstPhase(string uiAction, string reason)
         {
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                    "[OBS][GameplaySessionFlow][RunDecision] Retry ignorado (acao ja solicitada).",
+                    $"[OBS][GameplaySessionFlow][RunDecision] RestartFromFirstPhase ignorado (acao ja solicitada). uiAction='{Normalize(uiAction)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Selection] Retry solicitado. Sele��o confirmada e entregue ao owner run-level.",
+                $"[OBS][GameplaySessionFlow][RunDecision][Selection] Restart solicitado. uiAction='{Normalize(uiAction)}' source='{Normalize(uiAction)}' semantic='FirstPhaseRunRestart' legacy='false' selectedContinuation='{RunContinuationKind.RestartFromFirstPhase}' runtimeContinuation='{RunContinuationKind.RestartFromFirstPhase}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision(
-                selectedContinuation: RunContinuationKind.Retry,
+                selectedContinuation: RunContinuationKind.RestartFromFirstPhase,
                 completionKind: RunDecisionCompletionKind.Unknown,
                 handoffState: "SelectionConfirmed",
-                reason: RetryReason);
+                reason: reason);
             HideImmediate();
         }
 
-        public void OnClickResetRun()
+        private void RequestRestartCurrentPhase(string uiAction, string reason)
         {
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                    "[OBS][GameplaySessionFlow][RunDecision] ResetRun ignorado (acao ja solicitada).",
+                    $"[OBS][GameplaySessionFlow][RunDecision] RestartCurrentPhase ignorado (acao ja solicitada). uiAction='{Normalize(uiAction)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Selection] ResetRun solicitado. Sele��o confirmada e entregue ao owner run-level.",
+                $"[OBS][GameplaySessionFlow][RunDecision][Selection] Retry solicitado. uiAction='{Normalize(uiAction)}' source='{Normalize(uiAction)}' semantic='CurrentPhaseRestart' legacy='false' selectedContinuation='{RunContinuationKind.RestartCurrentPhase}' runtimeContinuation='{RunContinuationKind.RestartCurrentPhase}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision(
-                selectedContinuation: RunContinuationKind.ResetRun,
+                selectedContinuation: RunContinuationKind.RestartCurrentPhase,
                 completionKind: RunDecisionCompletionKind.Unknown,
                 handoffState: "SelectionConfirmed",
-                reason: ResetRunReason);
+                reason: reason);
             HideImmediate();
         }
 
@@ -496,9 +503,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
                 DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] retryButton nao configurado no Inspector.");
             }
 
-            if (resetRunButton == null)
+            if (restartButton == null)
             {
-                DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] resetRunButton nao configurado no Inspector.");
+                DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] restartButton nao configurado no Inspector.");
             }
 
             if (exitToMenuButton == null)

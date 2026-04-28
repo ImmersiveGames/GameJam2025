@@ -18,15 +18,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
             Overlay = 3,
         }
 
-        public enum PhasePlayerRole
-        {
-            Unknown = 0,
-            Local = 1,
-            Remote = 2,
-            Bot = 3,
-            Shared = 4,
-        }
-
         [Serializable]
         public sealed class PhaseIdentityBlock
         {
@@ -49,42 +40,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
             public PhaseSceneRole role;
         }
 
-        [Serializable]
-        public sealed class PhasePlayersBlock
-        {
-            public List<PhasePlayerEntry> entries = new();
-        }
-
-        [Serializable]
-        public sealed class PhasePlayerEntry
-        {
-            public string localId = string.Empty;
-            public PhasePlayerRole role;
-        }
-
-        [Serializable]
-        public sealed class PhaseIntroBlock
-        {
-            public bool hasIntroStage;
-            public GameObject introPresenterPrefab;
-        }
-
         [Header("Identity")]
         [SerializeField] private PhaseIdentityBlock identity = new();
 
         [Header("Content")]
         [SerializeField] private PhaseContentBlock content = new();
 
-        [Header("Players")]
-        [SerializeField] private PhasePlayersBlock players = new();
-
-        [Header("Intro")]
-        [SerializeField] private PhaseIntroBlock intro = new();
-
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
-        public PhasePlayersBlock Players => players;
-        public PhaseIntroBlock Intro => intro;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -112,7 +75,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
             }
 
             ValidateContentBlock(assetOwner);
-            ValidatePlayersBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -127,6 +89,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
             if (content == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing content block. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            // Phase must have at least one content entry (basal content is required).
+            if (content.entries == null || content.entries.Count == 0)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Content block is empty. Phase must have basal content. asset='{assetOwner}', phaseId='{PhaseId}'.");
             }
 
             ValidateEntries(
@@ -144,27 +112,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
                     if (entry.role == PhaseSceneRole.Unknown)
                     {
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Content entry missing role. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
-                    }
-                });
-        }
-
-        private void ValidatePlayersBlock(string assetOwner)
-        {
-            if (players == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing players block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            ValidateEntries(
-                players.entries,
-                assetOwner,
-                "players",
-                entry =>
-                {
-                    entry.localId = Normalize(entry.localId);
-                    if (entry.role == PhasePlayerRole.Unknown)
-                    {
-                        throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Player entry missing role. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
                 });
         }

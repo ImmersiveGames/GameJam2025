@@ -57,28 +57,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public bool HasActorSetRef => !string.IsNullOrWhiteSpace(ActorSetRef);
         public bool IsValid => ActorKind != GameActorKind.Unknown;
 
-        public static ActorSpawnRequest CreateLegacy(
-            GameActorKind actorKind,
-            string spawnServiceName,
-            string sceneName,
-            bool requiredForWorldReset)
-        {
-            return new ActorSpawnRequest(
-                actorKind,
-                ActorOperationalRecipeKind.Unknown,
-                AxisActorId.None,
-                RuntimeActorId.None,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                spawnServiceName,
-                sceneName,
-                requiredForWorldReset,
-                "legacy-spawn",
-                string.Empty,
-                string.Empty);
-        }
-
         public static ActorSpawnRequest FromExecutionEntry(
             ActorsMaterializationExecutionEntry entry,
             GameActorKind actorKind,

@@ -38,7 +38,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
                 reason: request.Reason,
                 transitionProfile: request.TransitionProfile,
                 routeRef: request.ResolvedRouteRef,
-                contextSignature: request.ContextSignature);
+                contextSignature: request.ContextSignature,
+                payload: request.Payload);
         }
 
         private static IReadOnlyList<string> NormalizeList(IReadOnlyList<string> source)

@@ -23,7 +23,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             ReconstructionShape = reconstructionShape;
             EmitsPhaseLocalEntryReady = emitsPhaseLocalEntryReady;
             _orderedAxes = NormalizeOrderedAxes(orderedAxes);
-            Continuity = axisMap.Continuity;
+            IntentKind = axisMap.IntentKind;
+            LegacyRunContinuation = axisMap.LegacyRunContinuation;
+            Continuity = axisMap.LegacyRunContinuation;
             PhaseIntent = axisMap.PhaseTransition;
             WorldResetIntent = axisMap.WorldReset;
             ContentSpawnIntent = axisMap.ContentSpawn;
@@ -34,6 +36,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         public SessionTransitionContinuityShape ContinuityShape { get; }
         public SessionTransitionReconstructionShape ReconstructionShape { get; }
         public bool EmitsPhaseLocalEntryReady { get; }
+        public SessionTransitionIntentKind IntentKind { get; }
+        public RunContinuationKind LegacyRunContinuation { get; }
         public RunContinuationKind Continuity { get; }
         public SessionTransitionPhaseAction PhaseIntent { get; }
         public SessionTransitionResetAction WorldResetIntent { get; }
@@ -57,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         public override string ToString()
         {
             string axes = _orderedAxes.Length == 0 ? "<none>" : string.Join(">", _orderedAxes);
-            return $"OrderedAxes='{axes}', Continuity='{Continuity}', ContinuityShape=[{ContinuityShape}], ReconstructionShape=[{ReconstructionShape}], EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', PhaseIntent='{PhaseIntent}', WorldResetIntent='{WorldResetIntent}', ContentSpawnIntent='{ContentSpawnIntent}', CarryOverIntent='{CarryOverIntent}'";
+            return $"OrderedAxes='{axes}', Intent='{IntentKind}', LegacyRunContinuation='{LegacyRunContinuation}', ContinuityShape=[{ContinuityShape}], ReconstructionShape=[{ReconstructionShape}], EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', PhaseIntent='{PhaseIntent}', WorldResetIntent='{WorldResetIntent}', ContentSpawnIntent='{ContentSpawnIntent}', CarryOverIntent='{CarryOverIntent}'";
         }
 
         private static SessionTransitionAxisId[] NormalizeOrderedAxes(IReadOnlyList<SessionTransitionAxisId> orderedAxes)
@@ -113,6 +117,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         NextPhase = 1,
         ResetCurrentPhase = 2,
         ExitToMenu = 3,
+        InitialEntry = 4,  /// Entrada inicial (Menu → Gameplay ou SceneFlow primeira fase)
+        RestartFromFirstPhase = 5,
     }
 
     [Flags]
@@ -194,4 +200,3 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         }
     }
 }
-

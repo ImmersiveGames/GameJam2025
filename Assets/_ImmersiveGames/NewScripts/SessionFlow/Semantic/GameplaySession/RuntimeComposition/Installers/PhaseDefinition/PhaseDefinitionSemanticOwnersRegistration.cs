@@ -1,5 +1,10 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
+using _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneFlow.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
@@ -53,7 +58,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 return;
             }
 
-            var owner = new GameplayParticipationFlowService();
+            SceneFlowInstaller.EnsureRouteActorSetRefContext();
+            ActorsSystemBootstrap.EnsureActorSetSelectionInfrastructure();
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var routeActorSetContext) ||
+                routeActorSetContext == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameplaySessionFlow] Missing ISceneFlowRouteActorSetRefContext for GameplayParticipationFlowService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IActorSetSelectionService>(out var actorSetSelectionService) ||
+                actorSetSelectionService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameplaySessionFlow] Missing IActorSetSelectionService for GameplayParticipationFlowService.");
+            }
+
+            var owner = new GameplayParticipationFlowService(routeActorSetContext, actorSetSelectionService);
             DependencyManager.Provider.RegisterGlobal<GameplayParticipationFlowService>(owner);
             DependencyManager.Provider.RegisterGlobal<IGameplayParticipationFlowService>(owner);
 

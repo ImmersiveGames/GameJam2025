@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
@@ -49,15 +48,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         /// </summary>
         public virtual bool IsRequiredForWorldReset => false;
 
-        public Task SpawnAsync()
-        {
-            return SpawnAsync(ActorSpawnRequest.CreateLegacy(
-                SpawnedActorKind,
-                Name,
-                _context?.SceneName ?? string.Empty,
-                IsRequiredForWorldReset));
-        }
-
         public Task SpawnAsync(ActorSpawnRequest request)
         {
             DebugUtility.LogVerbose(GetType(),
@@ -90,22 +80,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 return Task.CompletedTask;
             }
 
-            if (request.IsValid && request.ActorKind != ActorKind.Unknown && request.ActorKind != SpawnedActorKind)
-            {
-                DebugUtility.LogWarning(GetType(),
-                    $"Request de spawn com actorKind divergente requestActorKind='{request.ActorKind}' serviceActorKind='{SpawnedActorKind}' request='{request}'.");
-            }
-
-            bool isCanonicalSpawnRequest = !string.Equals(request.Source, "legacy-spawn", StringComparison.Ordinal);
-            if (isCanonicalSpawnRequest)
-            {
-                if (!request.HasAxisActorId || !request.HasActorSpecId || !request.HasActorSetRef || (SpawnedActorKind == ActorKind.Player && !request.HasSemanticParticipantId))
-                {
-                    DebugUtility.LogError(GetType(),
-                        $"Spawn canônico incompleto; abortando antes da instanciação. actorKind='{SpawnedActorKind}' axisActorId='{request.AxisActorId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' semanticParticipantId='{request.SemanticParticipantId}' source='{request.Source}'.");
-                    return Task.CompletedTask;
-                }
-            }
+            ValidateCanonicalRequestOrFail(request);
 
             var instance = Object.Instantiate(_prefab, _context.WorldRoot);
 
@@ -345,6 +320,33 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             }
 
             return string.Empty;
+        }
+
+        private void ValidateCanonicalRequestOrFail(in ActorSpawnRequest request)
+        {
+            if (!request.IsValid)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    "[FATAL][H1][Spawn] ActorSpawnRequest invalido recebido pelo servico de spawn.");
+            }
+
+            if (request.ActorKind != SpawnedActorKind)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest com actorKind divergente recebido pelo servico de spawn. requestActorKind='{request.ActorKind}' serviceActorKind='{SpawnedActorKind}' request='{request}'.");
+            }
+
+            if (!request.HasAxisActorId || !request.HasActorSpecId || !request.HasActorSetRef)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico incompleto; axisActorId='{request.AxisActorId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' actorKind='{request.ActorKind}'.");
+            }
+
+            if (SpawnedActorKind == ActorKind.Player && !request.HasSemanticParticipantId)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico de Player sem SemanticParticipantId. axisActorId='{request.AxisActorId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' source='{request.Source}'.");
+            }
         }
 
         protected virtual void OnPostInstantiate(GameObject instance) { }

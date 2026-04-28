@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,8 +8,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 {
     /// <summary>
     /// Executa o trilho local de reset em boundary neutro resolvido pelo pipeline macro.
-    /// Nao valida pos-condicoes nem publica lifecycle.
-    /// Mantem a descoberta de executores como helper operacional da fase 6.
+    /// Nao publica lifecycle; apenas agrega o resultado operacional real dos executores locais.
     /// </summary>
     public sealed class WorldResetExecutor
     {
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 
         public WorldResetExecutor(IWorldResetLocalExecutorRegistry localExecutorRegistry)
         {
-            _localExecutorRegistry = localExecutorRegistry ?? throw new System.ArgumentNullException(nameof(localExecutorRegistry));
+            _localExecutorRegistry = localExecutorRegistry ?? throw new ArgumentNullException(nameof(localExecutorRegistry));
         }
 
         public bool TryResolveExecutors(
@@ -27,32 +27,44 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             return executors != null && executors.Count > 0;
         }
 
-        public async Task<bool> TryExecuteAsync(string targetScene, string reason)
+        public async Task<WorldResetLocalExecutionResult> TryExecuteAsync(string targetScene, string reason)
         {
             IReadOnlyList<IWorldResetLocalExecutor> executors = _localExecutorRegistry.GetExecutorsForScene(targetScene);
             if (executors == null || executors.Count == 0)
             {
-                return false;
+                return WorldResetLocalExecutionResult.Rejected(
+                    targetScene,
+                    reason,
+                    nameof(WorldResetExecutor),
+                    $"No local reset executor found for scene='{Normalize(targetScene)}'.");
             }
 
-            await ExecuteResetOnControllersAsync(executors, reason);
-            return true;
+            return await ExecuteResetOnControllersAsync(executors, targetScene, reason);
         }
 
-        public async Task ExecuteAsync(
+        public async Task<WorldResetLocalExecutionResult> ExecuteAsync(
             IReadOnlyList<IWorldResetLocalExecutor> executors,
-            string reason)
+            string reason,
+            string targetScene = null)
         {
-            await ExecuteResetOnControllersAsync(executors, reason);
+            return await ExecuteResetOnControllersAsync(executors, targetScene, reason);
         }
 
-        private static async Task ExecuteResetOnControllersAsync(
+        private static async Task<WorldResetLocalExecutionResult> ExecuteResetOnControllersAsync(
             IReadOnlyList<IWorldResetLocalExecutor> executors,
+            string targetScene,
             string reason)
         {
+            string scene = Normalize(targetScene);
+            string normalizedReason = Normalize(reason);
+
             if (executors == null || executors.Count == 0)
             {
-                return;
+                return WorldResetLocalExecutionResult.Rejected(
+                    scene,
+                    normalizedReason,
+                    nameof(WorldResetExecutor),
+                    "No local reset executor was provided to the world reset executor.");
             }
 
             var filtered = new List<IWorldResetLocalExecutor>(executors.Count);
@@ -65,15 +77,135 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                 }
             }
 
-            filtered.Sort(static (a, b) => CompareExecutors(a, b));
-
-            var tasks = new List<Task>(filtered.Count);
-            for (int i = 0; i < filtered.Count; i++)
+            if (filtered.Count == 0)
             {
-                tasks.Add(filtered[i].ResetWorldAsync(reason));
+                return WorldResetLocalExecutionResult.Rejected(
+                    scene,
+                    normalizedReason,
+                    nameof(WorldResetExecutor),
+                    "All local reset executors were null.");
             }
 
-            await Task.WhenAll(tasks);
+            filtered.Sort(static (a, b) => CompareExecutors(a, b));
+
+            var tasks = new List<Task<WorldResetLocalExecutionResult>>(filtered.Count);
+            for (int i = 0; i < filtered.Count; i++)
+            {
+                tasks.Add(ExecuteSingleExecutorAsync(filtered[i], normalizedReason));
+            }
+
+            WorldResetLocalExecutionResult[] results = await Task.WhenAll(tasks);
+            return AggregateResults(results, scene, normalizedReason, filtered.Count);
+        }
+
+        private static async Task<WorldResetLocalExecutionResult> ExecuteSingleExecutorAsync(
+            IWorldResetLocalExecutor executor,
+            string reason)
+        {
+            if (executor == null)
+            {
+                return WorldResetLocalExecutionResult.Rejected(
+                    string.Empty,
+                    reason,
+                    nameof(WorldResetExecutor),
+                    "Null local reset executor.");
+            }
+
+            try
+            {
+                WorldResetLocalExecutionResult result = await executor.ResetWorldAsync(reason);
+                if (result.Status == WorldResetLocalExecutionStatus.Completed && string.IsNullOrWhiteSpace(result.Source))
+                {
+                    return WorldResetLocalExecutionResult.Unconfirmed(
+                        result.SceneName,
+                        reason,
+                        nameof(WorldResetExecutor),
+                        $"Local executor returned Completed without source. result='{result}'.");
+                }
+
+                if (string.IsNullOrWhiteSpace(result.Source) && result.Status != WorldResetLocalExecutionStatus.Completed)
+                {
+                    return WorldResetLocalExecutionResult.Unconfirmed(
+                        result.SceneName,
+                        reason,
+                        nameof(WorldResetExecutor),
+                        $"Local executor returned non-completed result without source. result='{result}'.");
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return WorldResetLocalExecutionResult.Failed(
+                    string.Empty,
+                    reason,
+                    executor.GetType().Name,
+                    $"Local reset executor threw '{ex.GetType().Name}': {ex.Message}");
+            }
+        }
+
+        private static WorldResetLocalExecutionResult AggregateResults(
+            IReadOnlyList<WorldResetLocalExecutionResult> results,
+            string scene,
+            string reason,
+            int executorCount)
+        {
+            if (results == null || results.Count == 0)
+            {
+                return WorldResetLocalExecutionResult.Rejected(
+                    scene,
+                    reason,
+                    nameof(WorldResetExecutor),
+                    "No local reset execution result was produced.");
+            }
+
+            WorldResetLocalExecutionStatus aggregateStatus = WorldResetLocalExecutionStatus.Completed;
+            var detail = new List<string>(results.Count + 1)
+            {
+                $"executorCount='{executorCount}'"
+            };
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                WorldResetLocalExecutionResult result = results[i];
+                detail.Add($"[{i}] {result}");
+
+                if (result.Status == WorldResetLocalExecutionStatus.Failed)
+                {
+                    aggregateStatus = WorldResetLocalExecutionStatus.Failed;
+                    continue;
+                }
+
+                if (aggregateStatus == WorldResetLocalExecutionStatus.Failed)
+                {
+                    continue;
+                }
+
+                if (result.Status == WorldResetLocalExecutionStatus.Unconfirmed)
+                {
+                    aggregateStatus = WorldResetLocalExecutionStatus.Unconfirmed;
+                    continue;
+                }
+
+                if (aggregateStatus == WorldResetLocalExecutionStatus.Unconfirmed)
+                {
+                    continue;
+                }
+
+                if (result.Status == WorldResetLocalExecutionStatus.Rejected)
+                {
+                    aggregateStatus = WorldResetLocalExecutionStatus.Rejected;
+                }
+            }
+
+            string combinedDetail = string.Join(" | ", detail);
+            return aggregateStatus switch
+            {
+                WorldResetLocalExecutionStatus.Completed => WorldResetLocalExecutionResult.Completed(scene, reason, nameof(WorldResetExecutor), combinedDetail),
+                WorldResetLocalExecutionStatus.Failed => WorldResetLocalExecutionResult.Failed(scene, reason, nameof(WorldResetExecutor), combinedDetail),
+                WorldResetLocalExecutionStatus.Unconfirmed => WorldResetLocalExecutionResult.Unconfirmed(scene, reason, nameof(WorldResetExecutor), combinedDetail),
+                _ => WorldResetLocalExecutionResult.Rejected(scene, reason, nameof(WorldResetExecutor), combinedDetail),
+            };
         }
 
         private static int CompareExecutors(IWorldResetLocalExecutor left, IWorldResetLocalExecutor right)
@@ -95,6 +227,11 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 
             return leftObject.GetInstanceID().CompareTo(rightObject.GetInstanceID());
         }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
     }
 
     /// <summary>
@@ -107,35 +244,61 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 
         public PhaseResetOperationalHandoffService(IWorldResetLocalExecutorRegistry localExecutorRegistry)
         {
-            _executor = new WorldResetExecutor(localExecutorRegistry ?? throw new System.ArgumentNullException(nameof(localExecutorRegistry)));
+            _executor = new WorldResetExecutor(localExecutorRegistry ?? throw new ArgumentNullException(nameof(localExecutorRegistry)));
         }
 
-        public async Task ExecuteAsync(PhaseResetHandoffRequest request, CancellationToken ct)
+        public async Task<PhaseResetOperationalHandoffResult> ExecuteAsync(PhaseResetHandoffRequest request, CancellationToken ct)
         {
             if (!request.IsValid)
             {
-                HardFailFastH1.Trigger(typeof(PhaseResetOperationalHandoffService),
-                    $"[FATAL][H1][PhaseReset] Invalid phase-reset handoff request. scene='{request.ActiveScene}' reason='{request.Reason}' source='{request.Source}'.");
+                return PhaseResetOperationalHandoffResult.Rejected(
+                    request,
+                    0,
+                    $"Invalid phase-reset handoff request. scene='{request.ActiveScene}' reason='{request.Reason}' source='{request.Source}'.");
             }
 
             ct.ThrowIfCancellationRequested();
 
-            if (!_executor.TryResolveExecutors(request.ActiveScene, out var executors) || executors.Count == 0)
+            if (!_executor.TryResolveExecutors(request.ActiveScene, out var executors) || executors == null || executors.Count == 0)
             {
-                HardFailFastH1.Trigger(typeof(PhaseResetOperationalHandoffService),
-                    $"[FATAL][H1][PhaseReset] No local reset executor found for scene='{request.ActiveScene}'. reason='{request.Reason}' source='{request.Source}'.");
+                PhaseResetOperationalHandoffResult result = PhaseResetOperationalHandoffResult.Rejected(
+                    request,
+                    0,
+                    $"No local reset executor found for scene='{request.ActiveScene}'. reason='{request.Reason}' source='{request.Source}'.");
+
+                DebugUtility.LogWarning<PhaseResetOperationalHandoffService>(
+                    $"[OBS][PhaseReset][Operational] HandoffRejected source='{request.Source}' scene='{request.ActiveScene}' reason='{request.Reason}' status='{result.Status}' detail='{result.Detail}'.");
+
+                return result;
             }
 
             DebugUtility.Log<PhaseResetOperationalHandoffService>(
                 $"[OBS][PhaseReset][Operational] HandoffAccepted source='{request.Source}' scene='{request.ActiveScene}' reason='{request.Reason}' executors='{executors.Count}'.",
                 DebugUtility.Colors.Info);
 
-            await _executor.ExecuteAsync(executors, request.Reason);
+            WorldResetLocalExecutionResult localResult = await _executor.ExecuteAsync(executors, request.Reason, request.ActiveScene);
+            PhaseResetOperationalHandoffResult handoffResult = MapLocalResult(request, executors.Count, localResult);
 
             DebugUtility.Log<PhaseResetOperationalHandoffService>(
-                $"[OBS][PhaseReset][Operational] HandoffCompleted source='{request.Source}' scene='{request.ActiveScene}' reason='{request.Reason}'.",
-                DebugUtility.Colors.Success);
+                $"[OBS][PhaseReset][Operational] HandoffCompleted source='{request.Source}' scene='{request.ActiveScene}' reason='{request.Reason}' executors='{executors.Count}' status='{handoffResult.Status}' detail='{handoffResult.Detail}'.",
+                handoffResult.Succeeded ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+
+            return handoffResult;
+        }
+
+        private static PhaseResetOperationalHandoffResult MapLocalResult(
+            PhaseResetHandoffRequest request,
+            int executorCount,
+            WorldResetLocalExecutionResult localResult)
+        {
+            string detail = $"localResult='{localResult}'";
+            return localResult.Status switch
+            {
+                WorldResetLocalExecutionStatus.Completed => PhaseResetOperationalHandoffResult.Completed(request, executorCount, detail),
+                WorldResetLocalExecutionStatus.Failed => PhaseResetOperationalHandoffResult.Failed(request, executorCount, detail),
+                WorldResetLocalExecutionStatus.Unconfirmed => PhaseResetOperationalHandoffResult.Unconfirmed(request, executorCount, detail),
+                _ => PhaseResetOperationalHandoffResult.Rejected(request, executorCount, detail),
+            };
         }
     }
 }
-
