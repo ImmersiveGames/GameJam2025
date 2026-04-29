@@ -258,3 +258,12 @@ Regras normativas complementares:
 - `realizationMode` define como realiza no mundo, sem reabrir legitimidade.
 - `continuityResetPolicy` governa reset/reentry sem retornar ownership para trilho legado.
 - `WorldDefinition` nao e owner canonico desses campos; quando presente, e apenas compat temporaria.
+
+## 19. Rastreabilidade de observabilidade (2026-04-29)
+
+No fluxo de `ActorsExecution`/materialization/spawn bridge, os logs downstream usam `traceId` compacto por ciclo de `PhaseLocalEntryReady` para manter rastreabilidade ate o log canonico completo.
+
+Regra validada:
+- o log canonico completo permanece em `SessionTransitionOrchestrator.PhaseLocalEntryReadyResolved`;
+- logs de `ActorsExecution` usam `traceId`, `phaseLocalEntrySequence`, `routeId`, `routeKind`, `scene`, `actorSetRef`, `actorSpecId`, `semanticParticipantId`, `runtimeActorId`, `directive`, `source`, `reason`;
+- a compactacao nao altera ownership, eventos, payloads, readiness, `PreserveExisting` ou decisoes operacionais.

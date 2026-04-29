@@ -169,10 +169,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                 ActorSpecRecord spec = selection.OrderedSpecs[index];
                 ActorDefinitionRecord definition = BuildDefinitionFromSpecOrFail(spec, hasParticipation, participationSnapshot, actorSetRef, routeKind, source);
                 entries.Add(definition);
-
-                DebugUtility.LogVerbose(typeof(SessionFlowActorsSemanticPortsAdapter),
-                    $"[OBS][ActorsSystem] DefinitionsResolvedViaCanonicalActorSet actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' order='{index}' actorSpecId='{spec.ActorSpecId}' axisActorId='{definition.AxisActorId}' semanticParticipantId='{AsText(definition.SemanticParticipantId)}' recipe='{definition.OperationalRecipeKind}'.",
-                    DebugUtility.Colors.Info);
             }
 
             snapshot = new ActorsDefinitionsSnapshot(
@@ -465,10 +461,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                     canonicalContext.RouteKind,
                     canonicalContext.Source);
                 entries.Add(definition);
-
-                DebugUtility.LogVerbose(typeof(SessionFlowActorsSemanticPortsAdapter),
-                    $"[OBS][ActorsSystem] DefinitionsRefreshedViaPhaseLocalEntryReady actorSetRef='{actorSetRef.Value}' routeKind='{canonicalContext.RouteKind}' routeId='{canonicalContext.RouteId}' actorSpecId='{spec.ActorSpecId}' axisActorId='{definition.AxisActorId}' semanticParticipantId='{AsText(definition.SemanticParticipantId)}' recipe='{definition.OperationalRecipeKind}'.",
-                    DebugUtility.Colors.Info);
             }
 
             snapshot = new ActorsDefinitionsSnapshot(

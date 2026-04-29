@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
@@ -43,7 +44,15 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.HasSemanticParticipantId)
             {
                 DebugUtility.Log(typeof(PlayerSpawnService),
-                    $"[OBS][Gameplay][SpawnBridge] Player spawn consumed semanticParticipantId from ActorSpawnRequest semanticParticipantId='{request.SemanticParticipantId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' recipe='{request.OperationalRecipeKind}' source='{request.Source}'.");
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "[OBS][Gameplay][SpawnBridge] Player spawn consumed semanticParticipantId",
+                        ("traceId", request.ExecutionSignature),
+                        ("semanticParticipantId", request.SemanticParticipantId),
+                        ("actorSpecId", request.ActorSpecId),
+                        ("actorSetRef", request.ActorSetRef),
+                        ("recipe", request.OperationalRecipeKind),
+                        ("source", request.Source),
+                        ("reason", request.Reason)));
                 return request.SemanticParticipantId;
             }
 

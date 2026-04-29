@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
@@ -105,11 +106,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             bool publishedPhaseLocalEntryReady = false;
             string resolvedPayloadSource = "<none>";
+            string executeTraceId = ObservabilityTraceFormatter.BuildCycleTraceId(signature);
 
             if (expectedPhaseLocalEntryReady && resultAllowsPhaseLocalEntryReady)
             {
                 bool publishedFromDispatchResult = executionResult.TryGetPhaseLocalEntryReadyEvent(out var phaseLocalEntryReadyEvent);
                 resolvedPayloadSource = publishedFromDispatchResult ? "dispatch_result" : "post_dispatch_runtime";
+                executeTraceId = ObservabilityTraceFormatter.BuildCycleTraceId(phaseLocalEntryReadyEvent.CycleSignature);
 
                 if (!publishedFromDispatchResult)
                 {
@@ -133,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             }
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' runContinuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='{publishedPhaseLocalEntryReady}' payloadSource='{resolvedPayloadSource}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted traceId='{executeTraceId}' source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' runContinuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='{publishedPhaseLocalEntryReady}' payloadSource='{resolvedPayloadSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -147,8 +150,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             bool expectedPhaseLocalEntryReady,
             bool resultAllowsPhaseLocalEntryReady)
         {
-            DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyResolved source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='false' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' runContinuation='{phaseLocalEntryReadyEvent.Plan.Context.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}' canonicalPayload='{phaseLocalEntryReadyEvent.HasCanonicalPayload.ToString().ToLowerInvariant()}' dispatchResultConfirmed='{publishedFromDispatchResult.ToString().ToLowerInvariant()}'.",
+                DebugUtility.Log<SessionTransitionOrchestrator>(
+                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyResolved traceId='{ObservabilityTraceFormatter.BuildCycleTraceId(phaseLocalEntryReadyEvent.CycleSignature)}' source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='false' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' runContinuation='{phaseLocalEntryReadyEvent.Plan.Context.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}' canonicalPayload='{phaseLocalEntryReadyEvent.HasCanonicalPayload.ToString().ToLowerInvariant()}' dispatchResultConfirmed='{publishedFromDispatchResult.ToString().ToLowerInvariant()}'.",
                 DebugUtility.Colors.Info);
 
             if (!phaseLocalEntryReadyEvent.HasCanonicalPayload)
@@ -160,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Raise(phaseLocalEntryReadyEvent);
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='true' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' runContinuation='{phaseLocalEntryReadyEvent.Plan.Context.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished traceId='{ObservabilityTraceFormatter.BuildCycleTraceId(phaseLocalEntryReadyEvent.CycleSignature)}' source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='true' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' runContinuation='{phaseLocalEntryReadyEvent.Plan.Context.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' reason='{Normalize(normalizedReason)}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -230,6 +233,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             string phaseSignature = payload.PhaseRuntime.PhaseRuntimeSignature;
             string participationSignature = payload.ParticipationSnapshot.Signature.Value;
             string actorSetRef = payload.ActorSetRef.Value;
+            string cycleSignature = BuildPhaseLocalEntryReadyCycleSignature(
+                contextSignature,
+                plan,
+                sessionContext.MacroRouteId,
+                sessionContext.MacroRouteRef.RouteKind,
+                sceneName,
+                plan.Reason,
+                sessionSignature,
+                phaseSignature,
+                participationSignature,
+                actorSetRef);
+            string traceId = ObservabilityTraceFormatter.BuildCycleTraceId(cycleSignature);
 
             ValidateRequiredPhaseLocalEntryReadyValueOrFail(
                 nameof(contextSignature),
@@ -272,7 +287,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 sceneName);
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPayloadResolved payloadResolvedAfterExecution='true' payloadSource='current_runtime_post_execution' payloadOrdering='post_execution_runtime_payload' source='{Normalize(source)}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' continuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' routeId='{sessionContext.MacroRouteId}' routeKind='{sessionContext.MacroRouteRef.RouteKind}' scene='{sceneName}' contextSignature='{contextSignature}' sessionSignature='{sessionSignature}' phaseSignature='{phaseSignature}' participationSignature='{participationSignature}' actorSetRef='{actorSetRef}' reason='{Normalize(plan.Reason)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPayloadResolved traceId='{traceId}' payloadResolvedAfterExecution='true' payloadSource='current_runtime_post_execution' payloadOrdering='post_execution_runtime_payload' source='{Normalize(source)}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' continuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' routeId='{sessionContext.MacroRouteId}' routeKind='{sessionContext.MacroRouteRef.RouteKind}' scene='{sceneName}' contextSignature='{contextSignature}' sessionSignature='{sessionSignature}' phaseSignature='{phaseSignature}' participationSignature='{participationSignature}' actorSetRef='{actorSetRef}' reason='{Normalize(plan.Reason)}'.",
                 DebugUtility.Colors.Info);
 
             return CreatePhaseLocalEntryReadyEventOrFail(

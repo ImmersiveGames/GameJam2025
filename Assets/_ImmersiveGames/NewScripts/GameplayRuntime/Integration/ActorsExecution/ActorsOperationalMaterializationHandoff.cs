@@ -152,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             if (!evt.HasCanonicalPayload)
             {
                 DebugUtility.LogWarning(typeof(ActorsMaterializationExecutionCycleContext),
-                    $"[OBS][ActorsExecution][CycleContext] Actor completion ignorada reason='missing_canonical_payload' actorKind='{evt.ActorKind}' actorSpecId='{AsText(evt.ActorSpecId)}' actorSetRef='{AsText(evt.ActorSetRef)}' runtimeActorId='{evt.RuntimeActorId}' executionSignature='{AsText(evt.ExecutionSignature)}'.");
+                    $"[OBS][ActorsExecution][CycleContext] Actor completion ignorada reason='missing_canonical_payload' traceId='{AsText(evt.ExecutionSignature)}' actorKind='{evt.ActorKind}' actorSpecId='{AsText(evt.ActorSpecId)}' actorSetRef='{AsText(evt.ActorSetRef)}' runtimeActorId='{evt.RuntimeActorId}'.");
                 return;
             }
 
@@ -161,7 +161,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             {
                 _hasActorSetMismatch = true;
                 DebugUtility.LogWarning(typeof(ActorsMaterializationExecutionCycleContext),
-                    $"[OBS][ActorsExecution][CycleContext] Actor completion ignorada reason='actor_set_ref_mismatch' expectedActorSetRef='{AsText(_currentState.ActorSetRef)}' actorSetRef='{AsText(evt.ActorSetRef)}' actorKind='{evt.ActorKind}' runtimeActorId='{evt.RuntimeActorId}' executionSignature='{AsText(evt.ExecutionSignature)}'.");
+                    $"[OBS][ActorsExecution][CycleContext] Actor completion ignorada reason='actor_set_ref_mismatch' traceId='{AsText(evt.ExecutionSignature)}' expectedActorSetRef='{AsText(_currentState.ActorSetRef)}' actorSetRef='{AsText(evt.ActorSetRef)}' actorKind='{evt.ActorKind}' runtimeActorId='{evt.RuntimeActorId}'.");
                 return;
             }
 
@@ -671,7 +671,18 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 source: "GameplayRuntime/ActorsOperationalMaterializationHandoff");
 
             DebugUtility.Log(typeof(ActorsOperationalMaterializationHandoffBridge),
-                $"[OBS][ActorsExecution][Operational] ActorSpawnCompleted forward-only actorSpecId='{AsText(evt.ActorSpecId)}' actorSetRef='{AsText(evt.ActorSetRef)}' axisActorId='{evt.AxisActorId}' runtimeActorId='{evt.RuntimeActorId}' semanticParticipantId='{AsText(evt.SemanticParticipantId)}' source='{AsText(evt.Source)}' executionSignature='{AsText(evt.ExecutionSignature)}'.",
+                ObservabilityTraceFormatter.BuildCompactLogMessage(
+                    "[OBS][ActorsExecution][Operational] ActorSpawnCompleted forward-only",
+                    ("traceId", evt.ExecutionSignature),
+                    ("phaseLocalEntrySequence", cycle.PhaseLocalEntrySequence),
+                    ("actorSpecId", evt.ActorSpecId),
+                    ("actorSetRef", evt.ActorSetRef),
+                    ("axisActorId", evt.AxisActorId),
+                    ("runtimeActorId", evt.RuntimeActorId),
+                    ("semanticParticipantId", evt.SemanticParticipantId),
+                    ("source", evt.Source),
+                    ("reason", evt.Reason),
+                    ("scene", evt.SceneName)),
                 DebugUtility.Colors.Info);
 
             _cycleContext.RecordCompletedActor(completedEvent);

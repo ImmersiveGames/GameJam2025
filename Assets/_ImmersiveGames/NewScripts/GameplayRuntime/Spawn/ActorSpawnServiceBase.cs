@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using UnityEngine;
@@ -60,8 +61,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public Task SpawnAsync(ActorSpawnRequest request)
         {
+            string traceId = request.ExecutionSignature;
             DebugUtility.LogVerbose(GetType(),
-                $"SpawnAsync iniciado actorSpecId='{AsText(_actorSpec.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}' request='{request}' scene={_context?.SceneName ?? "<unknown>"}.");
+                ObservabilityTraceFormatter.BuildCompactLogMessage(
+                    "SpawnAsync iniciado",
+                    ("traceId", traceId),
+                    ("actorKind", request.ActorKind),
+                    ("recipe", request.OperationalRecipeKind),
+                    ("axisActorId", request.AxisActorId),
+                    ("runtimeActorId", request.RuntimeActorId),
+                    ("actorSpecId", request.ActorSpecId),
+                    ("actorSetRef", request.ActorSetRef),
+                    ("semanticParticipantId", request.SemanticParticipantId),
+                    ("spawnServiceName", request.SpawnServiceName),
+                    ("scene", _context?.SceneName),
+                    ("requiredForWorldReset", request.RequiredForWorldReset),
+                    ("source", request.Source),
+                    ("reason", request.Reason)));
 
             if (uniqueIdFactory == null || _actorRegistry == null)
             {
@@ -156,7 +172,15 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.IsValid && request.HasAxisActorId && !axisActorId.IsValid)
             {
                 DebugUtility.LogError(GetType(),
-                    $"AxisActorId invalido no request canonico; abortando spawn. request='{request}'");
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "[OBS][Gameplay][SpawnBridge] AxisActorId invalido no request canonico",
+                        ("traceId", traceId),
+                        ("actorSpecId", request.ActorSpecId),
+                        ("actorSetRef", request.ActorSetRef),
+                        ("axisActorId", request.AxisActorId),
+                        ("recipe", request.OperationalRecipeKind),
+                        ("source", request.Source),
+                        ("reason", request.Reason)));
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 _spawnedActor = null;
@@ -184,7 +208,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.HasActorSpecId && string.IsNullOrWhiteSpace(completedEvent.ActorSpecId))
             {
                 DebugUtility.LogError(GetType(),
-                    $"ActorSpawnCompletedEvent canonico sem ActorSpecId apos spawn. request='{request}'");
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent canonico sem ActorSpecId apos spawn",
+                        ("traceId", traceId),
+                        ("actorSetRef", request.ActorSetRef),
+                        ("axisActorId", request.AxisActorId),
+                        ("recipe", request.OperationalRecipeKind),
+                        ("source", request.Source),
+                        ("reason", request.Reason)));
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 _spawnedActor = null;
@@ -194,7 +225,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.HasActorSetRef && string.IsNullOrWhiteSpace(completedEvent.ActorSetRef))
             {
                 DebugUtility.LogError(GetType(),
-                    $"ActorSpawnCompletedEvent canonico sem ActorSetRef apos spawn. request='{request}'");
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent canonico sem ActorSetRef apos spawn",
+                        ("traceId", traceId),
+                        ("actorSpecId", request.ActorSpecId),
+                        ("axisActorId", request.AxisActorId),
+                        ("recipe", request.OperationalRecipeKind),
+                        ("source", request.Source),
+                        ("reason", request.Reason)));
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 _spawnedActor = null;
@@ -204,7 +242,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.HasAxisActorId && !completedEvent.HasAxisActorId)
             {
                 DebugUtility.LogError(GetType(),
-                    $"ActorSpawnCompletedEvent canonico sem AxisActorId apos spawn. request='{request}'");
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent canonico sem AxisActorId apos spawn",
+                        ("traceId", traceId),
+                        ("actorSpecId", request.ActorSpecId),
+                        ("actorSetRef", request.ActorSetRef),
+                        ("recipe", request.OperationalRecipeKind),
+                        ("source", request.Source),
+                        ("reason", request.Reason)));
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 _spawnedActor = null;
@@ -214,7 +259,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.HasSemanticParticipantId && !completedEvent.HasSemanticParticipantId)
             {
                 DebugUtility.LogError(GetType(),
-                    $"ActorSpawnCompletedEvent canonico sem SemanticParticipantId apos spawn. request='{request}'");
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent canonico sem SemanticParticipantId apos spawn",
+                        ("traceId", traceId),
+                        ("actorSpecId", request.ActorSpecId),
+                        ("actorSetRef", request.ActorSetRef),
+                        ("recipe", request.OperationalRecipeKind),
+                        ("source", request.Source),
+                        ("reason", request.Reason)));
                 Object.Destroy(_spawnedObject);
                 _spawnedObject = null;
                 _spawnedActor = null;
@@ -225,7 +277,17 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 completedEvent);
 
             DebugUtility.Log(GetType(),
-                $"[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent published actorSpecId='{completedEvent.ActorSpecId}' actorSetRef='{completedEvent.ActorSetRef}' axisActorId='{completedEvent.AxisActorId}' runtimeActorId='{completedEvent.RuntimeActorId}' semanticParticipantId='{AsText(completedEvent.SemanticParticipantId)}' source='{AsText(completedEvent.Source)}' executionSignature='{AsText(completedEvent.ExecutionSignature)}'.",
+                ObservabilityTraceFormatter.BuildCompactLogMessage(
+                    "[OBS][Gameplay][SpawnBridge] ActorSpawnCompletedEvent published",
+                    ("traceId", completedEvent.ExecutionSignature),
+                    ("actorSpecId", completedEvent.ActorSpecId),
+                    ("actorSetRef", completedEvent.ActorSetRef),
+                    ("axisActorId", completedEvent.AxisActorId),
+                    ("runtimeActorId", completedEvent.RuntimeActorId),
+                    ("semanticParticipantId", completedEvent.SemanticParticipantId),
+                    ("source", completedEvent.Source),
+                    ("reason", completedEvent.Reason),
+                    ("scene", completedEvent.SceneName)),
                 DebugUtility.Colors.Info);
 
             string prefabName = _prefab != null ? _prefab.name : "<null>";
