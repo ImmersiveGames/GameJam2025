@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.Runtime
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 {
     /// <summary>
     /// Runtime binding between a pooled instance and its canonical source pool.

@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Core.Fsm;
-using ImmersiveGames.GameJam2025.Core.Validation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
+using _ImmersiveGames.NewScripts.Foundation.Core.Validation;
 namespace _ImmersiveGames.Scripts.StateMachineSystems {
     /// <summary>
     /// Builder para criar uma OldStateMachine para o ControllerSystems de forma fluida e modular.

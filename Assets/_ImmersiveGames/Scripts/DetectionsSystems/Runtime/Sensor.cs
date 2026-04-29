@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;

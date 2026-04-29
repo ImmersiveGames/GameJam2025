@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore
 {
     internal static class SceneFlowSameFrameDedupe
     {

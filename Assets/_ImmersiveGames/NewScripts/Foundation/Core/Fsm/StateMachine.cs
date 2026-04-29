@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Validation;
-namespace ImmersiveGames.GameJam2025.Core.Fsm
+using _ImmersiveGames.NewScripts.Foundation.Core.Validation;
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Fsm
 {
     public class StateMachine
     {

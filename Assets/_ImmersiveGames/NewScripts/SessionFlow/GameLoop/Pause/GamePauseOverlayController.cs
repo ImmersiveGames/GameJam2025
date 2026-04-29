@@ -12,16 +12,16 @@
  */
 
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.Commands;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Pause
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
 {
     /// <summary>
     /// Controlador do contexto visual local de PauseMenu no UIGlobal.
@@ -52,7 +52,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Pause
         [Inject] private IPauseCommands _pauseCommands;
         [Inject] private IPauseStateService _pauseStateService;
         [Inject] private IGameNavigationService _navigationService;
-        [Inject] private ISessionIntegrationContextService _sessionIntegrationContextService;
+        [Inject] private ISessionIntegrationInputModeEmitter _sessionIntegrationInputModeEmitter;
 
         // Run lifecycle gating (mesma regra do Hotkey)
         private bool _runActive;
@@ -356,28 +356,28 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Pause
         {
             EnsureDependenciesInjected();
 
-            if (_sessionIntegrationContextService == null)
+            if (_sessionIntegrationInputModeEmitter == null)
             {
                 HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para FrontendMenu input mode. reason='{reason}'.");
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para FrontendMenu input mode. reason='{reason}'.");
                 return;
             }
 
-            _sessionIntegrationContextService.RequestFrontendMenuInputMode(reason, "PauseOverlay");
+            _sessionIntegrationInputModeEmitter.RequestFrontendMenuInputMode(reason, "PauseOverlay");
         }
 
         private void PublishPauseOverlayInputMode(string reason)
         {
             EnsureDependenciesInjected();
 
-            if (_sessionIntegrationContextService == null)
+            if (_sessionIntegrationInputModeEmitter == null)
             {
                 HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para PauseOverlay input mode. reason='{reason}'.");
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para PauseOverlay input mode. reason='{reason}'.");
                 return;
             }
 
-            _sessionIntegrationContextService.RequestPauseOverlayInputMode(reason, "PauseOverlay");
+            _sessionIntegrationInputModeEmitter.RequestPauseOverlayInputMode(reason, "PauseOverlay");
         }
 
         private static bool WasEscapePressedThisFrame()

@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime.Phases
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime.Phases
 {
     internal sealed class DespawnPhase : ISceneResetPhase
     {

@@ -1,8 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.RuntimeState
 {
     public sealed class PhaseCatalogRuntimeStateService : IPhaseCatalogRuntimeStateService
     {

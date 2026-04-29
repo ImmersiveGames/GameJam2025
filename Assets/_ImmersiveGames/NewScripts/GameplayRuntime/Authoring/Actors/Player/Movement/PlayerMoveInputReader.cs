@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Player.Movement
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     /// <summary>
     /// Leitor mínimo de input para o stack do Player no NewScripts.

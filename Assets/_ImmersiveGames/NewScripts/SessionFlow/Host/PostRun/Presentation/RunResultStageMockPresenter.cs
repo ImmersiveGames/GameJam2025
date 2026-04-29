@@ -1,11 +1,11 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation
 {
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]

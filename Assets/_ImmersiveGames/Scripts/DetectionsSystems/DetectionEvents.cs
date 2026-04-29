@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using ImmersiveGames.GameJam2025.Core.Events;
 namespace _ImmersiveGames.Scripts.DetectionsSystems

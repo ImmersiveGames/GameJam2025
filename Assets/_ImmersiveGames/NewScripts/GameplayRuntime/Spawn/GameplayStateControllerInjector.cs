@@ -1,7 +1,7 @@
 using System;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     internal static class GameplayStateControllerInjector
     {

@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore
 {
     /// <summary>
     /// Marca campos de ID tipado que podem aceitar valor vazio no Inspector.

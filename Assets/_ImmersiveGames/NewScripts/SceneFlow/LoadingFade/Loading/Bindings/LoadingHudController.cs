@@ -1,10 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Bindings
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Bindings
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudController : MonoBehaviour

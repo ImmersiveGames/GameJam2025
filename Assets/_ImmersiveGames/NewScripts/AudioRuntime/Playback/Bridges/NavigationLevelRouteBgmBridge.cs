@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Context;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Bridges
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Context;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bridges
 {
     /// <summary>
     /// Integration bridge (outside Audio core) that only forwards contextual events to Audio.

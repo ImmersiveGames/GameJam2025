@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public interface IDependencyProvider
     {

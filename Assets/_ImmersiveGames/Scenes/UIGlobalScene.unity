@@ -1419,9 +1419,9 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1769195222}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings.PostRunOverlayController,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindings.PostRunOverlayController,
           Assembly-CSharp
-        m_MethodName: OnClickResetRun
+        m_MethodName: OnClickRestart
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1534,7 +1534,7 @@ MonoBehaviour:
   titleText: {fileID: 1137477974}
   reasonText: {fileID: 2100922049}
   retryButton: {fileID: 1090074092}
-  resetRunButton: {fileID: 1658248573}
+  restartButton: {fileID: 1658248573}
   exitToMenuButton: {fileID: 559145753}
 --- !u!1 &1801535683
 GameObject:

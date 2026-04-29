@@ -1,5 +1,5 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
 {
     public enum GameLoopStateId
     {

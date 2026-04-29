@@ -1,31 +1,33 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Ownership;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Result;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
+using System.Collections.Generic;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using NewRunDecisionEnteredEvent = ImmersiveGames.GameJam2025.Experience.PostRun.Contracts.RunDecisionEnteredEvent;
-using NewRunDecisionCompletedEvent = ImmersiveGames.GameJam2025.Experience.PostRun.Contracts.RunDecisionCompletedEvent;
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
+using NewRunDecisionEnteredEvent = _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts.RunDecisionEnteredEvent;
+using NewRunDecisionCompletedEvent = _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts.RunDecisionCompletedEvent;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindings
 {
     /// <summary>
     /// Contexto visual local de RunDecision.
     ///
-    /// Consome a projeção canônica de resultado do PostRun e emite intents downstream.
-    /// Gate, ownership e projeção de resultado ficam fora da camada visual.
+    /// Consome a projeï¿½ï¿½o canï¿½nica de resultado do PostRun e emite intents downstream.
+    /// Gate, ownership e projeï¿½ï¿½o de resultado ficam fora da camada visual.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
     public sealed partial class PostRunOverlayController : MonoBehaviour, IRunDecisionStagePresenter
     {
-        private const string RetryReason = "RunDecision/Retry";
-        private const string ResetRunReason = "RunDecision/ResetRun";
+        private const string RestartCurrentPhaseReason = "RunDecision/RestartCurrentPhase";
+        private const string RestartReason = "RunDecision/Restart";
         private const string ExitToMenuReason = "RunDecision/ExitToMenu";
 
         [Header("Overlay")]
@@ -37,7 +39,7 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
 
         [Header("Buttons")]
         [SerializeField] private Button retryButton;
-        [SerializeField] private Button resetRunButton;
+        [SerializeField] private Button restartButton;
         [SerializeField] private Button exitToMenuButton;
 
         [Inject] private IRunDecisionOwnershipService _runDecisionOwnershipService;
@@ -51,15 +53,18 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
         private bool _registered;
         private bool _isVisible;
         private bool _actionRequested;
+        private readonly Queue<Action> _mainThreadActions = new();
+        private readonly object _mainThreadActionsSync = new();
+        private int _mainThreadId = -1;
 
         public string PresenterSignature { get; private set; } = string.Empty;
 
-        public bool IsReady => gameObject != null &&
-                               gameObject.activeInHierarchy &&
-                               !string.IsNullOrWhiteSpace(PresenterSignature);
+        public bool IsReady => !string.IsNullOrWhiteSpace(PresenterSignature);
 
         private void Awake()
         {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+
             if (rootCanvasGroup == null)
             {
                 rootCanvasGroup = GetComponent<CanvasGroup>();
@@ -82,6 +87,12 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
             EnsureDependenciesInjected();
         }
 
+        private void Update()
+        {
+            DrainMainThreadActions();
+        }
+
+
         private void OnEnable() => RegisterBindings();
 
         private void OnDisable()
@@ -100,77 +111,91 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
 
         public void BindToRunDecision(RunDecision decision)
         {
-            PresenterSignature = Normalize(decision.Signature);
-            DebugUtility.Log<IRunDecisionStagePresenter>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterAttached presenter='RunDecisionStagePresenter' scene='{gameObject.scene.name}' signature='{PresenterSignature}'.",
-                DebugUtility.Colors.Info);
 
-            ApplyStatus(ResolveRequiredResultService("BindToRunDecision"));
-            Show();
+            RunOnMainThread(() =>
+            {
+                PresenterSignature = Normalize(decision.Signature);
+                DebugUtility.Log<IRunDecisionStagePresenter>(
+                    $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterAttached presenter='RunDecisionStagePresenter' scene='{gameObject.scene.name}' signature='{PresenterSignature}'.",
+                    DebugUtility.Colors.Info);
+
+                ApplyStatus(ResolveRequiredResultService("BindToRunDecision"));
+                Show();
+            });
         }
 
         public void DetachFromRunDecision(string reason)
         {
-            HideImmediate();
-            PresenterSignature = string.Empty;
+            RunOnMainThread(() =>
+            {
+                HideImmediate();
+                PresenterSignature = string.Empty;
 
-            DebugUtility.Log<IRunDecisionStagePresenter>(
-                $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterDetached presenter='RunDecisionStagePresenter' reason='{Normalize(reason)}'.",
-                DebugUtility.Colors.Info);
+                DebugUtility.Log<IRunDecisionStagePresenter>(
+                    $"[OBS][GameplaySessionFlow][RunDecision] RunDecisionPresenterDetached presenter='RunDecisionStagePresenter' reason='{Normalize(reason)}'.",
+                    DebugUtility.Colors.Info);
+            });
         }
 
         /// <summary>
-        /// Alias de compatibilidade para bindings antigos de restart.
-        /// O trilho canonico agora deve usar Retry (run-level).
+        /// Restart reinicia a run a partir da primeira phase do catalogo.
         /// </summary>
         public void OnClickRestart()
         {
-            OnClickRetry();
+            RequestRestartFromFirstPhase("Restart", RestartReason);
         }
 
+        /// <summary>
+        /// Reinicia somente a phase atual.
+        /// </summary>
         public void OnClickRetry()
+        {
+            RequestRestartCurrentPhase("RestartCurrentPhase", RestartCurrentPhaseReason);
+        }
+
+        private void RequestRestartFromFirstPhase(string uiAction, string reason)
         {
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                    "[OBS][GameplaySessionFlow][RunDecision] Retry ignorado (acao ja solicitada).",
+                    $"[OBS][GameplaySessionFlow][RunDecision] RestartFromFirstPhase ignorado (acao ja solicitada). uiAction='{Normalize(uiAction)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Selection] Retry solicitado. Seleção confirmada e entregue ao owner run-level.",
+                $"[OBS][GameplaySessionFlow][RunDecision][Selection] Restart solicitado. uiAction='{Normalize(uiAction)}' source='{Normalize(uiAction)}' semantic='FirstPhaseRunRestart' legacy='false' selectedContinuation='{RunContinuationKind.RestartFromFirstPhase}' runtimeContinuation='{RunContinuationKind.RestartFromFirstPhase}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision(
-                selectedContinuation: RunContinuationKind.Retry,
+                selectedContinuation: RunContinuationKind.RestartFromFirstPhase,
                 completionKind: RunDecisionCompletionKind.Unknown,
                 handoffState: "SelectionConfirmed",
-                reason: RetryReason);
+                reason: reason);
             HideImmediate();
         }
 
-        public void OnClickResetRun()
+        private void RequestRestartCurrentPhase(string uiAction, string reason)
         {
             if (_actionRequested)
             {
                 DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                    "[OBS][GameplaySessionFlow][RunDecision] ResetRun ignorado (acao ja solicitada).",
+                    $"[OBS][GameplaySessionFlow][RunDecision] RestartCurrentPhase ignorado (acao ja solicitada). uiAction='{Normalize(uiAction)}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Selection] ResetRun solicitado. Seleção confirmada e entregue ao owner run-level.",
+                $"[OBS][GameplaySessionFlow][RunDecision][Selection] RestartCurrentPhase solicitado. uiAction='{Normalize(uiAction)}' source='{Normalize(uiAction)}' semantic='CurrentPhaseRestart' legacy='false' selectedContinuation='{RunContinuationKind.RestartCurrentPhase}' runtimeContinuation='{RunContinuationKind.RestartCurrentPhase}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision(
-                selectedContinuation: RunContinuationKind.ResetRun,
+                selectedContinuation: RunContinuationKind.RestartCurrentPhase,
                 completionKind: RunDecisionCompletionKind.Unknown,
                 handoffState: "SelectionConfirmed",
-                reason: ResetRunReason);
+                reason: reason);
             HideImmediate();
         }
 
@@ -189,7 +214,7 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                "[OBS][GameplaySessionFlow][RunDecision][Selection] ExitToMenu solicitado. Seleção confirmada e entregue ao owner de continuidade.",
+                "[OBS][GameplaySessionFlow][RunDecision][Selection] ExitToMenu solicitado. Seleï¿½ï¿½o confirmada e entregue ao owner de continuidade.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision(
@@ -240,8 +265,11 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
                 "[OBS][GameplaySessionFlow][RunDecision] GameRunStartedEvent recebido. Ocultando contexto visual local.",
                 DebugUtility.Colors.Info);
 
-            _actionRequested = false;
-            HideImmediate();
+            RunOnMainThread(() =>
+            {
+                _actionRequested = false;
+                HideImmediate();
+            });
         }
 
         private void OnRunDecisionEntered(NewRunDecisionEnteredEvent evt)
@@ -255,8 +283,11 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
                 "[OBS][GameplaySessionFlow][RunDecision] RunDecisionEnteredEvent recebido. Exibindo contexto visual local.",
                 DebugUtility.Colors.Info);
 
-            BindToRunDecision(evt.Decision);
-            LogOverlayOpened("RunDecisionEntered");
+            RunOnMainThread(() =>
+            {
+                BindToRunDecision(evt.Decision);
+                LogOverlayOpened("RunDecisionEntered");
+            });
         }
 
         private void OnRunDecisionCompleted(NewRunDecisionCompletedEvent evt)
@@ -265,8 +296,11 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
                 "[OBS][GameplaySessionFlow][RunDecision] RunDecisionCompletedEvent recebido. Ocultando contexto visual.",
                 DebugUtility.Colors.Info);
 
-            _actionRequested = false;
-            HideImmediate();
+            RunOnMainThread(() =>
+            {
+                _actionRequested = false;
+                HideImmediate();
+            });
         }
 
         private void ApplyStatus(IPostRunResultService resultService)
@@ -469,15 +503,58 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation.Bindings
                 DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] retryButton nao configurado no Inspector.");
             }
 
-            if (resetRunButton == null)
+            if (restartButton == null)
             {
-                DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] resetRunButton nao configurado no Inspector.");
+                DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] restartButton nao configurado no Inspector.");
             }
 
             if (exitToMenuButton == null)
             {
                 DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] exitToMenuButton nao configurado no Inspector.");
             }
+        }
+
+        private void RunOnMainThread(Action action)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            if (IsMainThread())
+            {
+                action();
+                return;
+            }
+
+            lock (_mainThreadActionsSync)
+            {
+                _mainThreadActions.Enqueue(action);
+            }
+        }
+
+        private void DrainMainThreadActions()
+        {
+            while (true)
+            {
+                Action nextAction = null;
+                lock (_mainThreadActionsSync)
+                {
+                    if (_mainThreadActions.Count == 0)
+                    {
+                        break;
+                    }
+
+                    nextAction = _mainThreadActions.Dequeue();
+                }
+
+                nextAction?.Invoke();
+            }
+        }
+
+        private bool IsMainThread()
+        {
+            return _mainThreadId > 0 && Thread.CurrentThread.ManagedThreadId == _mainThreadId;
         }
 
         private static string Normalize(string value)

@@ -1,13 +1,16 @@
 #nullable enable
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
+using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using UnityEngine.SceneManagement;
 
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkipPolicy
 {
     public sealed class IntroStageLifecycleOrchestrator : IDisposable
     {
@@ -102,10 +105,96 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
         public string Reason { get; }
     }
 
+    public enum IntroStageExecutionDecisionKind
+    {
+        Execute = 0,
+        SkipNoContent = 1
+    }
+
+    public readonly struct IntroStageExecutionDecision
+    {
+        private IntroStageExecutionDecision(
+            IntroStageExecutionDecisionKind kind,
+            bool warning,
+            string logReason,
+            string skipReason,
+            string detail,
+            string completionReason)
+        {
+            Kind = kind;
+            Warning = warning;
+            LogReason = logReason;
+            SkipReason = skipReason;
+            Detail = detail;
+            CompletionReason = completionReason;
+        }
+
+        public IntroStageExecutionDecisionKind Kind { get; }
+        public bool Warning { get; }
+        public string LogReason { get; }
+        public string SkipReason { get; }
+        public string Detail { get; }
+        public string CompletionReason { get; }
+        public bool ShouldSkip => Kind != IntroStageExecutionDecisionKind.Execute;
+
+        public static IntroStageExecutionDecision Execute()
+            => new(
+                IntroStageExecutionDecisionKind.Execute,
+                warning: false,
+                logReason: string.Empty,
+                skipReason: string.Empty,
+                detail: string.Empty,
+                completionReason: string.Empty);
+
+        public static IntroStageExecutionDecision SkipNoContent()
+            => new(
+                IntroStageExecutionDecisionKind.SkipNoContent,
+                warning: false,
+                logReason: PhaseFlowSignalVocabulary.NoContentReason,
+                skipReason: PhaseFlowSignalVocabulary.NoContentReason,
+                detail: string.Empty,
+                completionReason: PhaseFlowSignalVocabulary.NoContentReason);
+    }
+
+    public interface IIntroStageExecutionDecisionService
+    {
+        IntroStageExecutionDecision Decide(IntroStageSession session, string source, string reason);
+    }
+
+    public sealed class IntroStageExecutionDecisionService : IIntroStageExecutionDecisionService
+    {
+        private readonly IIntroStagePresenterRegistry _presenterRegistry;
+
+        public IntroStageExecutionDecisionService(IIntroStagePresenterRegistry presenterRegistry)
+        {
+            _presenterRegistry = presenterRegistry ?? throw new ArgumentNullException(nameof(presenterRegistry));
+        }
+
+        public IntroStageExecutionDecision Decide(IntroStageSession session, string source, string reason)
+        {
+            _ = reason;
+
+            if (!session.HasIntroStage)
+            {
+                return IntroStageExecutionDecision.SkipNoContent();
+            }
+
+            if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
+            {
+                // Ausencia de contrato operacional/presenter no escopo da phase e no-content explicito.
+                return IntroStageExecutionDecision.SkipNoContent();
+            }
+
+            return IntroStageExecutionDecision.Execute();
+        }
+    }
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageLifecycleStateService : IIntroStageLifecycleStateService
     {
         private readonly object _sync = new();
+        private readonly IntroStageLifecycleDeferPolicy _deferPolicy = new();
+        private readonly IntroStageLifecycleTelemetry _telemetry = new();
         private int _lastProcessedPhaseLocalEntrySequence;
         private IntroStageSession _pendingGameplaySession;
         private string _pendingGameplaySource = string.Empty;
@@ -121,7 +210,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
                 return false;
             }
 
-            if (ShouldDeferGameplayIntro(evt))
+            if (_deferPolicy.ShouldDeferGameplayIntro(evt))
             {
                 QueuePendingGameplayIntro(evt);
                 shouldDefer = true;
@@ -161,9 +250,12 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
                 _pendingGameplayReason = string.Empty;
             }
 
-            DebugUtility.Log<IntroStageLifecycleStateService>(
-                $"[OBS][IntroStage] IntroStageReleasedOnSceneTransitionCompleted source='{pendingSource}' contentName='{DescribeSessionContentName(pendingSession)}' v='{pendingSession.SelectionVersion}' reason='{Normalize(pendingReason)}' sessionSignature='{Normalize(pendingSession.SessionSignature)}' routeKind='{evt.context.RouteKind}' sceneTransitionSignature='{SceneTransitionSignature.Compute(evt.context)}'.",
-                DebugUtility.Colors.Info);
+            _telemetry.LogReleasedOnSceneTransitionCompleted(
+                pendingSource,
+                pendingSession,
+                pendingReason,
+                evt.context.RouteKind,
+                SceneTransitionSignature.Compute(evt.context));
 
             pendingGameplayIntro = new IntroStagePendingGameplayIntro(
                 pendingSession,
@@ -195,22 +287,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
         private static string Normalize(string value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
 
-        private static string DescribeSessionContentName(IntroStageSession session)
-        {
-            if (session.PhaseDefinitionRef != null)
-            {
-                return session.PhaseDefinitionRef.name;
-            }
-
-            return "<none>";
-        }
-
-        private static bool ShouldDeferGameplayIntro(IntroStageEntryEvent evt)
-        {
-            return evt.RouteKind == SceneRouteKind.Gameplay
-                   && string.Equals(evt.Source, "GameplaySessionFlow", StringComparison.Ordinal);
-        }
-
         private void QueuePendingGameplayIntro(IntroStageEntryEvent evt)
         {
             lock (_sync)
@@ -221,63 +297,57 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
                 _hasPendingGameplayIntro = true;
             }
 
-            DebugUtility.Log<IntroStageLifecycleStateService>(
-                $"[OBS][IntroStage] IntroStageDeferred source='{evt.Source}' contentName='{DescribeSessionContentName(evt.Session)}' v='{evt.Session.SelectionVersion}' hasIntroStage='{evt.Session.HasIntroStage}' reason='{Normalize(evt.Session.Reason)}' sessionSignature='{Normalize(evt.Session.SessionSignature)}' gate='SceneTransitionCompletedEvent'.",
-                DebugUtility.Colors.Info);
+            _telemetry.LogDeferred(evt.Source, evt.Session, Normalize(evt.Session.Reason));
         }
     }
 
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageLifecycleDispatchService : IIntroStageLifecycleDispatchService
     {
-        private readonly IIntroStagePresenterRegistry _presenterRegistry;
         private readonly IIntroStageCoordinator _introStageCoordinator;
+        private readonly IIntroStageExecutionDecisionService _executionDecisionService;
+        private readonly IntroStageLifecycleTelemetry _telemetry = new();
+        private readonly IIntroStageCompletionSignalingService _completionSignalingService;
 
         public IntroStageLifecycleDispatchService(
-            IIntroStagePresenterRegistry presenterRegistry,
+            IIntroStageExecutionDecisionService executionDecisionService,
             IIntroStageCoordinator introStageCoordinator)
         {
-            _presenterRegistry = presenterRegistry ?? throw new ArgumentNullException(nameof(presenterRegistry));
             _introStageCoordinator = introStageCoordinator ?? throw new ArgumentNullException(nameof(introStageCoordinator));
+            _executionDecisionService = executionDecisionService ?? throw new ArgumentNullException(nameof(executionDecisionService));
+            _completionSignalingService = new IntroStageCompletionSignalingService(_telemetry);
         }
 
         public void DispatchIntroStage(string source, IntroStageSession session, SceneRouteKind routeKind, string reason)
         {
             string activeSceneName = SceneManager.GetActiveScene().name;
-            string contentName = DescribeSessionContentName(session);
+            IntroStageExecutionDecision decision = _executionDecisionService.Decide(session, source, reason);
 
-            if (!session.HasIntroStage)
+            if (decision.ShouldSkip)
             {
-                DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}'.",
-                    DebugUtility.Colors.Info);
+                IntroStageSession completionSession = decision.Kind == IntroStageExecutionDecisionKind.SkipNoContent
+                    ? CreateNoContentSession(session)
+                    : session;
 
-                IntroStageSession noContentSession = CreateNoContentSession(session);
-                PublishIntroStageCompleted(noContentSession, "GameplaySessionFlow", wasSkipped: true, reason: "no_content");
-                RunIntroStage(noContentSession, routeKind, activeSceneName, reason);
+                ValidateGameplayCompletionPayload(routeKind, completionSession, decision.CompletionReason);
+                _telemetry.LogSkipped(decision, source, completionSession, reason);
+
+                _completionSignalingService.Publish(completionSession, source, wasSkipped: true, reason: decision.CompletionReason);
+                RunIntroStage(completionSession, routeKind, activeSceneName, reason, source);
                 return;
             }
 
-            if (!_presenterRegistry.TryEnsureCurrentPresenter(session, source, out _))
-            {
-                DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                    $"[OBS][IntroStage] IntroStageSkipped reason='no_content' source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}' detail='presenter_unavailable'.",
-                    DebugUtility.Colors.Info);
+            _telemetry.LogStartRequested(source, session, reason);
 
-                IntroStageSession noContentSession = CreateNoContentSession(session);
-                PublishIntroStageCompleted(noContentSession, "GameplaySessionFlow", wasSkipped: true, reason: "no_content");
-                RunIntroStage(noContentSession, routeKind, activeSceneName, reason);
-                return;
-            }
-
-            DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                $"[OBS][IntroStage] IntroStageStartRequested source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{reason}' sessionSignature='{session.SessionSignature}'.",
-                DebugUtility.Colors.Info);
-
-            RunIntroStage(session, routeKind, activeSceneName, reason);
+            RunIntroStage(session, routeKind, activeSceneName, reason, source);
         }
 
-        private void RunIntroStage(IntroStageSession session, SceneRouteKind routeKind, string activeSceneName, string reason)
+        private void RunIntroStage(
+            IntroStageSession session,
+            SceneRouteKind routeKind,
+            string activeSceneName,
+            string reason,
+            string source)
         {
             var context = new IntroStageContext(
                 session: session,
@@ -285,17 +355,32 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
                 targetScene: activeSceneName,
                 reason: reason);
 
-            _ = _introStageCoordinator.RunIntroStageAsync(context);
+            _ = ObserveIntroStageDispatchAsync(context, source);
         }
 
-        private static void PublishIntroStageCompleted(IntroStageSession session, string source, bool wasSkipped, string reason)
+        private async Task ObserveIntroStageDispatchAsync(IntroStageContext context, string source)
         {
-            string contentName = DescribeSessionContentName(session);
-            DebugUtility.Log<IntroStageLifecycleDispatchService>(
-                $"[OBS][IntroStage] IntroStageCompletedPublished source='{source}' contentName='{contentName}' v='{session.SelectionVersion}' signature='{session.SessionSignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
-                DebugUtility.Colors.Info);
+            try
+            {
+                DebugUtility.Log<IntroStageLifecycleDispatchService>(
+                    BuildIntroStageDispatchLogMessage(context, source, "started", null),
+                    DebugUtility.Colors.Info);
 
-            EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(session, source, wasSkipped, reason));
+                await _introStageCoordinator.RunIntroStageAsync(context);
+
+                DebugUtility.Log<IntroStageLifecycleDispatchService>(
+                    BuildIntroStageDispatchLogMessage(context, source, "completed", null),
+                    DebugUtility.Colors.Success);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError<IntroStageLifecycleDispatchService>(
+                    BuildIntroStageDispatchLogMessage(context, source, "failed", ex));
+
+                HardFailFastH1.Trigger(typeof(IntroStageLifecycleDispatchService),
+                    $"[FATAL][H1][IntroStage] IntroStage dispatch failed. operation='IntroStageDispatch' status='failed' reason='{NormalizeForLog(context.Reason)}' targetScene='{NormalizeForLog(context.TargetScene)}' routeKind='{context.RouteKind}' contextSignature='{NormalizeForLog(context.ContextSignature)}' executionSignature='{NormalizeForLog(context.ExecutionSignature)}' phaseLocalEntrySequence='{context.Session.PhaseLocalEntrySequence}' entrySignature='{NormalizeForLog(context.Session.EntrySignature)}' sourcePath='{NormalizeForLog(source)}' exceptionType='{ex.GetType().Name}' exceptionMessage='{NormalizeForLog(ex.Message)}'.",
+                    ex);
+            }
         }
 
         private static IntroStageSession CreateNoContentSession(IntroStageSession session)
@@ -308,11 +393,143 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
                 session.PhaseLocalEntrySequence,
                 session.SessionSignature,
                 hasIntroStage: false,
-                entrySignature: session.EntrySignature);
+                entrySignature: session.EntrySignature,
+                phaseRuntimeSignature: session.PhaseRuntimeSignature);
         }
 
-        private static string Normalize(string value)
-            => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        private static void ValidateGameplayCompletionPayload(
+            SceneRouteKind routeKind,
+            IntroStageSession session,
+            string reason)
+        {
+            if (routeKind != SceneRouteKind.Gameplay)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(session.SessionSignature) &&
+                !string.IsNullOrWhiteSpace(session.PhaseRuntimeSignature) &&
+                !string.IsNullOrWhiteSpace(session.EntrySignature))
+            {
+                return;
+            }
+
+            HardFailFastH1.Trigger(typeof(IntroStageLifecycleDispatchService),
+                $"[FATAL][H1][IntroStage] Invalid IntroStageCompleted payload for Gameplay route. reason='{NormalizeForLog(reason)}' hasSessionSignature='{(!string.IsNullOrWhiteSpace(session.SessionSignature)).ToString().ToLowerInvariant()}' hasPhaseRuntimeSignature='{(!string.IsNullOrWhiteSpace(session.PhaseRuntimeSignature)).ToString().ToLowerInvariant()}' hasEntrySignature='{(!string.IsNullOrWhiteSpace(session.EntrySignature)).ToString().ToLowerInvariant()}'.");
+        }
+
+        private static string BuildIntroStageDispatchLogMessage(
+            IntroStageContext context,
+            string source,
+            string status,
+            Exception? exception)
+        {
+            string exceptionFields = exception == null
+                ? string.Empty
+                : $" exceptionType='{exception.GetType().Name}' exceptionMessage='{NormalizeForLog(exception.Message)}'";
+
+            return $"[OBS][IntroStage] intro_stage_dispatch_{status} operation='IntroStageDispatch' status='{status}' reason='{NormalizeForLog(context.Reason)}' targetScene='{NormalizeForLog(context.TargetScene)}' routeKind='{context.RouteKind}' contextSignature='{NormalizeForLog(context.ContextSignature)}' executionSignature='{NormalizeForLog(context.ExecutionSignature)}' phaseLocalEntrySequence='{context.Session.PhaseLocalEntrySequence}' entrySignature='{NormalizeForLog(context.Session.EntrySignature)}' sourcePath='{NormalizeForLog(source)}' hasIntroStage='{context.HasIntroStage.ToString().ToLowerInvariant()}' selectionVersion='{context.Session.SelectionVersion}'{exceptionFields}.";
+        }
+
+        private static string NormalizeForLog(string value)
+            => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    internal sealed class IntroStageLifecycleDeferPolicy
+    {
+        public bool ShouldDeferGameplayIntro(IntroStageEntryEvent evt)
+        {
+            return evt.RouteKind == SceneRouteKind.Gameplay
+                   && PhaseFlowSignalVocabulary.IsGameplaySessionFlowSource(evt.Source);
+        }
+    }
+
+    internal interface IIntroStageCompletionSignalingService
+    {
+        void Publish(IntroStageSession session, string source, bool wasSkipped, string reason);
+    }
+
+    internal sealed class IntroStageCompletionSignalingService : IIntroStageCompletionSignalingService
+    {
+        private readonly IntroStageLifecycleTelemetry _telemetry;
+
+        public IntroStageCompletionSignalingService(IntroStageLifecycleTelemetry telemetry)
+        {
+            _telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+        }
+
+        public void Publish(IntroStageSession session, string source, bool wasSkipped, string reason)
+        {
+            string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource(source);
+            string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason(reason, wasSkipped);
+
+            _telemetry.LogCompletedPublished(canonicalSource, session, wasSkipped, canonicalReason);
+            EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(session, canonicalSource, wasSkipped, canonicalReason));
+        }
+    }
+
+    internal static class IntroStageCompletionSignalPolicy
+    {
+        public static string CanonicalizeSource(string source)
+        {
+            return PhaseFlowSignalVocabulary.CanonicalizeCompletionSource(source);
+        }
+
+        public static string CanonicalizeReason(string reason, bool wasSkipped)
+        {
+            return PhaseFlowSignalVocabulary.CanonicalizeCompletionReason(reason, wasSkipped);
+        }
+    }
+
+    internal sealed class IntroStageLifecycleTelemetry
+    {
+        public void LogDeferred(string source, IntroStageSession session, string reason)
+        {
+            DebugUtility.Log<IntroStageLifecycleStateService>(
+                $"[OBS][IntroStage] IntroStageDeferred source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{Normalize(reason)}' sessionSignature='{Normalize(session.SessionSignature)}' gate='SceneTransitionCompletedEvent'.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void LogReleasedOnSceneTransitionCompleted(
+            string source,
+            IntroStageSession session,
+            string reason,
+            SceneRouteKind routeKind,
+            string sceneTransitionSignature)
+        {
+            DebugUtility.Log<IntroStageLifecycleStateService>(
+                $"[OBS][IntroStage] IntroStageReleasedOnSceneTransitionCompleted source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' reason='{Normalize(reason)}' sessionSignature='{Normalize(session.SessionSignature)}' routeKind='{routeKind}' sceneTransitionSignature='{sceneTransitionSignature}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void LogSkipped(IntroStageExecutionDecision decision, string source, IntroStageSession session, string reason)
+        {
+            string message = decision.Warning
+                ? $"[WARN][OBS][IntroStage] IntroStageSkipped reason='{decision.LogReason}' skipReason='{decision.SkipReason}' source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{Normalize(reason)}' sessionSignature='{Normalize(session.SessionSignature)}' detail='{decision.Detail}'."
+                : $"[OBS][IntroStage] IntroStageSkipped reason='{decision.LogReason}' source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{Normalize(reason)}' sessionSignature='{Normalize(session.SessionSignature)}'.";
+
+            if (decision.Warning)
+            {
+                DebugUtility.LogWarning<IntroStageLifecycleDispatchService>(message);
+                return;
+            }
+
+            DebugUtility.Log<IntroStageLifecycleDispatchService>(message, DebugUtility.Colors.Info);
+        }
+
+        public void LogStartRequested(string source, IntroStageSession session, string reason)
+        {
+            DebugUtility.Log<IntroStageLifecycleDispatchService>(
+                $"[OBS][IntroStage] IntroStageStartRequested source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' hasIntroStage='{session.HasIntroStage}' reason='{Normalize(reason)}' sessionSignature='{Normalize(session.SessionSignature)}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void LogCompletedPublished(string source, IntroStageSession session, bool wasSkipped, string reason)
+        {
+            DebugUtility.Log<IntroStageLifecycleDispatchService>(
+                $"[OBS][IntroStage] IntroStageCompletedPublished source='{source}' contentName='{DescribeSessionContentName(session)}' v='{session.SelectionVersion}' sessionSignature='{session.SessionSignature}' phaseRuntimeSignature='{session.PhaseRuntimeSignature}' entrySignature='{session.EntrySignature}' skipped='{wasSkipped.ToString().ToLowerInvariant()}' reason='{Normalize(reason)}'.",
+                DebugUtility.Colors.Info);
+        }
 
         private static string DescribeSessionContentName(IntroStageSession session)
         {
@@ -323,6 +540,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
 
             return "<none>";
         }
+
+        private static string Normalize(string value)
+            => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 }
-

@@ -1,4 +1,7 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
@@ -257,8 +260,10 @@ namespace _ImmersiveGames.Scripts.QA
                 return false;
             }
 
-            if (!provider.TryGetForScene<IResetOrchestrator>(gameplaySceneNameForOrchestrator, out var orchestrator) ||
-                orchestrator == null)
+            // (restoring original: no cross-folder diagnostic changes here)
+
+            if (!provider.TryGetForScene<IResetOrchestrator>(gameplaySceneNameForOrchestrator, out var orchestratorInstance) ||
+                orchestratorInstance == null)
             {
                 DebugUtility.LogError<MenuContextController>(
                     $"[MenuContext] IResetOrchestrator n�o encontrado para a cena '{gameplaySceneNameForOrchestrator}'. " +
@@ -272,7 +277,7 @@ namespace _ImmersiveGames.Scripts.QA
                     $"[MenuContext] Reset IN-PLACE => RequestResetAsync | Scene='{gameplaySceneNameForOrchestrator}' | Scope={scope} | Reason='{reason}'");
             }
 
-            bool ok = await orchestrator.RequestResetAsync(new ResetRequest(scope, $"MenuContext ResetInPlace: {reason}"));
+            bool ok = await orchestratorInstance.RequestResetAsync(new ResetRequest(scope, $"MenuContext ResetInPlace: {reason}"));
 
             if (logResetInPlaceVerbose)
             {

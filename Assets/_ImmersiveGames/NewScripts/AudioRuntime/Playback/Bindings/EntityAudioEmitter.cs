@@ -1,11 +1,10 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Models;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Bindings
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
 {
     /// <summary>
     /// Binding estrutural mínimo de contexto local para EntityAudio.

@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts
 {
     public enum PhaseCatalogTraversalMode
     {

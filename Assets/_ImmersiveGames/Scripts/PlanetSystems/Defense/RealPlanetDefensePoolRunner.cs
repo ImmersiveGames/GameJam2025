@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;

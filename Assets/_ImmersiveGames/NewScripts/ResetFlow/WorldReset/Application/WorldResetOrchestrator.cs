@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Guards;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Validation;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Guards;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Validation;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 {
     /// <summary>
     /// Orquestra a decisÃ£o de reset do WorldReset.
@@ -50,44 +48,21 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
             _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
         }
 
-        public static WorldResetOrchestrator CreateDefault(
-            IDependencyProvider provider,
-            WorldResetLifecyclePublisher lifecyclePublisher)
-        {
-            if (provider == null)
-            {
-                throw new InvalidOperationException("IDependencyProvider is required to build the WorldResetOrchestrator.");
-            }
-
-            provider.TryGetGlobal(out IWorldResetPolicy policy);
-            provider.TryGetGlobal(out ISimulationGateService gateService);
-
-            var guards = new List<IWorldResetGuard>(1)
-            {
-                new SimulationGateWorldResetGuard(gateService)
-            };
-
-            var validators = new List<IWorldResetValidator>(1)
-            {
-                new WorldResetSignatureValidator()
-            };
-
-            WorldResetValidationPipeline validationPipeline = new WorldResetValidationPipeline(validators);
-            WorldResetExecutor executor = new WorldResetExecutor();
-            WorldResetPostResetValidator postResetValidator = new WorldResetPostResetValidator(provider);
-
-            return new WorldResetOrchestrator(
-                policy,
-                guards,
-                validationPipeline,
-                executor,
-                postResetValidator,
-                lifecyclePublisher);
-        }
-
         public async Task<WorldResetResult> ExecuteAsync(WorldResetRequest request)
         {
             LogLifecycleCheckpoint(LifecycleCheckpoint.Dispatch, request, "received");
+
+            if (!request.ShouldExecute)
+            {
+                WorldResetOutcome skippedOutcome = WorldResetOutcome.SkippedByPolicy;
+                string skippedDetail = string.IsNullOrWhiteSpace(request.Reason) ? "SkippedByPolicy" : request.Reason;
+
+                _lifecyclePublisher.PublishCompleted(request, skippedOutcome, skippedDetail);
+                LogLifecycleCheckpoint(LifecycleCheckpoint.Completion, request, skippedOutcome.ToString());
+                LogCompletionFlow(skippedOutcome.ToString(), request, skippedDetail);
+                return WorldResetResult.Completed;
+            }
+
             ResetDecision decision = EvaluateGuards(request);
             if (!decision.ShouldProceed)
             {
@@ -129,8 +104,18 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
 
             try
             {
-                await _executor.ExecuteAsync(executors, request.Reason);
-                _postResetValidator.ValidateEssentialActors(request.TargetScene, _policy);
+                WorldResetLocalExecutionResult localResult = await _executor.ExecuteAsync(executors, request.Reason, request.TargetScene);
+                if (!localResult.Succeeded)
+                {
+                    result = WorldResetResult.Failed;
+                    outcome = WorldResetOutcome.FailedExecution;
+                    detailMessage = $"{WorldResetReasons.FailedExecutionPrefix}:{localResult.Status}:{localResult.Detail}";
+                    DebugUtility.LogWarning<WorldResetOrchestrator>(
+                        $"[{ResetLogTags.Failed}] [WorldResetOrchestrator] Reset local nao confirmou sucesso. request={request}, localResult={localResult}.");
+                    return result;
+                }
+
+                _postResetValidator.ValidateEssentialActors(request.TargetScene, _policy, request.Origin);
             }
             catch (Exception ex)
             {

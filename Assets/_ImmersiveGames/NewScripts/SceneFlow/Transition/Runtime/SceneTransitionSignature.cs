@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// Centraliza a assinatura de correlacao usada entre SceneFlow e WorldReset.
@@ -38,7 +38,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
                 reason: request.Reason,
                 transitionProfile: request.TransitionProfile,
                 routeRef: request.ResolvedRouteRef,
-                contextSignature: request.ContextSignature);
+                contextSignature: request.ContextSignature,
+                payload: request.Payload);
         }
 
         private static IReadOnlyList<string> NormalizeList(IReadOnlyList<string> source)

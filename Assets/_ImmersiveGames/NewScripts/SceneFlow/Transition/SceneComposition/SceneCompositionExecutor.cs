@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneComposition
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SceneCompositionExecutor : ISceneCompositionExecutor

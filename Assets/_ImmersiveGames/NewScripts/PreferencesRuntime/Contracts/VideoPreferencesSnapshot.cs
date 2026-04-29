@@ -1,5 +1,5 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Contracts
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
 {
     public sealed class VideoPreferencesSnapshot
     {

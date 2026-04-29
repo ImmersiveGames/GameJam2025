@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;

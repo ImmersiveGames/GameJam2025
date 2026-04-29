@@ -1,10 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Models;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     public sealed partial class AudioGlobalSfxService
     {

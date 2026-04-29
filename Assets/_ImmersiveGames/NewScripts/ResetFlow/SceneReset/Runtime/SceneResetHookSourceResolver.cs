@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Spawn;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetHookSourceResolver
     {

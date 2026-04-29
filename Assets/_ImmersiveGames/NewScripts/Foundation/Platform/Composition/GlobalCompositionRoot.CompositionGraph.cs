@@ -1,18 +1,20 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Bootstrap;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Bootstrap;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Bootstrap;
-using ImmersiveGames.GameJam2025.Experience.Save.Bootstrap;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Bootstrap;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Bootstrap;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation.Bootstrap;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Bootstrap;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Bootstrap;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Bootstrap;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap;
+using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers;
+using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
+using _ImmersiveGames.NewScripts.SceneFlow.Installers;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {
@@ -65,10 +67,12 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
                 CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(InputModesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SessionIntegrationCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(ActorsSystemCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(RunEndRailCompositionDescriptor.Descriptor),

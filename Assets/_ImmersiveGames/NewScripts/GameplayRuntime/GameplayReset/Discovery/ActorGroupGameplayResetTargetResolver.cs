@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Execution;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Policies;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Execution;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     internal sealed class ActorGroupGameplayResetTargetResolver
         : IActorGroupGameplayResetTargetResolver

@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Bindings
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 {
     /// <summary>
     /// Binder de intencao para opcoes de video.

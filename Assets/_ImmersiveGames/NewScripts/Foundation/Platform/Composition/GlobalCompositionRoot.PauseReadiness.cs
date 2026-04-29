@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {

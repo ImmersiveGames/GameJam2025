@@ -1,19 +1,20 @@
 using System;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 {
     public sealed partial class GameLoopSceneFlowSyncCoordinator : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameLoopService _gameLoop;
         private readonly IFadeService _fadeService;
+        private readonly IGameLoopSceneFlowSyncDecisionService _syncDecisionService;
         private readonly SceneTransitionRequest _startPlan;
         private readonly GameLoopEventSubscriptionSet _subscriptions = new();
 
@@ -23,6 +24,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
         private bool _syncIssued;
 
         private string _expectedContextSignature;
+        private string _lastReceivedContextSignature;
 
         private readonly EventBinding<BootStartPlanRequestedEvent> _startRequestedBinding;
         private readonly EventBinding<SceneTransitionStartedEvent> _transitionStartedBinding;
@@ -35,11 +37,13 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
             ISceneTransitionService sceneFlow,
             IGameLoopService gameLoop,
             IFadeService fadeService,
+            IGameLoopSceneFlowSyncDecisionService syncDecisionService,
             SceneTransitionRequest startPlan)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
             _gameLoop = gameLoop ?? throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IGameLoopService obrigatorio ausente para o coordinator.");
             _fadeService = fadeService;
+            _syncDecisionService = syncDecisionService ?? throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IGameLoopSceneFlowSyncDecisionService obrigatorio ausente para o coordinator.");
             _startPlan = ValidateStartPlanOrFailFast(startPlan);
 
             if (_startPlan.UseFade && _fadeService == null)
@@ -141,8 +145,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
             }
 
             string ctxSig = SceneTransitionSignature.Compute(evt.context);
-            if (!string.IsNullOrEmpty(_expectedContextSignature) &&
-                !string.Equals(ctxSig, _expectedContextSignature, StringComparison.Ordinal))
+            _lastReceivedContextSignature = ctxSig;
+
+            if (!_syncDecisionService.IsTransitionSignatureAccepted(_expectedContextSignature, ctxSig))
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
                     $"[OBS][GameLoopSceneFlow][Operational] TransitionCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{ctxSig}'.",
@@ -166,26 +171,31 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
                 return;
             }
 
-            if (!string.IsNullOrEmpty(evt.ContextSignature))
+            string receivedSignature = evt.ContextSignature ?? string.Empty;
+            _lastReceivedContextSignature = receivedSignature;
+
+            WorldResetSyncSignatureDecision signatureDecision =
+                _syncDecisionService.DecideWorldResetSignature(_expectedContextSignature, receivedSignature);
+
+            if (signatureDecision.Kind == WorldResetSyncSignatureDecisionKind.RejectedMismatch)
             {
-                if (string.IsNullOrEmpty(_expectedContextSignature))
-                {
-                    _expectedContextSignature = evt.ContextSignature;
-                }
-                else if (!string.Equals(evt.ContextSignature, _expectedContextSignature, StringComparison.Ordinal))
-                {
-                    DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                        $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
+                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
+                    $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return;
             }
-            else if (!string.IsNullOrEmpty(_expectedContextSignature))
+
+            if (signatureDecision.Kind == WorldResetSyncSignatureDecisionKind.RejectedMissingWithExpected)
             {
                 DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
                     $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
                 return;
+            }
+
+            if (signatureDecision.Kind == WorldResetSyncSignatureDecisionKind.AdoptExpectedFromReceived)
+            {
+                _expectedContextSignature = signatureDecision.ResolvedExpectedSignature;
             }
 
             _worldResetCompleted = true;
@@ -235,6 +245,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
             _worldResetCompleted = false;
             _syncIssued = false;
             _expectedContextSignature = null;
+            _lastReceivedContextSignature = string.Empty;
         }
 
         private bool ShouldHandleTransition(SceneTransitionContext context)
@@ -255,12 +266,13 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
 
         private void TryIssueGameLoopSync()
         {
-            if (_syncIssued)
-            {
-                return;
-            }
-
-            if (!_startInProgress || !_transitionCompleted || !_worldResetCompleted)
+            if (!_syncDecisionService.CanCompleteSync(
+                    _startInProgress,
+                    _transitionCompleted,
+                    _worldResetCompleted,
+                    _syncIssued,
+                    _expectedContextSignature,
+                    _lastReceivedContextSignature))
             {
                 return;
             }
@@ -302,6 +314,99 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
             string fatalMessage = $"[FATAL][Config][GameLoopSceneFlow] {message}";
             DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator), fatalMessage);
             throw new InvalidOperationException(fatalMessage);
+        }
+    }
+
+    public interface IGameLoopSceneFlowSyncDecisionService
+    {
+        bool IsTransitionSignatureAccepted(string expectedSignature, string receivedSignature);
+        WorldResetSyncSignatureDecision DecideWorldResetSignature(string expectedSignature, string receivedSignature);
+        bool CanCompleteSync(
+            bool startInProgress,
+            bool transitionCompleted,
+            bool worldResetCompleted,
+            bool syncIssued,
+            string expectedSignature,
+            string receivedSignature);
+    }
+
+    public enum WorldResetSyncSignatureDecisionKind
+    {
+        Accepted = 0,
+        AdoptExpectedFromReceived = 1,
+        RejectedMismatch = 2,
+        RejectedMissingWithExpected = 3,
+    }
+
+    public readonly struct WorldResetSyncSignatureDecision
+    {
+        public WorldResetSyncSignatureDecision(WorldResetSyncSignatureDecisionKind kind, string resolvedExpectedSignature)
+        {
+            Kind = kind;
+            ResolvedExpectedSignature = resolvedExpectedSignature ?? string.Empty;
+        }
+
+        public WorldResetSyncSignatureDecisionKind Kind { get; }
+        public string ResolvedExpectedSignature { get; }
+    }
+
+    public sealed class GameLoopSceneFlowSyncDecisionService : IGameLoopSceneFlowSyncDecisionService
+    {
+        public bool IsTransitionSignatureAccepted(string expectedSignature, string receivedSignature)
+        {
+            if (string.IsNullOrEmpty(expectedSignature))
+            {
+                return true;
+            }
+
+            return string.Equals(receivedSignature, expectedSignature, StringComparison.Ordinal);
+        }
+
+        public WorldResetSyncSignatureDecision DecideWorldResetSignature(string expectedSignature, string receivedSignature)
+        {
+            bool hasExpectedSignature = !string.IsNullOrEmpty(expectedSignature);
+            bool hasReceivedSignature = !string.IsNullOrEmpty(receivedSignature);
+
+            if (hasReceivedSignature)
+            {
+                if (!hasExpectedSignature)
+                {
+                    return new WorldResetSyncSignatureDecision(
+                        WorldResetSyncSignatureDecisionKind.AdoptExpectedFromReceived,
+                        receivedSignature);
+                }
+
+                if (!string.Equals(receivedSignature, expectedSignature, StringComparison.Ordinal))
+                {
+                    return new WorldResetSyncSignatureDecision(
+                        WorldResetSyncSignatureDecisionKind.RejectedMismatch,
+                        expectedSignature);
+                }
+            }
+            else if (hasExpectedSignature)
+            {
+                return new WorldResetSyncSignatureDecision(
+                    WorldResetSyncSignatureDecisionKind.RejectedMissingWithExpected,
+                    expectedSignature);
+            }
+
+            return new WorldResetSyncSignatureDecision(
+                WorldResetSyncSignatureDecisionKind.Accepted,
+                expectedSignature ?? string.Empty);
+        }
+
+        public bool CanCompleteSync(
+            bool startInProgress,
+            bool transitionCompleted,
+            bool worldResetCompleted,
+            bool syncIssued,
+            string expectedSignature,
+            string receivedSignature)
+        {
+            return !syncIssued &&
+                   startInProgress &&
+                   transitionCompleted &&
+                   worldResetCompleted;
         }
     }
 }

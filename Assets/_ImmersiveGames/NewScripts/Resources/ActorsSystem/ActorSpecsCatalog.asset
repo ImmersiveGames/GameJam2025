@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 311f24d9368e4207bd7ef64f28b8a81d, type: 3}
+  m_Name: ActorSpecsCatalog
+  m_EditorClassIdentifier: 
+  entries:
+  - actorSpecId: actor.player
+    sourceKind: 1
+    roleGroup: 1
+    operationalRecipeKind: 1
+    placeholderBodyRef: GameplayRuntime/Prefabs/Player_NewScripts
+    placeholderBodyPrefab: {fileID: 100000, guid: a92dfce9d9c24c34b1b217f3f0d2f08d, type: 3}
+    integrationStage: 2
+    realizationMode: 1
+    continuityResetPolicy: 3
+  - actorSpecId: actor.eater
+    sourceKind: 2
+    roleGroup: 2
+    operationalRecipeKind: 3
+    placeholderBodyRef: GameplayRuntime/Prefabs/Eater_NewScripts
+    placeholderBodyPrefab: {fileID: 100000, guid: 0744eef234e55034895662d2373a6d62, type: 3}
+    integrationStage: 2
+    realizationMode: 1
+    continuityResetPolicy: 3
+  - actorSpecId: actor.dummy
+    sourceKind: 2
+    roleGroup: 2
+    operationalRecipeKind: 2
+    placeholderBodyRef: GameplayRuntime/Prefabs/DummyActor
+    placeholderBodyPrefab: {fileID: 100000, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
+    integrationStage: 3
+    realizationMode: 1
+    continuityResetPolicy: 2

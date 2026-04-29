@@ -1,5 +1,4 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 namespace _ImmersiveGames.Scripts.EaterSystem.Events
 {
     /// <summary>

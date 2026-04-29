@@ -1,14 +1,13 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
 {
     public readonly struct IntroStageEntryEvent : IEvent
     {
@@ -95,11 +94,18 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
     {
         private readonly object _sync = new();
         private readonly EventBinding<GameplayPhaseRuntimeMaterializedEvent> _phaseRuntimeMaterializedBinding;
+        private readonly IIntroStagePresenterScopeResolver _presenterScopeResolver;
         private IntroStageSession _currentSession;
         private bool _disposed;
 
         public IntroStageSessionService()
+            : this(ResolvePresenterScopeResolverOrFail())
         {
+        }
+
+        public IntroStageSessionService(IIntroStagePresenterScopeResolver presenterScopeResolver)
+        {
+            _presenterScopeResolver = presenterScopeResolver ?? throw new ArgumentNullException(nameof(presenterScopeResolver));
             _phaseRuntimeMaterializedBinding = new EventBinding<GameplayPhaseRuntimeMaterializedEvent>(OnGameplayPhaseRuntimeMaterialized);
             EventBus<GameplayPhaseRuntimeMaterializedEvent>.Register(_phaseRuntimeMaterializedBinding);
 
@@ -128,6 +134,16 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
             EventBus<GameplayPhaseRuntimeMaterializedEvent>.Unregister(_phaseRuntimeMaterializedBinding);
         }
 
+        private static IIntroStagePresenterScopeResolver ResolvePresenterScopeResolverOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterScopeResolver>(out var resolver) && resolver != null)
+            {
+                return resolver;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][IntroStage] IIntroStagePresenterScopeResolver obrigatorio ausente para IntroStageSessionService.");
+        }
+
         private void OnGameplayPhaseRuntimeMaterialized(GameplayPhaseRuntimeMaterializedEvent evt)
         {
             GameplayPhaseRuntimeSnapshot runtime = evt.Runtime;
@@ -142,34 +158,53 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
             }
 
             string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(phaseDefinitionRef.PhaseId);
-            bool hasIntroStage = runtime.HasIntroStage;
 
-            if (!hasIntroStage)
-            {
-                DebugUtility.Log<IntroStageSessionService>(
-                    $"[OBS][IntroStage] IntroStageContractMaterialized contentName='{phaseName}' source='GameplayPhaseRuntime' phaseSignature='{runtime.PhaseRuntimeSignature}' hasIntroStage='false'.",
-                    DebugUtility.Colors.Info);
-            }
+            // Create temporary session to resolve operationally.
+            IntroStageSession tempSession = new IntroStageSession(
+                phaseDefinitionRef,
+                localContentId,
+                runtime.SessionContext.Reason,
+                runtime.SessionContext.SelectionVersion,
+                evt.PhaseLocalEntrySequence,
+                runtime.SessionContext.SessionSignature,
+                hasIntroStage: false,
+                phaseRuntimeSignature: runtime.PhaseRuntimeSignature); // Start with false; resolver will determine.
+
+            // Operationally resolve: does a valid presenter exist in the phase scope?
+            bool hasIntroStage = _presenterScopeResolver.TryResolvePresenters(tempSession, out _);
+
+            DebugUtility.Log<IntroStageSessionService>(
+                $"[OBS][IntroStage] IntroStageContractMaterialized contentName='{phaseName}' source='GameplayPhaseRuntime' sessionSignature='{runtime.SessionContext.SessionSignature}' phaseRuntimeSignature='{runtime.PhaseRuntimeSignature}' hasIntroStage='{hasIntroStage}' resolvedViaOperationalContract='true'.",
+                DebugUtility.Colors.Info);
 
             IntroStageSession session = runtime.CreateIntroStageSession(
                 localContentId,
                 runtime.SessionContext.Reason,
                 runtime.SessionContext.SelectionVersion,
                 evt.PhaseLocalEntrySequence,
+                runtime.SessionContext.SessionSignature,
                 runtime.PhaseRuntimeSignature,
                 evt.EntrySignature);
 
+            // Override the session with resolved HasIntroStage.
+            IntroStageSession resolvedSession = new IntroStageSession(
+                session.PhaseDefinitionRef,
+                session.LocalContentId,
+                session.Reason,
+                session.SelectionVersion,
+                session.PhaseLocalEntrySequence,
+                session.SessionSignature,
+                hasIntroStage,
+                session.EntrySignature,
+                session.PhaseRuntimeSignature);
+
             lock (_sync)
             {
-                _currentSession = session;
+                _currentSession = resolvedSession;
             }
 
             DebugUtility.Log<IntroStageSessionService>(
-                $"[OBS][IntroStage] IntroStageContractMaterialized contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' source='GameplayPhaseRuntime'.",
-                DebugUtility.Colors.Info);
-
-            DebugUtility.Log<IntroStageSessionService>(
-                $"[OBS][IntroStage] IntroStageSessionUpdated rail='phase' contentName='{phaseName}' hasIntroStage='{session.HasIntroStage}' v='{session.SelectionVersion}' entrySeq='{session.PhaseLocalEntrySequence}' signature='{session.SessionSignature}' entrySignature='{session.EntrySignature}' reason='{session.Reason}' source='{evt.Source}'.",
+                $"[OBS][IntroStage] IntroStageSessionUpdated rail='operational_contract_resolution' contentName='{phaseName}' hasIntroStage='{resolvedSession.HasIntroStage}' v='{resolvedSession.SelectionVersion}' entrySeq='{resolvedSession.PhaseLocalEntrySequence}' sessionSignature='{resolvedSession.SessionSignature}' phaseRuntimeSignature='{resolvedSession.PhaseRuntimeSignature}' entrySignature='{resolvedSession.EntrySignature}' reason='{resolvedSession.Reason}' source='{evt.Source}'.",
                 DebugUtility.Colors.Info);
         }
     }

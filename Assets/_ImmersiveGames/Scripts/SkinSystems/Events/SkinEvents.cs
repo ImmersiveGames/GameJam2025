@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using ImmersiveGames.GameJam2025.Core.Events;

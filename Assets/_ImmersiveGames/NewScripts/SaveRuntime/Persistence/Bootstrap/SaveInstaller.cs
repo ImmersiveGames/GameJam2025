@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Save.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Save.Models;
-using ImmersiveGames.GameJam2025.Experience.Save.Orchestration;
-using ImmersiveGames.GameJam2025.Experience.Save.Progression;
-using ImmersiveGames.GameJam2025.Experience.Save.Progression.Backends;
-namespace ImmersiveGames.GameJam2025.Experience.Save.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration;
+using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Progression;
+using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Progression.Backends;
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
 {
     public static class SaveInstaller
     {

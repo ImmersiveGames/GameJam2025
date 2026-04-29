@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.RuntimeSignals
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.RuntimeSignals
 {
     internal sealed class GameplayRuntimeSignalsAdapter : IDisposable
     {

@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public class DependencyInjector
     {

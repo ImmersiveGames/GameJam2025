@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     /// <summary>
     /// ResolvePlayerActor o modo de runtime baseado nas flags padrão do Unity.

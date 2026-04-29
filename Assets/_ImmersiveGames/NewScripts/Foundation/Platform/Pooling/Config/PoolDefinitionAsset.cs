@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityEngine.Serialization;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
 {
     [CreateAssetMenu(
         fileName = "PoolDefinitionAsset",

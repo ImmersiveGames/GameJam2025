@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies
 {
     public sealed partial class SceneRouteResetPolicy : IRouteResetPolicy
     {

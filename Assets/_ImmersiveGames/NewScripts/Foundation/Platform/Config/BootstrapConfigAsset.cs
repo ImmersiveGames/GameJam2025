@@ -1,13 +1,13 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Core.Logging.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Config;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Config
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Config
 {
     /// <summary>
     /// Root configuration with the canonical infrastructure references.

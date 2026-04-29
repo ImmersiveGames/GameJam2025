@@ -1,6 +1,5 @@
 using System;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext
 {
     /// <summary>
     /// Assinatura canônica do contexto da phase.

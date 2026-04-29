@@ -1,11 +1,11 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Coordination;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Coordination;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public sealed partial class SceneScopeCompositionRoot
     {

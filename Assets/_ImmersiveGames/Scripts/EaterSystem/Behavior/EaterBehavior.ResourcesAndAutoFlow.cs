@@ -1,3 +1,5 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;

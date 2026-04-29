@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers
 {
     public static class RunEndRailCompositionDescriptor
     {

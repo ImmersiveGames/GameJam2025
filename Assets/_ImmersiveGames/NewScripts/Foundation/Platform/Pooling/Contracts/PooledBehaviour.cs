@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
 {
     /// <summary>
     /// Optional base behaviour with predictable, domain-agnostic pool lifecycle state.

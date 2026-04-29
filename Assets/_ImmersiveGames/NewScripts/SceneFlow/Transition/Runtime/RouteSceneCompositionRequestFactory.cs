@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Orchestration.SceneComposition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
 {
     public static class RouteSceneCompositionRequestFactory
     {

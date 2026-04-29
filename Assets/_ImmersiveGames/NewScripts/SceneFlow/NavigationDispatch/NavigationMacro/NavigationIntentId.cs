@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.Navigation
+namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro
 {
     /// <summary>
     /// Identificador tipado para intents de navegação.

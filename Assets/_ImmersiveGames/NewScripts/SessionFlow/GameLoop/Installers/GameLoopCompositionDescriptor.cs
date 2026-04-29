@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
 {
     public static class GameLoopCompositionDescriptor
     {
@@ -7,7 +7,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "GameLoop",
                 installerDependencies: System.Array.Empty<string>(),
-                bootstrapDependencies: new[] { "SceneFlow" },
+                bootstrapDependencies: new[] { "SceneFlow", "SessionIntegration" },
                 installer: _ => GameLoopInstaller.Install(),
                 bootstrap: bootstrapConfig => GameLoopBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "GameLoopInstaller.Install",

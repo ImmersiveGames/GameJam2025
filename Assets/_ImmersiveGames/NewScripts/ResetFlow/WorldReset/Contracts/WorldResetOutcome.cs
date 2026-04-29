@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts
 {
     /// <summary>
     /// Resultado canônico observado ao concluir um WorldReset.

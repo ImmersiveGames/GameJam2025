@@ -1,11 +1,12 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     /// <summary>
     /// ResolvePlayerActor quais atores devem participar de um ActorGroupGameplayResetRequest.
-    /// Mantém a lógica de "grupos/alvos" centralizada e testável.
+    /// Mantï¿½m a lï¿½gica de "grupos/alvos" centralizada e testï¿½vel.
     /// </summary>
     public interface IActorGroupGameplayResetTargetClassifier
     {

@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Context
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Context
 {
     /// <summary>
     /// Owner canônico da precedência contextual de BGM.

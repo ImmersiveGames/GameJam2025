@@ -1,5 +1,5 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Fsm;
+using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
 namespace _ImmersiveGames.Scripts.StateMachineSystems
 {
     public abstract class OldTransition {

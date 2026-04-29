@@ -1,39 +1,39 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     /// <summary>
-    /// Define o modo de emissão de áudio: global (não espacial) ou espacial (3D).
+    /// Define o modo de emissï¿½o de ï¿½udio: global (nï¿½o espacial) ou espacial (3D).
     /// </summary>
     public enum AudioSfxPlaybackMode
     {
         /// <summary>
-        /// Áudio emitido globalmente, sem posicionamento espacial 3D.
+        /// ï¿½udio emitido globalmente, sem posicionamento espacial 3D.
         /// </summary>
         Global = 0,
         /// <summary>
-        /// Áudio com posicionamento espacial 3D baseado na posição de origem.
+        /// ï¿½udio com posicionamento espacial 3D baseado na posiï¿½ï¿½o de origem.
         /// </summary>
         Spatial = 1
     }
 
     /// <summary>
-    /// Define o modo de execução/reprodução de efeitos sonoros.
+    /// Define o modo de execuï¿½ï¿½o/reproduï¿½ï¿½o de efeitos sonoros.
     /// </summary>
     public enum AudioSfxExecutionMode
     {
         /// <summary>
-        /// Execução direta: toca uma única instância sem pool de objetos.
+        /// Execuï¿½ï¿½o direta: toca uma ï¿½nica instï¿½ncia sem pool de objetos.
         /// </summary>
         DirectOneShot = 0,
         /// <summary>
-        /// Execução em pool: reutiliza instâncias de áudio do pool para eficiência.
+        /// Execuï¿½ï¿½o em pool: reutiliza instï¿½ncias de ï¿½udio do pool para eficiï¿½ncia.
         /// </summary>
         PooledOneShot = 1
     }
 
     /// <summary>
-    /// Cue de áudio para efeitos sonoros (SFX).
-    /// Define propriedades de emissão (global/espacial) e execução (direto/pool).
+    /// Cue de ï¿½udio para efeitos sonoros (SFX).
+    /// Define propriedades de emissï¿½o (global/espacial) e execuï¿½ï¿½o (direto/pool).
     /// </summary>
     [CreateAssetMenu(
         fileName = "AudioSfxCue",
@@ -42,16 +42,16 @@ namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
     public sealed class AudioSfxCueAsset : AudioCueAsset
     {
         /// <summary>
-        /// Perfil de emissão que define modo e parâmetros espaciais.
+        /// Perfil de emissï¿½o que define modo e parï¿½metros espaciais.
         /// </summary>
         [SerializeField] private AudioSfxEmissionProfileAsset emissionProfile;
         /// <summary>
-        /// Perfil de execução que define modo e parâmetros de pool.
+        /// Perfil de execuï¿½ï¿½o que define modo e parï¿½metros de pool.
         /// </summary>
         [SerializeField] private AudioSfxExecutionProfileAsset executionProfile;
 
         /// <summary>
-        /// Política ativa de concorrência para SFX.
+        /// Polï¿½tica ativa de concorrï¿½ncia para SFX.
         /// </summary>
         [SerializeField] [Min(1)] private int maxSimultaneousInstances = 1;
         /// <summary>

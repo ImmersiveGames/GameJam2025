@@ -1,8 +1,8 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Eater.Movement
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Movement
 {
     /// <summary>
     /// Controlador simples de movimentação aleatória para o Eater no pipeline NewScripts.

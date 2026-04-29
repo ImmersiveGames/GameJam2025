@@ -1,10 +1,12 @@
-using ImmersiveGames.GameJam2025.Core.Identifiers;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Eater;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Eater.Movement;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Movement;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
     /// Serviço de spawn para instanciar o Eater no baseline do NewScripts.
@@ -18,9 +20,10 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
-            EaterActor prefab,
+            ActorSpecRecord actorSpec,
+            GameObject prefab,
             IGameplayStateGate gameplayStateService)
-            : base(uniqueIdFactory, actorRegistry, context, prefab ? prefab.gameObject : null)
+            : base(uniqueIdFactory, actorRegistry, context, actorSpec, prefab)
         {
             _gameplayStateService = gameplayStateService;
         }

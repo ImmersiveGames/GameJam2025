@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
 {
     /// <summary>
     /// Resultado explícito da execução do pipeline de reset.

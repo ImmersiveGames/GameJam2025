@@ -1,21 +1,21 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Interop
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
 {
     /// <summary>
     /// Bridge global para sincronizar InputMode com base nos eventos do SceneFlow.
     /// Nao sincroniza estado de GameLoop diretamente.
     ///
     /// Semantica:
-    /// - Gameplay: solicita InputMode de gameplay.
+    /// - Gameplay: nao solicita InputMode; readiness operacional pertence a ActorsExecution.
     /// - Startup/Frontend: solicita InputMode de menu.
     /// </summary>
     /// <summary>
@@ -100,6 +100,12 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Interop
 
             _lastProcessedSignature = dedupeKey;
 
+            if (evt.context.RouteKind == SceneRouteKind.Gameplay)
+            {
+                LogGameplayInputModeDeferred(signature, activeScene, evt.context.RouteKind);
+                return;
+            }
+
             if (TryGetInputModeRequest(evt.context.RouteKind, out var requestKind, out var mode, out var map, out var reason))
             {
                 PublishInputModeRequest(requestKind, reason, signature);
@@ -124,17 +130,18 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Interop
             string reason,
             string signature)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var sessionIntegration) || sessionIntegration == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) || sessionIntegration == null)
             {
                 HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationContextService indisponivel para request de InputMode kind='{requestKind}' reason='{reason}' signature='{signature}'.");
+                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para request de InputMode kind='{requestKind}' reason='{reason}' signature='{signature}'.");
                 return;
             }
 
             switch (requestKind)
             {
                 case InputModeRequestKind.Gameplay:
-                    sessionIntegration.RequestGameplayInputMode(reason, "SceneFlow", signature);
+                    HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                        $"[FATAL][H1][InputModes] SceneFlowInputModeBridge nao e owner de Gameplay input. reason='{reason}' signature='{signature}'.");
                     return;
                 case InputModeRequestKind.FrontendMenu:
                     sessionIntegration.RequestFrontendMenuInputMode(reason, "SceneFlow", signature);
@@ -159,12 +166,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Interop
         {
             switch (routeKind)
             {
-                case SceneRouteKind.Gameplay:
-                    requestKind = InputModeRequestKind.Gameplay;
-                    mode = "Gameplay";
-                    map = InputModesDefaults.PlayerActionMapName;
-                    reason = "SceneFlow/Completed:Gameplay";
-                    return true;
                 case SceneRouteKind.Frontend:
                     requestKind = InputModeRequestKind.FrontendMenu;
                     mode = "FrontendMenu";
@@ -178,6 +179,16 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Interop
                     reason = string.Empty;
                     return false;
             }
+        }
+
+        private static void LogGameplayInputModeDeferred(
+            string signature,
+            string scene,
+            SceneRouteKind routeKind)
+        {
+            DebugUtility.LogVerbose(typeof(SceneFlowInputModeBridge),
+                $"[OBS][InputMode] Gameplay input request deferred owner='ActorsExecution' event='SceneTransitionCompletedEvent' signature='{signature ?? string.Empty}' scene='{scene ?? string.Empty}' routeKind='{routeKind}' reason='SceneFlow macro readiness is not operational input readiness'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void LogObsInputModeApplied(

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.Navigation
+namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro
 {
     /// <summary>
     /// Canonical code source for navigation core intents.

@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime
+namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
     /// Leitura canonica do modo de input atualmente ativo.

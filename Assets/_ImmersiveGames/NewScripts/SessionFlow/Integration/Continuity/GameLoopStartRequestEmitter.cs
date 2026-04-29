@@ -1,8 +1,8 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
 {
     /// <summary>
     /// Emite BootStartPlanRequestedEvent (REQUEST) uma unica vez ao iniciar a cena.

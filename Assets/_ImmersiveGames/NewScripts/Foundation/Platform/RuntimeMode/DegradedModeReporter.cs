@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     /// <summary>
     /// Reporter canônico de DEGRADED_MODE.

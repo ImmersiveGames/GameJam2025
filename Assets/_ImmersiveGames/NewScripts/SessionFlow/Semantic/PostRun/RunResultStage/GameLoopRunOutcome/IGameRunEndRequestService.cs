@@ -1,7 +1,7 @@
 // Assets/_ImmersiveGames/NewScripts/Gameplay/GameLoop/IGameRunEndRequestService.cs
 
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome
 {
     /// <summary>
     /// Ponto único de entrada para solicitar o encerramento de uma execução de gameplay (vitória/derrota).

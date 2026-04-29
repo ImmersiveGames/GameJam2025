@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
     /// Serviço responsável por spawn/despawn dos elementos que compõem o mundo atual.
@@ -22,7 +22,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
         /// </summary>
         bool IsRequiredForWorldReset { get; }
 
-        Task SpawnAsync();
+        Task SpawnAsync(ActorSpawnRequest request);
 
         Task DespawnAsync();
     }

@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry
 {
 
     public sealed class ActorRegistry : IActorRegistry

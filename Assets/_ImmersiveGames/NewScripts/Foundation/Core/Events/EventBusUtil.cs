@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Core.Events
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
 {
     /// <summary>
     /// Utilitário de limpeza/gerenciamento do EventBus no NewScripts (sem dependências do legado).

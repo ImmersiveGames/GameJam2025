@@ -1,7 +1,7 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Frontend.UI.Bindings;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Frontend.UI.Panels
+namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Panels
 {
     /// <summary>
     /// Binder genérico para trocar painéis do Frontend (Main/Options/HowTo).

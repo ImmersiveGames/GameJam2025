@@ -1,9 +1,9 @@
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Models;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
-    /// Serviço para playback de SFX global (não-entity).
+    /// Serviï¿½o para playback de SFX global (nï¿½o-entity).
     /// </summary>
     public interface IGlobalAudioService
     {

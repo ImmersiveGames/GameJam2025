@@ -1,10 +1,10 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Bindings
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Bindings
 {
     /// <summary>
     /// Controla o fade (CanvasGroup alpha) dentro da FadeScene.

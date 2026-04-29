@@ -1,10 +1,11 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.GameplayCamera;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Gate;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap
 {
     /// <summary>
     /// Installer do Gameplay.
@@ -36,6 +37,11 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Bootstrap
 
         private static void RegisterGameplayStateGate()
         {
+            RegisterIfMissing<IActorsGameplayOperationalReadinessService>(
+                () => new ActorsGameplayOperationalReadinessService(),
+                "[Gameplay] IActorsGameplayOperationalReadinessService ja registrado no DI global.",
+                "[Gameplay] ActorsGameplayOperationalReadinessService registrado no DI global.");
+
             RegisterIfMissing<IGameplayStateGate>(
                 () => new GameplayStateGate(),
                 "[Gameplay] IGameplayStateGate ja registrado no DI global.",

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
 {
     /// <summary>
      /// OWNER: definicao de uma rota (cenas/policy) e validacoes de consistencia.
@@ -51,7 +51,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings
                 $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{nameof(scenesToUnloadKeys)}' scenes=[{FormatSceneDetails(unload)}].",
                 DebugUtility.Colors.Info);
 
-            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog);
+            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog != null);
         }
 
         public void ValidateRoutePolicyOrFailFast()

@@ -1,8 +1,8 @@
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
-    /// Serviço canônico para trilha de BGM global.
+    /// Serviï¿½o canï¿½nico para trilha de BGM global.
     /// Fases iniciais do ADR-0028 registram apenas o contrato.
     /// </summary>
     public interface IAudioBgmService

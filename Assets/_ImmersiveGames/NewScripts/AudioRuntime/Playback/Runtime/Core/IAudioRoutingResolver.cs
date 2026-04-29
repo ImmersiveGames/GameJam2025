@@ -1,9 +1,9 @@
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using UnityEngine.Audio;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
-    /// Resolvedor base de routing/mixer do módulo de áudio.
+    /// Resolvedor base de routing/mixer do mï¿½dulo de ï¿½udio.
     /// </summary>
     public interface IAudioRoutingResolver
     {

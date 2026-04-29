@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Config;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Runtime
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 {
     public sealed class PreferencesService : IPreferencesStateService, IPreferencesSaveService
     {

@@ -1,8 +1,8 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events
 {
     public readonly struct PhaseDefinitionSelectedEvent : IEvent
     {

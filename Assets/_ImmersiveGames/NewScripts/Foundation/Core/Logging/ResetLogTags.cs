@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Core.Logging
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 {
     /// <summary>
     /// Tags canônicas para logs de reset (World/Gameplay).

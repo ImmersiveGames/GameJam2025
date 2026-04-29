@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
 {
     /// <summary>
     /// Canonical global pooling service contract.

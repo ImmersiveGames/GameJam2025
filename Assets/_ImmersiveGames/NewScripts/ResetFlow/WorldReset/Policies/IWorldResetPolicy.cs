@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies
 {
     /// <summary>
     /// Policy central para reset (Strict/Release + fallback/degraded).

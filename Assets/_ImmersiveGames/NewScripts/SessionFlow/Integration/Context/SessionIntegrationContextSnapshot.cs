@@ -1,7 +1,6 @@
-using System;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 {
     public readonly struct SessionIntegrationContextSnapshot
     {

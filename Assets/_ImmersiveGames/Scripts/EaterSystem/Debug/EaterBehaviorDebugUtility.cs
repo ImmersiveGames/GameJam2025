@@ -1,4 +1,5 @@
 using System.Text;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;

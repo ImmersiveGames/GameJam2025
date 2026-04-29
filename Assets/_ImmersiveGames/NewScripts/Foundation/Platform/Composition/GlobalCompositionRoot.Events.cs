@@ -1,12 +1,13 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {

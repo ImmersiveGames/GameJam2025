@@ -1,8 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Diagnostics
 {
     public static class GameplaySessionFlowSmokeReporter
     {
@@ -162,7 +164,15 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
                 return "participation_without_phase";
             }
 
-            return string.Equals(phaseRuntime.PhaseRuntimeSignature, participation.PhaseSignature, StringComparison.Ordinal)
+            if (string.Equals(phaseRuntime.PhaseRuntimeSignature, participation.PhaseSignature, StringComparison.Ordinal))
+            {
+                return "linked";
+            }
+
+            // Participation usa assinatura semantica de fase (selection/session rail),
+            // enquanto PhaseRuntimeSignature pode carregar sufixo tecnico de runtime.
+            // Se o eixo semantico base bate, consideramos coerente.
+            return string.Equals(phaseRuntime.SessionContext.SessionSignature, participation.PhaseSignature, StringComparison.Ordinal)
                 ? "linked"
                 : "mismatch";
         }

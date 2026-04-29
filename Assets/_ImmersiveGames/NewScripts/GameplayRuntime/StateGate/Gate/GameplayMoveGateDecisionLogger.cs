@@ -1,10 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Gate
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 {
     internal sealed class GameplayMoveGateDecisionLogger
     {
@@ -56,8 +56,12 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Gate
             bool gateIsOpen = gateService?.IsOpen ?? true;
             int activeTokens = gateService?.ActiveTokenCount ?? 0;
             bool pausedOnly = snapshot.IsPausedOnlyByGate(gateService);
-            bool gameplayReady = snapshot.IsGameplayReadyOrUnknown;
-            bool isNonGameplayContext = !gameplayReady || !string.Equals(_lastLoopStateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
+            bool sceneReady = snapshot.IsSceneGameplayReadyOrUnknown;
+            bool actorsOperationalReady = snapshot.IsActorsOperationalReady;
+            bool interactionReady = snapshot.IsGameplayInteractionReady;
+            bool gameRunStarted = snapshot.HasGameRunStarted;
+            string readinessReason = snapshot.DescribeGameplayReadinessReason();
+            bool isNonGameplayContext = !interactionReady || !string.Equals(_lastLoopStateName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
 
             if (isNonGameplayContext && decision != StateDependentMoveDecision.Allowed)
             {
@@ -83,8 +87,8 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Gate
 
             DebugUtility.LogVerbose<GameplayStateGate>(
                 decision == StateDependentMoveDecision.Allowed
-                    ? $"[StateDependent] Action 'Move' liberada (gateOpen={gateIsOpen}, gameplayReady={gameplayReady}, paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens})."
-                    : $"[StateDependent] Action 'Move' bloqueada: {decision} (gateOpen={gateIsOpen}, gameplayReady={gameplayReady}, paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens}).");
+                    ? $"[StateDependent] Action 'Move' liberada (gateOpen={gateIsOpen}, sceneReady={sceneReady}, actorsOperationalReady={actorsOperationalReady}, interactionReady={interactionReady}, gameRunStarted={gameRunStarted}, readinessReason='{readinessReason}', paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens})."
+                    : $"[StateDependent] Action 'Move' bloqueada: {decision} (gateOpen={gateIsOpen}, sceneReady={sceneReady}, actorsOperationalReady={actorsOperationalReady}, interactionReady={interactionReady}, gameRunStarted={gameRunStarted}, readinessReason='{readinessReason}', paused={pausedOnly}, serviceState={resolvedState}, gameLoopState='{_lastLoopStateName}', activeTokens={activeTokens}).");
         }
 
         private static string NormalizeLoopStateName(string loopStateName)

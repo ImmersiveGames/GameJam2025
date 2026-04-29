@@ -1,7 +1,7 @@
 using System;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using UnityEngine.Audio;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     public sealed class AudioRoutingResolver : IAudioRoutingResolver
     {

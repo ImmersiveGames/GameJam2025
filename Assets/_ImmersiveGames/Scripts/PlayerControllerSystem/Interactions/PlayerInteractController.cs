@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Services;

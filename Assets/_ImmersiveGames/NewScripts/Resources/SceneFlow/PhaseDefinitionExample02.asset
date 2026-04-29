@@ -46,10 +46,6 @@ MonoBehaviour:
     additiveScenes:
     - buildIndex: 7
       sceneName: SceneTest
-  players:
-    entries:
-    - localId: solo_player
-      role: 1
   initialState:
     entries:
     - localId: phase_ready
@@ -58,9 +54,6 @@ MonoBehaviour:
   runResultStage:
     hasRunResultStage: 0
     parameters: []
-  intro:
-    hasIntroStage: 0
-    introPresenterPrefab: {fileID: 0}
   closure:
     resultKind: 1
     continuityPolicyKind: 2

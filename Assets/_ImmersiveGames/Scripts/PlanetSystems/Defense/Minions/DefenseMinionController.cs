@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;

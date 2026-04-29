@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.Runtime
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 {
     /// <summary>
     /// Tracks optional auto-return timers for rented pooled instances.

@@ -1,6 +1,6 @@
 using System;
 using System.Reflection;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using UnityEditor;
 using UnityEngine;
 

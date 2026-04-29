@@ -1,4 +1,4 @@
-using ImmersiveGames.GameJam2025.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 namespace _ImmersiveGames.Scripts.TimerSystem.Events
 {
     public class EventTimerStarted : IEvent

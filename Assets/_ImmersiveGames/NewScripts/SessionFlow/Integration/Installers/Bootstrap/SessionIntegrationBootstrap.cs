@@ -1,20 +1,26 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Bootstrap;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Installers.Bootstrap;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap
 {
     public static class SessionIntegrationBootstrap
     {
         private static bool _installerPhaseComposed;
         private static bool _runtimeComposed;
+        private static GameplayParticipationInputModeBridge _participationInputModeBridge;
+        private static IGameplayInteractionReadinessService _gameplayInteractionReadinessService;
 
         public static void ComposeInstallerPhase()
         {
@@ -42,15 +48,122 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][SessionIntegration] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
-            EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
-            EnsureGameplaySessionRunResetService();
-            SessionTransitionBootstrap.ComposeRuntime();
+            SessionIntegrationSeamRuntimeComposition.EnsureComposed();
+            SessionIntegrationContinuityRuntimeComposition.EnsureComposed(bootstrapConfig);
+            SessionIntegrationBridgesRuntimeComposition.EnsureComposed(
+                ref _participationInputModeBridge,
+                ref _gameplayInteractionReadinessService);
+            SessionIntegrationOperationalHandoffRuntimeComposition.EnsureComposed();
 
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(SessionIntegrationBootstrap),
                 "[OBS][SessionIntegration][Operational] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
+        }
+    }
+
+    internal static class SessionIntegrationSeamRuntimeComposition
+    {
+        public static void EnsureComposed()
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationContextService>(out var seam) || seam == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationContextService ausente no DI global antes de compor SessionIntegration runtime.");
+            }
+
+            if (seam is not SessionIntegrationContextService)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationContextService precisa ser o seam canonico SessionIntegrationContextService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var emitter) || emitter == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationInputModeEmitter ausente no DI global antes de compor SessionIntegration runtime.");
+            }
+
+            DebugUtility.LogVerbose(typeof(SessionIntegrationSeamRuntimeComposition),
+                "[OBS][SessionIntegration][Core] SessionIntegration seam availability validated before runtime composition.",
+                DebugUtility.Colors.Info);
+        }
+    }
+
+    internal static class SessionIntegrationBridgesRuntimeComposition
+    {
+        public static void EnsureComposed(
+            ref GameplayParticipationInputModeBridge participationInputModeBridge,
+            ref IGameplayInteractionReadinessService gameplayInteractionReadinessService)
+        {
+            EnsureParticipationInputModeBridge(ref participationInputModeBridge);
+            EnsureGameplayInteractionReadinessService(ref gameplayInteractionReadinessService);
+        }
+
+        private static void EnsureParticipationInputModeBridge(ref GameplayParticipationInputModeBridge participationInputModeBridge)
+        {
+            if (participationInputModeBridge == null)
+            {
+                if (DependencyManager.Provider.TryGetGlobal<GameplayParticipationInputModeBridge>(out var existing) && existing != null)
+                {
+                    participationInputModeBridge = existing;
+                }
+                else
+                {
+                    participationInputModeBridge = new GameplayParticipationInputModeBridge();
+                    DependencyManager.Provider.RegisterGlobal(participationInputModeBridge);
+                }
+            }
+
+            DebugUtility.LogVerbose(typeof(SessionIntegrationBridgesRuntimeComposition),
+                "[OBS][SessionIntegration][InputModes] GameplayParticipationInputModeBridge composed in SessionIntegration runtime.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureGameplayInteractionReadinessService(ref IGameplayInteractionReadinessService gameplayInteractionReadinessService)
+        {
+            if (gameplayInteractionReadinessService == null)
+            {
+                if (DependencyManager.Provider.TryGetGlobal<IGameplayInteractionReadinessService>(out var existing) && existing != null)
+                {
+                    gameplayInteractionReadinessService = existing;
+                }
+                else
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<IActorsGameplayOperationalReadinessService>(out var actorsOperationalReadinessService) || actorsOperationalReadinessService == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IActorsGameplayOperationalReadinessService ausente no DI global antes de registrar GameplayInteractionReadinessService.");
+                    }
+
+                    if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var inputModeEmitter) || inputModeEmitter == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationInputModeEmitter ausente no DI global antes de registrar GameplayInteractionReadinessService.");
+                    }
+
+                    gameplayInteractionReadinessService = new GameplayInteractionReadinessService(
+                        actorsOperationalReadinessService,
+                        inputModeEmitter);
+                    DependencyManager.Provider.RegisterGlobal<IGameplayInteractionReadinessService>(gameplayInteractionReadinessService);
+                }
+            }
+
+            DebugUtility.LogVerbose(typeof(SessionIntegrationBridgesRuntimeComposition),
+                "[OBS][SessionIntegration][InputModes] GameplayInteractionReadinessService composed in SessionIntegration runtime.",
+                DebugUtility.Colors.Info);
+        }
+    }
+
+    internal static class SessionIntegrationOperationalHandoffRuntimeComposition
+    {
+        public static void EnsureComposed()
+        {
+            SessionTransitionBootstrap.ComposeRuntime();
+        }
+    }
+
+    internal static class SessionIntegrationContinuityRuntimeComposition
+    {
+        public static void EnsureComposed(BootstrapConfigAsset bootstrapConfig)
+        {
+            EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
         }
 
         private static void EnsureGameplaySessionFlowContinuityService(BootstrapConfigAsset bootstrapConfig)
@@ -60,9 +173,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Bootstrap
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationNavigationHandoffService>(out var navigationHandoffService) || navigationHandoffService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameNavigationService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationNavigationHandoffService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
@@ -70,70 +183,122 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
-            IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService);
-            IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseResetOperationalHandoffService>(out var phaseResetOperationalHandoffService) || phaseResetOperationalHandoffService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseResetOperationalHandoffService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+            }
+
+            IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService, phaseResetOperationalHandoffService);
 
             var service = new GameplaySessionFlowContinuityService(
-                navigationService,
+                navigationHandoffService,
                 restartContextService,
-                phaseResetExecutor,
-                phaseDefinitionCatalog);
+                phaseResetExecutor);
 
             DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);
 
-            DebugUtility.LogVerbose(typeof(SessionIntegrationBootstrap),
+            DebugUtility.LogVerbose(typeof(SessionIntegrationContinuityRuntimeComposition),
                 "[OBS][SessionIntegration][Operational] IGameplaySessionFlowContinuityService registrado como continuity seam canonical.",
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureGameplaySessionRunResetService()
+    }
+}
+
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
+{
+    /// <summary>
+    /// Observa readiness semantica de Participation sem liberar input operacional.
+    /// </summary>
+    public sealed class GameplayParticipationInputModeBridge : IDisposable
+    {
+        private readonly EventBinding<ParticipationSnapshotChangedEvent> _participationBinding;
+        private bool _disposed;
+        private string _lastProcessedSignature = string.Empty;
+
+        public GameplayParticipationInputModeBridge()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionRunResetService>(out var existing) && existing != null)
+            _participationBinding = new EventBinding<ParticipationSnapshotChangedEvent>(OnParticipationChanged);
+            EventBus<ParticipationSnapshotChangedEvent>.Register(_participationBinding);
+
+            DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
+                "[OBS][SessionIntegration][InputModes] GameplayParticipationInputModeBridge registered.",
+                DebugUtility.Colors.Info);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
             {
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
+            _disposed = true;
+            EventBus<ParticipationSnapshotChangedEvent>.Unregister(_participationBinding);
+        }
+
+        private void OnParticipationChanged(ParticipationSnapshotChangedEvent evt)
+        {
+            if (_disposed || !evt.IsValid)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+                return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
+            if (evt.IsCleared)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameNavigationService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+                _lastProcessedSignature = string.Empty;
+                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
+                    $"[OBS][SessionIntegration][InputModes] Participation cleared source='{evt.Source}' reason='{evt.Reason}'.",
+                    DebugUtility.Colors.Info);
+                return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogRuntimeStateService>(out var phaseCatalogRuntimeStateService) || phaseCatalogRuntimeStateService == null)
+            ParticipationSnapshot snapshot = evt.Snapshot;
+            string signature = snapshot.Signature.Value;
+            if (!string.IsNullOrWhiteSpace(signature)
+                && string.Equals(_lastProcessedSignature, signature, StringComparison.Ordinal))
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseCatalogRuntimeStateService ausente no DI global antes de registrar o IGameplaySessionRunResetService.");
+                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
+                    $"[OBS][SessionIntegration][InputModes] Participation duplicate ignored signature='{signature}'.",
+                    DebugUtility.Colors.Info);
+                return;
             }
 
-            var service = new GameplaySessionRunResetService(
-                restartContextService,
-                navigationService,
-                phaseCatalogRuntimeStateService);
+            _lastProcessedSignature = signature;
 
-            DependencyManager.Provider.RegisterGlobal<IGameplaySessionRunResetService>(service);
+            if (!snapshot.Readiness.CanEnterGameplay)
+            {
+                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
+                    $"[OBS][SessionIntegration][InputModes] Participation not ready readinessState='{snapshot.Readiness.State}' signature='{signature}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
 
-            DebugUtility.LogVerbose(typeof(SessionIntegrationBootstrap),
-                "[OBS][SessionIntegration][Operational] IGameplaySessionRunResetService registrado como run-reset seam canonical.",
+            if (!snapshot.TryGetLocalBindingCandidate(out ParticipantSnapshot localParticipant))
+            {
+                DebugUtility.LogVerbose<GameplayParticipationInputModeBridge>(
+                    $"[OBS][SessionIntegration][InputModes] Local participant missing signature='{signature}' readinessState='{snapshot.Readiness.State}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            LogSemanticReadiness(snapshot, localParticipant, signature);
+        }
+
+        private static void LogSemanticReadiness(
+            ParticipationSnapshot snapshot,
+            ParticipantSnapshot localParticipant,
+            string signature)
+        {
+            DebugUtility.Log(typeof(GameplayParticipationInputModeBridge),
+                $"[OBS][SessionIntegration][InputModes] ParticipationSemanticReady inputModeDeferred='true' owner='ActorsExecution' signature='{signature}' readinessState='{snapshot.Readiness.State}' localParticipantId='{localParticipant.ParticipantId}' bindingHint='{localParticipant.BindingHint}' reason='{BuildReason(snapshot, localParticipant)}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static IPhaseDefinitionCatalog ResolveOptionalPhaseDefinitionCatalog(BootstrapConfigAsset bootstrapConfig)
+        private static string BuildReason(ParticipationSnapshot snapshot, ParticipantSnapshot participant)
         {
-            if (bootstrapConfig?.NavigationCatalog is not GameNavigationCatalogAsset navigationCatalog)
-            {
-                return null;
-            }
-
-            if (!navigationCatalog.IsGameplayPhaseEnabledOrFail())
-            {
-                return null;
-            }
-
-            return navigationCatalog.ResolveGameplayPhaseCatalogOrFail();
+            return $"Participation/{snapshot.Readiness.State}/local={participant.ParticipantId}";
         }
     }
-}
 
+}

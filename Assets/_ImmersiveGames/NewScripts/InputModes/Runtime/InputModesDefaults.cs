@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     internal static class InputModesDefaults
     {

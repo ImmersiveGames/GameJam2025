@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
     public readonly struct LoadingProgressSnapshot
     {

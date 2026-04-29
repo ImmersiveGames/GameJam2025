@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using UnityEditor;
 using UnityEngine;
 

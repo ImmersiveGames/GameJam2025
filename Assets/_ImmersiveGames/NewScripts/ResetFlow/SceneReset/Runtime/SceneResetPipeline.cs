@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Spawn;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime.Phases;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime.Phases;
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetPipeline
     {
@@ -86,7 +86,12 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
 
     internal sealed class SceneResetSpawnOwnerExecutor
     {
-        public async Task ExecuteAsync(SceneResetContext context, string stepName, Func<IWorldSpawnService, Task> stepAction)
+        public async Task ExecuteAsync(
+            SceneResetContext context,
+            string stepName,
+            Func<IWorldSpawnService, Task> stepAction,
+            Func<IWorldSpawnService, bool> shouldExecuteService = null,
+            string skipReason = null)
         {
             if (context == null)
             {
@@ -124,6 +129,13 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
                 {
                     DebugUtility.LogVerbose(typeof(SceneResetPipeline),
                         $"{stepName} service skipped by scope filter: {service.Name}");
+                    continue;
+                }
+
+                if (shouldExecuteService != null && !shouldExecuteService(service))
+                {
+                    DebugUtility.LogVerbose(typeof(SceneResetPipeline),
+                        $"{stepName} service skipped by policy: {service.Name} reason='{(string.IsNullOrWhiteSpace(skipReason) ? "<none>" : skipReason)}'");
                     continue;
                 }
 

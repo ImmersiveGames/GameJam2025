@@ -1,10 +1,10 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     /// <summary>
-    /// Estratégia de descoberta de atores para GameplayReset.
+    /// Estratï¿½gia de descoberta de atores para GameplayReset.
     /// </summary>
     public interface IActorGroupGameplayResetDiscoveryStrategy
     {

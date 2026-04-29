@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     /// <summary>
     /// Resolve RuntimeModeConfig apenas a partir do DI global.

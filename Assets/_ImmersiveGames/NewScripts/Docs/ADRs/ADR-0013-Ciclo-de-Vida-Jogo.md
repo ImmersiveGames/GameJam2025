@@ -77,3 +77,11 @@ Definir ciclo unico e auditavel com ordem estavel:
 ## Evidencia
 - Fonte canonica atual: `Docs/Reports/Evidence/LATEST.md`
 
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisao viva: o ciclo de vida de run continua valido como contrato operacional de alto nivel para boot, entrada em gameplay, playing e fim de run.
+- Trechos historicos/superados: `PostRun` e o vocabulário historico deste ADR devem ser lidos como compatibilidade documental, nao como owner atual.
+- Leitura normativa atual: a leitura vigente e `RunResultStage -> RunDecision`, com a entrada em `Playing` separada do rail de fim de run.
+- ADRs superiores relacionados: `ADR-0030`, `ADR-0031`, `ADR-0032`, `ADR-0033`, `ADR-0049`, `ADR-0050`, `ADR-0051`, `ADR-0056`, `ADR-0057`.
+- Nota operacional: nenhuma mudanca de codigo e requerida por este adendo; ele apenas alinha a leitura documental ao runtime atual.
+

@@ -1,11 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Ownership;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Presentation;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Result;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers
 {
     /// <summary>
     /// Installer do RunEndRail.

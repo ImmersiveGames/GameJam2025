@@ -1,12 +1,12 @@
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration
 {
     /// <summary>
     /// Participante de soft reset do SceneReset para o escopo Players.
@@ -16,7 +16,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration
     public sealed class PlayerActorGroupGameplayResetWorldParticipant : IActorGroupGameplayResetWorldParticipant
     {
         private IActorGroupGameplayResetOrchestrator _actorGroupGameplayReset;
-        private ISessionIntegrationContextService _sessionIntegrationContextService;
+        private ISpawnResetParticipationReadPort _participationReadPort;
         private string _sceneName = string.Empty;
         private bool _dependenciesResolved;
 
@@ -63,25 +63,25 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration
             var provider = DependencyManager.Provider;
 
             provider.TryGetForScene(_sceneName, out _actorGroupGameplayReset);
-            provider.TryGetGlobal<ISessionIntegrationContextService>(out _sessionIntegrationContextService);
+            provider.TryGetGlobal<ISpawnResetParticipationReadPort>(out _participationReadPort);
 
             _dependenciesResolved = true;
         }
 
         private string DescribeParticipation()
         {
-            if (_sessionIntegrationContextService == null || !_sessionIntegrationContextService.TryGetCurrentParticipation(out var snapshot))
+            if (_participationReadPort == null || !_participationReadPort.TryGetCurrent(out var snapshot))
             {
                 return string.Empty;
             }
 
             string localBinding = "<none>";
-            if (snapshot.TryGetLocalBindingCandidate(out var localParticipant))
+            if (!string.IsNullOrWhiteSpace(snapshot.LocalBindingHint))
             {
-                localBinding = localParticipant.BindingHint.ToString();
+                localBinding = snapshot.LocalBindingHint;
             }
 
-            return $" participationSignature='{snapshot.Signature}' readiness='{snapshot.Readiness.State}' localBinding='{localBinding}'";
+            return $" participationSignature='{snapshot.Signature}' readiness='{snapshot.ReadinessState}' localBinding='{localBinding}'";
         }
     }
 }

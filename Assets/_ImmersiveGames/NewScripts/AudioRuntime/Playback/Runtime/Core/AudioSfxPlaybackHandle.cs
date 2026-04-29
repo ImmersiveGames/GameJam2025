@@ -1,8 +1,8 @@
 using System;
 using System.Collections;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
     /// Handle runtime de playback direto de SFX (F4, sem pooling).

@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Execution
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Execution
 {
     internal readonly struct ResetTarget
     {

@@ -5,10 +5,10 @@
  * - Garantido desregistro também em OnDestroy (cobre casos de teardown/Domain reload).
  */
 
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.GameplayCamera
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Camera))]

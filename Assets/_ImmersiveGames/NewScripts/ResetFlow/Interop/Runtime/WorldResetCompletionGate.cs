@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
 {
     /// <summary>
     /// OWNER: gate de correlação do WorldResetCompletedEvent para liberar SceneFlow.
@@ -22,8 +22,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
     public sealed class WorldResetCompletionGate : ISceneTransitionCompletionGate, IDisposable
     {
         private readonly EventBinding<WorldResetCompletedEvent> _binding;
-        private readonly Dictionary<string, TaskCompletionSource<WorldResetCompletedEvent>> _pending = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, WorldResetCompletedEvent> _completedEvents = new(StringComparer.Ordinal);
+        private readonly Dictionary<WorldResetCorrelationKey, TaskCompletionSource<WorldResetCompletedEvent>> _pending = new();
+        private readonly Dictionary<WorldResetCorrelationKey, WorldResetCompletedEvent> _completedEvents = new();
         private readonly int _timeoutMs;
         private bool _disposed;
 
@@ -53,19 +53,19 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
 
             lock (_pending)
             {
-                foreach (KeyValuePair<string, TaskCompletionSource<WorldResetCompletedEvent>> kv in _pending)
+                foreach (KeyValuePair<WorldResetCorrelationKey, TaskCompletionSource<WorldResetCompletedEvent>> kv in _pending)
                 {
                     kv.Value.TrySetResult(new WorldResetCompletedEvent(
                         kind: ResetKind.Macro,
                         macroRouteId: SceneRouteId.None,
                         reason: WorldResetReasons.GateDisposed,
-                        contextSignature: kv.Key,
+                        contextSignature: kv.Key.Value,
                         phaseSignature: PhaseContextSignature.Empty,
                         outcome: WorldResetOutcome.Disposed,
                         detail: WorldResetReasons.GateDisposed,
                         origin: WorldResetOrigin.Unknown,
                         targetScene: string.Empty,
-                        sourceSignature: kv.Key));
+                        sourceSignature: kv.Key.Value));
                 }
 
                 _pending.Clear();
@@ -76,20 +76,21 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
             string signature = SceneTransitionSignature.Compute(context);
+            WorldResetCorrelationKey correlationKey = WorldResetCorrelationKey.FromContextSignature(signature);
 
-            if (string.IsNullOrEmpty(signature))
+            if (!correlationKey.IsValid)
             {
                 DebugUtility.LogWarning(typeof(WorldResetCompletionGate),
-                    "[SceneFlowGate] ContextSignature vazia. Não é possível correlacionar gate; liberando sem aguardar reset.");
+                    "[SceneFlowGate] CorrelationKey ausente. Não é possível correlacionar gate; liberando sem aguardar reset.");
                 return;
             }
 
             lock (_pending)
             {
-                if (_completedEvents.TryGetValue(signature, out WorldResetCompletedEvent cachedEvent))
+                if (_completedEvents.TryGetValue(correlationKey, out WorldResetCompletedEvent cachedEvent))
                 {
                     DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                        $"[SceneFlowGate] Já concluído (cached). signature='{signature}', outcome='{cachedEvent.Outcome}', reason='{cachedEvent.Reason}', detail='{cachedEvent.Detail}'.");
+                        $"[SceneFlowGate] Já concluído (cached). correlationKey='{correlationKey}', signature='{signature}', outcome='{cachedEvent.Outcome}', reason='{cachedEvent.Reason}', detail='{cachedEvent.Detail}'.");
                     return;
                 }
             }
@@ -98,10 +99,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
 
             lock (_pending)
             {
-                if (!_pending.TryGetValue(signature, out tcs))
+                if (!_pending.TryGetValue(correlationKey, out tcs))
                 {
                     tcs = new TaskCompletionSource<WorldResetCompletedEvent>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    _pending[signature] = tcs;
+                    _pending[correlationKey] = tcs;
                 }
             }
 
@@ -110,21 +111,21 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
             {
                 lock (_pending)
                 {
-                    if (_pending.TryGetValue(signature, out TaskCompletionSource<WorldResetCompletedEvent> current) && ReferenceEquals(current, tcs))
+                    if (_pending.TryGetValue(correlationKey, out TaskCompletionSource<WorldResetCompletedEvent> current) && ReferenceEquals(current, tcs))
                     {
-                        _pending.Remove(signature);
+                        _pending.Remove(correlationKey);
                     }
                 }
 
                 DebugUtility.LogWarning(typeof(WorldResetCompletionGate),
-                    $"[ResetTimeoutProceed] [SceneFlowGate] Timeout aguardando WorldResetCompletedEvent. signature='{signature}', timeoutMs={_timeoutMs}.");
+                    $"[ResetTimeoutProceed] [SceneFlowGate] Timeout aguardando WorldResetCompletedEvent. correlationKey='{correlationKey}', signature='{signature}', timeoutMs={_timeoutMs}.");
                 return;
             }
 
             WorldResetCompletedEvent completionEvent = await tcs.Task;
 
             DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                $"[SceneFlowGate] Concluído. signature='{signature}', outcome='{completionEvent.Outcome}', reason='{completionEvent.Reason}', detail='{completionEvent.Detail}'.");
+                $"[SceneFlowGate] Concluído. correlationKey='{correlationKey}', signature='{signature}', outcome='{completionEvent.Outcome}', reason='{completionEvent.Reason}', detail='{completionEvent.Detail}'.");
         }
 
         private void OnCompleted(WorldResetCompletedEvent evt)
@@ -137,13 +138,13 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
                 return;
             }
 
-            string signature = evt.ContextSignature ?? string.Empty;
+            WorldResetCorrelationKey correlationKey = WorldResetCorrelationKey.FromContextSignature(evt.ContextSignature);
             string reason = evt.Reason;
 
-            if (string.IsNullOrEmpty(signature))
+            if (!correlationKey.IsValid)
             {
                 DebugUtility.LogWarning(typeof(WorldResetCompletionGate),
-                    $"[SceneFlowGate] WorldResetCompletedEvent MACRO recebido com ContextSignature vazia. outcome='{evt.Outcome}', reason='{reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.");
+                    $"[SceneFlowGate] WorldResetCompletedEvent MACRO recebido sem CorrelationKey. outcome='{evt.Outcome}', reason='{reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.");
                 return;
             }
 
@@ -153,21 +154,21 @@ namespace ImmersiveGames.GameJam2025.Orchestration.ResetInterop.Runtime
             {
                 PruneCompletedCacheIfNeeded();
 
-                if (!_completedEvents.ContainsKey(signature))
+                if (!_completedEvents.ContainsKey(correlationKey))
                 {
-                    _completedEvents.Add(signature, evt);
+                    _completedEvents.Add(correlationKey, evt);
                 }
 
-                if (_pending.TryGetValue(signature, out tcs))
+                if (_pending.TryGetValue(correlationKey, out tcs))
                 {
-                    _pending.Remove(signature);
+                    _pending.Remove(correlationKey);
                 }
             }
 
             tcs?.TrySetResult(evt);
 
             DebugUtility.LogVerbose(typeof(WorldResetCompletionGate),
-                $"[SceneFlowGate] WorldResetCompletedEvent recebido. signature='{signature}', outcome='{evt.Outcome}', reason='{reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.");
+                $"[SceneFlowGate] WorldResetCompletedEvent recebido. correlationKey='{correlationKey}', signature='{evt.ContextSignature}', outcome='{evt.Outcome}', reason='{reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.");
         }
 
         private void PruneCompletedCacheIfNeeded()

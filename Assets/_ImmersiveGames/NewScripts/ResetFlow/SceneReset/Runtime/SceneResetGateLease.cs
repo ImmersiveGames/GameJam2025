@@ -1,7 +1,7 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetGateLease
     {

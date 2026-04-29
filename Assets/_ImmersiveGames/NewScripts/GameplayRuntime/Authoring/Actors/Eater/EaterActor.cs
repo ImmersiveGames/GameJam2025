@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Eater
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater
 {
     /// <summary>
     /// Implementação simples de IActor para o baseline de NewScripts.

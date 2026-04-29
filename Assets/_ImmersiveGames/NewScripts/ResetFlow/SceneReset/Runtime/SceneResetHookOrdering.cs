@@ -1,6 +1,6 @@
 using System;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal static class SceneResetHookOrdering
     {

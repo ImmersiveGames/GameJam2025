@@ -1,11 +1,13 @@
 #nullable enable
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkipPolicy
 {
     /// <summary>
     /// Servico global que controla o termino da IntroStage via comando explicito.
@@ -65,11 +67,13 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
                     DebugUtility.LogWarning<IntroStageControlService>(
                         $"[OBS][IntroStageControlService] BeginIntroStage chamado enquanto outra IntroStage ainda esta ativa. Intro antiga sera superseded signature='{NormalizeValue(previousContext.ContextSignature)}'.");
 
+                string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource(PhaseFlowSignalVocabulary.GameplaySessionFlowSource);
+                string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason(PhaseFlowSignalVocabulary.SupersededReason, wasSkipped: true);
                 EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                     previousContext.Session,
-                    "GameplaySessionFlow",
+                    canonicalSource,
                     wasSkipped: true,
-                    "superseded"));
+                    canonicalReason));
             }
         }
 
@@ -148,15 +152,18 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
 
                 if (context.IsValid)
                 {
+                    string canonicalSource = IntroStageCompletionSignalPolicy.CanonicalizeSource(PhaseFlowSignalVocabulary.GameplaySessionFlowSource);
+                    string canonicalReason = IntroStageCompletionSignalPolicy.CanonicalizeReason(normalizedReason, wasSkipped);
+
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='GameplaySessionFlow' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{normalizedReason}'.",
+                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='{canonicalSource}' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{canonicalReason}'.",
                         DebugUtility.Colors.Info);
 
                     EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
                         context.Session,
-                        "GameplaySessionFlow",
+                        canonicalSource,
                         wasSkipped,
-                        normalizedReason));
+                        canonicalReason));
                 }
             }
             catch (Exception ex)

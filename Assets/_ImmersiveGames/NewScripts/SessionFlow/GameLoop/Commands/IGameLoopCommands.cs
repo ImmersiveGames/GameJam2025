@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Commands
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands
 {
     /// <summary>
     /// API oficial para disparar comandos de gameplay (pause/resume/victory/defeat/exit-to-menu).

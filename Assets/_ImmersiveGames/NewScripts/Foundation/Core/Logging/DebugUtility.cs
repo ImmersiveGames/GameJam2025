@@ -4,11 +4,11 @@ using System.Globalization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace ImmersiveGames.GameJam2025.Core.Logging
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 {
     public enum DebugLevel
     {

@@ -17,11 +17,11 @@
  * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
  */
 
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Core.Logging.Config;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     /// <summary>
     /// Entry point for the NewScripts project area.

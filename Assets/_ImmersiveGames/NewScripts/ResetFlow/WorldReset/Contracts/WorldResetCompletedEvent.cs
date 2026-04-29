@@ -1,9 +1,9 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts
 {
     /// <summary>
     /// Evento canônico publicado quando um WorldReset conclui.

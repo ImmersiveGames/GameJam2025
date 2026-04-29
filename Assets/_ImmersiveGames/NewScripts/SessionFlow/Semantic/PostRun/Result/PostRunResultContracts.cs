@@ -1,7 +1,6 @@
 using System;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Result
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result
 {
     public enum PostRunResult
     {

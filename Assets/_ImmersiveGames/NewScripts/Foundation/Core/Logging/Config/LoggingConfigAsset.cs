@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Core.Logging.Config
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config
 {
     [CreateAssetMenu(
         fileName = "LoggingConfig",

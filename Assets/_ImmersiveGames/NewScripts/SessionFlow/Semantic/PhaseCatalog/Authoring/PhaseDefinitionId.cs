@@ -1,8 +1,7 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Identifiers;
+using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
 {
     /// <summary>
     /// Identificador tipado e normalizado para PhaseDefinition.

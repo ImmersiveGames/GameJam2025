@@ -1,8 +1,8 @@
 #nullable enable
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Adapters
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Adapters
 {
     /// <summary>
     /// Implementação padrão de loader usando SceneManager (fallback).

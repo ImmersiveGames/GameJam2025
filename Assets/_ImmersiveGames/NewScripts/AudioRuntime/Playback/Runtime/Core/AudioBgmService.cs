@@ -1,14 +1,14 @@
 using System;
 using System.Collections;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
-    /// Runtime canônico de BGM global (single-channel lógico) para F3 do ADR-0028.
-    /// Internamente usa duas fontes para suportar crossfade sem concorrência estrutural de BGM.
-    /// TODO: restaurar padrão via AudioDefaultsAsset e expor preview de SFX no commit do slider.
+    /// Runtime canï¿½nico de BGM global (single-channel lï¿½gico) para F3 do ADR-0028.
+    /// Internamente usa duas fontes para suportar crossfade sem concorrï¿½ncia estrutural de BGM.
+    /// TODO: restaurar padrï¿½o via AudioDefaultsAsset e expor preview de SFX no commit do slider.
     /// </summary>
     public sealed class AudioBgmService : MonoBehaviour, IAudioBgmService
     {

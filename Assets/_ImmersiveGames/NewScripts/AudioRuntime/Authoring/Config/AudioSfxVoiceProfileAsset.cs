@@ -1,7 +1,7 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
 using UnityEngine.Serialization;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     /// <summary>
     /// Define o perfil de vozes para execução de áudio em pool.

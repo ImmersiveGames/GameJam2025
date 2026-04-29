@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {

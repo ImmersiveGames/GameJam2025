@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     /// <summary>
     /// Define como os efeitos sonoros SFX são executados: diretamente ou por um pool.

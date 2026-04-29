@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
 
     public class SceneServiceRegistry : ServiceRegistry

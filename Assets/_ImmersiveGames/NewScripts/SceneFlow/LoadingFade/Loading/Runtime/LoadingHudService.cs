@@ -1,14 +1,14 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class LoadingHudService : ILoadingHudService, ILoadingPresentationService

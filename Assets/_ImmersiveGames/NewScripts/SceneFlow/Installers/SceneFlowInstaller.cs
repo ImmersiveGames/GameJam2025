@@ -1,15 +1,15 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Bootstrap
+namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 {
     /// <summary>
     /// Installer do SceneFlow.
@@ -39,6 +39,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Bootstrap
             RegisterNavigationPolicy();
             RegisterRouteGuard();
             RegisterRouteResetPolicy();
+            EnsureRouteActorSetRefContext();
             RegisterLoadingServices(bootstrapConfig);
 
             _installed = true;
@@ -92,6 +93,22 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Bootstrap
                 () => new SceneRouteResetPolicy(),
                 "[SceneFlow] IRouteResetPolicy ja registrado no DI global.",
                 "[SceneFlow] IRouteResetPolicy registrado no DI global (SceneRouteResetPolicy).");
+        }
+
+        public static void EnsureRouteActorSetRefContext()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var existingContext) && existingContext != null)
+            {
+                return;
+            }
+
+            var service = new SceneFlowRouteActorSetRefService();
+            DependencyManager.Provider.RegisterGlobal<ISceneFlowRouteActorSetRefContext>(service);
+            DependencyManager.Provider.RegisterGlobal(service);
+
+            DebugUtility.Log(typeof(SceneFlowInstaller),
+                "[OBS][ActorsExecution] Route actor-set context composed during SceneFlow installer phase.",
+                DebugUtility.Colors.Info);
         }
 
         private static void RegisterLoadingServices(BootstrapConfigAsset bootstrapConfig)

@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// Política de navegação usada para validar transições antes do processamento do SceneFlow.

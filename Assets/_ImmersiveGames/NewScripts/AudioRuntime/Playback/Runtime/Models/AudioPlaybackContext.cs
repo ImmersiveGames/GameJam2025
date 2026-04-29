@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Models
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models
 {
     /// <summary>
     /// Contexto can�nico de playback.

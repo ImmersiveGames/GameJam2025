@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Infrastructure.SimulationGate
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
 {
     /// <summary>
     /// Implementação thread-safe do gate baseada em tokens com ref-count.

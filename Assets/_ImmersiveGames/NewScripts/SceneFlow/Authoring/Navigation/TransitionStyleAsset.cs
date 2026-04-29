@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
 {
     /// <summary>
     /// Asset canonico de estilo de transicao.

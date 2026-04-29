@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;

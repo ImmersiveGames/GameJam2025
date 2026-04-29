@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Orchestration.Navigation.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation
 {
     public static class NavigationCompositionDescriptor
     {

@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
     /// <summary>
     /// Serviço global para orquestrar HUD de loading durante o Scene Flow.

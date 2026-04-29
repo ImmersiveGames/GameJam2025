@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core
 {
     /// <summary>
     /// Contrato complementar para expor o Kind de um ator sem alterar IActor.

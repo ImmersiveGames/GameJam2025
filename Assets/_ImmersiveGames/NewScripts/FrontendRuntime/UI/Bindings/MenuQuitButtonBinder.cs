@@ -1,8 +1,8 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Frontend.UI.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Frontend.UI.Bindings
+namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {
     /// <summary>
     /// Binder (produção) para a intent visual "Quit" do Frontend/UI.

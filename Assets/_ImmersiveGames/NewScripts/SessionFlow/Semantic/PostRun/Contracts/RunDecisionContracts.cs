@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Events;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Contracts
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts
 {
     public readonly struct RunDecision
     {

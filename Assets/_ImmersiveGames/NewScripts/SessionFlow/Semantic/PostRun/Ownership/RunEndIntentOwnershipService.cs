@@ -1,8 +1,7 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Ownership
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership
 {
     public interface IRunEndIntentOwnershipService
     {

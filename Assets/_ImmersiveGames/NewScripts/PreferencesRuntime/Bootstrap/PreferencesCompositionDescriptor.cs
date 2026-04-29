@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 {
     public static class PreferencesCompositionDescriptor
     {

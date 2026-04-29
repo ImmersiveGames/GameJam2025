@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
     public interface ILoadingPresentationService
     {

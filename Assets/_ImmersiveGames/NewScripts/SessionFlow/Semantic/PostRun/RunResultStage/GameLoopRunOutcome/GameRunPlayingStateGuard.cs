@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome
 {
     /// <summary>
     /// Centraliza a validação de gameplay ativo para serviços de run.

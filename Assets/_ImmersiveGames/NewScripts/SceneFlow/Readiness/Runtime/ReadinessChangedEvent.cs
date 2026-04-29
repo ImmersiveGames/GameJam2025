@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
 {
     /// <summary>
     /// Evento emitido quando o GameReadinessService publica um novo snapshot.

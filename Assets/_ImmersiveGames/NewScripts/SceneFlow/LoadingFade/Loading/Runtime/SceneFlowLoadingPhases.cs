@@ -1,5 +1,5 @@
 #nullable enable
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
     /// <summary>
     /// Constantes canonicas de fases do Loading HUD no SceneFlow.

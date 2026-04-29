@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Orchestration.SceneComposition;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {

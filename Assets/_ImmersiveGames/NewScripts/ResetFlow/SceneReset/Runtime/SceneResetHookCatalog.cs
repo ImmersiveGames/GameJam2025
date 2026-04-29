@@ -1,12 +1,12 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Spawn;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetHookCatalog
     {

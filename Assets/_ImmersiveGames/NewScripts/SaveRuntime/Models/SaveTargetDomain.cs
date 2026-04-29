@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Experience.Save.Models
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 {
     public enum SaveTargetDomain
     {

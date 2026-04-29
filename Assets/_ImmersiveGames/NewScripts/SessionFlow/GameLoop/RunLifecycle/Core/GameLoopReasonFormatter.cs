@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
 {
     /// <summary>
     /// Centraliza a lógica de formatação e normalização de "reason" na GameLoop.

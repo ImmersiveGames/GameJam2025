@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
 {
     [CreateAssetMenu(
         fileName = "PhaseDefinitionCatalogAsset",

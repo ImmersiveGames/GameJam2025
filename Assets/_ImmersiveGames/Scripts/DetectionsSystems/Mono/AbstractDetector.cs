@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using ImmersiveGames.GameJam2025.Core.Events;

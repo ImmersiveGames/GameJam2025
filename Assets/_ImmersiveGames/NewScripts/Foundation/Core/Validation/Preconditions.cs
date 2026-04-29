@@ -1,5 +1,5 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Core.Validation
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Validation
 {
     /// <summary>
     /// Utilitários básicos de validação usados pela infraestrutura.

@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Infrastructure.SimulationGate
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
 {
     /// <summary>
     /// Tokens padrão para bloquear/liberar simulação.

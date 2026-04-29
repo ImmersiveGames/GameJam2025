@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.Navigation
+namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro
 {
     /// <summary>
     /// Compatibility aliases and historical intent mappings for Navigation.

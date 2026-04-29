@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Spawn;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetContext
     {
@@ -24,7 +24,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
             ISimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
             IActorRegistry actorRegistry,
-            ISessionIntegrationContextService sessionIntegrationContextService,
+            ISpawnResetParticipationReadPort participationReadPort,
             IDependencyProvider provider,
             string sceneName,
             SceneResetHookRegistry hookRegistry,
@@ -35,7 +35,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
         {
             SpawnServices = spawnServices ?? Array.Empty<IWorldSpawnService>();
             ActorRegistry = actorRegistry;
-            SessionIntegrationContextService = sessionIntegrationContextService;
+            ParticipationReadPort = participationReadPort;
             _sceneName = string.IsNullOrWhiteSpace(sceneName) ? "<unknown>" : sceneName;
             ResetContext = resetContext;
             StartLog = startLog ?? string.Empty;
@@ -52,7 +52,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
         /// </summary>
         public IReadOnlyList<IWorldSpawnService> SpawnServices { get; }
         public IActorRegistry ActorRegistry { get; }
-        public ISessionIntegrationContextService SessionIntegrationContextService { get; }
+        public ISpawnResetParticipationReadPort ParticipationReadPort { get; }
         public WorldResetContext? ResetContext { get; }
         public string StartLog { get; }
         public string CompletionLog { get; }
@@ -138,16 +138,16 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
             _hookCatalog.ClearActorHookCacheForCycle();
         }
 
-        public bool TryGetCurrentParticipationSnapshot(out ParticipationSnapshot snapshot)
+        public bool TryGetCurrentParticipationSnapshot(out SpawnResetParticipationSnapshot snapshot)
         {
-            snapshot = ParticipationSnapshot.Empty;
+            snapshot = SpawnResetParticipationSnapshot.Empty;
 
-            if (SessionIntegrationContextService == null)
+            if (ParticipationReadPort == null)
             {
                 return false;
             }
 
-            return SessionIntegrationContextService.TryGetCurrentParticipation(out snapshot);
+            return ParticipationReadPort.TryGetCurrent(out snapshot);
         }
 
         public List<IActorGroupGameplayResetWorldParticipant> CollectScopedParticipants()
@@ -209,12 +209,12 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
 
         private string DescribeParticipationSuffix()
         {
-            if (!TryGetCurrentParticipationSnapshot(out ParticipationSnapshot snapshot))
+            if (!TryGetCurrentParticipationSnapshot(out SpawnResetParticipationSnapshot snapshot))
             {
                 return string.Empty;
             }
 
-            return $" participationSignature='{snapshot.Signature}' participationReadiness='{snapshot.Readiness.State}'";
+            return $" participationSignature='{snapshot.Signature}' participationReadiness='{snapshot.ReadinessState}'";
         }
     }
 }

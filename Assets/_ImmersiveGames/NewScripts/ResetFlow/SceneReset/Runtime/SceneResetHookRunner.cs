@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetHookRunner
     {

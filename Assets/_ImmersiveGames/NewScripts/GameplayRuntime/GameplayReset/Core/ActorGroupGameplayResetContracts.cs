@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Execution;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Policies
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Execution;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core
 {
     /// <summary>
     /// Policy local de GameplayReset.
@@ -19,18 +20,18 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Policies
     }
 
     /// <summary>
-    /// Policy padrão do GameplayReset.
+    /// Policy padrï¿½o do GameplayReset.
     /// - Strict = UNITY_EDITOR/DEVELOPMENT_BUILD
     /// - SceneScan: opt-in apenas em Strict (QA/Dev)
     /// </summary>
     public sealed class ProductionActorGroupGameplayResetPolicy : IActorGroupGameplayResetPolicy
     {
-        private readonly ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode.IRuntimeModeProvider _runtimeModeProvider;
-        private readonly ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode.IDegradedModeReporter _degradedModeReporter;
+        private readonly IRuntimeModeProvider _runtimeModeProvider;
+        private readonly IDegradedModeReporter _degradedModeReporter;
 
         public ProductionActorGroupGameplayResetPolicy(
-            ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode.IRuntimeModeProvider runtimeModeProvider,
-            ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode.IDegradedModeReporter degradedModeReporter)
+            IRuntimeModeProvider runtimeModeProvider,
+            IDegradedModeReporter degradedModeReporter)
         {
             _runtimeModeProvider = runtimeModeProvider;
             _degradedModeReporter = degradedModeReporter;
@@ -52,23 +53,17 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Policies
             _degradedModeReporter.Report(feature, reason, detail, signature, profile);
         }
     }
-}
 
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Observability
-{
     /// <summary>
-    /// Identificadores canônicos de observabilidade para GameplayReset.
+    /// Identificadores canï¿½nicos de observabilidade para GameplayReset.
     /// </summary>
     public static class GameplayResetFeatureIds
     {
         public const string GameplayReset = "gameplay.reset";
     }
-}
 
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
-{
     /// <summary>
-    /// Etapas assíncronas de reset para componentes de gameplay.
+    /// Etapas assï¿½ncronas de reset para componentes de gameplay.
     /// </summary>
     public enum ActorGroupGameplayResetStep
     {
@@ -78,7 +73,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Alvos canônicos suportados para reset de gameplay.
+    /// Alvos canï¿½nicos suportados para reset de gameplay.
     /// </summary>
     public enum ActorGroupGameplayResetTarget
     {
@@ -87,7 +82,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Pedido de reset contextualizado com alvo e actorIds (quando aplicável).
+    /// Pedido de reset contextualizado com alvo e actorIds (quando aplicï¿½vel).
     /// </summary>
     public readonly struct ActorGroupGameplayResetRequest
     {
@@ -172,7 +167,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Participante assíncrono de gameplay reset sobre um actor ja vivo,
+    /// Participante assï¿½ncrono de gameplay reset sobre um actor ja vivo,
     /// materializado e registrado pelo trilho de Spawn.
     /// </summary>
     public interface IActorGroupGameplayResettable
@@ -183,7 +178,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Participante síncrono sobre um actor ja vivo, materializado e registrado.
+    /// Participante sï¿½ncrono sobre um actor ja vivo, materializado e registrado.
     /// Um orchestrator pode adaptar para Task.
     /// </summary>
     public interface IActorGroupGameplayResettableSync
@@ -194,7 +189,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
     }
 
     /// <summary>
-    /// Opcional: controla a ordem de execução dentro de cada etapa. Menor primeiro.
+    /// Opcional: controla a ordem de execuï¿½ï¿½o dentro de cada etapa. Menor primeiro.
     /// </summary>
     public interface IActorGroupGameplayResetOrder
     {
@@ -227,17 +222,14 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core
         bool IsResetInProgress { get; }
 
         /// <summary>
-        /// Solicita reset e aguarda conclusão.
-        /// Se já houver reset em andamento, a implementação pode ignorar (retornando false) ou aguardar.
+        /// Solicita reset e aguarda conclusï¿½o.
+        /// Se jï¿½ houver reset em andamento, a implementaï¿½ï¿½o pode ignorar (retornando false) ou aguardar.
         /// </summary>
         Task<bool> RequestResetAsync(ActorGroupGameplayResetRequest request);
     }
 
     internal interface IActorGroupGameplayResetPolicyAware
     {
-        ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Policies.IActorGroupGameplayResetPolicy Policy { get; }
+        IActorGroupGameplayResetPolicy Policy { get; }
     }
 }
-
-
-

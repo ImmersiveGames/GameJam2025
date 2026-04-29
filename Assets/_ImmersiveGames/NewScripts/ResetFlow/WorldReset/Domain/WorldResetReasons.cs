@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
 {
     /// <summary>
     /// Reasons canônicas para reset do WorldReset (evita strings mágicas).
@@ -15,7 +15,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain
         public const string GuardDuplicatePrefix = "Guard_DuplicateScenesReady";
         public const string GateDisposed = "Gate_Disposed";
 
-        public const string ProductionTriggerPrefix = "ProductionTrigger/";
         public const string ManualProfile = "manual";
     }
 }

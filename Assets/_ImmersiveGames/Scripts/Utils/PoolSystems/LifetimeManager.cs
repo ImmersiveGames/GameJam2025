@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityUtils;
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems

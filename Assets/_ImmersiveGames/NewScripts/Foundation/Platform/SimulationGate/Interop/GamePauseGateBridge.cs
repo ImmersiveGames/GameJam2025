@@ -1,9 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-
-namespace ImmersiveGames.GameJam2025.Infrastructure.SimulationGate.Interop
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate.Interop
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GamePauseGateBridge : IDisposable

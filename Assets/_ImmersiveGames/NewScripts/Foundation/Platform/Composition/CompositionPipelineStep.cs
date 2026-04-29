@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     internal sealed class CompositionPipelineStep
     {

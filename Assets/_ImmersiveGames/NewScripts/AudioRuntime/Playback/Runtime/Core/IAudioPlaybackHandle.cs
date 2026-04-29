@@ -1,7 +1,7 @@
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
-    /// Handle canônico de playback.
+    /// Handle canï¿½nico de playback.
     /// </summary>
     public interface IAudioPlaybackHandle
     {

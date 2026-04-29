@@ -1,7 +1,7 @@
 using System;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Contracts
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
 {
     public sealed class AudioPreferencesSnapshot
     {

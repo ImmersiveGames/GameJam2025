@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.PlanetSystems;

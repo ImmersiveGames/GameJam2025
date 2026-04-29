@@ -1,16 +1,15 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Presentation;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Ownership
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership
 {
     public interface IRunResultStageOwnershipService
     {
         bool IsActive { get; }
         bool HasCompleted { get; }
-        RunResultStage CurrentStage { get; }
+        Contracts.RunResultStage CurrentStage { get; }
         void EnterRunResultStage(RunContinuationContext continuationContext);
         void CompleteRunResultStage(RunResultStageCompletion completion);
     }
@@ -32,7 +31,7 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Ownership
 
         public bool IsActive { get; private set; }
         public bool HasCompleted { get; private set; }
-        public RunResultStage CurrentStage { get; private set; }
+        public Contracts.RunResultStage CurrentStage { get; private set; }
 
         public void EnterRunResultStage(RunContinuationContext continuationContext)
         {
@@ -47,7 +46,7 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Ownership
                     "[FATAL][H1][RunResultStage] RunContinuationContext invalido recebido pelo stage owner.");
             }
 
-            CurrentStage = new RunResultStage(continuationContext);
+            CurrentStage = new Contracts.RunResultStage(continuationContext);
 
             if (!_presenterHost.TryEnsureCurrentPresenter(CurrentStage, this, nameof(RunResultStageOwnershipService), out IRunResultStagePresenter presenter) ||
                 presenter == null)

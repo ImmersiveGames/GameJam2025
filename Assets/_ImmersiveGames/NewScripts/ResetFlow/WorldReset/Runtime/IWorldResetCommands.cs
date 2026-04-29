@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
 {
     public interface IWorldResetCommands
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Text;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts
 {
     /// <summary>
     /// Stable semantic identity for a participant.
@@ -568,7 +568,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
     /// Event contract for participation snapshot publication.
     /// Operational seams may consume this as a read-only bridge, but they do not own the roster.
     /// </summary>
-    public readonly struct ParticipationSnapshotChangedEvent : ImmersiveGames.GameJam2025.Core.Events.IEvent
+    public readonly struct ParticipationSnapshotChangedEvent : IEvent
     {
         public ParticipationSnapshotChangedEvent(
             ParticipationSnapshot snapshot,

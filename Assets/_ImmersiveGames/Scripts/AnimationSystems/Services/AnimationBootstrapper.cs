@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;

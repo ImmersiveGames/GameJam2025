@@ -1,8 +1,9 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseCatalogNavigationService : IPhaseCatalogNavigationService
@@ -52,10 +53,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
 
         public PhaseCatalogNavigationPlan ResolveSpecificPhase(string phaseId, string reason = null)
         {
-            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);
+            string normalizedReason = NormalizeReason(reason);
             PhaseNavigationRequest request = PhaseNavigationRequest.Specific(phaseId, normalizedReason);
             PhaseDefinitionAsset currentCommitted = ResolveCurrentCommittedOrFail(normalizedReason);
-            string catalogName = PhaseNextPhaseServiceSupport.DescribeCatalog(_catalog);
+            string catalogName = DescribeCatalogName(_catalog);
 
             if (string.IsNullOrWhiteSpace(phaseId))
             {
@@ -88,13 +89,40 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
                 catalogName);
         }
 
+        public PhaseCatalogNavigationPlan ResolveFirstPhase(string reason = null)
+        {
+            string normalizedReason = NormalizeReason(reason);
+            PhaseDefinitionAsset currentCommitted = ResolveCurrentCommittedOrFail(normalizedReason);
+            PhaseDefinitionAsset targetPhaseRef = _catalog.ResolveInitialOrFail();
+            PhaseNavigationRequest request = PhaseNavigationRequest.FirstPhase(targetPhaseRef.PhaseId.Value, normalizedReason);
+            string catalogName = DescribeCatalogName(_catalog);
+
+            if (HasSamePhase(currentCommitted, targetPhaseRef))
+            {
+                return PhaseCatalogNavigationPlan.CreateBlocked(
+                    request,
+                    PhaseNavigationOutcome.TargetAlreadyCurrent,
+                    currentCommitted,
+                    TraversalMode,
+                    catalogName);
+            }
+
+            return PhaseCatalogNavigationPlan.CreateChanged(
+                request,
+                currentCommitted,
+                targetPhaseRef,
+                TraversalMode,
+                wasWrapped: false,
+                catalogName);
+        }
+
         public PhaseCatalogNavigationPlan RestartCatalog(string reason = null)
         {
-            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);
+            string normalizedReason = NormalizeReason(reason);
             PhaseDefinitionAsset currentCommitted = ResolveCurrentCommittedOrFail(normalizedReason);
             PhaseDefinitionAsset targetPhaseRef = _catalog.ResolveInitialOrFail();
             PhaseNavigationRequest request = PhaseNavigationRequest.RestartCatalog(targetPhaseRef.PhaseId.Value, normalizedReason);
-            string catalogName = PhaseNextPhaseServiceSupport.DescribeCatalog(_catalog);
+            string catalogName = DescribeCatalogName(_catalog);
 
             return PhaseCatalogNavigationPlan.CreateChanged(
                 request,
@@ -129,7 +157,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
             if (!HasSamePhase(runtimeCurrentCommitted, navigationPlan.CurrentCommitted))
             {
                 HardFailFastH1.Trigger(typeof(PhaseCatalogNavigationService),
-                    $"[FATAL][H1][PhaseDefinition] Commit rejected because the runtime committed phase changed while plan was being applied. planCurrent='{PhaseNextPhaseServiceSupport.DescribePhase(navigationPlan.CurrentCommitted)}' runtimeCurrent='{PhaseNextPhaseServiceSupport.DescribePhase(runtimeCurrentCommitted)}' target='{PhaseNextPhaseServiceSupport.DescribePhase(navigationPlan.TargetPhaseRef)}' reason='{navigationPlan.Reason}'.");
+                    $"[FATAL][H1][PhaseDefinition] Commit rejected because the runtime committed phase changed while plan was being applied. planCurrent='{DescribePhase(navigationPlan.CurrentCommitted)}' runtimeCurrent='{DescribePhase(runtimeCurrentCommitted)}' target='{DescribePhase(navigationPlan.TargetPhaseRef)}' reason='{navigationPlan.Reason}'.");
             }
 
             _runtimeStateService.SetPendingTarget(navigationPlan.TargetPhaseRef, navigationPlan.Reason);
@@ -141,11 +169,16 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
             }
         }
 
+        public void ClearPendingTarget(string reason = null)
+        {
+            _runtimeStateService.ClearPendingTarget(reason);
+        }
+
         private PhaseCatalogNavigationPlan ResolveDirectionalPlan(PhaseNavigationRequest request, PhaseNavigationDirection expectedDirection)
         {
-            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(request.Reason);
+            string normalizedReason = NormalizeReason(request.Reason);
             PhaseDefinitionAsset currentCommitted = ResolveCurrentCommittedOrFail(normalizedReason);
-            string catalogName = PhaseNextPhaseServiceSupport.DescribeCatalog(_catalog);
+            string catalogName = DescribeCatalogName(_catalog);
 
             if (expectedDirection == PhaseNavigationDirection.Next)
             {
@@ -238,10 +271,32 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
             if (!_catalog.TryGet(currentCommitted.PhaseId.Value, out _))
             {
                 HardFailFastH1.Trigger(typeof(PhaseCatalogNavigationService),
-                    $"[FATAL][H1][PhaseDefinition] Current committed phase is not present in the catalog. currentPhase='{PhaseNextPhaseServiceSupport.DescribePhase(currentCommitted)}' reason='{reason}'.");
+                    $"[FATAL][H1][PhaseDefinition] Current committed phase is not present in the catalog. currentPhase='{DescribePhase(currentCommitted)}' reason='{reason}'.");
             }
 
             return currentCommitted;
+        }
+
+        private static string NormalizeReason(string reason)
+        {
+            return string.IsNullOrWhiteSpace(reason) ? "PhaseDefinition/Navigation" : reason.Trim();
+        }
+
+        private static string DescribeCatalogName(IPhaseDefinitionCatalog catalog)
+        {
+            if (catalog is UnityEngine.Object unityObject)
+            {
+                return unityObject.name;
+            }
+
+            return catalog != null ? catalog.GetType().Name : "<none>";
+        }
+
+        private static string DescribePhase(PhaseDefinitionAsset phaseDefinition)
+        {
+            return phaseDefinition != null && phaseDefinition.PhaseId.IsValid
+                ? phaseDefinition.PhaseId.Value
+                : "<none>";
         }
 
         private static bool HasSamePhase(PhaseDefinitionAsset left, PhaseDefinitionAsset right)

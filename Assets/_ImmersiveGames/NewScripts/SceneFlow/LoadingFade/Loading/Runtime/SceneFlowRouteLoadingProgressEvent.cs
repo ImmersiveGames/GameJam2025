@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Loading.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime
 {
     public readonly struct SceneFlowRouteLoadingProgressEvent : IEvent
     {

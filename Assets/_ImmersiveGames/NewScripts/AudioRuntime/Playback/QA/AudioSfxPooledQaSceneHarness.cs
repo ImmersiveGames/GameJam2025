@@ -2,14 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Models;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.QA
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 {
     /// <summary>
     /// Harness dedicado ao trilho pooled de SFX (F5).

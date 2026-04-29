@@ -1,6 +1,5 @@
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     /// <summary>
     /// Identificador canonico dos eixos compostos por SessionTransition.
@@ -22,14 +21,14 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
     public readonly struct SessionTransitionAxisMap
     {
         public SessionTransitionAxisMap(
-            RunContinuationKind continuity,
+            SessionTransitionIntentKind intentKind,
             SessionTransitionPhaseAction phaseTransition,
             SessionTransitionResetAction worldReset,
             bool reconstruction,
             bool contentSpawn,
             bool carryOver)
         {
-            Continuity = continuity;
+            IntentKind = intentKind;
             PhaseTransition = phaseTransition;
             WorldReset = worldReset;
             Reconstruction = reconstruction;
@@ -37,7 +36,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
             CarryOver = carryOver;
         }
 
-        public RunContinuationKind Continuity { get; }
+        public SessionTransitionIntentKind IntentKind { get; }
         public SessionTransitionPhaseAction PhaseTransition { get; }
         public SessionTransitionResetAction WorldReset { get; }
         public bool Reconstruction { get; }
@@ -49,7 +48,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
 
         public override string ToString()
         {
-            return $"Continuity='{Continuity}', PhaseTransition='{PhaseTransition}', WorldReset='{WorldReset}', Reconstruction='{Reconstruction}', ContentSpawn='{ContentSpawn}', CarryOver='{CarryOver}'";
+            return $"Intent='{IntentKind}', PhaseTransition='{PhaseTransition}', WorldReset='{WorldReset}', Reconstruction='{Reconstruction}', ContentSpawn='{ContentSpawn}', CarryOver='{CarryOver}'";
         }
     }
 }

@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     /// <summary>
-    /// Classe base abstrata para configuração de cue de áudio.
+    /// Classe base abstrata para configuraï¿½ï¿½o de cue de ï¿½udio.
     /// Define propriedades compartilhadas entre diferentes tipos de cues (BGM, SFX, etc).
     /// </summary>
     public abstract class AudioCueAsset : ScriptableObject
@@ -27,10 +27,10 @@ namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
         public float RandomVolumeJitter => randomVolumeJitter;
 
         /// <summary>
-        /// Tenta selecionar um clip aleatório da lista, priorizando clips não-nulos.
+        /// Tenta selecionar um clip aleatï¿½rio da lista, priorizando clips nï¿½o-nulos.
         /// </summary>
-        /// <param name="clip">O clip selecionado aleatoriamente ou o primeiro válido encontrado.</param>
-        /// <returns>Verdadeiro se um clip válido foi encontrado.</returns>
+        /// <param name="clip">O clip selecionado aleatoriamente ou o primeiro vï¿½lido encontrado.</param>
+        /// <returns>Verdadeiro se um clip vï¿½lido foi encontrado.</returns>
         public bool TryPickClip(out AudioClip clip)
         {
             clip = null;
@@ -53,10 +53,10 @@ namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
 
 
         /// <summary>
-        /// Valida a configuração do cue em tempo de execução.
+        /// Valida a configuraï¿½ï¿½o do cue em tempo de execuï¿½ï¿½o.
         /// </summary>
-        /// <param name="reason">String que descreve o motivo da validação falhar, se aplicável.</param>
-        /// <returns>Verdadeiro se a configuração é válida para execução.</returns>
+        /// <param name="reason">String que descreve o motivo da validaï¿½ï¿½o falhar, se aplicï¿½vel.</param>
+        /// <returns>Verdadeiro se a configuraï¿½ï¿½o ï¿½ vï¿½lida para execuï¿½ï¿½o.</returns>
         public bool ValidateRuntime(out string reason)
         {
             if (clips == null || clips.Count == 0)

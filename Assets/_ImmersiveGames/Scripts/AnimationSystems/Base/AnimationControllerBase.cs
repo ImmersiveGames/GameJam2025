@@ -1,3 +1,5 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.AnimationSystems.Components;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;

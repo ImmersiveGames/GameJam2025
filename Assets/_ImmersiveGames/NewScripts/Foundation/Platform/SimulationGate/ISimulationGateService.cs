@@ -1,5 +1,5 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Infrastructure.SimulationGate
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
 {
     /// <summary>
     /// Controla se a "simulação" (lógica de gameplay) deve rodar ou não,

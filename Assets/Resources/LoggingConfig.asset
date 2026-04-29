@@ -18,11 +18,43 @@ MonoBehaviour:
   repeatedVerboseEnabled: 1
   defaultLevel: 4
   rules:
-  - ruleId: core_root
+  - ruleId: fundation_log
     enabled: 1
-    namespacePrefix: _ImmersiveGames.NewScripts.Core
+    namespacePrefix: _ImmersiveGames.NewScripts.Foundation
     level: 3
-  - ruleId: infrastructure_root
+  - ruleId: audio_log
     enabled: 1
-    namespacePrefix: _ImmersiveGames.NewScripts.Infrastructure
+    namespacePrefix: _ImmersiveGames.NewScripts.AudioRuntime
+    level: 3
+  - ruleId: frontend_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.FrontendRuntime
+    level: 3
+  - ruleId: gameplay_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime
+    level: 4
+  - ruleId: preferences_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.PreferencesRuntime
+    level: 3
+  - ruleId: reset_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.ResetFlow
+    level: 3
+  - ruleId: save_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.SaveRuntime
+    level: 3
+  - ruleId: sceneflow_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.SceneFlow
+    level: 3
+  - ruleId: inputmode_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.InputModes
+    level: 4
+  - ruleId: actors_log
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.ActorSystem
     level: 4

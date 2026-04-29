@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1c906ec60375d8946b130edfe0fae2ed, type: 3}
   m_Name: PhaseDefinitionExample
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   identity:
     phaseId:
       value: phase_test_slice_01
@@ -31,37 +31,30 @@ MonoBehaviour:
       - entryId: player_main
         role: 1
         configurationReference: {fileID: 100000, guid: a92dfce9d9c24c34b1b217f3f0d2f08d, type: 3}
-        materializationExpectation: 
-        observabilityExpectation: 
+        materializationExpectation:
+        observabilityExpectation:
       - entryId: eater_aux
         role: 2
         configurationReference: {fileID: 100000, guid: 0744eef234e55034895662d2373a6d62, type: 3}
-        materializationExpectation: 
-        observabilityExpectation: 
+        materializationExpectation:
+        observabilityExpectation:
       - entryId: dummy_prototype
         role: 3
         configurationReference: {fileID: 1188741042885028564, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
-        materializationExpectation: 
-        observabilityExpectation: 
+        materializationExpectation:
+        observabilityExpectation:
     additiveScenes:
     - buildIndex: 7
-      sceneName: SceneTest
-  players:
-    entries:
-    - localId: solo_player
-      role: 1
-  initialState:
+       sceneName: SceneTest
+   initialState:
     entries:
     - localId: phase_ready
       stateKind: 1
       parameters: []
   runResultStage:
-    hasRunResultStage: 1
-    parameters: []
-  intro:
-    hasIntroStage: 1
-    introPresenterPrefab: {fileID: 0}
-  closure:
+     hasRunResultStage: 1
+     parameters: []
+   closure:
     resultKind: 1
     continuityPolicyKind: 2
     parameters: []

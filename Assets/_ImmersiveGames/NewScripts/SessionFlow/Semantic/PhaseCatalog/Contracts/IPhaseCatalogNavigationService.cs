@@ -1,4 +1,6 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts
 {
     public interface IPhaseCatalogNavigationService
     {
@@ -14,8 +16,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
         PhaseCatalogNavigationPlan AdvancePhase(string reason = null);
         PhaseCatalogNavigationPlan ResolvePrevious(string reason = null);
         PhaseCatalogNavigationPlan ResolveSpecificPhase(string phaseId, string reason = null);
+        PhaseCatalogNavigationPlan ResolveFirstPhase(string reason = null);
         PhaseCatalogNavigationPlan RestartCatalog(string reason = null);
         void Commit(PhaseCatalogNavigationPlan navigationPlan);
+        void ClearPendingTarget(string reason = null);
     }
 
     public readonly struct PhaseCatalogNavigationPlan

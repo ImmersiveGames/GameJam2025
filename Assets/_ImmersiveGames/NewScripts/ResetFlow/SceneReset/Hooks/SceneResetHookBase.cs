@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks
 {
     /// <summary>
     /// Implementação base com no-op para facilitar adoção incremental.

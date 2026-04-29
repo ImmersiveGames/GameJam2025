@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks
 {
     /// <summary>
     /// Registry explícito de lifecycle hooks para o escopo de cena.

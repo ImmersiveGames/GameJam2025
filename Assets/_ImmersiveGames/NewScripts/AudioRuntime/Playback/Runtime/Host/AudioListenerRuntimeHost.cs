@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Host
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Host
 {
     /// <summary>
     /// Canonical minimal global AudioListener host for F3/BGM runtime.

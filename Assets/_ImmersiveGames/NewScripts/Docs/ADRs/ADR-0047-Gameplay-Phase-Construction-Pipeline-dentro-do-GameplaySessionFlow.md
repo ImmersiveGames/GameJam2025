@@ -1,5 +1,8 @@
 # ADR-0047 - Pipeline canonico de montagem da fase em `GameplaySessionFlow`
 
+> STATUS NORMATIVO: HISTORICO - ANTECEDENTE DA BASE 1.0, NAO FONTE NORMATIVA PRIMARIA.
+> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
+
 ## Status
 - Estado: Aceito
 - Data: 2026-04-03
@@ -102,3 +105,10 @@ Consequencias principais:
 - `GameplaySessionFlow` preserva a fronteira entre definicao e runtime
 - o conteudo local e os derivados runtime entram na preparacao protegida antes do reveal
 - o handoff para o fim de run fica explicitado como continuidade downstream
+
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisão viva: o pipeline de montagem da phase continua útil como leitura semântica do fluxo de preparação.
+- Trechos históricos/superados: o texto que faz `GameplaySessionFlow` absorver a fronteira de decisão operacional do backbone é antecedente; a resolução concreta agora passa por `Session Transition` e pelo host scene-local.
+- Leitura normativa atual: `prepare -> phase-local entry ready -> SceneTransitionCompleted -> IntroStage -> Playing` é a sequência relevante, com `RunResultStage` e `RunDecision` fora da montagem inicial.
+- ADRs superiores relacionados: `ADR-0052`, `ADR-0055`, `ADR-0056`, `ADR-0057`.

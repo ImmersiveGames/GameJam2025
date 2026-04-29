@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies
 {
     /// <summary>
     /// Policy padrão de produção.

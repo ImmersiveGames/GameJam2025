@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
-namespace ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     /// <summary>
     /// Configuração global (asset) para controlar o modo de execução e a política do reporter de degradação.
@@ -131,9 +131,9 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode
         public sealed class InputModesSettings
         {
             /// <summary>
-            /// Se verdadeiro, habilita o módulo InputModes (registro do IInputModeService no DI global).
+            /// Deve permanecer verdadeiro para manter o trilho canonico do InputModes.
             /// </summary>
-            [Tooltip("Habilita o módulo InputModes (registro do IInputModeService no DI global).")]
+            [Tooltip("Deve permanecer habilitado. Quando falso, o boot falha por quebrar o trilho canonico de InputModes.")]
             public bool enableInputModes = true;
 
             /// <summary>

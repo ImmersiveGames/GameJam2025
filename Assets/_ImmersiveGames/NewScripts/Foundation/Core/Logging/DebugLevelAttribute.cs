@@ -1,5 +1,5 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Core.Logging
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 {
     [AttributeUsage(AttributeTargets.Class)]
     public class DebugLevelAttribute : Attribute

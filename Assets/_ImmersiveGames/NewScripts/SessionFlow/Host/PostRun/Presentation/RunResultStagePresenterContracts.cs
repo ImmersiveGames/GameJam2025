@@ -1,6 +1,5 @@
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation
 {
     public interface IRunResultStagePresenter
     {
@@ -14,7 +13,7 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation
     {
         bool HasPresenter { get; }
         bool TryGetCurrentPresenter(out IRunResultStagePresenter presenter);
-        bool TryEnsureCurrentPresenter(ImmersiveGames.GameJam2025.Experience.PostRun.Contracts.RunResultStage stage, IRunResultStageControl control, string source, out IRunResultStagePresenter presenter);
+        bool TryEnsureCurrentPresenter(RunResultStage stage, IRunResultStageControl control, string source, out IRunResultStagePresenter presenter);
     }
 
     public interface IRunResultStagePresenterHost : IRunResultStagePresenterRegistry

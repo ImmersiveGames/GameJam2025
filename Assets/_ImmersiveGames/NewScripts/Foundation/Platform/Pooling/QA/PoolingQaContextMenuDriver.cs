@@ -2,13 +2,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Config;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Runtime;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.QA
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 {
     /// <summary>
     /// Reusable consumer base for explicit pool dependencies.

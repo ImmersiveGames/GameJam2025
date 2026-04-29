@@ -1,30 +1,28 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate.Interop;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Bridges;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Ownership;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Result;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.Commands;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneComposition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bridges;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate.Interop;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset.Installers;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
 {
     /// <summary>
     /// Runtime composer do GameLoop.
@@ -64,8 +62,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
             EnsurePauseBridge();
             EnsureGameRunRuntimeServices();
             EnsureOutcomeEventInputBridge();
+            EnsureRunEndBridgeRuntimeServices();
             EnsureRunEndEventBridge();
             EnsureDriver();
+            EnsureSceneFlowSyncDecisionService();
             EnsureSceneFlowSyncCoordinator(bootstrapConfig, gameLoopService);
             EnsureGameLoopModuleComposition();
 
@@ -170,12 +170,56 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
         {
             if (FindFirstObjectByType<GameRunEndedEventBridge>() != null)
             {
-                return;
+                throw new InvalidOperationException(
+                    "[FATAL][Config][GameLoop] GameRunEndedEventBridge must not be placed in a scene/prefab or created outside GameLoopBootstrap. Use the canonical composition path only.");
             }
 
+            EnsureRunEndBridgeRuntimeServices();
+
             var go = new GameObject(RunEndBridgeObjectName);
+            go.SetActive(false);
             go.AddComponent<GameRunEndedEventBridge>();
+            InitializeRunEndEventBridge(go);
             DontDestroyOnLoad(go);
+            go.SetActive(true);
+        }
+
+        private static void InitializeRunEndEventBridge(GameObject bridgeObject)
+        {
+            if (bridgeObject == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] RunEnd bridge GameObject ausente ao inicializar GameRunEndedEventBridge.");
+            }
+
+            if (!bridgeObject.TryGetComponent<GameRunEndedEventBridge>(out var bridge) || bridge == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] GameRunEndedEventBridge ausente no GameObject de composição.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunEndMaterializationService>(out var runEndMaterializationService) || runEndMaterializationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunEndMaterializationService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationSelectionRoutingService>(out var runContinuationSelectionRoutingService) || runContinuationSelectionRoutingService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunContinuationSelectionRoutingService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var runContinuationOwnershipService) || runContinuationOwnershipService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunContinuationOwnershipService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
+            }
+
+            bridge.Initialize(
+                runEndMaterializationService,
+                runContinuationSelectionRoutingService,
+                runContinuationOwnershipService);
+        }
+
+        private static void EnsureRunEndBridgeRuntimeServices()
+        {
+            RunEndBridgeRuntimeComposer.ComposeOrFail();
         }
 
         private static void EnsureDriver()
@@ -208,6 +252,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
             var bootStartRoute = ResolveBootStartRouteOrFailFast(bootstrapConfig);
             StartupTransitionResolution startup = ResolveRequiredStartupTransition(bootstrapConfig);
             IFadeService fadeService = startup.UseFade ? ResolveRequiredFadeService() : null;
+            IGameLoopSceneFlowSyncDecisionService syncDecisionService = ResolveRequiredSceneFlowSyncDecisionService();
 
             var startPlan = new SceneTransitionRequest(
                 bootStartRoute.ToDefinition(),
@@ -220,11 +265,36 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
                 reason: "Boot/StartPlan",
                 resolvedRouteRef: bootStartRoute);
 
-            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, startPlan);
+            _sceneFlowSyncCoordinator = new GameLoopSceneFlowSyncCoordinator(sceneFlow, gameLoopService, fadeService, syncDecisionService, startPlan);
 
             DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
                 $"[GameLoopSceneFlow][Operational] Coordinator composto para boot/start-plan canonical rail (routeId='{bootStartRoute.RouteId}', routeRef='{bootStartRoute.name}', style='{startup.StyleLabel}', profile='{startup.ProfileLabel}', profileAsset='{startup.Profile.name}').",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSceneFlowSyncDecisionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameLoopSceneFlowSyncDecisionService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal<IGameLoopSceneFlowSyncDecisionService>(
+                new GameLoopSceneFlowSyncDecisionService());
+
+            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
+                "[OBS][GameLoopSceneFlow][Operational] Sync decision service registrado no DI global.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static IGameLoopSceneFlowSyncDecisionService ResolveRequiredSceneFlowSyncDecisionService()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IGameLoopSceneFlowSyncDecisionService>(out var syncDecisionService) && syncDecisionService != null)
+            {
+                return syncDecisionService;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopSceneFlowSyncDecisionService ausente no DI global antes de compor o SceneFlow sync.");
         }
 
         private static void EnsureGameLoopModuleComposition()

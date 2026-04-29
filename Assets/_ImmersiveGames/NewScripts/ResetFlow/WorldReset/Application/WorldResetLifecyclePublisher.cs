@@ -1,8 +1,8 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 {
     /// <summary>
     /// Publicador canônico do lifecycle de WorldReset.

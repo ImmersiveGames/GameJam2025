@@ -1,6 +1,6 @@
 #nullable enable
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition
 {
     /// <summary>
     /// Adapter para operações de loading/unloading/ActiveScene independente da fonte (SceneManager ou legado).

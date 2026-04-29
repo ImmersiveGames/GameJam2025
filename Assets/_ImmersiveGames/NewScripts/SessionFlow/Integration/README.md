@@ -26,3 +26,14 @@
 - `SessionTransitionExpansion`: futuros eixos de session-transition devem permanecer declarativos e reutilizar a vocabulario existente.
 - `SemanticBlocksAboveBaseline`: novos blocos semanticos devem entrar por seams compostos, nao por logica oportunista de bootstrap.
 - A lista canonica de anchors vive em `SessionIntegrationExtensionPoints` para code e docs referenciarem de forma consistente.
+
+## RestartFromFirstPhase anti-regressao
+
+- `RestartCurrentPhase` continua sendo o trilho canonico de retry/restart da phase atual.
+- `RestartFromFirstPhase` e o trilho canonico do Reset visual de `RunDecision`: reinicia a run a partir da primeira phase do catalogo.
+- `ResetRun`, `GameplaySessionRunResetService`, `GameplayRunResetRequest` e `IGameplaySessionRunResetService` nao devem voltar.
+- `Navigation/StartGameplayRoute` nao e rail valido para reset da run para a primeira phase.
+- Reset visual deve emitir `RunContinuationKind.RestartFromFirstPhase`.
+- Restart/Retry visual devem emitir `RunContinuationKind.RestartCurrentPhase`.
+- O handoff final de `RestartFromFirstPhase` deve preservar `SessionTransitionPhaseLocalEntryReadyEvent -> actors readiness -> IntroStage/NoContent -> GameLoop Playing`.
+

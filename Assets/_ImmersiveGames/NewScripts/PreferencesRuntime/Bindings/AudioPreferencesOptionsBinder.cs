@@ -1,10 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using UnityEngine;
 using UnityEngine.UI;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Bindings
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 {
     /// <summary>
     /// Binder de intencao para opcoes de audio.

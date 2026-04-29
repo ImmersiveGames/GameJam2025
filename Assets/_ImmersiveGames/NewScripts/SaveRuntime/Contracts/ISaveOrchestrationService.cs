@@ -1,9 +1,9 @@
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Save.Models;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-namespace ImmersiveGames.GameJam2025.Experience.Save.Contracts
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Contracts
 {
     public interface ISaveOrchestrationService
     {

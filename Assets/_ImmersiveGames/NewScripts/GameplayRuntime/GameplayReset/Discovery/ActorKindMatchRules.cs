@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     internal static class ActorKindMatchRules
     {

@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Audio;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     [CreateAssetMenu(
         fileName = "AudioDefaults",
@@ -9,7 +9,7 @@ namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
     public sealed class AudioDefaultsAsset : ScriptableObject
     {
         /// <summary>
-        /// Controles de volume principais para diferentes categorias de áudio.
+        /// Controles de volume principais para diferentes categorias de ï¿½udio.
         /// </summary>
         [Header("Volumes")]
         [SerializeField] [Range(0f, 1f)] private float masterVolume = 1f;
@@ -17,21 +17,21 @@ namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
         [SerializeField] [Range(0f, 1f)] private float sfxVolume = 1f;
 
         /// <summary>
-        /// Multiplicadores de volume para categorias específicas de áudio.
+        /// Multiplicadores de volume para categorias especï¿½ficas de ï¿½udio.
         /// </summary>
         [Header("Category Multipliers")]
         [SerializeField] [Min(0f)] private float bgmCategoryMultiplier = 1f;
         [SerializeField] [Min(0f)] private float sfxCategoryMultiplier = 1f;
 
         /// <summary>
-        /// Configurações padrão para reprodução de música de fundo (BGM).
+        /// Configuraï¿½ï¿½es padrï¿½o para reproduï¿½ï¿½o de mï¿½sica de fundo (BGM).
         /// </summary>
         [Header("BGM Defaults")]
         [SerializeField] [Min(0f)] private float defaultBgmFadeSeconds = 1f;
         [SerializeField] [Range(0f, 1f)] private float pauseDuckingScale = 0.35f;
 
         /// <summary>
-        /// Roteamento de áudio através do mixer, defining os grupos e parâmetros de volume.
+        /// Roteamento de ï¿½udio atravï¿½s do mixer, defining os grupos e parï¿½metros de volume.
         /// </summary>
         [Header("Mixer Routing Base")]
         [SerializeField] private AudioMixerGroup defaultBgmMixerGroup;

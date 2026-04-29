@@ -1,11 +1,11 @@
 /*
  * ChangeLog
- * - Documentado contrato de resolução de câmera com expectativa de fallback resiliente.
+ * - Documentado contrato de resoluï¿½ï¿½o de cï¿½mera com expectativa de fallback resiliente.
  */
 
 using System;
 using System.Collections.Generic;
-namespace ImmersiveGames.GameJam2025.Experience.GameplayCamera
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
 {
     public interface IGameplayCameraResolver
     {

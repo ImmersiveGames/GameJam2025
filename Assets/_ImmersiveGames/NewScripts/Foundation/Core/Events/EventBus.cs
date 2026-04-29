@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace ImmersiveGames.GameJam2025.Core.Events
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
 {
     public static class EventBus<T>
     {

@@ -1,9 +1,9 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Diagnostics;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Frontend.UI.Bindings
+namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {
     /// <summary>
     /// Binder (produção) para a intent visual "Play" do Frontend/UI.

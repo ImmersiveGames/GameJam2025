@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore
 {
     public sealed class SceneFlowSignatureCache : ISceneFlowSignatureCache, System.IDisposable
     {

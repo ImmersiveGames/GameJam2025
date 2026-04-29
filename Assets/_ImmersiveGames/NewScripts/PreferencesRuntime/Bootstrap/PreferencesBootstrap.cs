@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 {
     public static class PreferencesBootstrap
     {

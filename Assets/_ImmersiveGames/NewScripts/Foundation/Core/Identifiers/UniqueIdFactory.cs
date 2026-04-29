@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Core.Identifiers
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Identifiers
 {
     public interface IUniqueIdFactory
     {

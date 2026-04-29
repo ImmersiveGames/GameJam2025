@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
     /// Implementação concreta do contexto de spawn para uma cena.

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Validation
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Validation
 {
     public sealed class WorldResetValidationPipeline
     {

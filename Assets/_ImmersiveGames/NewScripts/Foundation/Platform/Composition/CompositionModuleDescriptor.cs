@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public interface ICompositionModuleDescriptor
     {

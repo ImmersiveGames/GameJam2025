@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings
+namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
 {
     /// <summary>
     /// Chave de cena para evitar string solta em configurações de rota.

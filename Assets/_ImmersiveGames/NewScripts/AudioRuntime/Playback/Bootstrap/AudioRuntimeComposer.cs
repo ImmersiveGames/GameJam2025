@@ -1,17 +1,17 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Bridges;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Context;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Host;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Bootstrap
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Context;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bridges;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Host;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
     /// <summary>
     /// Runtime composer do Audio.

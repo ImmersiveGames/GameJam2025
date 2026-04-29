@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
     /// Registro simples de serviços de spawn para o escopo da cena atual.

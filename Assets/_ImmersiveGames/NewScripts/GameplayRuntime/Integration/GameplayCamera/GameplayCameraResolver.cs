@@ -1,14 +1,14 @@
 /*
  * ChangeLog
- * - Ajustado GetDefaultCamera para fallback em Camera.main quando não houver padrão registrado.
- * - Mantida idempotência de registro/desregistro com logs coerentes e evento de câmera padrão.
- * - Resiliência extra: evita eventos duplicados e usa fallback de câmera padrão ao consultar player específico.
+ * - Ajustado GetDefaultCamera para fallback em Camera.main quando nï¿½o houver padrï¿½o registrado.
+ * - Mantida idempotï¿½ncia de registro/desregistro com logs coerentes e evento de cï¿½mera padrï¿½o.
+ * - Resiliï¿½ncia extra: evita eventos duplicados e usa fallback de cï¿½mera padrï¿½o ao consultar player especï¿½fico.
  */
 
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Experience.GameplayCamera
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameplayCameraResolver : IGameplayCameraResolver

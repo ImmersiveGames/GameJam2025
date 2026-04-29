@@ -1,60 +1,31 @@
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneComposition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 {
+    public interface IGameplaySessionFlowPrepareOperationalHandoffService
+    {
+        Task ExecuteAsync(SceneTransitionContext context);
+    }
+
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameplaySessionFlowPrepareCompletionGate : ISceneTransitionCompletionGate
     {
+        private readonly IGameplaySessionFlowPrepareOperationalHandoffService _handoffService;
+
+        public GameplaySessionFlowPrepareCompletionGate(IGameplaySessionFlowPrepareOperationalHandoffService handoffService)
+        {
+            _handoffService = handoffService
+                ?? throw new System.InvalidOperationException("[FATAL][Config][SceneFlow] GameplaySessionFlowPrepareCompletionGate requer IGameplaySessionFlowPrepareOperationalHandoffService.");
+        }
+
         public async Task AwaitBeforeFadeOutAsync(SceneTransitionContext context)
         {
-            if (!context.RouteId.IsValid)
+            if (!ShouldAcceptGameplayPrepareRail(context))
             {
                 return;
-            }
-
-            if (context.RouteRef == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
-                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' reason='routeRef_missing'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
-            {
-                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
-                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' reason='non_gameplay_route'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (DependencyManager.Provider == null)
-            {
-                FailFastConfig(context, "DependencyManager.Provider unavailable.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseDefinitionSelectionService>(out var phaseSelectionService) || phaseSelectionService == null)
-            {
-                FailFastConfig(context, "IPhaseDefinitionSelectionService missing.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<GameplayPhaseFlowService>(out var gameplayPhaseFlowService) || gameplayPhaseFlowService == null)
-            {
-                FailFastConfig(context, "GameplayPhaseFlowService missing.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneCompositionExecutor>(out var sceneCompositionExecutor) || sceneCompositionExecutor == null)
-            {
-                FailFastConfig(context, "ISceneCompositionExecutor missing.");
             }
 
             string reason = string.IsNullOrWhiteSpace(context.Reason)
@@ -63,39 +34,61 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
             string signature = SceneTransitionSignature.Compute(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
-                $"[OBS][GameplaySessionFlow][Operational] MacroLoadingPhase='GameplaySessionPrepare' routeId='{context.RouteId}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Seam] received rail='GameplaySessionPrepare' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            PhaseDefinitionAsset selectedPhaseDefinitionRef = phaseSelectionService.ResolveOrFail();
-            PhaseDefinitionSelectedEvent phaseSelectedEvent = gameplayPhaseFlowService.PublishPhaseDefinitionSelected(
-                selectedPhaseDefinitionRef,
-                context.RouteId,
-                context.RouteRef,
-                reason);
+            DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
+                $"[OBS][GameplaySessionFlow][Seam] translated rail='GameplaySessionPrepare' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
 
-            SceneCompositionRequest phaseCompositionRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
-                selectedPhaseDefinitionRef,
-                reason,
-                phaseSelectedEvent.SelectionSignature,
-                forceFullReload: false);
+            await DispatchOperationalHandoffAsync(context, signature, reason);
+        }
 
-            SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
+        private async Task DispatchOperationalHandoffAsync(SceneTransitionContext context, string signature, string reason)
+        {
+            DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
+                $"[OBS][GameplaySessionFlow][Seam] handoff_dispatch target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
 
-            PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
-                selectedPhaseDefinitionRef,
-                phaseCompositionRequest.ScenesToLoad,
-                phaseCompositionRequest.ActiveScene,
-                "GameplaySessionFlow");
+            await _handoffService.ExecuteAsync(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareCompletionGate>(
-                $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareCompleted phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' routeId='{context.RouteId}' signature='{signature}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Seam] handoff_accepted target='GameplaySessionPrepareOperational' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
         }
 
-        private static void FailFastConfig(SceneTransitionContext context, string detail)
+        private static bool ShouldAcceptGameplayPrepareRail(SceneTransitionContext context)
         {
-            HardFailFastH1.Trigger(typeof(GameplaySessionFlowPrepareCompletionGate),
-                $"[FATAL][H1][SceneFlow] GameplaySessionFlow completion gate misconfigured: {detail} routeId='{context.RouteId}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+            if (!context.RouteId.IsValid)
+            {
+                return false;
+            }
+
+            if (context.RouteRef == null)
+            {
+                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' reason='routeRef_missing'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
+            if (context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' reason='non_gameplay_route'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
+            if (!context.IsGameplayInitialEntry)
+            {
+                DebugUtility.LogVerbose(typeof(GameplaySessionFlowPrepareCompletionGate),
+                    $"[OBS][GameplaySessionFlow][Operational] GameplaySessionPrepareSkipped routeId='{context.RouteId}' routeKind='{context.RouteRef.RouteKind}' gameplayEntryKind='{context.GameplayEntryKind}' reason='reentry_deferred_to_postcontinuation_rail'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
+
+            return true;
         }
     }
 }

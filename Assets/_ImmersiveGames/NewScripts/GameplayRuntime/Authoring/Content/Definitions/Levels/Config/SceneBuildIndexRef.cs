@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Content.Definitions.Levels.Config
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Content.Definitions.Levels.Config
 {
     [Serializable]
     public sealed partial class SceneBuildIndexRef : IEquatable<SceneBuildIndexRef>

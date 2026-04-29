@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     /// <summary>
     /// Composition is the declarative shape of the plan: axes, logical order and intents.
@@ -16,15 +15,13 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
             SessionTransitionAxisMap axisMap,
             SessionTransitionContinuityShape continuityShape,
             SessionTransitionReconstructionShape reconstructionShape,
-            bool emitsPhaseLocalEntryReady,
             IReadOnlyList<SessionTransitionAxisId> orderedAxes)
         {
             AxisMap = axisMap;
             ContinuityShape = continuityShape;
             ReconstructionShape = reconstructionShape;
-            EmitsPhaseLocalEntryReady = emitsPhaseLocalEntryReady;
             _orderedAxes = NormalizeOrderedAxes(orderedAxes);
-            Continuity = axisMap.Continuity;
+            IntentKind = axisMap.IntentKind;
             PhaseIntent = axisMap.PhaseTransition;
             WorldResetIntent = axisMap.WorldReset;
             ContentSpawnIntent = axisMap.ContentSpawn;
@@ -34,8 +31,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
         public SessionTransitionAxisMap AxisMap { get; }
         public SessionTransitionContinuityShape ContinuityShape { get; }
         public SessionTransitionReconstructionShape ReconstructionShape { get; }
-        public bool EmitsPhaseLocalEntryReady { get; }
-        public RunContinuationKind Continuity { get; }
+        public SessionTransitionIntentKind IntentKind { get; }
         public SessionTransitionPhaseAction PhaseIntent { get; }
         public SessionTransitionResetAction WorldResetIntent { get; }
         public bool ContentSpawnIntent { get; }
@@ -58,7 +54,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
         public override string ToString()
         {
             string axes = _orderedAxes.Length == 0 ? "<none>" : string.Join(">", _orderedAxes);
-            return $"OrderedAxes='{axes}', Continuity='{Continuity}', ContinuityShape=[{ContinuityShape}], ReconstructionShape=[{ReconstructionShape}], EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', PhaseIntent='{PhaseIntent}', WorldResetIntent='{WorldResetIntent}', ContentSpawnIntent='{ContentSpawnIntent}', CarryOverIntent='{CarryOverIntent}'";
+            return $"OrderedAxes='{axes}', Intent='{IntentKind}', ContinuityShape=[{ContinuityShape}], ReconstructionShape=[{ReconstructionShape}], PhaseIntent='{PhaseIntent}', WorldResetIntent='{WorldResetIntent}', ContentSpawnIntent='{ContentSpawnIntent}', CarryOverIntent='{CarryOverIntent}'";
         }
 
         private static SessionTransitionAxisId[] NormalizeOrderedAxes(IReadOnlyList<SessionTransitionAxisId> orderedAxes)
@@ -100,11 +96,27 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
 
         public SessionTransitionExecutionKind Kind { get; }
         public SessionTransitionHandoffAction HandoffAction { get; }
+        public bool RequiresPhaseLocalEntryReady => RequiresPhaseLocalEntryReadyFor(Kind);
         public bool IsNoOp => Kind == SessionTransitionExecutionKind.NoOp;
+
+        public static bool RequiresPhaseLocalEntryReadyFor(SessionTransitionExecutionKind kind)
+        {
+            return kind switch
+            {
+                SessionTransitionExecutionKind.InitialEntry => true,
+                SessionTransitionExecutionKind.NextPhase => true,
+                SessionTransitionExecutionKind.ResetCurrentPhase => true,
+                SessionTransitionExecutionKind.RestartFromFirstPhase => true,
+                SessionTransitionExecutionKind.PhaseOrdinalNavigation => true,
+                SessionTransitionExecutionKind.ExitToMenu => false,
+                SessionTransitionExecutionKind.NoOp => false,
+                _ => false,
+            };
+        }
 
         public override string ToString()
         {
-            return $"Kind='{Kind}', HandoffAction='{HandoffAction}'";
+            return $"Kind='{Kind}', RequiresPhaseLocalEntryReady='{RequiresPhaseLocalEntryReady}', HandoffAction='{HandoffAction}'";
         }
     }
 
@@ -114,6 +126,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
         NextPhase = 1,
         ResetCurrentPhase = 2,
         ExitToMenu = 3,
+        InitialEntry = 4,  /// Entrada inicial (Menu â†’ Gameplay ou SceneFlow primeira fase)
+        RestartFromFirstPhase = 5,
+        PhaseOrdinalNavigation = 6,
     }
 
     [Flags]

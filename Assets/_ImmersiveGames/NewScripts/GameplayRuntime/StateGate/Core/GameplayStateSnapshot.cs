@@ -1,8 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Core
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
 {
     internal enum StateDependentServiceState
     {
@@ -23,22 +24,85 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Core
     internal sealed class GameplayStateSnapshot
     {
         private StateDependentServiceState _state = StateDependentServiceState.Ready;
-        private bool _hasReadinessSnapshot;
-        private bool _gameplayReady;
+        private bool _hasSceneReadinessSnapshot;
+        private bool _sceneGameplayReady;
+        private bool _hasActorsOperationalReadinessSnapshot;
+        private bool _actorsOperationalReady;
+        private bool _hasGameplayInteractionReadinessSnapshot;
+        private bool _gameplayInteractionReady;
+        private string _interactionReadinessReason = string.Empty;
+        private bool _hasGameRunStarted;
 
         private int _lastResetFrame = -1;
         private string _lastResetReason = string.Empty;
-        public bool IsGameplayReadyOrUnknown => !_hasReadinessSnapshot || _gameplayReady;
+        public bool HasSceneReadinessSnapshot => _hasSceneReadinessSnapshot;
+        public bool IsSceneGameplayReady => _hasSceneReadinessSnapshot && _sceneGameplayReady;
+        public bool IsSceneGameplayReadyOrUnknown => !_hasSceneReadinessSnapshot || _sceneGameplayReady;
+        public bool HasActorsOperationalReadinessSnapshot => _hasActorsOperationalReadinessSnapshot;
+        public bool IsActorsOperationalReady => _hasActorsOperationalReadinessSnapshot && _actorsOperationalReady;
+        public bool HasGameplayInteractionReadinessSnapshot => _hasGameplayInteractionReadinessSnapshot;
+        public bool IsGameplayInteractionReady => _hasGameplayInteractionReadinessSnapshot && _gameplayInteractionReady;
+        public bool HasGameRunStarted => _hasGameRunStarted;
+        public bool IsPaused => _state == StateDependentServiceState.Paused;
 
         public void SetState(StateDependentServiceState next)
         {
             _state = next;
         }
 
-        public void UpdateReadiness(ReadinessChangedEvent evt)
+        public void SetGameRunStarted()
         {
-            _hasReadinessSnapshot = true;
-            _gameplayReady = evt.Snapshot.GameplayReady;
+            _hasGameRunStarted = true;
+            _state = StateDependentServiceState.Playing;
+        }
+
+        public void SetGameRunEnded()
+        {
+            _hasGameRunStarted = false;
+            _state = StateDependentServiceState.Ready;
+        }
+
+        public void UpdateSceneReadiness(ReadinessChangedEvent evt)
+        {
+            _hasSceneReadinessSnapshot = true;
+            _sceneGameplayReady = evt.Snapshot.GameplayReady;
+        }
+
+        public void UpdateGameplayInteractionReadiness(GameplayInteractionReadinessSnapshot snapshot)
+        {
+            _hasActorsOperationalReadinessSnapshot = snapshot.HasActorsOperationalReadyObservation;
+            _actorsOperationalReady = snapshot.ActorsOperationalReady;
+            _hasGameplayInteractionReadinessSnapshot = snapshot.HasCanonicalPayload ||
+                                                       snapshot.HasActorsOperationalReadyObservation ||
+                                                       snapshot.HasSceneTransitionCompletedObservation ||
+                                                       snapshot.HasIntroStageStatusObservation;
+            _gameplayInteractionReady = snapshot.IsGameplayInteractionReady;
+            _interactionReadinessReason = snapshot.ReadinessReason;
+
+            // SceneFlow readiness tecnico nao deve ser derrubado por snapshot de interacao sem observacao de cena.
+            // Mismatch de interacao fecha o gate via _gameplayInteractionReady, preservando sceneReady quando SceneFlow ja completou.
+            if (snapshot.HasSceneTransitionCompletedObservation)
+            {
+                _hasSceneReadinessSnapshot = true;
+                _sceneGameplayReady = snapshot.SceneTransitionCompleted;
+            }
+        }
+
+        public string DescribeGameplayReadinessReason()
+        {
+            if (!_hasGameplayInteractionReadinessSnapshot || !_gameplayInteractionReady)
+            {
+                return string.IsNullOrWhiteSpace(_interactionReadinessReason)
+                    ? "waiting_for_gameplay_interaction_ready"
+                    : _interactionReadinessReason;
+            }
+
+            if (!_hasGameRunStarted)
+            {
+                return "waiting_for_game_run_started";
+            }
+
+            return "ready";
         }
 
         public bool TryConsumeReset(string reason, int frame)
@@ -66,9 +130,19 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Core
             }
 
             StateDependentServiceState? loopState = ResolveFromGameLoop(gameLoopService);
-            if (loopState.HasValue)
+            if (loopState == StateDependentServiceState.Paused)
             {
-                return loopState.Value;
+                return StateDependentServiceState.Paused;
+            }
+
+            if (_hasGameRunStarted || loopState == StateDependentServiceState.Playing)
+            {
+                if (loopState.HasValue)
+                {
+                    return loopState.Value;
+                }
+
+                return StateDependentServiceState.Playing;
             }
 
             return _state;
@@ -96,7 +170,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Core
                 return false;
             }
 
-            if (_hasReadinessSnapshot && !_gameplayReady)
+            if (!_hasGameplayInteractionReadinessSnapshot || !_gameplayInteractionReady)
             {
                 return false;
             }
@@ -120,7 +194,7 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Core
                 return false;
             }
 
-            if (_hasReadinessSnapshot && !_gameplayReady)
+            if (!_hasGameplayInteractionReadinessSnapshot || !_gameplayInteractionReady)
             {
                 decision = StateDependentMoveDecision.GameplayNotReady;
                 return false;

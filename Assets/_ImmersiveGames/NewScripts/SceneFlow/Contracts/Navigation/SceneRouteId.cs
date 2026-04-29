@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
 {
     /// <summary>
     /// Identificador tipado para rotas do SceneFlow.

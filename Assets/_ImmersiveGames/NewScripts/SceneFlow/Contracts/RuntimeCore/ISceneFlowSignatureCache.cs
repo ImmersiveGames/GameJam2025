@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore
 {
     /// <summary>
     /// Cache simples para expor a ultima assinatura de SceneFlow observada em runtime.

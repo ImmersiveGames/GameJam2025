@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
 {
     /// <summary>
     /// Regra de produto por rota, separada da policy geral de navegação.

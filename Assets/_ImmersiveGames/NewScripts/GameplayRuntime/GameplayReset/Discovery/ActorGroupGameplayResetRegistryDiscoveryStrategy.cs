@@ -1,7 +1,8 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     public sealed class ActorGroupGameplayResetRegistryDiscoveryStrategy : IActorGroupGameplayResetDiscoveryStrategy
     {

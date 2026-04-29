@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Dummy
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Dummy
 {
     /// <summary>
     /// Implementação mínima de um ator para validar o pipeline de spawn/despawn.

@@ -1,9 +1,8 @@
 #nullable enable
-using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract
 {
     /// <summary>
     /// Contexto minimo para execucao da IntroStage antes da revelacao da cena.
@@ -13,6 +12,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
     {
         public IntroStageSession Session { get; }
         public string ContextSignature { get; }
+        public string ExecutionSignature { get; }
         public SceneRouteKind RouteKind { get; }
         public string TargetScene { get; }
         public string Reason { get; }
@@ -27,16 +27,11 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
         {
             Session = session;
             ContextSignature = session.SessionSignature;
+            ExecutionSignature = session.EntrySignature;
             RouteKind = routeKind;
             TargetScene = targetScene ?? string.Empty;
             Reason = reason ?? string.Empty;
         }
-    }
-
-    public interface IIntroStageStep
-    {
-        bool HasContent { get; }
-        Task RunAsync(IntroStageContext context, CancellationToken cancellationToken);
     }
 
     public interface IIntroStageCoordinator
@@ -64,14 +59,4 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage
             WasSkipped = wasSkipped;
         }
     }
-
-    public sealed class NoOpIntroStageStep : IIntroStageStep
-    {
-        public bool HasContent => false;
-
-        public Task RunAsync(IntroStageContext context, CancellationToken cancellationToken)
-            => Task.CompletedTask;
-    }
 }
-
-

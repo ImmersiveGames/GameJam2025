@@ -1,6 +1,5 @@
-using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap
 {
     public static class GameplayCompositionDescriptor
     {
@@ -8,13 +7,13 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "Gameplay",
                 installerDependencies: new[] { "Gates" },
-                bootstrapDependencies: Array.Empty<string>(),
+                bootstrapDependencies: new[] { "ActorsSystem" },
                 installer: _ => GameplayInstaller.Install(),
-                bootstrap: null,
+                bootstrap: _ => GameplayRuntimeBootstrap.ComposeRuntime(),
                 installerEntry: "GameplayInstaller.Install",
-                runtimeComposerEntry: null,
-                installerOnly: true,
-                description: "Gameplay state e camera resolver.");
+                runtimeComposerEntry: "GameplayRuntimeBootstrap.ComposeRuntime",
+                installerOnly: false,
+                description: "Gameplay state/camera + actors operational execution bridge.");
     }
 }
 

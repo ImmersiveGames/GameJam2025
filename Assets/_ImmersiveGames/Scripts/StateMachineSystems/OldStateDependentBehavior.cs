@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using ImmersiveGames.GameJam2025.Core.Events;
 using UnityEngine;

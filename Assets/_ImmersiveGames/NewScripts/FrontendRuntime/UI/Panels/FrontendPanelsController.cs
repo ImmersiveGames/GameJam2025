@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityEngine.EventSystems;
-namespace ImmersiveGames.GameJam2025.Experience.Frontend.UI.Panels
+namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Panels
 {
     /// <summary>
     /// Controla painéis locais do Frontend/UI dentro do MenuScene (sem SceneFlow / sem GameLoop).

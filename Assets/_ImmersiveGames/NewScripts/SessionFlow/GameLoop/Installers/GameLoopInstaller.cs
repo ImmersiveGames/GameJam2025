@@ -1,16 +1,16 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Ownership;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Result;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.Commands;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecution;
+using _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolution;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkipPolicy;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
 {
     /// <summary>
     /// Installer do GameLoop.
@@ -175,11 +175,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
             RegisterIntroStageLifecycleStateService();
+            RegisterIntroStageExecutionDecisionService();
             RegisterIntroStageLifecycleDispatchService();
-            RegisterPhaseNextPhaseEntryHandoffService();
-            RegisterPhaseNextPhaseService();
             RegisterGameplaySceneClassifier();
-            RegisterDefaultIntroStageStep();
             RegisterIntroStageLifecycleOrchestrator();
         }
 
@@ -231,14 +229,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
                 "[GameLoop] DefaultGameplaySceneClassifier registrado no DI global como support service de GameplaySessionFlow.");
         }
 
-        private static void RegisterDefaultIntroStageStep()
-        {
-            RegisterIfMissing<IIntroStageStep>(
-                () => new ConfirmToStartIntroStageStep(),
-                "[GameLoop] IIntroStageStep ja registrado no DI global.",
-                "[GameLoop] ConfirmToStartIntroStageStep registrado no DI global como support service de IntroStage.");
-        }
-
         private static void RegisterIntroStageLifecycleOrchestrator()
         {
             RegisterIfMissing<IntroStageLifecycleOrchestrator>(
@@ -273,9 +263,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
             RegisterIfMissing<IIntroStageLifecycleDispatchService>(
                 () =>
                 {
-                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
+                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStageExecutionDecisionService>(out var executionDecisionService) || executionDecisionService == null)
                     {
-                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStagePresenterRegistry ausente ao registrar IntroStageLifecycleDispatchService.");
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageExecutionDecisionService ausente ao registrar IntroStageLifecycleDispatchService.");
                     }
 
                     if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var coordinator) || coordinator == null)
@@ -283,80 +273,26 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bootstrap
                         throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageCoordinator ausente ao registrar IntroStageLifecycleDispatchService.");
                     }
 
-                    return new IntroStageLifecycleDispatchService(presenterRegistry, coordinator);
+                    return new IntroStageLifecycleDispatchService(executionDecisionService, coordinator);
                 },
                 "[GameLoop] IIntroStageLifecycleDispatchService ja registrado no DI global.",
                 "[GameLoop] IntroStageLifecycleDispatchService registrado no DI global como seam operacional de despacho/no-content.");
         }
 
-        private static void RegisterPhaseNextPhaseEntryHandoffService()
+        private static void RegisterIntroStageExecutionDecisionService()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseEntryHandoffService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] IPhaseNextPhaseEntryHandoffService ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
+            RegisterIfMissing<IIntroStageExecutionDecisionService>(
+                () =>
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStagePresenterRegistry ausente ao registrar IIntroStageExecutionDecisionService.");
+                    }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var phaseNextPhaseSelectionService) || phaseNextPhaseSelectionService == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] NextPhase entry handoff skipped because phase rail is not active yet.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageSessionService>(out var introStageSessionService) || introStageSessionService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageSessionService missing from global DI before next-phase entry handoff registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageLifecycleDispatchService>(out var introStageLifecycleDispatchService) || introStageLifecycleDispatchService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageLifecycleDispatchService missing from global DI before next-phase entry handoff registration.");
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseEntryHandoffService>(
-                new PhaseNextPhaseEntryHandoffService(introStageSessionService, introStageLifecycleDispatchService));
-            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] PhaseNextPhaseEntryHandoffService registrado no DI global como bridge estreito de next-phase.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterPhaseNextPhaseService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] IPhaseNextPhaseService ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var selectionService) || selectionService == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] NextPhase service skipped because phase rail is not active yet.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseCompositionService>(out var compositionService) || compositionService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IPhaseNextPhaseCompositionService missing from global DI before next-phase service registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseEntryHandoffService>(out var handoffService) || handoffService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IPhaseNextPhaseEntryHandoffService missing from global DI before next-phase service registration.");
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseService>(
-                new PhaseNextPhaseService(selectionService, compositionService, handoffService));
-            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] PhaseNextPhaseService registrado no DI global como orquestrador fino de next-phase.",
-                DebugUtility.Colors.Info);
+                    return new IntroStageExecutionDecisionService(presenterRegistry);
+                },
+                "[GameLoop] IIntroStageExecutionDecisionService ja registrado no DI global.",
+                "[GameLoop] IntroStageExecutionDecisionService registrado no DI global como seam de policy execute/skip.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

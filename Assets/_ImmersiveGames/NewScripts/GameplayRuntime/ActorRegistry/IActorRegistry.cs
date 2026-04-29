@@ -1,5 +1,6 @@
 using System.Collections.Generic;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry
 {
     /// <summary>
     /// Registro básico de atores para o escopo da cena.

@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     public sealed class ActorGroupGameplayResetSceneScanDiscoveryStrategy : IActorGroupGameplayResetDiscoveryStrategy
     {

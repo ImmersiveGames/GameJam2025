@@ -1,10 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Bindings;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
 {
     public sealed class SceneTransitionRequest
     {

@@ -2,11 +2,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Bindings;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Bindings;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime
 {
     /// <summary>
     /// Serviço de Fade do NewScripts.

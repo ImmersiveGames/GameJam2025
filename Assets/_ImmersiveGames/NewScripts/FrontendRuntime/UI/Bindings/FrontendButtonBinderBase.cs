@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-namespace ImmersiveGames.GameJam2025.Experience.Frontend.UI.Bindings
+namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {
     /// <summary>
     /// Base comum para binders de intents do Frontend/UI.

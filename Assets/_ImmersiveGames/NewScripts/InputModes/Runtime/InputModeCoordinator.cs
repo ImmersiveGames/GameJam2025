@@ -1,9 +1,10 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime
+namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
     /// Coordinator canonico do trilho de requests de InputMode.
@@ -14,7 +15,6 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime
         private readonly EventBinding<InputModeRequestEvent> _requestBinding;
         private int _lastRequestFrame = -1;
         private string _lastRequestKey = string.Empty;
-        private bool _missingInputModeServiceWarned;
 
         public InputModeCoordinator()
         {
@@ -47,17 +47,11 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime
             if (!DependencyManager.HasInstance || DependencyManager.Provider == null ||
                 !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) || service == null)
             {
-                if (!_missingInputModeServiceWarned)
-                {
-                    _missingInputModeServiceWarned = true;
-                    DebugUtility.LogWarning(typeof(InputModeCoordinator),
-                        $"[WARN][InputModes] Request ignored; IInputModeService missing key='{requestKey}' contextSignature='{contextSignature}'.");
-                }
-
+                HardFailFastH1.Trigger(typeof(InputModeCoordinator),
+                    $"[FATAL][H1][InputModes] Canonical trail broken: IInputModeService missing key='{requestKey}' contextSignature='{contextSignature}'.");
                 return;
             }
 
-            _missingInputModeServiceWarned = false;
             ApplyRequest(service, evt, requestKey, contextSignature);
             _lastRequestFrame = Time.frameCount;
             _lastRequestKey = requestKey;

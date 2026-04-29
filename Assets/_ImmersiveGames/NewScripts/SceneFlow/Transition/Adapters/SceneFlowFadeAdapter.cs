@@ -1,13 +1,13 @@
 #nullable enable
 using System;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Bindings;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Adapters
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Adapters
 {
     /// <summary>
     /// Adapter NewScripts: aplica referência direta de SceneTransitionProfile em FadeConfig.

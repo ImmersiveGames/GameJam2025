@@ -1,5 +1,8 @@
 # GameplaySessionFlow como primeiro bloco interno do Gameplay Runtime Composition
 
+> STATUS NORMATIVO: HISTORICO - ANTECEDENTE DA BASE 1.0, NAO FONTE NORMATIVA PRIMARIA.
+> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
+
 ## 1. Resumo executivo
 
 `GameplaySessionFlow` e o primeiro bloco semantico interno acima do backbone dentro de `Gameplay Runtime Composition`.
@@ -109,3 +112,10 @@ Elas nao devem virar o novo centro de ownership.
 Com este documento, `GameplaySessionFlow` fica formalmente definido como o primeiro bloco interno do `Gameplay Runtime Composition`.
 Ele nao e owner da progressao editorial entre phases.
 O proximo passo arquitetural e evoluir para o modelo de authoring/configuration da fase sem reabrir a decisao macro nem a fronteira agora fechada.
+
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisão viva: `GameplaySessionFlow` continua sendo o bloco semântico que organiza a sessão jogável e a derivação runtime da phase.
+- Trechos históricos/superados: `PostRunHandoffService`, `LevelFlowRuntimeService` e a leitura de `GameplaySessionFlow` como ponte para eixos antigos pertencem ao corte histórico.
+- Leitura normativa atual: `GameplaySessionFlow` integra com `Session Integration` e `Session Transition`; o fluxo canônico atual segue `PhaseDefinition -> prepare -> phase-local entry ready -> IntroStage -> Playing -> RunResultStage -> RunDecision`.
+- ADRs superiores relacionados: `ADR-0051`, `ADR-0052`, `ADR-0055`, `ADR-0056`, `ADR-0057`.

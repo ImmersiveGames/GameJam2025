@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.ProjectilesSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;

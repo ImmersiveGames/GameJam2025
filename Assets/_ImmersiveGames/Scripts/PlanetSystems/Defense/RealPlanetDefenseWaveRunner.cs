@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;

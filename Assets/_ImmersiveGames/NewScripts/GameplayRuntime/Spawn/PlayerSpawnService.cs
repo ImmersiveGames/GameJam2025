@@ -1,11 +1,12 @@
-using ImmersiveGames.GameJam2025.Core.Identifiers;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Player.Movement;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
     /// Serviço de spawn para instanciar o Player real no baseline.
@@ -13,19 +14,17 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
     public sealed class PlayerSpawnService : ActorSpawnServiceBase
     {
         private readonly IGameplayStateGate _gameplayStateService;
-        private readonly ISessionIntegrationContextService _sessionIntegrationContextService;
 
         public PlayerSpawnService(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
+            ActorSpecRecord actorSpec,
             GameObject prefab,
-            IGameplayStateGate gameplayStateService,
-            ISessionIntegrationContextService sessionIntegrationContextService)
-            : base(uniqueIdFactory, actorRegistry, context, prefab)
+            IGameplayStateGate gameplayStateService)
+            : base(uniqueIdFactory, actorRegistry, context, actorSpec, prefab)
         {
             _gameplayStateService = gameplayStateService;
-            _sessionIntegrationContextService = sessionIntegrationContextService;
         }
 
         public override string Name => nameof(PlayerSpawnService);
@@ -36,6 +35,22 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
 
         protected override IActor ResolveActor(GameObject instance) =>
             PlayerSpawnActorResolver.ResolvePlayerActor(instance);
+
+        protected override string ResolveSemanticParticipantId(IActor actor, in ActorSpawnRequest request)
+        {
+            _ = actor;
+
+            if (request.HasSemanticParticipantId)
+            {
+                DebugUtility.Log(typeof(PlayerSpawnService),
+                    $"[OBS][Gameplay][SpawnBridge] Player spawn consumed semanticParticipantId from ActorSpawnRequest semanticParticipantId='{request.SemanticParticipantId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' recipe='{request.OperationalRecipeKind}' source='{request.Source}'.");
+                return request.SemanticParticipantId;
+            }
+
+            HardFailFastH1.Trigger(typeof(PlayerSpawnService),
+                $"[FATAL][H1][Gameplay][SpawnBridge] Player spawn canônico sem semanticParticipantId no ActorSpawnRequest actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' recipe='{request.OperationalRecipeKind}' source='{request.Source}'.");
+            return string.Empty;
+        }
 
         protected override void OnPostInstantiate(GameObject instance)
         {
@@ -65,13 +80,8 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
 
         private void LogParticipationBridge()
         {
-            if (_sessionIntegrationContextService == null || !_sessionIntegrationContextService.TryGetCurrentParticipation(out var snapshot))
-            {
-                return;
-            }
-
-            DebugUtility.Log(typeof(PlayerSpawnService),
-                $"[OBS][Gameplay][SpawnBridge] Player spawn consumed participation signature='{snapshot.Signature}' readiness='{snapshot.Readiness.State}' localParticipantId='{snapshot.LocalParticipantId}' primaryParticipantId='{snapshot.PrimaryParticipantId}'.");
+            // F2-D remove a redescoberta de participação; neste ponto só registramos
+            // que o spawn do player consumiu o semanticParticipantId do request canônico.
         }
     }
 }

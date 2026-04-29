@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Core.Fsm
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Fsm
 {
     public interface IState
     {

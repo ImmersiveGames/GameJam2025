@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 using ImmersiveGames.GameJam2025.Core.Events;

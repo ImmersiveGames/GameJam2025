@@ -1,13 +1,13 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Frontend.UI.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.Bridges;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation.Runtime;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.Navigation.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation
 {
     /// <summary>
     /// Compositor operacional de Navigation.
@@ -49,6 +49,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.Navigation.Bootstrap
         {
             if (DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var existingService) && existingService != null)
             {
+                EnsureSessionIntegrationNavigationHandoff(existingService);
                 return;
             }
 
@@ -65,9 +66,25 @@ namespace ImmersiveGames.GameJam2025.Orchestration.Navigation.Bootstrap
             var service = new GameNavigationService(sceneFlow, catalog);
 
             DependencyManager.Provider.RegisterGlobal<IGameNavigationService>(service);
+            EnsureSessionIntegrationNavigationHandoff(service);
 
             DebugUtility.LogVerbose(typeof(NavigationBootstrap),
                 $"[OBS][NavigationCore][Operational] GameNavigationService composed at runtime (Catalog={catalog.GetType().Name}).",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionIntegrationNavigationHandoff(IGameNavigationService navigationService)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISessionIntegrationNavigationHandoffService>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var handoff = new SessionIntegrationNavigationHandoffService(navigationService);
+            DependencyManager.Provider.RegisterGlobal<ISessionIntegrationNavigationHandoffService>(handoff);
+
+            DebugUtility.LogVerbose(typeof(NavigationBootstrap),
+                "[OBS][NavigationCore][Operational] ISessionIntegrationNavigationHandoffService composed at runtime.",
                 DebugUtility.Colors.Info);
         }
 

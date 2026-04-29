@@ -15,6 +15,7 @@
 - `LoadingHudScene` e a HUD canonica fazem parte do macro flow.
 - `LevelCollection` e `LevelDefinition` nao sao owners daqui; vivem em `Game/Content/Definitions/Levels`.
 - `GameplaySessionFlow` consome `SceneTransitionCompletedEvent` para construir a sessao e a phase, mas nao altera o owner da transicao.
+- `Readiness` canonico de gameplay usa contexto de sessao valido como fonte principal de classificacao.
 
 ## Ownership
 
@@ -27,6 +28,7 @@
 - `ILoadingPresentationService` + `LoadingHudService`: apresentacao visual de loading.
 - `LoadingHudOrchestrator` + `LoadingProgressOrchestrator`: ponte de apresentacao; nao sao owners da transicao.
 - `SceneFlowInputModeBridge`: ponte de input, nao owner do modo.
+- `DefaultGameplaySceneClassifier`: classificacao de gameplay/readiness no trilho canonico por contexto de sessao valido.
 
 ## Regras praticas
 
@@ -38,6 +40,7 @@
 - `set-active` permanece no trilho macro do `SceneFlow`.
 - `load/unload` tecnico deve convergir para executor tecnico (`SceneComposition`) sem mover ownership de timeline para fora de `SceneFlow`.
 - O rail canonico de gameplay e construido depois de `SceneTransitionCompletedEvent`; a resolucao local da IntroStage pertence ao host scene-local, nao a `SceneFlow`.
+- marker scene-local e readiness manual permanecem apenas como trilho explicito de QA/dev fora do caminho canonico.
 
 ## Policy
 

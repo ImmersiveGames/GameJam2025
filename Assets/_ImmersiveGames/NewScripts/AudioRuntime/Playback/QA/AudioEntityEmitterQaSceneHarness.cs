@@ -1,12 +1,11 @@
 using System.Collections;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Bindings;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Models;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Experience.Audio.QA
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 {
     /// <summary>
     /// Harness de QA para validar o emitter como binding puro de contexto.

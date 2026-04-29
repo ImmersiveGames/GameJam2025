@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Execution
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Execution
 {
     internal sealed class ActorGroupGameplayResetExecutor
         : IActorGroupGameplayResetExecutor

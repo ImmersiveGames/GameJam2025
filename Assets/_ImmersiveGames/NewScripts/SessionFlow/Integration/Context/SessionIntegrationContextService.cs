@@ -1,13 +1,17 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SessionIntegrationContextService : ISessionIntegrationContextService
+    public sealed class SessionIntegrationContextService :
+        ISessionIntegrationContextService,
+        ISessionIntegrationInputModeEmitter
     {
         public SessionIntegrationContextService(
             IGameplaySessionContextService sessionContextService,
@@ -56,7 +60,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
                 InputModeRequestKind.Gameplay,
                 reason,
                 semanticSource,
-                contextSignature);
+                contextSignature,
+                ComposeCurrentSnapshot());
         }
 
         public void RequestFrontendMenuInputMode(string reason, string semanticSource, string contextSignature = "")
@@ -65,7 +70,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
                 InputModeRequestKind.FrontendMenu,
                 reason,
                 semanticSource,
-                contextSignature);
+                contextSignature,
+                ComposeCurrentSnapshot());
         }
 
         public void RequestPauseOverlayInputMode(string reason, string semanticSource, string contextSignature = "")
@@ -74,7 +80,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
                 InputModeRequestKind.PauseOverlay,
                 reason,
                 semanticSource,
-                contextSignature);
+                contextSignature,
+                ComposeCurrentSnapshot());
         }
 
         public void Clear(string reason = null)
@@ -111,7 +118,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
             InputModeRequestKind kind,
             string reason,
             string semanticSource,
-            string contextSignature)
+            string contextSignature,
+            SessionIntegrationContextSnapshot snapshot)
         {
             if (kind == InputModeRequestKind.Unspecified)
             {
@@ -122,7 +130,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
 
             string normalizedReason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             string normalizedSemanticSource = string.IsNullOrWhiteSpace(semanticSource) ? "<none>" : semanticSource.Trim();
-            string normalizedContextSignature = string.IsNullOrWhiteSpace(contextSignature) ? string.Empty : contextSignature.Trim();
+            string normalizedContextSignature = ResolveContextSignature(contextSignature, snapshot);
 
             DebugUtility.Log(typeof(SessionIntegrationContextService),
                 $"[OBS][SessionIntegration][InputModes] requestPublisher='SessionIntegrationContextService' seam='SessionIntegration' target='InputModeCoordinator' kind='{kind}' reason='{normalizedReason}' semanticSource='{normalizedSemanticSource}' contextSignature='{normalizedContextSignature}'.",
@@ -134,6 +142,65 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
                     normalizedReason,
                     "SessionIntegration",
                     normalizedContextSignature));
+        }
+
+        private static string ResolveContextSignature(string explicitContextSignature, SessionIntegrationContextSnapshot snapshot)
+        {
+            if (!string.IsNullOrWhiteSpace(explicitContextSignature))
+            {
+                return explicitContextSignature.Trim();
+            }
+
+            if (snapshot.Participation.IsValid && snapshot.Participation.Signature.IsValid)
+            {
+                return snapshot.Participation.Signature.ToString();
+            }
+
+            if (snapshot.PhaseRuntime.IsValid && snapshot.PhaseRuntime.HasPhaseRuntimeSignature)
+            {
+                return snapshot.PhaseRuntime.PhaseRuntimeSignature;
+            }
+
+            if (snapshot.SessionContext.IsValid && snapshot.SessionContext.HasSessionSignature)
+            {
+                return snapshot.SessionContext.SessionSignature;
+            }
+
+            return string.Empty;
+        }
+    }
+
+    public sealed class SpawnResetParticipationReadPortAdapter : ISpawnResetParticipationReadPort
+    {
+        private readonly ISessionIntegrationContextService _sessionIntegrationContextService;
+
+        public SpawnResetParticipationReadPortAdapter(ISessionIntegrationContextService sessionIntegrationContextService)
+        {
+            _sessionIntegrationContextService = sessionIntegrationContextService ?? throw new ArgumentNullException(nameof(sessionIntegrationContextService));
+        }
+
+        public bool TryGetCurrent(out SpawnResetParticipationSnapshot snapshot)
+        {
+            if (!_sessionIntegrationContextService.TryGetCurrentParticipation(out var participation))
+            {
+                snapshot = SpawnResetParticipationSnapshot.Empty;
+                return false;
+            }
+
+            string localBindingHint = string.Empty;
+            if (participation.TryGetLocalBindingCandidate(out var localParticipant))
+            {
+                localBindingHint = localParticipant.BindingHint.ToString();
+            }
+
+            snapshot = new SpawnResetParticipationSnapshot(
+                participation.Signature.ToString(),
+                participation.Readiness.State.ToString(),
+                participation.PrimaryParticipantId.ToString(),
+                participation.LocalParticipantId.ToString(),
+                localBindingHint);
+
+            return snapshot.HasSignature;
         }
     }
 

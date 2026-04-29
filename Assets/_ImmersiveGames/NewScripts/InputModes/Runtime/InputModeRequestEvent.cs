@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime
+namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     public enum InputModeRequestKind
     {

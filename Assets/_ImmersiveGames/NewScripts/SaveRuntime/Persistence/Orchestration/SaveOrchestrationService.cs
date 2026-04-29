@@ -1,17 +1,17 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Save.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Save.Models;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Save.Orchestration
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
 {
     public sealed class SaveOrchestrationService : ISaveOrchestrationService, IDisposable
     {

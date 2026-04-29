@@ -1,11 +1,11 @@
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Player.Movement
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     /// <summary>
     /// Controlador mínimo de movimento do Player no padrão NewScripts.

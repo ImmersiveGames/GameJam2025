@@ -1,11 +1,11 @@
 #nullable enable
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolution
 {
     public sealed class IntroStagePresenterScopeResolver : IIntroStagePresenterScopeResolver
     {
@@ -14,6 +14,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
             List<IIntroStagePresenter> resolvedPresenters = new List<IIntroStagePresenter>();
             HashSet<int> seenInstanceIds = new HashSet<int>();
 
+            // Resolve from phase content only.
+            // No fallback to active scene: the scope must be explicit in the phase definition.
             if (session.PhaseDefinitionRef != null && session.PhaseDefinitionRef.Content != null && session.PhaseDefinitionRef.Content.entries != null)
             {
                 ResolveFromPhaseContent(session, resolvedPresenters, seenInstanceIds);
@@ -21,13 +23,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
 
             if (resolvedPresenters.Count == 0)
             {
-                ResolveFromActiveScene(resolvedPresenters, seenInstanceIds);
-            }
+                DebugUtility.Log<IntroStagePresenterScopeResolver>(
+                    $"[OBS][IntroStage] No presenter in phase scope. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}' outcome='no_content'.",
+                    DebugUtility.Colors.Info);
 
-            if (resolvedPresenters.Count == 0)
-            {
-                DebugUtility.LogWarning<IntroStagePresenterScopeResolver>(
-                    $"[WARN][OBS][IntroStage] No scene-local presenter could be resolved. phaseRef='{(session.PhaseDefinitionRef != null ? session.PhaseDefinitionRef.name : "<none>")}' activeScene='{SceneManager.GetActiveScene().name}' contentId='{session.LocalContentId}' signature='{session.SessionSignature}'.");
                 presenters = new List<IIntroStagePresenter>();
                 return false;
             }
@@ -66,18 +65,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
             }
         }
 
-        private static void ResolveFromActiveScene(
-            List<IIntroStagePresenter> resolvedPresenters,
-            HashSet<int> seenInstanceIds)
-        {
-            Scene activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.IsValid() || !activeScene.isLoaded)
-            {
-                return;
-            }
-
-            AppendPresentersFromScene(activeScene, resolvedPresenters, seenInstanceIds);
-        }
 
         private static void AppendPresentersFromScene(
             Scene loadedScene,

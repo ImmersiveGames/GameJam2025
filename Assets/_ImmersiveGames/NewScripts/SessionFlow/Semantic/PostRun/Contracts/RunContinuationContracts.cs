@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Core.Events;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Contracts
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts
 {
     public enum RunContinuationKind
     {
@@ -12,8 +11,7 @@ namespace ImmersiveGames.GameJam2025.Experience.PostRun.Contracts
         RestartCurrentPhase = 2,
         ExitToMenu = 3,
         TerminateRun = 4,
-        ResetRun = 5,
-        Retry = 6,
+        RestartFromFirstPhase = 7,
     }
 
     public readonly struct RunContinuationTerminalFact

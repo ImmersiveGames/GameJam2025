@@ -1,6 +1,6 @@
 using System;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
 {
     public static class WorldResetCompositionDescriptor
     {

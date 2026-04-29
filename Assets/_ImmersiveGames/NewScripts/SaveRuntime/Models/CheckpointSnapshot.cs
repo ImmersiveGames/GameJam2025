@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-namespace ImmersiveGames.GameJam2025.Experience.Save.Models
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 {
     public sealed class CheckpointSnapshot
     {

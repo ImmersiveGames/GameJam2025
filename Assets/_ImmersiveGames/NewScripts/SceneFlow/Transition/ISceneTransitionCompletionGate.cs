@@ -1,7 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition
 {
     /// <summary>
     /// Gate opcional para "segurar" o final da transição (FadeOut/Completed) até que

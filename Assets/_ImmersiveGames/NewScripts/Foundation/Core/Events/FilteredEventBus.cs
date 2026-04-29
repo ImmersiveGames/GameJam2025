@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Core.Events
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
 {
     /// <summary>
     /// EventBus com filtragem por escopo (ex.: playerId).

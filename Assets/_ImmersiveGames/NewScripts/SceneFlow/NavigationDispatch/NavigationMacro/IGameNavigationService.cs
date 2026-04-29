@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.Navigation
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro
 {
     /// <summary>
     /// Public navigation API for core scene dispatch.
@@ -9,7 +9,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.Navigation
     {
         Task GoToMenuAsync(string reason = null);
         SceneRouteId ResolveGameplayRouteIdOrFail();
-        Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload = null, string reason = null);
+        Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload, string reason = null);
         Task NavigateAsync(GameNavigationIntentKind intent, string reason = null);
     }
 }

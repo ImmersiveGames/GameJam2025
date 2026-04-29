@@ -1,7 +1,9 @@
 using System;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 {
     /// <summary>
     /// OWNER: composicao de gates no fim da transicao macro.

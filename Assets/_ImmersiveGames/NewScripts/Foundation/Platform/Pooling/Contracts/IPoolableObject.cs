@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts
 {
     /// <summary>
     /// Optional lifecycle hooks for pooled objects in the canonical pooling module.

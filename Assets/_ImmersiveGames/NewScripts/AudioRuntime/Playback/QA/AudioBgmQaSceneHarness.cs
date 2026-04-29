@@ -1,10 +1,10 @@
 using System.Collections;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Audio.Config;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.QA
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 {
     /// <summary>
     /// Scene-level manual harness to validate F3 BGM runtime without route/navigation integrations.

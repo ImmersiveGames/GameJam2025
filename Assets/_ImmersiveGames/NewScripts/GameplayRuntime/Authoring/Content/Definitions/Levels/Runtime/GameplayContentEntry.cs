@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace ImmersiveGames.GameJam2025.Game.Content.Definitions.Levels.Runtime
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Content.Definitions.Levels.Runtime
 {
     public enum GameplayContentEntryRole
     {

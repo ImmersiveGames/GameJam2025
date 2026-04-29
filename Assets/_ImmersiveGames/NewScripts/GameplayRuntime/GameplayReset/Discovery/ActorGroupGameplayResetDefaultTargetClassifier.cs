@@ -1,11 +1,12 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery
 {
     /// <summary>
-    /// Classificador padrão de alvos de reset.
-    /// - ByActorKind: usa IActorKindProvider como contrato canônico de grupo.
+    /// Classificador padrï¿½o de alvos de reset.
+    /// - ByActorKind: usa IActorKindProvider como contrato canï¿½nico de grupo.
     /// - ActorIdSet: usa ActorRegistry.TryGetActor para os ids do request.
     /// </summary>
     public sealed class ActorGroupGameplayResetDefaultTargetClassifier : IActorGroupGameplayResetTargetClassifier

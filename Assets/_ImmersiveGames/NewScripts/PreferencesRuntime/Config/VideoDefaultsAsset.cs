@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Config
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Config
 {
     [CreateAssetMenu(
         fileName = "VideoDefaults",

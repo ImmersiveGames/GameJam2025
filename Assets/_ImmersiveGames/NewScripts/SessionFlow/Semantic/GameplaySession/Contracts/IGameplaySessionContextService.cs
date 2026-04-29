@@ -1,4 +1,6 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Contracts
 {
     public interface IGameplaySessionContextService
     {

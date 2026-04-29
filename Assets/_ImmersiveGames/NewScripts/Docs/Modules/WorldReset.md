@@ -6,6 +6,7 @@
 - `WorldResetOrchestrator` coordena o pipeline macro.
 - `WorldResetExecutor` faz a ponte do fluxo macro para o boundary local neutro e valida a pos-condicao final.
 - `WorldResetCommands` e a superficie canonica para pedir reset no runtime.
+- `IWorldResetLocalExecutorRegistry` e o registro explicito de executores locais por cena.
 - `SceneReset` e o executor local observado hoje; `SceneResetFacade` continua como compat historica.
 
 ## Ownership
@@ -15,6 +16,7 @@
 - `WorldResetExecutor`: handoff para o reset local neutro e verificacao final de atores/estado esperado.
 - `WorldResetRequestService`: fila/correlacao de pedidos de reset.
 - `IWorldResetLocalExecutor`: boundary neutro de execucao local consumido pelo macro.
+- `IWorldResetLocalExecutorRegistry`: composicao explicita dos executores locais (sem locator global por scan).
 - `Validation/*`: assinatura, validacao e regras do pedido.
 - `Policies/*`: policy macro e decisao de reset.
 - `Domain/*`: request, scope, flags, origin, reasons e contexto do reset.

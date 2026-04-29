@@ -1,10 +1,11 @@
 #nullable enable
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecution
 {
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]

@@ -216,13 +216,13 @@ As continuidades minimas de v1 sao:
 - `AdvancePhase`
 - `RestartCurrentPhase`
 - `ExitToMenu`
-- `TerminateRun`
+- `EndRun`
 
 Leitura canonica:
 
 - `Victory`, `Defeat` e `ExitToMenu` continuam sendo motivos de fechamento, nao destinos automaticos
 - o destino da continuidade e decidido depois do fechamento, por contrato de continuidade
-- `TerminateRun` representa o encerramento terminal da continuidade, nao um atalho de `PhaseNavigation`
+- `EndRun` representa o encerramento terminal da continuidade, nao um atalho de `PhaseNavigation`
 - `RestartCurrentPhase` pode existir como continuidade valida, mas sua execucao resolve para o rail proprio de phase reset
 - `AdvancePhase` pode existir como continuidade valida, mas seu tratamento e editorial explicito e nao vira navegacao pura escondida no contexto amplo
 
@@ -286,3 +286,15 @@ Ele formaliza o que acontece depois do fechamento semantico da run e antes da ex
 3. Manter `GameRunEndedEventBridge` apenas como transporte fino.
 4. Separar claramente contexto, selecao, execucao downstream e phase navigation.
 5. Garantir que `RestartCurrentPhase` siga resolvendo para o rail proprio de phase reset.
+
+## Addendum - Continuidade RestartFromFirstPhase
+
+`RunContinuationKind.RestartFromFirstPhase` e continuidade canonica distinta de `RestartCurrentPhase`.
+
+Mapa de continuidade:
+
+- `RestartCurrentPhase`: reinicia a phase atual.
+- `RestartFromFirstPhase`: resolve a primeira phase do catalogo e reinicia a run a partir dela.
+
+`Retry` pode existir apenas como compat defensiva/runtime para `RestartCurrentPhase`; nao e continuidade publica/default. Na UI de `RunDecision`, `Retry` emite `RestartCurrentPhase`, `Restart` emite `RestartFromFirstPhase` e nao existe acao visual publica `Reset`. Nenhum codigo novo deve emitir `ResetRun`.
+

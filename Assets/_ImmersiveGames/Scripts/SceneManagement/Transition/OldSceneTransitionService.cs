@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.LegadoFadeSystem;
 using _ImmersiveGames.Scripts.SceneManagement.Core;
 using ImmersiveGames.GameJam2025.Core.Events;

@@ -1,11 +1,12 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.State.Core
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
 {
     /// <summary>
     /// Contract for services that gate player or gameplay actions based on global state.
     /// </summary>
     public interface IGameplayStateGate : IDisposable
     {
+        event Action<GameplayOperationalStateSnapshot> OperationalStateChanged;
         bool CanExecuteGameplayAction(GameplayAction action);
         bool CanExecuteUiAction(UiAction action);
         bool CanExecuteSystemAction(SystemAction action);

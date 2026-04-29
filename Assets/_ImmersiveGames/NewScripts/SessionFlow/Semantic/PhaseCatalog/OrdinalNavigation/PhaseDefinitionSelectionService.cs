@@ -1,7 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation
 {
     public sealed class PhaseDefinitionSelectionService : IPhaseDefinitionSelectionService
     {

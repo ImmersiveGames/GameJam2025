@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Game.Content.Definitions.Levels.Config;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
 {
     [CreateAssetMenu(
         fileName = "PhaseDefinitionAsset",
@@ -18,15 +16,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
             Main = 1,
             Additive = 2,
             Overlay = 3,
-        }
-
-        public enum PhasePlayerRole
-        {
-            Unknown = 0,
-            Local = 1,
-            Remote = 2,
-            Bot = 3,
-            Shared = 4,
         }
 
         [Serializable]
@@ -51,31 +40,14 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
             public PhaseSceneRole role;
         }
 
-        [Serializable]
-        public sealed class PhasePlayersBlock
-        {
-            public List<PhasePlayerEntry> entries = new();
-        }
-
-        [Serializable]
-        public sealed class PhasePlayerEntry
-        {
-            public string localId = string.Empty;
-            public PhasePlayerRole role;
-        }
-
         [Header("Identity")]
         [SerializeField] private PhaseIdentityBlock identity = new();
 
         [Header("Content")]
         [SerializeField] private PhaseContentBlock content = new();
 
-        [Header("Players")]
-        [SerializeField] private PhasePlayersBlock players = new();
-
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
-        public PhasePlayersBlock Players => players;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
 
@@ -103,7 +75,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
             }
 
             ValidateContentBlock(assetOwner);
-            ValidatePlayersBlock(assetOwner);
         }
 
 #if UNITY_EDITOR
@@ -118,6 +89,12 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
             if (content == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing content block. asset='{assetOwner}', phaseId='{PhaseId}'.");
+            }
+
+            // Phase must have at least one content entry (basal content is required).
+            if (content.entries == null || content.entries.Count == 0)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Content block is empty. Phase must have basal content. asset='{assetOwner}', phaseId='{PhaseId}'.");
             }
 
             ValidateEntries(
@@ -135,27 +112,6 @@ namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition
                     if (entry.role == PhaseSceneRole.Unknown)
                     {
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Content entry missing role. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
-                    }
-                });
-        }
-
-        private void ValidatePlayersBlock(string assetOwner)
-        {
-            if (players == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Missing players block. asset='{assetOwner}', phaseId='{PhaseId}'.");
-            }
-
-            ValidateEntries(
-                players.entries,
-                assetOwner,
-                "players",
-                entry =>
-                {
-                    entry.localId = Normalize(entry.localId);
-                    if (entry.role == PhasePlayerRole.Unknown)
-                    {
-                        throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Player entry missing role. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
                 });
         }

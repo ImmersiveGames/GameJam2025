@@ -1,6 +1,6 @@
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Policies;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Guards
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Guards
 {
     /// <summary>
     /// Guard de pré-condições do reset.

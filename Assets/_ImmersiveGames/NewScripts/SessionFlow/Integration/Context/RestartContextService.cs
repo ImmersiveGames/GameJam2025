@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 {
     public sealed class RestartContextService : IRestartContextService, IDisposable
     {

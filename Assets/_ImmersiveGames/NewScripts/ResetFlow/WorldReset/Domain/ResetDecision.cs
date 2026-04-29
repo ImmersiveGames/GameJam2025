@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
 {
     /// <summary>
     /// Resultado de guard/validação para o pipeline de reset.

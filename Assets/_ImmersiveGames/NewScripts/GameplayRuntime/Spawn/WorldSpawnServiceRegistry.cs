@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
 
     public sealed class WorldSpawnServiceRegistry : IWorldSpawnServiceRegistry, IDisposable

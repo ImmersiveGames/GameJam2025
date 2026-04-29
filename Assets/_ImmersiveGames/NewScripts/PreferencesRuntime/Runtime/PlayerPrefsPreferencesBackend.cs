@@ -1,9 +1,9 @@
 using System;
 using System.Text;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Runtime
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 {
     public sealed class PlayerPrefsPreferencesBackend : IPreferencesBackend
     {

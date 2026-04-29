@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Experience.Frontend.UI.Runtime
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
 {
     public interface IFrontendQuitService
     {

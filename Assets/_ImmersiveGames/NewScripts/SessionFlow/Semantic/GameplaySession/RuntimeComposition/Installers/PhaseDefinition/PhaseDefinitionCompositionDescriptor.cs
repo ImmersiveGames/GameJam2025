@@ -1,6 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition
 {
     public static class PhaseDefinitionCompositionDescriptor
     {

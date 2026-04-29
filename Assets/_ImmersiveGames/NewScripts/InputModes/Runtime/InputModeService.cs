@@ -1,9 +1,9 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Infrastructure.InputModes.Runtime;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using UnityEngine.InputSystem;
-namespace ImmersiveGames.GameJam2025.Infrastructure.InputModes
+namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
     /// Controla action maps (Player/UI) alternando entre gameplay, pause overlay e frontend menu.

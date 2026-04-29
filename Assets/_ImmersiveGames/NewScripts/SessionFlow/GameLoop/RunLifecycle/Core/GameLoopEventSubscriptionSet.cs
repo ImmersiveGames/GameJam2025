@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Events;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
 {
     /// <summary>
     /// Helper local do módulo para registrar/unregister bindings de serviços/bridges IDisposable.

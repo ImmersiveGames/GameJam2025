@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Experience.Save.Models;
-namespace ImmersiveGames.GameJam2025.Experience.Save.Contracts
+using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Contracts
 {
     public interface IProgressionStateService
     {

@@ -1,6 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
 {
     /// <summary>
     /// Entry-point de produção para solicitar ResetWorld (hard reset) fora de QA.
@@ -8,9 +9,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime
     public interface IWorldResetRequestService
     {
         /// <summary>
-        /// Solicita um ResetWorld no contexto atual (quando não há transição ativa).
+        /// Solicita um ResetWorld já materializado pelo caller canônico.
         /// </summary>
-        Task RequestResetAsync(string source);
+        Task RequestResetAsync(WorldResetRequest request);
     }
 }
 

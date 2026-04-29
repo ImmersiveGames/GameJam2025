@@ -1,5 +1,5 @@
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks
 {
     /// <summary>
     /// Hooks opcionais para observar o ciclo de vida do reset do mundo.

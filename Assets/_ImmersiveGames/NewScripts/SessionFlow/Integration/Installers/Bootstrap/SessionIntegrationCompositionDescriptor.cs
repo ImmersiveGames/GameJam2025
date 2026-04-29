@@ -1,6 +1,5 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Bootstrap
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap
 {
     public static class SessionIntegrationCompositionDescriptor
     {

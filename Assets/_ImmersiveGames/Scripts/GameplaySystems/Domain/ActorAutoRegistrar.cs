@@ -1,3 +1,5 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;

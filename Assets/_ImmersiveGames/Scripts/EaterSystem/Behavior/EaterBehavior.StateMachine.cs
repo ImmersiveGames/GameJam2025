@@ -1,3 +1,5 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.StateMachineSystems;
 using ImmersiveGames.GameJam2025.Core.Fsm;

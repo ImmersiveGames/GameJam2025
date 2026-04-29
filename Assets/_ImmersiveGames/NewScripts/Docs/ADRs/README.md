@@ -1,74 +1,67 @@
 # ADRs
 
-Este diretorio mantem os ADRs ativos do projeto e sua ordem de precedencia.
+Este diretorio mantem os ADRs e sua precedencia normativa.
 
-## Regra de precedencia
+## Precedencia normativa atual
 
-Quando dois ADRs falarem da mesma superficie, vale a regra:
+Em decisoes de arquitetura e ownership, prevalecem:
 
-1. o ADR de numero maior prevalece sobre o menor no trecho em que houver conflito;
-2. o ADR menor continua valendo apenas no que nao foi sobrescrito;
-3. quando existir um ADR canonico de consolidacao, ele passa a ser a leitura operacional primaria;
-4. ADRs movidos para `Obsolete/` permanecem apenas como historico.
+1. `ADR-0057`
+2. `ADR-0056`
+3. `ADR-0055`
+4. `ADR-0058`
+5. `ADR-0054`
+6. `ADR-0052`
 
-## Base 1.0
+Regra obrigatoria:
 
-| Camada | ADR | Papel |
-| --- | --- | --- |
-| Leitura composta do sistema | `ADR-0057` | referencia operacional primaria |
-| Baseline tecnico fino | `ADR-0056` | executor tecnico fino |
-| Session Integration | `ADR-0055` | seam explicito acima do baseline |
-| Antecedentes semanticos e de composicao | `ADR-0045`, `ADR-0046`, `ADR-0047`, `ADR-0052` | base de leitura para gameplay composition e session transition |
+- ADRs anteriores devem ser lidos como historicos, exceto quando forem explicitamente referenciados por esses ADRs normativos.
+- Em caso de conflito, prevalece o ADR mais novo e/ou explicitamente normativo da Base 1.0.
+- Ownership nao e decidido por conveniencia operacional, e sim pelo papel arquitetural definido na Base 1.0.
 
-Para a leitura composta do sistema entre baseline tecnico, integracao semantica de sessao e camadas semanticas acima, use `ADR-0057` como entrada operacional primaria. `ADR-0056` e `ADR-0055` continuam como os owners diretos das duas camadas abaixo dessa leitura, enquanto `ADR-0045`, `ADR-0046`, `ADR-0047` e `ADR-0052` permanecem como antecedentes semanticos e de composicao.
+## Classificacao normativa do acervo (atual)
 
-Leitura operacional resumida do trilho de phase:
+### NORMATIVO_ATUAL
 
-- `ADR-0050`: entrada local da phase, `IntroStage`, reentrada monotonica e lifecycle local
-- `ADR-0051`: saida local da phase, `RunResultStage`, handoff canonico para `RunDecision` e continuidade macro pos-fechamento
-- `ADR-0052`: camada acima do baseline, cobrindo `SessionTransition` e o handoff macro para o pipeline local da phase
+- `ADR-0057`
+- `ADR-0056`
+- `ADR-0055`
+- `ADR-0058`
+- `ADR-0054`
+- `ADR-0052`
 
-## Leitura minima recomendada para entender o modulo
+### HISTORICO (nao normativo para ownership)
 
-1. `ADR-0030`
-2. `ADR-0031`
-3. `ADR-0032`
-4. `ADR-0033`
-5. `ADR-0037`
-6. `ADR-0045`
-7. `ADR-0046`
-8. `ADR-0048`
-9. `ADR-0049`
-10. `ADR-0050`
-11. `ADR-0052`
-12. `ADR-0055`
-13. `ADR-0056`
-14. `ADR-0057`
-
-Com isso, nao e mais necessario usar a baseline `ADR-0009` a `ADR-0026` como leitura primaria do stack.
-
-## Historico consolidado
-
-Os ADRs da baseline incremental anterior do eixo SceneFlow/LevelFlow foram movidos para:
-
-- `Obsolete/SceneFlow-Baseline/`
-
-Eles mantem numeracao e conteudo historico, mas nao devem mais ser usados como contrato operacional primario.
-
-## ADRs ativos fora do eixo consolidado
-
-Continuam ativos, sem alteracao de papel nesta reorganizacao:
-
-- `ADR-0002`
-- `ADR-0007`
-- `ADR-0008`
-- `ADR-0011`
-- `ADR-0012`
-- `ADR-0013`
+- `ADR-0051`
+- `ADR-0050`
+- `ADR-0049`
+- `ADR-0048`
+- `ADR-0047`
+- `ADR-0046`
+- `ADR-0045`
+- `ADR-0040`
 - `ADR-0014`
-- `ADR-0028`
-- `ADR-0029`
+- `ADR-0008`
 
-## Observacao
+### CONFLITANTE / OBSOLETO para leitura normativa atual
 
-Se o repositorio principal ja possuir ADRs acima de `0029` fora deste pacote, renumere os novos ADRs na integracao preservando a ordem relativa e a cadeia de supersedencia.
+- `ADR-0011`
+- `ADR-0001`
+
+## Nota sobre docs fora de ADR
+
+Os seguintes documentos sao conflitantes com a leitura normativa atual e nao devem ser usados para definir ownership:
+
+- `Docs/Modules/README.md`
+- `Docs/Modules/Gameplay.md`
+- `Docs/Modules/SceneReset.md`
+
+Esses documentos permanecem apenas como referencia historica ate revisao completa.
+
+## Regra de uso rapido
+
+Se um ADR antigo ou doc legado conflitar com a Base 1.0:
+
+- nao abrir excecao local;
+- nao usar compatibilidade narrativa;
+- aplicar a precedencia normativa deste indice.

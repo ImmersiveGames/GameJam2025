@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime.Core
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
     /// Handle no-op seguro para fases sem playback real.

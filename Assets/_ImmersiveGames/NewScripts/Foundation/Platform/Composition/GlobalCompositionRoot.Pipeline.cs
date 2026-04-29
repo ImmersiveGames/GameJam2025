@@ -1,10 +1,10 @@
-using ImmersiveGames.GameJam2025.Core.Identifiers;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts;
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Runtime;
-using ImmersiveGames.GameJam2025.Infrastructure.SimulationGate;
-using ImmersiveGames.GameJam2025.Core.Logging;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {
@@ -33,8 +33,6 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
         {
             var steps = GetCompositionPipelineSteps(bootstrapConfig);
             CompositionPipelineExecutor.ExecuteInstallers(steps, bootstrapConfig);
-
-            RegisterInputModesFromRuntimeConfig();
         }
 
         private static void ExecuteBootstrapPipeline(BootstrapConfigAsset bootstrapConfig)

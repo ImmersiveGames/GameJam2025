@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using ImmersiveGames.GameJam2025.Infrastructure.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using ImmersiveGames.GameJam2025.Modules.Navigation;
-using ImmersiveGames.GameJam2025.Orchestration.Navigation;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Bindings;
 using UnityEditor;
 using UnityEngine;
 

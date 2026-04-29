@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
 {
     /// <summary>
     /// REQUEST (intencao): "quero iniciar a simulacao".

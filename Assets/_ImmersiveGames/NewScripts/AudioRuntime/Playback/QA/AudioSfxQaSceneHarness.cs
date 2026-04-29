@@ -1,9 +1,9 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.QA
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 {
     /// <summary>
-    /// Shim legado para orientar migração do QA antigo para harnesses separados.
+    /// Shim legado para orientar migraï¿½ï¿½o do QA antigo para harnesses separados.
     /// </summary>
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/NewScripts/Audio/QA/Legacy SFX Harness Shim")]

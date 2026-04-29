@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Bindings;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
 {
     /// <summary>
     /// Define as propriedades efetivas de um estilo de transicao.

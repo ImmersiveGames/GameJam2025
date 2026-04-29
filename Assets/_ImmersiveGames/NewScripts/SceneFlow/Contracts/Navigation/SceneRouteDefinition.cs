@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
 {
     public enum SceneRouteKind
     {
@@ -22,7 +21,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime
         public string TargetActiveScene { get; }
         public SceneRouteKind RouteKind { get; }
         public bool RequiresWorldReset { get; }
-        public PhaseDefinitionCatalogAsset PhaseDefinitionCatalog { get; }
+        public bool HasPhaseDefinitionCatalog { get; }
 
         public SceneRouteDefinition(
             IReadOnlyList<string> scenesToLoad,
@@ -30,14 +29,14 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime
             string targetActiveScene,
             SceneRouteKind routeKind,
             bool requiresWorldReset,
-            PhaseDefinitionCatalogAsset phaseDefinitionCatalog)
+            bool hasPhaseDefinitionCatalog)
         {
             ScenesToLoad = scenesToLoad ?? Array.Empty<string>();
             ScenesToUnload = scenesToUnload ?? Array.Empty<string>();
             TargetActiveScene = targetActiveScene ?? string.Empty;
             RouteKind = routeKind;
             RequiresWorldReset = requiresWorldReset;
-            PhaseDefinitionCatalog = phaseDefinitionCatalog;
+            HasPhaseDefinitionCatalog = hasPhaseDefinitionCatalog;
         }
 
         public bool HasSceneData =>
@@ -46,7 +45,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime
             !string.IsNullOrWhiteSpace(TargetActiveScene);
 
         public override string ToString()
-            => $"active='{TargetActiveScene}', kind='{RouteKind}', requiresWorldReset={RequiresWorldReset}, phaseCatalogPresent={PhaseDefinitionCatalog != null}, load=[{FormatList(ScenesToLoad)}], unload=[{FormatList(ScenesToUnload)}]";
+            => $"active='{TargetActiveScene}', kind='{RouteKind}', requiresWorldReset={RequiresWorldReset}, phaseCatalogPresent={HasPhaseDefinitionCatalog}, load=[{FormatList(ScenesToLoad)}], unload=[{FormatList(ScenesToUnload)}]";
 
         private static string FormatList(IEnumerable<string> list)
             => string.Join(", ", list.Where(entry => !string.IsNullOrWhiteSpace(entry)));

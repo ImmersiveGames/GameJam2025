@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneComposition
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
 {
     public interface ISceneCompositionExecutor
     {

@@ -1,24 +1,27 @@
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Spawn;
-using ImmersiveGames.GameJam2025.Game.Content.Definitions.Worlds.Config;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Readiness.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
+using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
+
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     /// <summary>
-    /// Inicializa serviços de escopo de cena para o NewScripts e garante limpeza determinística.
+    /// Inicializa servicos de escopo de cena para o NewScripts e garante limpeza deterministica.
     /// </summary>
     public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
     {
-        [SerializeField]
-        [Tooltip("Input de authoring/bootstrap de conteudo para o escopo de cena. Nao e owner semantico do gameplay.")]
-        private WorldDefinition worldDefinition;
-
         private string _sceneName = string.Empty;
         private bool _registered;
         private readonly WorldSpawnServiceFactory _spawnServiceFactory = new();
@@ -26,13 +29,11 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
 
         private void Awake()
         {
-            // A cena correta para o escopo é a cena do GameObject, não a ActiveScene (especialmente em Additive).
             var scene = gameObject.scene;
             _sceneName = scene.name;
 
             if (_registered)
             {
-                // Não é um problema em fluxo additive; reduzimos ruído (warning) para verbose.
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
                     $"Scene scope already created (ignored): {_sceneName}");
                 return;
@@ -68,13 +69,11 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
                 spawnRegistry,
                 allowOverride: false);
 
-            // Guardrail: o registry de lifecycle deve ser criado apenas aqui no bootstrapper.
-            // Nunca criar o SceneResetHookRegistry no controller/orchestrator.
             SceneResetHookRegistry hookRegistry;
             if (provider.TryGetForScene<SceneResetHookRegistry>(_sceneName, out var existingRegistry))
             {
                 DebugUtility.LogError(typeof(SceneScopeCompositionRoot),
-                    $"SceneResetHookRegistry já existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
+                    $"SceneResetHookRegistry ja existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
                 hookRegistry = existingRegistry;
             }
             else
@@ -89,8 +88,7 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
             }
 
             RegisterActorGroupGameplayResetServices(provider, hookRegistry, worldRoot);
-
-            RegisterSpawnServicesFromDefinition(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
+            RegisterSpawnServicesFromCanonicalActorSet(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
             _registered = true;
             DebugUtility.Log(typeof(SceneScopeCompositionRoot), $"Scene scope created: {_sceneName}");
@@ -100,7 +98,6 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
         {
             if (!_registered)
             {
-                // Nothing to clear for this instance.
                 return;
             }
 
@@ -115,85 +112,86 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
             _registered = false;
         }
 
-        private void RegisterSpawnServicesFromDefinition(
+        private void RegisterSpawnServicesFromCanonicalActorSet(
             IDependencyProvider provider,
             IWorldSpawnServiceRegistry registry,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context)
         {
-            if (worldDefinition == null)
+            if (!provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
             {
-                // Esperado em cenas sem spawn (Ready). Evita WARNING no fluxo normal.
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"WorldDefinition não atribuída (scene='{_sceneName}'). " +
-                    "Isto é permitido em cenas sem spawn (ex.: Ready). Serviços de spawn não serão registrados.");
-
-                DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                    "Spawn services registered from authoring input: 0");
-                return;
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] Missing ISceneFlowRouteActorSetRefContext for scene='{_sceneName}'. SceneScopeCompositionRoot nao escolhe elenco localmente.");
             }
 
-            DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                $"Authoring input loaded: {worldDefinition.name}");
-
-            int registeredCount = 0;
-            int enabledCount = 0;
-            int createdCount = 0;
-            int skippedDisabledCount = 0;
-            int failedCreateCount = 0;
-
-            IReadOnlyList<WorldDefinition.SpawnEntry> entries = worldDefinition.Entries;
-            int totalEntries = entries?.Count ?? 0;
-
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"Authoring input entries count: {totalEntries}");
-
-            if (entries != null)
+            if (!provider.TryGetGlobal<IActorSetSelectionService>(out var actorSetSelectionService) || actorSetSelectionService == null)
             {
-                for (int index = 0; index < entries.Count; index++)
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] Missing IActorSetSelectionService for scene='{_sceneName}'.");
+            }
+
+            if (!actorSetRefContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string source))
+            {
+                if (routeKind == SceneRouteKind.Unspecified)
                 {
-                    var entry = entries[index];
-                    string entryKind = entry.Kind.ToString();
-                    string entryPrefabName = entry.Prefab != null ? entry.Prefab.name : "<null>";
-
-                    DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                        $"Spawn entry #{index}: Enabled={entry.Enabled}, Kind={entryKind}, Prefab={entryPrefabName}");
-
-                    if (!entry.Enabled)
+                    SceneCanonicalClassification classification = ResolveSceneCanonicalClassificationOrFail(provider);
+                    if (classification == SceneCanonicalClassification.Gameplay)
                     {
-                        skippedDisabledCount++;
-                        DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                            $"Spawn entry #{index} SKIPPED_DISABLED: Kind={entryKind}, Prefab={entryPrefabName}");
-                        continue;
+                        throw new InvalidOperationException(
+                            $"[FATAL][Config][ActorsExecution] Route context not resolved before gameplay scene scope spawn registration. scene='{_sceneName}' source='{AsText(source)}'.");
                     }
 
-                    enabledCount++;
+                    DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                        $"[OBS][ActorsExecution] Route context ainda nao resolvido; spawn canonico adiado para cena non-gameplay scene='{_sceneName}' classification='{classification}' source='{AsText(source)}'.",
+                        DebugUtility.Colors.Info);
+                    DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                        "Spawn services registered from canonical actor set: 0");
+                    return;
+                }
 
-                    var service = _spawnServiceFactory.Create(entry, provider, actorRegistry, context);
-                    if (service == null)
-                    {
-                        failedCreateCount++;
-                        // Mantém WARNING: aqui já é indicação real de configuração/entrada problemática.
-                        DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
-                            $"Spawn entry #{index} FAILED_CREATE: Kind={entryKind}, Prefab={entryPrefabName}");
-                        continue;
-                    }
-
-                    createdCount++;
-                    registry.Register(service);
-                    registeredCount++;
-
-                    DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                        $"Spawn entry #{index} REGISTERED: {service.Name} (Kind={entryKind}, Prefab={entryPrefabName})");
+                if (routeKind == SceneRouteKind.Gameplay)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsExecution] Missing ActorSetRef in gameplay route context for scene='{_sceneName}'. source='{AsText(source)}'.");
                 }
 
                 DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                    $"Spawn services registered from authoring input: {registeredCount}");
+                    $"[OBS][ActorsExecution] Non-gameplay scene sem ActorSetRef. Nenhum spawn registrado scene='{_sceneName}' routeKind='{routeKind}' source='{AsText(source)}'.",
+                    DebugUtility.Colors.Info);
+                DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                    "Spawn services registered from canonical actor set: 0");
+                return;
             }
 
-            DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                $"Spawn services summary => Total={totalEntries}, Enabled={enabledCount}, Disabled={skippedDisabledCount}, " +
-                $"Created={createdCount}, FailedCreate={failedCreateCount}");
+            if (!actorSetSelectionService.TryResolve(actorSetRef, out ActorSetResolvedSelection selection) || !selection.HasEntries)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] ActorSetRef sem resolucao actorSetRef='{actorSetRef.Value}' scene='{_sceneName}' routeKind='{routeKind}' source='{AsText(source)}'.");
+            }
+
+            int registeredCount = 0;
+            for (int i = 0; i < selection.OrderedSpecs.Length; i += 1)
+            {
+                ActorSpecRecord spec = selection.OrderedSpecs[i];
+                IWorldSpawnService service = _spawnServiceFactory.CreateFromActorSpec(spec, provider, actorRegistry, context);
+                if (service == null)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsExecution] Falha ao criar spawn service via ActorSpec actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' scene='{_sceneName}'.");
+                }
+
+                registry.Register(service);
+                registeredCount += 1;
+
+                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
+                    $"[OBS][ActorsExecution] CanonicalActorSetMemberRegistered actorSetRef='{actorSetRef.Value}' order='{i}' actorSpecId='{spec.ActorSpecId}' recipe='{spec.OperationalRecipeKind}'.");
+            }
+
+            DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                $"[OBS][ActorsExecution] ActorSelectionResolvedViaCanonicalContext actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' source='{AsText(source)}' registered='{registeredCount}' scene='{_sceneName}'.",
+                DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                $"Spawn services registered from canonical actor set: {registeredCount}");
         }
 
         private Transform EnsureWorldRoot(Scene scene)
@@ -202,7 +200,7 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
             if (!scene.IsValid())
             {
                 DebugUtility.LogWarning(typeof(SceneScopeCompositionRoot),
-                    $"EnsureWorldRoot recebeu uma cena inválida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
+                    $"EnsureWorldRoot recebeu uma cena invalida. Usando ActiveScene como fallback. bootstrapScene='{_sceneName}'");
             }
 
             GameObject[] rootObjects = targetScene.GetRootGameObjects();
@@ -268,14 +266,59 @@ namespace ImmersiveGames.GameJam2025.Infrastructure.Composition
 
             return $"{transform.gameObject.scene.name}/{transform.name}";
         }
+
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        }
+
+        private SceneCanonicalClassification ResolveSceneCanonicalClassificationOrFail(IDependencyProvider provider)
+        {
+            if (provider == null)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] IDependencyProvider ausente ao classificar cena='{_sceneName}'.");
+            }
+
+            if (!provider.TryGetGlobal<BootstrapConfigAsset>(out var bootstrapConfig) ||
+                bootstrapConfig == null ||
+                bootstrapConfig.NavigationCatalog == null)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] BootstrapConfigAsset/NavigationCatalog obrigatorio ausente para classificar cena='{_sceneName}' sem RouteActorSetRef resolvido.");
+            }
+
+            SceneRouteDefinitionAsset gameplayRouteRef = bootstrapConfig.NavigationCatalog.ResolveGameplayRouteRefOrFail();
+            SceneRouteDefinition gameplayRoute = gameplayRouteRef.ToDefinition();
+            if (IsSceneActiveTargetOfRoute(_sceneName, gameplayRoute))
+            {
+                return SceneCanonicalClassification.Gameplay;
+            }
+
+            GameNavigationEntry menuEntry = bootstrapConfig.NavigationCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Menu);
+            if (menuEntry.RouteRef != null && IsSceneActiveTargetOfRoute(_sceneName, menuEntry.RouteRef.ToDefinition()))
+            {
+                return SceneCanonicalClassification.Frontend;
+            }
+
+            return SceneCanonicalClassification.BootstrapOrAuxiliary;
+        }
+
+        private static bool IsSceneActiveTargetOfRoute(string sceneName, SceneRouteDefinition routeDefinition)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            return string.Equals(routeDefinition.TargetActiveScene, sceneName.Trim(), StringComparison.Ordinal);
+        }
+
+        private enum SceneCanonicalClassification
+        {
+            BootstrapOrAuxiliary = 0,
+            Frontend = 1,
+            Gameplay = 2
+        }
     }
 }
-
-
-
-
-
-
-
-
-

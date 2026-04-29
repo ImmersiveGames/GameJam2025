@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
+namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
 {
     public sealed class GameLoopStateMachine
     {

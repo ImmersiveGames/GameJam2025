@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Integration
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration
 {
     /// <summary>
     /// Ponte de participacao no reset macro para actors vivos ja materializados.

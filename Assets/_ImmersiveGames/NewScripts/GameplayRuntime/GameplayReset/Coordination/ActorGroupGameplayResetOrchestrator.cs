@@ -1,17 +1,16 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Infrastructure.RuntimeMode;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Core;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Discovery;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Execution;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Policies;
-using ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Observability;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Discovery;
+using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Execution;
 using UnityEngine.SceneManagement;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.GameplayReset.Coordination
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Coordination
 {
     /// <summary>
     /// Orquestra GameplayReset (Cleanup/Restore/Rebind) para atores ja vivos,

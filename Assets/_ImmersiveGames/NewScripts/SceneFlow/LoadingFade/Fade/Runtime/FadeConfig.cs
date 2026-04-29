@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Fade.Runtime
+namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime
 {
     /// <summary>
     /// Configuração “crua” de fade (sem depender de SceneTransitionProfile).

@@ -1,4 +1,4 @@
-using ImmersiveGames.GameJam2025.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Events
 {

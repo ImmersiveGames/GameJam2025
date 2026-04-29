@@ -1,11 +1,15 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunLifecycle.Core;
-using ImmersiveGames.GameJam2025.Orchestration.GameLoop.IntroStage.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Diagnostics;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndConditions
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome.EndConditions
 {
     [DisallowMultipleComponent]
     public sealed class GameplayOutcomeQaPanel : MonoBehaviour
@@ -23,7 +27,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
         [Inject] private IGameLoopService _gameLoopService;
         [Inject] private IGameplaySessionContextService _sessionContextService;
         [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
-        [Inject] private IGameplayPhasePlayerParticipationService _phasePlayersService;
+        [Inject] private IGameplayParticipationFlowService _participationFlowService;
 
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private EventBinding<GameRunEndedEvent> _runEndedBinding;
@@ -51,6 +55,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
         {
             EnsureDependenciesInjected();
             RegisterBindings();
+            DebugUtility.Log<GameplayOutcomeQaPanel>(
+                "[QA][RunEnd] panel enabled.",
+                DebugUtility.Colors.Info);
             ReportSmoke("OnEnable", "panel_enabled");
         }
 
@@ -81,12 +88,12 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
             GUILayout.Space(8f);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Victory", _buttonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button("Force Victory", _buttonStyle, GUILayout.Height(42f)))
             {
                 RequestOutcome(GameRunOutcome.Victory, VictoryReason);
             }
 
-            if (GUILayout.Button("Defeat", _buttonStyle, GUILayout.Height(42f)))
+            if (GUILayout.Button("Force Defeat", _buttonStyle, GUILayout.Height(42f)))
             {
                 RequestOutcome(GameRunOutcome.Defeat, DefeatReason);
             }
@@ -119,16 +126,20 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
             if (_endRequest == null)
             {
                 DebugUtility.LogWarning<GameplayOutcomeQaPanel>(
-                    $"[QA][BaselineV3] Outcome mock ignored: IGameRunEndRequestService unavailable. outcome='{outcome}'.",
+                    $"[QA][RunEnd] service unavailable. force outcome blocked result='{outcome}'.",
                     this);
                 return;
             }
 
             DebugUtility.Log<GameplayOutcomeQaPanel>(
-                $"[QA][BaselineV3] Outcome mock requested. outcome='{outcome}' reason='{reason}'.",
+                $"[QA][RunEnd] force outcome requested result='{outcome}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             _endRequest.RequestRunEnd(outcome, reason);
+
+            DebugUtility.Log<GameplayOutcomeQaPanel>(
+                $"[QA][RunEnd] request dispatched result='{outcome}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private void EnsureDependenciesInjected()
@@ -158,9 +169,9 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
                 DependencyManager.Provider.TryGetGlobal(out _phaseRuntimeService);
             }
 
-            if (_phasePlayersService == null)
+            if (_participationFlowService == null)
             {
-                DependencyManager.Provider.TryGetGlobal(out _phasePlayersService);
+                DependencyManager.Provider.TryGetGlobal(out _participationFlowService);
             }
         }
 
@@ -264,11 +275,11 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
         {
             GameplaySessionContextSnapshot session = GameplaySessionContextSnapshot.Empty;
             GameplayPhaseRuntimeSnapshot phase = GameplayPhaseRuntimeSnapshot.Empty;
-            GameplayPhasePlayerParticipationSnapshot players = GameplayPhasePlayerParticipationSnapshot.Empty;
+            ParticipationSnapshot participation = ParticipationSnapshot.Empty;
 
             bool hasSession = _sessionContextService != null && _sessionContextService.TryGetCurrent(out session);
             bool hasPhase = _phaseRuntimeService != null && _phaseRuntimeService.TryGetCurrent(out phase);
-            bool hasPlayers = _phasePlayersService != null && _phasePlayersService.TryGetCurrent(out players);
+            bool hasParticipation = _participationFlowService != null && _participationFlowService.TryGetCurrent(out participation);
 
             string sessionLabel = hasSession
                 ? $"Session: {session.PhaseId} v{session.SelectionVersion}"
@@ -278,11 +289,11 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
                 ? $"Phase: {(phase.PhaseDefinitionRef != null ? phase.PhaseDefinitionRef.name : "<none>")} v{phase.SessionContext.SelectionVersion}"
                 : "Phase: empty";
 
-            string playersLabel = hasPlayers
-                ? $"Players: {players.ParticipationMode} x{players.ParticipatingPlayerCount} primary={players.PrimaryParticipantId}"
+            string playersLabel = hasParticipation
+                ? $"Players: x{participation.ParticipantCount} primary={participation.PrimaryParticipantId} readiness={participation.Readiness.State}"
                 : "Players: empty";
 
-            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasPlayers, session, phase, players);
+            string linkLabel = BuildLinkSummary(hasSession, hasPhase, hasParticipation, session, phase, participation);
 
             return $"{sessionLabel} | {phaseLabel}\n{playersLabel}\n{linkLabel}";
         }
@@ -290,10 +301,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
         private static string BuildLinkSummary(
             bool hasSession,
             bool hasPhase,
-            bool hasPlayers,
+            bool hasParticipation,
             GameplaySessionContextSnapshot session,
             GameplayPhaseRuntimeSnapshot phase,
-            GameplayPhasePlayerParticipationSnapshot players)
+            ParticipationSnapshot participation)
         {
             string sessionPhase = hasSession && hasPhase
                 ? string.Equals(session.SessionSignature, phase.SessionContext.SessionSignature, System.StringComparison.Ordinal)
@@ -301,8 +312,8 @@ namespace ImmersiveGames.GameJam2025.Orchestration.GameLoop.RunOutcome.EndCondit
                     : "S-P: mismatch"
                 : "S-P: empty";
 
-            string phasePlayers = hasPhase && hasPlayers
-                ? string.Equals(phase.PhaseRuntimeSignature, players.PhaseRuntime.PhaseRuntimeSignature, System.StringComparison.Ordinal)
+            string phasePlayers = hasPhase && hasParticipation
+                ? string.Equals(phase.PhaseRuntimeSignature, participation.PhaseSignature, System.StringComparison.Ordinal)
                     ? "P-Players: linked"
                     : "P-Players: mismatch"
                 : "P-Players: empty";

@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Config
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     /// <summary>
     /// Define as propriedades de emissão de áudio SFX: modo de emissão e configurações espaciais.

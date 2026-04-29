@@ -1,21 +1,18 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Identifiers;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core;
-using ImmersiveGames.GameJam2025.Game.Content.Definitions.Worlds.Config;
-using ImmersiveGames.GameJam2025.Game.Gameplay.State.Core;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.SessionIntegration.Runtime;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
+using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
+
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>
-    /// ResolvePlayerActor e valida as dependências mínimas necessárias para criar serviços de spawn.
-    /// Mantém a semântica atual da factory: falha retorna false e o call site decide o tratamento.
+    /// Resolve e valida dependencias minimas para criar servicos de spawn canonicos via ActorSpec.
     /// </summary>
     public sealed class WorldSpawnFactoryDependenciesResolver
     {
         public bool TryResolve(
-            WorldDefinition.SpawnEntry entry,
             IDependencyProvider provider,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
@@ -23,31 +20,24 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
         {
             dependencies = default;
 
-            if (entry == null)
-            {
-                DebugUtility.LogError(typeof(WorldSpawnFactoryDependenciesResolver),
-                    "SpawnEntry nula ao criar serviço de spawn.");
-                return false;
-            }
-
             if (provider == null)
             {
                 DebugUtility.LogError(typeof(WorldSpawnFactoryDependenciesResolver),
-                    "IDependencyProvider ausente ao criar serviço de spawn.");
+                    "IDependencyProvider missing while creating spawn service.");
                 return false;
             }
 
             if (context == null)
             {
                 DebugUtility.LogError(typeof(WorldSpawnFactoryDependenciesResolver),
-                    "IWorldSpawnContext ausente ao criar serviço de spawn.");
+                    "IWorldSpawnContext missing while creating spawn service.");
                 return false;
             }
 
             if (actorRegistry == null)
             {
                 DebugUtility.LogError(typeof(WorldSpawnFactoryDependenciesResolver),
-                    "IActorRegistry ausente ao criar serviço de spawn.");
+                    "IActorRegistry missing while creating spawn service.");
                 return false;
             }
 
@@ -55,20 +45,19 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
             if (uniqueIdFactory == null)
             {
                 DebugUtility.LogError(typeof(WorldSpawnFactoryDependenciesResolver),
-                    "IUniqueIdFactory global ausente. Serviço de spawn não será criado.");
+                    "IUniqueIdFactory missing. Spawn service cannot be created.");
                 return false;
             }
 
-            // Serviço opcional: Player/Eater podem usar quando disponível.
             provider.TryGetGlobal(out IGameplayStateGate stateService);
-            provider.TryGetGlobal(out ISessionIntegrationContextService sessionIntegrationContextService);
+            provider.TryGetGlobal(out ISpawnResetParticipationReadPort participationReadPort);
 
             dependencies = new WorldSpawnFactoryDependencies(
                 uniqueIdFactory,
                 actorRegistry,
                 context,
                 stateService,
-                sessionIntegrationContextService);
+                participationReadPort);
 
             return true;
         }
@@ -81,24 +70,20 @@ namespace ImmersiveGames.GameJam2025.Game.Gameplay.Spawn
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
             IGameplayStateGate gameplayStateService,
-            ISessionIntegrationContextService sessionIntegrationContextService)
+            ISpawnResetParticipationReadPort participationReadPort)
         {
             UniqueIdFactory = uniqueIdFactory;
             ActorRegistry = actorRegistry;
             Context = context;
             GameplayStateService = gameplayStateService;
-            SessionIntegrationContextService = sessionIntegrationContextService;
+            ParticipationReadPort = participationReadPort;
         }
 
         public IUniqueIdFactory UniqueIdFactory { get; }
-
         public IActorRegistry ActorRegistry { get; }
-
         public IWorldSpawnContext Context { get; }
-
         public IGameplayStateGate GameplayStateService { get; }
-
-        public ISessionIntegrationContextService SessionIntegrationContextService { get; }
+        public ISpawnResetParticipationReadPort ParticipationReadPort { get; }
     }
 }
 

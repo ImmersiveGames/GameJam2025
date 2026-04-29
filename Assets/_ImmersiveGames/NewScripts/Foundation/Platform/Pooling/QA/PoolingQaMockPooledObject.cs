@@ -1,7 +1,7 @@
-using ImmersiveGames.GameJam2025.Infrastructure.Pooling.Contracts;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Infrastructure.Pooling.QA
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 {
     /// <summary>
     /// Mock neutro para observar lifecycle do pooling em Play Mode.

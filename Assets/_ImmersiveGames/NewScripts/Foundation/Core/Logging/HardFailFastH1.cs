@@ -1,7 +1,6 @@
 using System;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Core.Logging
+namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
 {
     public static partial class HardFailFastH1
     {

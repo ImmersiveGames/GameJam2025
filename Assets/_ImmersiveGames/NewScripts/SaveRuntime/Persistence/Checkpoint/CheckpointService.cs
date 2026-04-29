@@ -1,8 +1,8 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.Save.Contracts;
-using ImmersiveGames.GameJam2025.Experience.Save.Models;
-namespace ImmersiveGames.GameJam2025.Experience.Save.Checkpoint
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SaveRuntime.Models;
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Checkpoint
 {
     public sealed class CheckpointService : ICheckpointService
     {

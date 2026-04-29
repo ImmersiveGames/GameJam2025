@@ -1,12 +1,12 @@
 using System;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-using ImmersiveGames.GameJam2025.Experience.PostRun.Presentation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 //using NewRunDecisionCompletedEvent = ImmersiveGames.GameJam2025.Experience.PostRun.Contracts.RunDecisionCompletedEvent;
 //using NewRunDecisionEnteredEvent = ImmersiveGames.GameJam2025.Experience.PostRun.Contracts.RunDecisionEnteredEvent;
 
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Ownership
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership
 {
     public interface IRunDecisionOwnershipService
     {

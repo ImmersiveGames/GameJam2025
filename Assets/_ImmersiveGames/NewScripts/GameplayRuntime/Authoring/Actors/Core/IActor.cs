@@ -1,5 +1,5 @@
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Game.Gameplay.Actors.Core
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core
 {
     /// <summary>
     /// Contrato mínimo para atores controlados pelo novo pipeline.

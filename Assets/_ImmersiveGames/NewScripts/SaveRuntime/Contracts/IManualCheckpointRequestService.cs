@@ -1,4 +1,4 @@
-namespace ImmersiveGames.GameJam2025.Experience.Save.Contracts
+namespace _ImmersiveGames.NewScripts.SaveRuntime.Contracts
 {
     /// <summary>
     /// Placeholder seam for future manual checkpoint requests.

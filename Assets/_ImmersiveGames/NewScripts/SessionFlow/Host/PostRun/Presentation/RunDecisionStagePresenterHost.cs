@@ -1,6 +1,5 @@
-using ImmersiveGames.GameJam2025.Core.Logging;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RunDecisionStagePresenterHost : IRunDecisionStagePresenterHost

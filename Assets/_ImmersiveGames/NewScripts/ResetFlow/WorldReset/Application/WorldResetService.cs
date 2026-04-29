@@ -3,14 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Navigation.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Contracts;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Domain;
-using ImmersiveGames.GameJam2025.Orchestration.WorldReset.Runtime;
-using ImmersiveGames.GameJam2025.Orchestration.PhaseDefinition.Runtime;
-namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 {
     /// <summary>
     /// Serviço canônico do reset do WorldReset.
@@ -21,62 +20,52 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
         private const int RecentCompletionWindowMs = 750;
 
         private readonly object _lock = new();
-        private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, long> _recentCompleted = new(StringComparer.Ordinal);
-        private readonly WorldResetLifecyclePublisher _lifecyclePublisher = new();
+        private readonly HashSet<WorldResetCorrelationKey> _inFlight = new();
+        private readonly Dictionary<WorldResetCorrelationKey, long> _recentCompleted = new();
+        private readonly WorldResetLifecyclePublisher _lifecyclePublisher;
+        private readonly WorldResetOrchestrator _orchestrator;
 
-        private bool _dependenciesResolved;
-        private WorldResetOrchestrator? _orchestrator;
-
-        public async Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason)
+        public WorldResetService(
+            WorldResetOrchestrator orchestrator,
+            WorldResetLifecyclePublisher lifecyclePublisher)
         {
-            var request = new WorldResetRequest(
-                kind: ResetKind.Macro,
-                contextSignature: contextSignature ?? string.Empty,
-                reason: reason ?? string.Empty,
-                targetScene: string.Empty,
-                origin: WorldResetOrigin.Manual,
-                macroRouteId: SceneRouteId.None,
-                phaseSignature: PhaseContextSignature.Empty,
-                sourceSignature: contextSignature ?? string.Empty);
-
-            return await TriggerResetAsync(request);
+            _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
+            _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
         }
 
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
-            EnsureDependencies();
-
-            string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;
+            WorldResetCorrelationKey correlationKey = request.CorrelationKey;
             string rsn = string.IsNullOrWhiteSpace(request.Reason) ? string.Empty : request.Reason;
 
-            lock (_lock)
+            if (request.HasCorrelationKey)
             {
-                if (IsRecentlyCompletedLocked(ctx))
+                lock (_lock)
                 {
-                    LogLifecycleDedupe("recent_completed", ctx, rsn);
-                    return WorldResetResult.Completed;
-                }
+                    if (IsRecentlyCompletedLocked(correlationKey))
+                    {
+                        LogLifecycleDedupe("recent_completed", correlationKey, rsn);
+                        return WorldResetResult.Completed;
+                    }
 
-                if (!_inFlight.Add(ctx))
-                {
-                    LogLifecycleDedupe("in_flight", ctx, rsn);
-                    return WorldResetResult.Completed;
+                    if (!_inFlight.Add(correlationKey))
+                    {
+                        LogLifecycleDedupe("in_flight", correlationKey, rsn);
+                        return WorldResetResult.Completed;
+                    }
                 }
             }
 
             WorldResetResult result = WorldResetResult.Failed;
             try
             {
-                WorldResetOrchestrator orchestrator = _orchestrator
-                    ?? throw new InvalidOperationException("WorldResetOrchestrator was not initialized.");
-                result = await orchestrator.ExecuteAsync(request);
+                result = await _orchestrator.ExecuteAsync(request);
                 return result;
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError<WorldResetService>(
-                    $"[WorldResetService] Falha durante TriggerResetAsync signature='{ctx}' reason='{rsn}' ex={ex}");
+                    $"[WorldResetService] Falha durante TriggerResetAsync correlationKey='{correlationKey}' signature='{request.ContextSignature}' reason='{rsn}' ex={ex}");
 
                 _lifecyclePublisher.PublishCompleted(
                     request,
@@ -86,36 +75,24 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
             }
             finally
             {
-                lock (_lock)
+                if (request.HasCorrelationKey)
                 {
-                    _inFlight.Remove(ctx);
-                    if (result != WorldResetResult.Failed && !string.IsNullOrWhiteSpace(ctx))
+                    lock (_lock)
                     {
-                        _recentCompleted[ctx] = Stopwatch.GetTimestamp();
-                        PruneRecentCompletedLocked();
+                        _inFlight.Remove(correlationKey);
+                        if (result != WorldResetResult.Failed)
+                        {
+                            _recentCompleted[correlationKey] = Stopwatch.GetTimestamp();
+                            PruneRecentCompletedLocked();
+                        }
                     }
                 }
             }
         }
 
-        public void PublishResetCompleted(WorldResetRequest request, WorldResetOutcome outcome, string detail)
+        private bool IsRecentlyCompletedLocked(WorldResetCorrelationKey correlationKey)
         {
-            DebugUtility.LogVerbose<WorldResetService>(
-                $"[OBS][WorldReset][Completion] lifecycle='canonical' outcome='{outcome}' signature='{request.ContextSignature}' routeId='{request.MacroRouteId}' targetScene='{request.TargetScene}' detail='{detail}'.",
-                outcome == WorldResetOutcome.Completed || outcome == WorldResetOutcome.SkippedByPolicy || outcome == WorldResetOutcome.SkippedValidation
-                    ? DebugUtility.Colors.Success
-                    : DebugUtility.Colors.Info);
-            _lifecyclePublisher.PublishCompleted(request, outcome, detail);
-        }
-
-        private bool IsRecentlyCompletedLocked(string contextSignature)
-        {
-            if (string.IsNullOrWhiteSpace(contextSignature))
-            {
-                return false;
-            }
-
-            if (!_recentCompleted.TryGetValue(contextSignature, out long completedAt))
+            if (!correlationKey.IsValid || !_recentCompleted.TryGetValue(correlationKey, out long completedAt))
             {
                 return false;
             }
@@ -124,7 +101,7 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
             double elapsedMs = elapsedTicks * 1000d / Stopwatch.Frequency;
             if (elapsedMs < 0d || elapsedMs > RecentCompletionWindowMs)
             {
-                _recentCompleted.Remove(contextSignature);
+                _recentCompleted.Remove(correlationKey);
                 return false;
             }
 
@@ -141,23 +118,10 @@ namespace ImmersiveGames.GameJam2025.Orchestration.WorldReset.Application
             _recentCompleted.Clear();
         }
 
-        private void EnsureDependencies()
-        {
-            if (_dependenciesResolved)
-            {
-                return;
-            }
-
-            IDependencyProvider provider = DependencyManager.Provider;
-            _orchestrator = WorldResetOrchestrator.CreateDefault(provider, _lifecyclePublisher);
-
-            _dependenciesResolved = true;
-        }
-
-        private static void LogLifecycleDedupe(string dedupeKind, string contextSignature, string reason)
+        private static void LogLifecycleDedupe(string dedupeKind, WorldResetCorrelationKey correlationKey, string reason)
         {
             DebugUtility.LogVerbose<WorldResetService>(
-                $"[OBS][WorldReset][Dedupe] lifecycle='dedupe' kind='{dedupeKind}' signature='{contextSignature}' reason='{reason}'.",
+                $"[OBS][WorldReset][Dedupe] lifecycle='dedupe' kind='{dedupeKind}' correlationKey='{correlationKey}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
     }

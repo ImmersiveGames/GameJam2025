@@ -1,12 +1,13 @@
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-
-namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     public enum SessionTransitionPhaseAction
     {
         None = 0,
         NextPhase = 1,
         StayOnCurrentPhase = 2,
+        RestartFromFirstPhase = 3,
+        OrdinalNavigation = 4,
     }
 
     public enum SessionTransitionResetAction
@@ -36,17 +37,26 @@ namespace ImmersiveGames.GameJam2025.Orchestration.SessionTransition.Runtime
         public SessionTransitionContext Context { get; }
         public SessionTransitionComposition Composition { get; }
         public SessionTransitionExecution Execution { get; }
-        public bool EmitsPhaseLocalEntryReady => Composition.EmitsPhaseLocalEntryReady;
+        public bool RequiresPhaseLocalEntryReady => Execution.RequiresPhaseLocalEntryReady;
+        public bool EmitsPhaseLocalEntryReady => RequiresPhaseLocalEntryReady;
+        public SessionTransitionOrigin Origin => Context.Origin;
+        public SessionTransitionIntentKind IntentKind => Context.IntentKind;
+        public bool HasRunContinuationSelection => Context.HasRunContinuationSelection;
         public RunContinuationSelection ResolvedSelection => Context.ResolvedSelection;
         public RunContinuationContext ContinuationContext => Context.ContinuationContext;
         public RunContinuationKind ResolvedContinuation => Context.ResolvedContinuation;
+        public string ContextSignature => Context.ContextSignature;
         public string Reason => Context.Reason;
         public string NextState => Context.NextState;
-        public bool IsValid => Context.IsValid && ResolvedContinuation != RunContinuationKind.Unknown;
+        public bool IsValid =>
+            Context.IsValid &&
+            Composition.IntentKind == IntentKind &&
+            (Execution.Kind != SessionTransitionExecutionKind.NoOp ||
+             IntentKind == SessionTransitionIntentKind.TerminateRun);
 
         public override string ToString()
         {
-            return $"Continuation='{ResolvedContinuation}', Composition='{Composition}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
+            return $"Origin='{Origin}', Intent='{IntentKind}', RunContinuation='{ResolvedContinuation}', Composition='{Composition}', RequiresPhaseLocalEntryReady='{RequiresPhaseLocalEntryReady}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
         }
     }
 }

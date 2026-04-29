@@ -1,5 +1,5 @@
 using System;
-namespace ImmersiveGames.GameJam2025.Experience.Audio.Runtime
+namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime
 {
     /// <summary>
     /// Estado runtime de volume/sessão do jogador.

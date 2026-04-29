@@ -1,6 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneReset.Runtime.Phases
+namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime.Phases
 {
     internal sealed class AcquireResetGatePhase : ISceneResetPhase
     {

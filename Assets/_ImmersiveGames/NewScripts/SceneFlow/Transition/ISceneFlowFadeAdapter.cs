@@ -1,7 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
-using ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition.Bindings;
-namespace ImmersiveGames.GameJam2025.Orchestration.SceneFlow.Transition
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
+namespace _ImmersiveGames.NewScripts.SceneFlow.Transition
 {
     /// <summary>
     /// Adapter para operações de fade desacopladas do legado.

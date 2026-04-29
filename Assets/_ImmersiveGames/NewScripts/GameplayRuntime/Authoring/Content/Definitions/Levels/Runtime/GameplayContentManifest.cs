@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
-namespace ImmersiveGames.GameJam2025.Game.Content.Definitions.Levels.Runtime
+namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Content.Definitions.Levels.Runtime
 {
     [Serializable]
     public sealed class GameplayContentManifest

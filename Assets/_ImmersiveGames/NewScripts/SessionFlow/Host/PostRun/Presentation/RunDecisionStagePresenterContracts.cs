@@ -1,6 +1,5 @@
-using ImmersiveGames.GameJam2025.Experience.PostRun.Contracts;
-
-namespace ImmersiveGames.GameJam2025.Experience.PostRun.Presentation
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation
 {
     public interface IRunDecisionStagePresenter
     {

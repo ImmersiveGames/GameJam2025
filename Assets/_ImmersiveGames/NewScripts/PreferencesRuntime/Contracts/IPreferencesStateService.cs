@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using ImmersiveGames.GameJam2025.Experience.Audio.Runtime;
-using ImmersiveGames.GameJam2025.Experience.Preferences.Config;
+using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using UnityEngine;
-namespace ImmersiveGames.GameJam2025.Experience.Preferences.Contracts
+namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
 {
     public interface IPreferencesStateService
     {

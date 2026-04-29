@@ -1,5 +1,5 @@
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
