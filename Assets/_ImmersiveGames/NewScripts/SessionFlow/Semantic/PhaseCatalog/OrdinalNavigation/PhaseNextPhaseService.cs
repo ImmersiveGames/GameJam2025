@@ -36,7 +36,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
         Next = 0,
         Previous = 1,
         Specific = 2,
-        RestartCatalog = 3
+        RestartCatalog = 3,
+        FirstPhase = 4
     }
 
     public readonly struct PhaseNavigationRequest
@@ -66,6 +67,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
 
         public static PhaseNavigationRequest RestartCatalog(string phaseId, string reason = null)
             => new(PhaseNavigationRequestKind.RestartCatalog, PhaseNavigationDirection.Specific, reason, phaseId);
+
+        public static PhaseNavigationRequest FirstPhase(string phaseId, string reason = null)
+            => new(PhaseNavigationRequestKind.FirstPhase, PhaseNavigationDirection.Specific, reason, phaseId);
     }
 
     public readonly struct PhaseNavigationResult
@@ -170,13 +174,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
         {
             ct.ThrowIfCancellationRequested();
 
-            PhaseNavigationRequest normalizedRequest = new PhaseNavigationRequest(request.Kind, request.Direction, request.Reason, request.TargetPhaseId);
-            _completionService.LogNavigationRequested(normalizedRequest);
-
             HardFailFastH1.Trigger(typeof(PhaseNextPhaseService),
-                $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseService is deprecated as an operational navigation rail. Use SessionTransition AdvancePhase for canonical next-phase continuity. kind='{normalizedRequest.Kind}' direction='{normalizedRequest.Direction}' reason='{PhaseNextPhaseServiceSupport.NormalizeReason(normalizedRequest.Reason)}'.");
+                $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseService is deprecated as an operational navigation rail. Use IPhaseOrdinalNavigationRequestService for QA/tooling ordinal navigation or SessionTransition AdvancePhase for post-run continuity. requestKind='{request.Kind}' direction='{request.Direction}' targetPhaseId='{request.TargetPhaseId}' reason='{request.Reason}'.");
 
-            throw new InvalidOperationException("[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Deprecated PhaseNextPhaseService rail invoked.");
+            return Task.FromResult(default(PhaseNavigationResult));
         }
 
         private async Task<PhaseNavigationResult> RestartCatalogInternalAsync(string reason, CancellationToken ct)

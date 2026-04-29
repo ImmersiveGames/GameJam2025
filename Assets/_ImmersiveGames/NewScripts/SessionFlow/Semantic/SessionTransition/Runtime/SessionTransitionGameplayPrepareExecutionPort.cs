@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
@@ -22,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
     public interface ISessionTransitionGameplayPrepareExecutionPort
     {
         Task<SessionTransitionExecutionDispatchResult> ExecuteAsync(
-            SceneTransitionContext context,
+            SessionTransitionContext context,
             SessionTransitionPlan plan,
             CancellationToken ct = default);
     }
@@ -55,14 +54,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         }
 
         public async Task<SessionTransitionExecutionDispatchResult> ExecuteAsync(
-            SceneTransitionContext context,
+            SessionTransitionContext context,
             SessionTransitionPlan plan,
             CancellationToken ct = default)
         {
             ValidateGameplayPrepareInputsOrFail(context, plan);
 
             string reason = Normalize(context.Reason);
-            string signature = SceneTransitionSignature.Compute(context);
+            string signature = Normalize(context.ContextSignature);
 
             PhaseDefinitionAsset selectedPhaseDefinitionRef = _phaseSelectionService.ResolveOrFail();
             PhaseDefinitionSelectedEvent phaseSelectedEvent = _gameplayPhaseFlowService.PublishPhaseDefinitionSelected(
@@ -78,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 forceFullReload: false);
 
             DebugUtility.Log<SessionTransitionGameplayPrepareExecutionPort>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayPrepareExecutionStarted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' intent='{plan.IntentKind}' legacyContinuation='{plan.ResolvedContinuation}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayPrepareExecutionStarted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' origin='{context.Origin}' intent='{context.IntentKind}' signature='{signature}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' planIntent='{plan.IntentKind}' legacyContinuation='{plan.ResolvedContinuation}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
@@ -96,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 GameplaySessionPrepareSource);
 
             DebugUtility.Log<SessionTransitionGameplayPrepareExecutionPort>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayPrepareExecutionCompleted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} allowsPhaseLocalEntryReady='True' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayPrepareExecutionCompleted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' origin='{context.Origin}' intent='{context.IntentKind}' signature='{signature}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' scenesAdded={compositionResult.ScenesAdded} scenesRemoved={compositionResult.ScenesRemoved} allowsPhaseLocalEntryReady='True' reason='{reason}'.",
                 DebugUtility.Colors.Success);
 
             return SessionTransitionExecutionDispatchResult.PhaseLocalEntryReadyConfirmed(
@@ -105,18 +104,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 phaseLocalEntryReadyEvent);
         }
 
-        private static void ValidateGameplayPrepareInputsOrFail(SceneTransitionContext context, SessionTransitionPlan plan)
+        private static void ValidateGameplayPrepareInputsOrFail(SessionTransitionContext context, SessionTransitionPlan plan)
         {
             if (!context.RouteId.IsValid || context.RouteRef == null || context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    "[FATAL][H1][SessionTransition] Gameplay prepare execution port recebeu SceneTransitionContext invalido.");
+                    "[FATAL][H1][SessionTransition] Gameplay prepare execution port recebeu SessionTransitionContext invalido.");
             }
 
             if (!context.IsGameplayInitialEntry)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    $"[FATAL][H1][SessionTransition] Gameplay prepare execution port requer GameplayEntryKind.InitialEntry. routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
+                    $"[FATAL][H1][SessionTransition] Gameplay prepare execution port requer InitialEntry. routeId='{context.RouteId}' origin='{context.Origin}' intent='{context.IntentKind}' reason='{Normalize(context.Reason)}'.");
             }
 
             if (!plan.IsValid || plan.Context.Origin != SessionTransitionOrigin.InitialEntry)
@@ -133,7 +132,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         }
 
         private SessionTransitionPhaseLocalEntryReadyEvent BuildPhaseLocalEntryReadyEventOrFail(
-            SceneTransitionContext context,
+            SessionTransitionContext context,
             SessionTransitionPlan plan,
             string source)
         {
@@ -258,19 +257,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             }
         }
 
-        private static string ResolveSceneNameOrFail(SceneTransitionContext context)
+        private static string ResolveSceneNameOrFail(SessionTransitionContext context)
         {
-            if (context.TargetActiveScene == null)
+            if (context.SceneName == null)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    "[FATAL][H1][SessionTransition] TargetActiveScene ausente no gameplay prepare execution port.");
+                    "[FATAL][H1][SessionTransition] SceneName ausente no gameplay prepare execution port.");
             }
 
-            string sceneName = context.TargetActiveScene.Trim();
+            string sceneName = context.SceneName.Trim();
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    "[FATAL][H1][SessionTransition] TargetActiveScene vazio no gameplay prepare execution port.");
+                    "[FATAL][H1][SessionTransition] SceneName vazio no gameplay prepare execution port.");
             }
 
             return sceneName;

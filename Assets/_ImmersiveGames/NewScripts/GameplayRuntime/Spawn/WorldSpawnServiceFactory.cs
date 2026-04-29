@@ -3,8 +3,6 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
@@ -47,10 +45,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             }
 
             DebugUtility.Log(typeof(WorldSpawnServiceFactory),
-                $"[OBS][ActorsExecution] CreateSpawnServiceViaActorSpec actorSpecId='{actorSpec.ActorSpecId}' recipe='{actorSpec.OperationalRecipeKind}' kind='{kind}' orderSource='ActorSetRef'.",
+                $"[OBS][ActorsExecution] CreateSpawnServiceViaActorSpec actorSpecId='{actorSpec.ActorSpecId}' actorSetRef='<none>' recipe='{actorSpec.OperationalRecipeKind}' kind='{kind}' source='ActorSpec'.",
                 DebugUtility.Colors.Info);
 
-            IWorldSpawnService service = CreateByKind(kind, actorSpec.PlaceholderBodyPrefab, dependencies);
+            IWorldSpawnService service = CreateByKind(kind, actorSpec, dependencies);
             if (service == null)
             {
                 throw new InvalidOperationException(
@@ -61,51 +59,53 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         }
 
         private static IWorldSpawnService CreateDummy(
-            GameObject prefab,
+            ActorSpecRecord actorSpec,
             WorldSpawnFactoryDependencies dependencies)
         {
             return new DummyActorSpawnService(
                 dependencies.UniqueIdFactory,
                 dependencies.ActorRegistry,
                 dependencies.Context,
-                prefab);
+                actorSpec,
+                actorSpec.PlaceholderBodyPrefab);
         }
 
         private static IWorldSpawnService CreatePlayer(
-            GameObject prefab,
+            ActorSpecRecord actorSpec,
             WorldSpawnFactoryDependencies dependencies)
         {
             return new PlayerSpawnService(
                 dependencies.UniqueIdFactory,
                 dependencies.ActorRegistry,
                 dependencies.Context,
-                prefab,
+                actorSpec,
+                actorSpec.PlaceholderBodyPrefab,
                 dependencies.GameplayStateService);
         }
 
         private static IWorldSpawnService CreateEater(
-            GameObject prefab,
+            ActorSpecRecord actorSpec,
             WorldSpawnFactoryDependencies dependencies)
         {
-            EaterActor eaterPrefab = prefab != null ? prefab.GetComponent<EaterActor>() : null;
             return new EaterSpawnService(
                 dependencies.UniqueIdFactory,
                 dependencies.ActorRegistry,
                 dependencies.Context,
-                eaterPrefab,
+                actorSpec,
+                actorSpec.PlaceholderBodyPrefab,
                 dependencies.GameplayStateService);
         }
 
         private static IWorldSpawnService CreateByKind(
             WorldSpawnServiceKind kind,
-            GameObject prefab,
+            ActorSpecRecord actorSpec,
             WorldSpawnFactoryDependencies dependencies)
         {
             return kind switch
             {
-                WorldSpawnServiceKind.DummyActor => CreateDummy(prefab, dependencies),
-                WorldSpawnServiceKind.Player => CreatePlayer(prefab, dependencies),
-                WorldSpawnServiceKind.Eater => CreateEater(prefab, dependencies),
+                WorldSpawnServiceKind.DummyActor => CreateDummy(actorSpec, dependencies),
+                WorldSpawnServiceKind.Player => CreatePlayer(actorSpec, dependencies),
+                WorldSpawnServiceKind.Eater => CreateEater(actorSpec, dependencies),
                 _ => null
             };
         }

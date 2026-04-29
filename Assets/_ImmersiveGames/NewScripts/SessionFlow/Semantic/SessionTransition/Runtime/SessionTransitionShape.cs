@@ -119,6 +119,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         ExitToMenu = 3,
         InitialEntry = 4,  /// Entrada inicial (Menu → Gameplay ou SceneFlow primeira fase)
         RestartFromFirstPhase = 5,
+        PhaseOrdinalNavigation = 6,
     }
 
     [Flags]

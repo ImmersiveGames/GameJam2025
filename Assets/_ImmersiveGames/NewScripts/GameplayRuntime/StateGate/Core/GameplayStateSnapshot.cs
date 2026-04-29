@@ -37,12 +37,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
         private int _lastResetFrame = -1;
         private string _lastResetReason = string.Empty;
         public bool HasSceneReadinessSnapshot => _hasSceneReadinessSnapshot;
+        public bool IsSceneGameplayReady => _hasSceneReadinessSnapshot && _sceneGameplayReady;
         public bool IsSceneGameplayReadyOrUnknown => !_hasSceneReadinessSnapshot || _sceneGameplayReady;
         public bool HasActorsOperationalReadinessSnapshot => _hasActorsOperationalReadinessSnapshot;
         public bool IsActorsOperationalReady => _hasActorsOperationalReadinessSnapshot && _actorsOperationalReady;
         public bool HasGameplayInteractionReadinessSnapshot => _hasGameplayInteractionReadinessSnapshot;
         public bool IsGameplayInteractionReady => _hasGameplayInteractionReadinessSnapshot && _gameplayInteractionReady;
         public bool HasGameRunStarted => _hasGameRunStarted;
+        public bool IsPaused => _state == StateDependentServiceState.Paused;
 
         public void SetState(StateDependentServiceState next)
         {

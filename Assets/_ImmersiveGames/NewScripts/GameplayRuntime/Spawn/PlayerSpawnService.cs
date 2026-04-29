@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
@@ -18,9 +19,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
+            ActorSpecRecord actorSpec,
             GameObject prefab,
             IGameplayStateGate gameplayStateService)
-            : base(uniqueIdFactory, actorRegistry, context, prefab)
+            : base(uniqueIdFactory, actorRegistry, context, actorSpec, prefab)
         {
             _gameplayStateService = gameplayStateService;
         }
@@ -41,12 +43,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (request.HasSemanticParticipantId)
             {
                 DebugUtility.Log(typeof(PlayerSpawnService),
-                    $"[OBS][Gameplay][SpawnBridge] Player spawn consumed semanticParticipantId from ActorSpawnRequest semanticParticipantId='{request.SemanticParticipantId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' source='{request.Source}'.");
+                    $"[OBS][Gameplay][SpawnBridge] Player spawn consumed semanticParticipantId from ActorSpawnRequest semanticParticipantId='{request.SemanticParticipantId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' recipe='{request.OperationalRecipeKind}' source='{request.Source}'.");
                 return request.SemanticParticipantId;
             }
 
             HardFailFastH1.Trigger(typeof(PlayerSpawnService),
-                $"[FATAL][H1][Gameplay][SpawnBridge] Player spawn canônico sem semanticParticipantId no ActorSpawnRequest actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' source='{request.Source}'.");
+                $"[FATAL][H1][Gameplay][SpawnBridge] Player spawn canônico sem semanticParticipantId no ActorSpawnRequest actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' recipe='{request.OperationalRecipeKind}' source='{request.Source}'.");
             return string.Empty;
         }
 

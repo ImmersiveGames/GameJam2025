@@ -1,56 +1,11 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SessionTransitionPlanResolver
     {
-        public SessionTransitionPlan Resolve(SceneTransitionContext context)
-        {
-            HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                "[FATAL][H1][SessionTransition] Resolve(SceneTransitionContext) sem origin tipada foi desativado. Use Resolve(context, SessionTransitionOrigin.InitialEntry) no rail de entrada inicial.");
-            return default;
-        }
-
-        public SessionTransitionPlan Resolve(SceneTransitionContext context, SessionTransitionOrigin origin)
-        {
-            if (!context.RouteId.IsValid || context.RouteRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    "[FATAL][H1][SessionTransition] SceneTransitionContext invalido recebido pelo resolver de gameplay prepare.");
-            }
-
-            if (origin != SessionTransitionOrigin.InitialEntry)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    $"[FATAL][H1][SessionTransition] SceneTransitionContext so pode entrar em SessionTransition por origin tipada InitialEntry neste rail. origin='{origin}' routeKind='{context.RouteKind}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
-            }
-
-            if (context.RouteKind != SceneRouteKind.Gameplay || context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    $"[FATAL][H1][SessionTransition] InitialEntry requer rota Gameplay tipada. routeKind='{context.RouteKind}' routeRefKind='{context.RouteRef.RouteKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
-            }
-
-            if (!context.IsGameplayInitialEntry)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    $"[FATAL][H1][SessionTransition] InitialEntry requer payload GameplayInitialEntry tipado antes do resolver. routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
-            }
-
-            SessionTransitionContext transitionContext = SessionTransitionContext.CreateInitialEntry(
-                SceneTransitionSignature.Compute(context),
-                ResolveGameplaySceneName(context),
-                Normalize(context.TransitionProfileName),
-                Normalize(context.Reason),
-                ResolveGameplaySceneName(context));
-
-            return Resolve(transitionContext);
-        }
-
         public SessionTransitionPlan Resolve(SessionTransitionContext context)
         {
             if (!context.IsValid)
@@ -366,16 +321,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             SessionTransitionResetScopeKind resetBoundary)
         {
             return new SessionTransitionReconstructionShape(kind, resetBoundary);
-        }
-
-        private static string ResolveGameplaySceneName(SceneTransitionContext context)
-        {
-            if (!string.IsNullOrWhiteSpace(context.TargetActiveScene))
-            {
-                return context.TargetActiveScene.Trim();
-            }
-
-            return context.RouteId.Value ?? string.Empty;
         }
 
         private static string Normalize(string value)

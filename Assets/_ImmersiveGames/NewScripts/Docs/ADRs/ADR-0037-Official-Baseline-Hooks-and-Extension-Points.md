@@ -30,3 +30,10 @@
 - Hooks oficiais permanecem separados de ownership semantico.
 - A IntroStage nao depende de `LevelEnteredEvent` como gatilho de entrada.
 - A leitura canônica fica alinhada ao runtime final sem nomenclatura transitória.
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisao viva: o objetivo do ADR permanece valido como lista de hooks oficiais e referencia de observabilidade do baseline.
+- Trechos historicos/superados: `LevelIntroCompletedEvent` deve ser lido como vocabulário/hook historico; nao e a formulacao normativa atual do handoff.
+- Leitura normativa atual: usar `IntroStageReleasedOnSceneTransitionCompleted` e `IntroStageSkipped` como leitura principal, e `IntroStageStarted` / `IntroStageCompleted` quando houver necessidade de observar o ciclo interno da stage.
+- ADRs superiores relacionados: `ADR-0030`, `ADR-0031`, `ADR-0032`, `ADR-0033`, `ADR-0045`, `ADR-0046`, `ADR-0047`, `ADR-0048`, `ADR-0050`, `ADR-0051`, `ADR-0057`.
+- Nota operacional: nenhuma mudanca de codigo e requerida por este adendo; a atualizacao e somente documental.

@@ -6,9 +6,9 @@ Historical index only. This file is kept for legacy reading, not as Baseline 4.0
 
 ## Current authority
 
-- `Docs/ADRs/ADR-0001-Glossario-Fundamental-Contextos-e-Rotas-v2.md`
-- `Docs/ADRs/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md`
-- `Docs/ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md`
+- `Docs/ADRs/Historico/ADR-0001-Glossario-Fundamental-Contextos-e-Rotas-v2.md`
+- `Docs/ADRs/Historico/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md`
+- `Docs/ADRs/Historico/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md`
 - `Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md`
 - `Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md`
 - `Docs/Reports/Audits/LATEST.md`
@@ -21,9 +21,9 @@ Historical index only. This file is kept for legacy reading, not as Baseline 4.0
 ## Current reading order
 
 1. `Docs/README.md`
-2. `Docs/ADRs/ADR-0001-Glossario-Fundamental-Contextos-e-Rotas-v2.md`
-3. `Docs/ADRs/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md`
-4. `Docs/ADRs/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md`
+2. `Docs/ADRs/Historico/ADR-0001-Glossario-Fundamental-Contextos-e-Rotas-v2.md`
+3. `Docs/ADRs/Historico/ADR-0043-Ancora-de-Decisao-para-o-Baseline-4.0.md`
+4. `Docs/ADRs/Historico/ADR-0044-Baseline-4.0-Ideal-Architecture-Canon.md`
 5. `Docs/Plans/Blueprint-Baseline-4.0-Ideal-Architecture.md`
 6. `Docs/Plans/Plan-Baseline-4.0-Execution-Guardrails.md`
 7. `Docs/Reports/Audits/LATEST.md`

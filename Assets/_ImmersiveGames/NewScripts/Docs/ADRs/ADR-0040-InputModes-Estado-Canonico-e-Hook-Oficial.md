@@ -90,3 +90,10 @@ Explicitamente fora de escopo nesta etapa:
 ## Referências
 - `ADR-0037`
 - `ADR-0039`
+
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisão viva: `InputModes` continua sendo o rail operacional canônico para request/aplicação e observação efetiva de estado.
+- Trechos históricos/superados: `InputModes` não é owner semântico de participation, session ou actors; `InputModeCoordinator` e `InputModeService` não definem semântica de sessão.
+- Leitura normativa atual: `Session Integration` é o emissor canônico dos requests session-side; `InputModes` consome e aplica de forma operacional.
+- ADRs superiores relacionados: `ADR-0055`, `ADR-0056`, `ADR-0057`.

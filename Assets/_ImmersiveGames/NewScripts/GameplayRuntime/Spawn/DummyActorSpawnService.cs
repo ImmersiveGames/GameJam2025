@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Dummy;
 using UnityEngine;
@@ -15,8 +16,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
+            ActorSpecRecord actorSpec,
             GameObject prefab)
-            : base(uniqueIdFactory, actorRegistry, context, prefab)
+            : base(uniqueIdFactory, actorRegistry, context, actorSpec, prefab)
         {
         }
 

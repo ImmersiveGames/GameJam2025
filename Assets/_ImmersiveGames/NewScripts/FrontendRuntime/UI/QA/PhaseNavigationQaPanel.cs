@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -9,7 +10,6 @@ using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
@@ -18,9 +18,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
 {
     /// <summary>
@@ -33,6 +31,8 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
     public sealed class PhaseNavigationQaPanel : MonoBehaviour
     {
         private const string NextPhaseReason = "QA/PhaseNavigation/NextPhase";
+        private const string GoToSpecificPhaseReason = "QA/PhaseNavigation/GoToSpecificPhase";
+        private const string GoFirstReason = "QA/PhaseNavigation/GoFirst";
         private const float PanelWidth = 960f;
         private const float PanelHeight = 556f;
         private const float PanelMargin = 16f;
@@ -48,8 +48,8 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
         [Inject] private IPhaseDefinitionSelectionService _phaseSelectionService;
         [Inject] private IPhaseCatalogRuntimeStateService _phaseCatalogRuntimeStateService;
+        [Inject] private IPhaseOrdinalNavigationRequestService _phaseOrdinalNavigationRequestService;
         [Inject] private IPhaseCatalogNavigationService _phaseCatalogNavigationService;
-        [Inject] private IRunContinuationSelectionRoutingService _runContinuationSelectionRoutingService;
         [Inject] private IPhaseDefinitionCatalog _phaseDefinitionCatalog;
         [Inject] private IGameplayStateGate _gameplayStateGate;
         [Inject] private IGameplayInteractionReadinessService _interactionReadinessService;
@@ -59,9 +59,11 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         private EventBinding<PhaseContentAppliedEvent> _phaseContentAppliedBinding;
         private EventBinding<IntroStageCompletedEvent> _introStageCompletedBinding;
         private EventBinding<GameRunStartedEvent> _gameRunStartedBinding;
+        private Action<GameplayOperationalStateSnapshot> _operationalStateChangedHandler;
         private Action<GameplayInteractionReadinessSnapshot> _interactionReadinessChangedHandler;
         private bool _dependenciesInjected;
         private bool _registered;
+        private bool _operationalStateSubscribed;
         private bool _interactionReadinessSubscribed;
         private bool _isExecutingRequest;
         private bool _panelVisible;
@@ -92,8 +94,10 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             _phaseContentAppliedBinding = new EventBinding<PhaseContentAppliedEvent>(_ => RefreshView("PhaseContentAppliedEvent"));
             _introStageCompletedBinding = new EventBinding<IntroStageCompletedEvent>(_ => RefreshView("IntroStageCompletedEvent"));
             _gameRunStartedBinding = new EventBinding<GameRunStartedEvent>(OnGameRunStarted);
+            _operationalStateChangedHandler = _ => RefreshView("GameplayOperationalStateChanged");
             _interactionReadinessChangedHandler = _ => RefreshView("GameplayInteractionReadyChanged");
             RegisterBindings();
+            RegisterOperationalStateSubscription();
             RegisterInteractionReadinessSubscription();
             RefreshView("Awake");
         }
@@ -101,6 +105,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         private void OnEnable()
         {
             RegisterBindings();
+            RegisterOperationalStateSubscription();
             RegisterInteractionReadinessSubscription();
             RefreshView("OnEnable");
         }
@@ -114,6 +119,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         private void OnDisable()
         {
             UnregisterBindings();
+            UnregisterOperationalStateSubscription();
             UnregisterInteractionReadinessSubscription();
             _isExecutingRequest = false;
         }
@@ -121,6 +127,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         private void OnDestroy()
         {
             UnregisterBindings();
+            UnregisterOperationalStateSubscription();
             UnregisterInteractionReadinessSubscription();
         }
 
@@ -155,21 +162,42 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             GUILayout.Space(SectionSpacing);
 
             bool previousEnabled = GUI.enabled;
-            string previousLabel = BuildReadOnlyNavigationButtonLabel("Prev", _resolvedPreviousPhaseId, _catalogCapabilityPrevious);
+            string previousLabel = BuildNavigationButtonLabel("Prev", _catalogCapabilityPrevious);
             string nextLabel = BuildNavigationButtonLabel("Next", _catalogCapabilityNext);
 
             GUILayout.BeginHorizontal();
-            GUI.enabled = false;
-            GUILayout.Button(previousLabel, _buttonStyle, GUILayout.Height(42f));
-
-            GUI.enabled = previousEnabled && _catalogCapabilityNext && !_isExecutingRequest;
-            if (GUILayout.Button(nextLabel, _buttonStyle, GUILayout.Height(42f)))
+            GUI.enabled = previousEnabled && _executionAllowedNow && _catalogCapabilityPrevious && !_isExecutingRequest;
+            if (GUILayout.Button(previousLabel, _buttonStyle, GUILayout.Height(42f)))
             {
-                _ = ExecuteCanonicalNextPhaseAsync(NextPhaseReason);
+                _ = ExecuteOrdinalNavigationAsync(
+                    PhaseOrdinalNavigationKind.Previous,
+                    targetPhaseId: string.Empty,
+                    resolvedTarget: _resolvedPreviousPhaseId,
+                    reason: "QA/PhaseNavigation/PreviousPhase",
+                    action: "PreviousPhaseOrdinal");
             }
 
-            GUI.enabled = false;
-            GUILayout.Button("Restart Cat (disabled)", _buttonStyle, GUILayout.Height(42f));
+            GUI.enabled = previousEnabled && _executionAllowedNow && _catalogCapabilityNext && !_isExecutingRequest;
+            if (GUILayout.Button(nextLabel, _buttonStyle, GUILayout.Height(42f)))
+            {
+                _ = ExecuteOrdinalNavigationAsync(
+                    PhaseOrdinalNavigationKind.Next,
+                    targetPhaseId: string.Empty,
+                    resolvedTarget: _resolvedNextPhaseId,
+                    reason: NextPhaseReason,
+                    action: "NextPhaseOrdinal");
+            }
+
+            GUI.enabled = previousEnabled && _executionAllowedNow && !_isExecutingRequest;
+            if (GUILayout.Button("Go First", _buttonStyle, GUILayout.Height(42f)))
+            {
+                _ = ExecuteOrdinalNavigationAsync(
+                    PhaseOrdinalNavigationKind.FirstPhase,
+                    targetPhaseId: string.Empty,
+                    resolvedTarget: ResolveFirstPhaseIdForDisplay(),
+                    reason: GoFirstReason,
+                    action: "GoFirstOrdinal");
+            }
 
             GUI.enabled = previousEnabled;
             GUILayout.EndHorizontal();
@@ -179,11 +207,13 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             GUILayout.BeginHorizontal();
             _specificPhaseId = GUILayout.TextField(_specificPhaseId ?? string.Empty, GUILayout.ExpandWidth(true));
             bool specificButtonEnabled = previousEnabled &&
+                                         _executionAllowedNow &&
+                                         !_isExecutingRequest &&
                                          !string.IsNullOrWhiteSpace(_specificPhaseId);
             GUI.enabled = specificButtonEnabled;
-            if (GUILayout.Button("Resolve", _buttonStyle, GUILayout.Height(42f), GUILayout.Width(88f)))
+            if (GUILayout.Button("Go To", _buttonStyle, GUILayout.Height(42f), GUILayout.Width(88f)))
             {
-                ResolveSpecificPhaseReadOnly(_specificPhaseId);
+                _ = ExecuteGoToSpecificPhaseAsync(_specificPhaseId, GoToSpecificPhaseReason);
             }
             GUI.enabled = previousEnabled;
             GUILayout.EndHorizontal();
@@ -194,145 +224,125 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             GUILayout.EndArea();
         }
 
-        private Task ExecuteCanonicalNextPhaseAsync(string reason)
+        private async Task ExecuteOrdinalNavigationAsync(
+            PhaseOrdinalNavigationKind kind,
+            string targetPhaseId,
+            string resolvedTarget,
+            string reason,
+            string action)
         {
             if (_isExecutingRequest)
             {
                 DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='NextPhaseCanonical' guard_ignored='true' reason='{reason}'.",
+                    $"[OBS][QA][PhaseNavigation][Execute] action='{action}' guard_ignored='true' kind='{kind}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
-                return Task.CompletedTask;
+                return;
             }
 
-            if (_runContinuationSelectionRoutingService == null)
+            if (!_executionAllowedNow)
             {
-                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] IRunContinuationSelectionRoutingService indisponivel para QA NextPhase canonico. reason='{reason}'.");
-                return Task.CompletedTask;
+                _lastCommandResult = "RejectedNotReady";
+                _lastCommandRejectedReason = _executionBlockedReason;
+                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' kind='{kind}' target='{resolvedTarget}' outcome='RejectedNotReady' reason='{_executionBlockedReason}' source='PhaseOrdinalNavigationRequestService' requestReason='{reason}'.");
+                RefreshView($"{action}/RejectedNotReady");
+                return;
             }
 
-            PhaseDefinitionAsset currentPhase = GetCurrentPhase();
-            if (currentPhase == null || !currentPhase.PhaseId.IsValid)
+            if (_phaseOrdinalNavigationRequestService == null)
             {
                 HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] NextPhaseCanonical sem current phase valida. reason='{reason}'.");
-                return Task.CompletedTask;
+                    $"[FATAL][H1][QA][PhaseNavigation] IPhaseOrdinalNavigationRequestService indisponivel. action='{action}' kind='{kind}' reason='{reason}'.");
+                return;
             }
 
             _isExecutingRequest = true;
 
             try
             {
-                RunContinuationSelection selection = BuildQaAdvancePhaseSelection(currentPhase, reason);
-
                 DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='NextPhaseCanonical' stage='RunContinuationSelectionRoutingRequested' continuation='{selection.SelectedContinuation}' currentPhase='{DescribePhaseId(currentPhase.PhaseId)}' target='{_resolvedNextPhaseId}' reason='{reason}' source='RunContinuationSelectionRoutingService'.",
+                    $"[OBS][QA][PhaseNavigation][Execute] action='{action}' stage='OrdinalNavigationRequested' kind='{kind}' currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' target='{resolvedTarget}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
-                _runContinuationSelectionRoutingService.RouteSelection(selection);
+                PhaseNavigationResult result = await _phaseOrdinalNavigationRequestService.NavigateAsync(
+                    new PhaseOrdinalNavigationRequest(kind, targetPhaseId, reason),
+                    CancellationToken.None);
 
-                _lastCommandResult = "Dispatched";
-                _lastCommandRejectedReason = "<none>";
-
-                DebugUtility.Log<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation] QaNavigationCommandAccepted action='NextPhaseCanonical' target='{_resolvedNextPhaseId}' outcome='Dispatched' source='RunContinuationSelectionRoutingService' continuation='AdvancePhase' reason='{reason}'.",
-                    DebugUtility.Colors.Success);
+                RecordAndLogCommandResult(action, result, resolvedTarget, reason);
             }
             catch (Exception ex)
             {
-                RecordAndLogCommandFailure("NextPhaseCanonical", _resolvedNextPhaseId, reason, ex);
-                RefreshView("NextPhaseCanonical/Failed");
+                RecordAndLogCommandFailure(action, resolvedTarget, reason, ex);
+                RefreshView($"{action}/Failed");
             }
             finally
             {
                 _isExecutingRequest = false;
-                RefreshView("NextPhaseCanonical/Finished");
+                RefreshView($"{action}/Finished");
             }
-
-            return Task.CompletedTask;
         }
 
-        private RunContinuationSelection BuildQaAdvancePhaseSelection(PhaseDefinitionAsset currentPhase, string reason)
+        private Task ExecuteCanonicalNextPhaseAsync(string reason)
         {
-            string normalizedReason = NormalizeReason(reason);
-            string sceneName = SceneManager.GetActiveScene().name;
-            if (string.IsNullOrWhiteSpace(sceneName))
+            return ExecuteOrdinalNavigationAsync(
+                PhaseOrdinalNavigationKind.Next,
+                targetPhaseId: string.Empty,
+                resolvedTarget: _resolvedNextPhaseId,
+                reason: reason,
+                action: "NextPhaseOrdinal");
+        }
+
+        private async Task ExecuteGoToSpecificPhaseAsync(string rawInput, string reason)
+        {
+            if (_isExecutingRequest)
             {
-                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] NextPhaseCanonical nao conseguiu resolver active scene para contexto canonico. reason='{normalizedReason}'.");
-            }
-
-            string phaseId = currentPhase != null && currentPhase.PhaseId.IsValid
-                ? currentPhase.PhaseId.Value
-                : "<none>";
-            string signature = BuildQaAdvancePhaseSignature(phaseId, normalizedReason);
-            string nextState = string.IsNullOrWhiteSpace(_resolvedNextPhaseId) || string.Equals(_resolvedNextPhaseId, "<none>", StringComparison.Ordinal)
-                ? "AdvancePhase"
-                : _resolvedNextPhaseId.Trim();
-
-            var intent = new RunEndIntent(
-                signature,
-                sceneName,
-                "gameplay",
-                Time.frameCount,
-                normalizedReason,
-                isGameplayScene: true);
-
-            var context = new RunContinuationContext(
-                intent,
-                RunResult.Victory,
-                new[] { RunContinuationKind.AdvancePhase },
-                requiresPlayerDecision: false);
-
-            var completion = new RunDecisionCompletion(
-                RunDecisionCompletionKind.Macro,
-                normalizedReason,
-                nextState);
-
-            var selection = new RunContinuationSelection(
-                context,
-                RunContinuationKind.AdvancePhase,
-                completion);
-
-            if (!selection.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseNavigationQaPanel),
-                    $"[FATAL][H1][QA][PhaseNavigation] RunContinuationSelection QA invalida para AdvancePhase. phaseId='{phaseId}' scene='{sceneName}' target='{nextState}' reason='{normalizedReason}'.");
-            }
-
-            return selection;
-        }
-
-        private static string BuildQaAdvancePhaseSignature(string phaseId, string reason)
-        {
-            string normalizedPhaseId = string.IsNullOrWhiteSpace(phaseId) ? "none" : phaseId.Trim();
-            string normalizedReason = NormalizeReason(reason);
-            return $"qa.advance-phase|phase:{normalizedPhaseId}|frame:{Time.frameCount}|reason:{normalizedReason}";
-        }
-
-        private static string NormalizeReason(string reason)
-        {
-            return string.IsNullOrWhiteSpace(reason) ? "QA/PhaseNavigation/NextPhase" : reason.Trim();
-        }
-        private void ResolveSpecificPhaseReadOnly(string rawInput)
-        {
-            if (!TryResolveSpecificTarget(rawInput, out string resolvedPhaseId, out string resolutionKind, out string rejectionReason))
-            {
-                _lastCommandResult = "ReadOnlyRejectedInvalidInput";
-                _lastCommandRejectedReason = rejectionReason;
-                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='ResolveSpecificPhaseReadOnly' target='{rawInput}' reason='{rejectionReason}' source='PhaseCatalog'.");
-                RefreshView("ResolveSpecificPhaseReadOnly/RejectedInvalidInput");
+                DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation][Execute] action='GoToSpecificPhaseOrdinal' guard_ignored='true' input='{rawInput}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
-            _lastCommandResult = "ReadOnlyResolved";
-            _lastCommandRejectedReason = "<none>";
+            if (!TryResolveSpecificTarget(rawInput, out string resolvedPhaseId, out string resolutionKind, out string rejectionReason))
+            {
+                _lastCommandResult = "RejectedInvalidInput";
+                _lastCommandRejectedReason = rejectionReason;
+                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='GoToSpecificPhaseOrdinal' target='{rawInput}' reason='{rejectionReason}' source='PhaseCatalog'.");
+                RefreshView("GoToSpecificPhaseOrdinal/RejectedInvalidInput");
+                return;
+            }
+
             DebugUtility.Log<PhaseNavigationQaPanel>(
-                $"[OBS][QA][PhaseNavigation] QaNavigationReadOnlyResolved action='ResolveSpecificPhaseReadOnly' input='{rawInput}' interpretation='{resolutionKind}' targetPhaseId='{resolvedPhaseId}' source='PhaseCatalog' operationalDispatch='false'.",
+                $"[OBS][QA][PhaseNavigation][Parse] action='GoToSpecificPhaseOrdinal' input='{rawInput}' interpretation='{resolutionKind}' targetPhaseId='{resolvedPhaseId}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
-            RefreshView("ResolveSpecificPhaseReadOnly/Resolved");
+
+            await ExecuteOrdinalNavigationAsync(
+                PhaseOrdinalNavigationKind.SpecificPhase,
+                resolvedPhaseId,
+                resolvedPhaseId,
+                reason,
+                "GoToSpecificPhaseOrdinal");
         }
+
+        private void RecordAndLogCommandResult(string action, PhaseNavigationResult result, string resolvedTarget, string reason)
+        {
+            string target = ResolveCommandTarget(result, resolvedTarget);
+            _lastCommandResult = result.Outcome.ToString();
+
+            if (result.Outcome == PhaseNavigationOutcome.Changed)
+            {
+                _lastCommandRejectedReason = "<none>";
+                DebugUtility.Log<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationCommandAccepted action='{action}' target='{target}' outcome='{result.Outcome}' source='PhaseCatalog' reason='{reason}'.",
+                    DebugUtility.Colors.Success);
+                return;
+            }
+
+            _lastCommandRejectedReason = result.Outcome.ToString();
+            DebugUtility.LogWarning<PhaseNavigationQaPanel>(
+                $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' target='{target}' outcome='{result.Outcome}' reason='{_lastCommandRejectedReason}' source='PhaseCatalog' requestReason='{reason}'.");
+        }
+
 
         private void RecordAndLogCommandFailure(string action, string target, string reason, Exception ex)
         {
@@ -340,6 +350,31 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             _lastCommandRejectedReason = $"{ex.GetType().Name}: {ex.Message}";
             DebugUtility.LogWarning<PhaseNavigationQaPanel>(
                 $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' target='{target}' outcome='Failed' reason='{_lastCommandRejectedReason}' source='PhaseCatalog' requestReason='{reason}'.");
+        }
+
+        private string ResolveFirstPhaseIdForDisplay()
+        {
+            if (_phaseDefinitionCatalog != null && _phaseDefinitionCatalog.PhaseIds != null && _phaseDefinitionCatalog.PhaseIds.Count > 0)
+            {
+                return _phaseDefinitionCatalog.PhaseIds[0];
+            }
+
+            return "<first-phase>";
+        }
+
+        private static string ResolveCommandTarget(PhaseNavigationResult result, string resolvedTarget)
+        {
+            if (!string.IsNullOrWhiteSpace(result.ToPhaseId))
+            {
+                return result.ToPhaseId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(resolvedTarget) && !string.Equals(resolvedTarget, "<none>", StringComparison.Ordinal))
+            {
+                return resolvedTarget;
+            }
+
+            return result.Request.HasTargetPhaseId ? result.Request.TargetPhaseId : "<none>";
         }
 
         private bool TryResolveSpecificTarget(string rawInput, out string resolvedPhaseId, out string resolutionKind, out string rejectionReason)
@@ -428,7 +463,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
                 hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty);
 
             DebugUtility.Log<PhaseNavigationQaPanel>(
-                $"[OBS][QA][PhaseNavigation] PhaseQaViewUpdated phaseId='{DescribePhaseId(currentPhase != null ? currentPhase.PhaseId : default)}' contentId='{DescribeContentId(currentPhase, hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty)}' index='{DescribeCatalogIndex(currentPhase != null ? currentPhase.PhaseId : default)}' participationSignature='{DescribeParticipationSignature(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty)}' participationReadiness='{DescribeParticipationReadiness(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty)}' panelVisible='{(_panelVisible ? "true" : "false")}' navigationCapabilitySource='{_navigationCapabilitySource}' traversalMode='{_traversalMode}' resolvedNext='{_resolvedNextPhaseId}' resolvedPrevious='{_resolvedPreviousPhaseId}' catalogCapabilityNext='{(_catalogCapabilityNext ? "true" : "false")}' catalogCapabilityPrevious='{(_catalogCapabilityPrevious ? "true" : "false")}' buttonClickableNext='{(_catalogCapabilityNext && !_isExecutingRequest ? "true" : "false")}' buttonClickablePrevious='false' executionAllowedNow='{(_executionAllowedNow ? "true" : "false")}' executionBlockedReason='{_executionBlockedReason}' lastCommandResult='{_lastCommandResult}' lastCommandRejectedReason='{_lastCommandRejectedReason}' isExecuting='{(_isExecutingRequest ? "true" : "false")}' isOperationallyReadyForQa='{(_executionAllowedNow ? "true" : "false")}' reason='{_operationalStateReason}'.",
+                $"[OBS][QA][PhaseNavigation] PhaseQaViewUpdated phaseId='{DescribePhaseId(currentPhase != null ? currentPhase.PhaseId : default)}' contentId='{DescribeContentId(currentPhase, hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty)}' index='{DescribeCatalogIndex(currentPhase != null ? currentPhase.PhaseId : default)}' participationSignature='{DescribeParticipationSignature(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty)}' participationReadiness='{DescribeParticipationReadiness(hasParticipation ? participationSnapshot : ParticipationSnapshot.Empty)}' panelVisible='{(_panelVisible ? "true" : "false")}' navigationCapabilitySource='{_navigationCapabilitySource}' traversalMode='{_traversalMode}' resolvedNext='{_resolvedNextPhaseId}' resolvedPrevious='{_resolvedPreviousPhaseId}' catalogCapabilityNext='{(_catalogCapabilityNext ? "true" : "false")}' catalogCapabilityPrevious='{(_catalogCapabilityPrevious ? "true" : "false")}' buttonClickableNext='{(_catalogCapabilityNext && !_isExecutingRequest ? "true" : "false")}' buttonClickablePrevious='{(_catalogCapabilityPrevious && !_isExecutingRequest ? "true" : "false")}' executionAllowedNow='{(_executionAllowedNow ? "true" : "false")}' executionBlockedReason='{_executionBlockedReason}' lastCommandResult='{_lastCommandResult}' lastCommandRejectedReason='{_lastCommandRejectedReason}' isExecuting='{(_isExecutingRequest ? "true" : "false")}' isOperationallyReadyForQa='{(_executionAllowedNow ? "true" : "false")}' reason='{_operationalStateReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -461,6 +496,17 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             _interactionReadinessSubscribed = true;
         }
 
+        private void RegisterOperationalStateSubscription()
+        {
+            if (_gameplayStateGate == null || _operationalStateChangedHandler == null || _operationalStateSubscribed)
+            {
+                return;
+            }
+
+            _gameplayStateGate.OperationalStateChanged += _operationalStateChangedHandler;
+            _operationalStateSubscribed = true;
+        }
+
         private void UnregisterBindings()
         {
             if (!_registered)
@@ -488,6 +534,17 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
 
             _interactionReadinessService.Changed -= _interactionReadinessChangedHandler;
             _interactionReadinessSubscribed = false;
+        }
+
+        private void UnregisterOperationalStateSubscription()
+        {
+            if (_gameplayStateGate == null || _operationalStateChangedHandler == null || !_operationalStateSubscribed)
+            {
+                return;
+            }
+
+            _gameplayStateGate.OperationalStateChanged -= _operationalStateChangedHandler;
+            _operationalStateSubscribed = false;
         }
 
         private bool ShouldShow()
@@ -554,7 +611,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             _executionAllowedNow = currentPhase != null &&
                                    canResolveFromCatalog &&
                                    isGameplayActive &&
-                                   _runContinuationSelectionRoutingService != null &&
+                                   _phaseOrdinalNavigationRequestService != null &&
                                    !_isExecutingRequest;
 
             _executionBlockedReason = ResolveExecutionBlockedReason(
@@ -582,9 +639,9 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
                 return "catalog_unavailable";
             }
 
-            if (_runContinuationSelectionRoutingService == null)
+            if (_phaseOrdinalNavigationRequestService == null)
             {
-                return "run_continuation_routing_service_missing";
+                return "phase_ordinal_navigation_service_missing";
             }
 
             if (_isExecutingRequest)
@@ -615,15 +672,6 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             return _isExecutingRequest
                 ? $"{label} (target / executing)"
                 : $"{label} (target)";
-        }
-
-        private static string BuildReadOnlyNavigationButtonLabel(string label, string targetPhaseId, bool catalogCapabilityAvailable)
-        {
-            string target = catalogCapabilityAvailable && !string.IsNullOrWhiteSpace(targetPhaseId)
-                ? targetPhaseId
-                : "no target";
-
-            return $"{label} read-only ({target})";
         }
 
         private void EnsureDependenciesInjected()
@@ -710,12 +758,12 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             builder.AppendLine($"Participation: {DescribeParticipationSignature(participationSnapshot)}");
             builder.AppendLine($"Participation Ready: {DescribeParticipationReadiness(participationSnapshot)}");
             builder.AppendLine($"Loop: {DescribeLoopCount()}");
-            builder.AppendLine($"Catalog Capability Next/Prev: {(_catalogCapabilityNext ? "Y" : "N")}/{(_catalogCapabilityPrevious ? "Y" : "N")} (Prev read-only)");
+            builder.AppendLine($"Catalog Capability Next/Prev: {(_catalogCapabilityNext ? "Y" : "N")}/{(_catalogCapabilityPrevious ? "Y" : "N")}");
             builder.AppendLine($"Execution Allowed Now: {(_executionAllowedNow ? "Y" : "N")}");
             builder.AppendLine($"Execution Blocked: {_executionBlockedReason}");
             builder.AppendLine($"Last Command: {_lastCommandResult} | rejectedReason={_lastCommandRejectedReason}");
             builder.AppendLine($"Ready: {(_executionAllowedNow ? "Y" : "N")} ({_operationalStateReason})");
-            builder.AppendLine("Specific: phaseId | index 1-based (read-only resolve)");
+            builder.AppendLine("Specific: phaseId | index 1-based");
             builder.AppendLine($"Input: {(string.IsNullOrWhiteSpace(_specificPhaseId) ? "<none>" : _specificPhaseId.Trim())}");
             return builder.ToString().TrimEnd();
         }
@@ -815,6 +863,11 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
                 hasRuntime ? runtimeSnapshot : GameplayPhaseRuntimeSnapshot.Empty);
         }
 
+        private static string DescribeDirection(PhaseNavigationDirection direction)
+        {
+            return direction == PhaseNavigationDirection.Previous ? "Previous" : "Next";
+        }
+
         private string DescribeCatalog()
         {
             if (_phaseDefinitionCatalog == null)
@@ -860,4 +913,3 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         }
     }
 }
-

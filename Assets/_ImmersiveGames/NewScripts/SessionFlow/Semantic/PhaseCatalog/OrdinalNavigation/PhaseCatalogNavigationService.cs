@@ -89,6 +89,33 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
                 catalogName);
         }
 
+        public PhaseCatalogNavigationPlan ResolveFirstPhase(string reason = null)
+        {
+            string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);
+            PhaseDefinitionAsset currentCommitted = ResolveCurrentCommittedOrFail(normalizedReason);
+            PhaseDefinitionAsset targetPhaseRef = _catalog.ResolveInitialOrFail();
+            PhaseNavigationRequest request = PhaseNavigationRequest.FirstPhase(targetPhaseRef.PhaseId.Value, normalizedReason);
+            string catalogName = PhaseNextPhaseServiceSupport.DescribeCatalog(_catalog);
+
+            if (HasSamePhase(currentCommitted, targetPhaseRef))
+            {
+                return PhaseCatalogNavigationPlan.CreateBlocked(
+                    request,
+                    PhaseNavigationOutcome.TargetAlreadyCurrent,
+                    currentCommitted,
+                    TraversalMode,
+                    catalogName);
+            }
+
+            return PhaseCatalogNavigationPlan.CreateChanged(
+                request,
+                currentCommitted,
+                targetPhaseRef,
+                TraversalMode,
+                wasWrapped: false,
+                catalogName);
+        }
+
         public PhaseCatalogNavigationPlan RestartCatalog(string reason = null)
         {
             string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(reason);

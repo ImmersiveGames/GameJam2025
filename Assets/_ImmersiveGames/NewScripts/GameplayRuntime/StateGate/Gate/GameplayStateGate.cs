@@ -37,7 +37,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
         private readonly GameplayStateSnapshot _snapshot = new();
         private readonly GameplayMoveGateDecisionLogger _moveGateDecisionLogger = new();
         private GameplayRuntimeSignalsAdapter _runtimeSignalsAdapter;
+        private Action<bool> _gateChangedHandler;
         private Action<GameplayInteractionReadinessSnapshot> _interactionReadinessChangedHandler;
+        private bool _gateEventsSubscribed;
+        private bool _hasPublishedOperationalStateSnapshot;
+        private GameplayOperationalStateSnapshot _lastPublishedOperationalStateSnapshot = GameplayOperationalStateSnapshot.Empty;
+
+        public event Action<GameplayOperationalStateSnapshot> OperationalStateChanged;
 
         public GameplayStateGate(ISimulationGateService gateService = null)
         {
@@ -47,8 +53,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
             TryResolveGameLoopService();
             TryResolveInteractionReadinessService();
             RegisterEvents();
+            RegisterGateEvents();
             RegisterInteractionReadinessEvents();
             PrimeInteractionReadiness();
+            PublishOperationalStateIfChanged("bootstrap");
 
             // Clean option: NÃO logar nada no construtor (evita "Move bloqueada" no bootstrap).
         }
@@ -110,6 +118,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 
         public void Dispose()
         {
+            UnregisterGateEvents();
+
             if (_interactionReadinessService != null && _interactionReadinessChangedHandler != null)
             {
                 _interactionReadinessService.Changed -= _interactionReadinessChangedHandler;
@@ -126,6 +136,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
             }
 
             DependencyManager.Provider.TryGetGlobal(out _gateService);
+
+            if (_gateService != null)
+            {
+                RegisterGateEvents();
+                PublishOperationalStateIfChanged("simulation_gate_service_resolved");
+            }
         }
 
         private void TryResolveGameLoopService()
@@ -145,10 +161,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
             if (string.Equals(_gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal))
             {
                 _snapshot.SetGameRunStarted();
+                PublishOperationalStateIfChanged("game_loop_service_resolved_playing");
             }
             else if (string.Equals(_gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Paused), StringComparison.Ordinal))
             {
                 _snapshot.SetState(StateDependentServiceState.Paused);
+                PublishOperationalStateIfChanged("game_loop_service_resolved_paused");
             }
         }
 
@@ -165,6 +183,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
             {
                 RegisterInteractionReadinessEvents();
                 PrimeInteractionReadiness();
+                PublishOperationalStateIfChanged("interaction_readiness_service_resolved");
             }
         }
 
@@ -179,6 +198,29 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
                 OnReadinessChanged);
 
             _runtimeSignalsAdapter.TryRegister();
+        }
+
+        private void RegisterGateEvents()
+        {
+            if (_gateService == null || _gateChangedHandler != null || _gateEventsSubscribed)
+            {
+                return;
+            }
+
+            _gateChangedHandler = OnSimulationGateChanged;
+            _gateService.GateChanged += _gateChangedHandler;
+            _gateEventsSubscribed = true;
+        }
+
+        private void UnregisterGateEvents()
+        {
+            if (_gateService == null || _gateChangedHandler == null || !_gateEventsSubscribed)
+            {
+                return;
+            }
+
+            _gateService.GateChanged -= _gateChangedHandler;
+            _gateEventsSubscribed = false;
         }
 
         private void RegisterInteractionReadinessEvents()
@@ -209,18 +251,21 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
         {
             _snapshot.SetGameRunEnded();
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("game_start_requested");
         }
 
         private void HandleGameRunStarted()
         {
             _snapshot.SetGameRunStarted();
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("game_run_started");
         }
 
         private void HandleGameRunEnded()
         {
             _snapshot.SetGameRunEnded();
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("game_run_ended");
         }
 
         private void OnGameResetRequested(GameResetRequestedEvent evt)
@@ -237,6 +282,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 
             _snapshot.SetGameRunEnded();
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("game_reset_requested");
         }
 
         private void OnPauseStateChanged(PauseStateChangedEvent evt)
@@ -252,18 +298,30 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 
             _snapshot.SetState(evt.IsPaused ? StateDependentServiceState.Paused : StateDependentServiceState.Ready);
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("pause_state_changed");
         }
 
         private void OnReadinessChanged(ReadinessChangedEvent evt)
         {
             _snapshot.UpdateSceneReadiness(evt);
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("scene_readiness_changed");
         }
 
         private void OnGameplayInteractionReadinessChanged(GameplayInteractionReadinessSnapshot snapshot)
         {
             _snapshot.UpdateGameplayInteractionReadiness(snapshot);
             SyncMoveDecisionLogIfChanged();
+            PublishOperationalStateIfChanged("gameplay_interaction_readiness_changed");
+        }
+
+        private void OnSimulationGateChanged(bool isOpen)
+        {
+            DebugUtility.LogVerbose<GameplayStateGate>(
+                $"[OBS][GRS] SimulationGateChangedEvent consumed consumer='{nameof(GameplayStateGate)}' gateOpen='{isOpen.ToString().ToLowerInvariant()}'.",
+                DebugUtility.Colors.Info);
+
+            PublishOperationalStateIfChanged("simulation_gate_changed");
         }
 
         private void SyncMoveDecisionLogIfChanged()
@@ -275,6 +333,48 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 
             _ = _snapshot.EvaluateMoveAllowed(_gateService, _gameLoopService, out var decision, out var resolvedState, out string loopStateName);
             _moveGateDecisionLogger.LogIfChanged(_gateService, _snapshot, decision, resolvedState, loopStateName);
+        }
+
+        private void PublishOperationalStateIfChanged(string reason)
+        {
+            GameplayOperationalStateSnapshot snapshot = BuildOperationalStateSnapshot(reason);
+
+            if (_hasPublishedOperationalStateSnapshot && snapshot == _lastPublishedOperationalStateSnapshot)
+            {
+                return;
+            }
+
+            _lastPublishedOperationalStateSnapshot = snapshot;
+            _hasPublishedOperationalStateSnapshot = true;
+
+            DebugUtility.LogVerbose<GameplayStateGate>(
+                $"[OBS][GRS][OperationalState] GameplayOperationalStateChanged gateOpen='{snapshot.GateOpen.ToString().ToLowerInvariant()}' sceneReady='{snapshot.SceneReady.ToString().ToLowerInvariant()}' actorsOperationalReady='{snapshot.ActorsOperationalReady.ToString().ToLowerInvariant()}' interactionReady='{snapshot.InteractionReady.ToString().ToLowerInvariant()}' gameRunStarted='{snapshot.GameRunStarted.ToString().ToLowerInvariant()}' paused='{snapshot.Paused.ToString().ToLowerInvariant()}' gameLoopState='{snapshot.GameLoopState}' activeTokens='{snapshot.ActiveTokens}' reason='{snapshot.Reason}' consumer='{nameof(GameplayStateGate)}'.",
+                DebugUtility.Colors.Info);
+
+            OperationalStateChanged?.Invoke(snapshot);
+        }
+
+        private GameplayOperationalStateSnapshot BuildOperationalStateSnapshot(string reason)
+        {
+            bool gateOpen = _gateService?.IsOpen ?? false;
+            bool sceneReady = _snapshot.IsSceneGameplayReady;
+            bool actorsOperationalReady = _snapshot.IsActorsOperationalReady;
+            bool interactionReady = _snapshot.IsGameplayInteractionReady;
+            bool gameRunStarted = _snapshot.HasGameRunStarted;
+            string gameLoopState = _gameLoopService?.CurrentStateIdName ?? string.Empty;
+            bool paused = _snapshot.ResolveServiceState(_gateService, _gameLoopService) == StateDependentServiceState.Paused;
+            int activeTokens = _gateService?.ActiveTokenCount ?? 0;
+
+            return new GameplayOperationalStateSnapshot(
+                gateOpen,
+                sceneReady,
+                actorsOperationalReady,
+                interactionReady,
+                gameRunStarted,
+                paused,
+                gameLoopState,
+                activeTokens,
+                reason);
         }
     }
 }

@@ -152,3 +152,10 @@ A Intenção de Navegação não é:
 - esclarecer oficialmente o papel do Catálogo de Navegação;
 - esclarecer a precedência por dimensão, especialmente para BGM e conteúdo/cenas;
 - revisar os ADRs futuros de Navigation/Audio já usando esta definição.
+
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisão viva: a distinção entre intenção, rota e dispatch continua válida.
+- Trechos históricos/superados: qualquer leitura que transforme `Navigation` em owner de resultado de run, post-run ou estado de sessão é superada; termos como `PostRunMenu` ficam como vocabulário histórico quando usados como owner.
+- Leitura normativa atual: `Navigation` resolve intent -> route/style; o fechamento de run e a continuidade ficam em `RunResultStage -> RunDecision -> continuidade`, fora de `Navigation`.
+- ADRs superiores relacionados: `ADR-0049`, `ADR-0051`, `ADR-0052`, `ADR-0055`, `ADR-0057`.

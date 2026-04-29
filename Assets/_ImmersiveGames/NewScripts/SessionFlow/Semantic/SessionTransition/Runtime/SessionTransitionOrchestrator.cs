@@ -21,8 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SessionTransitionOrchestrator
     {
-        private const string GameplaySessionPrepareSource = "GameplaySessionPrepare";
-        private const string RunContinuationSelectionSource = "RunContinuationSelection";
+        private const string SessionTransitionContextSource = "SessionTransitionContext";
 
         private readonly SessionTransitionPlanResolver _planResolver;
         private readonly ISessionTransitionExecutionPort _executionPort;
@@ -38,160 +37,131 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _gameplayPrepareExecutionPort = gameplayPrepareExecutionPort ?? throw new ArgumentNullException(nameof(gameplayPrepareExecutionPort));
         }
 
-        public Task ExecuteAsync(SceneTransitionContext context, CancellationToken ct = default)
+        public async Task ExecuteAsync(SessionTransitionContext context, CancellationToken ct = default)
         {
-            HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                "[FATAL][H1][SessionTransition] ExecuteAsync(SceneTransitionContext) sem origin tipada foi desativado. SceneTransitionContext is InitialEntry-only. Reentry/PostRun/PhaseNavigation must use SessionTransitionContext.");
-            return Task.CompletedTask;
-        }
-
-        public async Task ExecuteAsync(SceneTransitionContext context, SessionTransitionOrigin origin, CancellationToken ct = default)
-        {
-            if (!context.RouteId.IsValid || context.RouteRef == null || context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            if (!context.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    "[FATAL][H1][SessionTransition] SceneTransitionContext invalido recebido pelo orquestrador gameplay prepare.");
-            }
-
-            if (origin != SessionTransitionOrigin.InitialEntry)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] SceneTransitionContext is InitialEntry-only. Reentry/PostRun/PhaseNavigation must use SessionTransitionContext. origin='{origin}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
-            }
-
-            if (!context.IsGameplayInitialEntry)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] SceneTransitionContext InitialEntry rail requer payload GameplayInitialEntry. Reentry/PostRun/PhaseNavigation must use SessionTransitionContext. routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
+                    $"[FATAL][H1][SessionTransition] SessionTransitionContext invalido recebido pelo orquestrador. origin='{context.Origin}' intent='{context.IntentKind}' reason='{Normalize(context.Reason)}'.");
             }
 
             string normalizedReason = Normalize(context.Reason);
-            string signature = SceneTransitionSignature.Compute(context);
-            SessionTransitionPlan plan = _planResolver.Resolve(context, origin);
+            string signature = Normalize(context.ContextSignature);
+            SessionTransitionPlan plan = _planResolver.Resolve(context);
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PlanResolved source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] PlanResolved source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteStarted source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteStarted source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
                 DebugUtility.Colors.Info);
 
             ct.ThrowIfCancellationRequested();
 
-            if (!plan.EmitsPhaseLocalEntryReady)
+            bool usesGameplayPreparePort = plan.Execution.Kind == SessionTransitionExecutionKind.InitialEntry;
+            string dispatchPortName = usesGameplayPreparePort
+                ? nameof(ISessionTransitionGameplayPrepareExecutionPort)
+                : nameof(ISessionTransitionExecutionPort);
+
+            if (!plan.EmitsPhaseLocalEntryReady && usesGameplayPreparePort)
             {
                 DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoContent source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoContent source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' reason='{normalizedReason}' dispatchPort='{dispatchPortName}'.",
                     DebugUtility.Colors.Warning);
                 return;
             }
 
-            SessionTransitionExecutionDispatchResult executionResult = await _gameplayPrepareExecutionPort.ExecuteAsync(context, plan, ct);
+            SessionTransitionExecutionDispatchResult executionResult = usesGameplayPreparePort
+                ? await _gameplayPrepareExecutionPort.ExecuteAsync(plan.Context, plan, ct)
+                : await _executionPort.DispatchAsync(plan, ct);
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecutionDispatchCompleted source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' allowsPhaseLocalEntryReady='{executionResult.AllowsPhaseLocalEntryReady}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] ExecutionDispatchCompleted source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' allowsPhaseLocalEntryReady='{executionResult.AllowsPhaseLocalEntryReady}' dispatchPort='{dispatchPortName}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.",
                 executionResult.AllowsPhaseLocalEntryReady ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
             if (plan.EmitsPhaseLocalEntryReady && !executionResult.AllowsPhaseLocalEntryReady)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] SessionTransitionPlan InitialEntry declara PhaseLocalEntryReady, mas o resultado operacional nao permite publicacao. source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.");
+                    $"[FATAL][H1][SessionTransition] SessionTransitionPlan declara PhaseLocalEntryReady, mas o resultado operacional nao permite publicacao. source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.");
             }
 
             if (!executionResult.WasExecuted)
             {
                 DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoExecution source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' reason='{normalizedReason}'.",
+                    $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoExecution source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
                 return;
             }
 
             if (plan.EmitsPhaseLocalEntryReady)
             {
-                if (!executionResult.TryGetPhaseLocalEntryReadyEvent(out var phaseLocalEntryReadyEvent))
+                bool publishedFromDispatchResult = executionResult.TryGetPhaseLocalEntryReadyEvent(out var phaseLocalEntryReadyEvent);
+                string payloadSource = publishedFromDispatchResult ? "dispatch_result" : "post_dispatch_runtime";
+
+                if (!publishedFromDispatchResult)
                 {
-                    HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                        $"[FATAL][H1][SessionTransition] SessionTransitionGameplayPrepareExecutionPort confirmou PhaseLocalEntryReady sem evento canonico. source='{GameplaySessionPrepareSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' reason='{normalizedReason}'.");
+                    phaseLocalEntryReadyEvent = ResolveCanonicalPhaseLocalEntryReadyEventOrFail(
+                        plan,
+                        dispatchPortName,
+                        normalizedReason);
                 }
 
                 PublishPhaseLocalEntryReadyOrFail(
                     phaseLocalEntryReadyEvent,
-                    GameplaySessionPrepareSource,
-                    normalizedReason);
+                    SessionTransitionContextSource,
+                    dispatchPortName,
+                    payloadSource,
+                    normalizedReason,
+                    publishedFromDispatchResult);
             }
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' intent='{plan.IntentKind}' legacyContinuation='{plan.ResolvedContinuation}' reason='{normalizedReason}'.",
-                DebugUtility.Colors.Success);
-        }
-
-        public async Task ExecuteAsync(SessionTransitionPlan plan, CancellationToken ct = default)
-        {
-            if (!plan.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    "[FATAL][H1][SessionTransition] SessionTransitionPlan invalido recebido pelo orquestrador.");
-            }
-
-            string normalizedReason = Normalize(plan.Reason);
-            bool shouldEmitPhaseLocalEntryReady = plan.EmitsPhaseLocalEntryReady;
-
-            DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteStarted source='{RunContinuationSelectionSource}' origin='{plan.Context.Origin}' continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' phaseLocalEntryReady='{shouldEmitPhaseLocalEntryReady}' reason='{normalizedReason}' nextState='{Normalize(plan.NextState)}'.",
-                DebugUtility.Colors.Info);
-
-            ct.ThrowIfCancellationRequested();
-
-            SessionTransitionExecutionDispatchResult executionResult = await _executionPort.DispatchAsync(plan, ct);
-
-            DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecutionDispatchCompleted source='{RunContinuationSelectionSource}' origin='{plan.Context.Origin}' continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' allowsPhaseLocalEntryReady='{executionResult.AllowsPhaseLocalEntryReady}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.",
-                executionResult.AllowsPhaseLocalEntryReady ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
-
-            if (shouldEmitPhaseLocalEntryReady && !executionResult.AllowsPhaseLocalEntryReady)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] SessionTransitionPlan declara PhaseLocalEntryReady, mas o resultado operacional nao permite publicacao. source='{RunContinuationSelectionSource}' origin='{plan.Context.Origin}' continuation='{plan.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.");
-            }
-
-            if (!executionResult.WasExecuted)
-            {
-                DebugUtility.Log<SessionTransitionOrchestrator>(
-                    $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoExecution source='{RunContinuationSelectionSource}' origin='{plan.Context.Origin}' continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' phaseLocalEntryReady='{shouldEmitPhaseLocalEntryReady}' reason='{normalizedReason}'.",
-                    DebugUtility.Colors.Warning);
-                return;
-            }
-
-            if (shouldEmitPhaseLocalEntryReady)
-            {
-                PublishPhaseLocalEntryReadyOrFail(
-                    BuildPlanPhaseLocalEntryReadyEventOrFail(plan, RunContinuationSelectionSource),
-                    RunContinuationSelectionSource,
-                    normalizedReason);
-            }
-
-            DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted source='{RunContinuationSelectionSource}' origin='{plan.Context.Origin}' continuation='{plan.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' phaseLocalEntryReady='{shouldEmitPhaseLocalEntryReady}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' legacyContinuation='{plan.ResolvedContinuation}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
         }
 
         private static void PublishPhaseLocalEntryReadyOrFail(
             SessionTransitionPhaseLocalEntryReadyEvent phaseLocalEntryReadyEvent,
             string source,
-            string normalizedReason)
+            string dispatchPortName,
+            string payloadSource,
+            string normalizedReason,
+            bool publishedFromDispatchResult)
         {
+            DebugUtility.Log<SessionTransitionOrchestrator>(
+                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyResolved source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='false' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' continuation='{phaseLocalEntryReadyEvent.Plan.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}' canonicalPayload='{phaseLocalEntryReadyEvent.HasCanonicalPayload.ToString().ToLowerInvariant()}' dispatchResultConfirmed='{publishedFromDispatchResult.ToString().ToLowerInvariant()}'.",
+                DebugUtility.Colors.Info);
+
             if (!phaseLocalEntryReadyEvent.HasCanonicalPayload)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] SessionTransitionPhaseLocalEntryReadyEvent construido sem payload canonico. source='{Normalize(source)}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' legacyContinuation='{phaseLocalEntryReadyEvent.Plan.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' reason='{Normalize(normalizedReason)}'.");
+                    $"[FATAL][H1][SessionTransition] SessionTransition confirmed PhaseLocalEntryReady but canonical payload could not be resolved. source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' continuation='{phaseLocalEntryReadyEvent.Plan.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' payloadSource='{Normalize(payloadSource)}' reason='{Normalize(normalizedReason)}'.");
             }
 
             EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Raise(phaseLocalEntryReadyEvent);
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished source='{Normalize(source)}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' legacyContinuation='{phaseLocalEntryReadyEvent.Plan.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='true' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' continuation='{phaseLocalEntryReadyEvent.Plan.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}'.",
                 DebugUtility.Colors.Success);
+        }
+
+        private static SessionTransitionPhaseLocalEntryReadyEvent ResolveCanonicalPhaseLocalEntryReadyEventOrFail(
+            SessionTransitionPlan plan,
+            string dispatchPortName,
+            string normalizedReason)
+        {
+            try
+            {
+                return BuildPlanPhaseLocalEntryReadyEventOrFail(plan, dispatchPortName);
+            }
+            catch (Exception ex)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] SessionTransition confirmed PhaseLocalEntryReady but canonical payload could not be resolved. source='{Normalize(SessionTransitionContextSource)}' dispatchPort='{Normalize(dispatchPortName)}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' continuation='{plan.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' payloadSource='post_dispatch_runtime' reason='{Normalize(normalizedReason)}'.",
+                    ex);
+                throw;
+            }
         }
 
 
@@ -472,27 +442,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class RunContinuationOperationalHandoffService : IRunContinuationOperationalHandoffService
     {
-        private readonly SessionTransitionPlanResolver _planResolver;
         private readonly SessionTransitionOrchestrator _orchestrator;
 
-        public RunContinuationOperationalHandoffService(
-            SessionTransitionPlanResolver planResolver,
-            SessionTransitionOrchestrator orchestrator)
+        public RunContinuationOperationalHandoffService(SessionTransitionOrchestrator orchestrator)
         {
-            _planResolver = planResolver ?? throw new ArgumentNullException(nameof(planResolver));
             _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
         }
 
         public async Task DispatchAsync(_ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts.RunContinuationSelection selection)
         {
             SessionTransitionContext context = new SessionTransitionContext(selection);
-            SessionTransitionPlan plan = _planResolver.Resolve(context);
 
             DebugUtility.Log<RunContinuationOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] handoff_accepted target='SessionTransitionExecution' continuation='{plan.ResolvedContinuation}' reason='{Normalize(plan.Reason)}' nextState='{Normalize(plan.NextState)}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_accepted target='SessionTransitionOrchestrator' origin='{context.Origin}' intent='{context.IntentKind}' continuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}' nextState='{Normalize(context.NextState)}'.",
                 DebugUtility.Colors.Info);
 
-            await _orchestrator.ExecuteAsync(plan);
+            await _orchestrator.ExecuteAsync(context);
         }
 
         private static string Normalize(string value)

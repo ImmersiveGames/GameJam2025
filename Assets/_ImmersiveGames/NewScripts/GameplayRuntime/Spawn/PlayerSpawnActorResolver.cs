@@ -7,26 +7,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
     {
         public static IActor ResolvePlayerActor(GameObject instance)
         {
-            if (instance == null)
-            {
-                return null;
-            }
-
-            // Try PlayerActor
-            if (instance.TryGetComponent(out PlayerActor playerActor))
+            if (instance != null && instance.TryGetComponent(out PlayerActor playerActor))
             {
                 return playerActor;
             }
 
-            // Try any existing IActor
-            if (instance.TryGetComponent(out IActor existingActor) && existingActor != null)
-            {
-                return existingActor;
-            }
-
-            // Fallback: add PlayerActor
-            var fallback = instance.AddComponent<PlayerActor>();
-            return fallback;
+            return null;
         }
     }
 }

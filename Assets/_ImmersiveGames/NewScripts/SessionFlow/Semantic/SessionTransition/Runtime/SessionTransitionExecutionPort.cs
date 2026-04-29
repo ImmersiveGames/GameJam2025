@@ -229,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
                 return SessionTransitionExecutionDispatchResult.PhaseLocalEntryReadyConfirmed(
                     executionKind,
-                    $"NextPhase committed. from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' outcome='{navigationResult.Outcome}' wasWrapped='{navigationResult.WasWrapped}'.");
+                    $"NextPhase committed by canonical advance execution. from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' outcome='{navigationResult.Outcome}' wasWrapped='{navigationResult.WasWrapped}'.");
             }
 
             if (executionKind == SessionTransitionExecutionKind.ExitToMenu)

@@ -186,3 +186,10 @@ Fica fora de escopo neste ciclo:
 - `ADR-0035-Ownership-Canônico-dos-Clusters-de-Módulos-NewScripts.md`
 - `ADR-0038-Modular-DI-Registration-and-Module-Installers.md`
 - `ADR-0040-InputModes-Estado-Canonico-e-Hook-Oficial.md`
+
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisão viva: a camada canônica de `Save` continua válida como contrato de persistência por hooks e contributors explícitos.
+- Trechos históricos/superados: qualquer leitura de `PostRun` como owner do save é histórica; `PostRunMenu` e nomes análogos não definem o contrato atual.
+- Leitura normativa atual: a ordem relevante é `RunResultStage -> RunDecision -> continuidade`, com `Save` observando marcos canônicos e sem absorver ownership de sessão ou navegação.
+- ADRs superiores relacionados: `ADR-0051`, `ADR-0052`, `ADR-0055`, `ADR-0057`.

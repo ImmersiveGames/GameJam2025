@@ -102,3 +102,10 @@ O owner documental do fim de run dentro desse centro e `ADR-0049`; este ADR defi
 1. Tratar o runtime V1 como base consolidada, nao mais como corte em definicao.
 2. Evoluir para o modelo de authoring/configuration da fase.
 3. Revisar `Modules/GameLoop`, `Modules/PostRun` e `Modules/LevelFlow` apenas sob essa leitura ja congelada.
+
+## Adendo - Leitura atual sob Base 1.0
+
+- Decisão viva: `Gameplay Runtime Composition` continua sendo a leitura semântica útil para organizar a sessão jogável.
+- Trechos históricos/superados: `WorldDefinition` como fundação final do jogo, `LevelManager` como eixo separado e a linguagem de swap de conteúdo ficaram superados pela Base 1.0.
+- Leitura normativa atual: o centro semântico atual é lido via `GameplaySessionFlow`, `Session Integration` e `Session Transition`, com `IntroStage` e `RunResultStage` resolvidos nos owners atuais.
+- ADRs superiores relacionados: `ADR-0052`, `ADR-0055`, `ADR-0056`, `ADR-0057`.

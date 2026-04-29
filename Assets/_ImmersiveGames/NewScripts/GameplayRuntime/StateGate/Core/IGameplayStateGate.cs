@@ -6,6 +6,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
     /// </summary>
     public interface IGameplayStateGate : IDisposable
     {
+        event Action<GameplayOperationalStateSnapshot> OperationalStateChanged;
         bool CanExecuteGameplayAction(GameplayAction action);
         bool CanExecuteUiAction(UiAction action);
         bool CanExecuteSystemAction(SystemAction action);

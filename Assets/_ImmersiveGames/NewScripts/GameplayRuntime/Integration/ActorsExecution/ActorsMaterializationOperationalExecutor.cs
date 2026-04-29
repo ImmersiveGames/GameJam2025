@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
@@ -128,10 +129,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     $"[OBS][ActorsExecution][Operational] PhaseLocalEntryReady refresh started actorSetRef='{evt.ActorSetRef}' routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' reason='{evt.Reason}' participationSignature='{AsText(evt.ParticipationSignature)}' cycleSignature='{AsText(evt.CycleSignature)}'.",
                     DebugUtility.Colors.Info);
 
-                _phaseLocalEntryReadyPreserveExistingEnabled = IsAdvancePhaseLocalEntryReady(evt);
-                _phaseLocalEntryReadyContinuation = _phaseLocalEntryReadyPreserveExistingEnabled
-                    ? evt.Plan.ResolvedContinuation.ToString()
-                    : string.Empty;
+                _phaseLocalEntryReadyPreserveExistingEnabled = ShouldPreserveExistingForPhaseLocalEntryReady(evt);
+                _phaseLocalEntryReadyContinuation = ResolvePhaseIntentLabel(evt);
 
                 ActorsDefinitionsSnapshot definitions = RefreshDefinitionsOrFail();
                 ActorsEnsembleSnapshot ensemble = RefreshEnsembleOrFail();
@@ -139,7 +138,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 ActorsMaterializationPlanSnapshot plan = RefreshPlanOrFail();
                 ActorsMaterializationExecutionSnapshot execution = ProjectPreserveExistingForPhaseLocalEntryReady(
                     RefreshExecutionPolicyOrFail(),
-                    evt);
+                    evt,
+                    definitions,
+                    presence,
+                    plan);
 
                 bool hasPlayerDefinition = HasDefinitionForActorSpec(definitions, "actor.player");
                 int playerReadyDirectives = CountPlayerReadyDirectives(execution);
@@ -644,14 +646,33 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private static ActorsMaterializationExecutionSnapshot ProjectPreserveExistingForPhaseLocalEntryReady(
             ActorsMaterializationExecutionSnapshot snapshot,
-            SessionTransitionPhaseLocalEntryReadyEvent evt)
+            SessionTransitionPhaseLocalEntryReadyEvent evt,
+            ActorsDefinitionsSnapshot definitions,
+            ActorsPresenceSnapshot presence,
+            ActorsMaterializationPlanSnapshot plan)
         {
-            if (!IsAdvancePhaseLocalEntryReady(evt))
+            if (!ShouldPreserveExistingForPhaseLocalEntryReady(evt))
             {
                 return snapshot;
             }
 
-            return ProjectPreserveExisting(snapshot, "PhaseLocalEntryReady", evt.Source, evt.Plan.ResolvedContinuation.ToString());
+            if (!definitions.IsValid || !presence.IsValid || !plan.IsValid)
+            {
+                return snapshot;
+            }
+
+            return ProjectPreserveExisting(
+                snapshot,
+                "PhaseLocalEntryReady",
+                evt.Source,
+                ResolvePhaseIntentLabel(evt),
+                evt.Plan.IntentKind.ToString(),
+                evt.Plan.Context.OrdinalNavigationKind.ToString(),
+                evt.ActorSetRef,
+                definitions,
+                presence,
+                plan,
+                requireCompatibility: true);
         }
 
         private ActorsMaterializationExecutionSnapshot ProjectPreserveExistingForDispatch(
@@ -665,14 +686,32 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 return snapshot;
             }
 
-            return ProjectPreserveExisting(snapshot, "Dispatch", sourceId, _phaseLocalEntryReadyContinuation);
+            return ProjectPreserveExisting(
+                snapshot,
+                "Dispatch",
+                sourceId,
+                _phaseLocalEntryReadyContinuation,
+                _phaseLocalEntryReadyContinuation,
+                _phaseLocalEntryReadyContinuation,
+                string.Empty,
+                ActorsDefinitionsSnapshot.Empty,
+                ActorsPresenceSnapshot.Empty,
+                ActorsMaterializationPlanSnapshot.Empty,
+                requireCompatibility: false);
         }
 
         private static ActorsMaterializationExecutionSnapshot ProjectPreserveExisting(
             ActorsMaterializationExecutionSnapshot snapshot,
             string stage,
             string sourceId,
-            string continuation)
+            string phaseIntent,
+            string intent,
+            string ordinalNavigationKind,
+            string actorSetRef,
+            ActorsDefinitionsSnapshot definitions,
+            ActorsPresenceSnapshot presence,
+            ActorsMaterializationPlanSnapshot plan,
+            bool requireCompatibility)
         {
             if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
             {
@@ -686,26 +725,27 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             for (int index = 0; index < snapshot.Entries.Length; index += 1)
             {
                 ActorsMaterializationExecutionEntry entry = snapshot.Entries[index];
-                if (entry.IsValid &&
-                    entry.Directive == ActorMaterializationExecutionDirective.NoActionStable &&
-                    entry.RuntimeActorId.IsValid)
+                if (TryPromoteExistingActorEntry(
+                        entry,
+                        sourceId,
+                        phaseIntent,
+                        intent,
+                        ordinalNavigationKind,
+                        actorSetRef,
+                        definitions,
+                        presence,
+                        plan,
+                        requireCompatibility,
+                        out ActorsMaterializationExecutionEntry preservedEntry,
+                        out string preserveReason))
                 {
-                    entries[index] = new ActorsMaterializationExecutionEntry(
-                        entry.SpecKind,
-                        entry.AxisActorId,
-                        entry.RuntimeActorId,
-                        entry.Role,
-                        entry.OperationalRecipeKind,
-                        entry.Intent,
-                        entry.Classification,
-                        ActorMaterializationExecutionDirective.PreserveExisting,
-                        entry.SemanticParticipantId,
-                        entry.ActorSpecId,
-                        entry.ActorSetRef,
-                        BuildPreserveExistingReason(entry, sourceId));
-
+                    entries[index] = preservedEntry;
                     preserveCount += 1;
                     changed = true;
+
+                    DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
+                        $"[OBS][ActorsExecution][Operational] preserve_existing_detected actorSpecId='{AsText(preservedEntry.ActorSpecId)}' actorSetRef='{AsText(preservedEntry.ActorSetRef)}' source='{AsText(sourceId)}' phaseIntent='{AsText(phaseIntent)}' intent='{AsText(intent)}' ordinalNavigationKind='{AsText(ordinalNavigationKind)}' directive='PreserveExisting' reason='{AsText(preserveReason)}' actorKind='{MapRecipeToActorKind(preservedEntry.OperationalRecipeKind)}' axisActorId='{preservedEntry.AxisActorId}' runtimeActorId='{preservedEntry.RuntimeActorId}' semanticParticipantId='{AsText(preservedEntry.SemanticParticipantId)}' executionSignature='{AsText(snapshot.ExecutionSignature)}'.",
+                        DebugUtility.Colors.Info);
                     continue;
                 }
 
@@ -718,7 +758,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
 
             DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                $"[OBS][ActorsExecution][Operational] preserve_existing_detected stage='{AsText(stage)}' sourceId='{AsText(sourceId)}' continuation='{AsText(continuation)}' preserveExisting='{preserveCount}' readyDirectiveCount='{CountReadyDirectives(entries)}' preservedActorKinds={FormatActorKinds(BuildActorKindsForDirective(entries, ActorMaterializationExecutionDirective.PreserveExisting))} readyActorKinds={FormatActorKinds(BuildReadyActorKinds(entries))} executionSignature='{snapshot.ExecutionSignature}'.",
+                $"[OBS][ActorsExecution][Operational] preserve_existing_detected stage='{AsText(stage)}' sourceId='{AsText(sourceId)}' phaseIntent='{AsText(phaseIntent)}' intent='{AsText(intent)}' ordinalNavigationKind='{AsText(ordinalNavigationKind)}' actorSetRef='{AsText(actorSetRef)}' preserveExisting='{preserveCount}' readyDirectiveCount='{CountReadyDirectives(entries)}' preservedActorKinds={FormatActorKinds(BuildActorKindsForDirective(entries, ActorMaterializationExecutionDirective.PreserveExisting))} readyActorKinds={FormatActorKinds(BuildReadyActorKinds(entries))} executionSignature='{snapshot.ExecutionSignature}'.",
                 DebugUtility.Colors.Info);
 
             return new ActorsMaterializationExecutionSnapshot(
@@ -735,17 +775,160 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 snapshot.Reason);
         }
 
-        private static string BuildPreserveExistingReason(ActorsMaterializationExecutionEntry entry, string sourceId)
-        {
-            return $"directive='{ActorMaterializationExecutionDirective.PreserveExisting}' classification='{entry.Classification}' intent='{entry.Intent}' source='{AsText(sourceId)}' previousReason='{AsText(entry.Reason)}'";
-        }
-
-        private static bool IsAdvancePhaseLocalEntryReady(SessionTransitionPhaseLocalEntryReadyEvent evt)
+        private static bool ShouldPreserveExistingForPhaseLocalEntryReady(SessionTransitionPhaseLocalEntryReadyEvent evt)
         {
             return evt.IsValid &&
                    evt.IsPhaseLocalEntry &&
                    evt.Plan.IsValid &&
-                   evt.Plan.ResolvedContinuation == RunContinuationKind.AdvancePhase;
+                   evt.RouteKind == SceneRouteKind.Gameplay &&
+                   !string.IsNullOrWhiteSpace(evt.ActorSetRef) &&
+                   (evt.Plan.ResolvedContinuation == RunContinuationKind.AdvancePhase ||
+                    (evt.Plan.IntentKind == SessionTransitionIntentKind.PhaseOrdinalNavigation &&
+                     string.Equals(evt.Source, PhaseFlowSignalVocabulary.SessionTransitionPhaseOrdinalNavigationSource, StringComparison.Ordinal)));
+        }
+
+        private static string ResolvePhaseIntentLabel(SessionTransitionPhaseLocalEntryReadyEvent evt)
+        {
+            if (!evt.IsValid || !evt.Plan.IsValid)
+            {
+                return string.Empty;
+            }
+
+            return evt.Plan.IntentKind == SessionTransitionIntentKind.PhaseOrdinalNavigation
+                ? evt.Plan.IntentKind.ToString()
+                : evt.Plan.ResolvedContinuation.ToString();
+        }
+
+        private static bool TryPromoteExistingActorEntry(
+            ActorsMaterializationExecutionEntry entry,
+            string sourceId,
+            string phaseIntent,
+            string intent,
+            string ordinalNavigationKind,
+            string actorSetRef,
+            ActorsDefinitionsSnapshot definitions,
+            ActorsPresenceSnapshot presence,
+            ActorsMaterializationPlanSnapshot plan,
+            bool requireCompatibility,
+            out ActorsMaterializationExecutionEntry preservedEntry,
+            out string reason)
+        {
+            preservedEntry = entry;
+            reason = string.Empty;
+
+            if (!entry.IsValid ||
+                entry.Directive != ActorMaterializationExecutionDirective.NoActionStable ||
+                !entry.RuntimeActorId.IsValid)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(actorSetRef) &&
+                !string.Equals(entry.ActorSetRef, actorSetRef, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (requireCompatibility && !IsExistingActorCompatible(definitions, presence, plan, entry))
+            {
+                return false;
+            }
+
+            preservedEntry = new ActorsMaterializationExecutionEntry(
+                entry.SpecKind,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Role,
+                entry.OperationalRecipeKind,
+                entry.Intent,
+                entry.Classification,
+                ActorMaterializationExecutionDirective.PreserveExisting,
+                entry.SemanticParticipantId,
+                entry.ActorSpecId,
+                entry.ActorSetRef,
+                BuildPreserveExistingReason(entry, sourceId, phaseIntent, intent, ordinalNavigationKind));
+
+            reason = string.Equals(intent, SessionTransitionIntentKind.PhaseOrdinalNavigation.ToString(), StringComparison.Ordinal)
+                ? "existing_actor_valid_for_phase_ordinal_navigation"
+                : "existing_actor_valid_for_advance_phase";
+            return true;
+        }
+
+        private static bool IsExistingActorCompatible(
+            ActorsDefinitionsSnapshot definitions,
+            ActorsPresenceSnapshot presence,
+            ActorsMaterializationPlanSnapshot plan,
+            ActorsMaterializationExecutionEntry entry)
+        {
+            if (!definitions.IsValid || !presence.IsValid || !plan.IsValid)
+            {
+                return false;
+            }
+
+            bool hasCompatibleDefinition = false;
+            for (int index = 0; index < definitions.Entries.Length; index += 1)
+            {
+                ActorDefinitionRecord definition = definitions.Entries[index];
+                if (!definition.IsValid ||
+                    definition.AxisActorId != entry.AxisActorId ||
+                    !string.Equals(definition.ActorSpecId, entry.ActorSpecId, StringComparison.Ordinal) ||
+                    !string.Equals(definition.ActorSetRef, entry.ActorSetRef, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                hasCompatibleDefinition = true;
+                break;
+            }
+
+            if (!hasCompatibleDefinition)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < presence.Entries.Length; index += 1)
+            {
+                ActorsPresenceRecord presenceRecord = presence.Entries[index];
+                if (!presenceRecord.IsValid ||
+                    presenceRecord.AxisActorId != entry.AxisActorId ||
+                    !presenceRecord.IsMaterialized ||
+                    presenceRecord.IsInconsistent ||
+                    !presenceRecord.RuntimeActorId.IsValid ||
+                    presenceRecord.RuntimeActorId != entry.RuntimeActorId)
+                {
+                    continue;
+                }
+
+                for (int planIndex = 0; planIndex < plan.Entries.Length; planIndex += 1)
+                {
+                    ActorsMaterializationSpecEntry planEntry = plan.Entries[planIndex];
+                    if (!planEntry.IsValid ||
+                        planEntry.AxisActorId != entry.AxisActorId ||
+                        !string.Equals(planEntry.ActorSpecId, entry.ActorSpecId, StringComparison.Ordinal) ||
+                        !string.Equals(planEntry.ActorSetRef, entry.ActorSetRef, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string BuildPreserveExistingReason(
+            ActorsMaterializationExecutionEntry entry,
+            string sourceId,
+            string phaseIntent,
+            string intent,
+            string ordinalNavigationKind)
+        {
+            string reason = string.Equals(intent, SessionTransitionIntentKind.PhaseOrdinalNavigation.ToString(), StringComparison.Ordinal)
+                ? "existing_actor_valid_for_phase_ordinal_navigation"
+                : "existing_actor_valid_for_advance_phase";
+
+            return $"directive='{ActorMaterializationExecutionDirective.PreserveExisting}' reason='{reason}' source='{AsText(sourceId)}' phaseIntent='{AsText(phaseIntent)}' intent='{AsText(intent)}' ordinalNavigationKind='{AsText(ordinalNavigationKind)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' previousReason='{AsText(entry.Reason)}'";
         }
 
         private static int CountReadyDirectives(ActorsMaterializationExecutionEntry[] entries)
@@ -966,7 +1149,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 "GameplayRuntime/ActorsMaterializationOperationalExecutor/PreserveExisting");
 
             DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                $"[OBS][ActorsExecution][Operational] preserve_existing_detected actorKind='{actorKind}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}' continuation='AdvancePhase' executionSignature='{AsText(executionSignature)}'.",
+                $"[OBS][ActorsExecution][Operational] preserve_existing_detected actorKind='{actorKind}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}' phaseIntent='{AsText(_phaseLocalEntryReadyContinuation)}' executionSignature='{AsText(executionSignature)}'.",
                 DebugUtility.Colors.Info);
 
             _cycleContext.RecordCompletedActor(completedEvent);

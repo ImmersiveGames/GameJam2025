@@ -7,6 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         NextPhase = 1,
         StayOnCurrentPhase = 2,
         RestartFromFirstPhase = 3,
+        OrdinalNavigation = 4,
     }
 
     public enum SessionTransitionResetAction

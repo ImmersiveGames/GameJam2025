@@ -1,6 +1,9 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
@@ -29,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         ExitToMenu = 4,
         TerminateRun = 5,
         RestartFromFirstPhase = 6,
+        PhaseOrdinalNavigation = 7,
     }
 
     public readonly struct SessionTransitionContext
@@ -38,6 +42,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private readonly string _profile;
         private readonly string _reason;
         private readonly string _nextState;
+        private readonly SceneRouteId _routeId;
+        private readonly SceneRouteKind _routeKind;
+        private readonly SceneRouteDefinitionAsset _routeRef;
+        private readonly PhaseOrdinalNavigationKind _ordinalNavigationKind;
+        private readonly string _ordinalNavigationTargetPhaseId;
 
         public SessionTransitionContext(RunContinuationSelection resolvedSelection)
             : this(resolvedSelection, SessionTransitionOrigin.PostRunContinuation)
@@ -56,6 +65,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _profile = string.Empty;
             _reason = string.Empty;
             _nextState = string.Empty;
+            _routeId = default;
+            _routeKind = SceneRouteKind.Unspecified;
+            _routeRef = null;
+            _ordinalNavigationKind = PhaseOrdinalNavigationKind.Unknown;
+            _ordinalNavigationTargetPhaseId = string.Empty;
         }
 
         private SessionTransitionContext(
@@ -66,6 +80,35 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             string profile,
             string reason,
             string nextState)
+            : this(
+                origin,
+                intentKind,
+                contextSignature,
+                sceneName,
+                profile,
+                reason,
+                nextState,
+                default,
+                SceneRouteKind.Unspecified,
+                null,
+                PhaseOrdinalNavigationKind.Unknown,
+                string.Empty)
+        {
+        }
+
+        private SessionTransitionContext(
+            SessionTransitionOrigin origin,
+            SessionTransitionIntentKind intentKind,
+            string contextSignature,
+            string sceneName,
+            string profile,
+            string reason,
+            string nextState,
+            SceneRouteId routeId,
+            SceneRouteKind routeKind,
+            SceneRouteDefinitionAsset routeRef,
+            PhaseOrdinalNavigationKind ordinalNavigationKind,
+            string ordinalNavigationTargetPhaseId)
         {
             ResolvedSelection = default;
             Origin = origin;
@@ -75,13 +118,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _profile = Normalize(profile);
             _reason = Normalize(reason);
             _nextState = Normalize(nextState);
+            _routeId = routeId;
+            _routeKind = routeKind;
+            _routeRef = routeRef;
+            _ordinalNavigationKind = ordinalNavigationKind;
+            _ordinalNavigationTargetPhaseId = Normalize(ordinalNavigationTargetPhaseId);
         }
 
         public RunContinuationSelection ResolvedSelection { get; }
         public SessionTransitionOrigin Origin { get; }
         public SessionTransitionIntentKind IntentKind { get; }
         public bool HasRunContinuationSelection =>
-            (Origin == SessionTransitionOrigin.PostRunContinuation || Origin == SessionTransitionOrigin.PhaseNavigation) &&
+            Origin == SessionTransitionOrigin.PostRunContinuation &&
             ResolvedSelection.IsValid;
 
         public RunContinuationContext ContinuationContext
@@ -126,6 +174,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         public string NextState => HasRunContinuationSelection
             ? ResolvedSelection.NextState
             : _nextState;
+        public SceneRouteId RouteId => _routeId;
+        public SceneRouteKind RouteKind => _routeKind;
+        public SceneRouteDefinitionAsset RouteRef => _routeRef;
+        public bool IsGameplayInitialEntry => Origin == SessionTransitionOrigin.InitialEntry && IntentKind == SessionTransitionIntentKind.InitialEntry;
+        public bool IsGameplayReentry => Origin == SessionTransitionOrigin.PhaseNavigation && IntentKind == SessionTransitionIntentKind.PhaseOrdinalNavigation;
 
         public bool IsValid
         {
@@ -141,12 +194,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     return IntentKind == SessionTransitionIntentKind.InitialEntry &&
                            !ResolvedSelection.IsValid &&
                            !string.IsNullOrWhiteSpace(ContextSignature) &&
-                           !string.IsNullOrWhiteSpace(SceneName);
+                           !string.IsNullOrWhiteSpace(SceneName) &&
+                           RouteId.IsValid &&
+                           RouteRef != null &&
+                           RouteKind == SceneRouteKind.Gameplay;
+                }
+
+                if (Origin == SessionTransitionOrigin.PhaseNavigation)
+                {
+                    return IntentKind == SessionTransitionIntentKind.PhaseOrdinalNavigation &&
+                           !ResolvedSelection.IsValid &&
+                           !string.IsNullOrWhiteSpace(ContextSignature) &&
+                           !string.IsNullOrWhiteSpace(SceneName) &&
+                           OrdinalNavigationKind != PhaseOrdinalNavigationKind.Unknown;
                 }
 
                 return HasRunContinuationSelection;
             }
         }
+
+        public PhaseOrdinalNavigationKind OrdinalNavigationKind => _ordinalNavigationKind;
+        public string OrdinalNavigationTargetPhaseId => _ordinalNavigationTargetPhaseId;
 
         public static SessionTransitionContext CreateInitialEntry(
             string contextSignature,
@@ -174,7 +242,117 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 sceneName,
                 profile,
                 reason,
-                string.IsNullOrWhiteSpace(nextState) ? sceneName : nextState);
+                string.IsNullOrWhiteSpace(nextState) ? sceneName : nextState,
+                default,
+                SceneRouteKind.Unspecified,
+                null,
+                PhaseOrdinalNavigationKind.Unknown,
+                string.Empty);
+        }
+
+        public static SessionTransitionContext CreateInitialEntry(SceneTransitionContext context)
+        {
+            if (!context.RouteId.IsValid || context.RouteRef == null || context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionContext),
+                    $"[FATAL][H1][SessionTransition] InitialEntry adapter recebeu SceneTransitionContext invalido. routeId='{context.RouteId}' routeKind='{context.RouteKind}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
+            }
+
+            if (!context.IsGameplayInitialEntry)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionContext),
+                    $"[FATAL][H1][SessionTransition] InitialEntry adapter requer payload GameplayInitialEntry. routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' reason='{Normalize(context.Reason)}'.");
+            }
+
+            string contextSignature = Normalize(context.ContextSignature);
+            if (string.IsNullOrWhiteSpace(contextSignature))
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionContext),
+                    $"[FATAL][H1][SessionTransition] InitialEntry adapter recebeu contextSignature vazio. routeId='{context.RouteId}' reason='{Normalize(context.Reason)}'.");
+            }
+
+            string sceneName = Normalize(context.TargetActiveScene);
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                sceneName = Normalize(context.RouteId.Value);
+            }
+
+            return CreateInitialEntry(
+                contextSignature,
+                sceneName,
+                context.TransitionProfileName,
+                context.Reason,
+                sceneName,
+                context.RouteId,
+                context.RouteKind,
+                context.RouteRef);
+        }
+
+        private static SessionTransitionContext CreateInitialEntry(
+            string contextSignature,
+            string sceneName,
+            string profile,
+            string reason,
+            string nextState,
+            SceneRouteId routeId,
+            SceneRouteKind routeKind,
+            SceneRouteDefinitionAsset routeRef)
+        {
+            return new SessionTransitionContext(
+                SessionTransitionOrigin.InitialEntry,
+                SessionTransitionIntentKind.InitialEntry,
+                contextSignature,
+                sceneName,
+                profile,
+                reason,
+                nextState,
+                routeId,
+                routeKind,
+                routeRef,
+                PhaseOrdinalNavigationKind.Unknown,
+                string.Empty);
+        }
+
+        public static SessionTransitionContext CreatePhaseOrdinalNavigation(
+            string contextSignature,
+            string sceneName,
+            string profile,
+            string reason,
+            string nextState,
+            PhaseOrdinalNavigationKind ordinalNavigationKind,
+            string targetPhaseId)
+        {
+            if (string.IsNullOrWhiteSpace(contextSignature))
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionContext),
+                    "[FATAL][H1][SessionTransition] PhaseOrdinalNavigation sem contextSignature tipada.");
+            }
+
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionContext),
+                    "[FATAL][H1][SessionTransition] PhaseOrdinalNavigation sem sceneName tipada.");
+            }
+
+            if (ordinalNavigationKind == PhaseOrdinalNavigationKind.Unknown)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionContext),
+                    "[FATAL][H1][SessionTransition] PhaseOrdinalNavigation sem kind ordinal tipado.");
+            }
+
+            return new SessionTransitionContext(
+                SessionTransitionOrigin.PhaseNavigation,
+                SessionTransitionIntentKind.PhaseOrdinalNavigation,
+                contextSignature,
+                sceneName,
+                profile,
+                reason,
+                string.IsNullOrWhiteSpace(nextState) ? sceneName : nextState,
+                default,
+                SceneRouteKind.Unspecified,
+                null,
+                ordinalNavigationKind,
+                targetPhaseId);
         }
 
         public static SessionTransitionIntentKind MapContinuationKind(RunContinuationKind continuationKind)
@@ -192,7 +370,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
         public override string ToString()
         {
-            return $"Origin='{Origin}', Intent='{IntentKind}', LegacyContinuation='{ResolvedContinuation}', Reason='{Reason}', NextState='{NextState}'";
+            return $"Origin='{Origin}', Intent='{IntentKind}', LegacyContinuation='{ResolvedContinuation}', OrdinalNavigation='{OrdinalNavigationKind}', OrdinalTarget='{OrdinalNavigationTargetPhaseId}', Reason='{Reason}', NextState='{NextState}'";
         }
 
         private static string Normalize(string value)

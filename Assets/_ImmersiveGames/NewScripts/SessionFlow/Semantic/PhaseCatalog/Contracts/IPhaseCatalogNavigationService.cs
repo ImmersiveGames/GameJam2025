@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts
         PhaseCatalogNavigationPlan AdvancePhase(string reason = null);
         PhaseCatalogNavigationPlan ResolvePrevious(string reason = null);
         PhaseCatalogNavigationPlan ResolveSpecificPhase(string phaseId, string reason = null);
+        PhaseCatalogNavigationPlan ResolveFirstPhase(string reason = null);
         PhaseCatalogNavigationPlan RestartCatalog(string reason = null);
         void Commit(PhaseCatalogNavigationPlan navigationPlan);
         void ClearPendingTarget(string reason = null);

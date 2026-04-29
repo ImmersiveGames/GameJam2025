@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
+
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -16,21 +17,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 return;
             }
 
-            // Acceitar both InitialEntry e Reentry para materializar actors.
-            // Comentário: os dois caminhos precisam de SessionTransitionPhaseLocalEntryReadyEvent.
-            SessionTransitionOrigin origin;
-            if (context.IsGameplayInitialEntry)
-            {
-                origin = SessionTransitionOrigin.InitialEntry;
-            }
-            else if (context.IsGameplayReentry)
-            {
-                origin = SessionTransitionOrigin.PhaseNavigation;
-            }
-            else
+            if (!context.IsGameplayInitialEntry)
             {
                 HardFailFastH1.Trigger(typeof(GameplaySessionFlowPrepareOperationalHandoffService),
-                    $"[FATAL][H1][GameplaySessionFlow] Handoff requires typed GameplayInitialEntry or GameplayReentry. routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+                    $"[FATAL][H1][GameplaySessionFlow] GameplaySessionFlow prepare handoff is InitialEntry-only. Reentry/PostRun/PhaseNavigation must use SessionTransitionContext. routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
                 return;
             }
 
@@ -44,19 +34,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 ? "SceneFlow/GameplaySessionPrepare"
                 : context.Reason.Trim();
             string signature = SceneTransitionSignature.Compute(context);
+            SessionTransitionContext sessionTransitionContext = SessionTransitionContext.CreateInitialEntry(context);
 
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] handoff_received rail='GameplaySessionPrepare' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' origin='{origin}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_received source='SceneTransitionContext' target='SessionTransitionContext' origin='{sessionTransitionContext.Origin}' intent='{sessionTransitionContext.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] handoff_delegated target='SessionTransitionOrchestrator' origin='{origin}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_delegated target='SessionTransitionOrchestrator' source='SceneTransitionContext' convertedTo='SessionTransitionContext' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            await orchestrator.ExecuteAsync(context, origin);
+            await orchestrator.ExecuteAsync(sessionTransitionContext);
 
             DebugUtility.Log<GameplaySessionFlowPrepareOperationalHandoffService>(
-                $"[OBS][GameplaySessionFlow][Operational] handoff_accepted target='SessionTransitionOrchestrator' origin='{origin}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][Operational] handoff_accepted target='SessionTransitionOrchestrator' source='SessionTransitionContext' origin='{sessionTransitionContext.Origin}' intent='{sessionTransitionContext.IntentKind}' routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{signature}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
         }
 

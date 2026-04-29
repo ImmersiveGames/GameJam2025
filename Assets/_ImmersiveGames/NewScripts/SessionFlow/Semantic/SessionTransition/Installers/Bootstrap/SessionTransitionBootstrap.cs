@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRunti
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Installers.Bootstrap
@@ -76,6 +77,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     DebugUtility.Colors.Info);
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseOrdinalNavigationRequestService>(out var existingOrdinalNavigationRequestService) || existingOrdinalNavigationRequestService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IPhaseOrdinalNavigationRequestService>(
+                    new PhaseOrdinalNavigationRequestService(
+                        ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<ISceneFlowRouteActorSetRefContext>("ISceneFlowRouteActorSetRefContext missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<IGameplayParticipationFlowService>("IGameplayParticipationFlowService missing from global DI before phase ordinal navigation request service composition.")));
+                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                    "[OBS][QA][PhaseNavigation] IPhaseOrdinalNavigationRequestService registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var existingOrchestrator) || existingOrchestrator == null)
             {
                 ISessionTransitionExecutionPort executionPort = ResolveGlobalOrFail<ISessionTransitionExecutionPort>(
@@ -96,13 +113,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
 
             if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOperationalHandoffService>(out var existingHandoff) || existingHandoff == null)
             {
-                SessionTransitionPlanResolver resolver = ResolveGlobalOrFail<SessionTransitionPlanResolver>(
-                    "SessionTransitionPlanResolver missing from global DI before run continuation handoff composition.");
                 SessionTransitionOrchestrator orchestrator = ResolveGlobalOrFail<SessionTransitionOrchestrator>(
                     "SessionTransitionOrchestrator missing from global DI before run continuation handoff composition.");
 
                 DependencyManager.Provider.RegisterGlobal<IRunContinuationOperationalHandoffService>(
-                    new RunContinuationOperationalHandoffService(resolver, orchestrator));
+                    new RunContinuationOperationalHandoffService(orchestrator));
 
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] IRunContinuationOperationalHandoffService registered in global DI.",

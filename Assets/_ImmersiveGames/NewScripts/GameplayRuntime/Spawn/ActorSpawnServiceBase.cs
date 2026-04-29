@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
@@ -19,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         protected readonly IUniqueIdFactory uniqueIdFactory;
         private readonly IActorRegistry _actorRegistry;
         private readonly IWorldSpawnContext _context;
+        private readonly ActorSpecRecord _actorSpec;
         private readonly GameObject _prefab;
 
         private IActor _spawnedActor;
@@ -28,11 +30,19 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
+            ActorSpecRecord actorSpec,
             GameObject prefab)
         {
+            if (!actorSpec.IsValid)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    "[FATAL][Config][Spawn] ActorSpec invalido recebido pelo servico de spawn.");
+            }
+
             this.uniqueIdFactory = uniqueIdFactory;
             _actorRegistry = actorRegistry;
             _context = context;
+            _actorSpec = actorSpec;
             _prefab = prefab;
         }
 
@@ -51,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public Task SpawnAsync(ActorSpawnRequest request)
         {
             DebugUtility.LogVerbose(GetType(),
-                $"SpawnAsync iniciado request='{request}' scene={_context?.SceneName ?? "<unknown>"}.");
+                $"SpawnAsync iniciado actorSpecId='{AsText(_actorSpec.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}' request='{request}' scene={_context?.SceneName ?? "<unknown>"}.");
 
             if (uniqueIdFactory == null || _actorRegistry == null)
             {
@@ -70,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (_prefab == null)
             {
                 DebugUtility.LogError(GetType(),
-                    "Prefab nao configurado para servico de spawn.");
+                    $"Prefab canonico nao configurado para servico de spawn actorSpecId='{AsText(_actorSpec.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
                 return Task.CompletedTask;
             }
 
@@ -81,6 +91,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             }
 
             ValidateCanonicalRequestOrFail(request);
+
+            if (!ReferenceEquals(_prefab, _actorSpec.PlaceholderBodyPrefab))
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] Prefab canonico divergente do ActorSpec. actorSpecId='{AsText(_actorSpec.ActorSpecId)}' requestedActorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
+            }
 
             var instance = Object.Instantiate(_prefab, _context.WorldRoot);
 
@@ -327,25 +343,43 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             if (!request.IsValid)
             {
                 HardFailFastH1.Trigger(GetType(),
-                    "[FATAL][H1][Spawn] ActorSpawnRequest invalido recebido pelo servico de spawn.");
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest invalido recebido pelo servico de spawn. actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
             }
 
             if (request.ActorKind != SpawnedActorKind)
             {
                 HardFailFastH1.Trigger(GetType(),
-                    $"[FATAL][H1][Spawn] ActorSpawnRequest com actorKind divergente recebido pelo servico de spawn. requestActorKind='{request.ActorKind}' serviceActorKind='{SpawnedActorKind}' request='{request}'.");
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest com actorKind divergente recebido pelo servico de spawn. requestActorKind='{request.ActorKind}' serviceActorKind='{SpawnedActorKind}' actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
             }
 
             if (!request.HasAxisActorId || !request.HasActorSpecId || !request.HasActorSetRef)
             {
                 HardFailFastH1.Trigger(GetType(),
-                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico incompleto; axisActorId='{request.AxisActorId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' actorKind='{request.ActorKind}'.");
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico incompleto; axisActorId='{request.AxisActorId}' actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}' actorKind='{request.ActorKind}'.");
+            }
+
+            if (request.OperationalRecipeKind == ActorOperationalRecipeKind.Unknown)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest sem recipe operacional canonica. actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' source='{AsText(request.Source)}'.");
+            }
+
+            if (!string.Equals(request.ActorSpecId, _actorSpec.ActorSpecId, StringComparison.Ordinal))
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest com actorSpecId divergente do ActorSpec canonico. requestActorSpecId='{AsText(request.ActorSpecId)}' canonicalActorSpecId='{AsText(_actorSpec.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
+            }
+
+            if (request.OperationalRecipeKind != _actorSpec.OperationalRecipeKind)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest com recipe divergente do ActorSpec canonico. requestRecipe='{request.OperationalRecipeKind}' canonicalRecipe='{_actorSpec.OperationalRecipeKind}' actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' source='{AsText(request.Source)}'.");
             }
 
             if (SpawnedActorKind == ActorKind.Player && !request.HasSemanticParticipantId)
             {
                 HardFailFastH1.Trigger(GetType(),
-                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico de Player sem SemanticParticipantId. axisActorId='{request.AxisActorId}' actorSpecId='{request.ActorSpecId}' actorSetRef='{request.ActorSetRef}' source='{request.Source}'.");
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico de Player sem SemanticParticipantId. axisActorId='{request.AxisActorId}' actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
             }
         }
 
