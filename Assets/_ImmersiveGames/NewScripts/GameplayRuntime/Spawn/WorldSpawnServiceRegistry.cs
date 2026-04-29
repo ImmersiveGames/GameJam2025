@@ -4,7 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
 
-    public sealed class WorldSpawnServiceRegistry : IWorldSpawnServiceRegistry, IDisposable
+    public sealed class WorldSpawnServiceRegistry : IWorldSpawnServiceRegistry, IWorldSpawnServiceRegistryReadPort, IDisposable
     {
         private readonly List<IWorldSpawnService> _services = new();
 
@@ -44,6 +44,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public void Clear()
         {
             _services.Clear();
+        }
+
+        public bool TryGetCurrent(out IWorldSpawnServiceRegistry registry)
+        {
+            registry = this;
+            return true;
         }
 
         public void Dispose()

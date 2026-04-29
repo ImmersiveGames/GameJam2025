@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
@@ -36,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private readonly ISceneFlowRouteActorSetRefContext _routeActorSetContext;
         private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
         private readonly IGameplayParticipationFlowService _participationFlowService;
+        private readonly IWorldSpawnServiceRegistryReadPortProvider _spawnRegistryReadPortProvider;
 
         public SessionTransitionGameplayPrepareExecutionPort(
             IPhaseDefinitionSelectionService phaseSelectionService,
@@ -43,7 +43,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             ISceneCompositionExecutor sceneCompositionExecutor,
             ISceneFlowRouteActorSetRefContext routeActorSetContext,
             IGameplayPhaseRuntimeService phaseRuntimeService,
-            IGameplayParticipationFlowService participationFlowService)
+            IGameplayParticipationFlowService participationFlowService,
+            IWorldSpawnServiceRegistryReadPortProvider spawnRegistryReadPortProvider)
         {
             _phaseSelectionService = phaseSelectionService ?? throw new ArgumentNullException(nameof(phaseSelectionService));
             _gameplayPhaseFlowService = gameplayPhaseFlowService ?? throw new ArgumentNullException(nameof(gameplayPhaseFlowService));
@@ -51,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _routeActorSetContext = routeActorSetContext ?? throw new ArgumentNullException(nameof(routeActorSetContext));
             _phaseRuntimeService = phaseRuntimeService ?? throw new ArgumentNullException(nameof(phaseRuntimeService));
             _participationFlowService = participationFlowService ?? throw new ArgumentNullException(nameof(participationFlowService));
+            _spawnRegistryReadPortProvider = spawnRegistryReadPortProvider ?? throw new ArgumentNullException(nameof(spawnRegistryReadPortProvider));
         }
 
         public async Task<SessionTransitionExecutionDispatchResult> ExecuteAsync(
@@ -137,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             string source)
         {
             string sceneName = ResolveSceneNameOrFail(context);
-            EnsureSpawnRegistryReadyOrFail(sceneName, source);
+            EnsureSpawnRegistryReadyOrFail(source);
             PhaseLocalEntryReadyRuntimePayload payload = ResolvePhaseLocalEntryReadyRuntimePayloadOrFail(source);
 
             if (payload.ActorSetRouteKind != SceneRouteKind.Gameplay || payload.ActorSetRouteKind != context.RouteRef.RouteKind)
@@ -236,24 +238,30 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 participationSnapshot);
         }
 
-        private static void EnsureSpawnRegistryReadyOrFail(string sceneName, string source)
+        private void EnsureSpawnRegistryReadyOrFail(string source)
         {
-            if (DependencyManager.Provider == null)
+            if (_spawnRegistryReadPortProvider == null)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    $"[FATAL][H1][SessionTransition] DependencyManager.Provider indisponivel ao validar spawn registry no gameplay prepare execution port. source='{Normalize(source)}'.");
+                    $"[FATAL][H1][SessionTransition] IWorldSpawnServiceRegistry provider indisponivel no gameplay prepare execution port. source='{Normalize(source)}'.");
             }
 
-            if (!DependencyManager.Provider.TryGetForScene<IWorldSpawnServiceRegistry>(sceneName, out var spawnRegistry) || spawnRegistry == null)
+            if (!_spawnRegistryReadPortProvider.TryGetCurrentReadPort(out IWorldSpawnServiceRegistryReadPort readPort) || readPort == null)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    $"[FATAL][H1][SessionTransition] IWorldSpawnServiceRegistry ausente para scene='{sceneName}' no gameplay prepare execution port. source='{Normalize(source)}'.");
+                    $"[FATAL][H1][SessionTransition] IWorldSpawnServiceRegistry scene-local indisponivel no gameplay prepare execution port. source='{Normalize(source)}'.");
+            }
+
+            if (!readPort.TryGetCurrent(out IWorldSpawnServiceRegistry spawnRegistry) || spawnRegistry == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
+                    $"[FATAL][H1][SessionTransition] IWorldSpawnServiceRegistry scene-local indisponivel no gameplay prepare execution port. source='{Normalize(source)}'.");
             }
 
             if (spawnRegistry.Services == null || spawnRegistry.Services.Count == 0)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    $"[FATAL][H1][SessionTransition] IWorldSpawnServiceRegistry ainda sem servicos registrados para scene='{sceneName}' no gameplay prepare execution port. source='{Normalize(source)}'.");
+                    $"[FATAL][H1][SessionTransition] IWorldSpawnServiceRegistry ainda sem servicos registrados no gameplay prepare execution port. source='{Normalize(source)}'.");
             }
         }
 

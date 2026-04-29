@@ -3,6 +3,13 @@ using System.Text;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts
 {
+    public enum ParticipationSnapshotClearKind
+    {
+        Unknown = 0,
+        General = 1,
+        PhaseSelection = 2
+    }
+
     /// <summary>
     /// Stable semantic identity for a participant.
     /// This is intentionally separate from any actor runtime identifier.
@@ -574,24 +581,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contract
             ParticipationSnapshot snapshot,
             string source,
             string reason,
-            bool isCleared = false)
+            bool isCleared = false,
+            ParticipationSnapshotClearKind clearKind = ParticipationSnapshotClearKind.Unknown)
         {
             Snapshot = snapshot;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             IsCleared = isCleared;
+            ClearKind = clearKind;
         }
 
         public ParticipationSnapshot Snapshot { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool IsCleared { get; }
+        public ParticipationSnapshotClearKind ClearKind { get; }
 
         public bool IsValid => Snapshot.IsValid || IsCleared;
 
         public override string ToString()
         {
-            return $"snapshot='{Snapshot}', source='{(string.IsNullOrWhiteSpace(Source) ? "<none>" : Source)}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', isCleared='{IsCleared}'";
+            return $"snapshot='{Snapshot}', source='{(string.IsNullOrWhiteSpace(Source) ? "<none>" : Source)}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}', isCleared='{IsCleared}', clearKind='{ClearKind}'";
         }
     }
 

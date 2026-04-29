@@ -16,5 +16,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         /// </summary>
         void Clear();
     }
+
+    /// <summary>
+    /// Read-port scene-local do registry de spawn.
+    /// O contrato existe só para compor o hot path sem lookup runtime por cena.
+    /// </summary>
+    public interface IWorldSpawnServiceRegistryReadPort
+    {
+        bool TryGetCurrent(out IWorldSpawnServiceRegistry registry);
+    }
 }
 

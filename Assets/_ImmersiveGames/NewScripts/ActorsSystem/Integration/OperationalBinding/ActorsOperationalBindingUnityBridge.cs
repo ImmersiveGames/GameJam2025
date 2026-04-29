@@ -85,10 +85,10 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
 
             if (evt.IsCleared)
             {
-                if (IsPhaseSelectionClear(evt))
+                if (evt.ClearKind == ParticipationSnapshotClearKind.PhaseSelection)
                 {
                     DebugUtility.LogVerbose(typeof(ActorsOperationalBindingUnityBridge),
-                        $"[OBS][ActorsSystem][OperationalBinding] Participation clear transitivo ignorado para preservar binding operacional entre phases. source='{evt.Source}' reason='{evt.Reason}'.",
+                        $"[OBS][ActorsSystem][OperationalBinding] Participation clear transitivo ignorado para preservar binding operacional entre phases. source='{evt.Source}' reason='{evt.Reason}' clearKind='{evt.ClearKind}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
@@ -473,11 +473,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
             _currentPlayerInputManager.onPlayerJoined -= OnPlayerJoined;
             _currentPlayerInputManager.onPlayerLeft -= OnPlayerLeft;
             _currentPlayerInputManager = null;
-        }
-
-        private static bool IsPhaseSelectionClear(ParticipationSnapshotChangedEvent evt)
-        {
-            return string.Equals(evt.Reason, "phase_selected", StringComparison.Ordinal);
         }
     }
 }

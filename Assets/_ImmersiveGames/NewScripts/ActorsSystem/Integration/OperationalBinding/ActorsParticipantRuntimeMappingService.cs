@@ -228,10 +228,10 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
                 return;
             }
 
-            if (IsPhaseSelectionClear(evt))
+            if (evt.ClearKind == ParticipationSnapshotClearKind.PhaseSelection)
             {
                 DebugUtility.LogVerbose(typeof(ActorsParticipantRuntimeMappingSpawnBridge),
-                    $"[OBS][ActorsSystem][ParticipantRuntimeMapping] Participation clear transitivo ignorado para preservar continuidade entre phases. source='{evt.Source}' reason='{evt.Reason}'.",
+                    $"[OBS][ActorsSystem][ParticipantRuntimeMapping] Participation clear transitivo ignorado para preservar continuidade entre phases. source='{evt.Source}' reason='{evt.Reason}' clearKind='{evt.ClearKind}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -260,11 +260,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
                 runtimeActorId,
                 source: "GameplayRuntime/ActorsOperationalMaterializationHandoff",
                 reason: "runtime-materialized"));
-        }
-
-        private static bool IsPhaseSelectionClear(ParticipationSnapshotChangedEvent evt)
-        {
-            return string.Equals(evt.Reason, "phase_selected", StringComparison.Ordinal);
         }
     }
 }

@@ -7,7 +7,6 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
@@ -33,8 +32,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
     /// </summary>
     public sealed class ActorsMaterializationOperationalExecutor : IActorsMaterializationOperationalExecutor
     {
+        private readonly SessionFlowActorsSemanticPortsAdapter _semanticPortsAdapter;
+        private readonly IActorsEnsembleService _ensembleService;
+        private readonly IActorsPresenceService _presenceService;
+        private readonly IActorsMaterializationPlanService _planService;
         private readonly IActorsMaterializationExecutionPolicyService _executionPolicyService;
-        private readonly IDependencyProvider _provider;
+        private readonly IWorldSpawnServiceRegistryReadPortProvider _spawnRegistryReadPortProvider;
         private readonly IActorsMaterializationExecutionCycleContext _cycleContext;
         private readonly Dictionary<string, string> _lastExecutionStampByScene = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastExecutionStampBySceneAndMode = new(StringComparer.Ordinal);
@@ -49,11 +52,19 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         public ActorsMaterializationOperationalExecutor(
             IActorsMaterializationExecutionPolicyService executionPolicyService,
-            IDependencyProvider provider,
+            SessionFlowActorsSemanticPortsAdapter semanticPortsAdapter,
+            IActorsEnsembleService ensembleService,
+            IActorsPresenceService presenceService,
+            IActorsMaterializationPlanService planService,
+            IWorldSpawnServiceRegistryReadPortProvider spawnRegistryReadPortProvider,
             IActorsMaterializationExecutionCycleContext cycleContext)
         {
             _executionPolicyService = executionPolicyService ?? throw new ArgumentNullException(nameof(executionPolicyService));
-            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
+            _semanticPortsAdapter = semanticPortsAdapter ?? throw new ArgumentNullException(nameof(semanticPortsAdapter));
+            _ensembleService = ensembleService ?? throw new ArgumentNullException(nameof(ensembleService));
+            _presenceService = presenceService ?? throw new ArgumentNullException(nameof(presenceService));
+            _planService = planService ?? throw new ArgumentNullException(nameof(planService));
+            _spawnRegistryReadPortProvider = spawnRegistryReadPortProvider ?? throw new ArgumentNullException(nameof(spawnRegistryReadPortProvider));
             _cycleContext = cycleContext ?? throw new ArgumentNullException(nameof(cycleContext));
         }
 
@@ -115,13 +126,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     "[FATAL][H1][ActorsExecution] SessionTransitionPhaseLocalEntryReadyEvent sem payload canonico nao pode primar o refresh semantico.");
             }
 
-            if (!_provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var adapter) || adapter == null)
-            {
-                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                    "[FATAL][H1][ActorsExecution] SessionFlowActorsSemanticPortsAdapter ausente para primar o refresh semantico phase-local-entry-ready.");
-            }
-
-            adapter.PrimeCanonicalGameplayEntry(evt);
+            _semanticPortsAdapter.PrimeCanonicalGameplayEntry(evt);
 
             try
             {
@@ -172,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             {
                 _phaseLocalEntryReadyPreserveExistingEnabled = false;
                 _phaseLocalEntryReadyContinuation = string.Empty;
-                adapter.ClearCanonicalGameplayEntryContext();
+                _semanticPortsAdapter.ClearCanonicalGameplayEntryContext();
                 throw;
             }
         }
@@ -238,11 +243,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     return;
                 }
 
-                if (!_provider.TryGetForScene<IWorldSpawnServiceRegistry>(sceneName, out var spawnRegistry) || spawnRegistry == null)
+                if (!_spawnRegistryReadPortProvider.TryGetForScene(sceneName, out var spawnRegistryReadPort) || spawnRegistryReadPort == null)
                 {
-                    DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] IWorldSpawnServiceRegistry ausente para scene='{sceneName}' sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}'.");
-                    return;
+                    HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                        $"[FATAL][H1][ActorsExecution] IWorldSpawnServiceRegistryReadPort ausente para scene='{sceneName}' sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}'.");
+                }
+
+                if (!spawnRegistryReadPort.TryGetCurrent(out IWorldSpawnServiceRegistry spawnRegistry) || spawnRegistry == null)
+                {
+                    HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                        $"[FATAL][H1][ActorsExecution] IWorldSpawnServiceRegistry nao pronto para scene='{sceneName}' sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}'.");
                 }
 
                 BuildServiceIndex(spawnRegistry);
@@ -250,13 +260,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
                 if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
                 {
-                    if (!_provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var adapter) || adapter == null)
-                    {
-                        HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                            "[FATAL][H1][ActorsExecution] SessionFlowActorsSemanticPortsAdapter ausente para compor o ciclo phase-local-entry-ready.");
-                    }
-
-                    if (!adapter.TryGetCurrentCanonicalGameplayEntry(out var canonicalEntry) || !canonicalEntry.IsValid)
+                    if (!(_semanticPortsAdapter.TryGetCurrentCanonicalGameplayEntry(out var canonicalEntry)) || !canonicalEntry.IsValid)
                     {
                         HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
                             "[FATAL][H1][ActorsExecution] Canonical gameplay entry ausente/invalida para compor o ciclo phase-local-entry-ready.");
@@ -327,10 +331,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private void ClearCanonicalGameplayEntryContextIfAvailable()
         {
-            if (_provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var adapter) && adapter != null)
-            {
-                adapter.ClearCanonicalGameplayEntryContext();
-            }
+            _semanticPortsAdapter.ClearCanonicalGameplayEntryContext();
         }
 
         private bool AlreadyExecuted(string sceneName, ActorsMaterializationExecutionCycle cycle, string executionSignature)
@@ -480,13 +481,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private ActorsDefinitionsSnapshot RefreshDefinitionsOrFail()
         {
-            if (!_provider.TryGetGlobal<IActorsDefinitionsPort>(out var definitionsPort) || definitionsPort == null)
-            {
-                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                    "[FATAL][H1][ActorsExecution] IActorsDefinitionsPort ausente para refresh semantico phase-local-entry-ready.");
-            }
-
-            ActorsDefinitionsSnapshot snapshot = definitionsPort.TryGetCurrent(out ActorsDefinitionsSnapshot current) && current.IsValid
+            ActorsDefinitionsSnapshot snapshot = _semanticPortsAdapter.TryGetCurrent(out ActorsDefinitionsSnapshot current) && current.IsValid
                 ? current
                 : ActorsDefinitionsSnapshot.Empty;
 
@@ -501,13 +496,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private ActorsEnsembleSnapshot RefreshEnsembleOrFail()
         {
-            if (!_provider.TryGetGlobal<IActorsEnsembleService>(out var ensembleService) || ensembleService == null)
-            {
-                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                    "[FATAL][H1][ActorsExecution] IActorsEnsembleService ausente para refresh semantico phase-local-entry-ready.");
-            }
-
-            ActorsEnsembleSnapshot snapshot = ensembleService.Refresh();
+            ActorsEnsembleSnapshot snapshot = _ensembleService.Refresh();
             if (!snapshot.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
@@ -519,13 +508,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private ActorsPresenceSnapshot RefreshPresenceOrFail()
         {
-            if (!_provider.TryGetGlobal<IActorsPresenceService>(out var presenceService) || presenceService == null)
-            {
-                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                    "[FATAL][H1][ActorsExecution] IActorsPresenceService ausente para refresh semantico phase-local-entry-ready.");
-            }
-
-            ActorsPresenceSnapshot snapshot = presenceService.Refresh();
+            ActorsPresenceSnapshot snapshot = _presenceService.Refresh();
             if (!snapshot.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
@@ -537,13 +520,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private ActorsMaterializationPlanSnapshot RefreshPlanOrFail()
         {
-            if (!_provider.TryGetGlobal<IActorsMaterializationPlanService>(out var planService) || planService == null)
-            {
-                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                    "[FATAL][H1][ActorsExecution] IActorsMaterializationPlanService ausente para refresh semantico phase-local-entry-ready.");
-            }
-
-            ActorsMaterializationPlanSnapshot snapshot = planService.Refresh();
+            ActorsMaterializationPlanSnapshot snapshot = _planService.Refresh();
             if (!snapshot.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
@@ -555,13 +532,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private ActorsMaterializationExecutionSnapshot RefreshExecutionPolicyOrFail()
         {
-            if (!_provider.TryGetGlobal<IActorsMaterializationExecutionPolicyService>(out var executionPolicyService) || executionPolicyService == null)
-            {
-                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                    "[FATAL][H1][ActorsExecution] IActorsMaterializationExecutionPolicyService ausente para refresh semantico phase-local-entry-ready.");
-            }
-
-            ActorsMaterializationExecutionSnapshot snapshot = executionPolicyService.Refresh();
+            ActorsMaterializationExecutionSnapshot snapshot = _executionPolicyService.Refresh();
             if (!snapshot.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),

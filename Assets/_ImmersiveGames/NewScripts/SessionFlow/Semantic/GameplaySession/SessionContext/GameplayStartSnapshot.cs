@@ -129,6 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         ParticipationSnapshot UpdateFromSemanticInput(ParticipationSemanticInput input);
         ParticipationSnapshot UpdateFromPhaseDefinitionSelectedEvent(PhaseDefinitionSelectedEvent evt);
         void Clear(string reason = null);
+        void Clear(ParticipationSnapshotClearKind clearKind, string reason = null);
     }
 
     public readonly struct ParticipationSemanticInput
@@ -262,6 +263,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
 
         public void Clear(string reason = null)
         {
+            Clear(ParticipationSnapshotClearKind.Unknown, reason);
+        }
+
+        public void Clear(ParticipationSnapshotClearKind clearKind, string reason = null)
+        {
             string normalizedReason = Normalize(reason);
             string lastSignature;
             ParticipationSnapshot clearedSnapshot = ParticipationSnapshot.Empty;
@@ -282,7 +288,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                     clearedSnapshot,
                     source: "GameplayParticipationFlowService.Clear",
                     reason: normalizedReason,
-                    isCleared: true));
+                    isCleared: true,
+                    clearKind: clearKind));
         }
 
         public void Dispose()

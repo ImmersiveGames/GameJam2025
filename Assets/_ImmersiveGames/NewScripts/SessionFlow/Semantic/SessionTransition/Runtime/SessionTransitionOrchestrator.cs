@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
@@ -26,15 +25,24 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private readonly SessionTransitionPlanResolver _planResolver;
         private readonly ISessionTransitionExecutionPort _executionPort;
         private readonly ISessionTransitionGameplayPrepareExecutionPort _gameplayPrepareExecutionPort;
+        private readonly ISceneFlowRouteActorSetRefContext _routeActorSetContext;
+        private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
+        private readonly IGameplayParticipationFlowService _participationFlowService;
 
         public SessionTransitionOrchestrator(
             SessionTransitionPlanResolver planResolver,
             ISessionTransitionExecutionPort executionPort,
-            ISessionTransitionGameplayPrepareExecutionPort gameplayPrepareExecutionPort)
+            ISessionTransitionGameplayPrepareExecutionPort gameplayPrepareExecutionPort,
+            ISceneFlowRouteActorSetRefContext routeActorSetContext,
+            IGameplayPhaseRuntimeService phaseRuntimeService,
+            IGameplayParticipationFlowService participationFlowService)
         {
             _planResolver = planResolver ?? throw new ArgumentNullException(nameof(planResolver));
             _executionPort = executionPort ?? throw new ArgumentNullException(nameof(executionPort));
             _gameplayPrepareExecutionPort = gameplayPrepareExecutionPort ?? throw new ArgumentNullException(nameof(gameplayPrepareExecutionPort));
+            _routeActorSetContext = routeActorSetContext ?? throw new ArgumentNullException(nameof(routeActorSetContext));
+            _phaseRuntimeService = phaseRuntimeService ?? throw new ArgumentNullException(nameof(phaseRuntimeService));
+            _participationFlowService = participationFlowService ?? throw new ArgumentNullException(nameof(participationFlowService));
         }
 
         public async Task ExecuteAsync(SessionTransitionContext context, CancellationToken ct = default)
@@ -156,7 +164,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 DebugUtility.Colors.Success);
         }
 
-        private static SessionTransitionPhaseLocalEntryReadyEvent ResolveCanonicalPhaseLocalEntryReadyEventOrFail(
+        private SessionTransitionPhaseLocalEntryReadyEvent ResolveCanonicalPhaseLocalEntryReadyEventOrFail(
             SessionTransitionPlan plan,
             string dispatchPortName,
             string normalizedReason)
@@ -186,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 : Normalize(dispatchPortName);
         }
 
-        private static SessionTransitionPhaseLocalEntryReadyEvent BuildPlanPhaseLocalEntryReadyEventOrFail(
+        private SessionTransitionPhaseLocalEntryReadyEvent BuildPlanPhaseLocalEntryReadyEventOrFail(
             SessionTransitionPlan plan,
             string source)
         {
@@ -335,33 +343,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 cycleSignature);
         }
 
-        private static PhaseLocalEntryReadyRuntimePayload ResolvePhaseLocalEntryReadyRuntimePayloadOrFail(string source)
+        private PhaseLocalEntryReadyRuntimePayload ResolvePhaseLocalEntryReadyRuntimePayloadOrFail(string source)
         {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] DependencyManager.Provider indisponivel ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var routeActorSetContext) || routeActorSetContext == null)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] ISceneFlowRouteActorSetRefContext ausente ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out var phaseRuntimeService) || phaseRuntimeService == null)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] IGameplayPhaseRuntimeService ausente ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameplayParticipationFlowService>(out var participationFlowService) || participationFlowService == null)
-            {
-                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] IGameplayParticipationFlowService ausente ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}'.");
-            }
-
-            if (!routeActorSetContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string routeSource) ||
+            if (!_routeActorSetContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string routeSource) ||
                 routeKind != SceneRouteKind.Gameplay ||
                 !actorSetRef.IsValid)
             {
@@ -369,7 +353,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     $"[FATAL][H1][SessionTransition] ActorSetRef canonico ausente ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}' routeKind='{routeKind}' routeSource='{Normalize(routeSource)}'.");
             }
 
-            if (!phaseRuntimeService.TryGetCurrent(out GameplayPhaseRuntimeSnapshot phaseRuntime) ||
+            if (!_phaseRuntimeService.TryGetCurrent(out GameplayPhaseRuntimeSnapshot phaseRuntime) ||
                 !phaseRuntime.IsValid ||
                 phaseRuntime.PhaseDefinitionRef == null)
             {
@@ -378,9 +362,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             }
 
             ParticipationReadinessSnapshot readiness = ParticipationReadinessSnapshot.Empty;
-            bool hasReadiness = participationFlowService.TryGetCurrentReadiness(out readiness);
+            bool hasReadiness = _participationFlowService.TryGetCurrentReadiness(out readiness);
 
-            if (!participationFlowService.TryGetCurrent(out ParticipationSnapshot participationSnapshot) ||
+            if (!_participationFlowService.TryGetCurrent(out ParticipationSnapshot participationSnapshot) ||
                 !hasReadiness ||
                 !participationSnapshot.IsValid ||
                 !readiness.IsValid ||

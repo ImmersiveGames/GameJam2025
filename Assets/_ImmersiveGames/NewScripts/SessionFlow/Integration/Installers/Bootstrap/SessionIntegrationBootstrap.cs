@@ -6,11 +6,14 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Installers.Bootstrap;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap
@@ -188,12 +191,30 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseResetOperationalHandoffService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogNavigationService>(out var phaseCatalogNavigationService) || phaseCatalogNavigationService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseCatalogNavigationService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<GameplayPhaseFlowService>(out var phaseFlowService) || phaseFlowService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] GameplayPhaseFlowService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISceneCompositionExecutor>(out var sceneCompositionExecutor) || sceneCompositionExecutor == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISceneCompositionExecutor ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+            }
+
             IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService, phaseResetOperationalHandoffService);
 
             var service = new GameplaySessionFlowContinuityService(
                 navigationHandoffService,
                 restartContextService,
-                phaseResetExecutor);
+                phaseResetExecutor,
+                phaseCatalogNavigationService,
+                phaseFlowService,
+                sceneCompositionExecutor);
 
             DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);
 

@@ -403,7 +403,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 _currentPhaseRuntime = GameplayPhaseRuntimeSnapshot.Empty;
             }
 
-            _participationFlowService.Clear("phase_selected");
+            _participationFlowService.Clear(ParticipationSnapshotClearKind.PhaseSelection, "phase_selected");
             SyncRestartContextFromPhaseSelection(evt);
 
             return new PhaseSelectionProcessingContext(evt, sessionContext);

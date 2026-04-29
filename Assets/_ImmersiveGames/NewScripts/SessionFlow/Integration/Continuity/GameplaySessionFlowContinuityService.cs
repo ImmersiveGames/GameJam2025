@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
@@ -22,15 +21,24 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
         private readonly IRestartContextService _restartContextService;
         private readonly ISessionIntegrationNavigationHandoffService _navigationHandoffService;
         private readonly IPhaseResetExecutor _phaseResetExecutor;
+        private readonly IPhaseCatalogNavigationService _phaseCatalogNavigationService;
+        private readonly GameplayPhaseFlowService _phaseFlowService;
+        private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
 
         public GameplaySessionFlowContinuityService(
             ISessionIntegrationNavigationHandoffService navigationHandoffService,
             IRestartContextService restartContextService,
-            IPhaseResetExecutor phaseResetExecutor)
+            IPhaseResetExecutor phaseResetExecutor,
+            IPhaseCatalogNavigationService phaseCatalogNavigationService,
+            GameplayPhaseFlowService phaseFlowService,
+            ISceneCompositionExecutor sceneCompositionExecutor)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _navigationHandoffService = navigationHandoffService ?? throw new ArgumentNullException(nameof(navigationHandoffService));
             _phaseResetExecutor = phaseResetExecutor ?? throw new ArgumentNullException(nameof(phaseResetExecutor));
+            _phaseCatalogNavigationService = phaseCatalogNavigationService ?? throw new ArgumentNullException(nameof(phaseCatalogNavigationService));
+            _phaseFlowService = phaseFlowService ?? throw new ArgumentNullException(nameof(phaseFlowService));
+            _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
         }
 
         public Task<PhaseResetExecutionResult> RestartFromFirstPhaseAsync(string reason = null, CancellationToken ct = default)
@@ -56,8 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                     $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_requested operation='RestartFromFirstPhase' source='SessionTransitionExecutionPort' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' semantic='FirstPhaseRunRestart' legacy='false' target='RunContinuationOperational' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(currentSnapshot.PhaseDefinitionRef != null ? currentSnapshot.PhaseDefinitionRef.name : string.Empty)}'.",
                     DebugUtility.Colors.Info);
 
-                IPhaseCatalogNavigationService catalogNavigationService = ResolveRequiredGlobal<IPhaseCatalogNavigationService>(nameof(IPhaseCatalogNavigationService), normalizedReason);
-                PhaseCatalogNavigationPlan catalogPlan = catalogNavigationService.RestartCatalog(normalizedReason);
+                PhaseCatalogNavigationPlan catalogPlan = _phaseCatalogNavigationService.RestartCatalog(normalizedReason);
                 if (!catalogPlan.IsValid || !catalogPlan.IsChanged || catalogPlan.TargetPhaseRef == null || !catalogPlan.TargetPhaseRef.PhaseId.IsValid)
                 {
                     HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
@@ -65,21 +72,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                 }
 
                 targetPhaseRef = catalogPlan.TargetPhaseRef;
-                catalogNavigationService.Commit(catalogPlan);
-                catalogSignature = DescribeCatalogName(catalogNavigationService.Catalog);
+                _phaseCatalogNavigationService.Commit(catalogPlan);
+                catalogSignature = DescribeCatalogName(_phaseCatalogNavigationService.Catalog);
 
                 DebugUtility.Log<GameplaySessionFlowContinuityService>(
                     $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_catalog_resolved operation='RestartFromFirstPhase' source='{nameof(IPhaseCatalogNavigationService)}' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' targetPhase='{DescribePhase(targetPhaseRef)}' phaseIndex='<none>' catalogSignature='{AsText(catalogSignature)}' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(targetPhaseRef != null ? targetPhaseRef.name : string.Empty)}'.",
                     DebugUtility.Colors.Info);
 
-                GameplayPhaseFlowService phaseFlowService = ResolveRequiredGlobal<GameplayPhaseFlowService>(nameof(GameplayPhaseFlowService), normalizedReason);
-                phaseSelectedEvent = phaseFlowService.PublishPhaseDefinitionSelected(
+                phaseSelectedEvent = _phaseFlowService.PublishPhaseDefinitionSelected(
                     targetPhaseRef,
                     currentSnapshot.MacroRouteId,
                     currentSnapshot.MacroRouteRef,
                     normalizedReason);
 
-                ISceneCompositionExecutor sceneCompositionExecutor = ResolveRequiredGlobal<ISceneCompositionExecutor>(nameof(ISceneCompositionExecutor), normalizedReason);
                 SceneCompositionRequest applyRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
                     targetPhaseRef,
                     normalizedReason,
@@ -90,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
                     $"[OBS][GameplaySessionFlow][Continuity] restart_from_first_phase_handoff_started operation='RestartFromFirstPhase' source='GameplaySessionFlowContinuityService' reason='{normalizedReason}' selectedContinuation='RestartFromFirstPhase' targetPhase='{DescribePhase(targetPhaseRef)}' phaseIndex='<none>' catalogSignature='{AsText(catalogSignature)}' contextSignature='{AsText(currentSnapshot.PhaseSignature)}' executionSignature='{AsText(phaseSelectedEvent.SelectionSignature)}' routeId='{currentSnapshot.MacroRouteId}' routeKind='{currentSnapshot.MacroRouteRef.RouteKind}' scene='{AsText(applyRequest.ActiveScene)}' scenesToLoad=[{string.Join(",", applyRequest.ScenesToLoad)}] scenesToUnload=[{string.Join(",", applyRequest.ScenesToUnload)}].",
                     DebugUtility.Colors.Info);
 
-                SceneCompositionResult compositionResult = await sceneCompositionExecutor.ApplyAsync(applyRequest, ct);
+                SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(applyRequest, ct);
                 if (!compositionResult.Success)
                 {
                     HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
@@ -215,24 +220,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity
             }
 
             return snapshot;
-        }
-
-        private static T ResolveRequiredGlobal<T>(string label, string reason)
-            where T : class
-        {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
-                    $"[FATAL][H1][GameplaySessionFlow] DependencyManager.Provider is null while resolving '{label}'. reason='{reason}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<T>(out var service) || service == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameplaySessionFlowContinuityService),
-                    $"[FATAL][H1][GameplaySessionFlow] Missing required global service '{label}'. reason='{reason}'.");
-            }
-
-            return service;
         }
 
         private static string DescribePhase(PhaseDefinitionAsset phaseDefinitionRef)

@@ -1,7 +1,9 @@
 using System;
+using _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap
@@ -42,6 +44,26 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Gameplay] IActorsMaterializationExecutionPolicyService ausente para compor executor operacional de actors.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<SessionFlowActorsSemanticPortsAdapter>(out var semanticPortsAdapter) || semanticPortsAdapter == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Gameplay] SessionFlowActorsSemanticPortsAdapter ausente para compor executor operacional de actors.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IActorsEnsembleService>(out var ensembleService) || ensembleService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Gameplay] IActorsEnsembleService ausente para compor executor operacional de actors.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IActorsPresenceService>(out var presenceService) || presenceService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Gameplay] IActorsPresenceService ausente para compor executor operacional de actors.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IActorsMaterializationPlanService>(out var planService) || planService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Gameplay] IActorsMaterializationPlanService ausente para compor executor operacional de actors.");
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<IActorsMaterializationOperationalExecutor>(out var executor) || executor == null)
             {
                 if (!DependencyManager.Provider.TryGetGlobal<IActorsMaterializationExecutionCycleContext>(out var cycleContext) || cycleContext == null)
@@ -50,7 +72,15 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap
                     DependencyManager.Provider.RegisterGlobal<IActorsMaterializationExecutionCycleContext>(cycleContext);
                 }
 
-                executor = new ActorsMaterializationOperationalExecutor(executionPolicyService, DependencyManager.Provider, cycleContext);
+                IWorldSpawnServiceRegistryReadPortProvider spawnRegistryReadPortProvider = new WorldSpawnServiceRegistryReadPortProvider(DependencyManager.Provider);
+                executor = new ActorsMaterializationOperationalExecutor(
+                    executionPolicyService,
+                    semanticPortsAdapter,
+                    ensembleService,
+                    presenceService,
+                    planService,
+                    spawnRegistryReadPortProvider,
+                    cycleContext);
                 DependencyManager.Provider.RegisterGlobal<IActorsMaterializationOperationalExecutor>(executor);
             }
 

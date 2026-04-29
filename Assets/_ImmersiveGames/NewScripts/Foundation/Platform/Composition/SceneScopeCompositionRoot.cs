@@ -68,6 +68,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 _sceneName,
                 spawnRegistry,
                 allowOverride: false);
+            provider.RegisterForScene<IWorldSpawnServiceRegistryReadPort>(
+                _sceneName,
+                spawnRegistry,
+                allowOverride: false);
 
             SceneResetHookRegistry hookRegistry;
             if (provider.TryGetForScene<SceneResetHookRegistry>(_sceneName, out var existingRegistry))

@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
@@ -82,7 +83,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                         ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before gameplay prepare execution port composition."),
                         ResolveGlobalOrFail<ISceneFlowRouteActorSetRefContext>("ISceneFlowRouteActorSetRefContext missing from global DI before gameplay prepare execution port composition."),
                         ResolveGlobalOrFail<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService missing from global DI before gameplay prepare execution port composition."),
-                        ResolveGlobalOrFail<IGameplayParticipationFlowService>("IGameplayParticipationFlowService missing from global DI before gameplay prepare execution port composition.")));
+                        ResolveGlobalOrFail<IGameplayParticipationFlowService>("IGameplayParticipationFlowService missing from global DI before gameplay prepare execution port composition."),
+                        new WorldSpawnServiceRegistryReadPortProvider(DependencyManager.Provider)));
 
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionGameplayPrepareExecutionPort registered in global DI.",
@@ -97,11 +99,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     "ISessionTransitionGameplayPrepareExecutionPort missing from global DI before SessionTransitionOrchestrator composition.");
                 SessionTransitionPlanResolver planResolver = ResolveGlobalOrFail<SessionTransitionPlanResolver>(
                     "SessionTransitionPlanResolver missing from global DI before SessionTransitionOrchestrator composition.");
+                ISceneFlowRouteActorSetRefContext routeActorSetContext = ResolveGlobalOrFail<ISceneFlowRouteActorSetRefContext>(
+                    "ISceneFlowRouteActorSetRefContext missing from global DI before SessionTransitionOrchestrator composition.");
+                IGameplayPhaseRuntimeService phaseRuntimeService = ResolveGlobalOrFail<IGameplayPhaseRuntimeService>(
+                    "IGameplayPhaseRuntimeService missing from global DI before SessionTransitionOrchestrator composition.");
+                IGameplayParticipationFlowService participationFlowService = ResolveGlobalOrFail<IGameplayParticipationFlowService>(
+                    "IGameplayParticipationFlowService missing from global DI before SessionTransitionOrchestrator composition.");
 
                 DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(
                     planResolver,
                     executionPort,
-                    gameplayPrepareExecutionPort));
+                    gameplayPrepareExecutionPort,
+                    routeActorSetContext,
+                    phaseRuntimeService,
+                    participationFlowService));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] SessionTransitionOrchestrator registered in global DI.",
                     DebugUtility.Colors.Info);
@@ -151,5 +162,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
 
             return value;
         }
+
     }
 }
