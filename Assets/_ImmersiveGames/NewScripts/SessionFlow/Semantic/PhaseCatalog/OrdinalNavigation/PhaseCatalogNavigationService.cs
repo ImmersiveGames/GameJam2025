@@ -142,6 +142,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             }
         }
 
+        public void ClearPendingTarget(string reason = null)
+        {
+            _runtimeStateService.ClearPendingTarget(reason);
+        }
+
         private PhaseCatalogNavigationPlan ResolveDirectionalPlan(PhaseNavigationRequest request, PhaseNavigationDirection expectedDirection)
         {
             string normalizedReason = PhaseNextPhaseServiceSupport.NormalizeReason(request.Reason);

@@ -131,7 +131,7 @@ Mapa minimo das continuidades atuais:
 - `AdvancePhase` -> `ContinuityAxis + PhaseTransitionAxis + ContentSpawnAxis + CarryOverAxis`
 - `RestartCurrentPhase` -> `ContinuityAxis + PhaseTransitionAxis + WorldResetAxis + ContentSpawnAxis + CarryOverAxis`
 - `ExitToMenu` -> `ContinuityAxis + Handoff`
-- `TerminateRun` -> `ContinuityAxis + Terminal`
+- `EndRun` -> `ContinuityAxis + Terminal`
 
 Nesta etapa, `ReconstructionAxis` permanece apenas como vocabulário reservado e nao como comportamento novo.
 
@@ -201,17 +201,24 @@ O custo depois e refatorar contratos ja consumidos por varios eixos ao mesmo tem
 - `SessionTransitionPhaseLocalEntryReadyEvent` continua sendo o seam pequeno validado pelo smoke atual.
 - Nao houve introducao de runtime novo em reset; o shape ficou declarativo, sem reabrir `WorldReset`, `SceneResetPipeline` ou `GameplayReset`.
 
-## 10.3 Incremento de wiring relacionado (2026-04-22)
-
-Sem alterar o ownership deste ADR, fica registrado:
-
-- bridges de sync/prepare relacionados ao handoff de fase seguem como executores finos com decisao/policy extraida para seams dedicados.
-- a camada `Session Transition` permanece sem absorver policy de sync do `GameLoopSceneFlowSyncCoordinator` nem handoff operacional de prepare.
-- contratos macro de `SessionTransition` nao foram alterados por esses slices.
-
 
 ## 11. Veredito
 
 Vale registrar agora.
 
 Nao vale esperar, porque este e o ponto certo para congelar a separacao entre baseline e camada de transformacao de sessao/runtime antes que o shape fique acoplado a um caso local.
+
+## Addendum - SessionTransition para RestartFromFirstPhase
+
+`RestartFromFirstPhase` compoe:
+
+- `ContinuityAxis`
+- `PhaseTransitionAxis` apontando para a primeira phase do catalogo
+- `WorldResetAxis` como reset operacional de phase
+- `ReconstructionAxis` por reentry/rebuild local
+- `ContentSpawnAxis`
+
+A execucao deve produzir `SessionTransitionPhaseLocalEntryReadyEvent` e preservar o handoff canonico para actors/readiness/IntroStage. `Navigation/StartGameplayRoute` nao e rail valido para esta continuidade.
+
+
+Leitura de RunDecision: a UI publica nao expoe `Reset`. `Retry` emite `RestartCurrentPhase`; `Restart` emite `RestartFromFirstPhase`; `ExitToMenu` permanece saida para menu.

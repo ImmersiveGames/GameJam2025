@@ -1,8 +1,5 @@
 # ADR-0049 - Fluxo canonico de fim de run e postrun
 
-> STATUS NORMATIVO: HISTORICO - ANTECEDENTE DA BASE 1.0, NAO FONTE NORMATIVA PRIMARIA.
-> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
-
 ## Status
 - Estado: Aceito
 - Data: 2026-04-06
@@ -18,13 +15,11 @@ O termo `PostRun` neste ADR e historico/compatibilidade de nomenclatura. O contr
 
 Este ADR congela o contrato pos-`Playing` como fluxo positivo, tipado e operacional, separando o fim de run da IntroStage e da montagem inicial da fase.
 
-`RunResultStage` e o espelho de saida de `IntroStage`: um stage local `phase-owned`, quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
+`RunResultStage` e `phase-owned` quando presente, recebe a `reason`, executa o fechamento local da phase e encerra por acao explicita de `Continue`.
 
 `RunDecision` e `macro-owned` e decide a acao downstream final, sem absorver `RunRestart` como ownership semantico.
 
 `RunContinuation` pertence ao fluxo macro de continuidade apos o fechamento local da phase, nao ao "post-run local".
-
-Este ADR nao trata navegacao ordinal phase-local. `NextPhaseAsync` e `RestartCatalogAsync` pertencem ao ADR-0053 e nao substituem `RunResultStage` nem `RunDecision`.
 
 ## 2. Escopo
 
@@ -71,7 +66,7 @@ Esse fluxo preserva a transicao entre o encerramento local da phase e a decisao 
 
 `RunResultStage` recebe a reason do fim de run, executa o fechamento local da phase e termina por `Continue`.
 
-O presenter local de `RunResultStage`, quando presente, existe como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto. Ele e a projecao concreta do stage, nao a prova da existencia do stage.
+O presenter local de `RunResultStage`, quando presente, existe como conteudo local da phase/cena e e adotado pelo host tipado no escopo correto.
 
 Lifecycle:
 
@@ -132,7 +127,6 @@ Este contrato estabiliza o fim de run como uma sequencia clara entre phase e mac
 
 Consequencias principais:
 
-- `IntroStage` e o espelho de entrada da phase; `RunResultStage` e o espelho de saida
 - o resultado local da run permanece phase-owned
 - o fechamento local da run termina por `Continue` e segue para a decisao macro
 - a decisao final permanece macro-owned
@@ -140,12 +134,15 @@ Consequencias principais:
 - a tipagem de resultado e decisao fica isolada por contrato
 - o fim de run pode evoluir sem reabrir a entrada da phase
 
-## 11. Estado incremental consolidado (2026-04-22)
+## Addendum - Semantica visual de Retry/Restart no RunDecision
 
-Sem alterar a decisao deste ADR, fica registrado como wiring canonico atual:
+No `RunDecision`, nao existe acao visual publica `Reset`.
 
-- `GameRunEndedEventBridge` depende explicitamente de `IRunEndMaterializationService`.
-- composicao do bridge exige composicao previa de `RunEndBridgeRuntimeComposer` no bootstrap do `GameLoop`.
-- ausencia desses contratos continua fail-fast explicito, sem fallback silencioso.
+`Retry` reinicia somente a phase atual via `RestartCurrentPhase`, com `reason='RunDecision/Retry'`.
 
-Esse ajuste e estrutural de ordem de composicao, nao mudanca de semantica do rail de run-end.
+`Restart` reinicia a run a partir da primeira phase do catalogo via `RestartFromFirstPhase`, com `reason='RunDecision/Restart'`.
+
+`ExitToMenu` continua sendo a saida para menu.
+
+Anti-regressao: `Restart` nao pode voltar a emitir `RestartCurrentPhase`; `Retry` nao pode emitir `RestartFromFirstPhase`; `ResetRun` permanece legado removido e nao deve ser restaurado; `GameplaySessionRunResetService` tambem nao deve voltar; `Navigation/StartGameplayRoute` nao e rail valido para restart da run.
+

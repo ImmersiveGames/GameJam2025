@@ -9,9 +9,10 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         NoActionObserve = 2,
         RequestMaterialize = 3,
         RequestRematerialize = 4,
-        FlagInconsistentNoAutoRemediation = 5,
-        FlagRuntimeOrphanTolerated = 6,
-        FlagRuntimeOrphanProblematic = 7
+        PreserveExisting = 5,
+        FlagInconsistentNoAutoRemediation = 6,
+        FlagRuntimeOrphanTolerated = 7,
+        FlagRuntimeOrphanProblematic = 8
     }
 
     public readonly struct ActorsMaterializationExecutionEntry : IEquatable<ActorsMaterializationExecutionEntry>

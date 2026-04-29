@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
@@ -35,10 +36,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     DebugUtility.Colors.Info);
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionTransitionAdvancePhaseExecutionService>(out var existingAdvancePhaseExecutionService) || existingAdvancePhaseExecutionService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<ISessionTransitionAdvancePhaseExecutionService>(
+                    new SessionTransitionAdvancePhaseExecutionService(
+                        ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before advance phase execution service composition."),
+                        ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before advance phase execution service composition."),
+                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before advance phase execution service composition."),
+                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before advance phase execution service composition.")));
+                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                    "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionAdvancePhaseExecutionService registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<ISessionTransitionExecutionPort>(out var existingExecutionPort) || existingExecutionPort == null)
             {
                 DependencyManager.Provider.RegisterGlobal<ISessionTransitionExecutionPort>(
-                    new SessionTransitionExecutionPort(continuityService));
+                    new SessionTransitionExecutionPort(
+                        continuityService,
+                        ResolveGlobalOrFail<ISessionTransitionAdvancePhaseExecutionService>("ISessionTransitionAdvancePhaseExecutionService missing from global DI before execution port composition.")));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionExecutionPort registered in global DI.",
                     DebugUtility.Colors.Info);

@@ -43,6 +43,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         private string _activePhaseLocalEntryReadyCycleStamp = string.Empty;
         private bool _phaseLocalEntryReadyDispatchReserved;
         private bool _executionInProgress;
+        private bool _phaseLocalEntryReadyPreserveExistingEnabled;
+        private string _phaseLocalEntryReadyContinuation = string.Empty;
 
         public ActorsMaterializationOperationalExecutor(
             IActorsMaterializationExecutionPolicyService executionPolicyService,
@@ -126,14 +128,21 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     $"[OBS][ActorsExecution][Operational] PhaseLocalEntryReady refresh started actorSetRef='{evt.ActorSetRef}' routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' reason='{evt.Reason}' participationSignature='{AsText(evt.ParticipationSignature)}' cycleSignature='{AsText(evt.CycleSignature)}'.",
                     DebugUtility.Colors.Info);
 
+                _phaseLocalEntryReadyPreserveExistingEnabled = IsAdvancePhaseLocalEntryReady(evt);
+                _phaseLocalEntryReadyContinuation = _phaseLocalEntryReadyPreserveExistingEnabled
+                    ? evt.Plan.ResolvedContinuation.ToString()
+                    : string.Empty;
+
                 ActorsDefinitionsSnapshot definitions = RefreshDefinitionsOrFail();
                 ActorsEnsembleSnapshot ensemble = RefreshEnsembleOrFail();
                 ActorsPresenceSnapshot presence = RefreshPresenceOrFail();
                 ActorsMaterializationPlanSnapshot plan = RefreshPlanOrFail();
-                ActorsMaterializationExecutionSnapshot execution = RefreshExecutionPolicyOrFail();
+                ActorsMaterializationExecutionSnapshot execution = ProjectPreserveExistingForPhaseLocalEntryReady(
+                    RefreshExecutionPolicyOrFail(),
+                    evt);
 
                 bool hasPlayerDefinition = HasDefinitionForActorSpec(definitions, "actor.player");
-                int playerDirectives = CountPlayerDirectives(execution);
+                int playerReadyDirectives = CountPlayerReadyDirectives(execution);
 
                 if (!definitions.IsValid || definitions.Count < 1 || !hasPlayerDefinition)
                 {
@@ -147,18 +156,20 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         $"[FATAL][H1][ActorsExecution] Plan materialization vazio para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' planCount='{plan.Count}' planSignature='{AsText(plan.PlanSignature)}'.");
                 }
 
-                if (!execution.IsValid || execution.Count < 1 || playerDirectives < 1)
+                if (!execution.IsValid || execution.Count < 1 || playerReadyDirectives < 1)
                 {
                     HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[FATAL][H1][ActorsExecution] Execution policy vazio para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' executionCount='{execution.Count}' requestMaterialize='{execution.RequestMaterializeCount}' requestRematerialize='{execution.RequestRematerializeCount}'.");
+                        $"[FATAL][H1][ActorsExecution] Execution policy vazio para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' executionCount='{execution.Count}' requestMaterialize='{execution.RequestMaterializeCount}' requestRematerialize='{execution.RequestRematerializeCount}' preserveExisting='{CountDirectives(execution, ActorMaterializationExecutionDirective.PreserveExisting)}' readyDirectiveCount='{playerReadyDirectives}' continuation='{evt.Plan.ResolvedContinuation}'.");
                 }
 
                 DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                    $"[OBS][ActorsExecution][Operational] PhaseLocalEntryReady refresh completed actorSetRef='{evt.ActorSetRef}' definitions='{definitions.Count}' ensemble='{ensemble.Count}' presence='{presence.Count}' planEntries='{plan.Count}' executionEntries='{execution.Count}' playerDefinitions='{(hasPlayerDefinition ? 1 : 0)}' playerDirectives='{playerDirectives}'.",
+                    $"[OBS][ActorsExecution][Operational] PhaseLocalEntryReady refresh completed actorSetRef='{evt.ActorSetRef}' definitions='{definitions.Count}' ensemble='{ensemble.Count}' presence='{presence.Count}' planEntries='{plan.Count}' executionEntries='{execution.Count}' playerDefinitions='{(hasPlayerDefinition ? 1 : 0)}' readyDirectiveCount='{playerReadyDirectives}' preserveExisting='{CountDirectives(execution, ActorMaterializationExecutionDirective.PreserveExisting)}' continuation='{evt.Plan.ResolvedContinuation}'.",
                     DebugUtility.Colors.Success);
             }
             catch
             {
+                _phaseLocalEntryReadyPreserveExistingEnabled = false;
+                _phaseLocalEntryReadyContinuation = string.Empty;
                 adapter.ClearCanonicalGameplayEntryContext();
                 throw;
             }
@@ -174,6 +185,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
                 if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
                 {
+                    _phaseLocalEntryReadyPreserveExistingEnabled = false;
+                    _phaseLocalEntryReadyContinuation = string.Empty;
                     ClearCanonicalGameplayEntryContextIfAvailable();
                     ReleasePhaseLocalEntryReadyDispatch(cycle);
 
@@ -203,7 +216,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     return;
                 }
 
-                ActorsMaterializationExecutionSnapshot snapshot = _executionPolicyService.Refresh();
+                ActorsMaterializationExecutionSnapshot snapshot = ProjectPreserveExistingForDispatch(
+                    _executionPolicyService.Refresh(),
+                    sourceId,
+                    dispatchMode);
                 if (!snapshot.IsValid)
                 {
                     DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
@@ -275,7 +291,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         }
 
                         DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                            $"[OBS][ActorsExecution][CycleContext] dispatchMode='{cycleCompletedEvent.DispatchMode.ToLogToken()}' actorSetRef='{cycleCompletedEvent.ActorSetRef}' expectedKinds={FormatActorKinds(cycleCompletedEvent.ExpectedActorKinds)} materializedKinds={FormatActorKinds(cycleCompletedEvent.MaterializedActorKinds)} isGameplayOperationalReady='{cycleCompletedEvent.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{cycleCompletedEvent.ReadinessReason}'.",
+                            $"[OBS][ActorsExecution][CycleContext] dispatchMode='{cycleCompletedEvent.DispatchMode.ToLogToken()}' actorSetRef='{cycleCompletedEvent.ActorSetRef}' expectedKinds={FormatActorKinds(cycleCompletedEvent.ExpectedActorKinds)} materializedKinds={FormatActorKinds(cycleCompletedEvent.MaterializedActorKinds)} preservedActorKinds={FormatActorKinds(cycleCompletedEvent.PreservedActorKinds)} readyActorKinds={FormatActorKinds(cycleCompletedEvent.ReadyActorKinds)} isGameplayOperationalReady='{cycleCompletedEvent.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{cycleCompletedEvent.ReadinessReason}'.",
                             DebugUtility.Colors.Info);
 
                         EventBus<ActorsOperationalMaterializationCycleCompletedEvent>.Raise(cycleCompletedEvent);
@@ -293,6 +309,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             {
                 if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
                 {
+                    _phaseLocalEntryReadyPreserveExistingEnabled = false;
+                    _phaseLocalEntryReadyContinuation = string.Empty;
                     ClearCanonicalGameplayEntryContextIfAvailable();
                 }
 
@@ -410,6 +428,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             int eaterCount = 0;
             int materializeCount = 0;
             int rematerializeCount = 0;
+            int preserveExistingCount = 0;
             int noActionCount = 0;
 
             ActorsMaterializationExecutionEntry[] entries = snapshot.Entries ?? Array.Empty<ActorsMaterializationExecutionEntry>();
@@ -428,6 +447,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         break;
                     case ActorMaterializationExecutionDirective.RequestRematerialize:
                         rematerializeCount += 1;
+                        break;
+                    case ActorMaterializationExecutionDirective.PreserveExisting:
+                        preserveExistingCount += 1;
                         break;
                     default:
                         noActionCount += 1;
@@ -450,7 +472,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
 
             DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                $"[OBS][ActorsExecution][Operational] Dispatch iniciado sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' scene='{sceneName}' entries='{entries.Length}' player='{playerCount}' dummy='{dummyCount}' eater='{eaterCount}' materialize='{materializeCount}' rematerialize='{rematerializeCount}' noAction='{noActionCount}' executionSignature='{snapshot.ExecutionSignature}'.",
+                $"[OBS][ActorsExecution][Operational] Dispatch iniciado sourceId='{AsText(sourceId)}' dispatchMode='{dispatchMode.ToLogToken()}' scene='{sceneName}' entries='{entries.Length}' player='{playerCount}' dummy='{dummyCount}' eater='{eaterCount}' materialize='{materializeCount}' rematerialize='{rematerializeCount}' preserveExisting='{preserveExistingCount}' readyDirectiveCount='{materializeCount + rematerializeCount + preserveExistingCount}' noAction='{noActionCount}' executionSignature='{snapshot.ExecutionSignature}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -566,7 +588,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             return false;
         }
 
-        private static int CountPlayerDirectives(ActorsMaterializationExecutionSnapshot snapshot)
+        private static int CountPlayerReadyDirectives(ActorsMaterializationExecutionSnapshot snapshot)
         {
             if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
             {
@@ -582,14 +604,238 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     continue;
                 }
 
-                if (entry.Directive == ActorMaterializationExecutionDirective.RequestMaterialize ||
-                    entry.Directive == ActorMaterializationExecutionDirective.RequestRematerialize)
+                if (IsReadyDirective(entry.Directive))
                 {
                     count += 1;
                 }
             }
 
             return count;
+        }
+
+        private static int CountDirectives(
+            ActorsMaterializationExecutionSnapshot snapshot,
+            ActorMaterializationExecutionDirective directive)
+        {
+            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int index = 0; index < snapshot.Entries.Length; index += 1)
+            {
+                ActorsMaterializationExecutionEntry entry = snapshot.Entries[index];
+                if (entry.IsValid && entry.Directive == directive)
+                {
+                    count += 1;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool IsReadyDirective(ActorMaterializationExecutionDirective directive)
+        {
+            return directive == ActorMaterializationExecutionDirective.RequestMaterialize ||
+                   directive == ActorMaterializationExecutionDirective.RequestRematerialize ||
+                   directive == ActorMaterializationExecutionDirective.PreserveExisting;
+        }
+
+        private static ActorsMaterializationExecutionSnapshot ProjectPreserveExistingForPhaseLocalEntryReady(
+            ActorsMaterializationExecutionSnapshot snapshot,
+            SessionTransitionPhaseLocalEntryReadyEvent evt)
+        {
+            if (!IsAdvancePhaseLocalEntryReady(evt))
+            {
+                return snapshot;
+            }
+
+            return ProjectPreserveExisting(snapshot, "PhaseLocalEntryReady", evt.Source, evt.Plan.ResolvedContinuation.ToString());
+        }
+
+        private ActorsMaterializationExecutionSnapshot ProjectPreserveExistingForDispatch(
+            ActorsMaterializationExecutionSnapshot snapshot,
+            string sourceId,
+            ActorsOperationalMaterializationDispatchMode dispatchMode)
+        {
+            if (dispatchMode != ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady ||
+                !_phaseLocalEntryReadyPreserveExistingEnabled)
+            {
+                return snapshot;
+            }
+
+            return ProjectPreserveExisting(snapshot, "Dispatch", sourceId, _phaseLocalEntryReadyContinuation);
+        }
+
+        private static ActorsMaterializationExecutionSnapshot ProjectPreserveExisting(
+            ActorsMaterializationExecutionSnapshot snapshot,
+            string stage,
+            string sourceId,
+            string continuation)
+        {
+            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
+            {
+                return snapshot;
+            }
+
+            var entries = new ActorsMaterializationExecutionEntry[snapshot.Entries.Length];
+            int preserveCount = 0;
+            bool changed = false;
+
+            for (int index = 0; index < snapshot.Entries.Length; index += 1)
+            {
+                ActorsMaterializationExecutionEntry entry = snapshot.Entries[index];
+                if (entry.IsValid &&
+                    entry.Directive == ActorMaterializationExecutionDirective.NoActionStable &&
+                    entry.RuntimeActorId.IsValid)
+                {
+                    entries[index] = new ActorsMaterializationExecutionEntry(
+                        entry.SpecKind,
+                        entry.AxisActorId,
+                        entry.RuntimeActorId,
+                        entry.Role,
+                        entry.OperationalRecipeKind,
+                        entry.Intent,
+                        entry.Classification,
+                        ActorMaterializationExecutionDirective.PreserveExisting,
+                        entry.SemanticParticipantId,
+                        entry.ActorSpecId,
+                        entry.ActorSetRef,
+                        BuildPreserveExistingReason(entry, sourceId));
+
+                    preserveCount += 1;
+                    changed = true;
+                    continue;
+                }
+
+                entries[index] = entry;
+            }
+
+            if (!changed)
+            {
+                return snapshot;
+            }
+
+            DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
+                $"[OBS][ActorsExecution][Operational] preserve_existing_detected stage='{AsText(stage)}' sourceId='{AsText(sourceId)}' continuation='{AsText(continuation)}' preserveExisting='{preserveCount}' readyDirectiveCount='{CountReadyDirectives(entries)}' preservedActorKinds={FormatActorKinds(BuildActorKindsForDirective(entries, ActorMaterializationExecutionDirective.PreserveExisting))} readyActorKinds={FormatActorKinds(BuildReadyActorKinds(entries))} executionSignature='{snapshot.ExecutionSignature}'.",
+                DebugUtility.Colors.Info);
+
+            return new ActorsMaterializationExecutionSnapshot(
+                snapshot.PlanSignature,
+                snapshot.ExecutionSignature,
+                entries,
+                CountDirectives(entries, ActorMaterializationExecutionDirective.NoActionStable),
+                snapshot.NoActionObserveCount,
+                snapshot.RequestMaterializeCount,
+                snapshot.RequestRematerializeCount,
+                snapshot.FlagInconsistentCount,
+                snapshot.FlagRuntimeOrphanToleratedCount,
+                snapshot.FlagRuntimeOrphanProblematicCount,
+                snapshot.Reason);
+        }
+
+        private static string BuildPreserveExistingReason(ActorsMaterializationExecutionEntry entry, string sourceId)
+        {
+            return $"directive='{ActorMaterializationExecutionDirective.PreserveExisting}' classification='{entry.Classification}' intent='{entry.Intent}' source='{AsText(sourceId)}' previousReason='{AsText(entry.Reason)}'";
+        }
+
+        private static bool IsAdvancePhaseLocalEntryReady(SessionTransitionPhaseLocalEntryReadyEvent evt)
+        {
+            return evt.IsValid &&
+                   evt.IsPhaseLocalEntry &&
+                   evt.Plan.IsValid &&
+                   evt.Plan.ResolvedContinuation == RunContinuationKind.AdvancePhase;
+        }
+
+        private static int CountReadyDirectives(ActorsMaterializationExecutionEntry[] entries)
+        {
+            if (entries == null || entries.Length == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int index = 0; index < entries.Length; index += 1)
+            {
+                ActorsMaterializationExecutionEntry entry = entries[index];
+                if (entry.IsValid && IsReadyDirective(entry.Directive))
+                {
+                    count += 1;
+                }
+            }
+
+            return count;
+        }
+
+        private static int CountDirectives(
+            ActorsMaterializationExecutionEntry[] entries,
+            ActorMaterializationExecutionDirective directive)
+        {
+            if (entries == null || entries.Length == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int index = 0; index < entries.Length; index += 1)
+            {
+                ActorsMaterializationExecutionEntry entry = entries[index];
+                if (entry.IsValid && entry.Directive == directive)
+                {
+                    count += 1;
+                }
+            }
+
+            return count;
+        }
+
+        private static ActorKind[] BuildReadyActorKinds(ActorsMaterializationExecutionEntry[] entries)
+        {
+            if (entries == null || entries.Length == 0)
+            {
+                return Array.Empty<ActorKind>();
+            }
+
+            var kinds = new List<ActorKind>(entries.Length);
+            for (int index = 0; index < entries.Length; index += 1)
+            {
+                ActorsMaterializationExecutionEntry entry = entries[index];
+                ActorKind kind = MapRecipeToActorKind(entry.OperationalRecipeKind);
+                if (!entry.IsValid || kind == ActorKind.Unknown || !IsReadyDirective(entry.Directive) || kinds.Contains(kind))
+                {
+                    continue;
+                }
+
+                kinds.Add(kind);
+            }
+
+            return kinds.ToArray();
+        }
+
+        private static ActorKind[] BuildActorKindsForDirective(
+            ActorsMaterializationExecutionEntry[] entries,
+            ActorMaterializationExecutionDirective directive)
+        {
+            if (entries == null || entries.Length == 0)
+            {
+                return Array.Empty<ActorKind>();
+            }
+
+            var kinds = new List<ActorKind>(entries.Length);
+            for (int index = 0; index < entries.Length; index += 1)
+            {
+                ActorsMaterializationExecutionEntry entry = entries[index];
+                ActorKind kind = MapRecipeToActorKind(entry.OperationalRecipeKind);
+                if (!entry.IsValid || kind == ActorKind.Unknown || entry.Directive != directive || kinds.Contains(kind))
+                {
+                    continue;
+                }
+
+                kinds.Add(kind);
+            }
+
+            return kinds.ToArray();
         }
 
         private async Task DispatchAsync(string sceneName, ActorsMaterializationExecutionSnapshot snapshot, string sourceId, ActorsOperationalMaterializationDispatchMode dispatchMode)
@@ -633,6 +879,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                             rematerializeEntries[rematerializeKind] = entry;
                             materializeEntries.Remove(rematerializeKind);
                         }
+                        break;
+
+                    case ActorMaterializationExecutionDirective.PreserveExisting:
+                        RecordPreservedActorOrFail(entry, sceneName, sourceId, snapshot.ExecutionSignature);
                         break;
 
                     case ActorMaterializationExecutionDirective.NoActionStable:
@@ -683,6 +933,44 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     $"[OBS][ActorsExecution][Operational] Materialize executado actorKind='{kind}' service='{service.Name}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.",
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private void RecordPreservedActorOrFail(
+            ActorsMaterializationExecutionEntry entry,
+            string sceneName,
+            string sourceId,
+            string executionSignature)
+        {
+            if (!_cycleContext.TryGetCurrent(out ActorsMaterializationExecutionCycle cycle) || !cycle.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] PreserveExisting sem ciclo operacional valido. axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' sourceId='{AsText(sourceId)}'.");
+                return;
+            }
+
+            ActorKind actorKind = MapRecipeToActorKind(entry.OperationalRecipeKind);
+            if (actorKind == ActorKind.Unknown || !entry.RuntimeActorId.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] PreserveExisting invalido. actorKind='{actorKind}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' sourceId='{AsText(sourceId)}'.");
+                return;
+            }
+
+            var completedEvent = new ActorsOperationalMaterializationCompletedEvent(
+                entry,
+                actorKind,
+                cycle,
+                sceneName,
+                sourceId,
+                executionSignature,
+                "GameplayRuntime/ActorsMaterializationOperationalExecutor/PreserveExisting");
+
+            DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
+                $"[OBS][ActorsExecution][Operational] preserve_existing_detected actorKind='{actorKind}' axisActorId='{entry.AxisActorId}' runtimeActorId='{entry.RuntimeActorId}' semanticParticipantId='{AsText(entry.SemanticParticipantId)}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}' continuation='AdvancePhase' executionSignature='{AsText(executionSignature)}'.",
+                DebugUtility.Colors.Info);
+
+            _cycleContext.RecordCompletedActor(completedEvent);
+            EventBus<ActorsOperationalMaterializationCompletedEvent>.Raise(completedEvent);
         }
 
         private static bool IsDispatchAllowedForMode(ActorsOperationalMaterializationDispatchMode dispatchMode, ActorKind actorKind)
@@ -988,7 +1276,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 ? string.Empty
                 : $" exceptionType='{exception.GetType().Name}' exceptionMessage='{AsText(exception.Message)}'";
 
-            return $"[OBS][ActorsExecution][Operational] materialization_dispatch_{status} operation='PhaseLocalEntryReadyActorMaterialization' source='{AsText(evt.Source)}' reason='{AsText(evt.Reason)}' sceneName='{AsText(evt.SceneName)}' cycleSignature='{AsText(evt.CycleSignature)}' entrySignature='{AsText(cycle.EntrySignature)}' contextSignature='{AsText(evt.SessionSignature)}' executionSignature='{AsText(cycle.EntrySignature)}' phaseLocalEntrySequence='{cycle.PhaseLocalEntrySequence}' dispatchMode='{ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady.ToLogToken()}' status='{status}' routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' actorSetRef='{AsText(evt.ActorSetRef)}' sessionSignature='{AsText(evt.SessionSignature)}' phaseSignature='{AsText(evt.PhaseSignature)}' participationSignature='{AsText(evt.ParticipationSignature)}'{exceptionFields}.";
+            return $"[OBS][ActorsExecution][Operational] materialization_dispatch_{status} operation='PhaseLocalEntryReadyActorMaterialization' source='{AsText(evt.Source)}' reason='{AsText(evt.Reason)}' sceneName='{AsText(evt.SceneName)}' cycleSignature='{AsText(evt.CycleSignature)}' entrySignature='{AsText(cycle.EntrySignature)}' contextSignature='{AsText(evt.SessionSignature)}' executionSignature='{AsText(cycle.EntrySignature)}' phaseLocalEntrySequence='{cycle.PhaseLocalEntrySequence}' dispatchMode='{ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady.ToLogToken()}' status='{status}' continuation='{evt.Plan.ResolvedContinuation}' routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' actorSetRef='{AsText(evt.ActorSetRef)}' sessionSignature='{AsText(evt.SessionSignature)}' phaseSignature='{AsText(evt.PhaseSignature)}' participationSignature='{AsText(evt.ParticipationSignature)}'{exceptionFields}.";
         }
 
         private static string BuildEntrySignature(SessionTransitionPhaseLocalEntryReadyEvent evt)

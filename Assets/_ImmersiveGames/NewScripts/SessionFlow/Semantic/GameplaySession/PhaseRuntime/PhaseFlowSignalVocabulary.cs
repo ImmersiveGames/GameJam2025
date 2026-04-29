@@ -6,6 +6,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
     {
         public const string GameplaySessionFlowSource = "GameplaySessionFlow";
         public const string PhaseDefinitionNavigationSource = "PhaseDefinitionNavigation";
+        public const string SessionTransitionAdvancePhaseSource = "SessionTransitionAdvancePhase";
 
         public const string NoContentReason = "no_content";
         public const string ContinueButtonReason = "IntroStage/ContinueButton";
@@ -13,6 +14,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
 
         public static bool IsGameplaySessionFlowSource(string? source)
             => string.Equals(NormalizeToken(source), GameplaySessionFlowSource, StringComparison.Ordinal);
+
+        public static bool IsSessionTransitionAdvancePhaseSource(string? source)
+            => string.Equals(NormalizeToken(source), SessionTransitionAdvancePhaseSource, StringComparison.Ordinal);
+
+        public static bool ShouldQueueIntroOnContentApplied(string? source)
+            => IsGameplaySessionFlowSource(source) || IsSessionTransitionAdvancePhaseSource(source);
 
         public static string CanonicalizeCompletionSource(string? source)
         {
@@ -27,7 +34,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
                 return GameplaySessionFlowSource;
             }
 
-            if (string.Equals(normalized, PhaseDefinitionNavigationSource, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(normalized, PhaseDefinitionNavigationSource, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(normalized, SessionTransitionAdvancePhaseSource, StringComparison.OrdinalIgnoreCase))
             {
                 return GameplaySessionFlowSource;
             }

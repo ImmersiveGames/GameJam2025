@@ -1,8 +1,5 @@
 ﻿# ADR-0048 - PhaseDefinition como fonte de verdade autoral da fase jogavel
 
-> STATUS NORMATIVO: HISTORICO - ANTECEDENTE DA BASE 1.0, NAO FONTE NORMATIVA PRIMARIA.
-> Em conflito, prevalecem ADR-0057, ADR-0056, ADR-0055, ADR-0058, ADR-0054 e ADR-0052.
-
 ## Status
 - Estado: Aceito
 - Data: 2026-04-03
@@ -97,7 +94,26 @@ Leitura canonica:
 - cada participante possui papel / tipo de participacao forte
 - o eixo e declarativo e nao operacional
 
-`Rules/Objectives` e `InitialState` foram removidos do canônico atual de `Phase` e nao compoem mais este asset.
+### 5.4 Rules/Objectives
+
+Esse eixo declara o que vale e o que precisa ser alcancado na phase.
+
+Leitura canonica:
+
+- `Rules/Objectives` e um bloco declarativo unico
+- internamente, `Rules` e `Objectives` sao distinguidos por listas separadas
+- cada item comeca com id local, tipo forte e parametros declarativos
+- a simplicidade do V1 preserva leitura clara e evolucao futura
+
+### 5.5 Initial State
+
+Esse eixo declara como a phase nasce semanticamente.
+
+Leitura canonica:
+
+- `InitialState` e um bloco declarativo unico
+- internamente, o eixo e organizado como lista de entradas de estado inicial
+- cada entrada comeca com id local, tipo forte e parametros declarativos
 
 ### 5.6 Fechamento da fase
 
@@ -162,7 +178,7 @@ Leitura canonica:
 - a entrada principal do `GameplaySessionFlow` e a propria `PhaseDefinition` ja resolvida
 - o runtime nao muta o asset autoral
 - `SessionContext` nasce em `PhaseSelected`
-- `PhaseRuntime` e `Players` nascem em `ContentApplied`
+- `PhaseRuntime`, `Players`, `Rules/Objectives` e `InitialState` nascem em `ContentApplied`
 - `IntroStage`, quando presente, acontece antes de `Playing`
 - `RunResultStage`, quando presente, acontece depois de `Playing`
 - `RunResult` acontece depois de `Playing`
@@ -188,4 +204,12 @@ Consequencias principais:
 
 `Level` permanece como nome historico do estado atual visivel no runtime.
 O contrato canÃ´nico do futuro fica centrado em `PhaseDefinition`.
+
+## Addendum - RestartFromFirstPhase
+
+`RestartCurrentPhase` continua sendo contrato de lifecycle da phase atual.
+
+`RestartFromFirstPhase` passa a representar o restart macro da run a partir da primeira `PhaseDefinition` resolvida pelo catalogo. A `PhaseDefinition` continua sendo apenas a fonte autoral do que a phase e; ela nao se torna owner da ordem nem do reset.
+
+Regra anti-regressao: `RunDecision` nao expoe acao visual `Reset`. `Retry` deve emitir `RestartCurrentPhase`; `Restart` deve emitir `RestartFromFirstPhase`; nenhum codigo novo pode emitir `ResetRun`, usar `Retry` como reset da run ou acionar `Navigation/StartGameplayRoute` como atalho. O rail valido para restart da run e `RunContinuation -> SessionTransition -> PhaseCatalog -> phase-local handoff`.
 

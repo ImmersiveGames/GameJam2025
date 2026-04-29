@@ -18,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts
         PhaseCatalogNavigationPlan ResolveSpecificPhase(string phaseId, string reason = null);
         PhaseCatalogNavigationPlan RestartCatalog(string reason = null);
         void Commit(PhaseCatalogNavigationPlan navigationPlan);
+        void ClearPendingTarget(string reason = null);
     }
 
     public readonly struct PhaseCatalogNavigationPlan

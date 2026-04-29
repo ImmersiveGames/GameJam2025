@@ -166,37 +166,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             return RestartCatalogInternalAsync(reason, ct);
         }
 
-        private async Task<PhaseNavigationResult> ExecuteNavigationAsync(PhaseNavigationRequest request, CancellationToken ct)
+        private Task<PhaseNavigationResult> ExecuteNavigationAsync(PhaseNavigationRequest request, CancellationToken ct)
         {
             ct.ThrowIfCancellationRequested();
 
             PhaseNavigationRequest normalizedRequest = new PhaseNavigationRequest(request.Kind, request.Direction, request.Reason, request.TargetPhaseId);
             _completionService.LogNavigationRequested(normalizedRequest);
 
-            await _gate.WaitAsync(ct);
-            try
-            {
-                GameplayStartSnapshot currentSnapshot = _requestContextService.ResolveCurrentSnapshotOrFail(normalizedRequest.Reason);
-                PhaseCatalogNavigationPlan navigationPlan = _selectionService.SelectPhase(normalizedRequest, currentSnapshot);
-                if (navigationPlan.Outcome != PhaseNavigationOutcome.Changed)
-                {
-                    return _completionService.CreateBlockedResult(navigationPlan);
-                }
+            HardFailFastH1.Trigger(typeof(PhaseNextPhaseService),
+                $"[FATAL][H1][GameplaySessionFlow][PhaseDefinition] PhaseNextPhaseService is deprecated as an operational navigation rail. Use SessionTransition AdvancePhase for canonical next-phase continuity. kind='{normalizedRequest.Kind}' direction='{normalizedRequest.Direction}' reason='{PhaseNextPhaseServiceSupport.NormalizeReason(normalizedRequest.Reason)}'.");
 
-                PhaseNavigationSelectionContext selectionContext = _requestContextService.CreateSelectionContext(
-                    navigationPlan,
-                    currentSnapshot);
-
-                PhaseNavigationCompositionContext compositionContext = await _compositionService.ApplyNavigationPhaseAsync(selectionContext, ct);
-                await _handoffService.CompleteIntroHandoffAsync(compositionContext, ct);
-
-                _completionService.LogNavigationCompleted(normalizedRequest, navigationPlan, selectionContext);
-                return _completionService.CreateChangedResult(navigationPlan, selectionContext);
-            }
-            finally
-            {
-                _gate.Release();
-            }
+            throw new InvalidOperationException("[FATAL][H1][GameplaySessionFlow][PhaseDefinition] Deprecated PhaseNextPhaseService rail invoked.");
         }
 
         private async Task<PhaseNavigationResult> RestartCatalogInternalAsync(string reason, CancellationToken ct)

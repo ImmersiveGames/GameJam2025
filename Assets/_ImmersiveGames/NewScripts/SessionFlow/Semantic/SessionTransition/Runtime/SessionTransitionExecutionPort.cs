@@ -171,10 +171,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
     public sealed class SessionTransitionExecutionPort : ISessionTransitionExecutionPort
     {
         private readonly IGameplaySessionFlowContinuityService _continuityService;
+        private readonly ISessionTransitionAdvancePhaseExecutionService _advancePhaseExecutionService;
 
-        public SessionTransitionExecutionPort(IGameplaySessionFlowContinuityService continuityService)
+        public SessionTransitionExecutionPort(
+            IGameplaySessionFlowContinuityService continuityService,
+            ISessionTransitionAdvancePhaseExecutionService advancePhaseExecutionService)
         {
             _continuityService = continuityService ?? throw new ArgumentNullException(nameof(continuityService));
+            _advancePhaseExecutionService = advancePhaseExecutionService ?? throw new ArgumentNullException(nameof(advancePhaseExecutionService));
         }
 
         public async Task<SessionTransitionExecutionDispatchResult> DispatchAsync(SessionTransitionPlan plan, CancellationToken ct = default)
@@ -214,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             if (executionKind == SessionTransitionExecutionKind.NextPhase)
             {
-                PhaseNavigationResult navigationResult = await _continuityService.NextPhaseAsync(normalizedReason, ct);
+                PhaseNavigationResult navigationResult = await _advancePhaseExecutionService.AdvanceAsync(plan, ct);
                 if (navigationResult.Outcome != PhaseNavigationOutcome.Changed || !navigationResult.HasSelectionContext)
                 {
                     return SessionTransitionExecutionDispatchResult.Rejected(

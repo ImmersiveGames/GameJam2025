@@ -288,6 +288,36 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             ExecutionCycle = executionCycle;
         }
 
+        public ActorsOperationalMaterializationCompletedEvent(
+            ActorsMaterializationExecutionEntry entry,
+            ActorKind actorKind,
+            ActorsMaterializationExecutionCycle executionCycle,
+            string sceneName,
+            string source,
+            string executionSignature,
+            string handoffSource)
+        {
+            Actor = null;
+            ActorKind = actorKind;
+            AxisActorId = entry.AxisActorId;
+            RuntimeActorId = entry.RuntimeActorId;
+            ActorId = entry.RuntimeActorId.IsValid ? entry.RuntimeActorId.Value : string.Empty;
+            ActorSpecId = string.IsNullOrWhiteSpace(entry.ActorSpecId) ? string.Empty : entry.ActorSpecId.Trim();
+            ActorSetRef = string.IsNullOrWhiteSpace(entry.ActorSetRef) ? string.Empty : entry.ActorSetRef.Trim();
+            SemanticParticipantId = string.IsNullOrWhiteSpace(entry.SemanticParticipantId) ? string.Empty : entry.SemanticParticipantId.Trim();
+            OperationalRecipeKind = entry.OperationalRecipeKind;
+            SpawnServiceName = "PreserveExisting";
+            SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+            Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
+            HandoffSource = string.IsNullOrWhiteSpace(handoffSource) ? string.Empty : handoffSource.Trim();
+            Reason = string.IsNullOrWhiteSpace(entry.Reason) ? "PreserveExisting" : entry.Reason.Trim();
+            ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
+            RequiredForWorldReset = false;
+            ExecutionCycle = executionCycle;
+        }
+
+        public bool IsPreserveExisting => string.Equals(SpawnServiceName, "PreserveExisting", StringComparison.Ordinal);
+
         public IActor Actor { get; }
         public ActorKind ActorKind { get; }
         public AxisActorId AxisActorId { get; }
@@ -360,6 +390,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             CompletedActors = completedActors == null ? Array.Empty<ActorsOperationalMaterializationCompletedEvent>() : (ActorsOperationalMaterializationCompletedEvent[])completedActors.Clone();
             HasActorSetMismatch = hasActorSetMismatch;
             MaterializedActorKinds = BuildMaterializedActorKinds(CompletedActors);
+            PreservedActorKinds = BuildPreservedActorKinds(CompletedActors);
+            ReadyActorKinds = BuildReadyActorKinds(CompletedActors);
             HasCanonicalPayload = BuildHasCanonicalPayload(
                 SceneName,
                 ExecutionCycle,
@@ -397,6 +429,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public string ExecutionSignature { get; }
         public ActorKind[] ExpectedActorKinds { get; }
         public ActorKind[] MaterializedActorKinds { get; }
+        public ActorKind[] PreservedActorKinds { get; }
+        public ActorKind[] ReadyActorKinds { get; }
         public ActorsOperationalMaterializationCompletedEvent[] CompletedActors { get; }
         public bool HasActorSetMismatch { get; }
         public bool HasCanonicalPayload { get; }
@@ -532,24 +566,45 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private static ActorKind[] BuildMaterializedActorKinds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
         {
+            return BuildActorKindsByPreserveState(completedActors, includePreserved: false, includeMaterialized: true);
+        }
+
+        private static ActorKind[] BuildPreservedActorKinds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        {
+            return BuildActorKindsByPreserveState(completedActors, includePreserved: true, includeMaterialized: false);
+        }
+
+        private static ActorKind[] BuildReadyActorKinds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        {
+            return BuildActorKindsByPreserveState(completedActors, includePreserved: true, includeMaterialized: true);
+        }
+
+        private static ActorKind[] BuildActorKindsByPreserveState(
+            ActorsOperationalMaterializationCompletedEvent[] completedActors,
+            bool includePreserved,
+            bool includeMaterialized)
+        {
             if (completedActors == null || completedActors.Length == 0)
             {
                 return Array.Empty<ActorKind>();
             }
 
-            var materializedKinds = new List<ActorKind>(completedActors.Length);
+            var kinds = new List<ActorKind>(completedActors.Length);
             for (int index = 0; index < completedActors.Length; index += 1)
             {
-                ActorKind actorKind = completedActors[index].ActorKind;
-                if (actorKind == ActorKind.Unknown || materializedKinds.Contains(actorKind))
+                ActorsOperationalMaterializationCompletedEvent completedActor = completedActors[index];
+                bool include = (completedActor.IsPreserveExisting && includePreserved) ||
+                               (!completedActor.IsPreserveExisting && includeMaterialized);
+                ActorKind actorKind = completedActor.ActorKind;
+                if (!include || actorKind == ActorKind.Unknown || kinds.Contains(actorKind))
                 {
                     continue;
                 }
 
-                materializedKinds.Add(actorKind);
+                kinds.Add(actorKind);
             }
 
-            return materializedKinds.ToArray();
+            return kinds.ToArray();
         }
 
         private static bool HasActorKind(ActorKind kind, ActorsOperationalMaterializationCompletedEvent[] completedActors)
