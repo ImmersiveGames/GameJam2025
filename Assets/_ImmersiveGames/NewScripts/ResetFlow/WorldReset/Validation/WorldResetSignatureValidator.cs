@@ -7,17 +7,16 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Validation
     {
         public ResetDecision Validate(WorldResetRequest request, IWorldResetPolicy policy)
         {
-            if (request.HasSignature)
+            if (request.HasCorrelationKey)
             {
                 return ResetDecision.Proceed();
             }
 
             DebugUtility.LogWarning(typeof(WorldResetSignatureValidator),
-                $"[{ResetLogTags.ValidationFailed}][DEGRADED_MODE] ContextSignature vazia. reset será SKIP. request={request}");
+                $"[{ResetLogTags.ValidationFailed}][DEGRADED_MODE] CorrelationKey vazia. reset sera SKIP. request={request}");
 
-            string reason = string.IsNullOrWhiteSpace(request.Reason) ? "Validation_MissingSignature" : request.Reason;
-            return ResetDecision.Skip(reason, "ContextSignature vazia", publishCompletion: true, isViolation: true);
+            string reason = string.IsNullOrWhiteSpace(request.Reason) ? "Validation_MissingCorrelationKey" : request.Reason;
+            return ResetDecision.Skip(reason, "CorrelationKey vazia", publishCompletion: true, isViolation: true);
         }
     }
 }
-

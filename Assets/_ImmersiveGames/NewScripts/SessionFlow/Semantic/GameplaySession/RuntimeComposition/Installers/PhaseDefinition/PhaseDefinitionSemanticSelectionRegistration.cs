@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.RuntimeState;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition
 {
     internal static class PhaseDefinitionSemanticSelectionRegistration

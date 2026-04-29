@@ -22,7 +22,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
     {
         public SessionTransitionAxisMap(
             SessionTransitionIntentKind intentKind,
-            RunContinuationKind legacyRunContinuation,
             SessionTransitionPhaseAction phaseTransition,
             SessionTransitionResetAction worldReset,
             bool reconstruction,
@@ -30,7 +29,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             bool carryOver)
         {
             IntentKind = intentKind;
-            LegacyRunContinuation = legacyRunContinuation;
             PhaseTransition = phaseTransition;
             WorldReset = worldReset;
             Reconstruction = reconstruction;
@@ -39,13 +37,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         }
 
         public SessionTransitionIntentKind IntentKind { get; }
-
-        /// <summary>
-        /// Ponte explícita de telemetria para o contrato antigo de PostRun.
-        /// InitialEntry deve manter este campo como Unknown.
-        /// </summary>
-        public RunContinuationKind LegacyRunContinuation { get; }
-        public RunContinuationKind Continuity => LegacyRunContinuation;
         public SessionTransitionPhaseAction PhaseTransition { get; }
         public SessionTransitionResetAction WorldReset { get; }
         public bool Reconstruction { get; }
@@ -57,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
         public override string ToString()
         {
-            return $"Intent='{IntentKind}', LegacyRunContinuation='{LegacyRunContinuation}', PhaseTransition='{PhaseTransition}', WorldReset='{WorldReset}', Reconstruction='{Reconstruction}', ContentSpawn='{ContentSpawn}', CarryOver='{CarryOver}'";
+            return $"Intent='{IntentKind}', PhaseTransition='{PhaseTransition}', WorldReset='{WorldReset}', Reconstruction='{Reconstruction}', ContentSpawn='{ContentSpawn}', CarryOver='{CarryOver}'";
         }
     }
 }

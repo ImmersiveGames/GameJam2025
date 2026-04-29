@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 forceFullReload: false);
 
             DebugUtility.Log<SessionTransitionGameplayPrepareExecutionPort>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayPrepareExecutionStarted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' origin='{context.Origin}' intent='{context.IntentKind}' signature='{signature}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' planIntent='{plan.IntentKind}' legacyContinuation='{plan.ResolvedContinuation}' reason='{reason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayPrepareExecutionStarted source='{GameplaySessionPrepareSource}' routeId='{context.RouteId}' origin='{context.Origin}' intent='{context.IntentKind}' signature='{signature}' phaseId='{selectedPhaseDefinitionRef.PhaseId}' phaseRef='{selectedPhaseDefinitionRef.name}' planIntent='{plan.IntentKind}' runContinuation='{context.ResolvedContinuation}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(phaseCompositionRequest);
@@ -124,10 +124,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     $"[FATAL][H1][SessionTransition] Gameplay prepare execution port recebeu plano invalido ou origin nao-inicial. origin='{plan.Context.Origin}' intent='{plan.IntentKind}' executionKind='{plan.Execution.Kind}' reason='{Normalize(plan.Reason)}'.");
             }
 
-            if (plan.Execution.Kind != SessionTransitionExecutionKind.InitialEntry || !plan.EmitsPhaseLocalEntryReady)
+            if (plan.Execution.Kind != SessionTransitionExecutionKind.InitialEntry || !plan.RequiresPhaseLocalEntryReady)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionGameplayPrepareExecutionPort),
-                    $"[FATAL][H1][SessionTransition] Gameplay prepare InitialEntry requer execution InitialEntry com PhaseLocalEntryReady. executionKind='{plan.Execution.Kind}' emitsPhaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' intent='{plan.IntentKind}' reason='{Normalize(plan.Reason)}'.");
+                    $"[FATAL][H1][SessionTransition] Gameplay prepare InitialEntry requer execution InitialEntry com contrato derivado de PhaseLocalEntryReady. executionKind='{plan.Execution.Kind}' expectedPhaseLocalEntryReady='{plan.RequiresPhaseLocalEntryReady}' intent='{plan.IntentKind}' reason='{Normalize(plan.Reason)}'.");
             }
         }
 
@@ -288,7 +288,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             string actorSetRef)
         {
             return
-                $"phase-local-entry-ready|context:{AsText(contextSignature)}|routeId:{routeId}|routeKind:{routeKind}|scene:{AsText(sceneName)}|reason:{AsText(reason)}|session:{AsText(sessionSignature)}|phase:{AsText(phaseSignature)}|participation:{AsText(participationSignature)}|actorSetRef:{AsText(actorSetRef)}|intent:{plan.IntentKind}|legacyContinuation:{plan.ResolvedContinuation}|composition:{plan.Composition}|execution:{plan.Execution}";
+                $"phase-local-entry-ready|context:{AsText(contextSignature)}|routeId:{routeId}|routeKind:{routeKind}|scene:{AsText(sceneName)}|reason:{AsText(reason)}|session:{AsText(sessionSignature)}|phase:{AsText(phaseSignature)}|participation:{AsText(participationSignature)}|actorSetRef:{AsText(actorSetRef)}|intent:{plan.IntentKind}|runContinuation:{plan.Context.ResolvedContinuation}|composition:{plan.Composition}|execution:{plan.Execution}";
         }
 
         private static string Normalize(string value)

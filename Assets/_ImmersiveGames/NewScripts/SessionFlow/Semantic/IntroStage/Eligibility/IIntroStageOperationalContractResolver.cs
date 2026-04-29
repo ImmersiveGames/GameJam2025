@@ -1,6 +1,4 @@
 ﻿#nullable enable
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
-
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
 {
     /// <summary>

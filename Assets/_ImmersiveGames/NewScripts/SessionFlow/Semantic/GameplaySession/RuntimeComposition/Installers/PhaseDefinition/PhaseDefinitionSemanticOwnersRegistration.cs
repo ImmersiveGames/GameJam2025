@@ -9,7 +9,6 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition
 {
     internal static class PhaseDefinitionSemanticOwnersRegistration
@@ -88,30 +87,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
         public static void RegisterAll()
         {
             RegisterRestartContextService();
-            RegisterPhaseNextPhaseSelectionService();
-            RegisterPhaseNextPhaseCompositionService();
-        }
-
-        private static void RegisterPhaseNextPhaseSelectionService()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var existingService) || existingService == null)
-            {
-                DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseSelectionService>(new PhaseNextPhaseSelectionService());
-                DebugUtility.LogVerbose(typeof(PhaseDefinitionSemanticPhaseSideHelpersRegistration),
-                    "[OBS][PhaseDefinition][Core] NextPhase selection service registered in global DI.",
-                    DebugUtility.Colors.Info);
-            }
-        }
-
-        private static void RegisterPhaseNextPhaseCompositionService()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseCompositionService>(out var existingService) || existingService == null)
-            {
-                DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseCompositionService>(new PhaseNextPhaseCompositionService());
-                DebugUtility.LogVerbose(typeof(PhaseDefinitionSemanticPhaseSideHelpersRegistration),
-                    "[OBS][PhaseDefinition][Core] NextPhase composition service registered in global DI.",
-                    DebugUtility.Colors.Info);
-            }
         }
 
         private static void RegisterRestartContextService()

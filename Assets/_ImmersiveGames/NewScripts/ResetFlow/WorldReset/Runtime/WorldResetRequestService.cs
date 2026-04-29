@@ -1,9 +1,7 @@
-using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain;
-using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
 {
     /// <summary>
@@ -20,43 +18,23 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
             IWorldResetService resetService,
             ISimulationGateService gateService)
         {
-            _resetService = resetService ?? throw new ArgumentNullException(nameof(resetService));
-            _gateService = gateService ?? throw new ArgumentNullException(nameof(gateService));
+            _resetService = resetService ?? throw new System.ArgumentNullException(nameof(resetService));
+            _gateService = gateService ?? throw new System.ArgumentNullException(nameof(gateService));
         }
 
-        public async Task RequestResetAsync(string source)
+        public async Task RequestResetAsync(WorldResetRequest request)
         {
-            string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
-            string normalizedSource = string.IsNullOrWhiteSpace(source) ? "unknown" : source.Trim();
-            string reason = normalizedSource.StartsWith(WorldResetReasons.ProductionTriggerPrefix, StringComparison.Ordinal)
-                ? normalizedSource
-                : $"{WorldResetReasons.ProductionTriggerPrefix}{normalizedSource}";
-
-            string signature = $"directReset:scene={activeScene};src={normalizedSource}";
             DebugUtility.LogVerbose(typeof(WorldResetRequestService),
-                $"[OBS][WorldReset] ResetRequested signature='{signature}' sourceSignature='{signature}' target='{activeScene}' reason='{reason}' source='{normalizedSource}' scene='{activeScene}'.",
+                $"[OBS][WorldReset] ResetRequested correlationKey='{request.CorrelationKey}' signature='{request.ContextSignature}' sourceSignature='{request.SourceSignature}' target='{request.TargetScene}' reason='{request.Reason}' origin='{request.Origin}' shouldExecute={request.ShouldExecute}.",
                 DebugUtility.Colors.Info);
 
             if (_gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
             {
                 DebugUtility.LogWarning<WorldResetRequestService>(
-                    $"[{ResetLogTags.Guarded}] [WorldReset] RequestResetAsync chamado durante SceneTransition. source='{source ?? "<null>"}', activeScene='{activeScene}'.");
+                    $"[{ResetLogTags.Guarded}] [WorldReset] RequestResetAsync chamado durante SceneTransition. correlationKey='{request.CorrelationKey}', signature='{request.ContextSignature}', targetScene='{request.TargetScene}'.");
             }
-
-            var request = new WorldResetRequest(
-                kind: ResetKind.Macro,
-                contextSignature: signature,
-                reason: reason,
-                targetScene: activeScene,
-                origin: WorldResetOrigin.Manual,
-                sourceSignature: signature);
-
-            DebugUtility.LogVerbose<WorldResetRequestService>(
-                $"[OBS][WorldReset] RequestResetAsync -> IWorldResetService.TriggerResetAsync. source='{normalizedSource}', scene='{activeScene}', reason='{reason}'.",
-                DebugUtility.Colors.Info);
 
             await _resetService.TriggerResetAsync(request);
         }
     }
 }
-

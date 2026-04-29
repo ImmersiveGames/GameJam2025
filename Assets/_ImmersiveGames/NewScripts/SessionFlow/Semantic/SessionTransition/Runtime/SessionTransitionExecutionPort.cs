@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
@@ -172,13 +171,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
     {
         private readonly IGameplaySessionFlowContinuityService _continuityService;
         private readonly ISessionTransitionAdvancePhaseExecutionService _advancePhaseExecutionService;
+        private readonly ISessionTransitionPhaseOrdinalNavigationExecutionService _phaseOrdinalNavigationExecutionService;
 
         public SessionTransitionExecutionPort(
             IGameplaySessionFlowContinuityService continuityService,
-            ISessionTransitionAdvancePhaseExecutionService advancePhaseExecutionService)
+            ISessionTransitionAdvancePhaseExecutionService advancePhaseExecutionService,
+            ISessionTransitionPhaseOrdinalNavigationExecutionService phaseOrdinalNavigationExecutionService)
         {
             _continuityService = continuityService ?? throw new ArgumentNullException(nameof(continuityService));
             _advancePhaseExecutionService = advancePhaseExecutionService ?? throw new ArgumentNullException(nameof(advancePhaseExecutionService));
+            _phaseOrdinalNavigationExecutionService = phaseOrdinalNavigationExecutionService ?? throw new ArgumentNullException(nameof(phaseOrdinalNavigationExecutionService));
         }
 
         public async Task<SessionTransitionExecutionDispatchResult> DispatchAsync(SessionTransitionPlan plan, CancellationToken ct = default)
@@ -230,6 +232,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 return SessionTransitionExecutionDispatchResult.PhaseLocalEntryReadyConfirmed(
                     executionKind,
                     $"NextPhase committed by canonical advance execution. from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' outcome='{navigationResult.Outcome}' wasWrapped='{navigationResult.WasWrapped}'.");
+            }
+
+            if (executionKind == SessionTransitionExecutionKind.PhaseOrdinalNavigation)
+            {
+                PhaseNavigationResult navigationResult = await _phaseOrdinalNavigationExecutionService.NavigateAsync(plan, ct);
+                if (navigationResult.Outcome != PhaseNavigationOutcome.Changed || !navigationResult.HasSelectionContext)
+                {
+                    return SessionTransitionExecutionDispatchResult.Rejected(
+                        executionKind,
+                        $"PhaseNavigationOutcome.{navigationResult.Outcome}",
+                        $"PhaseOrdinalNavigation did not apply a phase change. kind='{plan.Context.OrdinalNavigationKind}' target='{Normalize(plan.Context.OrdinalNavigationTargetPhaseId)}' from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
+                }
+
+                return SessionTransitionExecutionDispatchResult.PhaseLocalEntryReadyConfirmed(
+                    executionKind,
+                    $"PhaseOrdinalNavigation applied by canonical execution. kind='{plan.Context.OrdinalNavigationKind}' target='{Normalize(plan.Context.OrdinalNavigationTargetPhaseId)}' from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' outcome='{navigationResult.Outcome}'.");
             }
 
             if (executionKind == SessionTransitionExecutionKind.ExitToMenu)

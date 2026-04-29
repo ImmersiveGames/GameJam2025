@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
@@ -18,16 +19,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             {
                 SessionTransitionIntentKind.InitialEntry => BuildInitialEntryPlan(ValidateInitialEntryContract(context)),
                 SessionTransitionIntentKind.AdvancePhase => BuildPhaseNavigationPlan(ValidatePostRunContinuationContract(context)),
+                SessionTransitionIntentKind.PhaseOrdinalNavigation => BuildPhaseOrdinalNavigationPlan(ValidatePhaseOrdinalNavigationContract(context)),
                 SessionTransitionIntentKind.RestartCurrentPhase => BuildPhaseResetPlan(ValidatePostRunContinuationContract(context)),
                 SessionTransitionIntentKind.RestartFromFirstPhase => BuildRestartFromFirstPhasePlan(ValidatePostRunContinuationContract(context)),
                 SessionTransitionIntentKind.ExitToMenu => BuildExitToMenuPlan(ValidatePostRunContinuationContract(context)),
                 SessionTransitionIntentKind.TerminateRun => BuildTerminateRunPlan(ValidatePostRunContinuationContract(context)),
                 _ => throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionTransition] Intent nao suportada no plano minimo. origin='{context.Origin}' intent='{context.IntentKind}' legacyContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'."),
+                $"[FATAL][Config][SessionTransition] Intent nao suportada no plano minimo. origin='{context.Origin}' intent='{context.IntentKind}' runContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'."),
             };
 
             DebugUtility.Log<SessionTransitionPlanResolver>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PlanResolved origin='{plan.Context.Origin}' intent='{plan.IntentKind}' legacyContinuation='{plan.LegacyRunContinuation}' composition='{plan.Composition}' phaseLocalEntryReady='{plan.EmitsPhaseLocalEntryReady}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{Normalize(plan.Reason)}' nextState='{Normalize(plan.NextState)}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] PlanResolved origin='{plan.Context.Origin}' intent='{plan.IntentKind}' runContinuation='{context.ResolvedContinuation}' composition='{plan.Composition}' expectedPhaseLocalEntryReady='{plan.RequiresPhaseLocalEntryReady}' execution='{plan.Execution}' continuityShape='{plan.Composition.ContinuityShape}' reconstructionShape='{plan.Composition.ReconstructionShape}' reason='{Normalize(plan.Reason)}' nextState='{Normalize(plan.NextState)}'.",
                 DebugUtility.Colors.Info);
 
             return plan;
@@ -44,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             if (context.ResolvedSelection.IsValid || context.HasRunContinuationSelection || context.ResolvedContinuation != RunContinuationKind.Unknown)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    $"[FATAL][H1][SessionTransition] InitialEntry nao pode carregar RunContinuationSelection nem RunContinuationKind. legacyContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'.");
+                $"[FATAL][H1][SessionTransition] InitialEntry nao pode carregar RunContinuationSelection nem RunContinuationKind. runContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'.");
             }
 
             if (string.IsNullOrWhiteSpace(context.ContextSignature) || string.IsNullOrWhiteSpace(context.SceneName))
@@ -56,12 +58,39 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             return context;
         }
 
-        private static SessionTransitionContext ValidatePostRunContinuationContract(SessionTransitionContext context)
+        private static SessionTransitionContext ValidatePhaseOrdinalNavigationContract(SessionTransitionContext context)
         {
-            if (context.Origin != SessionTransitionOrigin.PostRunContinuation && context.Origin != SessionTransitionOrigin.PhaseNavigation)
+            if (context.Origin != SessionTransitionOrigin.PhaseNavigation ||
+                context.IntentKind != SessionTransitionIntentKind.PhaseOrdinalNavigation)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    $"[FATAL][H1][SessionTransition] RunContinuationSelection so pode ser usado por PostRunContinuation/PhaseNavigation. origin='{context.Origin}' intent='{context.IntentKind}' reason='{Normalize(context.Reason)}'.");
+                    $"[FATAL][H1][SessionTransition] PhaseOrdinalNavigation requer origin/intent locais explicitos. origin='{context.Origin}' intent='{context.IntentKind}' reason='{Normalize(context.Reason)}'.");
+            }
+
+            if (context.ResolvedSelection.IsValid || context.HasRunContinuationSelection || context.ResolvedContinuation != RunContinuationKind.Unknown)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
+                $"[FATAL][H1][SessionTransition] PhaseOrdinalNavigation nao pode carregar RunContinuationSelection nem RunContinuationKind. runContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(context.ContextSignature) ||
+                string.IsNullOrWhiteSpace(context.SceneName) ||
+                string.IsNullOrWhiteSpace(context.OrdinalNavigationTargetPhaseId) ||
+                context.OrdinalNavigationKind == PhaseOrdinalNavigationKind.Unknown)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
+                    $"[FATAL][H1][SessionTransition] PhaseOrdinalNavigation sem payload ordinal valido. signature='{Normalize(context.ContextSignature)}' scene='{Normalize(context.SceneName)}' kind='{context.OrdinalNavigationKind}' target='{Normalize(context.OrdinalNavigationTargetPhaseId)}' reason='{Normalize(context.Reason)}'.");
+            }
+
+            return context;
+        }
+
+        private static SessionTransitionContext ValidatePostRunContinuationContract(SessionTransitionContext context)
+        {
+            if (context.Origin != SessionTransitionOrigin.PostRunContinuation)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
+                    $"[FATAL][H1][SessionTransition] RunContinuationSelection so pode ser usado por PostRunContinuation. origin='{context.Origin}' intent='{context.IntentKind}' reason='{Normalize(context.Reason)}'.");
             }
 
             if (!context.HasRunContinuationSelection || context.ResolvedContinuation == RunContinuationKind.Unknown)
@@ -96,14 +125,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     SessionTransitionResetScopeKind.None),
                 new SessionTransitionAxisMap(
                     intentKind: SessionTransitionIntentKind.InitialEntry,
-                    legacyRunContinuation: RunContinuationKind.Unknown,
                     phaseTransition: SessionTransitionPhaseAction.NextPhase,
                     worldReset: SessionTransitionResetAction.None,
                     reconstruction: false,
                     contentSpawn: true,
                     carryOver: true),
                 SessionTransitionExecutionKind.InitialEntry,
-                emitsPhaseLocalEntryReady: true,
                 SessionTransitionHandoffAction.None,
                 SessionTransitionAxisId.Continuity,
                 SessionTransitionAxisId.PhaseTransition,
@@ -128,14 +155,42 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     SessionTransitionResetScopeKind.None),
                 new SessionTransitionAxisMap(
                     intentKind: SessionTransitionIntentKind.AdvancePhase,
-                    legacyRunContinuation: context.ResolvedContinuation,
                     phaseTransition: SessionTransitionPhaseAction.NextPhase,
                     worldReset: SessionTransitionResetAction.None,
                     reconstruction: false,
                     contentSpawn: true,
                     carryOver: true),
                 SessionTransitionExecutionKind.NextPhase,
-                emitsPhaseLocalEntryReady: true,
+                SessionTransitionHandoffAction.None,
+                SessionTransitionAxisId.Continuity,
+                SessionTransitionAxisId.PhaseTransition,
+                SessionTransitionAxisId.ContentSpawn,
+                SessionTransitionAxisId.CarryOver);
+        }
+
+        private static SessionTransitionPlan BuildPhaseOrdinalNavigationPlan(SessionTransitionContext context)
+        {
+            return BuildPlan(
+                context,
+                BuildContinuityShape(
+                    preservation: SessionTransitionPreservationMask.SessionState |
+                                  SessionTransitionPreservationMask.WorldState |
+                                  SessionTransitionPreservationMask.ContentState |
+                                  SessionTransitionPreservationMask.ActorState |
+                                  SessionTransitionPreservationMask.ObjectState,
+                    resetScope: SessionTransitionResetScopeKind.None,
+                    carryOver: SessionTransitionCarryOverKind.Selective),
+                BuildReconstructionShape(
+                    SessionTransitionReconstructionKind.None,
+                    SessionTransitionResetScopeKind.None),
+                new SessionTransitionAxisMap(
+                    intentKind: SessionTransitionIntentKind.PhaseOrdinalNavigation,
+                    phaseTransition: SessionTransitionPhaseAction.OrdinalNavigation,
+                    worldReset: SessionTransitionResetAction.None,
+                    reconstruction: false,
+                    contentSpawn: true,
+                    carryOver: true),
+                SessionTransitionExecutionKind.PhaseOrdinalNavigation,
                 SessionTransitionHandoffAction.None,
                 SessionTransitionAxisId.Continuity,
                 SessionTransitionAxisId.PhaseTransition,
@@ -160,14 +215,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     SessionTransitionResetScopeKind.Phase),
                 new SessionTransitionAxisMap(
                     intentKind: SessionTransitionIntentKind.RestartCurrentPhase,
-                    legacyRunContinuation: context.ResolvedContinuation,
                     phaseTransition: SessionTransitionPhaseAction.StayOnCurrentPhase,
                     worldReset: SessionTransitionResetAction.PhaseReset,
                     reconstruction: false,
                     contentSpawn: true,
                     carryOver: true),
                 SessionTransitionExecutionKind.ResetCurrentPhase,
-                emitsPhaseLocalEntryReady: true,
                 SessionTransitionHandoffAction.None,
                 SessionTransitionAxisId.Continuity,
                 SessionTransitionAxisId.PhaseTransition,
@@ -189,14 +242,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     SessionTransitionResetScopeKind.Phase),
                 new SessionTransitionAxisMap(
                     intentKind: SessionTransitionIntentKind.RestartFromFirstPhase,
-                    legacyRunContinuation: context.ResolvedContinuation,
                     phaseTransition: SessionTransitionPhaseAction.RestartFromFirstPhase,
                     worldReset: SessionTransitionResetAction.PhaseReset,
                     reconstruction: true,
                     contentSpawn: true,
                     carryOver: false),
                 SessionTransitionExecutionKind.RestartFromFirstPhase,
-                emitsPhaseLocalEntryReady: true,
                 SessionTransitionHandoffAction.None,
                 SessionTransitionAxisId.Continuity,
                 SessionTransitionAxisId.PhaseTransition,
@@ -218,14 +269,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     SessionTransitionResetScopeKind.None),
                 new SessionTransitionAxisMap(
                     intentKind: SessionTransitionIntentKind.ExitToMenu,
-                    legacyRunContinuation: context.ResolvedContinuation,
                     phaseTransition: SessionTransitionPhaseAction.None,
                     worldReset: SessionTransitionResetAction.None,
                     reconstruction: false,
                     contentSpawn: false,
                     carryOver: false),
                 SessionTransitionExecutionKind.ExitToMenu,
-                emitsPhaseLocalEntryReady: false,
                 SessionTransitionHandoffAction.GoToMenu,
                 SessionTransitionAxisId.Continuity);
         }
@@ -243,14 +292,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     SessionTransitionResetScopeKind.None),
                 new SessionTransitionAxisMap(
                     intentKind: SessionTransitionIntentKind.TerminateRun,
-                    legacyRunContinuation: context.ResolvedContinuation,
                     phaseTransition: SessionTransitionPhaseAction.None,
                     worldReset: SessionTransitionResetAction.None,
                     reconstruction: false,
                     contentSpawn: false,
                     carryOver: false),
                 SessionTransitionExecutionKind.NoOp,
-                emitsPhaseLocalEntryReady: false,
                 SessionTransitionHandoffAction.None,
                 SessionTransitionAxisId.Continuity);
         }
@@ -261,13 +308,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             SessionTransitionReconstructionShape reconstructionShape,
             SessionTransitionAxisMap axisMap,
             SessionTransitionExecutionKind executionKind,
-            bool emitsPhaseLocalEntryReady,
             SessionTransitionHandoffAction handoffAction,
             params SessionTransitionAxisId[] orderedAxes)
         {
-            ValidatePlanContract(context, axisMap, executionKind, emitsPhaseLocalEntryReady);
+            ValidatePlanContract(context, axisMap, executionKind);
 
-            var composition = new SessionTransitionComposition(axisMap, continuityShape, reconstructionShape, emitsPhaseLocalEntryReady, orderedAxes);
+            var composition = new SessionTransitionComposition(axisMap, continuityShape, reconstructionShape, orderedAxes);
             var execution = new SessionTransitionExecution(executionKind, handoffAction);
             return new SessionTransitionPlan(context, composition, execution);
         }
@@ -275,8 +321,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private static void ValidatePlanContract(
             SessionTransitionContext context,
             SessionTransitionAxisMap axisMap,
-            SessionTransitionExecutionKind executionKind,
-            bool emitsPhaseLocalEntryReady)
+            SessionTransitionExecutionKind executionKind)
         {
             if (axisMap.IntentKind != context.IntentKind)
             {
@@ -286,25 +331,44 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             if (context.Origin == SessionTransitionOrigin.InitialEntry)
             {
-                if (executionKind != SessionTransitionExecutionKind.InitialEntry || !emitsPhaseLocalEntryReady)
+                if (executionKind != SessionTransitionExecutionKind.InitialEntry ||
+                    !SessionTransitionExecution.RequiresPhaseLocalEntryReadyFor(executionKind))
                 {
                     HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                        $"[FATAL][H1][SessionTransition] InitialEntry deve gerar execution InitialEntry e PhaseLocalEntryReady. execution='{executionKind}' emits='{emitsPhaseLocalEntryReady}' reason='{Normalize(context.Reason)}'.");
+                        $"[FATAL][H1][SessionTransition] InitialEntry deve gerar execution InitialEntry com contrato derivado de PhaseLocalEntryReady. execution='{executionKind}' expectedPhaseLocalEntryReady='{SessionTransitionExecution.RequiresPhaseLocalEntryReadyFor(executionKind)}' reason='{Normalize(context.Reason)}'.");
                 }
 
-                if (axisMap.LegacyRunContinuation != RunContinuationKind.Unknown)
+                if (context.ResolvedContinuation != RunContinuationKind.Unknown)
                 {
                     HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                        $"[FATAL][H1][SessionTransition] InitialEntry nao pode usar RunContinuationKind como contrato ou compat implicita. legacyContinuation='{axisMap.LegacyRunContinuation}' reason='{Normalize(context.Reason)}'.");
+                        $"[FATAL][H1][SessionTransition] InitialEntry nao pode usar RunContinuationKind como contrato ou compat implicita. runContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'.");
                 }
 
                 return;
             }
 
-            if (!context.HasRunContinuationSelection || axisMap.LegacyRunContinuation == RunContinuationKind.Unknown)
+            if (context.Origin == SessionTransitionOrigin.PhaseNavigation)
+            {
+                if (executionKind != SessionTransitionExecutionKind.PhaseOrdinalNavigation ||
+                    !SessionTransitionExecution.RequiresPhaseLocalEntryReadyFor(executionKind))
+                {
+                    HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
+                        $"[FATAL][H1][SessionTransition] PhaseOrdinalNavigation deve gerar execution PhaseOrdinalNavigation com contrato derivado de PhaseLocalEntryReady. execution='{executionKind}' expectedPhaseLocalEntryReady='{SessionTransitionExecution.RequiresPhaseLocalEntryReadyFor(executionKind)}' reason='{Normalize(context.Reason)}'.");
+                }
+
+                if (context.ResolvedContinuation != RunContinuationKind.Unknown)
+                {
+                    HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
+                        $"[FATAL][H1][SessionTransition] PhaseOrdinalNavigation nao pode usar RunContinuationKind como contrato ou compat implicita. runContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'.");
+                }
+
+                return;
+            }
+
+            if (!context.HasRunContinuationSelection || context.ResolvedContinuation == RunContinuationKind.Unknown)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionPlanResolver),
-                    $"[FATAL][H1][SessionTransition] PostRunContinuation deve carregar RunContinuationSelection valida e legacyRunContinuation explicito. origin='{context.Origin}' intent='{context.IntentKind}' legacyContinuation='{axisMap.LegacyRunContinuation}' reason='{Normalize(context.Reason)}'.");
+                    $"[FATAL][H1][SessionTransition] PostRunContinuation deve carregar RunContinuationSelection valida e runContinuation explicito. origin='{context.Origin}' intent='{context.IntentKind}' runContinuation='{context.ResolvedContinuation}' reason='{Normalize(context.Reason)}'.");
             }
         }
 

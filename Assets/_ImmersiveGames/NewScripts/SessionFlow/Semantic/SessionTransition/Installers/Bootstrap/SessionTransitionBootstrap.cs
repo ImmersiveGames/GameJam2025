@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
@@ -8,7 +7,6 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
@@ -50,12 +48,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     DebugUtility.Colors.Info);
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<ISessionTransitionPhaseOrdinalNavigationExecutionService>(out var existingPhaseOrdinalNavigationExecutionService) || existingPhaseOrdinalNavigationExecutionService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<ISessionTransitionPhaseOrdinalNavigationExecutionService>(
+                    new SessionTransitionPhaseOrdinalNavigationExecutionService(
+                        ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before phase ordinal navigation execution service composition."),
+                        ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before phase ordinal navigation execution service composition."),
+                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before phase ordinal navigation execution service composition."),
+                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before phase ordinal navigation execution service composition.")));
+                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                    "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionPhaseOrdinalNavigationExecutionService registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
+
             if (!DependencyManager.Provider.TryGetGlobal<ISessionTransitionExecutionPort>(out var existingExecutionPort) || existingExecutionPort == null)
             {
                 DependencyManager.Provider.RegisterGlobal<ISessionTransitionExecutionPort>(
                     new SessionTransitionExecutionPort(
                         continuityService,
-                        ResolveGlobalOrFail<ISessionTransitionAdvancePhaseExecutionService>("ISessionTransitionAdvancePhaseExecutionService missing from global DI before execution port composition.")));
+                        ResolveGlobalOrFail<ISessionTransitionAdvancePhaseExecutionService>("ISessionTransitionAdvancePhaseExecutionService missing from global DI before execution port composition."),
+                        ResolveGlobalOrFail<ISessionTransitionPhaseOrdinalNavigationExecutionService>("ISessionTransitionPhaseOrdinalNavigationExecutionService missing from global DI before execution port composition.")));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionExecutionPort registered in global DI.",
                     DebugUtility.Colors.Info);
@@ -77,22 +89,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     DebugUtility.Colors.Info);
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseOrdinalNavigationRequestService>(out var existingOrdinalNavigationRequestService) || existingOrdinalNavigationRequestService == null)
-            {
-                DependencyManager.Provider.RegisterGlobal<IPhaseOrdinalNavigationRequestService>(
-                    new PhaseOrdinalNavigationRequestService(
-                        ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before phase ordinal navigation request service composition."),
-                        ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before phase ordinal navigation request service composition."),
-                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before phase ordinal navigation request service composition."),
-                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before phase ordinal navigation request service composition."),
-                        ResolveGlobalOrFail<ISceneFlowRouteActorSetRefContext>("ISceneFlowRouteActorSetRefContext missing from global DI before phase ordinal navigation request service composition."),
-                        ResolveGlobalOrFail<IGameplayPhaseRuntimeService>("IGameplayPhaseRuntimeService missing from global DI before phase ordinal navigation request service composition."),
-                        ResolveGlobalOrFail<IGameplayParticipationFlowService>("IGameplayParticipationFlowService missing from global DI before phase ordinal navigation request service composition.")));
-                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
-                    "[OBS][QA][PhaseNavigation] IPhaseOrdinalNavigationRequestService registered in global DI.",
-                    DebugUtility.Colors.Info);
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var existingOrchestrator) || existingOrchestrator == null)
             {
                 ISessionTransitionExecutionPort executionPort = ResolveGlobalOrFail<ISessionTransitionExecutionPort>(
@@ -108,6 +104,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     gameplayPrepareExecutionPort));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] SessionTransitionOrchestrator registered in global DI.",
+                    DebugUtility.Colors.Info);
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IPhaseOrdinalNavigationRequestService>(out var existingOrdinalNavigationRequestService) || existingOrdinalNavigationRequestService == null)
+            {
+                DependencyManager.Provider.RegisterGlobal<IPhaseOrdinalNavigationRequestService>(
+                    new PhaseOrdinalNavigationRequestService(
+                        ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before phase ordinal navigation request service composition."),
+                        ResolveGlobalOrFail<SessionTransitionOrchestrator>("SessionTransitionOrchestrator missing from global DI before phase ordinal navigation request service composition.")));
+                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                    "[OBS][QA][PhaseNavigation] IPhaseOrdinalNavigationRequestService registered in global DI.",
                     DebugUtility.Colors.Info);
             }
 

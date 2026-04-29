@@ -63,9 +63,9 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
                 string signature = SceneTransitionSignature.Compute(context);
                 string targetScene = ResolveTargetSceneNameOrFailFast(context);
                 SceneRouteId routeId = context.RouteId;
-                bool hasSignature = !string.IsNullOrWhiteSpace(signature);
+                WorldResetCorrelationKey correlationKey = WorldResetCorrelationKey.FromContextSignature(signature);
                 bool requiresWorldReset = context.RequiresWorldReset;
-                bool shouldExecute = hasSignature && requiresWorldReset;
+                bool shouldExecute = correlationKey.IsValid && requiresWorldReset;
 
                 string decisionSource = NormalizeDecisionSource(context.ResetDecisionSource);
                 string decisionReason = NormalizeDecisionReason(context.ResetDecisionReason);
@@ -86,10 +86,10 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
                     reason: requestReason,
                     shouldExecute: shouldExecute);
 
-                if (!hasSignature)
+                if (!correlationKey.IsValid)
                 {
                     DebugUtility.LogWarning<SceneFlowWorldResetDriver>(
-                        "[ResetInterop] ScenesReady recebido com ContextSignature vazia. Handing off ao owner macro para completion canônica.");
+                        "[ResetInterop] ScenesReady recebido sem CorrelationKey. Handing off ao owner macro para completion canônica.");
                     LogHandshake("handoff_invalid_context", string.Empty, targetScene, routeId.Value, context.RouteKind, context.TransitionProfileName);
                 }
                 else if (!requiresWorldReset)
@@ -103,6 +103,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
 
                 WorldResetRequest request = BuildSceneFlowRequest(
                     signature,
+                    correlationKey,
                     targetScene,
                     routeId,
                     requestReason,
@@ -132,6 +133,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
 
         private static WorldResetRequest BuildSceneFlowRequest(
             string signature,
+            WorldResetCorrelationKey correlationKey,
             string targetScene,
             SceneRouteId routeId,
             string reason,
@@ -139,6 +141,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
         {
             return new WorldResetRequest(
                 kind: ResetKind.Macro,
+                correlationKey: correlationKey,
                 contextSignature: signature ?? string.Empty,
                 reason: reason ?? string.Empty,
                 targetScene: targetScene ?? string.Empty,
@@ -209,4 +212,3 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime
         }
     }
 }
-

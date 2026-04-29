@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;

@@ -12,7 +12,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts
         ExitToMenu = 3,
         TerminateRun = 4,
         RestartFromFirstPhase = 7,
-        Retry = 6,
     }
 
     public readonly struct RunContinuationTerminalFact
@@ -54,11 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts
         public bool IsValid =>
             ContinuationContext.IsValid &&
             SelectedContinuation != RunContinuationKind.Unknown &&
-            (ContinuationContext.HasContinuation(SelectedContinuation) || IsRetryCompatibilitySelection);
-
-        private bool IsRetryCompatibilitySelection =>
-            SelectedContinuation == RunContinuationKind.Retry &&
-            ContinuationContext.HasContinuation(RunContinuationKind.RestartCurrentPhase);
+            ContinuationContext.HasContinuation(SelectedContinuation);
     }
 
     public readonly struct RunContinuationContext
@@ -106,4 +101,3 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts
         public RunContinuationSelection Selection { get; }
     }
 }
-

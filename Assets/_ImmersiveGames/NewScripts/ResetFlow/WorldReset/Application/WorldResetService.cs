@@ -20,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
         private const int RecentCompletionWindowMs = 750;
 
         private readonly object _lock = new();
-        private readonly HashSet<string> _inFlight = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, long> _recentCompleted = new(StringComparer.Ordinal);
+        private readonly HashSet<WorldResetCorrelationKey> _inFlight = new();
+        private readonly Dictionary<WorldResetCorrelationKey, long> _recentCompleted = new();
         private readonly WorldResetLifecyclePublisher _lifecyclePublisher;
         private readonly WorldResetOrchestrator _orchestrator;
 
@@ -33,38 +33,26 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             _lifecyclePublisher = lifecyclePublisher ?? throw new ArgumentNullException(nameof(lifecyclePublisher));
         }
 
-        public async Task<WorldResetResult> TriggerResetAsync(string? contextSignature, string? reason)
-        {
-            var request = new WorldResetRequest(
-                kind: ResetKind.Macro,
-                contextSignature: contextSignature ?? string.Empty,
-                reason: reason ?? string.Empty,
-                targetScene: string.Empty,
-                origin: WorldResetOrigin.Manual,
-                macroRouteId: SceneRouteId.None,
-                phaseSignature: PhaseContextSignature.Empty,
-                sourceSignature: contextSignature ?? string.Empty);
-
-            return await TriggerResetAsync(request);
-        }
-
         public async Task<WorldResetResult> TriggerResetAsync(WorldResetRequest request)
         {
-            string ctx = string.IsNullOrWhiteSpace(request.ContextSignature) ? string.Empty : request.ContextSignature;
+            WorldResetCorrelationKey correlationKey = request.CorrelationKey;
             string rsn = string.IsNullOrWhiteSpace(request.Reason) ? string.Empty : request.Reason;
 
-            lock (_lock)
+            if (request.HasCorrelationKey)
             {
-                if (IsRecentlyCompletedLocked(ctx))
+                lock (_lock)
                 {
-                    LogLifecycleDedupe("recent_completed", ctx, rsn);
-                    return WorldResetResult.Completed;
-                }
+                    if (IsRecentlyCompletedLocked(correlationKey))
+                    {
+                        LogLifecycleDedupe("recent_completed", correlationKey, rsn);
+                        return WorldResetResult.Completed;
+                    }
 
-                if (!_inFlight.Add(ctx))
-                {
-                    LogLifecycleDedupe("in_flight", ctx, rsn);
-                    return WorldResetResult.Completed;
+                    if (!_inFlight.Add(correlationKey))
+                    {
+                        LogLifecycleDedupe("in_flight", correlationKey, rsn);
+                        return WorldResetResult.Completed;
+                    }
                 }
             }
 
@@ -77,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             catch (Exception ex)
             {
                 DebugUtility.LogError<WorldResetService>(
-                    $"[WorldResetService] Falha durante TriggerResetAsync signature='{ctx}' reason='{rsn}' ex={ex}");
+                    $"[WorldResetService] Falha durante TriggerResetAsync correlationKey='{correlationKey}' signature='{request.ContextSignature}' reason='{rsn}' ex={ex}");
 
                 _lifecyclePublisher.PublishCompleted(
                     request,
@@ -87,26 +75,24 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             }
             finally
             {
-                lock (_lock)
+                if (request.HasCorrelationKey)
                 {
-                    _inFlight.Remove(ctx);
-                    if (result != WorldResetResult.Failed && !string.IsNullOrWhiteSpace(ctx))
+                    lock (_lock)
                     {
-                        _recentCompleted[ctx] = Stopwatch.GetTimestamp();
-                        PruneRecentCompletedLocked();
+                        _inFlight.Remove(correlationKey);
+                        if (result != WorldResetResult.Failed)
+                        {
+                            _recentCompleted[correlationKey] = Stopwatch.GetTimestamp();
+                            PruneRecentCompletedLocked();
+                        }
                     }
                 }
             }
         }
 
-        private bool IsRecentlyCompletedLocked(string contextSignature)
+        private bool IsRecentlyCompletedLocked(WorldResetCorrelationKey correlationKey)
         {
-            if (string.IsNullOrWhiteSpace(contextSignature))
-            {
-                return false;
-            }
-
-            if (!_recentCompleted.TryGetValue(contextSignature, out long completedAt))
+            if (!correlationKey.IsValid || !_recentCompleted.TryGetValue(correlationKey, out long completedAt))
             {
                 return false;
             }
@@ -115,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             double elapsedMs = elapsedTicks * 1000d / Stopwatch.Frequency;
             if (elapsedMs < 0d || elapsedMs > RecentCompletionWindowMs)
             {
-                _recentCompleted.Remove(contextSignature);
+                _recentCompleted.Remove(correlationKey);
                 return false;
             }
 
@@ -132,10 +118,10 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             _recentCompleted.Clear();
         }
 
-        private static void LogLifecycleDedupe(string dedupeKind, string contextSignature, string reason)
+        private static void LogLifecycleDedupe(string dedupeKind, WorldResetCorrelationKey correlationKey, string reason)
         {
             DebugUtility.LogVerbose<WorldResetService>(
-                $"[OBS][WorldReset][Dedupe] lifecycle='dedupe' kind='{dedupeKind}' signature='{contextSignature}' reason='{reason}'.",
+                $"[OBS][WorldReset][Dedupe] lifecycle='dedupe' kind='{dedupeKind}' correlationKey='{correlationKey}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
     }

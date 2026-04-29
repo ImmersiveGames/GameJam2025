@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 

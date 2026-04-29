@@ -1,21 +1,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.ActorsSystem.Models;
-using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 using UnityEngine.SceneManagement;
 
@@ -53,32 +43,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class PhaseOrdinalNavigationRequestService : IPhaseOrdinalNavigationRequestService
     {
-        private const string Source = PhaseFlowSignalVocabulary.SessionTransitionPhaseOrdinalNavigationSource;
-
         private readonly IRestartContextService _restartContextService;
         private readonly IPhaseCatalogNavigationService _phaseCatalogNavigationService;
-        private readonly GameplayPhaseFlowService _gameplayPhaseFlowService;
-        private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
-        private readonly ISceneFlowRouteActorSetRefContext _routeActorSetContext;
-        private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
-        private readonly IGameplayParticipationFlowService _participationFlowService;
+        private readonly SessionTransitionOrchestrator _sessionTransitionOrchestrator;
 
         public PhaseOrdinalNavigationRequestService(
             IRestartContextService restartContextService,
             IPhaseCatalogNavigationService phaseCatalogNavigationService,
-            GameplayPhaseFlowService gameplayPhaseFlowService,
-            ISceneCompositionExecutor sceneCompositionExecutor,
-            ISceneFlowRouteActorSetRefContext routeActorSetContext,
-            IGameplayPhaseRuntimeService phaseRuntimeService,
-            IGameplayParticipationFlowService participationFlowService)
+            SessionTransitionOrchestrator sessionTransitionOrchestrator)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _phaseCatalogNavigationService = phaseCatalogNavigationService ?? throw new ArgumentNullException(nameof(phaseCatalogNavigationService));
-            _gameplayPhaseFlowService = gameplayPhaseFlowService ?? throw new ArgumentNullException(nameof(gameplayPhaseFlowService));
-            _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
-            _routeActorSetContext = routeActorSetContext ?? throw new ArgumentNullException(nameof(routeActorSetContext));
-            _phaseRuntimeService = phaseRuntimeService ?? throw new ArgumentNullException(nameof(phaseRuntimeService));
-            _participationFlowService = participationFlowService ?? throw new ArgumentNullException(nameof(participationFlowService));
+            _sessionTransitionOrchestrator = sessionTransitionOrchestrator ?? throw new ArgumentNullException(nameof(sessionTransitionOrchestrator));
         }
 
         public async Task<PhaseNavigationResult> NavigateAsync(PhaseOrdinalNavigationRequest request, CancellationToken ct = default)
@@ -97,14 +73,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             ValidateCurrentSnapshotMatchesCatalogOrFail(currentSnapshot, navigationPlan, reason);
             _phaseCatalogNavigationService.Commit(navigationPlan);
 
-            PhaseNavigationSelectionContext selectionContext = await ApplyTargetPhaseAsync(navigationPlan, currentSnapshot, request.Kind, reason, ct);
+            SessionTransitionContext context = BuildSessionTransitionContextOrFail(request, navigationPlan, reason);
+            await _sessionTransitionOrchestrator.ExecuteAsync(context, ct);
+
             _phaseCatalogNavigationService.ClearPendingTarget(reason);
 
-            SessionTransitionPlan sessionTransitionPlan = BuildSessionTransitionPlanOrFail(request, selectionContext, reason);
-            PublishPhaseLocalEntryReadyOrFail(sessionTransitionPlan, reason);
-
             DebugUtility.Log<PhaseOrdinalNavigationRequestService>(
-                $"[OBS][QA][PhaseNavigation] ordinal_navigation_completed kind='{request.Kind}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(navigationPlan.TargetPhaseRef)}' reason='{reason}'.",
+                $"[OBS][QA][PhaseNavigation] ordinal_navigation_completed kind='{request.Kind}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(navigationPlan.TargetPhaseRef)}' routedTo='SessionTransitionOrchestrator' phaseLocalEntryPublisher='SessionTransitionOrchestrator' reason='{reason}'.",
                 DebugUtility.Colors.Success);
 
             return new PhaseNavigationResult(
@@ -114,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
                 navigationPlan.CatalogName,
                 navigationPlan.TraversalMode,
                 navigationPlan.WasWrapped,
-                selectionContext);
+                default);
         }
 
         private PhaseCatalogNavigationPlan ResolvePlan(PhaseOrdinalNavigationRequest request, string reason)
@@ -136,172 +111,31 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             }
         }
 
-        private async Task<PhaseNavigationSelectionContext> ApplyTargetPhaseAsync(
-            PhaseCatalogNavigationPlan navigationPlan,
-            GameplayStartSnapshot currentSnapshot,
-            PhaseOrdinalNavigationKind kind,
-            string reason,
-            CancellationToken ct)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            PhaseDefinitionAsset targetPhaseRef = navigationPlan.TargetPhaseRef;
-            PhaseDefinitionSelectedEvent phaseSelectedEvent = _gameplayPhaseFlowService.PublishPhaseDefinitionSelected(
-                targetPhaseRef,
-                currentSnapshot.MacroRouteId,
-                currentSnapshot.MacroRouteRef,
-                reason);
-
-            SceneCompositionRequest applyRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
-                targetPhaseRef,
-                reason,
-                phaseSelectedEvent.SelectionSignature,
-                forceFullReload: false);
-
-            DebugUtility.Log<PhaseOrdinalNavigationRequestService>(
-                $"[OBS][QA][PhaseNavigation] ordinal_navigation_content_apply_started kind='{kind}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(targetPhaseRef)}' scenesToLoad=[{string.Join(",", applyRequest.ScenesToLoad)}] reason='{reason}'.",
-                DebugUtility.Colors.Info);
-
-            await _sceneCompositionExecutor.ApplyAsync(applyRequest);
-
-            PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
-                targetPhaseRef,
-                applyRequest.ScenesToLoad,
-                applyRequest.ActiveScene,
-                Source);
-
-            return new PhaseNavigationSelectionContext(
-                currentSnapshot,
-                targetPhaseRef,
-                phaseSelectedEvent,
-                reason,
-                ResolveTargetSceneName(applyRequest),
-                navigationPlan.Direction,
-                forceFullReload: false);
-        }
-
-        private SessionTransitionPlan BuildSessionTransitionPlanOrFail(
+        private SessionTransitionContext BuildSessionTransitionContextOrFail(
             PhaseOrdinalNavigationRequest request,
-            PhaseNavigationSelectionContext selectionContext,
+            PhaseCatalogNavigationPlan navigationPlan,
             string reason)
         {
             string sceneName = ResolveActiveSceneNameOrFail(reason);
-            string contextSignature = $"qa-phase-ordinal|kind:{request.Kind}|from:{DescribePhase(selectionContext.CurrentPhaseRef)}|to:{DescribePhase(selectionContext.TargetPhaseRef)}|selection:{selectionContext.PhaseSelectedEvent.SelectionSignature}|reason:{reason}";
-            SessionTransitionContext context = SessionTransitionContext.CreatePhaseOrdinalNavigation(
+            string targetPhaseId = navigationPlan.TargetPhaseRef != null && navigationPlan.TargetPhaseRef.PhaseId.IsValid
+                ? navigationPlan.TargetPhaseRef.PhaseId.Value
+                : string.Empty;
+
+            if (string.IsNullOrWhiteSpace(targetPhaseId))
+            {
+                HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
+                    $"[FATAL][H1][QA][PhaseNavigation] PhaseOrdinalNavigation sem targetPhaseId canonico apos commit. kind='{request.Kind}' reason='{reason}'.");
+            }
+
+            string contextSignature = $"qa-phase-ordinal|kind:{request.Kind}|from:{DescribePhase(navigationPlan.CurrentCommitted)}|to:{DescribePhase(navigationPlan.TargetPhaseRef)}|reason:{reason}";
+            return SessionTransitionContext.CreatePhaseOrdinalNavigation(
                 contextSignature,
                 sceneName,
                 profile: "QA/PhaseNavigation",
                 reason: reason,
                 nextState: "PhaseOrdinalNavigation",
                 ordinalNavigationKind: request.Kind,
-                targetPhaseId: selectionContext.TargetPhaseRef.PhaseId.Value);
-
-            SessionTransitionComposition composition = new SessionTransitionComposition(
-                new SessionTransitionAxisMap(
-                    SessionTransitionIntentKind.PhaseOrdinalNavigation,
-                    RunContinuationKind.Unknown,
-                    SessionTransitionPhaseAction.OrdinalNavigation,
-                    SessionTransitionResetAction.None,
-                    reconstruction: false,
-                    contentSpawn: true,
-                    carryOver: true),
-                new SessionTransitionContinuityShape(
-                    SessionTransitionPreservationMask.SessionState |
-                    SessionTransitionPreservationMask.WorldState |
-                    SessionTransitionPreservationMask.ContentState |
-                    SessionTransitionPreservationMask.ActorState |
-                    SessionTransitionPreservationMask.ObjectState,
-                    SessionTransitionResetScopeKind.None,
-                    SessionTransitionCarryOverKind.Selective),
-                new SessionTransitionReconstructionShape(
-                    SessionTransitionReconstructionKind.None,
-                    SessionTransitionResetScopeKind.None),
-                emitsPhaseLocalEntryReady: true,
-                new[]
-                {
-                    SessionTransitionAxisId.Continuity,
-                    SessionTransitionAxisId.PhaseTransition,
-                    SessionTransitionAxisId.ContentSpawn,
-                    SessionTransitionAxisId.CarryOver,
-                });
-
-            SessionTransitionExecution execution = new SessionTransitionExecution(
-                SessionTransitionExecutionKind.PhaseOrdinalNavigation,
-                SessionTransitionHandoffAction.None);
-
-            return new SessionTransitionPlan(context, composition, execution);
-        }
-
-        private void PublishPhaseLocalEntryReadyOrFail(SessionTransitionPlan plan, string reason)
-        {
-            if (!plan.IsValid || !plan.EmitsPhaseLocalEntryReady)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
-                    $"[FATAL][H1][QA][PhaseNavigation] Plano ordinal invalido para PhaseLocalEntryReady. intent='{plan.IntentKind}' reason='{reason}'.");
-            }
-
-            PhaseLocalEntryReadyRuntimePayload payload = ResolvePhaseLocalEntryReadyRuntimePayloadOrFail(reason);
-            GameplaySessionContextSnapshot sessionContext = payload.PhaseRuntime.SessionContext;
-            string sceneName = ResolveActiveSceneNameOrFail(reason);
-            string cycleSignature = $"phase-local-entry-ready|context:{plan.ContextSignature}|routeId:{sessionContext.MacroRouteId}|routeKind:{sessionContext.MacroRouteRef.RouteKind}|scene:{sceneName}|reason:{reason}|session:{payload.PhaseRuntime.SessionContext.SessionSignature}|phase:{payload.PhaseRuntime.PhaseRuntimeSignature}|participation:{payload.ParticipationSnapshot.Signature.Value}|actorSetRef:{payload.ActorSetRef.Value}|intent:{plan.IntentKind}|ordinal:{plan.Context.OrdinalNavigationKind}|execution:{plan.Execution}";
-
-            var evt = new SessionTransitionPhaseLocalEntryReadyEvent(
-                plan,
-                Source,
-                sessionContext.MacroRouteId,
-                sessionContext.MacroRouteRef.RouteKind,
-                sceneName,
-                reason,
-                payload.PhaseRuntime.SessionContext.SessionSignature,
-                payload.PhaseRuntime.PhaseRuntimeSignature,
-                payload.ParticipationSnapshot.Signature.Value,
-                payload.ActorSetRef.Value,
-                cycleSignature);
-
-            if (!evt.HasCanonicalPayload)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
-                    $"[FATAL][H1][QA][PhaseNavigation] PhaseLocalEntryReady ordinal construido sem payload canonico. kind='{plan.Context.OrdinalNavigationKind}' reason='{reason}'.");
-            }
-
-            EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Raise(evt);
-
-            DebugUtility.Log<PhaseOrdinalNavigationRequestService>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished source='{Source}' intent='{evt.Plan.IntentKind}' ordinalKind='{evt.Plan.Context.OrdinalNavigationKind}' executionKind='{evt.Plan.Execution.Kind}' routeId='{evt.RouteId}' routeKind='{evt.RouteKind}' scene='{evt.SceneName}' actorSetRef='{evt.ActorSetRef}' sessionSignature='{evt.SessionSignature}' phaseSignature='{evt.PhaseSignature}' participationSignature='{evt.ParticipationSignature}' cycleSignature='{evt.CycleSignature}' reason='{reason}'.",
-                DebugUtility.Colors.Success);
-        }
-
-        private PhaseLocalEntryReadyRuntimePayload ResolvePhaseLocalEntryReadyRuntimePayloadOrFail(string reason)
-        {
-            if (!_routeActorSetContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string routeSource) ||
-                routeKind != SceneRouteKind.Gameplay ||
-                !actorSetRef.IsValid)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
-                    $"[FATAL][H1][QA][PhaseNavigation] ActorSetRef canonico ausente para PhaseLocalEntryReady ordinal. routeKind='{routeKind}' routeSource='{Normalize(routeSource)}' reason='{reason}'.");
-            }
-
-            if (!_phaseRuntimeService.TryGetCurrent(out GameplayPhaseRuntimeSnapshot phaseRuntime) ||
-                !phaseRuntime.IsValid ||
-                phaseRuntime.PhaseDefinitionRef == null)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
-                    $"[FATAL][H1][QA][PhaseNavigation] GameplayPhaseRuntimeSnapshot invalido para PhaseLocalEntryReady ordinal. reason='{reason}'.");
-            }
-
-            ParticipationReadinessSnapshot readiness = ParticipationReadinessSnapshot.Empty;
-            bool hasReadiness = _participationFlowService.TryGetCurrentReadiness(out readiness);
-            if (!_participationFlowService.TryGetCurrent(out ParticipationSnapshot participationSnapshot) ||
-                !hasReadiness ||
-                !participationSnapshot.IsValid ||
-                !readiness.IsValid ||
-                !readiness.CanEnterGameplay)
-            {
-                HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
-                    $"[FATAL][H1][QA][PhaseNavigation] Participation snapshot invalida para PhaseLocalEntryReady ordinal. readinessState='{readiness.State}' canEnterGameplay='{readiness.CanEnterGameplay}' reason='{reason}'.");
-            }
-
-            return new PhaseLocalEntryReadyRuntimePayload(actorSetRef, phaseRuntime, participationSnapshot);
+                targetPhaseId: targetPhaseId);
         }
 
         private GameplayStartSnapshot ResolveCurrentSnapshotOrFail(string reason)
@@ -362,43 +196,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             if (string.IsNullOrWhiteSpace(sceneName))
             {
                 HardFailFastH1.Trigger(typeof(PhaseOrdinalNavigationRequestService),
-                    $"[FATAL][H1][QA][PhaseNavigation] ActiveScene vazio para PhaseLocalEntryReady ordinal. reason='{reason}'.");
+                    $"[FATAL][H1][QA][PhaseNavigation] ActiveScene vazio para PhaseOrdinalNavigation. reason='{reason}'.");
             }
 
             return sceneName.Trim();
         }
 
-        private static string ResolveTargetSceneName(SceneCompositionRequest applyRequest)
+        private static string DescribePhase(PhaseDefinitionAsset phase)
         {
-            if (applyRequest.ScenesToLoad != null && applyRequest.ScenesToLoad.Count > 0)
+            if (phase == null)
             {
-                return applyRequest.ScenesToLoad[0];
+                return "<null>";
             }
 
-            return applyRequest.ActiveScene;
+            return phase.PhaseId.IsValid ? phase.PhaseId.Value : phase.name;
         }
 
-        private static string DescribePhase(PhaseDefinitionAsset phase)
-            => phase != null && phase.PhaseId.IsValid ? phase.PhaseId.Value : "<none>";
-
         private static string Normalize(string value)
-            => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-
-        private readonly struct PhaseLocalEntryReadyRuntimePayload
         {
-            public PhaseLocalEntryReadyRuntimePayload(
-                ActorSetRef actorSetRef,
-                GameplayPhaseRuntimeSnapshot phaseRuntime,
-                ParticipationSnapshot participationSnapshot)
-            {
-                ActorSetRef = actorSetRef;
-                PhaseRuntime = phaseRuntime;
-                ParticipationSnapshot = participationSnapshot;
-            }
-
-            public ActorSetRef ActorSetRef { get; }
-            public GameplayPhaseRuntimeSnapshot PhaseRuntime { get; }
-            public ParticipationSnapshot ParticipationSnapshot { get; }
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

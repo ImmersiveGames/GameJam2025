@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition
 {

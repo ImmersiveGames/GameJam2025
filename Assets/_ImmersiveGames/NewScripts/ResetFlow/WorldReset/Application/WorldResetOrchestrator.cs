@@ -54,10 +54,8 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
 
             if (!request.ShouldExecute)
             {
-                WorldResetOutcome skippedOutcome = request.HasSignature
-                    ? WorldResetOutcome.SkippedByPolicy
-                    : WorldResetOutcome.SkippedInvalidContext;
-                string skippedDetail = request.HasSignature ? string.Empty : "ContextSignatureEmpty";
+                WorldResetOutcome skippedOutcome = WorldResetOutcome.SkippedByPolicy;
+                string skippedDetail = string.IsNullOrWhiteSpace(request.Reason) ? "SkippedByPolicy" : request.Reason;
 
                 _lifecyclePublisher.PublishCompleted(request, skippedOutcome, skippedDetail);
                 LogLifecycleCheckpoint(LifecycleCheckpoint.Completion, request, skippedOutcome.ToString());

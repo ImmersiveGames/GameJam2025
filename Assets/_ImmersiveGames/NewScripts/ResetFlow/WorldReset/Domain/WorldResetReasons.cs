@@ -15,7 +15,6 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Domain
         public const string GuardDuplicatePrefix = "Guard_DuplicateScenesReady";
         public const string GateDisposed = "Gate_Disposed";
 
-        public const string ProductionTriggerPrefix = "ProductionTrigger/";
         public const string ManualProfile = "manual";
     }
 }

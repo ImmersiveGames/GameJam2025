@@ -37,14 +37,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         public SessionTransitionContext Context { get; }
         public SessionTransitionComposition Composition { get; }
         public SessionTransitionExecution Execution { get; }
-        public bool EmitsPhaseLocalEntryReady => Composition.EmitsPhaseLocalEntryReady;
+        public bool RequiresPhaseLocalEntryReady => Execution.RequiresPhaseLocalEntryReady;
+        public bool EmitsPhaseLocalEntryReady => RequiresPhaseLocalEntryReady;
         public SessionTransitionOrigin Origin => Context.Origin;
         public SessionTransitionIntentKind IntentKind => Context.IntentKind;
         public bool HasRunContinuationSelection => Context.HasRunContinuationSelection;
         public RunContinuationSelection ResolvedSelection => Context.ResolvedSelection;
         public RunContinuationContext ContinuationContext => Context.ContinuationContext;
         public RunContinuationKind ResolvedContinuation => Context.ResolvedContinuation;
-        public RunContinuationKind LegacyRunContinuation => Composition.LegacyRunContinuation;
         public string ContextSignature => Context.ContextSignature;
         public string Reason => Context.Reason;
         public string NextState => Context.NextState;
@@ -56,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
         public override string ToString()
         {
-            return $"Origin='{Origin}', Intent='{IntentKind}', LegacyContinuation='{ResolvedContinuation}', Composition='{Composition}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
+            return $"Origin='{Origin}', Intent='{IntentKind}', RunContinuation='{ResolvedContinuation}', Composition='{Composition}', RequiresPhaseLocalEntryReady='{RequiresPhaseLocalEntryReady}', EmitsPhaseLocalEntryReady='{EmitsPhaseLocalEntryReady}', Execution='{Execution}', Reason='{Reason}', NextState='{NextState}'";
         }
     }
 }

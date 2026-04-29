@@ -370,7 +370,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
         public override string ToString()
         {
-            return $"Origin='{Origin}', Intent='{IntentKind}', LegacyContinuation='{ResolvedContinuation}', OrdinalNavigation='{OrdinalNavigationKind}', OrdinalTarget='{OrdinalNavigationTargetPhaseId}', Reason='{Reason}', NextState='{NextState}'";
+            return $"Origin='{Origin}', Intent='{IntentKind}', RunContinuation='{ResolvedContinuation}', OrdinalNavigation='{OrdinalNavigationKind}', OrdinalTarget='{OrdinalNavigationTargetPhaseId}', Reason='{Reason}', NextState='{NextState}'";
         }
 
         private static string Normalize(string value)
@@ -431,6 +431,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             !string.IsNullOrWhiteSpace(ParticipationSignature) &&
             !string.IsNullOrWhiteSpace(ActorSetRef) &&
             !string.IsNullOrWhiteSpace(CycleSignature);
-        public bool IsPhaseLocalEntry => Plan.EmitsPhaseLocalEntryReady;
+        public bool IsPhaseLocalEntry => HasCanonicalPayload;
     }
 }

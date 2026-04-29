@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;

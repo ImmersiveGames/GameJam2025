@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
     [DebugLevel(DebugLevel.Verbose)]
     public sealed partial class PostRunOverlayController : MonoBehaviour, IRunDecisionStagePresenter
     {
-        private const string RetryReason = "RunDecision/Retry";
+        private const string RestartCurrentPhaseReason = "RunDecision/RestartCurrentPhase";
         private const string RestartReason = "RunDecision/Restart";
         private const string ExitToMenuReason = "RunDecision/ExitToMenu";
 
@@ -146,11 +146,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
         }
 
         /// <summary>
-        /// Retry reinicia somente a phase atual.
+        /// Reinicia somente a phase atual.
         /// </summary>
         public void OnClickRetry()
         {
-            RequestRestartCurrentPhase("Retry", RetryReason);
+            RequestRestartCurrentPhase("RestartCurrentPhase", RestartCurrentPhaseReason);
         }
 
         private void RequestRestartFromFirstPhase(string uiAction, string reason)
@@ -188,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
             _actionRequested = true;
             DebugUtility.LogVerbose<IRunDecisionStagePresenter>(
-                $"[OBS][GameplaySessionFlow][RunDecision][Selection] Retry solicitado. uiAction='{Normalize(uiAction)}' source='{Normalize(uiAction)}' semantic='CurrentPhaseRestart' legacy='false' selectedContinuation='{RunContinuationKind.RestartCurrentPhase}' runtimeContinuation='{RunContinuationKind.RestartCurrentPhase}' reason='{Normalize(reason)}'.",
+                $"[OBS][GameplaySessionFlow][RunDecision][Selection] RestartCurrentPhase solicitado. uiAction='{Normalize(uiAction)}' source='{Normalize(uiAction)}' semantic='CurrentPhaseRestart' legacy='false' selectedContinuation='{RunContinuationKind.RestartCurrentPhase}' runtimeContinuation='{RunContinuationKind.RestartCurrentPhase}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             CloseRunDecision(
@@ -563,4 +563,3 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
         }
     }
 }
-

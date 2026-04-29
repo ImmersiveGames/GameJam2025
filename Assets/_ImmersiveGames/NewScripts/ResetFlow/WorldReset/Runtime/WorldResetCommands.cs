@@ -28,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
 
             string normalizedReason = NormalizeReason(reason, "WorldReset/Macro");
             string normalizedMacroSignature = NormalizeSignature(macroSignature);
+            WorldResetCorrelationKey correlationKey = WorldResetCorrelationKey.Required(normalizedMacroSignature);
 
             DebugUtility.Log<WorldResetCommands>(
                 $"[OBS][WorldReset] ResetMacro command routeId='{macroRouteId}' macroSignature='{normalizedMacroSignature}' reason='{normalizedReason}'.",
@@ -35,6 +36,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
 
             var request = new WorldResetRequest(
                 kind: ResetKind.Macro,
+                correlationKey: correlationKey,
                 contextSignature: normalizedMacroSignature,
                 reason: normalizedReason,
                 targetScene: string.Empty,
@@ -57,4 +59,3 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime
         }
     }
 }
-

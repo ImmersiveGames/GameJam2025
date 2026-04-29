@@ -9,8 +9,6 @@ using _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterResolution
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkipPolicy;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
 {
@@ -179,9 +177,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterIntroStageLifecycleStateService();
             RegisterIntroStageExecutionDecisionService();
             RegisterIntroStageLifecycleDispatchService();
-            RegisterPhaseNextPhaseHandoffFinalizationService();
-            RegisterPhaseNextPhaseEntryHandoffService();
-            RegisterPhaseNextPhaseService();
             RegisterGameplaySceneClassifier();
             RegisterIntroStageLifecycleOrchestrator();
         }
@@ -298,106 +293,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 },
                 "[GameLoop] IIntroStageExecutionDecisionService ja registrado no DI global.",
                 "[GameLoop] IntroStageExecutionDecisionService registrado no DI global como seam de policy execute/skip.");
-        }
-
-        private static void RegisterPhaseNextPhaseEntryHandoffService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseEntryHandoffService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] IPhaseNextPhaseEntryHandoffService ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var phaseNextPhaseSelectionService) || phaseNextPhaseSelectionService == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] NextPhase entry handoff skipped because phase rail is not active yet.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageSessionService>(out var introStageSessionService) || introStageSessionService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageSessionService missing from global DI before next-phase entry handoff registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageLifecycleDispatchService>(out var introStageLifecycleDispatchService) || introStageLifecycleDispatchService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageLifecycleDispatchService missing from global DI before next-phase entry handoff registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseHandoffFinalizationService>(out var handoffFinalizationService) || handoffFinalizationService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IPhaseNextPhaseHandoffFinalizationService missing from global DI before next-phase entry handoff registration.");
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseEntryHandoffService>(
-                new PhaseNextPhaseEntryHandoffService(introStageSessionService, introStageLifecycleDispatchService, handoffFinalizationService));
-            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] PhaseNextPhaseEntryHandoffService registrado no DI global como bridge estreito de next-phase.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterPhaseNextPhaseHandoffFinalizationService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseHandoffFinalizationService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] IPhaseNextPhaseHandoffFinalizationService ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var phaseNextPhaseSelectionService) || phaseNextPhaseSelectionService == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] NextPhase handoff finalization skipped because phase rail is not active yet.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseHandoffFinalizationService>(
-                new PhaseNextPhaseHandoffFinalizationService());
-            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] PhaseNextPhaseHandoffFinalizationService registrado no DI global como seam de finalizacao de handoff.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void RegisterPhaseNextPhaseService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseService>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] IPhaseNextPhaseService ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseSelectionService>(out var selectionService) || selectionService == null)
-            {
-                DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                    "[OBS][GameLoop][Operational] NextPhase service skipped because phase rail is not active yet.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseCompositionService>(out var compositionService) || compositionService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IPhaseNextPhaseCompositionService missing from global DI before next-phase service registration.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IPhaseNextPhaseEntryHandoffService>(out var handoffService) || handoffService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IPhaseNextPhaseEntryHandoffService missing from global DI before next-phase service registration.");
-            }
-
-            DependencyManager.Provider.RegisterGlobal<IPhaseNextPhaseService>(
-                new PhaseNextPhaseService(selectionService, compositionService, handoffService));
-            DebugUtility.LogVerbose(typeof(GameLoopInstaller),
-                "[GameLoop] PhaseNextPhaseService registrado no DI global como orquestrador fino de next-phase.",
-                DebugUtility.Colors.Info);
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

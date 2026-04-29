@@ -671,8 +671,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 evt.ActorSetRef,
                 definitions,
                 presence,
-                plan,
-                requireCompatibility: true);
+                plan);
         }
 
         private ActorsMaterializationExecutionSnapshot ProjectPreserveExistingForDispatch(
@@ -694,10 +693,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 _phaseLocalEntryReadyContinuation,
                 _phaseLocalEntryReadyContinuation,
                 string.Empty,
-                ActorsDefinitionsSnapshot.Empty,
-                ActorsPresenceSnapshot.Empty,
-                ActorsMaterializationPlanSnapshot.Empty,
-                requireCompatibility: false);
+                RefreshDefinitionsOrFail(),
+                RefreshPresenceOrFail(),
+                RefreshPlanOrFail());
         }
 
         private static ActorsMaterializationExecutionSnapshot ProjectPreserveExisting(
@@ -710,8 +708,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             string actorSetRef,
             ActorsDefinitionsSnapshot definitions,
             ActorsPresenceSnapshot presence,
-            ActorsMaterializationPlanSnapshot plan,
-            bool requireCompatibility)
+            ActorsMaterializationPlanSnapshot plan)
         {
             if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
             {
@@ -735,7 +732,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         definitions,
                         presence,
                         plan,
-                        requireCompatibility,
                         out ActorsMaterializationExecutionEntry preservedEntry,
                         out string preserveReason))
                 {
@@ -809,7 +805,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             ActorsDefinitionsSnapshot definitions,
             ActorsPresenceSnapshot presence,
             ActorsMaterializationPlanSnapshot plan,
-            bool requireCompatibility,
             out ActorsMaterializationExecutionEntry preservedEntry,
             out string reason)
         {
@@ -818,7 +813,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
             if (!entry.IsValid ||
                 entry.Directive != ActorMaterializationExecutionDirective.NoActionStable ||
-                !entry.RuntimeActorId.IsValid)
+                !entry.RuntimeActorId.IsValid ||
+                entry.SpecKind != ActorMaterializationSpecKind.AxisActor ||
+                string.IsNullOrWhiteSpace(entry.ActorSpecId) ||
+                string.IsNullOrWhiteSpace(entry.ActorSetRef) ||
+                entry.OperationalRecipeKind == ActorOperationalRecipeKind.Unknown)
             {
                 return false;
             }
@@ -829,7 +828,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 return false;
             }
 
-            if (requireCompatibility && !IsExistingActorCompatible(definitions, presence, plan, entry))
+            if (!TryResolveCompatibleExistingActor(definitions, presence, plan, entry, out string compatibilityReason))
             {
                 return false;
             }
@@ -851,67 +850,137 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             reason = string.Equals(intent, SessionTransitionIntentKind.PhaseOrdinalNavigation.ToString(), StringComparison.Ordinal)
                 ? "existing_actor_valid_for_phase_ordinal_navigation"
                 : "existing_actor_valid_for_advance_phase";
+            if (!string.IsNullOrWhiteSpace(compatibilityReason))
+            {
+                reason = compatibilityReason;
+            }
             return true;
         }
 
-        private static bool IsExistingActorCompatible(
+        private static bool TryResolveCompatibleExistingActor(
             ActorsDefinitionsSnapshot definitions,
             ActorsPresenceSnapshot presence,
             ActorsMaterializationPlanSnapshot plan,
-            ActorsMaterializationExecutionEntry entry)
+            ActorsMaterializationExecutionEntry entry,
+            out string reason)
         {
+            reason = string.Empty;
+
             if (!definitions.IsValid || !presence.IsValid || !plan.IsValid)
             {
+                reason = "invalid_dependencies";
                 return false;
             }
 
-            bool hasCompatibleDefinition = false;
+            if (!TryResolveCompatibleDefinition(definitions, entry, out ActorDefinitionRecord definition))
+            {
+                reason = "definition_mismatch";
+                return false;
+            }
+
+            if (!TryResolveCompatiblePresence(presence, entry))
+            {
+                reason = "presence_mismatch";
+                return false;
+            }
+
+            if (!TryResolveCompatiblePlanEntry(plan, entry))
+            {
+                reason = "plan_mismatch";
+                return false;
+            }
+
+            if (entry.Role == ActorRole.Player)
+            {
+                if (string.IsNullOrWhiteSpace(entry.SemanticParticipantId))
+                {
+                    reason = "player_missing_semantic_participant";
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(definition.SemanticParticipantId) ||
+                    !string.Equals(definition.SemanticParticipantId, entry.SemanticParticipantId, StringComparison.Ordinal))
+                {
+                    reason = "player_definition_semantic_participant_mismatch";
+                    return false;
+                }
+            }
+
+            reason = "existing_actor_compatible";
+            return true;
+        }
+
+        private static bool TryResolveCompatibleDefinition(
+            ActorsDefinitionsSnapshot definitions,
+            ActorsMaterializationExecutionEntry entry,
+            out ActorDefinitionRecord compatibleDefinition)
+        {
+            compatibleDefinition = default;
+
             for (int index = 0; index < definitions.Entries.Length; index += 1)
             {
                 ActorDefinitionRecord definition = definitions.Entries[index];
                 if (!definition.IsValid ||
                     definition.AxisActorId != entry.AxisActorId ||
+                    definition.Role != entry.Role ||
                     !string.Equals(definition.ActorSpecId, entry.ActorSpecId, StringComparison.Ordinal) ||
-                    !string.Equals(definition.ActorSetRef, entry.ActorSetRef, StringComparison.Ordinal))
+                    !string.Equals(definition.ActorSetRef, entry.ActorSetRef, StringComparison.Ordinal) ||
+                    definition.OperationalRecipeKind != entry.OperationalRecipeKind)
                 {
                     continue;
                 }
 
-                hasCompatibleDefinition = true;
-                break;
+                compatibleDefinition = definition;
+                return true;
             }
 
-            if (!hasCompatibleDefinition)
-            {
-                return false;
-            }
+            return false;
+        }
 
+        private static bool TryResolveCompatiblePresence(
+            ActorsPresenceSnapshot presence,
+            ActorsMaterializationExecutionEntry entry)
+        {
             for (int index = 0; index < presence.Entries.Length; index += 1)
             {
                 ActorsPresenceRecord presenceRecord = presence.Entries[index];
                 if (!presenceRecord.IsValid ||
                     presenceRecord.AxisActorId != entry.AxisActorId ||
+                    presenceRecord.Role != entry.Role ||
                     !presenceRecord.IsMaterialized ||
                     presenceRecord.IsInconsistent ||
                     !presenceRecord.RuntimeActorId.IsValid ||
-                    presenceRecord.RuntimeActorId != entry.RuntimeActorId)
+                    presenceRecord.RuntimeActorId != entry.RuntimeActorId ||
+                    !string.Equals(presenceRecord.SemanticParticipantId, entry.SemanticParticipantId, StringComparison.Ordinal))
                 {
                     continue;
                 }
 
-                for (int planIndex = 0; planIndex < plan.Entries.Length; planIndex += 1)
-                {
-                    ActorsMaterializationSpecEntry planEntry = plan.Entries[planIndex];
-                    if (!planEntry.IsValid ||
-                        planEntry.AxisActorId != entry.AxisActorId ||
-                        !string.Equals(planEntry.ActorSpecId, entry.ActorSpecId, StringComparison.Ordinal) ||
-                        !string.Equals(planEntry.ActorSetRef, entry.ActorSetRef, StringComparison.Ordinal))
-                    {
-                        continue;
-                    }
+                return true;
+            }
 
-                    return true;
+            return false;
+        }
+
+        private static bool TryResolveCompatiblePlanEntry(
+            ActorsMaterializationPlanSnapshot plan,
+            ActorsMaterializationExecutionEntry entry)
+        {
+            for (int planIndex = 0; planIndex < plan.Entries.Length; planIndex += 1)
+            {
+                ActorsMaterializationSpecEntry planEntry = plan.Entries[planIndex];
+                if (!planEntry.IsValid ||
+                    planEntry.Kind != ActorMaterializationSpecKind.AxisActor ||
+                    planEntry.AxisActorId != entry.AxisActorId ||
+                    !string.Equals(planEntry.ActorSpecId, entry.ActorSpecId, StringComparison.Ordinal) ||
+                    !string.Equals(planEntry.ActorSetRef, entry.ActorSetRef, StringComparison.Ordinal) ||
+                    planEntry.OperationalRecipeKind != entry.OperationalRecipeKind ||
+                    !string.Equals(planEntry.SemanticParticipantId, entry.SemanticParticipantId, StringComparison.Ordinal))
+                {
+                    continue;
                 }
+
+                return true;
             }
 
             return false;

@@ -1,11 +1,8 @@
 using System;
-using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
@@ -192,13 +189,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
             }
 
             IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService, phaseResetOperationalHandoffService);
-            IPhaseDefinitionCatalog phaseDefinitionCatalog = ResolveOptionalPhaseDefinitionCatalog(bootstrapConfig);
 
             var service = new GameplaySessionFlowContinuityService(
                 navigationHandoffService,
                 restartContextService,
-                phaseResetExecutor,
-                phaseDefinitionCatalog);
+                phaseResetExecutor);
 
             DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);
 
@@ -207,20 +202,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 DebugUtility.Colors.Info);
         }
 
-        private static IPhaseDefinitionCatalog ResolveOptionalPhaseDefinitionCatalog(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (bootstrapConfig?.NavigationCatalog is not GameNavigationCatalogAsset navigationCatalog)
-            {
-                return null;
-            }
-
-            if (!navigationCatalog.IsGameplayPhaseEnabledOrFail())
-            {
-                return null;
-            }
-
-            return navigationCatalog.ResolveGameplayPhaseCatalogOrFail();
-        }
     }
 }
 
@@ -321,4 +302,3 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
     }
 
 }
-
