@@ -7,8 +7,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.RuntimeSignals
     internal sealed class GameplayRuntimeSignalsAdapter : IDisposable
     {
         private readonly Action _onBootStartPlanRequested;
-        private readonly Action _onGameRunStarted;
-        private readonly Action _onGameRunEnded;
+        private readonly Action<GameRunStartedEvent> _onGameRunStarted;
+        private readonly Action<GameRunEndedEvent> _onGameRunEnded;
         private readonly Action<PauseStateChangedEvent> _onPauseStateChanged;
         private readonly Action<GameResetRequestedEvent> _onGameResetRequested;
         private readonly Action<ReadinessChangedEvent> _onReadinessChanged;
@@ -24,8 +24,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.RuntimeSignals
 
         public GameplayRuntimeSignalsAdapter(
             Action onBootStartPlanRequested,
-            Action onGameRunStarted,
-            Action onGameRunEnded,
+            Action<GameRunStartedEvent> onGameRunStarted,
+            Action<GameRunEndedEvent> onGameRunEnded,
             Action<PauseStateChangedEvent> onPauseStateChanged,
             Action<GameResetRequestedEvent> onGameResetRequested,
             Action<ReadinessChangedEvent> onReadinessChanged)
@@ -43,8 +43,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.RuntimeSignals
             try
             {
                 _bootStartPlanRequestedBinding = new EventBinding<BootStartPlanRequestedEvent>(_ => _onBootStartPlanRequested());
-                _gameRunStartedBinding = new EventBinding<GameRunStartedEvent>(_ => _onGameRunStarted());
-                _gameRunEndedBinding = new EventBinding<GameRunEndedEvent>(_ => _onGameRunEnded());
+                _gameRunStartedBinding = new EventBinding<GameRunStartedEvent>(_onGameRunStarted);
+                _gameRunEndedBinding = new EventBinding<GameRunEndedEvent>(_onGameRunEnded);
                 _pauseStateBinding = new EventBinding<PauseStateChangedEvent>(_onPauseStateChanged);
                 _gameResetBinding = new EventBinding<GameResetRequestedEvent>(_onGameResetRequested);
                 _readinessBinding = new EventBinding<ReadinessChangedEvent>(_onReadinessChanged);

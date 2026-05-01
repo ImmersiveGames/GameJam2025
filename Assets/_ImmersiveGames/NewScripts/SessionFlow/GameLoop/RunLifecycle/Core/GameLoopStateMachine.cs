@@ -36,18 +36,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 return TransitionTo(GameLoopStateId.Boot);
             }
 
-            // ReadyRequested tem prioridade alta APENAS em estados nao-ativos.
-            // Evita capturar reset/restart durante transicoes em gameplay.
-            if (_signals.ReadyRequested)
-            {
-                if (Current.IsPreGameplayState()
-                    || Current.IsPausedState()
-                    || Current.IsTerminalRunState())
-                {
-                    return TransitionTo(GameLoopStateId.Ready);
-                }
-            }
-
             var next = Current;
 
             switch (Current)
@@ -55,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 case GameLoopStateId.Boot:
                     if (_signals.StartRequested)
                     {
-                        next = GameLoopStateId.Ready;
+                        next = GameLoopStateId.Playing;
                     }
                     break;
 
@@ -88,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                     // Mantem RunEnded como estado terminal interno do GameLoop.
                     if (_signals.StartRequested)
                     {
-                        next = GameLoopStateId.Ready;
+                        next = GameLoopStateId.Playing;
                     }
                     break;
             }

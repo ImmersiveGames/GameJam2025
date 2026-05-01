@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         private readonly GameLoopStateTransitionEffects _stateTransitionEffects;
         private string _pendingPauseWillEnterReason;
         private string _pendingPauseWillExitReason;
+        private GameLoopSignalIdentity _currentLoopIdentity;
         private SynchronizationContext _mainThreadContext;
         private int _mainThreadId = -1;
         private int _startHandoffPosted;
@@ -28,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         public string CurrentStateIdName { get; private set; } = string.Empty;
         public bool IsPaused => string.Equals(CurrentStateIdName, nameof(GameLoopStateId.Paused), StringComparison.Ordinal);
 
-        public void RequestStart()
+        public void RequestStart(string reason = null, GameLoopSignalIdentity identity = null)
         {
             if (_stateMachine is { IsGameActive: true })
             {
@@ -37,15 +38,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 return;
             }
 
+            _currentLoopIdentity = ResolveLoopIdentity(
+                identity,
+                source: nameof(RequestStart),
+                reason: reason,
+                handshake: "IntroStageCoordinator",
+                reuseCurrentIfTechnical: false);
+
             DebugUtility.Log<GameLoopService>(
-                "[OBS][GameLoop][Operational] RequestStart accepted for canonical rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='IntroStageCoordinator'.",
+                $"[OBS][GameLoop][Operational] RequestStart accepted for canonical rail 'GameplaySessionFlow -> Level -> EnterStage -> Playing' handshake='IntroStageCoordinator' identity='{_currentLoopIdentity.Describe()}'.",
                 DebugUtility.Colors.Info);
 
             _signals.MarkStart();
             TryConsumeStartHandoffImmediately();
         }
 
-        public void RequestPause(string reason = null)
+        public void RequestPause(string reason = null, GameLoopSignalIdentity identity = null)
         {
             if (_stateMachine == null || _stateMachine.Current != GameLoopStateId.Playing)
             {
@@ -53,11 +61,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 return;
             }
 
+            _currentLoopIdentity = ResolveLoopIdentity(identity, nameof(RequestPause), reason, "PauseCommands", reuseCurrentIfTechnical: true);
             _pendingPauseWillEnterReason = reason;
             _signals.MarkPause();
         }
 
-        public void RequestResume(string reason = null)
+        public void RequestResume(string reason = null, GameLoopSignalIdentity identity = null)
         {
             if (_stateMachine == null || _stateMachine.Current != GameLoopStateId.Paused)
             {
@@ -65,22 +74,30 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 return;
             }
 
+            _currentLoopIdentity = ResolveLoopIdentity(identity, nameof(RequestResume), reason, "PauseCommands", reuseCurrentIfTechnical: true);
             _pendingPauseWillExitReason = reason;
             _signals.MarkResume();
         }
-        public void RequestReady() => _signals.MarkReady();
+        public void RequestReady()
+        {
+            DebugUtility.LogVerbose<GameLoopService>(
+                "[GameLoop] RequestReady neutralizado (nenhum owner canonico vigente para ReadyRequested).",
+                DebugUtility.Colors.Info);
+        }
 
-        public void RequestReset()
+        public void RequestReset(string reason = null, GameLoopSignalIdentity identity = null)
         {
             // Reset canonico deve invalidar qualquer start pendente anterior.
             // Isso impede carregar StartRequested de uma run anterior para a reentrada atual.
+            _currentLoopIdentity = ResolveLoopIdentity(identity, nameof(RequestReset), reason, "SceneFlowSync", reuseCurrentIfTechnical: true);
             _signals.ClearStartPending();
             _signals.MarkReset();
         }
-        public void RequestRunEnd()
+        public void RequestRunEnd(string reason = null, GameLoopSignalIdentity identity = null)
         {
+            _currentLoopIdentity = ResolveLoopIdentity(identity, nameof(RequestRunEnd), reason, "RunOutcome", reuseCurrentIfTechnical: true);
             DebugUtility.LogVerbose<GameLoopService>(
-                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' handshake='RunResultStage'.");
+                $"[OBS][ExitStage] GameRunEndRequested accepted state='{CurrentStateIdName}' handshake='RunResultStage' identity='{_currentLoopIdentity.Describe()}'.");
 
             _signals.MarkEnd();
         }
@@ -111,15 +128,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             CaptureMainThreadIdentity();
 
             _stateMachine.Update();
-
-            // Start canonical pode precisar de dois passos no mesmo tick:
-            // Boot/RunEnded -> Ready -> Playing.
-            // Mantemos isso restrito ao start handoff para nao alterar outros fluxos.
-            if (_signals.StartRequested &&
-                _stateMachine.Current == GameLoopStateId.Ready)
-            {
-                _stateMachine.Update();
-            }
 
             _signals.ResetTransientSignals();
         }
@@ -176,12 +184,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         private void ConsumeStartHandoffCore()
         {
             _stateMachine.Update();
-
-            if (_signals.StartRequested &&
-                _stateMachine.Current == GameLoopStateId.Ready)
-            {
-                _stateMachine.Update();
-            }
         }
 
         private bool IsMainThread()
@@ -196,6 +198,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             CurrentStateIdName = string.Empty;
             _pendingPauseWillEnterReason = null;
             _pendingPauseWillExitReason = null;
+            _currentLoopIdentity = null;
             _mainThreadContext = null;
             _mainThreadId = -1;
             _startHandoffPosted = 0;
@@ -210,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         {
             var previousState = _lastStateId;
             UpdateCurrentState(stateId, isActive, previousState);
-            PublishPauseStateChangedIfNeeded(previousState, stateId);
+            PublishPauseStateChangedIfNeeded(previousState, stateId, _currentLoopIdentity);
             UpdateRunStartedFlag(stateId);
             HandlePlayingEnteredIfNeeded(stateId);
             _lastStateId = stateId;
@@ -279,20 +282,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             {
                 _runStartedEmittedThisRun = true;
                 DebugUtility.Log<GameLoopService>(
-                    "[OBS][GameLoop][Operational] RunStartPublished state='Playing' handshake='GameplaySessionFlow' canonical='run_start'.",
+                    $"[OBS][GameLoop][Operational] RunStartPublished state='Playing' handshake='GameplaySessionFlow' canonical='run_start' identity='{_currentLoopIdentity.Describe()}'.",
                     DebugUtility.Colors.Info);
-                EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId));
+                EventBus<GameRunStartedEvent>.Raise(new GameRunStartedEvent(stateId, _currentLoopIdentity));
             }
         }
 
-        private static void PublishPauseStateChangedIfNeeded(GameLoopStateId previousState, GameLoopStateId nextState)
+        private static void PublishPauseStateChangedIfNeeded(GameLoopStateId previousState, GameLoopStateId nextState, GameLoopSignalIdentity identity)
         {
             if (nextState == GameLoopStateId.Paused)
             {
                 DebugUtility.LogVerbose<GameLoopService>(
                     $"[Pause] PauseStateChangedEvent raised isPaused='true' previous='{previousState}' next='{nextState}'.",
                     DebugUtility.Colors.Info);
-                EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(true));
+                EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(true, identity));
                 return;
             }
 
@@ -301,7 +304,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
                 DebugUtility.LogVerbose<GameLoopService>(
                     $"[Pause] PauseStateChangedEvent raised isPaused='false' previous='{previousState}' next='{nextState}'.",
                     DebugUtility.Colors.Info);
-                EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(false));
+                EventBus<PauseStateChangedEvent>.Raise(new PauseStateChangedEvent(false, identity));
             }
         }
 
@@ -334,6 +337,36 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         private static string GetLogStateName(GameLoopStateId stateId)
         {
             return stateId.ToString();
+        }
+
+        private GameLoopSignalIdentity ResolveLoopIdentity(
+            GameLoopSignalIdentity identity,
+            string source,
+            string reason,
+            string handshake,
+            bool reuseCurrentIfTechnical)
+        {
+            if (identity != null)
+            {
+                if (identity.HasCanonicalIdentity)
+                {
+                    return identity;
+                }
+
+                if (reuseCurrentIfTechnical && _currentLoopIdentity != null && _currentLoopIdentity.HasCanonicalIdentity)
+                {
+                    return _currentLoopIdentity;
+                }
+
+                return identity;
+            }
+
+            if (reuseCurrentIfTechnical && _currentLoopIdentity != null)
+            {
+                return _currentLoopIdentity;
+            }
+
+            return GameLoopSignalIdentity.TechnicalInternal(reason, source, handshake);
         }
 
         private sealed class MutableGameLoopSignals : IGameLoopSignals

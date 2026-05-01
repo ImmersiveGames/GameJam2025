@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
@@ -236,6 +237,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                             reason,
                             "actors_readiness_callback",
                             "GameplayStartReady",
+                            context.Session.PhaseEntryIdentity,
                             gameLoopService);
                         releaseRequested = true;
                         startReleaseSource.TrySetResult(true);
@@ -323,6 +325,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                             reason,
                             "no_content_immediate",
                             "GameplayStartReady",
+                            context.Session.PhaseEntryIdentity,
                             gameLoopService);
                         releaseRequested = true;
                         startReleaseSource.TrySetResult(true);
@@ -420,6 +423,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                         reason,
                         "intro_completion_immediate",
                         "GameplayStartReady",
+                        context.Session.PhaseEntryIdentity,
                         gameLoopService);
                     releaseRequested = true;
                     startReleaseSource.TrySetResult(true);
@@ -688,9 +692,23 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
             string reason,
             string sourcePath,
             string releaseReason,
+            PhaseEntryIdentity phaseEntryIdentity,
             IGameLoopService gameLoopService)
         {
             bool alreadyPlaying = string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
+            string phaseEntryIdentityText = phaseEntryIdentity.IsValid
+                ? NormalizeValue(phaseEntryIdentity.ToString())
+                : string.Empty;
+            GameLoopSignalIdentity loopIdentity = new GameLoopSignalIdentity(
+                phaseEntryIdentity: phaseEntryIdentityText,
+                sessionSignature: contextSignature,
+                entrySignature: executionSignature,
+                cycleSignature: cycleSignature,
+                reason: reason,
+                source: nameof(IntroStageCoordinator),
+                handshake: nameof(IntroStageCoordinator),
+                routeKind: routeKind,
+                targetScene: targetScene);
 
             DebugUtility.Log<IntroStageCoordinator>(
                 $"[OBS][IntroStageCoordinator] GameLoopStartReleased signature='{contextSignature}' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{entrySignature}' cycleSignature='{NormalizeSignature(cycleSignature)}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}' releaseReason='{releaseReason}' sourcePath='{sourcePath}' alreadyPlaying='{alreadyPlaying.ToString().ToLowerInvariant()}'.",
@@ -704,7 +722,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                 return;
             }
 
-            gameLoopService.RequestStart();
+            gameLoopService.RequestStart(reason, loopIdentity);
         }
 
         private static void LogGameplayStartReady(

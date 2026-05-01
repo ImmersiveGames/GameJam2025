@@ -40,20 +40,23 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             InputModeRequestKind previousMode = _currentMode;
 
             bool isRepeat = previousMode == mode;
-            _currentMode = mode;
-            PlayerInput[] preResolvedInputs = null;
+            PlayerInput[] inputs = _playerInputLocator.GetActivePlayerInputs();
+            string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
 
-            if (isRepeat && mode != InputModeRequestKind.Gameplay)
+            if (inputs.Length == 0)
             {
-                preResolvedInputs = _playerInputLocator.GetActivePlayerInputs();
-                if (preResolvedInputs.Length == 0)
+                if (mode == InputModeRequestKind.FrontendMenu)
                 {
                     DebugUtility.LogVerbose<InputModeService>(
-                        $"[InputMode] Modo '{mode}' ja ativo e sem PlayerInput ativo. Skip reapply ({resolvedReason}).",
+                        $"[InputMode] skipped_no_player_input_frontend mode='{mode}' reason='{resolvedReason}'.",
                         DebugUtility.Colors.Info);
+                    _currentMode = mode;
                     PublishModeChanged(previousMode, mode, resolvedReason);
                     return;
                 }
+
+                FailFastMissingPlayerInput(mode, resolvedReason);
+                return;
             }
 
             if (isRepeat)
@@ -69,20 +72,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     DebugUtility.Colors.Info);
             }
 
-            string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
-            PlayerInput[] inputs = preResolvedInputs ?? _playerInputLocator.GetActivePlayerInputs();
-            if (inputs.Length == 0)
-            {
-                DebugUtility.LogVerbose<InputModeService>(
-                    $"[InputMode] Nenhum PlayerInput ativo encontrado ao aplicar modo '{mode}'. " +
-                    "Isto e esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado.",
-                    DebugUtility.Colors.Info);
-                PublishModeChanged(previousMode, mode, resolvedReason);
-                return;
-            }
-
             bool anyHandled = false;
-            bool anyMissingActions = false;
             int switchedCount = 0;
 
             foreach (var pi in inputs)
@@ -95,16 +85,14 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 var actions = pi.actions;
                 if (actions == null)
                 {
-                    anyMissingActions = true;
-                    continue;
+                    FailFastMissingActionMap(mode, targetMapName, pi, "actions_null", resolvedReason);
+                    return;
                 }
 
                 if (!HasActionMap(actions, targetMapName))
                 {
-                    DebugUtility.LogWarning<InputModeService>(
-                        $"[InputMode] ActionMap '{targetMapName}' nao encontrada no PlayerInput '{pi.gameObject.name}'.");
-                    anyHandled = true;
-                    continue;
+                    FailFastMissingActionMap(mode, targetMapName, pi, "action_map_missing", resolvedReason);
+                    return;
                 }
 
                 pi.SwitchCurrentActionMap(targetMapName);
@@ -112,26 +100,17 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 anyHandled = true;
             }
 
-            if (anyMissingActions)
-            {
-                DebugUtility.LogWarning<InputModeService>(
-                    "[InputMode] PlayerInput encontrado sem 'actions' atribuidas; nao e possivel alternar action map. " +
-                    "Corrija o prefab do Player (PlayerInput -> Actions = seu InputActionAsset).");
-                anyHandled = true;
-            }
-
             if (anyHandled)
             {
+                _currentMode = mode;
                 DebugUtility.LogVerbose<InputModeService>(
-                    $"[InputMode] Applied map '{targetMapName}' em {switchedCount}/{inputs.Length} PlayerInput(s) ({resolvedReason}).",
+                    $"[InputMode] applied mode='{mode}' map='{targetMapName}' switchedPlayers='{switchedCount}/{inputs.Length}' reason='{resolvedReason}'.",
                     DebugUtility.Colors.Info);
                 PublishModeChanged(previousMode, mode, resolvedReason);
                 return;
             }
 
-            DebugUtility.LogWarning<InputModeService>(
-                "[InputMode] Nenhum PlayerInput pode ser processado para alternar action maps (todos nulos/desabilitados/sem actions).");
-            PublishModeChanged(previousMode, mode, resolvedReason);
+            FailFastMissingPlayerInput(mode, resolvedReason);
         }
 
         private static bool HasActionMap(InputActionAsset asset, string mapName)
@@ -145,6 +124,27 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         }
 
         private static bool ShouldUseMenuMap(InputModeRequestKind mode) => mode != InputModeRequestKind.Gameplay;
+
+        private static void FailFastMissingPlayerInput(InputModeRequestKind mode, string reason)
+        {
+            HardFailFastH1.Trigger(typeof(InputModeService),
+                $"[FATAL][H1][InputModes] fail_fast_missing_player_input mode='{mode}' reason='{reason}'.");
+        }
+
+        private static void FailFastMissingActionMap(
+            InputModeRequestKind mode,
+            string targetMapName,
+            PlayerInput playerInput,
+            string failureKind,
+            string reason)
+        {
+            string playerName = playerInput != null && playerInput.gameObject != null
+                ? playerInput.gameObject.name
+                : "<null>";
+
+            HardFailFastH1.Trigger(typeof(InputModeService),
+                $"[FATAL][H1][InputModes] fail_fast_missing_action_map mode='{mode}' map='{targetMapName}' playerInput='{playerName}' failureKind='{failureKind}' reason='{reason}'.");
+        }
 
         private static string NormalizeReason(string reason)
         {

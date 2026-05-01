@@ -103,11 +103,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
 
             if (evt != null && evt.IsPaused)
             {
-                _gameLoop.RequestPause(evt.Reason);
+                _gameLoop.RequestPause(evt.Reason, evt.Identity);
             }
             else
             {
-                _gameLoop.RequestResume(evt?.Reason);
+                _gameLoop.RequestResume(evt?.Reason, evt?.Identity);
             }
         }
 
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes
                 $"[OBS][GRS] GameResumeRequestedEvent consumed consumer='{nameof(GameLoopInputCommandBridge)}' key='{key}' frame='{frame}'",
                 DebugUtility.Colors.Info);
 
-            _gameLoop.RequestResume(evt?.Reason);
+            _gameLoop.RequestResume(evt?.Reason, evt?.Identity);
         }
 
         private static string BuildPauseKey(GamePauseCommandEvent evt)

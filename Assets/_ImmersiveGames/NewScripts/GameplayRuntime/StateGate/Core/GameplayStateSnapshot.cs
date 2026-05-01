@@ -32,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
         private bool _gameplayInteractionReady;
         private string _interactionReadinessReason = string.Empty;
         private bool _hasGameRunStarted;
+        private GameLoopSignalIdentity _activeLoopIdentity;
 
         private int _lastResetFrame = -1;
         private string _lastResetReason = string.Empty;
@@ -44,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
         public bool IsGameplayInteractionReady => _hasGameplayInteractionReadinessSnapshot && _gameplayInteractionReady;
         public bool HasGameRunStarted => _hasGameRunStarted;
         public bool IsPaused => _state == StateDependentServiceState.Paused;
+        public bool HasActiveLoopIdentity => _activeLoopIdentity != null;
 
         public void SetState(StateDependentServiceState next)
         {
@@ -60,6 +62,46 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
         {
             _hasGameRunStarted = false;
             _state = StateDependentServiceState.Ready;
+        }
+
+        public void SetActiveLoopIdentity(GameLoopSignalIdentity identity)
+        {
+            if (identity == null)
+            {
+                return;
+            }
+
+            _activeLoopIdentity = identity;
+        }
+
+        public void ClearActiveLoopIdentity()
+        {
+            _activeLoopIdentity = null;
+        }
+
+        public bool MatchesActiveLoopIdentity(GameLoopSignalIdentity identity)
+        {
+            if (_activeLoopIdentity == null || !_activeLoopIdentity.HasCanonicalIdentity)
+            {
+                return true;
+            }
+
+            if (identity == null || !identity.HasCanonicalIdentity)
+            {
+                return false;
+            }
+
+            return string.Equals(_activeLoopIdentity.PhaseEntryIdentity, identity.PhaseEntryIdentity, StringComparison.Ordinal) &&
+                   string.Equals(_activeLoopIdentity.SessionSignature, identity.SessionSignature, StringComparison.Ordinal) &&
+                   string.Equals(_activeLoopIdentity.EntrySignature, identity.EntrySignature, StringComparison.Ordinal) &&
+                   string.Equals(_activeLoopIdentity.CycleSignature, identity.CycleSignature, StringComparison.Ordinal) &&
+                   string.Equals(_activeLoopIdentity.RouteKind, identity.RouteKind, StringComparison.Ordinal) &&
+                   string.Equals(_activeLoopIdentity.TargetScene, identity.TargetScene, StringComparison.Ordinal);
+        }
+
+        public string DescribeActiveLoopIdentity()
+        {
+            return _activeLoopIdentity?.Describe() ?? string.Empty;
         }
 
         public void UpdateSceneReadiness(ReadinessChangedEvent evt)

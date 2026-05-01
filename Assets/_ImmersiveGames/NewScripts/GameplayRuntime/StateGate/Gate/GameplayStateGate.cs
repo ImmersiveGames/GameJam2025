@@ -191,8 +191,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
         {
             _runtimeSignalsAdapter = new GameplayRuntimeSignalsAdapter(
                 HandleGameStartRequested,
-                HandleGameRunStarted,
-                HandleGameRunEnded,
+                OnGameRunStarted,
+                OnGameRunEnded,
                 OnPauseStateChanged,
                 OnGameResetRequested,
                 OnReadinessChanged);
@@ -250,20 +250,49 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
         private void HandleGameStartRequested()
         {
             _snapshot.SetGameRunEnded();
+            _snapshot.ClearActiveLoopIdentity();
             SyncMoveDecisionLogIfChanged();
             PublishOperationalStateIfChanged("game_start_requested");
         }
 
-        private void HandleGameRunStarted()
+        private void OnGameRunStarted(GameRunStartedEvent evt)
         {
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (!_snapshot.MatchesActiveLoopIdentity(evt.Identity))
+            {
+                DebugUtility.LogVerbose<GameplayStateGate>(
+                    $"[OBS][GRS] GameRunStartedEvent ignorado por identidade fora do ciclo ativo expected='{_snapshot.DescribeActiveLoopIdentity()}' received='{evt.Identity?.Describe() ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            _snapshot.SetActiveLoopIdentity(evt.Identity);
             _snapshot.SetGameRunStarted();
             SyncMoveDecisionLogIfChanged();
             PublishOperationalStateIfChanged("game_run_started");
         }
 
-        private void HandleGameRunEnded()
+        private void OnGameRunEnded(GameRunEndedEvent evt)
         {
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (!_snapshot.MatchesActiveLoopIdentity(evt.Identity))
+            {
+                DebugUtility.LogVerbose<GameplayStateGate>(
+                    $"[OBS][GRS] GameRunEndedEvent ignorado por identidade fora do ciclo ativo expected='{_snapshot.DescribeActiveLoopIdentity()}' received='{evt.Identity?.Describe() ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             _snapshot.SetGameRunEnded();
+            _snapshot.ClearActiveLoopIdentity();
             SyncMoveDecisionLogIfChanged();
             PublishOperationalStateIfChanged("game_run_ended");
         }
@@ -280,7 +309,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
                 return;
             }
 
+            if (!_snapshot.MatchesActiveLoopIdentity(evt.Identity))
+            {
+                DebugUtility.LogVerbose<GameplayStateGate>(
+                    $"[OBS][GRS] GameResetRequestedEvent ignorado por identidade fora do ciclo ativo expected='{_snapshot.DescribeActiveLoopIdentity()}' received='{evt.Identity?.Describe() ?? "<null>"}' reason='{reason}' frame={frame}.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             _snapshot.SetGameRunEnded();
+            _snapshot.ClearActiveLoopIdentity();
             SyncMoveDecisionLogIfChanged();
             PublishOperationalStateIfChanged("game_reset_requested");
         }
@@ -289,6 +327,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
         {
             if (evt == null)
             {
+                return;
+            }
+
+            if (!_snapshot.MatchesActiveLoopIdentity(evt.Identity))
+            {
+                DebugUtility.LogVerbose<GameplayStateGate>(
+                    $"[OBS][GRS] PauseStateChangedEvent ignorado por identidade fora do ciclo ativo expected='{_snapshot.DescribeActiveLoopIdentity()}' received='{evt.Identity?.Describe() ?? "<null>"}'.",
+                    DebugUtility.Colors.Info);
                 return;
             }
 
@@ -307,6 +353,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
             SyncMoveDecisionLogIfChanged();
             PublishOperationalStateIfChanged("scene_readiness_changed");
         }
+
 
         private void OnGameplayInteractionReadinessChanged(GameplayInteractionReadinessSnapshot snapshot)
         {

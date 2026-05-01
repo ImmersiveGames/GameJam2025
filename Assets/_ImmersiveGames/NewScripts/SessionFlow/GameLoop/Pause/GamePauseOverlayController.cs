@@ -15,6 +15,8 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
@@ -62,6 +64,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         private EventBinding<GameRunStartedEvent> _onRunStarted;
         private EventBinding<GameRunEndedEvent> _onRunEnded;
         private EventBinding<PauseStateChangedEvent> _onPauseStateChanged;
+        private EventBinding<SceneTransitionStartedEvent> _onSceneTransitionStarted;
+        private EventBinding<SceneTransitionCompletedEvent> _onSceneTransitionCompleted;
         private int _lastEscapeToggleFrame = -1;
 
         private void Awake()
@@ -70,10 +74,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
             _onRunStarted = new EventBinding<GameRunStartedEvent>(_ => OnRunStarted());
             _onRunEnded = new EventBinding<GameRunEndedEvent>(_ => OnRunEnded());
             _onPauseStateChanged = new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
+            _onSceneTransitionStarted = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
+            _onSceneTransitionCompleted = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
 
             EventBus<GameRunStartedEvent>.Register(_onRunStarted);
             EventBus<GameRunEndedEvent>.Register(_onRunEnded);
             EventBus<PauseStateChangedEvent>.Register(_onPauseStateChanged);
+            EventBus<SceneTransitionStartedEvent>.Register(_onSceneTransitionStarted);
+            EventBus<SceneTransitionCompletedEvent>.Register(_onSceneTransitionCompleted);
         }
 
         private void Start()
@@ -101,6 +109,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
             EventBus<GameRunStartedEvent>.Unregister(_onRunStarted);
             EventBus<GameRunEndedEvent>.Unregister(_onRunEnded);
             EventBus<PauseStateChangedEvent>.Unregister(_onPauseStateChanged);
+            EventBus<SceneTransitionStartedEvent>.Unregister(_onSceneTransitionStarted);
+            EventBus<SceneTransitionCompletedEvent>.Unregister(_onSceneTransitionCompleted);
         }
 
         private void OnDisable()
@@ -186,6 +196,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
             DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
                 $"[PauseOverlay][Intent] ReturnToMenuFrontend delegado ao executor real IGameNavigationService. reason='{ExitToMenuReason}'.",
                 DebugUtility.Colors.Info);
+
+            CloseOverlayExplicitly("ReturnToMenuFrontend");
+            DisarmLocalPauseOverlay("ReturnToMenuFrontend");
 
             if (_navigationService == null)
             {
@@ -380,6 +393,24 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
             _sessionIntegrationInputModeEmitter.RequestPauseOverlayInputMode(reason, "PauseOverlay");
         }
 
+        private void OnSceneTransitionStarted(SceneTransitionStartedEvent evt)
+        {
+            if (evt.context.RouteKind == SceneRouteKind.Frontend)
+            {
+                CloseOverlayExplicitly("SceneTransitionStarted/Frontend");
+                DisarmLocalPauseOverlay("SceneTransitionStarted/Frontend");
+            }
+        }
+
+        private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
+        {
+            if (evt.context.RouteKind == SceneRouteKind.Frontend)
+            {
+                CloseOverlayExplicitly("SceneTransitionCompleted/Frontend");
+                DisarmLocalPauseOverlay("SceneTransitionCompleted/Frontend");
+            }
+        }
+
         private static bool WasEscapePressedThisFrame()
         {
 #if ENABLE_INPUT_SYSTEM
@@ -439,6 +470,37 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
                 $"[PauseOverlay] Overlay {(active ? "ativado" : "desativado")}.",
                 DebugUtility.Colors.Info);
             return true;
+        }
+
+        private void CloseOverlayExplicitly(string reason)
+        {
+            if (overlayRoot == null)
+            {
+                return;
+            }
+
+            if (!overlayRoot.activeSelf)
+            {
+                DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
+                    $"[PauseOverlay] CloseOverlayExplicitly idempotente (already hidden). reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            TrySetOverlayActive(false);
+            DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
+                $"[PauseOverlay] CloseOverlayExplicitly executado. reason='{reason}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void DisarmLocalPauseOverlay(string reason)
+        {
+            _runActive = false;
+            _runEnded = true;
+
+            DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
+                $"[PauseOverlay] Local pause overlay disarmed. reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
     }
 }

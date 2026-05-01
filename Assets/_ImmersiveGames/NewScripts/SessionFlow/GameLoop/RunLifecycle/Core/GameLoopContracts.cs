@@ -34,12 +34,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
     {
         void Initialize();
         void Tick(float dt);
-        void RequestStart();
-        void RequestPause(string reason = null);
-        void RequestResume(string reason = null);
+        void RequestStart(string reason = null, GameLoopSignalIdentity identity = null);
+        void RequestPause(string reason = null, GameLoopSignalIdentity identity = null);
+        void RequestResume(string reason = null, GameLoopSignalIdentity identity = null);
         void RequestReady();
-        void RequestReset();
-        void RequestRunEnd();
+        void RequestReset(string reason = null, GameLoopSignalIdentity identity = null);
+        void RequestRunEnd(string reason = null, GameLoopSignalIdentity identity = null);
         string CurrentStateIdName { get; }
     }
 
