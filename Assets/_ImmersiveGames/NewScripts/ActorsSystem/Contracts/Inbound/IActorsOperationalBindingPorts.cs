@@ -26,4 +26,12 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound
         bool TryGetByRuntimeActorId(RuntimeActorId runtimeActorId, out ActorsOperationalBindingEntry entry);
         bool TryGetAll(List<ActorsOperationalBindingEntry> target);
     }
+
+    public interface IActorsPendingBindingQueryPort
+    {
+        ActorsPendingBindingSnapshot Current { get; }
+        bool TryGetCurrent(out ActorsPendingBindingSnapshot snapshot);
+        bool TryGetByRuntimeActorId(RuntimeActorId runtimeActorId, out ActorsPendingBindingEntry entry);
+        bool TryGetAll(List<ActorsPendingBindingEntry> target);
+    }
 }

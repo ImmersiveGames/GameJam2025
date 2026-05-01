@@ -355,7 +355,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 phaseSignature,
                 participationSignature,
                 payload.ActorSetRef.Value,
-                cycleSignature);
+                cycleSignature,
+                payload.PhaseEntryIdentity);
         }
 
         private PhaseLocalEntryReadyRuntimePayload ResolvePhaseLocalEntryReadyRuntimePayloadOrFail(string source)
@@ -370,10 +371,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             if (!_phaseRuntimeService.TryGetCurrent(out GameplayPhaseRuntimeSnapshot phaseRuntime) ||
                 !phaseRuntime.IsValid ||
-                phaseRuntime.PhaseDefinitionRef == null)
+                phaseRuntime.PhaseDefinitionRef == null ||
+                !phaseRuntime.PhaseEntryIdentity.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
-                    $"[FATAL][H1][SessionTransition] GameplayPhaseRuntimeSnapshot invalido ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}'.");
+                    $"[FATAL][H1][SessionTransition] GameplayPhaseRuntimeSnapshot invalido ao construir SessionTransitionPhaseLocalEntryReadyEvent. source='{Normalize(source)}' hasPhaseEntryIdentity='{phaseRuntime.PhaseEntryIdentity.IsValid}'.");
             }
 
             ParticipationReadinessSnapshot readiness = ParticipationReadinessSnapshot.Empty;
@@ -394,7 +396,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 routeKind,
                 routeSource,
                 phaseRuntime,
-                participationSnapshot);
+                participationSnapshot,
+                phaseRuntime.PhaseEntryIdentity);
         }
 
         private static string BuildPhaseLocalEntryReadyCycleSignature(
@@ -442,13 +445,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 SceneRouteKind actorSetRouteKind,
                 string actorSetRouteSource,
                 GameplayPhaseRuntimeSnapshot phaseRuntime,
-                ParticipationSnapshot participationSnapshot)
+                ParticipationSnapshot participationSnapshot,
+                PhaseEntryIdentity phaseEntryIdentity)
             {
                 ActorSetRef = actorSetRef;
                 ActorSetRouteKind = actorSetRouteKind;
                 ActorSetRouteSource = Normalize(actorSetRouteSource);
                 PhaseRuntime = phaseRuntime;
                 ParticipationSnapshot = participationSnapshot;
+                PhaseEntryIdentity = phaseEntryIdentity;
             }
 
             public ActorSetRef ActorSetRef { get; }
@@ -456,6 +461,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             public string ActorSetRouteSource { get; }
             public GameplayPhaseRuntimeSnapshot PhaseRuntime { get; }
             public ParticipationSnapshot ParticipationSnapshot { get; }
+            public PhaseEntryIdentity PhaseEntryIdentity { get; }
         }
     }
 

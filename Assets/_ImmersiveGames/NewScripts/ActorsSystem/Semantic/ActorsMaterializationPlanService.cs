@@ -75,6 +75,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
             BuildPresenceLookup(presence);
             BuildBindingLookup(operationalBinding);
             _axisRuntimeIds.Clear();
+            var plannedAxisIds = new HashSet<AxisActorId>();
 
             ActorIdentityRecord[] members = ensemble.Members ?? Array.Empty<ActorIdentityRecord>();
             var entries = new List<ActorsMaterializationSpecEntry>(members.Length + Math.Max(0, presence.RuntimeOrphanCount));
@@ -85,6 +86,12 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                 if (!member.IsValid)
                 {
                     continue;
+                }
+                ValidateCanonicalIdentityOrFail(member);
+                if (!plannedAxisIds.Add(member.AxisActorId))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsSystem] Duplicate AxisActorId no mesmo ciclo de materialization plan. axisActorId='{member.AxisActorId}' actorSpecId='{AsText(member.ActorSpecId)}' actorSetMemberId='{AsText(member.ActorSetMemberId)}' actorSetRef='{AsText(member.ActorSetRef)}'.");
                 }
 
                 ActorsPresenceRecord presenceRecord = ResolvePresenceRecord(member);
@@ -108,6 +115,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                     member.Relevance,
                     member.SemanticParticipantId,
                     member.ActorSpecId,
+                    member.SpawnArchetypeId,
+                    member.ActorSetMemberId,
+                    member.OccurrenceIndex,
+                    member.RealizationMode,
+                    member.ContinuityResetPolicy,
                     member.ActorSetRef,
                     presenceRecord.Status,
                     presenceRecord.IsExpected,
@@ -209,6 +221,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                     string.Empty,
                     string.Empty,
                     string.Empty,
+                    string.Empty,
+                    0,
+                    ActorSpecRealizationMode.Unknown,
+                    ActorSpecContinuityResetPolicy.Unknown,
+                    string.Empty,
                     ActorPresenceStatus.UnexpectedMaterialized,
                     isExpected: false,
                     isMaterialized: true,
@@ -251,6 +268,37 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
         {
             string binding = hasBinding ? bindingState.ToString() : "none";
             return $"presence='{presence.Status}' relevance='{member.Relevance}' binding='{binding}' reason='{(string.IsNullOrWhiteSpace(presence.Reason) ? "<none>" : presence.Reason)}'";
+        }
+
+        private static void ValidateCanonicalIdentityOrFail(ActorIdentityRecord member)
+        {
+            if (!member.AxisActorId.IsValid)
+            {
+                throw new InvalidOperationException("[FATAL][Config][ActorsSystem] AxisActorId ausente/invalido no materialization plan.");
+            }
+
+            if (string.IsNullOrWhiteSpace(member.ActorSpecId))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsSystem] actorSpecId ausente no materialization plan. axisActorId='{member.AxisActorId}'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(member.ActorSetMemberId))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsSystem] actorSetMemberId ausente no materialization plan. axisActorId='{member.AxisActorId}' actorSpecId='{member.ActorSpecId}'.");
+            }
+            if (string.IsNullOrWhiteSpace(member.SpawnArchetypeId))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsSystem] spawnArchetypeId ausente no materialization plan. axisActorId='{member.AxisActorId}' actorSpecId='{member.ActorSpecId}' actorSetMemberId='{member.ActorSetMemberId}'.");
+            }
+
+            if (member.OccurrenceIndex < 0)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsSystem] occurrenceIndex invalido no materialization plan. axisActorId='{member.AxisActorId}' actorSpecId='{member.ActorSpecId}' actorSetMemberId='{member.ActorSetMemberId}' occurrenceIndex='{member.OccurrenceIndex}'.");
+            }
         }
 
         private static ActorMaterializationClassification ResolveAxisClassification(ActorMaterializationIntent intent)
@@ -354,6 +402,12 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                 builder.Append(string.IsNullOrWhiteSpace(entry.SemanticParticipantId) ? "<none>" : entry.SemanticParticipantId);
                 builder.Append(':');
                 builder.Append(string.IsNullOrWhiteSpace(entry.ActorSpecId) ? "<none>" : entry.ActorSpecId);
+                builder.Append(':');
+                builder.Append(string.IsNullOrWhiteSpace(entry.SpawnArchetypeId) ? "<none>" : entry.SpawnArchetypeId);
+                builder.Append(':');
+                builder.Append(string.IsNullOrWhiteSpace(entry.ActorSetMemberId) ? "<none>" : entry.ActorSetMemberId);
+                builder.Append(':');
+                builder.Append(entry.OccurrenceIndex);
                 builder.Append(':');
                 builder.Append(string.IsNullOrWhiteSpace(entry.ActorSetRef) ? "<none>" : entry.ActorSetRef);
                 builder.Append(':');
@@ -478,6 +532,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                 0,
                 0,
                 reason);
+        }
+
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
     }
 }

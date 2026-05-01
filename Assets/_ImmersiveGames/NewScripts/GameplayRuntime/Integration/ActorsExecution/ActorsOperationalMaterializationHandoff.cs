@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 {
@@ -48,7 +49,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             string actorSetRef,
             string cycleSignature,
             string executionSignature,
-            ActorKind[] expectedActorKinds)
+            AxisActorId[] expectedAxisActorIds,
+            PhaseEntryIdentity phaseEntryIdentity)
         {
             DispatchMode = dispatchMode;
             SourceKind = sourceKind;
@@ -59,7 +61,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
             CycleSignature = string.IsNullOrWhiteSpace(cycleSignature) ? string.Empty : cycleSignature.Trim();
             ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
-            ExpectedActorKinds = expectedActorKinds == null ? Array.Empty<ActorKind>() : (ActorKind[])expectedActorKinds.Clone();
+            ExpectedAxisActorIds = expectedAxisActorIds == null ? Array.Empty<AxisActorId>() : (AxisActorId[])expectedAxisActorIds.Clone();
+            PhaseEntryIdentity = phaseEntryIdentity;
         }
 
         public ActorsOperationalMaterializationDispatchMode DispatchMode { get; }
@@ -71,9 +74,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public string ActorSetRef { get; }
         public string CycleSignature { get; }
         public string ExecutionSignature { get; }
-        public ActorKind[] ExpectedActorKinds { get; }
+        public AxisActorId[] ExpectedAxisActorIds { get; }
+        public PhaseEntryIdentity PhaseEntryIdentity { get; }
 
-        public int ExpectedActorKindCount => ExpectedActorKinds?.Length ?? 0;
+        public int ExpectedAxisActorCount => ExpectedAxisActorIds?.Length ?? 0;
         public bool HasCanonicalPayload =>
             DispatchMode != ActorsOperationalMaterializationDispatchMode.Unknown &&
             SourceKind != ActorsOperationalMaterializationSourceKind.Unknown &&
@@ -84,7 +88,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             !string.IsNullOrWhiteSpace(ActorSetRef) &&
             !string.IsNullOrWhiteSpace(CycleSignature) &&
             !string.IsNullOrWhiteSpace(ExecutionSignature) &&
-            ExpectedActorKindCount > 0;
+            PhaseEntryIdentity.IsValid &&
+            ExpectedAxisActorCount > 0;
         public bool IsValid => HasCanonicalPayload;
     }
 
@@ -195,7 +200,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 _currentState.ActorSetRef,
                 _currentState.CycleSignature,
                 _currentState.ExecutionSignature,
-                _currentState.ExpectedActorKinds,
+                _currentState.PhaseEntryIdentity,
+                _currentState.ExpectedAxisActorIds,
                 _completedActors.ToArray(),
                 _hasActorSetMismatch);
             return true;
@@ -224,6 +230,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             if (evt.HasRuntimeActorId)
             {
                 return evt.RuntimeActorId.ToString();
+            }
+
+            if (evt.HasAxisActorId)
+            {
+                return evt.AxisActorId.Value;
             }
 
             return $"{evt.ExecutionSignature}|{evt.ActorKind}|{AsText(evt.ActorId)}";
@@ -275,9 +286,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             RuntimeActorId = completedEvent.RuntimeActorId;
             ActorId = string.IsNullOrWhiteSpace(completedEvent.ActorId) ? string.Empty : completedEvent.ActorId.Trim();
             ActorSpecId = string.IsNullOrWhiteSpace(completedEvent.ActorSpecId) ? string.Empty : completedEvent.ActorSpecId.Trim();
+            SpawnArchetypeId = string.IsNullOrWhiteSpace(completedEvent.SpawnArchetypeId) ? string.Empty : completedEvent.SpawnArchetypeId.Trim();
+            ActorSetMemberId = string.IsNullOrWhiteSpace(completedEvent.ActorSetMemberId) ? string.Empty : completedEvent.ActorSetMemberId.Trim();
+            OccurrenceIndex = completedEvent.OccurrenceIndex < 0 ? 0 : completedEvent.OccurrenceIndex;
             ActorSetRef = string.IsNullOrWhiteSpace(completedEvent.ActorSetRef) ? string.Empty : completedEvent.ActorSetRef.Trim();
             SemanticParticipantId = string.IsNullOrWhiteSpace(completedEvent.SemanticParticipantId) ? string.Empty : completedEvent.SemanticParticipantId.Trim();
             OperationalRecipeKind = completedEvent.OperationalRecipeKind;
+            RuntimeReplacementCause = completedEvent.RuntimeReplacementCause;
             SpawnServiceName = string.IsNullOrWhiteSpace(completedEvent.SpawnServiceName) ? string.Empty : completedEvent.SpawnServiceName.Trim();
             SceneName = string.IsNullOrWhiteSpace(completedEvent.SceneName) ? string.Empty : completedEvent.SceneName.Trim();
             Source = string.IsNullOrWhiteSpace(completedEvent.Source) ? string.Empty : completedEvent.Source.Trim();
@@ -303,9 +318,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             RuntimeActorId = entry.RuntimeActorId;
             ActorId = entry.RuntimeActorId.IsValid ? entry.RuntimeActorId.Value : string.Empty;
             ActorSpecId = string.IsNullOrWhiteSpace(entry.ActorSpecId) ? string.Empty : entry.ActorSpecId.Trim();
+            SpawnArchetypeId = string.IsNullOrWhiteSpace(entry.SpawnArchetypeId) ? string.Empty : entry.SpawnArchetypeId.Trim();
+            ActorSetMemberId = string.IsNullOrWhiteSpace(entry.ActorSetMemberId) ? string.Empty : entry.ActorSetMemberId.Trim();
+            OccurrenceIndex = entry.OccurrenceIndex < 0 ? 0 : entry.OccurrenceIndex;
             ActorSetRef = string.IsNullOrWhiteSpace(entry.ActorSetRef) ? string.Empty : entry.ActorSetRef.Trim();
             SemanticParticipantId = string.IsNullOrWhiteSpace(entry.SemanticParticipantId) ? string.Empty : entry.SemanticParticipantId.Trim();
             OperationalRecipeKind = entry.OperationalRecipeKind;
+            RuntimeReplacementCause = ActorsRuntimeReplacementCause.PreserveExisting;
             SpawnServiceName = "PreserveExisting";
             SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
@@ -324,9 +343,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public RuntimeActorId RuntimeActorId { get; }
         public string ActorId { get; }
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
+        public string ActorSetMemberId { get; }
+        public int OccurrenceIndex { get; }
         public string ActorSetRef { get; }
         public string SemanticParticipantId { get; }
         public ActorOperationalRecipeKind OperationalRecipeKind { get; }
+        public ActorsRuntimeReplacementCause RuntimeReplacementCause { get; }
         public string SpawnServiceName { get; }
         public string SceneName { get; }
         public string Source { get; }
@@ -340,18 +363,22 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public bool HasAxisActorId => AxisActorId.IsValid;
         public bool HasRuntimeActorId => RuntimeActorId.IsValid;
         public bool HasActorSpecId => !string.IsNullOrWhiteSpace(ActorSpecId);
+        public bool HasSpawnArchetypeId => !string.IsNullOrWhiteSpace(SpawnArchetypeId);
+        public bool HasActorSetMemberId => !string.IsNullOrWhiteSpace(ActorSetMemberId);
         public bool HasActorSetRef => !string.IsNullOrWhiteSpace(ActorSetRef);
         public bool HasSemanticParticipantId => !string.IsNullOrWhiteSpace(SemanticParticipantId);
         public bool HasCanonicalPayload =>
             HasAxisActorId &&
             HasRuntimeActorId &&
             HasActorSpecId &&
+            HasSpawnArchetypeId &&
+            HasActorSetMemberId &&
+            OccurrenceIndex >= 0 &&
             HasActorSetRef &&
             !string.IsNullOrWhiteSpace(SpawnServiceName) &&
             !string.IsNullOrWhiteSpace(SceneName) &&
             !string.IsNullOrWhiteSpace(Source) &&
-            !string.IsNullOrWhiteSpace(ExecutionSignature) &&
-            (ActorKind != ActorKind.Player || HasSemanticParticipantId);
+            !string.IsNullOrWhiteSpace(ExecutionSignature);
         public bool IsValid => ExecutionCycle.IsValid && !string.IsNullOrWhiteSpace(ActorId) && HasRuntimeActorId;
     }
 
@@ -372,7 +399,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             string actorSetRef,
             string cycleSignature,
             string executionSignature,
-            ActorKind[] expectedActorKinds,
+            PhaseEntryIdentity phaseEntryIdentity,
+            AxisActorId[] expectedAxisActorIds,
             ActorsOperationalMaterializationCompletedEvent[] completedActors,
             bool hasActorSetMismatch)
         {
@@ -386,12 +414,19 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
             CycleSignature = string.IsNullOrWhiteSpace(cycleSignature) ? string.Empty : cycleSignature.Trim();
             ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
-            ExpectedActorKinds = expectedActorKinds == null ? Array.Empty<ActorKind>() : (ActorKind[])expectedActorKinds.Clone();
+            PhaseEntryIdentity = phaseEntryIdentity;
+            ExpectedAxisActorIds = expectedAxisActorIds == null ? Array.Empty<AxisActorId>() : (AxisActorId[])expectedAxisActorIds.Clone();
             CompletedActors = completedActors == null ? Array.Empty<ActorsOperationalMaterializationCompletedEvent>() : (ActorsOperationalMaterializationCompletedEvent[])completedActors.Clone();
             HasActorSetMismatch = hasActorSetMismatch;
             MaterializedActorKinds = BuildMaterializedActorKinds(CompletedActors);
             PreservedActorKinds = BuildPreservedActorKinds(CompletedActors);
             ReadyActorKinds = BuildReadyActorKinds(CompletedActors);
+            MaterializedAxisActorIds = BuildMaterializedAxisActorIds(CompletedActors);
+            PreservedAxisActorIds = BuildPreservedAxisActorIds(CompletedActors);
+            ReadyAxisActorIds = BuildReadyAxisActorIds(CompletedActors);
+            MissingRequiredAxisActorIds = BuildMissingExpectedAxisActorIds(ExpectedAxisActorIds, ReadyAxisActorIds);
+            HasDuplicateReadyAxisActorId = DetectDuplicateReadyAxisActorIds(CompletedActors, out string duplicateAxisActorId);
+            DuplicateReadyAxisActorId = duplicateAxisActorId;
             HasCanonicalPayload = BuildHasCanonicalPayload(
                 SceneName,
                 ExecutionCycle,
@@ -403,7 +438,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 ActorSetRef,
                 CycleSignature,
                 ExecutionSignature,
-                ExpectedActorKinds,
+                PhaseEntryIdentity,
+                ExpectedAxisActorIds,
                 CompletedActors,
                 HasActorSetMismatch);
             IsGameplayOperationalReady = BuildIsGameplayOperationalReady(
@@ -411,7 +447,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 HasActorSetMismatch,
                 DispatchMode,
                 RouteKind,
-                ExpectedActorKinds,
+                ExpectedAxisActorIds,
+                ReadyAxisActorIds,
+                MissingRequiredAxisActorIds,
+                HasDuplicateReadyAxisActorId,
                 CompletedActors,
                 out string readinessReason);
             ReadinessReason = readinessReason;
@@ -427,10 +466,17 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         public string ActorSetRef { get; }
         public string CycleSignature { get; }
         public string ExecutionSignature { get; }
-        public ActorKind[] ExpectedActorKinds { get; }
+        public PhaseEntryIdentity PhaseEntryIdentity { get; }
+        public AxisActorId[] ExpectedAxisActorIds { get; }
         public ActorKind[] MaterializedActorKinds { get; }
         public ActorKind[] PreservedActorKinds { get; }
         public ActorKind[] ReadyActorKinds { get; }
+        public AxisActorId[] MaterializedAxisActorIds { get; }
+        public AxisActorId[] PreservedAxisActorIds { get; }
+        public AxisActorId[] ReadyAxisActorIds { get; }
+        public AxisActorId[] MissingRequiredAxisActorIds { get; }
+        public bool HasDuplicateReadyAxisActorId { get; }
+        public string DuplicateReadyAxisActorId { get; }
         public ActorsOperationalMaterializationCompletedEvent[] CompletedActors { get; }
         public bool HasActorSetMismatch { get; }
         public bool HasCanonicalPayload { get; }
@@ -462,7 +508,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             string actorSetRef,
             string cycleSignature,
             string executionSignature,
-            ActorKind[] expectedActorKinds,
+            PhaseEntryIdentity phaseEntryIdentity,
+            AxisActorId[] expectedAxisActorIds,
             ActorsOperationalMaterializationCompletedEvent[] completedActors,
             bool hasActorSetMismatch)
         {
@@ -475,12 +522,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 routeKind == SceneRouteKind.Unspecified ||
                 string.IsNullOrWhiteSpace(actorSetRef) ||
                 string.IsNullOrWhiteSpace(cycleSignature) ||
-                string.IsNullOrWhiteSpace(executionSignature))
+                string.IsNullOrWhiteSpace(executionSignature) ||
+                !phaseEntryIdentity.IsValid)
             {
                 return false;
             }
 
-            if (expectedActorKinds == null || expectedActorKinds.Length < 1)
+            if (expectedAxisActorIds == null || expectedAxisActorIds.Length < 1)
             {
                 return false;
             }
@@ -511,7 +559,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             bool hasActorSetMismatch,
             ActorsOperationalMaterializationDispatchMode dispatchMode,
             SceneRouteKind routeKind,
-            ActorKind[] expectedActorKinds,
+            AxisActorId[] expectedAxisActorIds,
+            AxisActorId[] readyAxisActorIds,
+            AxisActorId[] missingRequiredAxisActorIds,
+            bool hasDuplicateReadyAxisActorId,
             ActorsOperationalMaterializationCompletedEvent[] completedActors,
             out string readinessReason)
         {
@@ -539,25 +590,28 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 return false;
             }
 
-            if (!HasActorKind(ActorKind.Player, completedActors))
+            if (hasDuplicateReadyAxisActorId)
             {
-                readinessReason = "player_not_materialized";
+                readinessReason = "duplicate_ready_axis_actor_id";
                 return false;
             }
 
-            for (int index = 0; index < expectedActorKinds.Length; index += 1)
+            if (expectedAxisActorIds == null || expectedAxisActorIds.Length < 1)
             {
-                ActorKind expectedKind = expectedActorKinds[index];
-                if (expectedKind == ActorKind.Unknown)
-                {
-                    continue;
-                }
+                readinessReason = "missing_expected_axis_actor_ids";
+                return false;
+            }
 
-                if (!HasActorKind(expectedKind, completedActors))
-                {
-                    readinessReason = $"missing_expected_actor_kind:{expectedKind}";
-                    return false;
-                }
+            if (readyAxisActorIds == null || readyAxisActorIds.Length < 1)
+            {
+                readinessReason = "no_ready_axis_actor_ids";
+                return false;
+            }
+
+            if (missingRequiredAxisActorIds != null && missingRequiredAxisActorIds.Length > 0)
+            {
+                readinessReason = "missing_required_axis_actor_ids";
+                return false;
             }
 
             readinessReason = "GameplayOperationalReady";
@@ -607,16 +661,122 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             return kinds.ToArray();
         }
 
-        private static bool HasActorKind(ActorKind kind, ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        private static AxisActorId[] BuildMaterializedAxisActorIds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
         {
-            if (kind == ActorKind.Unknown || completedActors == null || completedActors.Length == 0)
+            return BuildAxisActorIdsByPreserveState(completedActors, includePreserved: false, includeMaterialized: true);
+        }
+
+        private static AxisActorId[] BuildPreservedAxisActorIds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        {
+            return BuildAxisActorIdsByPreserveState(completedActors, includePreserved: true, includeMaterialized: false);
+        }
+
+        private static AxisActorId[] BuildReadyAxisActorIds(ActorsOperationalMaterializationCompletedEvent[] completedActors)
+        {
+            return BuildAxisActorIdsByPreserveState(completedActors, includePreserved: true, includeMaterialized: true);
+        }
+
+        private static AxisActorId[] BuildAxisActorIdsByPreserveState(
+            ActorsOperationalMaterializationCompletedEvent[] completedActors,
+            bool includePreserved,
+            bool includeMaterialized)
+        {
+            if (completedActors == null || completedActors.Length == 0)
+            {
+                return Array.Empty<AxisActorId>();
+            }
+
+            var axisIds = new List<AxisActorId>(completedActors.Length);
+            for (int index = 0; index < completedActors.Length; index += 1)
+            {
+                ActorsOperationalMaterializationCompletedEvent completedActor = completedActors[index];
+                bool include = (completedActor.IsPreserveExisting && includePreserved) ||
+                               (!completedActor.IsPreserveExisting && includeMaterialized);
+                if (!include || !completedActor.HasAxisActorId)
+                {
+                    continue;
+                }
+
+                if (axisIds.Contains(completedActor.AxisActorId))
+                {
+                    continue;
+                }
+
+                axisIds.Add(completedActor.AxisActorId);
+            }
+
+            return axisIds.ToArray();
+        }
+
+        private static AxisActorId[] BuildMissingExpectedAxisActorIds(AxisActorId[] expectedAxisActorIds, AxisActorId[] readyAxisActorIds)
+        {
+            if (expectedAxisActorIds == null || expectedAxisActorIds.Length == 0)
+            {
+                return Array.Empty<AxisActorId>();
+            }
+
+            var missing = new List<AxisActorId>(expectedAxisActorIds.Length);
+            for (int index = 0; index < expectedAxisActorIds.Length; index += 1)
+            {
+                AxisActorId expectedAxisActorId = expectedAxisActorIds[index];
+                if (!expectedAxisActorId.IsValid)
+                {
+                    continue;
+                }
+
+                if (ContainsAxisActorId(readyAxisActorIds, expectedAxisActorId))
+                {
+                    continue;
+                }
+
+                missing.Add(expectedAxisActorId);
+            }
+
+            return missing.ToArray();
+        }
+
+        private static bool DetectDuplicateReadyAxisActorIds(
+            ActorsOperationalMaterializationCompletedEvent[] completedActors,
+            out string duplicateAxisActorId)
+        {
+            duplicateAxisActorId = string.Empty;
+            if (completedActors == null || completedActors.Length == 0)
             {
                 return false;
             }
 
+            var seen = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < completedActors.Length; index += 1)
             {
-                if (completedActors[index].ActorKind == kind)
+                ActorsOperationalMaterializationCompletedEvent completedActor = completedActors[index];
+                if (!completedActor.HasAxisActorId)
+                {
+                    continue;
+                }
+
+                string key = completedActor.AxisActorId.Value;
+                if (seen.Add(key))
+                {
+                    continue;
+                }
+
+                duplicateAxisActorId = key;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool ContainsAxisActorId(AxisActorId[] values, AxisActorId target)
+        {
+            if (!target.IsValid || values == null || values.Length == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < values.Length; index += 1)
+            {
+                if (values[index] == target)
                 {
                     return true;
                 }

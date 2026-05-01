@@ -8,16 +8,43 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 {
     public readonly struct ActorSetResolvedSelection
     {
-        public ActorSetResolvedSelection(ActorSetRef actorSetRef, ActorSpecRecord[] orderedSpecs)
+        public ActorSetResolvedSelection(ActorSetRef actorSetRef, ActorSetResolvedMember[] members)
         {
             ActorSetRef = actorSetRef;
-            OrderedSpecs = orderedSpecs ?? Array.Empty<ActorSpecRecord>();
+            Members = members ?? Array.Empty<ActorSetResolvedMember>();
         }
 
         public ActorSetRef ActorSetRef { get; }
-        public ActorSpecRecord[] OrderedSpecs { get; }
-        public int Count => OrderedSpecs?.Length ?? 0;
+        public ActorSetResolvedMember[] Members { get; }
+        public int Count => Members?.Length ?? 0;
         public bool HasEntries => Count > 0;
+    }
+
+    public readonly struct ActorSetResolvedMember
+    {
+        public ActorSetResolvedMember(
+            ActorSetMemberId actorSetMemberId,
+            string actorSpecId,
+            int order,
+            bool enabled,
+            ActorCardinalitySpec cardinality,
+            ActorSpecRecord spec)
+        {
+            ActorSetMemberId = actorSetMemberId;
+            ActorSpecId = string.IsNullOrWhiteSpace(actorSpecId) ? string.Empty : actorSpecId.Trim();
+            Order = order < 0 ? 0 : order;
+            Enabled = enabled;
+            Cardinality = cardinality;
+            Spec = spec;
+        }
+
+        public ActorSetMemberId ActorSetMemberId { get; }
+        public string ActorSpecId { get; }
+        public int Order { get; }
+        public bool Enabled { get; }
+        public ActorCardinalitySpec Cardinality { get; }
+        public ActorSpecRecord Spec { get; }
+        public bool IsValid => ActorSetMemberId.IsValid && !string.IsNullOrWhiteSpace(ActorSpecId) && Cardinality.IsValid && Spec.IsValid;
     }
 
     public interface IActorSetSelectionService
@@ -51,22 +78,22 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                 return false;
             }
 
-            List<(int order, ActorSpecRecord spec)> ordered = BuildOrderedSpecsOrFail(actorSetRef, set);
-            ordered.Sort(static (left, right) => left.order.CompareTo(right.order));
+            List<ActorSetResolvedMember> ordered = BuildOrderedMembersOrFail(actorSetRef, set);
+            ordered.Sort(static (left, right) => left.Order.CompareTo(right.Order));
 
-            var specs = new ActorSpecRecord[ordered.Count];
+            var members = new ActorSetResolvedMember[ordered.Count];
             for (int i = 0; i < ordered.Count; i += 1)
             {
-                specs[i] = ordered[i].spec;
+                members[i] = ordered[i];
             }
 
-            selection = new ActorSetResolvedSelection(actorSetRef, specs);
+            selection = new ActorSetResolvedSelection(actorSetRef, members);
             return selection.HasEntries;
         }
 
-        private List<(int order, ActorSpecRecord spec)> BuildOrderedSpecsOrFail(ActorSetRef actorSetRef, ActorSetCatalogAsset.SetEntry set)
+        private List<ActorSetResolvedMember> BuildOrderedMembersOrFail(ActorSetRef actorSetRef, ActorSetCatalogAsset.SetEntry set)
         {
-            var ordered = new List<(int order, ActorSpecRecord spec)>(set.members.Count);
+            var ordered = new List<ActorSetResolvedMember>(set.members.Count);
             for (int i = 0; i < set.members.Count; i += 1)
             {
                 ActorSetCatalogAsset.MemberEntry member = set.members[i];
@@ -81,7 +108,37 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                         $"[FATAL][Config][ActorsSystem] Missing ActorSpec for actorSetRef='{actorSetRef.Value}' actorSpecId='{member.actorSpecId}'.");
                 }
 
-                ordered.Add((member.order, spec));
+                if (member.cardinality == null)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsSystem] Missing cardinality for actorSetRef='{actorSetRef.Value}' memberId='{member.actorSetMemberId}'.");
+                }
+
+                var cardinality = new ActorCardinalitySpec(
+                    member.cardinality.kind,
+                    member.cardinality.fixedCount,
+                    member.cardinality.minCount,
+                    member.cardinality.maxCount);
+                if (!cardinality.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsSystem] Invalid cardinality for actorSetRef='{actorSetRef.Value}' memberId='{member.actorSetMemberId}'.");
+                }
+
+                var resolvedMember = new ActorSetResolvedMember(
+                    new ActorSetMemberId(member.actorSetMemberId),
+                    member.actorSpecId,
+                    member.order,
+                    member.enabled,
+                    cardinality,
+                    spec);
+                if (!resolvedMember.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsSystem] Invalid actor set member for actorSetRef='{actorSetRef.Value}' memberId='{member.actorSetMemberId}'.");
+                }
+
+                ordered.Add(resolvedMember);
             }
 
             if (ordered.Count <= 0)

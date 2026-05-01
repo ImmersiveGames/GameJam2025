@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
@@ -18,6 +19,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         ActorKind SpawnedActorKind { get; }
 
         /// <summary>
+        /// Archetype operacional usado para selecionar este serviço via contrato canônico.
+        /// </summary>
+        string SpawnArchetypeId { get; }
+
+        /// <summary>
         /// Indica se este serviço participa da garantia mínima do hard reset macro.
         /// </summary>
         bool IsRequiredForWorldReset { get; }
@@ -25,6 +31,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         Task SpawnAsync(ActorSpawnRequest request);
 
         Task DespawnAsync();
+
+        bool TryGetCurrentRuntimeActorId(out RuntimeActorId runtimeActorId);
     }
 }
 

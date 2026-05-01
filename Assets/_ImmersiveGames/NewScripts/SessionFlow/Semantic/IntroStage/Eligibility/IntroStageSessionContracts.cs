@@ -168,7 +168,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
                 evt.PhaseLocalEntrySequence,
                 runtime.SessionContext.SessionSignature,
                 hasIntroStage: false,
-                phaseRuntimeSignature: runtime.PhaseRuntimeSignature); // Start with false; resolver will determine.
+                phaseRuntimeSignature: runtime.PhaseRuntimeSignature,
+                phaseEntryIdentity: evt.PhaseEntryIdentity); // Start with false; resolver will determine.
 
             // Operationally resolve: does a valid presenter exist in the phase scope?
             bool hasIntroStage = _presenterScopeResolver.TryResolvePresenters(tempSession, out _);
@@ -184,7 +185,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
                 evt.PhaseLocalEntrySequence,
                 runtime.SessionContext.SessionSignature,
                 runtime.PhaseRuntimeSignature,
-                evt.EntrySignature);
+                evt.EntrySignature,
+                evt.PhaseEntryIdentity);
 
             // Override the session with resolved HasIntroStage.
             IntroStageSession resolvedSession = new IntroStageSession(
@@ -196,7 +198,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
                 session.SessionSignature,
                 hasIntroStage,
                 session.EntrySignature,
-                session.PhaseRuntimeSignature);
+                session.PhaseRuntimeSignature,
+                session.PhaseEntryIdentity);
 
             lock (_sync)
             {

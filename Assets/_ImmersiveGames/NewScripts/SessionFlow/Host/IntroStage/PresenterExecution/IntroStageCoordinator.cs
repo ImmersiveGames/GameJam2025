@@ -269,6 +269,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                 {
                     LogSkipped("no_content", context);
                     LogCompletion(signature, targetScene, routeLabel, IntroStageRunResult.Skipped);
+                    PublishNoContentCompletion(context);
 
                     bool shouldRequestStart = false;
                     GameplayStartReadySnapshot noContentGameplayStartReadySnapshot = GameplayStartReadySnapshot.Empty;
@@ -646,6 +647,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                 DebugUtility.Colors.Info);
         }
 
+        private static void PublishNoContentCompletion(IntroStageContext context)
+        {
+            string canonicalSource = PhaseFlowSignalVocabulary.CanonicalizeCompletionSource(PhaseFlowSignalVocabulary.GameplaySessionFlowSource);
+            string canonicalReason = PhaseFlowSignalVocabulary.CanonicalizeCompletionReason(PhaseFlowSignalVocabulary.NoContentReason, wasSkipped: true);
+
+            DebugUtility.Log<IntroStageCoordinator>(
+                $"[OBS][IntroStageCoordinator] IntroStageCompletedPublished owner='IntroStageCoordinator' source='{canonicalSource}' sessionSignature='{NormalizeSignature(context.Session.SessionSignature)}' phaseRuntimeSignature='{NormalizeSignature(context.Session.PhaseRuntimeSignature)}' entrySignature='{NormalizeSignature(context.Session.EntrySignature)}' skipped='true' reason='{canonicalReason}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
+                context.Session,
+                canonicalSource,
+                wasSkipped: true,
+                canonicalReason));
+        }
+
         private static void LogSkipped(string reason, IntroStageContext context)
         {
             DebugUtility.Log<IntroStageCoordinator>(
@@ -673,9 +690,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
             string releaseReason,
             IGameLoopService gameLoopService)
         {
+            bool alreadyPlaying = string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
+
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageCoordinator] GameLoopStartReleased signature='{contextSignature}' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{entrySignature}' cycleSignature='{NormalizeSignature(cycleSignature)}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}' releaseReason='{releaseReason}' sourcePath='{sourcePath}'.",
+                $"[OBS][IntroStageCoordinator] GameLoopStartReleased signature='{contextSignature}' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{entrySignature}' cycleSignature='{NormalizeSignature(cycleSignature)}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}' releaseReason='{releaseReason}' sourcePath='{sourcePath}' alreadyPlaying='{alreadyPlaying.ToString().ToLowerInvariant()}'.",
                 DebugUtility.Colors.Info);
+
+            if (alreadyPlaying)
+            {
+                DebugUtility.Log<IntroStageCoordinator>(
+                    $"[OBS][IntroStageCoordinator] GameLoopStartRequestSkipped reason='already_playing' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' routeKind='{routeKind}' target='{targetScene}' sourcePath='{sourcePath}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
 
             gameLoopService.RequestStart();
         }

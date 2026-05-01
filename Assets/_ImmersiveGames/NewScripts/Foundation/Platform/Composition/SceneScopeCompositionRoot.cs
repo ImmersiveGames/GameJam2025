@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
@@ -24,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     {
         private string _sceneName = string.Empty;
         private bool _registered;
-        private readonly WorldSpawnServiceFactory _spawnServiceFactory = new();
+        private WorldSpawnServiceFactory _spawnServiceFactory;
         private IWorldSpawnContext _worldSpawnContext;
 
         private void Awake()
@@ -40,6 +41,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             var provider = DependencyManager.Provider;
+            if (!provider.TryGetGlobal<IActorSpawnArchetypeRegistry>(out var spawnArchetypeRegistry) || spawnArchetypeRegistry == null)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] IActorSpawnArchetypeRegistry ausente antes de compor scene scope scene='{_sceneName}'.");
+            }
+            _spawnServiceFactory = new WorldSpawnServiceFactory(spawnArchetypeRegistry);
 
             provider.RegisterForScene<ISceneScopeMarker>(
                 _sceneName,
@@ -174,9 +181,26 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             int registeredCount = 0;
-            for (int i = 0; i < selection.OrderedSpecs.Length; i += 1)
+            var archetypes = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < selection.Members.Length; i += 1)
             {
-                ActorSpecRecord spec = selection.OrderedSpecs[i];
+                ActorSetResolvedMember member = selection.Members[i];
+                if (!member.IsValid)
+                {
+                    continue;
+                }
+
+                ActorSpecRecord spec = member.Spec;
+                if (string.IsNullOrWhiteSpace(spec.SpawnArchetypeId))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsExecution] ActorSpec sem spawnArchetypeId resolvido actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' scene='{_sceneName}'.");
+                }
+                if (!archetypes.Add(spec.SpawnArchetypeId))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsExecution] Duplicate spawnArchetypeId no registro scene-local. actorSetRef='{actorSetRef.Value}' spawnArchetypeId='{spec.SpawnArchetypeId}' scene='{_sceneName}'.");
+                }
                 IWorldSpawnService service = _spawnServiceFactory.CreateFromActorSpec(spec, provider, actorRegistry, context);
                 if (service == null)
                 {
@@ -188,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 registeredCount += 1;
 
                 DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"[OBS][ActorsExecution] CanonicalActorSetMemberRegistered actorSetRef='{actorSetRef.Value}' order='{i}' actorSpecId='{spec.ActorSpecId}' recipe='{spec.OperationalRecipeKind}'.");
+                    $"[OBS][ActorsExecution] CanonicalActorSetMemberRegistered actorSetRef='{actorSetRef.Value}' order='{member.Order}' actorSpecId='{spec.ActorSpecId}' spawnArchetypeId='{spec.SpawnArchetypeId}' recipe='{spec.OperationalRecipeKind}'.");
             }
 
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),

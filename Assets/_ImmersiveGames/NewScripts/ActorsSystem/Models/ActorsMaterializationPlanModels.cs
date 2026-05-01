@@ -42,6 +42,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             ActorRelevance relevance,
             string semanticParticipantId,
             string actorSpecId,
+            string spawnArchetypeId,
+            string actorSetMemberId,
+            int occurrenceIndex,
+            ActorSpecRealizationMode realizationMode,
+            ActorSpecContinuityResetPolicy continuityResetPolicy,
             string actorSetRef,
             ActorPresenceStatus presenceStatus,
             bool isExpected,
@@ -61,6 +66,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             Relevance = relevance;
             SemanticParticipantId = Normalize(semanticParticipantId);
             ActorSpecId = Normalize(actorSpecId);
+            SpawnArchetypeId = Normalize(spawnArchetypeId);
+            ActorSetMemberId = Normalize(actorSetMemberId);
+            OccurrenceIndex = occurrenceIndex < 0 ? 0 : occurrenceIndex;
+            RealizationMode = realizationMode;
+            ContinuityResetPolicy = continuityResetPolicy;
             ActorSetRef = Normalize(actorSetRef);
             PresenceStatus = presenceStatus;
             IsExpected = isExpected;
@@ -81,6 +91,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         public ActorRelevance Relevance { get; }
         public string SemanticParticipantId { get; }
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
+        public string ActorSetMemberId { get; }
+        public int OccurrenceIndex { get; }
+        public ActorSpecRealizationMode RealizationMode { get; }
+        public ActorSpecContinuityResetPolicy ContinuityResetPolicy { get; }
         public string ActorSetRef { get; }
         public ActorPresenceStatus PresenceStatus { get; }
         public bool IsExpected { get; }
@@ -95,7 +110,13 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         public bool IsValid =>
             Intent != ActorMaterializationIntent.Unknown &&
             Classification != ActorMaterializationClassification.Unknown &&
-            (Kind == ActorMaterializationSpecKind.AxisActor ? AxisActorId.IsValid : RuntimeActorId.IsValid);
+            (Kind == ActorMaterializationSpecKind.AxisActor
+                ? AxisActorId.IsValid &&
+                  !string.IsNullOrWhiteSpace(ActorSpecId) &&
+                  !string.IsNullOrWhiteSpace(SpawnArchetypeId) &&
+                  !string.IsNullOrWhiteSpace(ActorSetMemberId) &&
+                  OccurrenceIndex >= 0
+                : RuntimeActorId.IsValid);
 
         public bool Equals(ActorsMaterializationSpecEntry other)
         {
@@ -107,6 +128,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                    Relevance == other.Relevance &&
                    string.Equals(SemanticParticipantId, other.SemanticParticipantId, StringComparison.Ordinal) &&
                    string.Equals(ActorSpecId, other.ActorSpecId, StringComparison.Ordinal) &&
+                   string.Equals(SpawnArchetypeId, other.SpawnArchetypeId, StringComparison.Ordinal) &&
+                   string.Equals(ActorSetMemberId, other.ActorSetMemberId, StringComparison.Ordinal) &&
+                   OccurrenceIndex == other.OccurrenceIndex &&
+                   RealizationMode == other.RealizationMode &&
+                   ContinuityResetPolicy == other.ContinuityResetPolicy &&
                    string.Equals(ActorSetRef, other.ActorSetRef, StringComparison.Ordinal) &&
                    PresenceStatus == other.PresenceStatus &&
                    IsExpected == other.IsExpected &&
@@ -136,6 +162,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                 hashCode = (hashCode * 397) ^ (int)Relevance;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SemanticParticipantId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSpecId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SpawnArchetypeId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetMemberId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ OccurrenceIndex;
+                hashCode = (hashCode * 397) ^ (int)RealizationMode;
+                hashCode = (hashCode * 397) ^ (int)ContinuityResetPolicy;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetRef ?? string.Empty);
                 hashCode = (hashCode * 397) ^ (int)PresenceStatus;
                 hashCode = (hashCode * 397) ^ IsExpected.GetHashCode();
@@ -152,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 
         public override string ToString()
         {
-            return $"kind='{Kind}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', role='{Role}', operationalRecipeKind='{OperationalRecipeKind}', relevance='{Relevance}', semanticParticipantId='{AsText(SemanticParticipantId)}', actorSpecId='{AsText(ActorSpecId)}', actorSetRef='{AsText(ActorSetRef)}', presenceStatus='{PresenceStatus}', expected='{IsExpected}', materialized='{IsMaterialized}', inconsistent='{IsInconsistent}', hasBinding='{HasOperationalBinding}', bindingState='{OperationalBindingState}', intent='{Intent}', classification='{Classification}', reason='{AsText(Reason)}'";
+            return $"kind='{Kind}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', role='{Role}', operationalRecipeKind='{OperationalRecipeKind}', relevance='{Relevance}', semanticParticipantId='{AsText(SemanticParticipantId)}', actorSpecId='{AsText(ActorSpecId)}', spawnArchetypeId='{AsText(SpawnArchetypeId)}', actorSetMemberId='{AsText(ActorSetMemberId)}', occurrenceIndex='{OccurrenceIndex}', realizationMode='{RealizationMode}', continuityResetPolicy='{ContinuityResetPolicy}', actorSetRef='{AsText(ActorSetRef)}', presenceStatus='{PresenceStatus}', expected='{IsExpected}', materialized='{IsMaterialized}', inconsistent='{IsInconsistent}', hasBinding='{HasOperationalBinding}', bindingState='{OperationalBindingState}', intent='{Intent}', classification='{Classification}', reason='{AsText(Reason)}'";
         }
 
         private static string Normalize(string value)

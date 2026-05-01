@@ -13,12 +13,10 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
     public sealed class ActorsDefaultIdentityRolePolicy : IActorsIdentityRolePolicy
     {
         private readonly List<ActorIdentityRecord> _buffer = new(32);
-        private readonly HashSet<RuntimeActorId> _claimedRuntimeActors = new();
 
         public ActorIdentityRoleSet Resolve(ActorsEnsembleInput input)
         {
             _buffer.Clear();
-            _claimedRuntimeActors.Clear();
 
             ActorDefinitionRecord[] definitions = input.Definitions.Entries ?? Array.Empty<ActorDefinitionRecord>();
             ActorsSemanticParticipantRecord[] participants = input.SemanticParticipation.Participants ?? Array.Empty<ActorsSemanticParticipantRecord>();
@@ -34,16 +32,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 
                 bool hasSemanticLink = TryFindSemanticParticipant(definition.SemanticParticipantId, participants, out ActorsSemanticParticipantRecord semanticParticipant);
                 bool isRuntimeObserved = TryFindRuntimeActor(definition.PreferredRuntimeActorId, runtimeActors, out RuntimeActorObservationRecord runtimeActor);
-                if (!isRuntimeObserved &&
-                    !hasSemanticLink &&
-                    definition.OperationalRecipeKind != ActorOperationalRecipeKind.Unknown)
-                {
-                    isRuntimeObserved = TryFindRuntimeActorByRecipeKind(
-                        definition.OperationalRecipeKind,
-                        runtimeActors,
-                        _claimedRuntimeActors,
-                        out runtimeActor);
-                }
 
                 ActorRelevance relevance = ResolveRelevance(definition, hasSemanticLink, semanticParticipant, isRuntimeObserved, runtimeActor);
 
@@ -55,14 +43,14 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                     definition.OperationalRecipeKind,
                     isRuntimeObserved ? runtimeActor.RuntimeActorId : RuntimeActorId.None,
                     definition.ActorSpecId,
+                    definition.SpawnArchetypeId,
+                    definition.ActorSetMemberId,
+                    definition.OccurrenceIndex,
+                    definition.RealizationMode,
+                    definition.ContinuityResetPolicy,
                     definition.ActorSetRef,
                     hasSemanticLink,
                     isRuntimeObserved));
-
-                if (isRuntimeObserved)
-                {
-                    _claimedRuntimeActors.Add(runtimeActor.RuntimeActorId);
-                }
             }
 
             string signature = BuildSignature(
@@ -134,50 +122,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
             }
 
             return false;
-        }
-
-        private static bool TryFindRuntimeActorByRecipeKind(
-            ActorOperationalRecipeKind recipeKind,
-            RuntimeActorObservationRecord[] runtimeActors,
-            HashSet<RuntimeActorId> claimedRuntimeActors,
-            out RuntimeActorObservationRecord runtimeActor)
-        {
-            runtimeActor = default;
-            if (recipeKind == ActorOperationalRecipeKind.Unknown || runtimeActors == null || runtimeActors.Length == 0)
-            {
-                return false;
-            }
-
-            int candidateIndex = -1;
-            for (int index = 0; index < runtimeActors.Length; index += 1)
-            {
-                RuntimeActorObservationRecord current = runtimeActors[index];
-                if (!current.IsValid ||
-                    current.ObservedRecipeKind != recipeKind ||
-                    claimedRuntimeActors.Contains(current.RuntimeActorId))
-                {
-                    continue;
-                }
-
-                if (current.IsActive)
-                {
-                    runtimeActor = current;
-                    return true;
-                }
-
-                if (candidateIndex < 0)
-                {
-                    candidateIndex = index;
-                }
-            }
-
-            if (candidateIndex < 0)
-            {
-                return false;
-            }
-
-            runtimeActor = runtimeActors[candidateIndex];
-            return runtimeActor.IsValid;
         }
 
         private static bool TryFindRuntimeActor(

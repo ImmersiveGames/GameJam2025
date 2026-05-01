@@ -51,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
     {
         public ActorSpecRecord(
             string actorSpecId,
+            string spawnArchetypeId,
             ActorSpecSourceKind sourceKind,
             ActorSpecRoleGroup roleGroup,
             ActorOperationalRecipeKind operationalRecipeKind,
@@ -61,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             ActorSpecContinuityResetPolicy continuityResetPolicy)
         {
             ActorSpecId = Normalize(actorSpecId);
+            SpawnArchetypeId = Normalize(spawnArchetypeId);
             SourceKind = sourceKind;
             RoleGroup = roleGroup;
             OperationalRecipeKind = operationalRecipeKind;
@@ -72,6 +74,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         }
 
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
         public ActorSpecSourceKind SourceKind { get; }
         public ActorSpecRoleGroup RoleGroup { get; }
         public ActorOperationalRecipeKind OperationalRecipeKind { get; }
@@ -85,6 +88,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(ActorSpecId) &&
+            !string.IsNullOrWhiteSpace(SpawnArchetypeId) &&
             SourceKind != ActorSpecSourceKind.Unknown &&
             RoleGroup != ActorSpecRoleGroup.Unknown &&
             OperationalRecipeKind != ActorOperationalRecipeKind.Unknown &&
@@ -95,6 +99,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         public bool Equals(ActorSpecRecord other)
         {
             return string.Equals(ActorSpecId, other.ActorSpecId, StringComparison.Ordinal) &&
+                   string.Equals(SpawnArchetypeId, other.SpawnArchetypeId, StringComparison.Ordinal) &&
                    SourceKind == other.SourceKind &&
                    RoleGroup == other.RoleGroup &&
                    OperationalRecipeKind == other.OperationalRecipeKind &&
@@ -115,6 +120,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             unchecked
             {
                 int hashCode = StringComparer.Ordinal.GetHashCode(ActorSpecId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SpawnArchetypeId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ (int)SourceKind;
                 hashCode = (hashCode * 397) ^ (int)RoleGroup;
                 hashCode = (hashCode * 397) ^ (int)OperationalRecipeKind;

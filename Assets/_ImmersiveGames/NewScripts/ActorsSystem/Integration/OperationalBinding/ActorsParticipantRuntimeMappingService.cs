@@ -36,21 +36,48 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
         {
             if (!entry.IsValid)
             {
+                ReportConflict(new ActorsBindingConflict(
+                    ActorsBindingConflictCode.InvalidBindingState,
+                    entry.ParticipantId,
+                    entry.AxisActorId,
+                    entry.RuntimeActorId,
+                    entry.Source,
+                    "invalid_mapping_entry"));
                 return false;
             }
 
-            if (HasAxisConflict(entry) || HasRuntimeConflict(entry))
+            bool allowReplacement = ShouldAllowReplacement(entry, out ActorsParticipantRuntimeMappingEntry currentForParticipant);
+
+            if (HasParticipantConflict(entry, allowReplacement, out ActorsBindingConflict participantConflict))
             {
+                ReportConflict(participantConflict);
+                return false;
+            }
+
+            if (HasAxisConflict(entry, allowReplacement, out ActorsBindingConflict axisConflict))
+            {
+                ReportConflict(axisConflict);
+                return false;
+            }
+
+            if (HasRuntimeConflict(entry, out ActorsBindingConflict runtimeConflict))
+            {
+                ReportConflict(runtimeConflict);
                 return false;
             }
 
             RemoveIndexes(entry.ParticipantId);
+            if (allowReplacement && currentForParticipant.RuntimeActorId.IsValid)
+            {
+                _participantByRuntime.Remove(currentForParticipant.RuntimeActorId);
+            }
 
             _byParticipant[entry.ParticipantId] = entry;
             _participantByAxis[entry.AxisActorId] = entry.ParticipantId;
             _participantByRuntime[entry.RuntimeActorId] = entry.ParticipantId;
 
             RebuildSnapshot(entry.Reason);
+            EventBus<ActorsParticipantRuntimeMappingUpdatedEvent>.Raise(new ActorsParticipantRuntimeMappingUpdatedEvent(entry));
             return true;
         }
 
@@ -114,24 +141,80 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
                 string.IsNullOrWhiteSpace(reason) ? "cleared" : reason.Trim());
         }
 
-        private bool HasAxisConflict(ActorsParticipantRuntimeMappingEntry entry)
+        private bool HasParticipantConflict(ActorsParticipantRuntimeMappingEntry entry, bool allowReplacement, out ActorsBindingConflict conflict)
         {
+            conflict = default;
+            if (!_byParticipant.TryGetValue(entry.ParticipantId, out ActorsParticipantRuntimeMappingEntry current))
+            {
+                return false;
+            }
+
+            if (current.AxisActorId == entry.AxisActorId && current.RuntimeActorId == entry.RuntimeActorId)
+            {
+                return false;
+            }
+
+            if (allowReplacement &&
+                current.AxisActorId == entry.AxisActorId &&
+                current.RuntimeActorId != entry.RuntimeActorId)
+            {
+                return false;
+            }
+
+            conflict = new ActorsBindingConflict(
+                ActorsBindingConflictCode.DuplicateParticipant,
+                entry.ParticipantId,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Source,
+                "participant_already_mapped_to_other_identity");
+            return true;
+        }
+
+        private bool HasAxisConflict(ActorsParticipantRuntimeMappingEntry entry, bool allowReplacement, out ActorsBindingConflict conflict)
+        {
+            conflict = default;
             if (!_participantByAxis.TryGetValue(entry.AxisActorId, out string existingParticipantId))
             {
                 return false;
             }
 
-            return !string.Equals(existingParticipantId, entry.ParticipantId, StringComparison.Ordinal);
+            if (string.Equals(existingParticipantId, entry.ParticipantId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            conflict = new ActorsBindingConflict(
+                ActorsBindingConflictCode.DuplicateAxisActorId,
+                entry.ParticipantId,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Source,
+                "axis_actor_id_already_mapped_to_other_participant");
+            return true;
         }
 
-        private bool HasRuntimeConflict(ActorsParticipantRuntimeMappingEntry entry)
+        private bool HasRuntimeConflict(ActorsParticipantRuntimeMappingEntry entry, out ActorsBindingConflict conflict)
         {
+            conflict = default;
             if (!_participantByRuntime.TryGetValue(entry.RuntimeActorId, out string existingParticipantId))
             {
                 return false;
             }
 
-            return !string.Equals(existingParticipantId, entry.ParticipantId, StringComparison.Ordinal);
+            if (string.Equals(existingParticipantId, entry.ParticipantId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            conflict = new ActorsBindingConflict(
+                ActorsBindingConflictCode.DuplicateRuntimeActorId,
+                entry.ParticipantId,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Source,
+                "runtime_actor_id_already_mapped_to_other_participant");
+            return true;
         }
 
         private void RemoveIndexes(string participantId)
@@ -183,6 +266,43 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private bool ShouldAllowReplacement(ActorsParticipantRuntimeMappingEntry entry, out ActorsParticipantRuntimeMappingEntry current)
+        {
+            current = default;
+            if (!_byParticipant.TryGetValue(entry.ParticipantId, out current))
+            {
+                return false;
+            }
+
+            if (!current.AxisActorId.IsValid ||
+                current.AxisActorId != entry.AxisActorId ||
+                current.RuntimeActorId == entry.RuntimeActorId)
+            {
+                return false;
+            }
+
+            return entry.ReplacementCause == ActorsRuntimeReplacementCause.Rematerialized ||
+                   entry.ReplacementCause == ActorsRuntimeReplacementCause.ReplacedRuntime;
+        }
+
+        private void ReportConflict(ActorsBindingConflict conflict)
+        {
+            if (!conflict.IsValid)
+            {
+                return;
+            }
+
+            DebugUtility.LogError(typeof(ActorsParticipantRuntimeMappingService),
+                $"[FATAL][ActorsSystem][ParticipantRuntimeMapping] conflict code='{conflict.Code}' participantId='{AsText(conflict.ParticipantId)}' axisActorId='{conflict.AxisActorId}' runtimeActorId='{conflict.RuntimeActorId}' source='{AsText(conflict.Source)}' reason='{AsText(conflict.Reason)}'.");
+
+            EventBus<ActorsBindingConflictEvent>.Raise(new ActorsBindingConflictEvent(conflict));
+        }
+
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
     }
 
@@ -247,7 +367,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
             }
 
             string participantId = evt.SemanticParticipantId.Trim();
-            AxisActorId axisActorId = AxisActorId.FromParticipantId(participantId);
+            AxisActorId axisActorId = evt.AxisActorId;
             RuntimeActorId runtimeActorId = new RuntimeActorId(evt.ActorId);
             if (!axisActorId.IsValid || !runtimeActorId.IsValid)
             {
@@ -258,8 +378,43 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
                 participantId,
                 axisActorId,
                 runtimeActorId,
+                evt.RuntimeReplacementCause,
                 source: "GameplayRuntime/ActorsOperationalMaterializationHandoff",
-                reason: "runtime-materialized"));
+                reason: ResolveMappingReason(evt.RuntimeReplacementCause)));
         }
+
+        private static string ResolveMappingReason(ActorsRuntimeReplacementCause cause)
+        {
+            return cause switch
+            {
+                ActorsRuntimeReplacementCause.Materialized => "runtime-materialized",
+                ActorsRuntimeReplacementCause.Rematerialized => "runtime-rematerialized",
+                ActorsRuntimeReplacementCause.PreserveExisting => "runtime-preserve-existing",
+                ActorsRuntimeReplacementCause.ReplacedRuntime => "runtime-replaced",
+                _ => "runtime-mapping-upsert"
+            };
+        }
+    }
+
+    public readonly struct ActorsBindingConflictEvent : IEvent
+    {
+        public ActorsBindingConflictEvent(ActorsBindingConflict conflict)
+        {
+            Conflict = conflict;
+        }
+
+        public ActorsBindingConflict Conflict { get; }
+        public bool IsValid => Conflict.IsValid;
+    }
+
+    public readonly struct ActorsParticipantRuntimeMappingUpdatedEvent : IEvent
+    {
+        public ActorsParticipantRuntimeMappingUpdatedEvent(ActorsParticipantRuntimeMappingEntry entry)
+        {
+            Entry = entry;
+        }
+
+        public ActorsParticipantRuntimeMappingEntry Entry { get; }
+        public bool IsValid => Entry.IsValid;
     }
 }

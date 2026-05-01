@@ -44,7 +44,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
         private void BuildCacheOrFail(ActorSpecsCatalogAsset catalog)
         {
             _bySpecId.Clear();
-            var seenRecipeKinds = new HashSet<ActorOperationalRecipeKind>();
 
             IReadOnlyList<ActorSpecsCatalogAsset.Entry> entries = catalog.Entries;
             for (int i = 0; i < entries.Count; i += 1)
@@ -57,6 +56,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 
                 var spec = new ActorSpecRecord(
                     entry.actorSpecId,
+                    entry.spawnArchetypeId,
                     entry.sourceKind,
                     entry.roleGroup,
                     entry.operationalRecipeKind,
@@ -74,11 +74,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                 if (_bySpecId.ContainsKey(spec.ActorSpecId))
                 {
                     throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Duplicate actorSpecId='{spec.ActorSpecId}' in catalog='{catalog.name}'.");
-                }
-
-                if (!seenRecipeKinds.Add(spec.OperationalRecipeKind))
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Duplicate recipe='{spec.OperationalRecipeKind}' in catalog='{catalog.name}'.");
                 }
 
                 _bySpecId.Add(spec.ActorSpecId, spec);

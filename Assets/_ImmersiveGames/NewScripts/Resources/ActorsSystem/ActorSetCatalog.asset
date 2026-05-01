@@ -15,14 +15,32 @@ MonoBehaviour:
   sets:
   - actorSetRefId: route.macro.gameplay
     members:
-    - actorSpecId: actor.player
+    - actorSetMemberId: route.macro.gameplay.player.primary
+      actorSpecId: actor.player
       order: 10
       enabled: 1
-    - actorSpecId: actor.eater
+      cardinality:
+        kind: 1
+        fixedCount: 1
+        minCount: 1
+        maxCount: 1
+    - actorSetMemberId: route.macro.gameplay.eater.primary
+      actorSpecId: actor.eater
       order: 20
       enabled: 1
+      cardinality:
+        kind: 1
+        fixedCount: 1
+        minCount: 1
+        maxCount: 1
   - actorSetRefId: phase.test.dummy
     members:
-    - actorSpecId: actor.dummy
+    - actorSetMemberId: phase.test.dummy.actor.primary
+      actorSpecId: actor.dummy
       order: 10
       enabled: 1
+      cardinality:
+        kind: 1
+        fixedCount: 1
+        minCount: 1
+        maxCount: 1

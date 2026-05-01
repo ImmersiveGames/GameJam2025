@@ -17,9 +17,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             RuntimeActorId runtimeActorId,
             string actorId,
             string actorSpecId,
+            string spawnArchetypeId,
+            string actorSetMemberId,
+            int occurrenceIndex,
             string actorSetRef,
             string semanticParticipantId,
             ActorOperationalRecipeKind operationalRecipeKind,
+            ActorsRuntimeReplacementCause runtimeReplacementCause,
             string spawnServiceName,
             string sceneName,
             string source,
@@ -33,9 +37,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             RuntimeActorId = runtimeActorId;
             ActorId = string.IsNullOrWhiteSpace(actorId) ? string.Empty : actorId.Trim();
             ActorSpecId = string.IsNullOrWhiteSpace(actorSpecId) ? string.Empty : actorSpecId.Trim();
+            SpawnArchetypeId = string.IsNullOrWhiteSpace(spawnArchetypeId) ? string.Empty : spawnArchetypeId.Trim();
+            ActorSetMemberId = string.IsNullOrWhiteSpace(actorSetMemberId) ? string.Empty : actorSetMemberId.Trim();
+            OccurrenceIndex = occurrenceIndex < 0 ? 0 : occurrenceIndex;
             ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
             SemanticParticipantId = string.IsNullOrWhiteSpace(semanticParticipantId) ? string.Empty : semanticParticipantId.Trim();
             OperationalRecipeKind = operationalRecipeKind;
+            RuntimeReplacementCause = runtimeReplacementCause;
             SpawnServiceName = string.IsNullOrWhiteSpace(spawnServiceName) ? string.Empty : spawnServiceName.Trim();
             SceneName = string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
@@ -55,12 +63,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public string ActorId { get; }
 
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
+        public string ActorSetMemberId { get; }
+        public int OccurrenceIndex { get; }
 
         public string ActorSetRef { get; }
 
         public string SemanticParticipantId { get; }
 
         public ActorOperationalRecipeKind OperationalRecipeKind { get; }
+        public ActorsRuntimeReplacementCause RuntimeReplacementCause { get; }
 
         public string SpawnServiceName { get; }
 
@@ -78,12 +90,17 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public bool HasAxisActorId => AxisActorId.IsValid;
         public bool HasRuntimeActorId => RuntimeActorId.IsValid;
         public bool HasActorSpecId => !string.IsNullOrWhiteSpace(ActorSpecId);
+        public bool HasSpawnArchetypeId => !string.IsNullOrWhiteSpace(SpawnArchetypeId);
+        public bool HasActorSetMemberId => !string.IsNullOrWhiteSpace(ActorSetMemberId);
         public bool HasActorSetRef => !string.IsNullOrWhiteSpace(ActorSetRef);
         public bool HasSemanticParticipantId => !string.IsNullOrWhiteSpace(SemanticParticipantId);
         public bool HasCanonicalPayload =>
             HasAxisActorId &&
             HasRuntimeActorId &&
             HasActorSpecId &&
+            HasSpawnArchetypeId &&
+            HasActorSetMemberId &&
+            OccurrenceIndex >= 0 &&
             HasActorSetRef &&
             !string.IsNullOrWhiteSpace(SpawnServiceName) &&
             !string.IsNullOrWhiteSpace(SceneName) &&

@@ -210,6 +210,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                     continue;
                 }
 
+                if (!record.IsActive)
+                {
+                    continue;
+                }
+
                 _runtimeLookup.Add(record.RuntimeActorId, record);
             }
         }
@@ -226,11 +231,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                 return member.RuntimeActorId;
             }
 
-            if (!string.IsNullOrWhiteSpace(member.SemanticParticipantId))
-            {
-                return new RuntimeActorId(member.SemanticParticipantId);
-            }
-
             return RuntimeActorId.None;
         }
 
@@ -244,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 
             if (continuationRuntimeId.IsValid &&
                 _runtimeLookup.TryGetValue(continuationRuntimeId, out RuntimeActorObservationRecord continuedRecord) &&
-                continuedRecord.IsValid)
+                IsUsableRuntimeRecord(continuedRecord))
             {
                 runtimeActorId = continuedRecord.RuntimeActorId;
                 return true;
@@ -252,7 +252,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 
             if (expectedRuntimeHint.IsValid &&
                 _runtimeLookup.TryGetValue(expectedRuntimeHint, out RuntimeActorObservationRecord hintedRecord) &&
-                hintedRecord.IsValid)
+                IsUsableRuntimeRecord(hintedRecord))
             {
                 runtimeActorId = hintedRecord.RuntimeActorId;
                 return true;
@@ -260,13 +260,18 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 
             if (member.RuntimeActorId.IsValid &&
                 _runtimeLookup.TryGetValue(member.RuntimeActorId, out RuntimeActorObservationRecord exactRecord) &&
-                exactRecord.IsValid)
+                IsUsableRuntimeRecord(exactRecord))
             {
                 runtimeActorId = exactRecord.RuntimeActorId;
                 return true;
             }
 
             return false;
+        }
+
+        private static bool IsUsableRuntimeRecord(RuntimeActorObservationRecord record)
+        {
+            return record.IsValid && record.IsActive;
         }
 
         private static ActorPresenceStatus ResolveStatus(bool isExpected, bool isMaterialized, bool isInconsistent)

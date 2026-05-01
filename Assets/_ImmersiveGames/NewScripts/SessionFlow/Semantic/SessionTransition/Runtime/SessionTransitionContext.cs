@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     /// <summary>
@@ -392,7 +393,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             string phaseSignature = "",
             string participationSignature = "",
             string actorSetRef = "",
-            string cycleSignature = "")
+            string cycleSignature = "",
+            PhaseEntryIdentity phaseEntryIdentity = default)
         {
             Plan = plan;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
@@ -405,6 +407,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             ParticipationSignature = string.IsNullOrWhiteSpace(participationSignature) ? string.Empty : participationSignature.Trim();
             ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
             CycleSignature = string.IsNullOrWhiteSpace(cycleSignature) ? string.Empty : cycleSignature.Trim();
+            PhaseEntryIdentity = phaseEntryIdentity;
         }
 
         public SessionTransitionPlan Plan { get; }
@@ -418,7 +421,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         public string ParticipationSignature { get; }
         public string ActorSetRef { get; }
         public string CycleSignature { get; }
-        public string EntrySignature => CycleSignature;
+        public PhaseEntryIdentity PhaseEntryIdentity { get; }
+        public string EntrySignature => PhaseEntryIdentity.EntrySignature;
         public SessionTransitionContext Context => Plan.Context;
         public bool IsValid => Plan.IsValid;
         public bool HasCanonicalPayload =>
@@ -430,7 +434,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             !string.IsNullOrWhiteSpace(PhaseSignature) &&
             !string.IsNullOrWhiteSpace(ParticipationSignature) &&
             !string.IsNullOrWhiteSpace(ActorSetRef) &&
-            !string.IsNullOrWhiteSpace(CycleSignature);
+            !string.IsNullOrWhiteSpace(CycleSignature) &&
+            PhaseEntryIdentity.IsValid;
         public bool IsPhaseLocalEntry => HasCanonicalPayload;
     }
 }

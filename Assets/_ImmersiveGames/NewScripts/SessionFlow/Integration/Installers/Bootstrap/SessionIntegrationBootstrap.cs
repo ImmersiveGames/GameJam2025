@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
         private static bool _runtimeComposed;
         private static GameplayParticipationInputModeBridge _participationInputModeBridge;
         private static IGameplayInteractionReadinessService _gameplayInteractionReadinessService;
+        private static IPhaseEntryReadinessCoordinator _phaseEntryReadinessCoordinator;
 
         public static void ComposeInstallerPhase()
         {
@@ -55,7 +56,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
             SessionIntegrationContinuityRuntimeComposition.EnsureComposed(bootstrapConfig);
             SessionIntegrationBridgesRuntimeComposition.EnsureComposed(
                 ref _participationInputModeBridge,
-                ref _gameplayInteractionReadinessService);
+                ref _gameplayInteractionReadinessService,
+                ref _phaseEntryReadinessCoordinator);
             SessionIntegrationOperationalHandoffRuntimeComposition.EnsureComposed();
 
             _runtimeComposed = true;
@@ -95,10 +97,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
     {
         public static void EnsureComposed(
             ref GameplayParticipationInputModeBridge participationInputModeBridge,
-            ref IGameplayInteractionReadinessService gameplayInteractionReadinessService)
+            ref IGameplayInteractionReadinessService gameplayInteractionReadinessService,
+            ref IPhaseEntryReadinessCoordinator phaseEntryReadinessCoordinator)
         {
             EnsureParticipationInputModeBridge(ref participationInputModeBridge);
             EnsureGameplayInteractionReadinessService(ref gameplayInteractionReadinessService);
+            EnsurePhaseEntryReadinessCoordinator(ref phaseEntryReadinessCoordinator);
         }
 
         private static void EnsureParticipationInputModeBridge(ref GameplayParticipationInputModeBridge participationInputModeBridge)
@@ -150,6 +154,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
 
             DebugUtility.LogVerbose(typeof(SessionIntegrationBridgesRuntimeComposition),
                 "[OBS][SessionIntegration][InputModes] GameplayInteractionReadinessService composed in SessionIntegration runtime.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsurePhaseEntryReadinessCoordinator(ref IPhaseEntryReadinessCoordinator phaseEntryReadinessCoordinator)
+        {
+            if (phaseEntryReadinessCoordinator == null)
+            {
+                if (DependencyManager.Provider.TryGetGlobal<IPhaseEntryReadinessCoordinator>(out var existing) && existing != null)
+                {
+                    phaseEntryReadinessCoordinator = existing;
+                }
+                else
+                {
+                    phaseEntryReadinessCoordinator = new PhaseEntryReadinessCoordinator();
+                    DependencyManager.Provider.RegisterGlobal<IPhaseEntryReadinessCoordinator>(phaseEntryReadinessCoordinator);
+                }
+            }
+
+            DebugUtility.LogVerbose(typeof(SessionIntegrationBridgesRuntimeComposition),
+                "[OBS][SessionIntegration][PhaseEntryReadiness] PhaseEntryReadinessCoordinator composed in SessionIntegration runtime.",
                 DebugUtility.Colors.Info);
         }
     }

@@ -56,6 +56,27 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             return new AxisActorId($"axis:actorspec:{normalized}");
         }
 
+        public static AxisActorId FromCanonicalOccurrence(ActorSetRef actorSetRef, ActorSetMemberId actorSetMemberId, int instanceIndex)
+        {
+            if (!actorSetRef.IsValid || !actorSetMemberId.IsValid || instanceIndex < 0)
+            {
+                return None;
+            }
+
+            return new AxisActorId($"axis:{actorSetRef.Value}:{actorSetMemberId.Value}:{instanceIndex}");
+        }
+
+        public static AxisActorId FromCanonicalParticipation(ActorSetRef actorSetRef, ActorSetMemberId actorSetMemberId, string participantId)
+        {
+            string normalizedParticipantId = Normalize(participantId);
+            if (!actorSetRef.IsValid || !actorSetMemberId.IsValid || string.IsNullOrWhiteSpace(normalizedParticipantId))
+            {
+                return None;
+            }
+
+            return new AxisActorId($"axis:{actorSetRef.Value}:{actorSetMemberId.Value}:p:{normalizedParticipantId}");
+        }
+
         public bool Equals(AxisActorId other)
         {
             return string.Equals(Value, other.Value, StringComparison.Ordinal);

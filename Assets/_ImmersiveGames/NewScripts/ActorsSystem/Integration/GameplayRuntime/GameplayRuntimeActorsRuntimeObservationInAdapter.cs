@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.GameplayRuntime
                 ActorRole role = ResolveRole(actor);
                 ActorOperationalRecipeKind recipeKind = ResolveRecipeKind(actor);
                 var record = new RuntimeActorObservationRecord(
-                    new RuntimeActorId(actor.ActorId),
+                    new RuntimeActorId(actor.ActorId.Trim()),
                     actor.DisplayName,
                     role,
                     recipeKind,

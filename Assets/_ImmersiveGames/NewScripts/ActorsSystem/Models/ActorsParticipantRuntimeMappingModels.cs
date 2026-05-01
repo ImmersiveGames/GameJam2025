@@ -2,18 +2,29 @@ using System;
 
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 {
+    public enum ActorsRuntimeReplacementCause
+    {
+        None = 0,
+        Materialized = 1,
+        Rematerialized = 2,
+        PreserveExisting = 3,
+        ReplacedRuntime = 4
+    }
+
     public readonly struct ActorsParticipantRuntimeMappingEntry : IEquatable<ActorsParticipantRuntimeMappingEntry>
     {
         public ActorsParticipantRuntimeMappingEntry(
             string participantId,
             AxisActorId axisActorId,
             RuntimeActorId runtimeActorId,
+            ActorsRuntimeReplacementCause replacementCause,
             string source,
             string reason)
         {
             ParticipantId = Normalize(participantId);
             AxisActorId = axisActorId;
             RuntimeActorId = runtimeActorId;
+            ReplacementCause = replacementCause;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -21,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         public string ParticipantId { get; }
         public AxisActorId AxisActorId { get; }
         public RuntimeActorId RuntimeActorId { get; }
+        public ActorsRuntimeReplacementCause ReplacementCause { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -34,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             return string.Equals(ParticipantId, other.ParticipantId, StringComparison.Ordinal) &&
                    AxisActorId.Equals(other.AxisActorId) &&
                    RuntimeActorId.Equals(other.RuntimeActorId) &&
+                   ReplacementCause == other.ReplacementCause &&
                    string.Equals(Source, other.Source, StringComparison.Ordinal) &&
                    string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
@@ -50,6 +63,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                 int hashCode = StringComparer.Ordinal.GetHashCode(ParticipantId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ AxisActorId.GetHashCode();
                 hashCode = (hashCode * 397) ^ RuntimeActorId.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)ReplacementCause;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hashCode;
@@ -58,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 
         public override string ToString()
         {
-            return $"participantId='{AsText(ParticipantId)}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', source='{AsText(Source)}', reason='{AsText(Reason)}'";
+            return $"participantId='{AsText(ParticipantId)}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', replacementCause='{ReplacementCause}', source='{AsText(Source)}', reason='{AsText(Reason)}'";
         }
 
         private static string Normalize(string value)

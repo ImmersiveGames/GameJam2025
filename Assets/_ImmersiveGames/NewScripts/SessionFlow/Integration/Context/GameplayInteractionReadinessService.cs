@@ -288,6 +288,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 
             lock (_sync)
             {
+                if (_hasIntroStageStatus &&
+                    snapshot.HasCurrentContext &&
+                    !ActorsSnapshotMatchesIntroStage(_currentIntroStageCompletedEvent, snapshot))
+                {
+                    DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                        $"[OBS][SessionIntegration][GameplayInteractionReady] Actors snapshot ignored reason='intro_stage_context_mismatch' introSessionSignature='{_currentIntroStageCompletedEvent.Session.SessionSignature}' introPhaseRuntimeSignature='{_currentIntroStageCompletedEvent.Session.PhaseRuntimeSignature}' introEntrySignature='{_currentIntroStageCompletedEvent.Session.EntrySignature}' actorSessionSignature='{snapshot.PhaseLocalEntryReadyEvent.SessionSignature}' actorPhaseRuntimeSignature='{snapshot.PhaseLocalEntryReadyEvent.PhaseSignature}' actorEntrySignature='{snapshot.PhaseLocalEntryReadyEvent.EntrySignature}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
                 _currentActorsSnapshot = snapshot;
                 _hasActorsSnapshot = snapshot.HasCurrentContext;
             }
@@ -357,14 +367,23 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 return;
             }
 
+            bool clearedStaleActorsSnapshot = false;
             lock (_sync)
             {
                 _currentIntroStageCompletedEvent = evt;
                 _hasIntroStageStatus = true;
+
+                if (_hasActorsSnapshot &&
+                    !ActorsSnapshotMatchesIntroStage(evt, _currentActorsSnapshot))
+                {
+                    _currentActorsSnapshot = default;
+                    _hasActorsSnapshot = false;
+                    clearedStaleActorsSnapshot = true;
+                }
             }
 
             DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
-                $"[OBS][SessionIntegration][GameplayInteractionReady] IntroStageStatus observed sessionSignature='{evt.Session.SessionSignature}' phaseRuntimeSignature='{evt.Session.PhaseRuntimeSignature}' entrySignature='{evt.Session.EntrySignature}' wasSkipped='{evt.WasSkipped.ToString().ToLowerInvariant()}' reason='{evt.Reason}'.",
+                $"[OBS][SessionIntegration][GameplayInteractionReady] IntroStageStatus observed sessionSignature='{evt.Session.SessionSignature}' phaseRuntimeSignature='{evt.Session.PhaseRuntimeSignature}' entrySignature='{evt.Session.EntrySignature}' wasSkipped='{evt.WasSkipped.ToString().ToLowerInvariant()}' reason='{evt.Reason}' clearedStaleActorsSnapshot='{clearedStaleActorsSnapshot.ToString().ToLowerInvariant()}'.",
                 DebugUtility.Colors.Info);
 
             PublishSnapshot(force: false);
@@ -509,8 +528,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                                   _currentSceneTransitionContext.RouteId.IsValid &&
                                   _currentSceneTransitionContext.RouteId == _currentActorsSnapshot.PhaseLocalEntryReadyEvent.RouteId &&
                                   string.Equals(_currentSceneTransitionContext.TargetActiveScene, _currentActorsSnapshot.PhaseLocalEntryReadyEvent.SceneName, StringComparison.Ordinal) &&
-                                  string.Equals(_currentIntroStageCompletedEvent.Session.SessionSignature, _currentActorsSnapshot.PhaseLocalEntryReadyEvent.SessionSignature, StringComparison.Ordinal) &&
-                                  string.Equals(_currentIntroStageCompletedEvent.Session.PhaseRuntimeSignature, _currentActorsSnapshot.PhaseLocalEntryReadyEvent.PhaseSignature, StringComparison.Ordinal);
+                                  ActorsSnapshotMatchesIntroStage(_currentIntroStageCompletedEvent, _currentActorsSnapshot);
 
             if (!contextMatches)
             {
@@ -599,6 +617,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                    left.HasIntroStageStatusObservation == right.HasIntroStageStatusObservation &&
                    left.ReadinessReasonKind == right.ReadinessReasonKind &&
                    string.Equals(left.ReadinessReason, right.ReadinessReason, StringComparison.Ordinal);
+        }
+
+        private static bool ActorsSnapshotMatchesIntroStage(
+            IntroStageCompletedEvent introStageCompletedEvent,
+            ActorsGameplayOperationalReadinessSnapshot actorsSnapshot)
+        {
+            if (!introStageCompletedEvent.Session.IsValid || !actorsSnapshot.HasCurrentContext)
+            {
+                return false;
+            }
+
+            return string.Equals(introStageCompletedEvent.Session.SessionSignature, actorsSnapshot.PhaseLocalEntryReadyEvent.SessionSignature, StringComparison.Ordinal) &&
+                   string.Equals(introStageCompletedEvent.Session.PhaseRuntimeSignature, actorsSnapshot.PhaseLocalEntryReadyEvent.PhaseSignature, StringComparison.Ordinal);
         }
 
         private static GameplayInteractionIntroStageStatus ResolveIntroStageStatus(IntroStageCompletedEvent evt)

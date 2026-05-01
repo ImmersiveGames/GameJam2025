@@ -519,22 +519,61 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseR
             GameplayPhaseRuntimeSnapshot phaseRuntime = rearmContext.PhaseRuntime;
             ParticipationSnapshot participationSnapshot = rearmContext.ParticipationSnapshot;
 
-            UpdatePhaseRuntime(phaseRuntime, source: operationLabel);
-
             int phaseLocalEntrySequence = ResolveNextPhaseLocalEntrySequence();
             string entrySignature = ResolveNextPhaseLocalEntrySequenceSignature(selectionEvent, source, phaseLocalEntrySequence);
+            PhaseEntryIdentity phaseEntryIdentity = BuildPhaseEntryIdentity(
+                phaseRuntime,
+                entrySignature,
+                phaseLocalEntrySequence,
+                source,
+                activeSceneName);
+            GameplayPhaseRuntimeSnapshot phaseRuntimeWithEntryIdentity = phaseRuntime.WithPhaseEntryIdentity(phaseEntryIdentity);
+            UpdatePhaseRuntime(phaseRuntimeWithEntryIdentity, source: operationLabel);
 
             DebugUtility.Log<GameplayPhaseFlowService>(
                 $"[OBS][GameplaySessionFlow][PhaseDefinition] {operationLabel} owner='GameplayPhaseFlowService' phaseSignature='{phaseRuntime.PhaseRuntimeSignature}' sessionSignature='{sessionContext.SessionSignature}' participationSignature='{participationSnapshot.Signature}' participationReadiness='{participationSnapshot.Readiness.State}' canEnterGameplay='{participationSnapshot.Readiness.CanEnterGameplay}' source='{source}' activeScene='{activeSceneName}'.",
                 DebugUtility.Colors.Success);
 
             EventBus<GameplayPhaseRuntimeMaterializedEvent>.Raise(
-                new GameplayPhaseRuntimeMaterializedEvent(phaseRuntime, source, phaseLocalEntrySequence, entrySignature));
+                new GameplayPhaseRuntimeMaterializedEvent(
+                    phaseRuntimeWithEntryIdentity,
+                    source,
+                    phaseLocalEntrySequence,
+                    entrySignature,
+                    phaseEntryIdentity));
 
             if (shouldQueueIntro)
             {
                 QueueIntroStageForRearm(selectionEvent, phaseRuntime, source, phaseLocalEntrySequence, entrySignature);
             }
+        }
+
+        private static PhaseEntryIdentity BuildPhaseEntryIdentity(
+            GameplayPhaseRuntimeSnapshot phaseRuntime,
+            string entrySignature,
+            int phaseLocalEntrySequence,
+            string source,
+            string sceneName)
+        {
+            GameplaySessionContextSnapshot sessionContext = phaseRuntime.SessionContext;
+            SceneRouteId routeId = sessionContext.MacroRouteId;
+            SceneRouteKind routeKind = sessionContext.MacroRouteRef != null
+                ? sessionContext.MacroRouteRef.RouteKind
+                : SceneRouteKind.Unspecified;
+            string normalizedSceneName = string.IsNullOrWhiteSpace(sceneName)
+                ? sessionContext.MacroRouteId.Value
+                : sceneName.Trim();
+            string phaseEntryId = $"phase-entry|phase:{phaseRuntime.PhaseRuntimeSignature}|entry:{entrySignature}";
+            return new PhaseEntryIdentity(
+                phaseEntryId,
+                phaseRuntime.PhaseRuntimeSignature,
+                entrySignature,
+                phaseLocalEntrySequence,
+                sessionContext.SessionSignature,
+                routeId,
+                routeKind,
+                normalizedSceneName,
+                source);
         }
 
         private PhaseRearmMaterializationContext MaterializePhaseRearmOrFail(PhaseDefinitionSelectedEvent selectionEvent)

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
 {
@@ -14,21 +15,39 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
         [Serializable]
         public sealed class Entry
         {
+            [Header("Canonical Identity")]
+            [Tooltip("Canonical ActorSpec identifier. Global unique key in ActorsSystem (for example: actor.player).")]
             public string actorSpecId;
+            [FormerlySerializedAs("archetypeId")]
+            [Tooltip("Operational spawn archetype key resolved by spawn registry (for example: spawn.player). Required.")]
+            public string spawnArchetypeId;
+
+            [Header("Canonical Semantics")]
+            [Tooltip("Semantic source strategy that defines how canonical occurrences are resolved.")]
             public ActorSpecSourceKind sourceKind = ActorSpecSourceKind.Unknown;
+            [Tooltip("Expected semantic role group for this spec.")]
             public ActorSpecRoleGroup roleGroup = ActorSpecRoleGroup.Unknown;
+            [Tooltip("Operational recipe detail. Never used as canonical identity.")]
             public ActorOperationalRecipeKind operationalRecipeKind = ActorOperationalRecipeKind.Unknown;
+
+            [Header("Operational Payload")]
+            [Tooltip("Logical reference/path for placeholder body payload.")]
             public string placeholderBodyRef;
+            [Tooltip("Optional prefab payload used by spawn archetype implementation.")]
             public GameObject placeholderBodyPrefab;
+
+            [Header("Lifecycle Policy")]
+            [Tooltip("Integration stage for this spec in runtime lifecycle.")]
             public ActorSpecIntegrationStage integrationStage = ActorSpecIntegrationStage.Unknown;
+            [Tooltip("How this spec should be realized operationally.")]
             public ActorSpecRealizationMode realizationMode = ActorSpecRealizationMode.Unknown;
+            [Tooltip("Reset/continuity policy applied for this spec.")]
             public ActorSpecContinuityResetPolicy continuityResetPolicy = ActorSpecContinuityResetPolicy.Unknown;
         }
 
-        [SerializeField] private List<Entry> entries = new();
+        [SerializeField, Tooltip("Canonical ActorSpecs catalog entries.")] private List<Entry> entries = new();
 
         private readonly Dictionary<string, Entry> _entriesBySpecId = new(StringComparer.Ordinal);
-        private readonly Dictionary<ActorOperationalRecipeKind, Entry> _entriesByRecipeKind = new();
         private bool _built;
 
         public IReadOnlyList<Entry> Entries => entries;
@@ -43,18 +62,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
 
             EnsureBuilt();
             return _entriesBySpecId.TryGetValue(actorSpecId.Trim(), out entry);
-        }
-
-        public bool TryGetByRecipeKind(ActorOperationalRecipeKind recipeKind, out Entry entry)
-        {
-            entry = null;
-            if (recipeKind == ActorOperationalRecipeKind.Unknown)
-            {
-                return false;
-            }
-
-            EnsureBuilt();
-            return _entriesByRecipeKind.TryGetValue(recipeKind, out entry);
         }
 
         public void ValidateOrFail()
@@ -93,7 +100,6 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
         private void BuildCacheOrFail()
         {
             _entriesBySpecId.Clear();
-            _entriesByRecipeKind.Clear();
 
             if (entries == null)
             {
@@ -123,6 +129,10 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
                 {
                     throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] ActorSpec '{actorSpecId}' with unknown sourceKind.");
                 }
+                if (string.IsNullOrWhiteSpace(entry.spawnArchetypeId))
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] ActorSpec '{actorSpecId}' with empty spawnArchetypeId.");
+                }
 
                 if (entry.roleGroup == ActorSpecRoleGroup.Unknown)
                 {
@@ -150,6 +160,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
                 }
 
                 entry.actorSpecId = actorSpecId;
+                entry.spawnArchetypeId = Normalize(entry.spawnArchetypeId);
                 entry.placeholderBodyRef = Normalize(entry.placeholderBodyRef);
                 if (string.IsNullOrWhiteSpace(entry.placeholderBodyRef) && entry.placeholderBodyPrefab != null)
                 {
@@ -161,13 +172,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
                     throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Duplicate actorSpecId='{actorSpecId}' in asset='{name}'.");
                 }
 
-                if (_entriesByRecipeKind.ContainsKey(entry.operationalRecipeKind))
-                {
-                    throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Duplicate operationalRecipeKind='{entry.operationalRecipeKind}' in asset='{name}'.");
-                }
-
                 _entriesBySpecId.Add(actorSpecId, entry);
-                _entriesByRecipeKind.Add(entry.operationalRecipeKind, entry);
             }
         }
 

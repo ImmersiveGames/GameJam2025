@@ -20,6 +20,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             ActorOperationalRecipeKind operationalRecipeKind,
             RuntimeActorId preferredRuntimeActorId,
             string actorSpecId,
+            string spawnArchetypeId,
+            string actorSetMemberId,
+            int occurrenceIndex,
+            ActorSpecRealizationMode realizationMode,
+            ActorSpecContinuityResetPolicy continuityResetPolicy,
             string actorSetRef,
             string source)
         {
@@ -30,6 +35,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             OperationalRecipeKind = operationalRecipeKind;
             PreferredRuntimeActorId = preferredRuntimeActorId;
             ActorSpecId = Normalize(actorSpecId);
+            SpawnArchetypeId = Normalize(spawnArchetypeId);
+            ActorSetMemberId = Normalize(actorSetMemberId);
+            OccurrenceIndex = occurrenceIndex < 0 ? 0 : occurrenceIndex;
+            RealizationMode = realizationMode;
+            ContinuityResetPolicy = continuityResetPolicy;
             ActorSetRef = Normalize(actorSetRef);
             Source = Normalize(source);
         }
@@ -41,10 +51,21 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         public ActorOperationalRecipeKind OperationalRecipeKind { get; }
         public RuntimeActorId PreferredRuntimeActorId { get; }
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
+        public string ActorSetMemberId { get; }
+        public int OccurrenceIndex { get; }
+        public ActorSpecRealizationMode RealizationMode { get; }
+        public ActorSpecContinuityResetPolicy ContinuityResetPolicy { get; }
         public string ActorSetRef { get; }
         public string Source { get; }
 
-        public bool IsValid => AxisActorId.IsValid && Role != ActorRole.Unknown;
+        public bool IsValid =>
+            AxisActorId.IsValid &&
+            Role != ActorRole.Unknown &&
+            !string.IsNullOrWhiteSpace(ActorSpecId) &&
+            !string.IsNullOrWhiteSpace(SpawnArchetypeId) &&
+            !string.IsNullOrWhiteSpace(ActorSetMemberId) &&
+            OccurrenceIndex >= 0;
         public bool HasSemanticParticipantId => !string.IsNullOrWhiteSpace(SemanticParticipantId);
         public bool HasPreferredRuntimeActorId => PreferredRuntimeActorId.IsValid;
 
@@ -57,6 +78,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                    OperationalRecipeKind == other.OperationalRecipeKind &&
                    PreferredRuntimeActorId.Equals(other.PreferredRuntimeActorId) &&
                    string.Equals(ActorSpecId, other.ActorSpecId, StringComparison.Ordinal) &&
+                   string.Equals(SpawnArchetypeId, other.SpawnArchetypeId, StringComparison.Ordinal) &&
+                   string.Equals(ActorSetMemberId, other.ActorSetMemberId, StringComparison.Ordinal) &&
+                   OccurrenceIndex == other.OccurrenceIndex &&
+                   RealizationMode == other.RealizationMode &&
+                   ContinuityResetPolicy == other.ContinuityResetPolicy &&
                    string.Equals(ActorSetRef, other.ActorSetRef, StringComparison.Ordinal) &&
                    string.Equals(Source, other.Source, StringComparison.Ordinal);
         }
@@ -77,6 +103,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                 hashCode = (hashCode * 397) ^ (int)OperationalRecipeKind;
                 hashCode = (hashCode * 397) ^ PreferredRuntimeActorId.GetHashCode();
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSpecId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SpawnArchetypeId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetMemberId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ OccurrenceIndex;
+                hashCode = (hashCode * 397) ^ (int)RealizationMode;
+                hashCode = (hashCode * 397) ^ (int)ContinuityResetPolicy;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetRef ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
                 return hashCode;
@@ -85,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 
         public override string ToString()
         {
-            return $"axisActorId='{AxisActorId}', role='{Role}', required='{IsRequired}', semanticParticipantId='{AsText(SemanticParticipantId)}', operationalRecipeKind='{OperationalRecipeKind}', preferredRuntimeActorId='{PreferredRuntimeActorId}', actorSpecId='{AsText(ActorSpecId)}', actorSetRef='{AsText(ActorSetRef)}', source='{AsText(Source)}'";
+            return $"axisActorId='{AxisActorId}', role='{Role}', required='{IsRequired}', semanticParticipantId='{AsText(SemanticParticipantId)}', operationalRecipeKind='{OperationalRecipeKind}', preferredRuntimeActorId='{PreferredRuntimeActorId}', actorSpecId='{AsText(ActorSpecId)}', spawnArchetypeId='{AsText(SpawnArchetypeId)}', actorSetMemberId='{AsText(ActorSetMemberId)}', occurrenceIndex='{OccurrenceIndex}', realizationMode='{RealizationMode}', continuityResetPolicy='{ContinuityResetPolicy}', actorSetRef='{AsText(ActorSetRef)}', source='{AsText(Source)}'";
         }
 
         private static string Normalize(string value)

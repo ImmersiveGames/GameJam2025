@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
 {
@@ -12,21 +13,46 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
     public sealed class ActorSetCatalogAsset : ScriptableObject, ISerializationCallbackReceiver
     {
         [Serializable]
+        public sealed class CardinalityEntry
+        {
+            [Tooltip("Cardinality strategy for this ActorSet member.")]
+            public ActorCardinalityKind kind = ActorCardinalityKind.ExactlyOne;
+            [Tooltip("Used only when kind is Fixed.")]
+            public int fixedCount = 1;
+            [Tooltip("Used only when kind is Range.")]
+            public int minCount = 1;
+            [Tooltip("Used only when kind is Range.")]
+            public int maxCount = 1;
+        }
+
+        [Serializable]
         public sealed class MemberEntry
         {
+            [FormerlySerializedAs("memberId")]
+            [Header("Canonical Member Identity")]
+            [Tooltip("Canonical ActorSetMemberId. Unique inside the ActorSet.")]
+            public string actorSetMemberId;
+            [Tooltip("Referenced canonical ActorSpecId.")]
             public string actorSpecId;
+            [Tooltip("Deterministic order for semantic resolution.")]
             public int order;
+            [Tooltip("Whether this member is enabled in this ActorSet.")]
             public bool enabled = true;
+            [Tooltip("Cardinality definition for occurrences of this member.")]
+            public CardinalityEntry cardinality = new();
         }
 
         [Serializable]
         public sealed class SetEntry
         {
+            [FormerlySerializedAs("actorSetRef")]
+            [Tooltip("Canonical ActorSetRef identifier. Global unique key for this set.")]
             public string actorSetRefId;
+            [Tooltip("Configured members for this ActorSet.")]
             public List<MemberEntry> members = new();
         }
 
-        [SerializeField] private List<SetEntry> sets = new();
+        [SerializeField, Tooltip("Canonical ActorSet catalog entries.")] private List<SetEntry> sets = new();
 
         private readonly Dictionary<string, SetEntry> _setByRefId = new(StringComparer.Ordinal);
         private bool _built;
@@ -126,15 +152,37 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
                         throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Null actor set member in set='{actorSetRefId}', index={memberIndex}.");
                     }
 
+                    member.actorSetMemberId = Normalize(member.actorSetMemberId);
+                    if (string.IsNullOrWhiteSpace(member.actorSetMemberId))
+                    {
+                        throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Actor set member with empty actorSetMemberId in set='{actorSetRefId}', index={memberIndex}.");
+                    }
+
+                    if (!memberIds.Add(member.actorSetMemberId))
+                    {
+                        throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Duplicate actorSetMemberId='{member.actorSetMemberId}' in actor set='{actorSetRefId}'.");
+                    }
+
                     member.actorSpecId = Normalize(member.actorSpecId);
                     if (string.IsNullOrWhiteSpace(member.actorSpecId))
                     {
                         throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Actor set member with empty actorSpecId in set='{actorSetRefId}', index={memberIndex}.");
                     }
 
-                    if (!memberIds.Add(member.actorSpecId))
+                    if (member.cardinality == null)
                     {
-                        throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Duplicate actorSpecId='{member.actorSpecId}' in actor set='{actorSetRefId}'.");
+                        throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Actor set member without cardinality in set='{actorSetRefId}' memberId='{member.actorSetMemberId}'.");
+                    }
+
+                    var cardinality = new ActorCardinalitySpec(
+                        member.cardinality.kind,
+                        member.cardinality.fixedCount,
+                        member.cardinality.minCount,
+                        member.cardinality.maxCount);
+                    if (!cardinality.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"[FATAL][Config][ActorsSystem] Invalid cardinality in actor set='{actorSetRefId}' memberId='{member.actorSetMemberId}' kind='{member.cardinality.kind}' fixed='{member.cardinality.fixedCount}' min='{member.cardinality.minCount}' max='{member.cardinality.maxCount}'.");
                     }
                 }
 

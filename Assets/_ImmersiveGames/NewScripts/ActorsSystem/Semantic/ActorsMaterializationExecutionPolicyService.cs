@@ -88,6 +88,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                     directive,
                     spec.SemanticParticipantId,
                     spec.ActorSpecId,
+                    spec.SpawnArchetypeId,
+                    spec.ActorSetMemberId,
+                    spec.OccurrenceIndex,
+                    spec.RealizationMode,
+                    spec.ContinuityResetPolicy,
                     spec.ActorSetRef,
                     reason));
 
@@ -210,6 +215,12 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
                     builder.Append(string.IsNullOrWhiteSpace(entry.SemanticParticipantId) ? "<none>" : entry.SemanticParticipantId);
                     builder.Append(':');
                     builder.Append(string.IsNullOrWhiteSpace(entry.ActorSpecId) ? "<none>" : entry.ActorSpecId);
+                    builder.Append(':');
+                    builder.Append(string.IsNullOrWhiteSpace(entry.SpawnArchetypeId) ? "<none>" : entry.SpawnArchetypeId);
+                    builder.Append(':');
+                    builder.Append(string.IsNullOrWhiteSpace(entry.ActorSetMemberId) ? "<none>" : entry.ActorSetMemberId);
+                    builder.Append(':');
+                    builder.Append(entry.OccurrenceIndex);
                     builder.Append(':');
                     builder.Append(string.IsNullOrWhiteSpace(entry.ActorSetRef) ? "<none>" : entry.ActorSetRef);
                     builder.Append(':');

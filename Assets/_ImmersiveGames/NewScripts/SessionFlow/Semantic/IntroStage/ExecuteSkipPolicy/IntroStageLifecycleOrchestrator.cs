@@ -332,7 +332,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 ValidateGameplayCompletionPayload(routeKind, completionSession, decision.CompletionReason);
                 _telemetry.LogSkipped(decision, source, completionSession, reason);
 
-                _completionSignalingService.Publish(completionSession, source, wasSkipped: true, reason: decision.CompletionReason);
+                // O no_content não publica conclusão aqui.
+                // O owner operacional único da conclusão é o IntroStageCoordinator,
+                // depois de entrar no contexto de execução e assinar readiness.
                 RunIntroStage(completionSession, routeKind, activeSceneName, reason, source);
                 return;
             }
@@ -394,7 +396,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 session.SessionSignature,
                 hasIntroStage: false,
                 entrySignature: session.EntrySignature,
-                phaseRuntimeSignature: session.PhaseRuntimeSignature);
+                phaseRuntimeSignature: session.PhaseRuntimeSignature,
+                phaseEntryIdentity: session.PhaseEntryIdentity);
         }
 
         private static void ValidateGameplayCompletionPayload(

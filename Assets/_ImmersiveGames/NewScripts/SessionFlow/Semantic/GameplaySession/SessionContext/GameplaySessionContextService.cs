@@ -10,18 +10,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
 {
     public readonly struct GameplayPhaseRuntimeMaterializedEvent : IEvent
     {
-        public GameplayPhaseRuntimeMaterializedEvent(GameplayPhaseRuntimeSnapshot runtime, string source, int phaseLocalEntrySequence, string entrySignature = "")
+        public GameplayPhaseRuntimeMaterializedEvent(
+            GameplayPhaseRuntimeSnapshot runtime,
+            string source,
+            int phaseLocalEntrySequence,
+            string entrySignature = "",
+            PhaseEntryIdentity phaseEntryIdentity = default)
         {
             Runtime = runtime;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
             PhaseLocalEntrySequence = phaseLocalEntrySequence < 0 ? 0 : phaseLocalEntrySequence;
             EntrySignature = string.IsNullOrWhiteSpace(entrySignature) ? string.Empty : entrySignature.Trim();
+            PhaseEntryIdentity = phaseEntryIdentity;
         }
 
         public GameplayPhaseRuntimeSnapshot Runtime { get; }
         public string Source { get; }
         public int PhaseLocalEntrySequence { get; }
         public string EntrySignature { get; }
+        public PhaseEntryIdentity PhaseEntryIdentity { get; }
     }
 
     public readonly struct PhaseCompleted : IEvent
@@ -104,7 +111,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             int phaseLocalEntrySequence,
             string sessionSignature,
             string phaseRuntimeSignature,
-            string entrySignature = "")
+            string entrySignature = "",
+            PhaseEntryIdentity phaseEntryIdentity = default)
         {
             if (PhaseDefinitionRef == null)
             {
@@ -124,13 +132,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
                 sessionSignature,
                 HasIntroStage,
                 entrySignature,
-                phaseRuntimeSignature);
+                phaseRuntimeSignature,
+                phaseEntryIdentity);
+        }
+
+        public GameplayPhaseRuntimeSnapshot WithPhaseEntryIdentity(PhaseEntryIdentity phaseEntryIdentity)
+        {
+            return new GameplayPhaseRuntimeSnapshot(
+                SessionContext,
+                IntroStageSession,
+                PhaseDefinitionRef,
+                ContentEntryCount,
+                PlayerEntryCount,
+                HasIntroStage,
+                phaseEntryIdentity);
         }
 
         public GameplayPhaseRuntimeSnapshot(
             GameplaySessionContextSnapshot sessionContext,
             IntroStageSession levelSession,
-            bool hasIntroStage)
+            bool hasIntroStage,
+            PhaseEntryIdentity phaseEntryIdentity = default)
         {
             SessionContext = sessionContext;
             IntroStageSession = levelSession;
@@ -138,6 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             ContentEntryCount = 0;
             PlayerEntryCount = 0;
             HasIntroStage = hasIntroStage;
+            PhaseEntryIdentity = phaseEntryIdentity;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession);
         }
 
@@ -147,7 +170,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             PhaseDefinitionAsset phaseDefinitionRef,
             int contentEntryCount,
             int playerEntryCount,
-            bool hasIntroStage)
+            bool hasIntroStage,
+            PhaseEntryIdentity phaseEntryIdentity = default)
         {
             SessionContext = sessionContext;
             IntroStageSession = levelSession;
@@ -155,6 +179,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             ContentEntryCount = contentEntryCount < 0 ? 0 : contentEntryCount;
             PlayerEntryCount = playerEntryCount < 0 ? 0 : playerEntryCount;
             HasIntroStage = hasIntroStage;
+            PhaseEntryIdentity = phaseEntryIdentity;
             PhaseRuntimeSignature = BuildPhaseRuntimeSignature(sessionContext, levelSession, phaseDefinitionRef, ContentEntryCount, PlayerEntryCount);
         }
 
@@ -164,6 +189,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
         public int ContentEntryCount { get; }
         public int PlayerEntryCount { get; }
         public bool HasIntroStage { get; }
+        public PhaseEntryIdentity PhaseEntryIdentity { get; }
         public string PhaseRuntimeSignature { get; }
 
         public bool IsValid =>

@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
     /// <summary>
     /// Operational consumer of Actors materialization execution directives.
-    /// Executes only RequestMaterialize/RequestRematerialize and keeps Flag/NoAction as signal-only.
+    /// Executes RequestMaterialize/RequestRematerialize and explicit orphan cleanup actions.
     /// </summary>
     public sealed class ActorsMaterializationOperationalExecutor : IActorsMaterializationOperationalExecutor
     {
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         private readonly Dictionary<string, string> _lastExecutionStampByScene = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastExecutionStampBySceneAndMode = new(StringComparer.Ordinal);
         private readonly List<IWorldSpawnService> _servicesBuffer = new(16);
-        private readonly Dictionary<ActorKind, IWorldSpawnService> _serviceByKind = new();
+        private readonly Dictionary<string, IWorldSpawnService> _serviceByArchetype = new(StringComparer.Ordinal);
         private readonly object _phaseLocalEntryReadySync = new();
         private string _activePhaseLocalEntryReadyCycleStamp = string.Empty;
         private bool _phaseLocalEntryReadyDispatchReserved;
@@ -157,15 +157,21 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     presence,
                     plan);
 
-                bool hasPlayerDefinition = HasDefinitionForActorSpec(definitions, "actor.player");
-                int playerDefinitionCount = CountDefinitionsByKind(definitions, ActorKind.Player);
-                int eaterDefinitionCount = CountDefinitionsByKind(definitions, ActorKind.Eater);
-                int playerReadyDirectives = CountPlayerReadyDirectives(execution);
-
-                if (!definitions.IsValid || definitions.Count < 1 || !hasPlayerDefinition)
+                if (!_semanticPortsAdapter.TryGetCurrentCanonicalResolution(out CanonicalActorResolutionSet canonicalResolutionSet) ||
+                    !canonicalResolutionSet.IsValid)
                 {
                     HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[FATAL][H1][ActorsExecution] Definitions insuficientes para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' definitionsCount='{definitions.Count}' hasPlayer='{hasPlayerDefinition}'.");
+                        $"[FATAL][H1][ActorsExecution] Canonical resolution ausente/invalida para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' cycleSignature='{evt.CycleSignature}'.");
+                }
+
+                AxisActorId[] requiredAxisActorIds = BuildExpectedAxisActorIds(canonicalResolutionSet);
+                int requiredDefinitionsCount = requiredAxisActorIds.Length;
+                int readyDirectivesCount = CountReadyDirectives(execution.Entries);
+
+                if (!definitions.IsValid || definitions.Count < 1 || requiredDefinitionsCount < 1)
+                {
+                    HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                        $"[FATAL][H1][ActorsExecution] Definitions insuficientes para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' definitionsCount='{definitions.Count}' requiredDefinitions='{requiredDefinitionsCount}'.");
                 }
 
                 if (!plan.IsValid || plan.Count < 1)
@@ -174,10 +180,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         $"[FATAL][H1][ActorsExecution] Plan materialization vazio para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' planCount='{plan.Count}' planSignature='{AsText(plan.PlanSignature)}'.");
                 }
 
-                if (!execution.IsValid || execution.Count < 1 || playerReadyDirectives < 1)
+                if (!execution.IsValid || execution.Count < 1 || readyDirectivesCount < 1)
                 {
                     HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[FATAL][H1][ActorsExecution] Execution policy vazio para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' executionCount='{execution.Count}' requestMaterialize='{execution.RequestMaterializeCount}' requestRematerialize='{execution.RequestRematerializeCount}' preserveExisting='{CountDirectives(execution, ActorMaterializationExecutionDirective.PreserveExisting)}' readyDirectiveCount='{playerReadyDirectives}' continuation='{evt.Plan.ResolvedContinuation}'.");
+                        $"[FATAL][H1][ActorsExecution] Execution policy vazio para phase-local-entry-ready actorSetRef='{evt.ActorSetRef}' executionCount='{execution.Count}' requestMaterialize='{execution.RequestMaterializeCount}' requestRematerialize='{execution.RequestRematerializeCount}' preserveExisting='{CountDirectives(execution, ActorMaterializationExecutionDirective.PreserveExisting)}' readyDirectiveCount='{readyDirectivesCount}' continuation='{evt.Plan.ResolvedContinuation}'.");
                 }
 
                 DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
@@ -189,8 +195,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         ("scene", evt.SceneName),
                         ("actorSetRef", evt.ActorSetRef),
                         ("count", definitions.Count),
-                        ("playerCount", playerDefinitionCount),
-                        ("eaterCount", eaterDefinitionCount)),
+                        ("requiredDefinitions", requiredDefinitionsCount)),
                     DebugUtility.Colors.Info);
 
                 DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
@@ -203,8 +208,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         ("presence", presence.Count),
                         ("planEntries", plan.Count),
                         ("executionEntries", execution.Count),
-                        ("playerDefinitions", playerDefinitionCount),
-                        ("readyDirectiveCount", playerReadyDirectives),
+                        ("requiredDefinitions", requiredDefinitionsCount),
+                        ("readyDirectiveCount", readyDirectivesCount),
                         ("preserveExisting", CountDirectives(execution, ActorMaterializationExecutionDirective.PreserveExisting)),
                         ("continuation", evt.Plan.ResolvedContinuation)),
                     DebugUtility.Colors.Success);
@@ -345,11 +350,18 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     }
 
                     ActorsDefinitionsSnapshot definitions = RefreshDefinitionsOrFail();
-                    ActorKind[] expectedActorKinds = BuildExpectedActorKinds(definitions);
-                    if (expectedActorKinds.Length < 1)
+                    if (!_semanticPortsAdapter.TryGetCurrentCanonicalResolution(out CanonicalActorResolutionSet canonicalResolutionSet) ||
+                        !canonicalResolutionSet.IsValid)
                     {
                         HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
-                            $"[FATAL][H1][ActorsExecution] Expected actor kinds vazios para phase-local-entry-ready actorSetRef='{canonicalEntry.ActorSetRef}' scene='{canonicalEntry.SceneName}'.");
+                            $"[FATAL][H1][ActorsExecution] Canonical resolution ausente/invalida para phase-local-entry-ready actorSetRef='{canonicalEntry.ActorSetRef}' scene='{canonicalEntry.SceneName}'.");
+                    }
+
+                    AxisActorId[] expectedAxisActorIds = BuildExpectedAxisActorIds(canonicalResolutionSet);
+                    if (expectedAxisActorIds.Length < 1)
+                    {
+                        HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                            $"[FATAL][H1][ActorsExecution] Expected axis actors vazios para phase-local-entry-ready actorSetRef='{canonicalEntry.ActorSetRef}' scene='{canonicalEntry.SceneName}'.");
                     }
 
                     ActorsOperationalMaterializationCycleState cycleState = new ActorsOperationalMaterializationCycleState(
@@ -362,7 +374,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         canonicalEntry.ActorSetRef,
                         cycle.EntrySignature,
                         snapshot.ExecutionSignature,
-                        expectedActorKinds);
+                        expectedAxisActorIds,
+                        canonicalEntry.PhaseEntryIdentity);
 
                     using (_cycleContext.OpenScope(cycle, cycleState, sourceId))
                     {
@@ -375,7 +388,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         }
 
                         DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
-                            $"[OBS][ActorsExecution][CycleContext] dispatchMode='{cycleCompletedEvent.DispatchMode.ToLogToken()}' actorSetRef='{cycleCompletedEvent.ActorSetRef}' expectedKinds={FormatActorKinds(cycleCompletedEvent.ExpectedActorKinds)} materializedKinds={FormatActorKinds(cycleCompletedEvent.MaterializedActorKinds)} preservedActorKinds={FormatActorKinds(cycleCompletedEvent.PreservedActorKinds)} readyActorKinds={FormatActorKinds(cycleCompletedEvent.ReadyActorKinds)} isGameplayOperationalReady='{cycleCompletedEvent.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{cycleCompletedEvent.ReadinessReason}'.",
+                            $"[OBS][ActorsExecution][CycleContext] dispatchMode='{cycleCompletedEvent.DispatchMode.ToLogToken()}' actorSetRef='{cycleCompletedEvent.ActorSetRef}' expectedAxisActors={FormatAxisActorIds(cycleCompletedEvent.ExpectedAxisActorIds)} readyAxisActors={FormatAxisActorIds(cycleCompletedEvent.ReadyAxisActorIds)} missingRequiredAxisActors={FormatAxisActorIds(cycleCompletedEvent.MissingRequiredAxisActorIds)} materializedKinds={FormatActorKinds(cycleCompletedEvent.MaterializedActorKinds)} preservedKinds={FormatActorKinds(cycleCompletedEvent.PreservedActorKinds)} readyKinds={FormatActorKinds(cycleCompletedEvent.ReadyActorKinds)} isGameplayOperationalReady='{cycleCompletedEvent.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{cycleCompletedEvent.ReadinessReason}'.",
                             DebugUtility.Colors.Info);
 
                         EventBus<ActorsOperationalMaterializationCycleCompletedEvent>.Raise(cycleCompletedEvent);
@@ -475,7 +488,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
         private void BuildServiceIndex(IWorldSpawnServiceRegistry spawnRegistry)
         {
             _servicesBuffer.Clear();
-            _serviceByKind.Clear();
+            _serviceByArchetype.Clear();
 
             IReadOnlyList<IWorldSpawnService> services = spawnRegistry.Services;
             for (int index = 0; index < services.Count; index += 1)
@@ -488,13 +501,19 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
                 _servicesBuffer.Add(service);
 
-                ActorKind kind = service.SpawnedActorKind;
-                if (kind == ActorKind.Unknown || _serviceByKind.ContainsKey(kind))
+                if (string.IsNullOrWhiteSpace(service.SpawnArchetypeId))
                 {
-                    continue;
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsExecution] Spawn service sem SpawnArchetypeId service='{service.Name}'.");
                 }
 
-                _serviceByKind.Add(kind, service);
+                if (_serviceByArchetype.ContainsKey(service.SpawnArchetypeId))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][ActorsExecution] Duplicate spawn service archetype spawnArchetypeId='{service.SpawnArchetypeId}' service='{service.Name}'.");
+                }
+
+                _serviceByArchetype.Add(service.SpawnArchetypeId, service);
             }
         }
 
@@ -635,70 +654,41 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             return snapshot;
         }
 
-        private static bool HasDefinitionForActorSpec(ActorsDefinitionsSnapshot snapshot, string actorSpecId)
+        private static AxisActorId[] BuildExpectedAxisActorIds(CanonicalActorResolutionSet resolutionSet)
         {
-            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0 || string.IsNullOrWhiteSpace(actorSpecId))
+            if (!resolutionSet.IsValid || resolutionSet.Entries == null || resolutionSet.Entries.Length == 0)
             {
-                return false;
+                return Array.Empty<AxisActorId>();
             }
 
-            for (int index = 0; index < snapshot.Entries.Length; index += 1)
+            var expected = new List<AxisActorId>(resolutionSet.Entries.Length);
+            for (int resolutionIndex = 0; resolutionIndex < resolutionSet.Entries.Length; resolutionIndex += 1)
             {
-                ActorDefinitionRecord entry = snapshot.Entries[index];
-                if (entry.IsValid && string.Equals(entry.ActorSpecId, actorSpecId, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static int CountDefinitionsByKind(ActorsDefinitionsSnapshot snapshot, ActorKind actorKind)
-        {
-            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0 || actorKind == ActorKind.Unknown)
-            {
-                return 0;
-            }
-
-            int count = 0;
-            for (int index = 0; index < snapshot.Entries.Length; index += 1)
-            {
-                ActorDefinitionRecord entry = snapshot.Entries[index];
-                if (!entry.IsValid || MapRecipeToActorKind(entry.OperationalRecipeKind) != actorKind)
+                CanonicalActorResolution resolution = resolutionSet.Entries[resolutionIndex];
+                if (!resolution.IsValid)
                 {
                     continue;
                 }
 
-                count += 1;
-            }
-
-            return count;
-        }
-
-        private static int CountPlayerReadyDirectives(ActorsMaterializationExecutionSnapshot snapshot)
-        {
-            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
-            {
-                return 0;
-            }
-
-            int count = 0;
-            for (int index = 0; index < snapshot.Entries.Length; index += 1)
-            {
-                ActorsMaterializationExecutionEntry entry = snapshot.Entries[index];
-                if (!entry.IsValid || MapRecipeToActorKind(entry.OperationalRecipeKind) != ActorKind.Player)
+                CanonicalActorOccurrence[] occurrences = resolution.Occurrences ?? Array.Empty<CanonicalActorOccurrence>();
+                for (int occurrenceIndex = 0; occurrenceIndex < occurrences.Length; occurrenceIndex += 1)
                 {
-                    continue;
-                }
+                    CanonicalActorOccurrence occurrence = occurrences[occurrenceIndex];
+                    if (!occurrence.IsValid || !occurrence.IsRequired)
+                    {
+                        continue;
+                    }
 
-                if (IsReadyDirective(entry.Directive))
-                {
-                    count += 1;
+                    if (expected.Contains(occurrence.AxisActorId))
+                    {
+                        continue;
+                    }
+
+                    expected.Add(occurrence.AxisActorId);
                 }
             }
 
-            return count;
+            return expected.ToArray();
         }
 
         private static int CountDirectives(
@@ -957,6 +947,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 ActorMaterializationExecutionDirective.PreserveExisting,
                 entry.SemanticParticipantId,
                 entry.ActorSpecId,
+                entry.SpawnArchetypeId,
+                entry.ActorSetMemberId,
+                entry.OccurrenceIndex,
+                entry.RealizationMode,
+                entry.ContinuityResetPolicy,
                 entry.ActorSetRef,
                 BuildPreserveExistingReason(entry, sourceId, phaseIntent, intent, ordinalNavigationKind));
 
@@ -1205,8 +1200,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private async Task DispatchAsync(string sceneName, ActorsMaterializationExecutionSnapshot snapshot, string sourceId, ActorsOperationalMaterializationDispatchMode dispatchMode, string traceId)
         {
-            var materializeEntries = new Dictionary<ActorKind, ActorsMaterializationExecutionEntry>();
-            var rematerializeEntries = new Dictionary<ActorKind, ActorsMaterializationExecutionEntry>();
+            var materializeEntries = new Dictionary<AxisActorId, ActorsMaterializationExecutionEntry>();
+            var rematerializeEntries = new Dictionary<AxisActorId, ActorsMaterializationExecutionEntry>();
+            var problematicOrphanRuntimeIds = new HashSet<RuntimeActorId>();
 
             ActorsMaterializationExecutionEntry[] entries = snapshot.Entries ?? Array.Empty<ActorsMaterializationExecutionEntry>();
             for (int index = 0; index < entries.Length; index += 1)
@@ -1238,21 +1234,17 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 switch (entry.Directive)
                 {
                     case ActorMaterializationExecutionDirective.RequestMaterialize:
-                        if (TryResolveTargetKind(entry, out ActorKind materializeKind))
+                        ValidateDirectiveIdentityOrFail(entry, sceneName, sourceId);
+                        if (!rematerializeEntries.ContainsKey(entry.AxisActorId))
                         {
-                            if (!rematerializeEntries.ContainsKey(materializeKind))
-                            {
-                                materializeEntries[materializeKind] = entry;
-                            }
+                            materializeEntries[entry.AxisActorId] = entry;
                         }
                         break;
 
                     case ActorMaterializationExecutionDirective.RequestRematerialize:
-                        if (TryResolveTargetKind(entry, out ActorKind rematerializeKind))
-                        {
-                            rematerializeEntries[rematerializeKind] = entry;
-                            materializeEntries.Remove(rematerializeKind);
-                        }
+                        ValidateDirectiveIdentityOrFail(entry, sceneName, sourceId);
+                        rematerializeEntries[entry.AxisActorId] = entry;
+                        materializeEntries.Remove(entry.AxisActorId);
                         break;
 
                     case ActorMaterializationExecutionDirective.PreserveExisting:
@@ -1263,7 +1255,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     case ActorMaterializationExecutionDirective.NoActionObserve:
                     case ActorMaterializationExecutionDirective.FlagInconsistentNoAutoRemediation:
                     case ActorMaterializationExecutionDirective.FlagRuntimeOrphanTolerated:
-                    case ActorMaterializationExecutionDirective.FlagRuntimeOrphanProblematic:
                         DebugUtility.LogVerbose(typeof(ActorsMaterializationOperationalExecutor),
                             ObservabilityTraceFormatter.BuildCompactLogMessage(
                                 "[OBS][ActorsExecution][Operational] Directive sem acao automatica",
@@ -1277,17 +1268,35 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                                 ("sourceId", sourceId)),
                             DebugUtility.Colors.Info);
                         break;
+
+                    case ActorMaterializationExecutionDirective.FlagRuntimeOrphanProblematic:
+                        if (entry.RuntimeActorId.IsValid)
+                        {
+                            problematicOrphanRuntimeIds.Add(entry.RuntimeActorId);
+                        }
+
+                        DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
+                            ObservabilityTraceFormatter.BuildCompactLogMessage(
+                                "[OBS][ActorsExecution][Operational] orphan_problematic_flagged_for_cleanup",
+                                ("traceId", traceId),
+                                ("runtimeActorId", entry.RuntimeActorId),
+                                ("axisActorId", entry.AxisActorId),
+                                ("actorSpecId", entry.ActorSpecId),
+                                ("actorSetRef", entry.ActorSetRef),
+                                ("scene", sceneName),
+                                ("sourceId", sourceId)),
+                            DebugUtility.Colors.Info);
+                        break;
                 }
             }
 
-            foreach (KeyValuePair<ActorKind, ActorsMaterializationExecutionEntry> pair in rematerializeEntries)
+            foreach (KeyValuePair<AxisActorId, ActorsMaterializationExecutionEntry> pair in rematerializeEntries)
             {
-                ActorKind kind = pair.Key;
                 ActorsMaterializationExecutionEntry entry = pair.Value;
-                if (!_serviceByKind.TryGetValue(kind, out IWorldSpawnService service) || service == null)
+                if (!TryResolveServiceForEntry(entry, out IWorldSpawnService service, out ActorKind actorKind))
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
-                        $"[OBS][ActorsExecution][Operational] Service ausente para rematerializar actorKind='{kind}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.");
+                        $"[OBS][ActorsExecution][Operational] Service ausente para rematerializar actorKind='{actorKind}' spawnArchetypeId='{AsText(entry.SpawnArchetypeId)}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetMemberId='{AsText(entry.ActorSetMemberId)}' occurrenceIndex='{entry.OccurrenceIndex}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{sceneName}' sourceId='{AsText(sourceId)}'.");
                     continue;
                 }
 
@@ -1298,7 +1307,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     ObservabilityTraceFormatter.BuildCompactLogMessage(
                         "[OBS][ActorsExecution][Operational] Rematerialize executado",
                         ("traceId", traceId),
-                        ("actorKind", kind),
+                        ("actorKind", actorKind),
                         ("service", service.Name),
                         ("axisActorId", entry.AxisActorId),
                         ("runtimeActorId", entry.RuntimeActorId),
@@ -1310,24 +1319,34 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     DebugUtility.Colors.Info);
             }
 
-            foreach (KeyValuePair<ActorKind, ActorsMaterializationExecutionEntry> pair in materializeEntries)
+            foreach (KeyValuePair<AxisActorId, ActorsMaterializationExecutionEntry> pair in materializeEntries)
             {
-                ActorKind kind = pair.Key;
                 ActorsMaterializationExecutionEntry entry = pair.Value;
-                if (!_serviceByKind.TryGetValue(kind, out IWorldSpawnService service) || service == null)
+                if (!TryResolveServiceForEntry(entry, out IWorldSpawnService service, out ActorKind actorKind))
                 {
                     DebugUtility.LogWarning(typeof(ActorsMaterializationOperationalExecutor),
                         ObservabilityTraceFormatter.BuildCompactLogMessage(
                             "[OBS][ActorsExecution][Operational] Service ausente para materializar",
                             ("traceId", traceId),
-                            ("actorKind", kind),
+                            ("actorKind", actorKind),
+                            ("spawnArchetypeId", entry.SpawnArchetypeId),
                             ("axisActorId", entry.AxisActorId),
                             ("actorSpecId", entry.ActorSpecId),
+                            ("actorSetMemberId", entry.ActorSetMemberId),
+                            ("occurrenceIndex", entry.OccurrenceIndex),
                             ("actorSetRef", entry.ActorSetRef),
                             ("scene", sceneName),
                             ("sourceId", sourceId)));
                     continue;
                 }
+
+                await CleanupBlockingProblematicOrphanBeforeMaterializeAsync(
+                    service,
+                    entry,
+                    problematicOrphanRuntimeIds,
+                    sceneName,
+                    sourceId,
+                    traceId);
 
                 await service.SpawnAsync(CreateSpawnRequest(sceneName, sourceId, service, entry, traceId));
 
@@ -1335,7 +1354,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                     ObservabilityTraceFormatter.BuildCompactLogMessage(
                         "[OBS][ActorsExecution][Operational] Materialize executado",
                         ("traceId", traceId),
-                        ("actorKind", kind),
+                        ("actorKind", actorKind),
                         ("service", service.Name),
                         ("axisActorId", entry.AxisActorId),
                         ("runtimeActorId", entry.RuntimeActorId),
@@ -1346,6 +1365,101 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                         ("sourceId", sourceId)),
                     DebugUtility.Colors.Info);
             }
+        }
+
+        private static async Task CleanupBlockingProblematicOrphanBeforeMaterializeAsync(
+            IWorldSpawnService service,
+            ActorsMaterializationExecutionEntry materializeEntry,
+            HashSet<RuntimeActorId> problematicOrphanRuntimeIds,
+            string sceneName,
+            string sourceId,
+            string traceId)
+        {
+            if (service == null ||
+                materializeEntry.Directive != ActorMaterializationExecutionDirective.RequestMaterialize ||
+                problematicOrphanRuntimeIds == null ||
+                problematicOrphanRuntimeIds.Count == 0)
+            {
+                return;
+            }
+
+            if (!service.TryGetCurrentRuntimeActorId(out RuntimeActorId currentRuntimeActorId) ||
+                !currentRuntimeActorId.IsValid ||
+                !problematicOrphanRuntimeIds.Contains(currentRuntimeActorId))
+            {
+                return;
+            }
+
+            await service.DespawnAsync();
+
+            DebugUtility.Log(typeof(ActorsMaterializationOperationalExecutor),
+                ObservabilityTraceFormatter.BuildCompactLogMessage(
+                    "[OBS][ActorsExecution][Operational] orphan_problematic_cleanup_executed_before_materialize",
+                    ("traceId", traceId),
+                    ("service", service.Name),
+                    ("runtimeActorId", currentRuntimeActorId),
+                    ("axisActorId", materializeEntry.AxisActorId),
+                    ("actorSpecId", materializeEntry.ActorSpecId),
+                    ("actorSetMemberId", materializeEntry.ActorSetMemberId),
+                    ("actorSetRef", materializeEntry.ActorSetRef),
+                    ("scene", sceneName),
+                    ("sourceId", sourceId)),
+                DebugUtility.Colors.Info);
+        }
+
+        private void ValidateDirectiveIdentityOrFail(
+            ActorsMaterializationExecutionEntry entry,
+            string sceneName,
+            string sourceId)
+        {
+            if (!entry.AxisActorId.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] Directive sem AxisActorId valido. directive='{entry.Directive}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetMemberId='{AsText(entry.ActorSetMemberId)}' occurrenceIndex='{entry.OccurrenceIndex}' actorSetRef='{AsText(entry.ActorSetRef)}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.ActorSpecId))
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] Directive sem actorSpecId. directive='{entry.Directive}' axisActorId='{entry.AxisActorId}' actorSetMemberId='{AsText(entry.ActorSetMemberId)}' occurrenceIndex='{entry.OccurrenceIndex}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.ActorSetMemberId))
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] Directive sem actorSetMemberId. directive='{entry.Directive}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' occurrenceIndex='{entry.OccurrenceIndex}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}'.");
+            }
+            if (string.IsNullOrWhiteSpace(entry.SpawnArchetypeId))
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] Directive sem spawnArchetypeId. directive='{entry.Directive}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetMemberId='{AsText(entry.ActorSetMemberId)}' occurrenceIndex='{entry.OccurrenceIndex}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}'.");
+            }
+
+            if (entry.OccurrenceIndex < 0)
+            {
+                HardFailFastH1.Trigger(typeof(ActorsMaterializationOperationalExecutor),
+                    $"[FATAL][H1][ActorsExecution] Directive com occurrenceIndex invalido. directive='{entry.Directive}' axisActorId='{entry.AxisActorId}' actorSpecId='{AsText(entry.ActorSpecId)}' actorSetMemberId='{AsText(entry.ActorSetMemberId)}' occurrenceIndex='{entry.OccurrenceIndex}' scene='{AsText(sceneName)}' sourceId='{AsText(sourceId)}'.");
+            }
+        }
+
+        private bool TryResolveServiceForEntry(
+            ActorsMaterializationExecutionEntry entry,
+            out IWorldSpawnService service,
+            out ActorKind actorKind)
+        {
+            service = null;
+            actorKind = ActorKind.Unknown;
+            if (string.IsNullOrWhiteSpace(entry.SpawnArchetypeId))
+            {
+                return false;
+            }
+            if (!_serviceByArchetype.TryGetValue(entry.SpawnArchetypeId, out service) || service == null)
+            {
+                return false;
+            }
+
+            actorKind = service.SpawnedActorKind;
+            return true;
         }
 
         private void RecordPreservedActorOrFail(
@@ -1399,11 +1513,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private static bool IsDispatchAllowedForMode(ActorsOperationalMaterializationDispatchMode dispatchMode, ActorKind actorKind)
         {
-            if (actorKind == ActorKind.Unknown)
-            {
-                return false;
-            }
-
             if (dispatchMode == ActorsOperationalMaterializationDispatchMode.PhaseLocalEntryReady)
             {
                 return true;
@@ -1433,12 +1542,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             ActorsMaterializationExecutionEntry entry,
             string executionSignature)
         {
+            ActorsRuntimeReplacementCause replacementCause = entry.Directive switch
+            {
+                ActorMaterializationExecutionDirective.RequestRematerialize => ActorsRuntimeReplacementCause.Rematerialized,
+                ActorMaterializationExecutionDirective.RequestMaterialize => ActorsRuntimeReplacementCause.Materialized,
+                _ => ActorsRuntimeReplacementCause.None
+            };
+
             return new ActorSpawnRequest(
                 service.SpawnedActorKind,
                 entry.OperationalRecipeKind,
+                replacementCause,
                 entry.AxisActorId,
                 RuntimeActorId.None,
                 entry.ActorSpecId,
+                entry.SpawnArchetypeId,
+                entry.ActorSetMemberId,
+                entry.OccurrenceIndex,
                 entry.ActorSetRef,
                 entry.SemanticParticipantId,
                 service.Name,
@@ -1451,41 +1571,30 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 
         private static ActorKind MapRecipeToActorKind(ActorOperationalRecipeKind recipeKind)
         {
-            return recipeKind switch
-            {
-                ActorOperationalRecipeKind.Player => ActorKind.Player,
-                ActorOperationalRecipeKind.Dummy => ActorKind.Dummy,
-                ActorOperationalRecipeKind.Eater => ActorKind.Eater,
-                _ => ActorKind.Unknown
-            };
+            return ActorSpawnArchetypeDefaults.MapRecipeToActorKind(recipeKind);
         }
 
-        private static ActorKind[] BuildExpectedActorKinds(ActorsDefinitionsSnapshot snapshot)
+        private static string FormatAxisActorIds(AxisActorId[] axisActorIds)
         {
-            if (!snapshot.IsValid || snapshot.Entries == null || snapshot.Entries.Length == 0)
+            if (axisActorIds == null || axisActorIds.Length == 0)
             {
-                return Array.Empty<ActorKind>();
+                return "[]";
             }
 
-            var expectedKinds = new List<ActorKind>(snapshot.Entries.Length);
-            for (int index = 0; index < snapshot.Entries.Length; index += 1)
+            var builder = new System.Text.StringBuilder();
+            builder.Append('[');
+            for (int index = 0; index < axisActorIds.Length; index += 1)
             {
-                ActorDefinitionRecord entry = snapshot.Entries[index];
-                if (!entry.IsValid)
+                if (index > 0)
                 {
-                    continue;
+                    builder.Append(',');
                 }
 
-                ActorKind kind = MapRecipeToActorKind(entry.OperationalRecipeKind);
-                if (kind == ActorKind.Unknown || expectedKinds.Contains(kind))
-                {
-                    continue;
-                }
-
-                expectedKinds.Add(kind);
+                builder.Append(axisActorIds[index].IsValid ? axisActorIds[index].Value : "<none>");
             }
 
-            return expectedKinds.ToArray();
+            builder.Append(']');
+            return builder.ToString();
         }
 
         private static string FormatActorKinds(ActorKind[] kinds)

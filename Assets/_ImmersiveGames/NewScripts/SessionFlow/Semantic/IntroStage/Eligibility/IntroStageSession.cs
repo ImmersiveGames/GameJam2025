@@ -1,5 +1,6 @@
 #nullable enable
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
 {
     public readonly struct IntroStageSession
@@ -13,7 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
             string sessionSignature,
             bool hasIntroStage = false,
             string? entrySignature = null,
-            string? phaseRuntimeSignature = null)
+            string? phaseRuntimeSignature = null,
+            PhaseEntryIdentity phaseEntryIdentity = default)
         {
             PhaseDefinitionRef = phaseDefinitionRef;
             LocalContentId = string.IsNullOrWhiteSpace(localContentId) ? string.Empty : localContentId.Trim();
@@ -26,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
                 ? $"{SessionSignature}|entry:{PhaseLocalEntrySequence}"
                 : entrySignature.Trim();
             HasIntroStage = hasIntroStage;
+            PhaseEntryIdentity = phaseEntryIdentity;
         }
 
         public PhaseDefinitionAsset? PhaseDefinitionRef { get; }
@@ -37,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility
         public string PhaseRuntimeSignature { get; }
         public string EntrySignature { get; }
         public bool HasIntroStage { get; }
+        public PhaseEntryIdentity PhaseEntryIdentity { get; }
 
         public bool HasPhaseDefinitionRef => PhaseDefinitionRef != null;
         public bool IsValid => HasPhaseDefinitionRef;

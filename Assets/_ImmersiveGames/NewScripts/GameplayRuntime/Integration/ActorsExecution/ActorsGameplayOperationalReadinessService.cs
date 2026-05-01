@@ -168,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             PublishChanged();
 
             DebugUtility.Log(typeof(ActorsGameplayOperationalReadinessService),
-                $"[OBS][ActorsExecution][OperationalReadiness] CycleCompleted consumed dispatchMode='{evt.DispatchMode.ToLogToken()}' actorSetRef='{evt.ActorSetRef}' expectedKinds={FormatActorKinds(evt.ExpectedActorKinds)} materializedKinds={FormatActorKinds(evt.MaterializedActorKinds)} isGameplayOperationalReady='{evt.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{evt.ReadinessReason}'.",
+                $"[OBS][ActorsExecution][OperationalReadiness] CycleCompleted consumed dispatchMode='{evt.DispatchMode.ToLogToken()}' actorSetRef='{evt.ActorSetRef}' expectedAxisActors={FormatAxisActorIds(evt.ExpectedAxisActorIds)} readyAxisActors={FormatAxisActorIds(evt.ReadyAxisActorIds)} missingRequiredAxisActors={FormatAxisActorIds(evt.MissingRequiredAxisActorIds)} materializedKinds={FormatActorKinds(evt.MaterializedActorKinds)} isGameplayOperationalReady='{evt.IsGameplayOperationalReady.ToString().ToLowerInvariant()}' readinessReason='{evt.ReadinessReason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -210,6 +210,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             }
 
             return $"[{string.Join(",", actorKinds)}]";
+        }
+
+        private static string FormatAxisActorIds(ActorsSystem.Models.AxisActorId[] axisActorIds)
+        {
+            if (axisActorIds == null || axisActorIds.Length == 0)
+            {
+                return "[]";
+            }
+
+            return $"[{string.Join(",", Array.ConvertAll(axisActorIds, axisActorId => axisActorId.IsValid ? axisActorId.Value : "<none>"))}]";
         }
     }
 }

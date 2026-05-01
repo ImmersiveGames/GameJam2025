@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
@@ -40,16 +41,32 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
         {
             if (!entry.IsValid)
             {
+                ReportConflict(new ActorsBindingConflict(
+                    ActorsBindingConflictCode.InvalidBindingState,
+                    entry.ParticipantId,
+                    entry.AxisActorId,
+                    entry.RuntimeActorId,
+                    entry.Source,
+                    "invalid_operational_binding_entry"),
+                    failFast: false);
                 return false;
             }
 
-            if (HasParticipantConflict(entry))
+            if (HasParticipantConflict(entry, out ActorsBindingConflict participantConflict))
             {
+                ReportConflict(participantConflict, failFast: true);
                 return false;
             }
 
-            if (HasRuntimeConflict(entry))
+            if (HasAxisConflict(entry, out ActorsBindingConflict axisConflict))
             {
+                ReportConflict(axisConflict, failFast: true);
+                return false;
+            }
+
+            if (HasRuntimeConflict(entry, out ActorsBindingConflict runtimeConflict))
+            {
+                ReportConflict(runtimeConflict, failFast: true);
                 return false;
             }
 
@@ -157,18 +174,55 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
                 string.IsNullOrWhiteSpace(reason) ? "cleared" : reason.Trim());
         }
 
-        private bool HasParticipantConflict(ActorsOperationalBindingEntry entry)
+        private bool HasParticipantConflict(ActorsOperationalBindingEntry entry, out ActorsBindingConflict conflict)
         {
+            conflict = default;
             if (!_participantIndex.TryGetValue(entry.ParticipantId, out AxisActorId existingAxisActorId))
             {
                 return false;
             }
 
-            return existingAxisActorId != entry.AxisActorId;
+            if (existingAxisActorId == entry.AxisActorId)
+            {
+                return false;
+            }
+
+            conflict = new ActorsBindingConflict(
+                ActorsBindingConflictCode.DuplicateParticipant,
+                entry.ParticipantId,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Source,
+                "participant_already_bound_to_other_axis_actor");
+            return true;
         }
 
-        private bool HasRuntimeConflict(ActorsOperationalBindingEntry entry)
+        private bool HasAxisConflict(ActorsOperationalBindingEntry entry, out ActorsBindingConflict conflict)
         {
+            conflict = default;
+            if (!_byAxisActor.TryGetValue(entry.AxisActorId, out ActorsOperationalBindingEntry existing))
+            {
+                return false;
+            }
+
+            if (string.Equals(existing.ParticipantId, entry.ParticipantId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            conflict = new ActorsBindingConflict(
+                ActorsBindingConflictCode.DuplicateAxisActorId,
+                entry.ParticipantId,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Source,
+                "axis_actor_id_already_bound_to_other_participant");
+            return true;
+        }
+
+        private bool HasRuntimeConflict(ActorsOperationalBindingEntry entry, out ActorsBindingConflict conflict)
+        {
+            conflict = default;
             if (!entry.RuntimeActorId.IsValid)
             {
                 return false;
@@ -179,7 +233,19 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
                 return false;
             }
 
-            return existingAxisActorId != entry.AxisActorId;
+            if (existingAxisActorId == entry.AxisActorId)
+            {
+                return false;
+            }
+
+            conflict = new ActorsBindingConflict(
+                ActorsBindingConflictCode.DuplicateRuntimeActorId,
+                entry.ParticipantId,
+                entry.AxisActorId,
+                entry.RuntimeActorId,
+                entry.Source,
+                "runtime_actor_id_already_bound_to_other_axis_actor");
+            return true;
         }
 
         private void RemoveSecondaryIndexesForAxis(AxisActorId axisActorId)
@@ -277,6 +343,29 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.OperationalBinding
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string AsText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        }
+
+        private static void ReportConflict(ActorsBindingConflict conflict, bool failFast)
+        {
+            if (!conflict.IsValid)
+            {
+                return;
+            }
+
+            string message =
+                $"[FATAL][ActorsSystem][OperationalBinding] conflict code='{conflict.Code}' participantId='{AsText(conflict.ParticipantId)}' axisActorId='{conflict.AxisActorId}' runtimeActorId='{conflict.RuntimeActorId}' source='{AsText(conflict.Source)}' reason='{AsText(conflict.Reason)}'.";
+            DebugUtility.LogError(typeof(ActorsOperationalBindingService), message);
+            EventBus<ActorsBindingConflictEvent>.Raise(new ActorsBindingConflictEvent(conflict));
+
+            if (failFast)
+            {
+                throw new InvalidOperationException(message);
+            }
         }
     }
 }

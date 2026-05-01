@@ -377,11 +377,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             }
 
             var participants = new List<ParticipantSnapshot>(selection.Count);
-            int primaryIndex = ResolvePrimaryIndex(selection.OrderedSpecs);
+            int primaryIndex = ResolvePrimaryIndex(selection.Members);
 
-            for (int index = 0; index < selection.OrderedSpecs.Length; index += 1)
+            for (int index = 0; index < selection.Members.Length; index += 1)
             {
-                ActorSpecRecord spec = selection.OrderedSpecs[index];
+                ActorSetResolvedMember member = selection.Members[index];
+                if (!member.IsValid)
+                {
+                    continue;
+                }
+
+                ActorSpecRecord spec = member.Spec;
                 if (!spec.IsValid || spec.RoleGroup != ActorSpecRoleGroup.Player)
                 {
                     continue;
@@ -410,7 +416,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
             return participants.ToArray();
         }
 
-        private static int ResolvePrimaryIndex(IReadOnlyList<ActorSpecRecord> entries)
+        private static int ResolvePrimaryIndex(IReadOnlyList<ActorSetResolvedMember> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -419,8 +425,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Sessio
 
             for (int index = 0; index < entries.Count; index += 1)
             {
-                ActorSpecRecord entry = entries[index];
-                if (entry.IsValid && entry.RoleGroup == ActorSpecRoleGroup.Player)
+                ActorSetResolvedMember entry = entries[index];
+                if (entry.IsValid && entry.Spec.IsValid && entry.Spec.RoleGroup == ActorSpecRoleGroup.Player)
                 {
                     return index;
                 }

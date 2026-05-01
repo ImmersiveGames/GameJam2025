@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using UnityEngine;
@@ -45,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap
             EnsureOperationalBindingBoundary();
             EnsureMaterializationPlanService();
             EnsureMaterializationExecutionPolicyService();
+            EnsureSpawnArchetypeRegistry();
             EnsureRegistryBoundary();
 
             _installerComposed = true;
@@ -394,6 +396,18 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap
 
             _operationalBindingUnityBridge = new ActorsOperationalBindingUnityBridge(semanticPort, participantRuntimeMappingQueryPort, bindingInPort, queryPort);
             DependencyManager.Provider.RegisterGlobal(_operationalBindingUnityBridge);
+        }
+
+        private static void EnsureSpawnArchetypeRegistry()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IActorSpawnArchetypeRegistry>(out var existing) && existing != null)
+            {
+                return;
+            }
+
+            var registry = new ActorSpawnArchetypeRegistry();
+            ActorSpawnArchetypeDefaults.RegisterDefaults(registry);
+            DependencyManager.Provider.RegisterGlobal<IActorSpawnArchetypeRegistry>(registry);
         }
 
         private static void EnsureParticipantRuntimeMappingSpawnBridge()

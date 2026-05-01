@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entries:
   - actorSpecId: actor.player
+    spawnArchetypeId: spawn.player
     sourceKind: 1
     roleGroup: 1
     operationalRecipeKind: 1
@@ -23,6 +24,7 @@ MonoBehaviour:
     realizationMode: 1
     continuityResetPolicy: 3
   - actorSpecId: actor.eater
+    spawnArchetypeId: spawn.eater
     sourceKind: 2
     roleGroup: 2
     operationalRecipeKind: 3
@@ -32,11 +34,12 @@ MonoBehaviour:
     realizationMode: 1
     continuityResetPolicy: 3
   - actorSpecId: actor.dummy
+    spawnArchetypeId: spawn.dummy
     sourceKind: 2
     roleGroup: 2
     operationalRecipeKind: 2
     placeholderBodyRef: GameplayRuntime/Prefabs/DummyActor
-    placeholderBodyPrefab: {fileID: 100000, guid: e9ccfebb5ac66364a9197dc8cc07ffd6, type: 3}
+    placeholderBodyPrefab: {fileID: 100000, guid: 0744eef234e55034895662d2373a6d62, type: 3}
     integrationStage: 3
     realizationMode: 1
     continuityResetPolicy: 2

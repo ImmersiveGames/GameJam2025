@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                 return false;
             }
 
-            expectedKinds = ResolveExpectedKinds(selection.OrderedSpecs);
+            expectedKinds = ResolveExpectedKinds(selection.Members);
             if (expectedKinds.Length == 0)
             {
                 LogDegraded(null,
@@ -257,7 +257,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
                 return;
             }
 
-            if (!AreActorKindsEquivalent(expectedKinds, cycleCompletedEvent.ExpectedActorKinds))
+            if (!AreActorKindsEquivalent(expectedKinds, cycleCompletedEvent.ReadyActorKinds))
             {
                 EmitCanonicalFailure(policy, sceneName, actorSetRef, routeKind, expectedKinds, "CanonicalExpectedKindsMismatch");
                 return;
@@ -444,19 +444,25 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application
             }
         }
 
-        private static ActorKind[] ResolveExpectedKinds(ActorSpecRecord[] orderedSpecs)
+        private static ActorKind[] ResolveExpectedKinds(ActorSetResolvedMember[] members)
         {
-            if (orderedSpecs == null || orderedSpecs.Length == 0)
+            if (members == null || members.Length == 0)
             {
                 return Array.Empty<ActorKind>();
             }
 
-            var expectedKinds = new List<ActorKind>(orderedSpecs.Length);
+            var expectedKinds = new List<ActorKind>(members.Length);
             var seenKinds = new HashSet<ActorKind>();
 
-            for (int index = 0; index < orderedSpecs.Length; index += 1)
+            for (int index = 0; index < members.Length; index += 1)
             {
-                ActorSpecRecord spec = orderedSpecs[index];
+                ActorSetResolvedMember member = members[index];
+                if (!member.IsValid)
+                {
+                    continue;
+                }
+
+                ActorSpecRecord spec = member.Spec;
                 if (!spec.IsValid)
                 {
                     continue;

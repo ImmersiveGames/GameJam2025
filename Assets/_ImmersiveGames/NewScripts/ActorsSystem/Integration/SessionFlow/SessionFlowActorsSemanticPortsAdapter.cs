@@ -32,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
         private readonly object _canonicalGameplayEntrySync = new();
         private CanonicalGameplayEntryContext _canonicalGameplayEntryContext;
         private bool _hasCanonicalGameplayEntryContext;
+        private CanonicalActorResolutionSet _currentResolutionSet;
 
         public SessionFlowActorsSemanticPortsAdapter(
             IGameplayParticipationFlowService participationFlowService,
@@ -70,7 +71,8 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                     evt.ParticipationSignature,
                     evt.ActorSetRef,
                     evt.CycleSignature,
-                    evt.Source);
+                    evt.Source,
+                    evt.PhaseEntryIdentity);
                 _hasCanonicalGameplayEntryContext = true;
             }
         }
@@ -163,17 +165,20 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                     $"[FATAL][Config][ActorsSystem] ActorSetRef unresolved while deriving definitions actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' source='{AsText(source)}'.");
             }
 
-            var entries = new List<ActorDefinitionRecord>(selection.Count);
-            for (int index = 0; index < selection.OrderedSpecs.Length; index += 1)
-            {
-                ActorSpecRecord spec = selection.OrderedSpecs[index];
-                ActorDefinitionRecord definition = BuildDefinitionFromSpecOrFail(spec, hasParticipation, participationSnapshot, actorSetRef, routeKind, source);
-                entries.Add(definition);
-            }
+            CanonicalActorResolutionSet resolutionSet = BuildCanonicalResolutionSetOrFail(
+                selection,
+                hasParticipation,
+                participationSnapshot,
+                actorSetRef,
+                routeKind,
+                source,
+                cycleSignature: string.Empty);
+            _currentResolutionSet = resolutionSet;
+            ActorDefinitionRecord[] entries = BuildDefinitionsFromResolutionSet(resolutionSet);
 
             snapshot = new ActorsDefinitionsSnapshot(
-                BuildDefinitionsSignature(actorSetRef, routeKind, source, hasParticipation ? participationSnapshot.Signature.Value : string.Empty, string.Empty, entries.Count),
-                entries.ToArray());
+                BuildDefinitionsSignature(actorSetRef, routeKind, source, hasParticipation ? participationSnapshot.Signature.Value : string.Empty, string.Empty, entries.Length),
+                entries);
             return snapshot.IsValid;
         }
         // ...existing code...
@@ -204,18 +209,56 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             return participants.ToArray();
         }
 
-        private static ActorDefinitionRecord BuildDefinitionFromSpecOrFail(
-            ActorSpecRecord spec,
+        public bool TryGetCurrentCanonicalResolution(out CanonicalActorResolutionSet resolutionSet)
+        {
+            resolutionSet = _currentResolutionSet;
+            return resolutionSet.IsValid;
+        }
+
+        private static CanonicalActorResolutionSet BuildCanonicalResolutionSetOrFail(
+            ActorSetResolvedSelection selection,
+            bool hasParticipation,
+            ParticipationSnapshot participationSnapshot,
+            ActorSetRef actorSetRef,
+            SceneRouteKind routeKind,
+            string source,
+            string cycleSignature)
+        {
+            var entries = new List<CanonicalActorResolution>(selection.Count);
+            for (int index = 0; index < selection.Members.Length; index += 1)
+            {
+                ActorSetResolvedMember member = selection.Members[index];
+                if (!member.IsValid)
+                {
+                    continue;
+                }
+
+                entries.Add(BuildResolutionFromMemberOrFail(
+                    member,
+                    hasParticipation,
+                    participationSnapshot,
+                    actorSetRef,
+                    routeKind,
+                    source));
+            }
+
+            string signature = BuildResolutionSignature(actorSetRef, routeKind, source, cycleSignature, entries.Count);
+            return new CanonicalActorResolutionSet(signature, entries.ToArray());
+        }
+
+        private static CanonicalActorResolution BuildResolutionFromMemberOrFail(
+            ActorSetResolvedMember member,
             bool hasParticipation,
             ParticipationSnapshot participationSnapshot,
             ActorSetRef actorSetRef,
             SceneRouteKind routeKind,
             string source)
         {
+            ActorSpecRecord spec = member.Spec;
             if (!spec.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsSystem] Invalid ActorSpec while deriving definition actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}'.");
+                    $"[FATAL][Config][ActorsSystem] Invalid ActorSpec while deriving canonical resolution actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' memberId='{member.ActorSetMemberId}'.");
             }
 
             ActorRole role = MapRole(spec.RoleGroup);
@@ -225,9 +268,8 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                     $"[FATAL][Config][ActorsSystem] Unsupported roleGroup='{spec.RoleGroup}' while deriving definition actorSpecId='{spec.ActorSpecId}'.");
             }
 
-            AxisActorId axisActorId;
-            string semanticParticipantId = string.Empty;
-            bool isRequired = spec.IntegrationStage != ActorSpecIntegrationStage.RuntimeDynamic;
+            var occurrences = new List<CanonicalActorOccurrence>();
+            bool isDefaultRequired = spec.IntegrationStage != ActorSpecIntegrationStage.RuntimeDynamic;
 
             if (spec.SourceKind == ActorSpecSourceKind.ParticipationDerived)
             {
@@ -237,127 +279,235 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                         $"[FATAL][Config][ActorsSystem] Participation snapshot required for participation-derived actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}'.");
                 }
 
-                if (!TryResolveParticipantForRoleGroup(spec.RoleGroup, participationSnapshot, out ParticipantSnapshot participant))
+                List<ParticipantSnapshot> participants = ResolveParticipantsForRoleGroup(spec.RoleGroup, participationSnapshot);
+                if (participants.Count == 0 && member.Cardinality.Kind != ActorCardinalityKind.ZeroOrOne)
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][Config][ActorsSystem] Missing semantic participant for participation-derived actorSpecId='{spec.ActorSpecId}' roleGroup='{spec.RoleGroup}' actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' participationSignature='{participationSnapshot.Signature}'.");
+                        $"[FATAL][Config][ActorsSystem] Missing semantic participants for participation-derived actorSpecId='{spec.ActorSpecId}' roleGroup='{spec.RoleGroup}' actorSetRef='{actorSetRef.Value}' memberId='{member.ActorSetMemberId}' routeKind='{routeKind}' participationSignature='{participationSnapshot.Signature}'.");
                 }
 
-                semanticParticipantId = participant.ParticipantId.Value;
-                axisActorId = AxisActorId.FromParticipantId(semanticParticipantId);
-                isRequired = isRequired || participant.IsPrimary || participant.IsLocal;
+                ValidateParticipantCardinalityOrFail(member.Cardinality, participants.Count, spec, actorSetRef, routeKind);
+                for (int index = 0; index < participants.Count; index += 1)
+                {
+                    ParticipantSnapshot participant = participants[index];
+                    string participantId = participant.ParticipantId.Value;
+                    AxisActorId axisActorId = AxisActorId.FromCanonicalParticipation(actorSetRef, member.ActorSetMemberId, participantId);
+                    if (!axisActorId.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"[FATAL][Config][ActorsSystem] Invalid AxisActorId for participation-derived actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' memberId='{member.ActorSetMemberId}' participantId='{participantId}'.");
+                    }
+
+                    bool isRequired = isDefaultRequired || participant.IsPrimary || participant.IsLocal;
+                    occurrences.Add(new CanonicalActorOccurrence(axisActorId, index, participantId, isRequired));
+                }
             }
             else
             {
-                axisActorId = AxisActorId.FromActorSpecId(spec.ActorSpecId);
+                int occurrenceCount = ResolveNonParticipationOccurrenceCount(member.Cardinality);
+                for (int occurrenceIndex = 0; occurrenceIndex < occurrenceCount; occurrenceIndex += 1)
+                {
+                    AxisActorId axisActorId = AxisActorId.FromCanonicalOccurrence(actorSetRef, member.ActorSetMemberId, occurrenceIndex);
+                    if (!axisActorId.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"[FATAL][Config][ActorsSystem] Invalid AxisActorId for non-participation actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' memberId='{member.ActorSetMemberId}' occurrenceIndex='{occurrenceIndex}'.");
+                    }
+
+                    bool isRequired = IsRequiredOccurrence(member.Cardinality, occurrenceIndex, isDefaultRequired);
+                    occurrences.Add(new CanonicalActorOccurrence(axisActorId, occurrenceIndex, string.Empty, isRequired));
+                }
             }
 
-            var definition = new ActorDefinitionRecord(
-                axisActorId,
-                role,
-                isRequired,
-                semanticParticipantId,
-                spec.OperationalRecipeKind,
-                RuntimeActorId.None,
-                spec.ActorSpecId,
-                actorSetRef.Value,
-                $"ActorSet/{actorSetRef.Value}/ActorSpec/{spec.ActorSpecId}");
-
-            if (!definition.IsValid)
+            if (occurrences.Count == 0)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsSystem] Invalid definition derived from ActorSpec actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' source='{AsText(source)}'.");
+                    $"[FATAL][Config][ActorsSystem] Canonical resolution sem ocorrencias actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' memberId='{member.ActorSetMemberId}' routeKind='{routeKind}'.");
             }
 
-            return definition;
+            return new CanonicalActorResolution(
+                actorSetRef,
+                member.ActorSetMemberId,
+                spec.ActorSpecId,
+                spec.SpawnArchetypeId,
+                role,
+                spec.OperationalRecipeKind,
+                spec.RealizationMode,
+                spec.ContinuityResetPolicy,
+                occurrences.ToArray(),
+                $"ActorSet/{actorSetRef.Value}/Member/{member.ActorSetMemberId.Value}/ActorSpec/{spec.ActorSpecId}");
         }
 
-        private static bool TryResolveParticipantForRoleGroup(
-            ActorSpecRoleGroup roleGroup,
-            ParticipationSnapshot participationSnapshot,
-            out ParticipantSnapshot participant)
+        private static ActorDefinitionRecord[] BuildDefinitionsFromResolutionSet(CanonicalActorResolutionSet resolutionSet)
         {
-            participant = default;
+            if (!resolutionSet.IsValid || resolutionSet.Entries == null || resolutionSet.Entries.Length == 0)
+            {
+                return Array.Empty<ActorDefinitionRecord>();
+            }
+
+            var definitions = new List<ActorDefinitionRecord>(resolutionSet.Entries.Length);
+            for (int entryIndex = 0; entryIndex < resolutionSet.Entries.Length; entryIndex += 1)
+            {
+                CanonicalActorResolution resolution = resolutionSet.Entries[entryIndex];
+                if (!resolution.IsValid)
+                {
+                    continue;
+                }
+
+                CanonicalActorOccurrence[] occurrences = resolution.Occurrences ?? Array.Empty<CanonicalActorOccurrence>();
+                for (int occurrenceIndex = 0; occurrenceIndex < occurrences.Length; occurrenceIndex += 1)
+                {
+                    CanonicalActorOccurrence occurrence = occurrences[occurrenceIndex];
+                    if (!occurrence.IsValid)
+                    {
+                        continue;
+                    }
+
+                    definitions.Add(new ActorDefinitionRecord(
+                        occurrence.AxisActorId,
+                        resolution.Role,
+                        occurrence.IsRequired,
+                        occurrence.SemanticParticipantId,
+                        resolution.OperationalRecipeKind,
+                        RuntimeActorId.None,
+                        resolution.ActorSpecId,
+                        resolution.SpawnArchetypeId,
+                        resolution.ActorSetMemberId.Value,
+                        occurrence.InstanceIndex,
+                        resolution.RealizationMode,
+                        resolution.ContinuityResetPolicy,
+                        resolution.ActorSetRef.Value,
+                        resolution.Source));
+                }
+            }
+
+            return definitions.ToArray();
+        }
+
+        private static int ResolveNonParticipationOccurrenceCount(ActorCardinalitySpec cardinality)
+        {
+            switch (cardinality.Kind)
+            {
+                case ActorCardinalityKind.ExactlyOne:
+                case ActorCardinalityKind.ZeroOrOne:
+                    return 1;
+                case ActorCardinalityKind.OneOrMore:
+                    throw new InvalidOperationException(
+                        "[FATAL][Config][ActorsSystem] Non-participation cardinality OneOrMore exige resolucao finita explicita no ciclo canonico.");
+                case ActorCardinalityKind.Fixed:
+                    return cardinality.FixedCount;
+                case ActorCardinalityKind.Range:
+                    throw new InvalidOperationException(
+                        "[FATAL][Config][ActorsSystem] Non-participation cardinality Range exige resolvedCount explicito no ciclo canonico (sem fallback para min/max).");
+                default:
+                    throw new InvalidOperationException($"[FATAL][Config][ActorsSystem] Unsupported cardinality kind='{cardinality.Kind}' for non-participation resolution.");
+            }
+        }
+
+        private static bool IsRequiredOccurrence(ActorCardinalitySpec cardinality, int occurrenceIndex, bool defaultRequired)
+        {
+            if (occurrenceIndex < 0)
+            {
+                return false;
+            }
+
+            switch (cardinality.Kind)
+            {
+                case ActorCardinalityKind.ZeroOrOne:
+                    return false;
+                case ActorCardinalityKind.Range:
+                    return defaultRequired && occurrenceIndex < cardinality.MinCount;
+                default:
+                    return defaultRequired;
+            }
+        }
+
+        private static void ValidateParticipantCardinalityOrFail(
+            ActorCardinalitySpec cardinality,
+            int participantCount,
+            ActorSpecRecord spec,
+            ActorSetRef actorSetRef,
+            SceneRouteKind routeKind)
+        {
+            bool valid = cardinality.Kind switch
+            {
+                ActorCardinalityKind.ExactlyOne => participantCount == 1,
+                ActorCardinalityKind.ZeroOrOne => participantCount <= 1,
+                ActorCardinalityKind.OneOrMore => participantCount >= 1,
+                ActorCardinalityKind.Fixed => participantCount == cardinality.FixedCount,
+                ActorCardinalityKind.Range => participantCount >= cardinality.MinCount && participantCount <= cardinality.MaxCount,
+                _ => false
+            };
+
+            if (valid)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"[FATAL][Config][ActorsSystem] Participant cardinality mismatch actorSpecId='{spec.ActorSpecId}' actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' cardinalityKind='{cardinality.Kind}' fixed='{cardinality.FixedCount}' min='{cardinality.MinCount}' max='{cardinality.MaxCount}' participants='{participantCount}'.");
+        }
+
+        private static List<ParticipantSnapshot> ResolveParticipantsForRoleGroup(
+            ActorSpecRoleGroup roleGroup,
+            ParticipationSnapshot participationSnapshot)
+        {
+            var participants = new List<ParticipantSnapshot>();
             ParticipantSnapshot[] source = participationSnapshot.Participants;
             if (source == null || source.Length == 0)
             {
-                return false;
+                return participants;
             }
 
             ParticipantKind expectedKind = MapParticipantKind(roleGroup);
             if (expectedKind == ParticipantKind.Unknown)
             {
-                return false;
+                return participants;
             }
 
-            if (roleGroup == ActorSpecRoleGroup.Player)
-            {
-                if (TryResolveLocal(source, expectedKind, out participant))
-                {
-                    return true;
-                }
-
-                if (TryResolvePrimary(source, expectedKind, out participant))
-                {
-                    return true;
-                }
-            }
-
-            return TryResolveFirst(source, expectedKind, out participant);
-        }
-
-        private static bool TryResolveLocal(ParticipantSnapshot[] source, ParticipantKind kind, out ParticipantSnapshot participant)
-        {
-            participant = default;
             for (int index = 0; index < source.Length; index += 1)
             {
                 ParticipantSnapshot current = source[index];
-                if (!current.IsValid || current.Kind != kind || !current.IsLocal)
+                if (!current.IsValid || current.Kind != expectedKind)
                 {
                     continue;
                 }
 
-                participant = current;
-                return true;
+                participants.Add(current);
             }
 
-            return false;
-        }
-
-        private static bool TryResolvePrimary(ParticipantSnapshot[] source, ParticipantKind kind, out ParticipantSnapshot participant)
-        {
-            participant = default;
-            for (int index = 0; index < source.Length; index += 1)
+            if (participants.Count == 0)
             {
-                ParticipantSnapshot current = source[index];
-                if (!current.IsValid || current.Kind != kind || !current.IsPrimary)
+                return participants;
+            }
+
+            participants.Sort(static (left, right) =>
+            {
+                int leftRank = GetParticipantRank(left);
+                int rightRank = GetParticipantRank(right);
+                if (leftRank != rightRank)
                 {
-                    continue;
+                    return leftRank.CompareTo(rightRank);
                 }
 
-                participant = current;
-                return true;
-            }
-
-            return false;
+                return string.CompareOrdinal(left.ParticipantId.Value, right.ParticipantId.Value);
+            });
+            return participants;
         }
 
-        private static bool TryResolveFirst(ParticipantSnapshot[] source, ParticipantKind kind, out ParticipantSnapshot participant)
+        private static int GetParticipantRank(ParticipantSnapshot participant)
         {
-            participant = default;
-            for (int index = 0; index < source.Length; index += 1)
+            if (participant.IsLocal)
             {
-                ParticipantSnapshot current = source[index];
-                if (!current.IsValid || current.Kind != kind)
-                {
-                    continue;
-                }
-
-                participant = current;
-                return true;
+                return 0;
             }
 
-            return false;
+            if (participant.IsPrimary)
+            {
+                return 1;
+            }
+
+            return 2;
         }
 
         private static ParticipantKind MapParticipantKind(ActorSpecRoleGroup roleGroup)
@@ -444,24 +594,16 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                     $"[FATAL][Config][ActorsSystem] ActorSetRef canonico nao resolveu entries no rail phase-local-entry-ready actorSetRef='{actorSetRef.Value}' routeKind='{canonicalContext.RouteKind}' source='{AsText(canonicalContext.Source)}'.");
             }
 
-            var entries = new List<ActorDefinitionRecord>(selection.Count);
-            for (int index = 0; index < selection.OrderedSpecs.Length; index += 1)
-            {
-                ActorSpecRecord spec = selection.OrderedSpecs[index];
-                if (!spec.IsValid)
-                {
-                    continue;
-                }
-
-                ActorDefinitionRecord definition = BuildDefinitionFromSpecOrFail(
-                    spec,
-                    true,
-                    participationSnapshot,
-                    actorSetRef,
-                    canonicalContext.RouteKind,
-                    canonicalContext.Source);
-                entries.Add(definition);
-            }
+            CanonicalActorResolutionSet resolutionSet = BuildCanonicalResolutionSetOrFail(
+                selection,
+                true,
+                participationSnapshot,
+                actorSetRef,
+                canonicalContext.RouteKind,
+                canonicalContext.Source,
+                canonicalContext.CycleSignature);
+            _currentResolutionSet = resolutionSet;
+            ActorDefinitionRecord[] entries = BuildDefinitionsFromResolutionSet(resolutionSet);
 
             snapshot = new ActorsDefinitionsSnapshot(
                 BuildDefinitionsSignature(
@@ -470,8 +612,8 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                     canonicalContext.Source,
                     canonicalContext.ParticipationSignature,
                     canonicalContext.CycleSignature,
-                    entries.Count),
-                entries.ToArray());
+                    entries.Length),
+                entries);
             return snapshot.IsValid;
         }
 
@@ -486,6 +628,16 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             return $"actor-set-definitions|routeKind:{routeKind}|actorSetRef:{actorSetRef.Value}|source:{AsText(source)}|participation:{AsText(participationSignature)}|cycle:{AsText(cycleSignature)}|count:{count}";
         }
 
+        private static string BuildResolutionSignature(
+            ActorSetRef actorSetRef,
+            SceneRouteKind routeKind,
+            string source,
+            string cycleSignature,
+            int count)
+        {
+            return $"canonical-resolution|routeKind:{routeKind}|actorSetRef:{actorSetRef.Value}|source:{AsText(source)}|cycle:{AsText(cycleSignature)}|count:{count}";
+        }
+
         public readonly struct CanonicalGameplayEntryContext
         {
             public CanonicalGameplayEntryContext(
@@ -498,7 +650,8 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                 string participationSignature,
                 string actorSetRef,
                 string cycleSignature,
-                string source)
+                string source,
+                PhaseEntryIdentity phaseEntryIdentity)
             {
                 RouteId = routeId;
                 RouteKind = routeKind;
@@ -510,6 +663,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                 ActorSetRef = Normalize(actorSetRef);
                 CycleSignature = Normalize(cycleSignature);
                 Source = Normalize(source);
+                PhaseEntryIdentity = phaseEntryIdentity;
             }
 
             public SceneRouteId RouteId { get; }
@@ -522,6 +676,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             public string ActorSetRef { get; }
             public string CycleSignature { get; }
             public string Source { get; }
+            public PhaseEntryIdentity PhaseEntryIdentity { get; }
 
             private static string Normalize(string value)
             {
@@ -542,6 +697,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                 ParticipationSignature = context.ParticipationSignature;
                 ActorSetRef = context.ActorSetRef;
                 CycleSignature = context.CycleSignature;
+                PhaseEntryIdentity = context.PhaseEntryIdentity;
                 SourceKind = ActorsOperationalMaterializationSourceKind.SessionTransitionPhaseLocalEntryReady;
                 SourceId = context.Source;
             }
@@ -555,6 +711,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
             public string ParticipationSignature { get; }
             public string ActorSetRef { get; }
             public string CycleSignature { get; }
+            public PhaseEntryIdentity PhaseEntryIdentity { get; }
             public ActorsOperationalMaterializationSourceKind SourceKind { get; }
             public string SourceId { get; }
 
@@ -568,6 +725,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Integration.SessionFlow
                 !string.IsNullOrWhiteSpace(ParticipationSignature) &&
                 !string.IsNullOrWhiteSpace(ActorSetRef) &&
                 !string.IsNullOrWhiteSpace(CycleSignature) &&
+                PhaseEntryIdentity.IsValid &&
                 !string.IsNullOrWhiteSpace(SourceId);
 
             public bool IsValid =>

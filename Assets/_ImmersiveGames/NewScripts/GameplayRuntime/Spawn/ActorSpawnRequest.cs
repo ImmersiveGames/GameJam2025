@@ -9,9 +9,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public ActorSpawnRequest(
             GameActorKind actorKind,
             ActorOperationalRecipeKind operationalRecipeKind,
+            ActorsRuntimeReplacementCause runtimeReplacementCause,
             AxisActorId axisActorId,
             RuntimeActorId runtimeActorId,
             string actorSpecId,
+            string spawnArchetypeId,
+            string actorSetMemberId,
+            int occurrenceIndex,
             string actorSetRef,
             string semanticParticipantId,
             string spawnServiceName,
@@ -23,9 +27,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         {
             ActorKind = actorKind;
             OperationalRecipeKind = operationalRecipeKind;
+            RuntimeReplacementCause = runtimeReplacementCause;
             AxisActorId = axisActorId;
             RuntimeActorId = runtimeActorId;
             ActorSpecId = Normalize(actorSpecId);
+            SpawnArchetypeId = Normalize(spawnArchetypeId);
+            ActorSetMemberId = Normalize(actorSetMemberId);
+            OccurrenceIndex = occurrenceIndex < 0 ? 0 : occurrenceIndex;
             ActorSetRef = Normalize(actorSetRef);
             SemanticParticipantId = Normalize(semanticParticipantId);
             SpawnServiceName = Normalize(spawnServiceName);
@@ -38,9 +46,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public GameActorKind ActorKind { get; }
         public ActorOperationalRecipeKind OperationalRecipeKind { get; }
+        public ActorsRuntimeReplacementCause RuntimeReplacementCause { get; }
         public AxisActorId AxisActorId { get; }
         public RuntimeActorId RuntimeActorId { get; }
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
+        public string ActorSetMemberId { get; }
+        public int OccurrenceIndex { get; }
         public string ActorSetRef { get; }
         public string SemanticParticipantId { get; }
         public string SpawnServiceName { get; }
@@ -55,7 +67,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public bool HasSemanticParticipantId => !string.IsNullOrWhiteSpace(SemanticParticipantId);
         public bool HasActorSpecId => !string.IsNullOrWhiteSpace(ActorSpecId);
         public bool HasActorSetRef => !string.IsNullOrWhiteSpace(ActorSetRef);
-        public bool IsValid => ActorKind != GameActorKind.Unknown;
+        public bool IsValid =>
+            ActorKind != GameActorKind.Unknown &&
+            !string.IsNullOrWhiteSpace(ActorSpecId) &&
+            !string.IsNullOrWhiteSpace(SpawnArchetypeId) &&
+            !string.IsNullOrWhiteSpace(ActorSetMemberId) &&
+            OccurrenceIndex >= 0;
 
         public static ActorSpawnRequest FromExecutionEntry(
             ActorsMaterializationExecutionEntry entry,
@@ -69,9 +86,15 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             return new ActorSpawnRequest(
                 actorKind,
                 entry.OperationalRecipeKind,
+                entry.Directive == ActorMaterializationExecutionDirective.RequestRematerialize
+                    ? ActorsRuntimeReplacementCause.Rematerialized
+                    : ActorsRuntimeReplacementCause.Materialized,
                 entry.AxisActorId,
                 entry.RuntimeActorId,
                 entry.ActorSpecId,
+                entry.SpawnArchetypeId,
+                entry.ActorSetMemberId,
+                entry.OccurrenceIndex,
                 entry.ActorSetRef,
                 entry.SemanticParticipantId,
                 spawnServiceName,
@@ -86,9 +109,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         {
             return ActorKind == other.ActorKind &&
                    OperationalRecipeKind == other.OperationalRecipeKind &&
+                   RuntimeReplacementCause == other.RuntimeReplacementCause &&
                    AxisActorId.Equals(other.AxisActorId) &&
                    RuntimeActorId.Equals(other.RuntimeActorId) &&
                    string.Equals(ActorSpecId, other.ActorSpecId, StringComparison.Ordinal) &&
+                   string.Equals(SpawnArchetypeId, other.SpawnArchetypeId, StringComparison.Ordinal) &&
+                   string.Equals(ActorSetMemberId, other.ActorSetMemberId, StringComparison.Ordinal) &&
+                   OccurrenceIndex == other.OccurrenceIndex &&
                    string.Equals(ActorSetRef, other.ActorSetRef, StringComparison.Ordinal) &&
                    string.Equals(SemanticParticipantId, other.SemanticParticipantId, StringComparison.Ordinal) &&
                    string.Equals(SpawnServiceName, other.SpawnServiceName, StringComparison.Ordinal) &&
@@ -110,9 +137,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             {
                 int hashCode = (int)ActorKind;
                 hashCode = (hashCode * 397) ^ (int)OperationalRecipeKind;
+                hashCode = (hashCode * 397) ^ (int)RuntimeReplacementCause;
                 hashCode = (hashCode * 397) ^ AxisActorId.GetHashCode();
                 hashCode = (hashCode * 397) ^ RuntimeActorId.GetHashCode();
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSpecId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SpawnArchetypeId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetMemberId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ OccurrenceIndex;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetRef ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SemanticParticipantId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SpawnServiceName ?? string.Empty);
@@ -127,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public override string ToString()
         {
-            return $"actorKind='{ActorKind}', recipe='{OperationalRecipeKind}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', actorSpecId='{AsText(ActorSpecId)}', actorSetRef='{AsText(ActorSetRef)}', semanticParticipantId='{AsText(SemanticParticipantId)}', spawnServiceName='{AsText(SpawnServiceName)}', sceneName='{AsText(SceneName)}', requiredForWorldReset='{RequiredForWorldReset}', source='{AsText(Source)}', reason='{AsText(Reason)}', executionSignature='{AsText(ExecutionSignature)}'";
+            return $"actorKind='{ActorKind}', recipe='{OperationalRecipeKind}', runtimeReplacementCause='{RuntimeReplacementCause}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', actorSpecId='{AsText(ActorSpecId)}', spawnArchetypeId='{AsText(SpawnArchetypeId)}', actorSetMemberId='{AsText(ActorSetMemberId)}', occurrenceIndex='{OccurrenceIndex}', actorSetRef='{AsText(ActorSetRef)}', semanticParticipantId='{AsText(SemanticParticipantId)}', spawnServiceName='{AsText(SpawnServiceName)}', sceneName='{AsText(SceneName)}', requiredForWorldReset='{RequiredForWorldReset}', source='{AsText(Source)}', reason='{AsText(Reason)}', executionSignature='{AsText(ExecutionSignature)}'";
         }
 
         private static string Normalize(string value)

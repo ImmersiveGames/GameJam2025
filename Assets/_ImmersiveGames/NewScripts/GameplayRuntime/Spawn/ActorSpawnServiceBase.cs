@@ -53,6 +53,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         /// Kind canonico do actor criado por este servico.
         /// </summary>
         public abstract ActorKind SpawnedActorKind { get; }
+        public string SpawnArchetypeId => _actorSpec.SpawnArchetypeId;
 
         /// <summary>
         /// Indica se o actor deste servico deve existir apos o hard reset macro.
@@ -71,6 +72,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                     ("axisActorId", request.AxisActorId),
                     ("runtimeActorId", request.RuntimeActorId),
                     ("actorSpecId", request.ActorSpecId),
+                    ("spawnArchetypeId", request.SpawnArchetypeId),
+                    ("actorSetMemberId", request.ActorSetMemberId),
+                    ("occurrenceIndex", request.OccurrenceIndex),
                     ("actorSetRef", request.ActorSetRef),
                     ("semanticParticipantId", request.SemanticParticipantId),
                     ("spawnServiceName", request.SpawnServiceName),
@@ -102,7 +106,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
             if (_spawnedActor != null)
             {
-                DebugUtility.LogWarning(GetType(), "Spawn chamado mais de uma vez; ignorando.");
+                DebugUtility.LogWarning(GetType(),
+                    ObservabilityTraceFormatter.BuildCompactLogMessage(
+                        "Spawn chamado mais de uma vez; ignorando.",
+                        ("traceId", traceId),
+                        ("actorKind", request.ActorKind),
+                        ("runtimeActorId", TryReadActorId(_spawnedActor)),
+                        ("scene", _context?.SceneName),
+                        ("reason", "already_spawned")));
                 return Task.CompletedTask;
             }
 
@@ -195,9 +206,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 runtimeActorId,
                 _spawnedActor.ActorId,
                 request.ActorSpecId,
+                request.SpawnArchetypeId,
+                request.ActorSetMemberId,
+                request.OccurrenceIndex,
                 request.ActorSetRef,
                 semanticParticipantId,
                 request.OperationalRecipeKind,
+                request.RuntimeReplacementCause,
                 Name,
                 _context.SceneName,
                 request.Source,
@@ -311,34 +326,42 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 return Task.CompletedTask;
             }
 
-            if (_spawnedActor == null)
+            if (_spawnedActor == null && _spawnedObject == null)
             {
                 DebugUtility.LogVerbose(GetType(),
                     "Despawn ignorado (no actor).", "cyan");
                 return Task.CompletedTask;
             }
 
-            string actorId = _spawnedActor.ActorId;
-
-            if (!_actorRegistry.Unregister(actorId))
+            string actorId = TryReadActorId(_spawnedActor);
+            if (!string.IsNullOrWhiteSpace(actorId) && !_actorRegistry.Unregister(actorId))
             {
                 DebugUtility.LogWarning(GetType(),
                     $"Falha ao remover ator do registry. ActorId={actorId}");
             }
 
-            if (_spawnedObject != null)
-            {
-                Object.Destroy(_spawnedObject);
-            }
+            Object.Destroy(_spawnedObject);
 
             _spawnedActor = null;
             _spawnedObject = null;
 
             DebugUtility.Log(GetType(),
-                $"Actor despawned: {actorId} (kind={SpawnedActorKind}, root={_context?.WorldRoot?.name}, scene={_context?.SceneName})");
+                $"Actor despawned: {AsText(actorId)} (kind={SpawnedActorKind}, root={_context?.WorldRoot?.name}, scene={_context?.SceneName})");
             DebugUtility.Log(GetType(), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;
+        }
+
+        public bool TryGetCurrentRuntimeActorId(out RuntimeActorId runtimeActorId)
+        {
+            runtimeActorId = RuntimeActorId.None;
+            if (_spawnedActor == null || string.IsNullOrWhiteSpace(_spawnedActor.ActorId))
+            {
+                return false;
+            }
+
+            runtimeActorId = new RuntimeActorId(_spawnedActor.ActorId);
+            return runtimeActorId.IsValid;
         }
 
         /// <summary>
@@ -419,6 +442,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 HardFailFastH1.Trigger(GetType(),
                     $"[FATAL][H1][Spawn] ActorSpawnRequest canonico incompleto; axisActorId='{request.AxisActorId}' actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}' actorKind='{request.ActorKind}'.");
             }
+            if (string.IsNullOrWhiteSpace(request.SpawnArchetypeId) ||
+                string.IsNullOrWhiteSpace(request.ActorSetMemberId) ||
+                request.OccurrenceIndex < 0)
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest canonico sem identidade member/archetype completa; axisActorId='{request.AxisActorId}' actorSpecId='{AsText(request.ActorSpecId)}' spawnArchetypeId='{AsText(request.SpawnArchetypeId)}' actorSetMemberId='{AsText(request.ActorSetMemberId)}' occurrenceIndex='{request.OccurrenceIndex}' actorSetRef='{AsText(request.ActorSetRef)}' source='{AsText(request.Source)}'.");
+            }
 
             if (request.OperationalRecipeKind == ActorOperationalRecipeKind.Unknown)
             {
@@ -430,6 +460,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             {
                 HardFailFastH1.Trigger(GetType(),
                     $"[FATAL][H1][Spawn] ActorSpawnRequest com actorSpecId divergente do ActorSpec canonico. requestActorSpecId='{AsText(request.ActorSpecId)}' canonicalActorSpecId='{AsText(_actorSpec.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' recipe='{request.OperationalRecipeKind}' source='{AsText(request.Source)}'.");
+            }
+            if (!string.Equals(request.SpawnArchetypeId, _actorSpec.SpawnArchetypeId, StringComparison.Ordinal))
+            {
+                HardFailFastH1.Trigger(GetType(),
+                    $"[FATAL][H1][Spawn] ActorSpawnRequest com spawnArchetypeId divergente do ActorSpec canonico. requestSpawnArchetypeId='{AsText(request.SpawnArchetypeId)}' canonicalSpawnArchetypeId='{AsText(_actorSpec.SpawnArchetypeId)}' actorSpecId='{AsText(request.ActorSpecId)}' actorSetRef='{AsText(request.ActorSetRef)}' source='{AsText(request.Source)}'.");
             }
 
             if (request.OperationalRecipeKind != _actorSpec.OperationalRecipeKind)
@@ -447,10 +482,16 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         protected virtual void OnPostInstantiate(GameObject instance) { }
 
+        private static string TryReadActorId(IActor actor)
+        {
+            return actor == null || string.IsNullOrWhiteSpace(actor.ActorId)
+                ? string.Empty
+                : actor.ActorId.Trim();
+        }
+
         private static string AsText(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
     }
 }
-

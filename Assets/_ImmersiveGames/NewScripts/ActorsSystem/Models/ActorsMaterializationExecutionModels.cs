@@ -28,6 +28,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             ActorMaterializationExecutionDirective directive,
             string semanticParticipantId,
             string actorSpecId,
+            string spawnArchetypeId,
+            string actorSetMemberId,
+            int occurrenceIndex,
+            ActorSpecRealizationMode realizationMode,
+            ActorSpecContinuityResetPolicy continuityResetPolicy,
             string actorSetRef,
             string reason)
         {
@@ -41,6 +46,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
             Directive = directive;
             SemanticParticipantId = string.IsNullOrWhiteSpace(semanticParticipantId) ? string.Empty : semanticParticipantId.Trim();
             ActorSpecId = string.IsNullOrWhiteSpace(actorSpecId) ? string.Empty : actorSpecId.Trim();
+            SpawnArchetypeId = string.IsNullOrWhiteSpace(spawnArchetypeId) ? string.Empty : spawnArchetypeId.Trim();
+            ActorSetMemberId = string.IsNullOrWhiteSpace(actorSetMemberId) ? string.Empty : actorSetMemberId.Trim();
+            OccurrenceIndex = occurrenceIndex < 0 ? 0 : occurrenceIndex;
+            RealizationMode = realizationMode;
+            ContinuityResetPolicy = continuityResetPolicy;
             ActorSetRef = string.IsNullOrWhiteSpace(actorSetRef) ? string.Empty : actorSetRef.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
         }
@@ -55,12 +65,23 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
         public ActorMaterializationExecutionDirective Directive { get; }
         public string SemanticParticipantId { get; }
         public string ActorSpecId { get; }
+        public string SpawnArchetypeId { get; }
+        public string ActorSetMemberId { get; }
+        public int OccurrenceIndex { get; }
+        public ActorSpecRealizationMode RealizationMode { get; }
+        public ActorSpecContinuityResetPolicy ContinuityResetPolicy { get; }
         public string ActorSetRef { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Directive != ActorMaterializationExecutionDirective.Unknown &&
-            (SpecKind == ActorMaterializationSpecKind.AxisActor ? AxisActorId.IsValid : RuntimeActorId.IsValid);
+            (SpecKind == ActorMaterializationSpecKind.AxisActor
+                ? AxisActorId.IsValid &&
+                  !string.IsNullOrWhiteSpace(ActorSpecId) &&
+                  !string.IsNullOrWhiteSpace(SpawnArchetypeId) &&
+                  !string.IsNullOrWhiteSpace(ActorSetMemberId) &&
+                  OccurrenceIndex >= 0
+                : RuntimeActorId.IsValid);
 
         public bool Equals(ActorsMaterializationExecutionEntry other)
         {
@@ -74,6 +95,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                    Directive == other.Directive &&
                    string.Equals(SemanticParticipantId, other.SemanticParticipantId, StringComparison.Ordinal) &&
                    string.Equals(ActorSpecId, other.ActorSpecId, StringComparison.Ordinal) &&
+                   string.Equals(SpawnArchetypeId, other.SpawnArchetypeId, StringComparison.Ordinal) &&
+                   string.Equals(ActorSetMemberId, other.ActorSetMemberId, StringComparison.Ordinal) &&
+                   OccurrenceIndex == other.OccurrenceIndex &&
+                   RealizationMode == other.RealizationMode &&
+                   ContinuityResetPolicy == other.ContinuityResetPolicy &&
                    string.Equals(ActorSetRef, other.ActorSetRef, StringComparison.Ordinal) &&
                    string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
@@ -97,6 +123,11 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
                 hashCode = (hashCode * 397) ^ (int)Directive;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SemanticParticipantId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSpecId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SpawnArchetypeId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetMemberId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ OccurrenceIndex;
+                hashCode = (hashCode * 397) ^ (int)RealizationMode;
+                hashCode = (hashCode * 397) ^ (int)ContinuityResetPolicy;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActorSetRef ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hashCode;
@@ -105,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 
         public override string ToString()
         {
-            return $"specKind='{SpecKind}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', role='{Role}', operationalRecipeKind='{OperationalRecipeKind}', intent='{Intent}', classification='{Classification}', directive='{Directive}', semanticParticipantId='{(string.IsNullOrWhiteSpace(SemanticParticipantId) ? "<none>" : SemanticParticipantId)}', actorSpecId='{(string.IsNullOrWhiteSpace(ActorSpecId) ? "<none>" : ActorSpecId)}', actorSetRef='{(string.IsNullOrWhiteSpace(ActorSetRef) ? "<none>" : ActorSetRef)}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}'";
+            return $"specKind='{SpecKind}', axisActorId='{AxisActorId}', runtimeActorId='{RuntimeActorId}', role='{Role}', operationalRecipeKind='{OperationalRecipeKind}', intent='{Intent}', classification='{Classification}', directive='{Directive}', semanticParticipantId='{(string.IsNullOrWhiteSpace(SemanticParticipantId) ? "<none>" : SemanticParticipantId)}', actorSpecId='{(string.IsNullOrWhiteSpace(ActorSpecId) ? "<none>" : ActorSpecId)}', spawnArchetypeId='{(string.IsNullOrWhiteSpace(SpawnArchetypeId) ? "<none>" : SpawnArchetypeId)}', actorSetMemberId='{(string.IsNullOrWhiteSpace(ActorSetMemberId) ? "<none>" : ActorSetMemberId)}', occurrenceIndex='{OccurrenceIndex}', realizationMode='{RealizationMode}', continuityResetPolicy='{ContinuityResetPolicy}', actorSetRef='{(string.IsNullOrWhiteSpace(ActorSetRef) ? "<none>" : ActorSetRef)}', reason='{(string.IsNullOrWhiteSpace(Reason) ? "<none>" : Reason)}'";
         }
     }
 
