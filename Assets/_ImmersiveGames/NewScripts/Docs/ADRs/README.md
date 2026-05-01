@@ -1,66 +1,60 @@
 # ADRs
 
-Este diretorio mantem os ADRs e sua precedencia normativa.
+Este diretorio mantem o acervo de ADRs e sua precedencia normativa.
+
+## Base 1.1 viva
+
+A partir do freeze de Base 1.1, somente estes ADRs permanecem vivos na pasta principal:
+
+1. `ADR-0060-Base-1.1-Pipeline-Convergence-e-Identidade-Explicita.md`
+2. `ADR-0061-Run-Pipeline-Canonico-e-Substituicao-do-Conceito-de-Macro.md`
+3. `ADR-0062-Session-Pipeline-Canonico-e-Substituicao-do-Conceito-de-Local.md`
+4. `ADR-0063-Modules-Produzem-Fatos-ou-Comandos-e-Adapters-Executam-Side-Effects.md`
+5. `ADR-0064-IntroStage-como-Activation-Stage-e-Policy-de-Entrada.md`
+6. `ADR-0065-Deactivation-e-Continuity-RunResult-RunDecision-PostRun.md`
+7. `ADR-0066-Gates-InputModes-e-GameLoop-como-Executores-de-Estado-e-Efeitos.md`
+8. `ADR-0067-Identidade-Explicita-de-Ciclo-e-Isolamento-Contra-Eventos-Foreign.md`
 
 ## Precedencia normativa atual
 
 Em decisoes de arquitetura e ownership, prevalecem:
 
-1. `ADR-0057`
-2. `ADR-0056`
-3. `ADR-0055`
-4. `ADR-0058`
-5. `ADR-0054`
-6. `ADR-0052`
+1. `ADR-0060`
+2. `ADR-0061`
+3. `ADR-0062`
+4. `ADR-0063`
+5. `ADR-0064`
+6. `ADR-0065`
+7. `ADR-0066`
+8. `ADR-0067`
 
 Regra obrigatoria:
 
-- ADRs anteriores devem ser lidos como historicos, exceto quando forem explicitamente referenciados por esses ADRs normativos.
-- Em caso de conflito, prevalece o ADR mais novo e/ou explicitamente normativo da Base 1.0.
-- Ownership nao e decidido por conveniencia operacional, e sim pelo papel arquitetural definido na Base 1.0.
+- ADRs anteriores devem ser lidos como historicos, exceto quando forem explicitamente referenciados por estes ADRs normativos.
+- Em caso de conflito, prevalece o ADR mais novo e/ou explicitamente normativo da Base 1.1.
+- Ownership nao e decidido por conveniencia operacional, e sim pelo papel arquitetural definido na Base 1.1.
+- Eventos foreign ou stale nao podem alterar o pipeline ativo.
 
-## Classificacao normativa do acervo (atual)
+## Classificacao normativa do acervo
 
 ### NORMATIVO_ATUAL
 
-- `ADR-0057`
-- `ADR-0056`
-- `ADR-0055`
-- `ADR-0058`
-- `ADR-0054`
-- `ADR-0052`
+- `ADR-0060`
+- `ADR-0061`
+- `ADR-0062`
+- `ADR-0063`
+- `ADR-0064`
+- `ADR-0065`
+- `ADR-0066`
+- `ADR-0067`
 
 ### HISTORICO (nao normativo para ownership)
 
-- `ADR-0051`
-- `ADR-0050`
-- `ADR-0049`
-- `ADR-0048`
-- `ADR-0047`
-- `ADR-0046`
-- `ADR-0045`
-- `ADR-0040`
-- `ADR-0014`
-- `ADR-0008`
-
-### CONFLITANTE / OBSOLETO para leitura normativa atual
-
-- `ADR-0011`
-- `ADR-0001`
-
-## Nota sobre docs fora de ADR
-
-Os seguintes documentos sao conflitantes com a leitura normativa atual e nao devem ser usados para definir ownership:
-
-- `Docs/Modules/README.md`
-- `Docs/Modules/Gameplay.md`
-- `Docs/Modules/SceneReset.md`
-
-Esses documentos permanecem apenas como referencia historica ate revisao completa.
+Todo ADR anterior a `ADR-0060` foi movido para `Docs/ADRs/Historico/` e deve ser lido como referencia historica, nao como fonte normativa viva.
 
 ## Regra de uso rapido
 
-Se um ADR antigo ou doc legado conflitar com a Base 1.0:
+Se um ADR historico conflitar com a Base 1.1:
 
 - nao abrir excecao local;
 - nao usar compatibilidade narrativa;
