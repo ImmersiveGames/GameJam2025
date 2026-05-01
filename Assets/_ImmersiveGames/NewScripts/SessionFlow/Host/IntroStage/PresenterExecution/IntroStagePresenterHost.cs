@@ -81,7 +81,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                     return true;
                 }
 
-                LogNoContentSkip(session, source, "missing_scene_local_presenter");
                 return false;
             }
         }
@@ -167,13 +166,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
             _currentPresenter = null;
             _currentPresenterOwnedByHost = false;
             _currentSessionSignature = string.Empty;
-        }
-
-        private static void LogNoContentSkip(IntroStageSession session, string source, string reason)
-        {
-            DebugUtility.Log<IntroStagePresenterHost>(
-                $"[OBS][IntroStage] IntroStageSkipped contentName='{DescribeSessionContentName(session)}' reason='no_content' source='{source}' detail='{reason}' signature='{session.SessionSignature}'.",
-                DebugUtility.Colors.Info);
         }
 
         private static bool TryFindPresentersOnObject(GameObject root, out List<IIntroStagePresenter> presenters)

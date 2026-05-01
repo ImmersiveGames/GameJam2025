@@ -13,6 +13,9 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using UnityEngine.SceneManagement;
 
@@ -29,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private readonly ISceneFlowRouteActorSetRefContext _routeActorSetContext;
         private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
         private readonly IGameplayParticipationFlowService _participationFlowService;
+        private readonly IIntroStageOperationalContractResolver _introStageOperationalContractResolver;
 
         public SessionTransitionOrchestrator(
             SessionTransitionPlanResolver planResolver,
@@ -36,7 +40,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             ISessionTransitionGameplayPrepareExecutionPort gameplayPrepareExecutionPort,
             ISceneFlowRouteActorSetRefContext routeActorSetContext,
             IGameplayPhaseRuntimeService phaseRuntimeService,
-            IGameplayParticipationFlowService participationFlowService)
+            IGameplayParticipationFlowService participationFlowService,
+            IIntroStageOperationalContractResolver introStageOperationalContractResolver)
         {
             _planResolver = planResolver ?? throw new ArgumentNullException(nameof(planResolver));
             _executionPort = executionPort ?? throw new ArgumentNullException(nameof(executionPort));
@@ -44,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _routeActorSetContext = routeActorSetContext ?? throw new ArgumentNullException(nameof(routeActorSetContext));
             _phaseRuntimeService = phaseRuntimeService ?? throw new ArgumentNullException(nameof(phaseRuntimeService));
             _participationFlowService = participationFlowService ?? throw new ArgumentNullException(nameof(participationFlowService));
+            _introStageOperationalContractResolver = introStageOperationalContractResolver ?? throw new ArgumentNullException(nameof(introStageOperationalContractResolver));
         }
 
         public async Task ExecuteAsync(SessionTransitionContext context, CancellationToken ct = default)
@@ -122,6 +128,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                         normalizedReason);
                 }
 
+                PublishIntroStageActivationOrFail(
+                    phaseLocalEntryReadyEvent,
+                    SessionTransitionContextSource,
+                    normalizedReason);
+
                 PublishPhaseLocalEntryReadyOrFail(
                     phaseLocalEntryReadyEvent,
                     SessionTransitionContextSource,
@@ -142,6 +153,67 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
                 $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted traceId='{executeTraceId}' source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' runContinuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='{publishedPhaseLocalEntryReady}' payloadSource='{resolvedPayloadSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private void PublishIntroStageActivationOrFail(
+            SessionTransitionPhaseLocalEntryReadyEvent phaseLocalEntryReadyEvent,
+            string source,
+            string normalizedReason)
+        {
+            GameplayPhaseRuntimeSnapshot phaseRuntime = ResolveCurrentPhaseRuntimeOrFail(source);
+            if (phaseRuntime.PhaseDefinitionRef == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] IntroStage activation requires a valid phaseDefinitionRef. source='{Normalize(source)}' reason='{Normalize(normalizedReason)}' phaseSignature='{Normalize(phaseLocalEntryReadyEvent.PhaseSignature)}'.");
+            }
+
+            string localContentId = PhaseDefinitionId.BuildCanonicalIntroContentId(phaseRuntime.PhaseDefinitionRef.PhaseId);
+            IntroStageSession candidateSession = new(
+                phaseRuntime.PhaseDefinitionRef,
+                localContentId,
+                normalizedReason,
+                phaseRuntime.SessionContext.SelectionVersion,
+                phaseLocalEntryReadyEvent.PhaseEntryIdentity.PhaseLocalEntrySequence,
+                phaseLocalEntryReadyEvent.SessionSignature,
+                hasIntroStage: false,
+                entrySignature: phaseLocalEntryReadyEvent.EntrySignature,
+                phaseRuntimeSignature: phaseLocalEntryReadyEvent.PhaseSignature,
+                phaseEntryIdentity: phaseLocalEntryReadyEvent.PhaseEntryIdentity);
+
+            bool hasOperationalContract = _introStageOperationalContractResolver.HasOperationalContract(candidateSession);
+            IntroStageSession session = new(
+                candidateSession.PhaseDefinitionRef,
+                candidateSession.LocalContentId,
+                candidateSession.Reason,
+                candidateSession.SelectionVersion,
+                candidateSession.PhaseLocalEntrySequence,
+                candidateSession.SessionSignature,
+                hasOperationalContract,
+                candidateSession.EntrySignature,
+                candidateSession.PhaseRuntimeSignature,
+                candidateSession.PhaseEntryIdentity);
+
+            SessionTransitionIntroStageActivationEvent activationEvent = new(
+                phaseLocalEntryReadyEvent,
+                session,
+                source,
+                normalizedReason);
+
+            if (!activationEvent.HasCanonicalPayload)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Invalid IntroStage activation event produced. source='{Normalize(source)}' reason='{Normalize(normalizedReason)}' phaseEntryIdentity='{phaseLocalEntryReadyEvent.PhaseEntryIdentity}'.");
+            }
+
+            DebugUtility.Log<SessionTransitionOrchestrator>(
+                $"[OBS][GameplaySessionFlow][SessionTransition] IntroStageActivationResolved source='{Normalize(source)}' activationKind='{(activationEvent.IsExecute ? "Execute" : "SkipNoContent")}' phaseEntryIdentity='{activationEvent.PhaseEntryIdentity}' sessionSignature='{activationEvent.SessionSignature}' phaseSignature='{activationEvent.PhaseSignature}' cycleSignature='{activationEvent.CycleSignature}' hasIntroStage='{activationEvent.Session.HasIntroStage}' reason='{Normalize(normalizedReason)}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<SessionTransitionIntroStageActivationEvent>.Raise(activationEvent);
+
+            DebugUtility.Log<SessionTransitionOrchestrator>(
+                $"[OBS][GameplaySessionFlow][SessionTransition] IntroStageActivationPublished source='{Normalize(source)}' activationKind='{(activationEvent.IsExecute ? "Execute" : "SkipNoContent")}' phaseEntryIdentity='{activationEvent.PhaseEntryIdentity}' sessionSignature='{activationEvent.SessionSignature}' phaseSignature='{activationEvent.PhaseSignature}' cycleSignature='{activationEvent.CycleSignature}' hasIntroStage='{activationEvent.Session.HasIntroStage}' reason='{Normalize(normalizedReason)}'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -170,6 +242,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             DebugUtility.Log<SessionTransitionOrchestrator>(
                 $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished traceId='{ObservabilityTraceFormatter.BuildCycleTraceId(phaseLocalEntryReadyEvent.CycleSignature)}' source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='true' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' runContinuation='{phaseLocalEntryReadyEvent.Plan.Context.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' reason='{Normalize(normalizedReason)}'.",
                 DebugUtility.Colors.Success);
+        }
+
+        private GameplayPhaseRuntimeSnapshot ResolveCurrentPhaseRuntimeOrFail(string source)
+        {
+            if (!_phaseRuntimeService.TryGetCurrent(out GameplayPhaseRuntimeSnapshot phaseRuntime) ||
+                !phaseRuntime.IsValid ||
+                phaseRuntime.PhaseDefinitionRef == null ||
+                !phaseRuntime.PhaseEntryIdentity.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Active gameplay phase runtime is required to resolve IntroStage activation. source='{Normalize(source)}'.");
+            }
+
+            return phaseRuntime;
         }
 
         private static void PublishGameplayInputModeCommandOrFail(

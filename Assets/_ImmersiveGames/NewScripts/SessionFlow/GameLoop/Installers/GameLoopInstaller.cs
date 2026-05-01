@@ -175,7 +175,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterIntroStageCoordinator();
             RegisterIntroStageControlService();
             RegisterIntroStageLifecycleStateService();
-            RegisterIntroStageExecutionDecisionService();
             RegisterIntroStageLifecycleDispatchService();
             RegisterGameplaySceneClassifier();
             RegisterIntroStageLifecycleOrchestrator();
@@ -263,36 +262,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterIfMissing<IIntroStageLifecycleDispatchService>(
                 () =>
                 {
-                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStageExecutionDecisionService>(out var executionDecisionService) || executionDecisionService == null)
-                    {
-                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageExecutionDecisionService ausente ao registrar IntroStageLifecycleDispatchService.");
-                    }
-
                     if (!DependencyManager.Provider.TryGetGlobal<IIntroStageCoordinator>(out var coordinator) || coordinator == null)
                     {
                         throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStageCoordinator ausente ao registrar IntroStageLifecycleDispatchService.");
                     }
 
-                    return new IntroStageLifecycleDispatchService(executionDecisionService, coordinator);
+                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStagePresenterRegistry ausente ao registrar IntroStageLifecycleDispatchService.");
+                    }
+
+                    return new IntroStageLifecycleDispatchService(coordinator, presenterRegistry);
                 },
                 "[GameLoop] IIntroStageLifecycleDispatchService ja registrado no DI global.",
                 "[GameLoop] IntroStageLifecycleDispatchService registrado no DI global como seam operacional de despacho/no-content.");
-        }
-
-        private static void RegisterIntroStageExecutionDecisionService()
-        {
-            RegisterIfMissing<IIntroStageExecutionDecisionService>(
-                () =>
-                {
-                    if (!DependencyManager.Provider.TryGetGlobal<IIntroStagePresenterRegistry>(out var presenterRegistry) || presenterRegistry == null)
-                    {
-                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IIntroStagePresenterRegistry ausente ao registrar IIntroStageExecutionDecisionService.");
-                    }
-
-                    return new IntroStageExecutionDecisionService(presenterRegistry);
-                },
-                "[GameLoop] IIntroStageExecutionDecisionService ja registrado no DI global.",
-                "[GameLoop] IntroStageExecutionDecisionService registrado no DI global como seam de policy execute/skip.");
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)

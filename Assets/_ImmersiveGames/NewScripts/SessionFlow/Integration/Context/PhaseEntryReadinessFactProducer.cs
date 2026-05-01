@@ -350,13 +350,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             bool isStale;
             lock (_sync)
             {
-                if (!_hasActivePhaseEntryIdentity)
+                if (!_hasActivePhaseEntryIdentity || !_hasPhaseLocalEntryReady)
                 {
                     isStale = true;
                 }
                 else
                 {
-                    bool sceneMatches = MatchesSceneAgainstActiveIdentity(evt.context, _activePhaseEntryIdentity);
+                    bool sceneMatches = MatchesSceneTransitionCompletedAgainstActiveEntry(
+                        evt.context,
+                        _currentPhaseLocalEntryReady,
+                        _activePhaseEntryIdentity);
                     if (sceneMatches)
                     {
                         _currentSceneTransitionCompleted = evt;
@@ -373,7 +376,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 if (isStale)
                 {
                     _lastStaleFactSource = "scene_transition_completed";
-                    LogStaleFact("scene_transition_completed", evt.context.ContextSignature);
+                    LogStaleSceneTransitionCompleted(evt.context);
                 }
             }
 
@@ -664,13 +667,35 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                    string.Equals(context.TargetActiveScene, entry.SceneName, StringComparison.Ordinal);
         }
 
-        private static bool MatchesSceneAgainstActiveIdentity(
+        private static bool MatchesSceneTransitionCompletedAgainstActiveEntry(
             SceneTransitionContext context,
+            SessionTransitionPhaseLocalEntryReadyEvent entry,
             PhaseEntryIdentity activeIdentity)
         {
-            return context.RouteKind == activeIdentity.RouteKind &&
-                   context.RouteId == activeIdentity.RouteId &&
-                   string.Equals(context.TargetActiveScene, activeIdentity.SceneName, StringComparison.Ordinal);
+            if (!context.RouteId.IsValid || !entry.RouteId.IsValid)
+            {
+                return false;
+            }
+
+            if (context.RouteKind != entry.RouteKind ||
+                context.RouteId != entry.RouteId)
+            {
+                return false;
+            }
+
+            if (!string.Equals(context.TargetActiveScene, entry.SceneName, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(context.ContextSignature) &&
+                !string.Equals(context.ContextSignature, entry.Plan.ContextSignature, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return activeIdentity.IsValid &&
+                   entry.PhaseEntryIdentity == activeIdentity;
         }
 
         private static bool MatchesCurrentEntry(
@@ -812,6 +837,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 : _currentPhaseLocalEntryReady.PhaseEntryIdentity.PhaseEntryId;
             DebugUtility.LogVerbose<PhaseEntryReadinessFactProducer>(
                 $"[OBS][SessionIntegration][PhaseEntryReadiness] StaleFactIgnored source='{source}' signature='{AsText(signature)}' activePhaseEntryId='{AsText(activePhaseEntryId)}' activeCycleSignature='{AsText(_currentPhaseLocalEntryReady.CycleSignature)}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void LogStaleSceneTransitionCompleted(SceneTransitionContext context)
+        {
+            string activePhaseEntryId = _hasActivePhaseEntryIdentity
+                ? _activePhaseEntryIdentity.PhaseEntryId
+                : _currentPhaseLocalEntryReady.PhaseEntryIdentity.PhaseEntryId;
+
+            DebugUtility.LogVerbose<PhaseEntryReadinessFactProducer>(
+                $"[OBS][SessionIntegration][PhaseEntryReadiness] StaleFactIgnored source='scene_transition_completed' signature='{AsText(context.ContextSignature)}' activePhaseEntryId='{AsText(activePhaseEntryId)}' expectedRouteId='{_currentPhaseLocalEntryReady.RouteId}' expectedRouteKind='{_currentPhaseLocalEntryReady.RouteKind}' expectedScene='{AsText(_currentPhaseLocalEntryReady.SceneName)}' receivedRouteId='{context.RouteId}' receivedRouteKind='{context.RouteKind}' receivedScene='{AsText(context.TargetActiveScene)}' expectedContextSignature='{AsText(_currentPhaseLocalEntryReady.Plan.ContextSignature)}' receivedContextSignature='{AsText(context.ContextSignature)}'.",
                 DebugUtility.Colors.Info);
         }
 
