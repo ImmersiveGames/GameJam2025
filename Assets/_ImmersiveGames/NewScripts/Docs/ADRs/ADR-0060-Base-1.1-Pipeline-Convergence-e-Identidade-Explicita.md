@@ -1,57 +1,57 @@
-# ADR-0060 - Base 1.1: Pipeline Convergence e Identidade Explicita
+# ADR-0060 - Base 1.1: Pipeline Convergence / Convergência para Pipelines Determinísticos e Identidade Explícita
 
 ## Status
 - Estado: Accepted
 - Data: 2026-05-01
 - Tipo: Direction / Canonical architecture
-- Fonte de verdade canonica deste contrato: este ADR.
+- Fonte de verdade canônica deste contrato: este ADR.
 
 ## Contexto
 
-A Base 1.0 estabilizou varios fluxos concretos, mas ainda deixou a arquitetura com linguagem mista entre semantica, rails operacionais e owners por conveniencia.
-Isso funciona como historico de consolidacao, mas nao e suficiente para congelar uma base deterministica.
+A Base 1.0 estabilizou vários fluxos concretos, mas ainda deixou a arquitetura com linguagem mista entre semântica, rails operacionais e owners por conveniência.
+Isso funciona como histórico de consolidação, mas não é suficiente para congelar uma base determinística.
 
-A Base 1.1 entra para convergir os fluxos ja materializados em pipelines com identidade explicita, sem reabrir a discussao de uma Base 2.0 nem tratar este freeze como transicao descartavel.
+A Base 1.1 entra para convergir os fluxos já materializados em pipelines com identidade explícita, sem reabrir a discussão de uma Base 2.0 nem tratar este freeze como transição descartável.
 
-## Decisao
+## Decisão
 
-Adota-se a Base 1.1 como **Pipeline Convergence / Convergencia para Pipelines Deterministicos**.
+Adota-se a Base 1.1 como **Pipeline Convergence / Convergência para Pipelines Determinísticos**.
 
 Este freeze define:
 
-- `Run Pipeline` substitui o conceito historico de `macro`.
-- `Session Pipeline` substitui o conceito historico de `local`.
-- modulos produzem fatos ou comandos.
-- pipelines decidem ordem, lifecycle, policies e handoffs.
-- adapters executam side-effects comandados pelo pipeline.
-- todo ciclo relevante possui identidade explicita.
-- eventos foreign ou stale nao podem alterar o pipeline ativo.
+- `Run Pipeline` substitui o conceito histórico de `macro`.
+- `Session Pipeline` substitui o conceito histórico de `local`.
+- módulos produzem `Pipeline Facts` ou `Pipeline Commands`.
+- pipelines decidem ordem, lifecycle, `Pipeline Policies` e `Pipeline Handoffs`.
+- `Pipeline Adapters` executam side-effects comandados pelo pipeline.
+- todo ciclo relevante possui identidade explícita.
+- foreign/stale events não podem alterar o pipeline ativo.
 
 Somente os ADRs `ADR-0060` a `ADR-0067` permanecem vivos na pasta principal.
-ADRs anteriores viram historico de referencia em `Docs/ADRs/Historico/`.
+ADRs anteriores viram histórico de referência em `Docs/ADRs/Historico/`.
 
-## Consequencias
+## Consequências
 
 - A pasta principal deixa de carregar normativa da Base 1.0.
-- A leitura do sistema passa a ter um grupo vivo unico para a Base 1.1.
-- Ownership deixa de ser inferido por quem executa o codigo.
-- O historico continua disponivel como referencia, mas nao como fonte normativa.
+- A leitura do sistema passa a ter um grupo vivo único para a Base 1.1.
+- Ownership deixa de ser inferido por quem executa o código.
+- O histórico continua disponível como referência, mas não como fonte normativa.
 
 ## Invariantes
 
-- Base 1.1 nao e Base 2.0.
-- Base 1.1 nao e transicao descartavel.
-- Identidade explicita e obrigatoria em todo ciclo relevante.
-- Foreign/stale events nao alteram o pipeline ativo.
-- Pipeline ativo e decidido por identidade e contrato, nao por ambiguidade temporal.
+- Base 1.1 não é Base 2.0.
+- Base 1.1 não é transição descartável.
+- Identidade explícita é obrigatória em todo ciclo relevante.
+- Foreign/stale events não alteram o pipeline ativo.
+- Pipeline ativo é decidido por identidade e contrato, não por ambiguidade temporal.
 
-## Relacao com Base 1.0 e Base 2.0
+## Relação com Base 1.0 e Base 2.0
 
-- Base 1.0 e antecedente historico e prova de materializacao dos fluxos.
-- Base 1.1 da shape final de pipeline aos fluxos concretos ja materializados na Base 1.0.
-- Base 2.0 futura so pode extrair, generalizar ou reorganizar o que a Base 1.1 provar.
+- Base 1.0 é antecedente histórico e prova de materialização dos fluxos.
+- Base 1.1 dá shape final de pipeline aos fluxos concretos já materializados na Base 1.0.
+- Base 2.0 futura só pode extrair, generalizar ou reorganizar o que a Base 1.1 provar.
 
-## ADRs historicos relacionados
+## ADRs históricos relacionados
 
 - `ADR-0052`
 - `ADR-0055`

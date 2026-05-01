@@ -12,10 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
     {
         public async System.Threading.Tasks.Task ExecuteAsync(SceneTransitionContext context)
         {
-            if (!context.RouteId.IsValid || context.RouteRef == null || context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
-            {
-                return;
-            }
+            ValidateOperationalHandoffContextOrFail(context);
 
             if (!context.IsGameplayInitialEntry)
             {
@@ -51,10 +48,43 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Runtim
                 DebugUtility.Colors.Success);
         }
 
+        private static void ValidateOperationalHandoffContextOrFail(SceneTransitionContext context)
+        {
+            if (context == null)
+            {
+                HardFailFastH1.Trigger(typeof(GameplaySessionFlowPrepareOperationalHandoffService),
+                    "[FATAL][H1][GameplaySessionFlow] GameplaySessionFlow prepare operational handoff recebeu SceneTransitionContext nulo.");
+                return;
+            }
+
+            if (!context.RouteId.IsValid)
+            {
+                FailFastOperational(context, "RouteId obrigatorio ausente.");
+                return;
+            }
+
+            if (context.RouteRef == null)
+            {
+                FailFastOperational(context, "RouteRef obrigatorio ausente.");
+                return;
+            }
+
+            if (context.RouteRef.RouteKind != SceneRouteKind.Gameplay)
+            {
+                FailFastOperational(context, $"RouteKind invalido para handoff gameplay. routeKind='{context.RouteRef.RouteKind}'.");
+                return;
+            }
+        }
+
         private static void FailFastOperational(SceneTransitionContext context, string detail)
         {
+            string routeId = context != null ? context.RouteId.ToString() : "<null>";
+            string gameplayEntryKind = context != null ? context.GameplayEntryKind.ToString() : "<null>";
+            string signature = context != null ? SceneTransitionSignature.Compute(context) : "<null>";
+            string reason = context != null ? context.Reason : "<null>";
+
             HardFailFastH1.Trigger(typeof(GameplaySessionFlowPrepareOperationalHandoffService),
-                $"[FATAL][H1][SceneFlow] GameplaySessionFlow prepare operational handoff misconfigured: {detail} routeId='{context.RouteId}' gameplayEntryKind='{context.GameplayEntryKind}' signature='{SceneTransitionSignature.Compute(context)}' reason='{context.Reason}'.");
+                $"[FATAL][H1][SceneFlow] GameplaySessionFlow prepare operational handoff misconfigured: {detail} routeId='{routeId}' gameplayEntryKind='{gameplayEntryKind}' signature='{signature}' reason='{reason}'.");
         }
     }
 }

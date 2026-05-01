@@ -1,6 +1,6 @@
 # ADRs
 
-Este diretorio mantem o acervo de ADRs e sua precedencia normativa.
+Este diretório mantém o acervo de ADRs e sua precedência normativa.
 
 ## Base 1.1 viva
 
@@ -15,9 +15,9 @@ A partir do freeze de Base 1.1, somente estes ADRs permanecem vivos na pasta pri
 7. `ADR-0066-Gates-InputModes-e-GameLoop-como-Executores-de-Estado-e-Efeitos.md`
 8. `ADR-0067-Identidade-Explicita-de-Ciclo-e-Isolamento-Contra-Eventos-Foreign.md`
 
-## Precedencia normativa atual
+## Precedência normativa atual
 
-Em decisoes de arquitetura e ownership, prevalecem:
+Em decisões de arquitetura e ownership, prevalecem:
 
 1. `ADR-0060`
 2. `ADR-0061`
@@ -28,14 +28,14 @@ Em decisoes de arquitetura e ownership, prevalecem:
 7. `ADR-0066`
 8. `ADR-0067`
 
-Regra obrigatoria:
+Regra obrigatória:
 
-- ADRs anteriores devem ser lidos como historicos, exceto quando forem explicitamente referenciados por estes ADRs normativos.
+- ADRs anteriores devem ser lidos como históricos, exceto quando forem explicitamente referenciados por estes ADRs normativos.
 - Em caso de conflito, prevalece o ADR mais novo e/ou explicitamente normativo da Base 1.1.
-- Ownership nao e decidido por conveniencia operacional, e sim pelo papel arquitetural definido na Base 1.1.
-- Eventos foreign ou stale nao podem alterar o pipeline ativo.
+- Ownership não é decidido por conveniência operacional, e sim pelo papel arquitetural definido na Base 1.1.
+- foreign/stale events não podem alterar o pipeline ativo.
 
-## Classificacao normativa do acervo
+## Classificação normativa do acervo
 
 ### NORMATIVO_ATUAL
 
@@ -48,14 +48,14 @@ Regra obrigatoria:
 - `ADR-0066`
 - `ADR-0067`
 
-### HISTORICO (nao normativo para ownership)
+### HISTÓRICO (não normativo para ownership)
 
-Todo ADR anterior a `ADR-0060` foi movido para `Docs/ADRs/Historico/` e deve ser lido como referencia historica, nao como fonte normativa viva.
+Todo ADR anterior a `ADR-0060` foi movido para `Docs/ADRs/Historico/` e deve ser lido como referência histórica, não como fonte normativa viva.
 
-## Regra de uso rapido
+## Regra de uso rápido
 
-Se um ADR historico conflitar com a Base 1.1:
+Se um ADR histórico conflitar com a Base 1.1:
 
-- nao abrir excecao local;
-- nao usar compatibilidade narrativa;
-- aplicar a precedencia normativa deste indice.
+- não abrir exceção local;
+- não usar compatibilidade narrativa;
+- aplicar a precedência normativa deste índice.

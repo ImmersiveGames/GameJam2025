@@ -7,7 +7,9 @@ using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 {
     public enum GameplayInteractionIntroStageStatus
@@ -188,19 +190,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
         private readonly EventBinding<SceneTransitionStartedEvent> _sceneTransitionStartedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
         private readonly EventBinding<IntroStageCompletedEvent> _introStageCompletedBinding;
+        private readonly EventBinding<SessionTransitionPhaseLocalEntryReadyEvent> _phaseLocalEntryReadyBinding;
+        private readonly EventBinding<SessionTransitionGameplayInputModeCommandEvent> _gameplayInputModeCommandBinding;
 
         private Action<ActorsGameplayOperationalReadinessSnapshot> _actorsReadinessChangedHandler;
         private ActorsGameplayOperationalReadinessSnapshot _currentActorsSnapshot;
         private SceneTransitionContext _currentSceneTransitionContext;
         private IntroStageCompletedEvent _currentIntroStageCompletedEvent;
+        private PhaseEntryIdentity _activePhaseEntryIdentity;
+        private SessionTransitionPhaseLocalEntryReadyEvent _activePhaseLocalEntryReadyEvent;
 
         private bool _hasActorsSnapshot;
         private bool _hasSceneTransitionCompleted;
         private bool _hasIntroStageStatus;
+        private bool _hasActivePhaseEntryIdentity;
+        private bool _hasActivePhaseLocalEntryReadyEvent;
         private bool _disposed;
         private bool _hasLastPublishedSnapshot;
         private GameplayInteractionReadinessSnapshot _lastPublishedSnapshot;
-        private string _lastRequestedInteractionSignature = string.Empty;
+        private string _lastBridgedGameplayInputModeCommandSignature = string.Empty;
 
         public GameplayInteractionReadinessService(
             IActorsGameplayOperationalReadinessService actorsOperationalReadinessService,
@@ -212,10 +220,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             _sceneTransitionStartedBinding = new EventBinding<SceneTransitionStartedEvent>(OnSceneTransitionStarted);
             _sceneTransitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
             _introStageCompletedBinding = new EventBinding<IntroStageCompletedEvent>(OnIntroStageCompleted);
+            _phaseLocalEntryReadyBinding = new EventBinding<SessionTransitionPhaseLocalEntryReadyEvent>(OnPhaseLocalEntryReady);
+            _gameplayInputModeCommandBinding = new EventBinding<SessionTransitionGameplayInputModeCommandEvent>(OnGameplayInputModeCommand);
 
             EventBus<SceneTransitionStartedEvent>.Register(_sceneTransitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_sceneTransitionCompletedBinding);
             EventBus<IntroStageCompletedEvent>.Register(_introStageCompletedBinding);
+            EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Register(_phaseLocalEntryReadyBinding);
+            EventBus<SessionTransitionGameplayInputModeCommandEvent>.Register(_gameplayInputModeCommandBinding);
 
             _actorsReadinessChangedHandler = OnActorsReadinessChanged;
             _actorsOperationalReadinessService.Changed += _actorsReadinessChangedHandler;
@@ -272,6 +284,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             EventBus<SceneTransitionStartedEvent>.Unregister(_sceneTransitionStartedBinding);
             EventBus<SceneTransitionCompletedEvent>.Unregister(_sceneTransitionCompletedBinding);
             EventBus<IntroStageCompletedEvent>.Unregister(_introStageCompletedBinding);
+            EventBus<SessionTransitionPhaseLocalEntryReadyEvent>.Unregister(_phaseLocalEntryReadyBinding);
+            EventBus<SessionTransitionGameplayInputModeCommandEvent>.Unregister(_gameplayInputModeCommandBinding);
 
             if (_actorsReadinessChangedHandler != null)
             {
@@ -316,11 +330,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             {
                 _currentSceneTransitionContext = default;
                 _currentIntroStageCompletedEvent = default;
+                _activePhaseEntryIdentity = default;
+                _activePhaseLocalEntryReadyEvent = default;
                 _hasActorsSnapshot = false;
                 _hasSceneTransitionCompleted = false;
                 _hasIntroStageStatus = false;
+                _hasActivePhaseEntryIdentity = false;
+                _hasActivePhaseLocalEntryReadyEvent = false;
                 _currentActorsSnapshot = default;
-                _lastRequestedInteractionSignature = string.Empty;
+                _lastBridgedGameplayInputModeCommandSignature = string.Empty;
                 _lastPublishedSnapshot = GameplayInteractionReadinessSnapshot.Empty;
                 _hasLastPublishedSnapshot = false;
             }
@@ -389,6 +407,147 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             PublishSnapshot(force: false);
         }
 
+        private void OnPhaseLocalEntryReady(SessionTransitionPhaseLocalEntryReadyEvent evt)
+        {
+            if (_disposed || !evt.HasCanonicalPayload || !evt.PhaseEntryIdentity.IsValid)
+            {
+                return;
+            }
+
+            bool hasGameplaySceneTransitionContext;
+            bool sceneTransitionMatches = true;
+            bool hasActiveIdentity;
+            PhaseEntryIdentity currentActiveIdentity;
+
+            lock (_sync)
+            {
+                hasGameplaySceneTransitionContext =
+                    _currentSceneTransitionContext.RouteKind == SceneRouteKind.Gameplay &&
+                    _currentSceneTransitionContext.RouteId.IsValid;
+
+                if (hasGameplaySceneTransitionContext)
+                {
+                    sceneTransitionMatches =
+                        _currentSceneTransitionContext.RouteId == evt.RouteId &&
+                        string.Equals(_currentSceneTransitionContext.TargetActiveScene, evt.SceneName, StringComparison.Ordinal);
+                }
+
+                hasActiveIdentity = _hasActivePhaseEntryIdentity;
+                currentActiveIdentity = _activePhaseEntryIdentity;
+
+                if (hasActiveIdentity && currentActiveIdentity.IsValid && currentActiveIdentity != evt.PhaseEntryIdentity)
+                {
+                    sceneTransitionMatches = false;
+                }
+
+                if (sceneTransitionMatches)
+                {
+                    _activePhaseEntryIdentity = evt.PhaseEntryIdentity;
+                    _activePhaseLocalEntryReadyEvent = evt;
+                    _hasActivePhaseEntryIdentity = true;
+                    _hasActivePhaseLocalEntryReadyEvent = true;
+                    _lastBridgedGameplayInputModeCommandSignature = string.Empty;
+                }
+            }
+
+            if (!sceneTransitionMatches)
+            {
+                DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                    $"[OBS][SessionIntegration][InputModes] ActivePhaseEntryIdentity ignored reason='foreign_or_stale_phase_local_entry_ready' expectedPhaseEntryIdentity='{currentActiveIdentity}' receivedPhaseEntryIdentity='{evt.PhaseEntryIdentity}' expectedSessionSignature='{_activePhaseLocalEntryReadyEvent.SessionSignature}' receivedSessionSignature='{evt.SessionSignature}' expectedPhaseSignature='{_activePhaseLocalEntryReadyEvent.PhaseSignature}' receivedPhaseSignature='{evt.PhaseSignature}' expectedCycleSignature='{_activePhaseLocalEntryReadyEvent.CycleSignature}' receivedCycleSignature='{evt.CycleSignature}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                $"[OBS][SessionIntegration][InputModes] ActivePhaseEntryIdentity opened source='{evt.Source}' phaseEntryIdentity='{evt.PhaseEntryIdentity}' sessionSignature='{evt.SessionSignature}' phaseSignature='{evt.PhaseSignature}' cycleSignature='{evt.CycleSignature}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void OnGameplayInputModeCommand(SessionTransitionGameplayInputModeCommandEvent evt)
+        {
+            if (_disposed || !evt.IsValid)
+            {
+                return;
+            }
+
+            bool shouldBridge;
+            bool hasActiveIdentity;
+            PhaseEntryIdentity activeIdentity;
+            SessionTransitionPhaseLocalEntryReadyEvent activeEntryReadyEvent;
+
+            lock (_sync)
+            {
+                hasActiveIdentity = _hasActivePhaseEntryIdentity;
+                activeIdentity = _activePhaseEntryIdentity;
+                activeEntryReadyEvent = _activePhaseLocalEntryReadyEvent;
+
+                if (!hasActiveIdentity || !activeIdentity.IsValid || !_hasActivePhaseLocalEntryReadyEvent || !activeEntryReadyEvent.HasCanonicalPayload)
+                {
+                    shouldBridge = false;
+                }
+                else if (evt.PhaseEntryIdentity != activeIdentity ||
+                         !string.Equals(evt.SessionSignature, activeEntryReadyEvent.SessionSignature, StringComparison.Ordinal) ||
+                         !string.Equals(evt.PhaseSignature, activeEntryReadyEvent.PhaseSignature, StringComparison.Ordinal) ||
+                         !string.Equals(evt.CycleSignature, activeEntryReadyEvent.CycleSignature, StringComparison.Ordinal))
+                {
+                    shouldBridge = false;
+                }
+                else if (string.Equals(_lastBridgedGameplayInputModeCommandSignature, evt.CycleSignature, StringComparison.Ordinal))
+                {
+                    shouldBridge = false;
+                }
+                else
+                {
+                    _lastBridgedGameplayInputModeCommandSignature = evt.CycleSignature;
+                    shouldBridge = true;
+                }
+            }
+
+            if (!hasActiveIdentity || !activeIdentity.IsValid)
+            {
+                DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                    $"[OBS][SessionIntegration][InputModes] GameplayInputModeCommand ignored reason='no_active_phase_entry_identity' commandPhaseEntryIdentity='{evt.PhaseEntryIdentity}' sessionSignature='{evt.SessionSignature}' phaseSignature='{evt.PhaseSignature}' cycleSignature='{evt.CycleSignature}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!_hasActivePhaseLocalEntryReadyEvent || !activeEntryReadyEvent.HasCanonicalPayload)
+            {
+                DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                    $"[OBS][SessionIntegration][InputModes] GameplayInputModeCommand ignored reason='no_active_phase_local_entry_ready_event' commandPhaseEntryIdentity='{evt.PhaseEntryIdentity}' sessionSignature='{evt.SessionSignature}' phaseSignature='{evt.PhaseSignature}' cycleSignature='{evt.CycleSignature}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (evt.PhaseEntryIdentity != activeIdentity ||
+                !string.Equals(evt.SessionSignature, activeEntryReadyEvent.SessionSignature, StringComparison.Ordinal) ||
+                !string.Equals(evt.PhaseSignature, activeEntryReadyEvent.PhaseSignature, StringComparison.Ordinal) ||
+                !string.Equals(evt.CycleSignature, activeEntryReadyEvent.CycleSignature, StringComparison.Ordinal))
+            {
+                DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                    $"[OBS][SessionIntegration][InputModes] GameplayInputModeCommand ignored reason='foreign_or_stale_command' expectedPhaseEntryIdentity='{activeIdentity}' receivedPhaseEntryIdentity='{evt.PhaseEntryIdentity}' expectedSessionSignature='{activeEntryReadyEvent.SessionSignature}' receivedSessionSignature='{evt.SessionSignature}' expectedPhaseSignature='{activeEntryReadyEvent.PhaseSignature}' receivedPhaseSignature='{evt.PhaseSignature}' expectedCycleSignature='{activeEntryReadyEvent.CycleSignature}' receivedCycleSignature='{evt.CycleSignature}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (!shouldBridge)
+            {
+                DebugUtility.LogVerbose<GameplayInteractionReadinessService>(
+                    $"[OBS][SessionIntegration][InputModes] GameplayInputModeCommand deduped phaseEntryIdentity='{evt.PhaseEntryIdentity}' cycleSignature='{evt.CycleSignature}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            DebugUtility.Log(typeof(GameplayInteractionReadinessService),
+                $"[OBS][SessionIntegration][InputModes] InputModeRequested kind='Gameplay' source='SessionTransition' reason='{evt.Reason}' phaseEntryIdentity='{evt.PhaseEntryIdentity}' sessionSignature='{evt.SessionSignature}' phaseSignature='{evt.PhaseSignature}' cycleSignature='{evt.CycleSignature}'.",
+                DebugUtility.Colors.Info);
+
+            _inputModeEmitter.RequestGameplayInputMode(
+                evt.Reason,
+                "SessionTransition",
+                evt.ContextSignature);
+        }
+
         private void PublishSnapshot(bool force)
         {
             GameplayInteractionReadinessSnapshot snapshot;
@@ -409,11 +568,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             }
 
             Changed?.Invoke(snapshot);
-
-            if (snapshot.IsGameplayInteractionReady)
-            {
-                MaybeRequestGameplayInputMode(snapshot);
-            }
         }
 
         private bool TryBuildSnapshotLocked(out GameplayInteractionReadinessSnapshot snapshot)
@@ -570,33 +724,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 GameplayInteractionReadinessReasonKind.Ready,
                 "ActorsOperationalReady+SceneTransitionCompleted+IntroStageDone");
             return true;
-        }
-
-        private void MaybeRequestGameplayInputMode(GameplayInteractionReadinessSnapshot snapshot)
-        {
-            if (_disposed || !snapshot.IsGameplayInteractionReady)
-            {
-                return;
-            }
-
-            lock (_sync)
-            {
-                if (string.Equals(_lastRequestedInteractionSignature, snapshot.InteractionSignature, StringComparison.Ordinal))
-                {
-                    return;
-                }
-
-                _lastRequestedInteractionSignature = snapshot.InteractionSignature;
-            }
-
-            DebugUtility.Log(typeof(GameplayInteractionReadinessService),
-                $"[OBS][SessionIntegration][InputModes] InputModeRequested kind='Gameplay' reason='GameplayInteractionReady' semanticSource='GameplayInteractionReady' cycleSignature='{snapshot.CycleSignature}' phaseRuntimeSignature='{snapshot.PhaseRuntimeSignature}' participationSignature='{snapshot.ParticipationSignature}' routeId='{snapshot.RouteId}' routeKind='{snapshot.RouteKind}' scene='{snapshot.SceneName}' actorSetRef='{snapshot.ActorSetRef}' introStageStatus='{snapshot.IntroStageStatus}'.",
-                DebugUtility.Colors.Info);
-
-            _inputModeEmitter.RequestGameplayInputMode(
-                "GameplayInteractionReady",
-                "GameplayInteractionReady",
-                snapshot.InteractionSignature);
         }
 
         private static bool SnapshotsEqual(GameplayInteractionReadinessSnapshot left, GameplayInteractionReadinessSnapshot right)

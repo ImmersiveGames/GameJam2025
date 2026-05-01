@@ -13,18 +13,17 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 {
-    public enum PhaseEntryReadinessStatus
+    public enum PhaseEntryReadinessFactKind
     {
         Unknown = 0,
-        Blocked = 1,
-        Ready = 2,
-        Stale = 3
+        Partial = 1,
+        Observed = 2
     }
 
     public enum PhaseEntryReadinessReasonKind
     {
         Unknown = 0,
-        WaitingForPhaseLocalEntryReady = 1,
+        WaitingForPhaseLocalEntryFact = 1,
         WaitingForActorsCycleCompleted = 2,
         WaitingForSceneTransitionCompleted = 3,
         WaitingForIntroStageCompleted = 4,
@@ -32,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
         WaitingForPhaseRuntimeSnapshot = 6,
         ContextMismatch = 7,
         StaleFactIgnored = 8,
-        Ready = 9
+        CanonicalFactObserved = 9
     }
 
     public readonly struct PhaseEntryCanonicalSignature
@@ -112,11 +111,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
     }
 
-    public readonly struct PhaseEntryPermissionSnapshot
+    public readonly struct PhaseEntryReadinessFactSnapshot
     {
-        public PhaseEntryPermissionSnapshot(
+        public PhaseEntryReadinessFactSnapshot(
             PhaseEntryCanonicalSignature signature,
-            PhaseEntryReadinessStatus status,
+            PhaseEntryReadinessFactKind kind,
             PhaseEntryReadinessReasonKind reasonKind,
             string reason,
             bool hasPhaseLocalEntryReady,
@@ -130,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             string staleFactSource)
         {
             CanonicalSignature = signature;
-            Status = status;
+            Kind = kind;
             ReasonKind = reasonKind;
             Reason = Normalize(reason);
             HasPhaseLocalEntryReady = hasPhaseLocalEntryReady;
@@ -145,7 +144,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
         }
 
         public PhaseEntryCanonicalSignature CanonicalSignature { get; }
-        public PhaseEntryReadinessStatus Status { get; }
+        public PhaseEntryIdentity PhaseEntryIdentity => CanonicalSignature.PhaseEntryIdentity;
+        public PhaseEntryReadinessFactKind Kind { get; }
         public PhaseEntryReadinessReasonKind ReasonKind { get; }
         public string Reason { get; }
         public bool HasPhaseLocalEntryReady { get; }
@@ -158,14 +158,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
         public bool GameLoopAlreadyPlaying { get; }
         public string StaleFactSource { get; }
 
-        public bool IsValid => Status != PhaseEntryReadinessStatus.Unknown && CanonicalSignature.IsValid;
+        public bool IsValid => Kind != PhaseEntryReadinessFactKind.Unknown && CanonicalSignature.IsValid;
 
-        public static PhaseEntryPermissionSnapshot Empty =>
+        public static PhaseEntryReadinessFactSnapshot Empty =>
             new(
                 PhaseEntryCanonicalSignature.Empty,
-                PhaseEntryReadinessStatus.Unknown,
+                PhaseEntryReadinessFactKind.Unknown,
                 PhaseEntryReadinessReasonKind.Unknown,
-                "waiting_for_phase_entry",
+                "waiting_for_phase_entry_fact",
                 hasPhaseLocalEntryReady: false,
                 hasMatchingActorsReady: false,
                 hasMatchingSceneTransitionCompleted: false,
@@ -180,27 +180,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
-    public readonly struct PhaseEntryReadinessChangedEvent : IEvent
+    public readonly struct PhaseEntryReadinessFactChangedEvent : IEvent
     {
-        public PhaseEntryReadinessChangedEvent(PhaseEntryPermissionSnapshot snapshot, string source)
+        public PhaseEntryReadinessFactChangedEvent(PhaseEntryReadinessFactSnapshot snapshot, string source)
         {
             Snapshot = snapshot;
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
         }
 
-        public PhaseEntryPermissionSnapshot Snapshot { get; }
+        public PhaseEntryReadinessFactSnapshot Snapshot { get; }
         public string Source { get; }
         public bool IsValid => Snapshot.IsValid;
     }
 
-    public interface IPhaseEntryReadinessCoordinator : IDisposable
+    public interface IPhaseEntryReadinessFactProducer : IDisposable
     {
-        event Action<PhaseEntryPermissionSnapshot> Changed;
-        bool TryGetCurrent(out PhaseEntryPermissionSnapshot snapshot);
+        event Action<PhaseEntryReadinessFactSnapshot> Changed;
+        bool TryGetCurrent(out PhaseEntryReadinessFactSnapshot snapshot);
     }
 
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PhaseEntryReadinessCoordinator : IPhaseEntryReadinessCoordinator
+    public sealed class PhaseEntryReadinessFactProducer : IPhaseEntryReadinessFactProducer
     {
         private readonly object _sync = new();
         private readonly EventBinding<SessionTransitionPhaseLocalEntryReadyEvent> _phaseLocalEntryReadyBinding;
@@ -226,25 +226,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
         private bool _hasIntroStageCompleted;
         private bool _hasPhaseRuntimeMaterialized;
         private bool _disposed;
-        private PhaseEntryPermissionSnapshot _lastPublishedSnapshot;
+        private PhaseEntryReadinessFactSnapshot _lastPublishedSnapshot;
         private bool _hasLastPublishedSnapshot;
         private string _lastStaleFactSource;
 
-        public PhaseEntryReadinessCoordinator()
+        public PhaseEntryReadinessFactProducer()
         {
             if (!DependencyManager.Provider.TryGetGlobal<IGameplayParticipationFlowService>(out _participationFlowService) || _participationFlowService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayParticipationFlowService ausente para compor PhaseEntryReadinessCoordinator.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayParticipationFlowService ausente para compor PhaseEntryReadinessFactProducer.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out _phaseRuntimeService) || _phaseRuntimeService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayPhaseRuntimeService ausente para compor PhaseEntryReadinessCoordinator.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayPhaseRuntimeService ausente para compor PhaseEntryReadinessFactProducer.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out _gameLoopService) || _gameLoopService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameLoopService ausente para compor PhaseEntryReadinessCoordinator.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameLoopService ausente para compor PhaseEntryReadinessFactProducer.");
             }
 
             _phaseLocalEntryReadyBinding = new EventBinding<SessionTransitionPhaseLocalEntryReadyEvent>(OnPhaseLocalEntryReady);
@@ -262,9 +262,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             PublishSnapshot("bootstrap");
         }
 
-        public event Action<PhaseEntryPermissionSnapshot> Changed;
+        public event Action<PhaseEntryReadinessFactSnapshot> Changed;
 
-        public bool TryGetCurrent(out PhaseEntryPermissionSnapshot snapshot)
+        public bool TryGetCurrent(out PhaseEntryReadinessFactSnapshot snapshot)
         {
             lock (_sync)
             {
@@ -301,13 +301,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                     evt.RouteId,
                     evt.RouteKind,
                     evt.SceneName,
-                    "phase_local_entry_ready");
+                    "phase_local_entry_fact");
                 _currentPhaseLocalEntryReady = evt;
                 _hasPhaseLocalEntryReady = true;
                 _lastStaleFactSource = string.Empty;
             }
 
-            PublishSnapshot("phase_local_entry_ready");
+            PublishSnapshot("phase_local_entry_fact");
         }
 
         private void OnActorsCycleCompleted(ActorsOperationalMaterializationCycleCompletedEvent evt)
@@ -417,32 +417,42 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 return;
             }
 
+            bool matchesActiveEntry;
             lock (_sync)
             {
-                OpenActiveEntryLocked(
-                    evt.PhaseEntryIdentity,
-                    evt.PhaseEntryIdentity.RouteId,
-                    evt.PhaseEntryIdentity.RouteKind,
-                    evt.PhaseEntryIdentity.SceneName,
-                    "phase_runtime_materialized");
-                _currentPhaseRuntimeMaterialized = evt;
-                _hasPhaseRuntimeMaterialized = true;
-                _lastStaleFactSource = string.Empty;
+                matchesActiveEntry = _hasActivePhaseEntryIdentity && MatchesCurrentIdentity(evt.PhaseEntryIdentity);
+
+                if (!matchesActiveEntry)
+                {
+                    _lastStaleFactSource = "phase_runtime_materialized";
+                    LogStaleFact("phase_runtime_materialized", evt.PhaseEntryIdentity.PhaseEntryId);
+                }
+                else
+                {
+                    _currentPhaseRuntimeMaterialized = evt;
+                    _hasPhaseRuntimeMaterialized = true;
+                    _lastStaleFactSource = string.Empty;
+                }
             }
 
-            PublishSnapshot("phase_runtime_materialized");
+            PublishSnapshot(matchesActiveEntry ? "phase_runtime_materialized" : "phase_runtime_materialized_stale");
         }
 
         private void PublishSnapshot(string source)
         {
-            PhaseEntryPermissionSnapshot snapshot;
+            PhaseEntryReadinessFactSnapshot snapshot;
             bool shouldPublish;
 
             lock (_sync)
             {
                 if (!TryBuildSnapshotLocked(out snapshot))
                 {
-                    snapshot = PhaseEntryPermissionSnapshot.Empty;
+                    snapshot = PhaseEntryReadinessFactSnapshot.Empty;
+                }
+
+                if (!ShouldPublishSnapshot(snapshot))
+                {
+                    return;
                 }
 
                 shouldPublish = !_hasLastPublishedSnapshot || !AreEquivalent(_lastPublishedSnapshot, snapshot);
@@ -455,25 +465,40 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 _hasLastPublishedSnapshot = true;
             }
 
-            DebugUtility.Log<PhaseEntryReadinessCoordinator>(
-                $"[OBS][SessionIntegration][PhaseEntryReadiness] status='{snapshot.Status}' reason='{AsText(snapshot.Reason)}' phaseEntryId='{AsText(snapshot.CanonicalSignature.PhaseEntryIdentity.PhaseEntryId)}' cycle='{ToShortCycleSignature(snapshot.CanonicalSignature.CycleSignature)}' routeId='{snapshot.CanonicalSignature.RouteId}' scene='{AsText(snapshot.CanonicalSignature.SceneName)}' actorsMatched='{snapshot.HasMatchingActorsReady.ToString().ToLowerInvariant()}' introMatched='{snapshot.HasMatchingIntroCompleted.ToString().ToLowerInvariant()}' sceneMatched='{snapshot.HasMatchingSceneTransitionCompleted.ToString().ToLowerInvariant()}' gameLoopAlreadyPlaying='{snapshot.GameLoopAlreadyPlaying.ToString().ToLowerInvariant()}' staleFactSource='{AsText(snapshot.StaleFactSource)}'.",
+            DebugUtility.Log<PhaseEntryReadinessFactProducer>(
+                $"[OBS][SessionIntegration][PhaseEntryReadiness] factKind='{snapshot.Kind}' reasonKind='{snapshot.ReasonKind}' reason='{AsText(snapshot.Reason)}' phaseEntryId='{AsText(snapshot.PhaseEntryIdentity.PhaseEntryId)}' cycle='{ToShortCycleSignature(snapshot.CanonicalSignature.CycleSignature)}' routeId='{snapshot.CanonicalSignature.RouteId}' scene='{AsText(snapshot.CanonicalSignature.SceneName)}' actorsMatched='{snapshot.HasMatchingActorsReady.ToString().ToLowerInvariant()}' introMatched='{snapshot.HasMatchingIntroCompleted.ToString().ToLowerInvariant()}' sceneMatched='{snapshot.HasMatchingSceneTransitionCompleted.ToString().ToLowerInvariant()}' gameLoopAlreadyPlaying='{snapshot.GameLoopAlreadyPlaying.ToString().ToLowerInvariant()}' staleFactSource='{AsText(snapshot.StaleFactSource)}'.",
                 DebugUtility.Colors.Info);
 
             Changed?.Invoke(snapshot);
-            EventBus<PhaseEntryReadinessChangedEvent>.Raise(new PhaseEntryReadinessChangedEvent(snapshot, source));
+            EventBus<PhaseEntryReadinessFactChangedEvent>.Raise(new PhaseEntryReadinessFactChangedEvent(snapshot, source));
         }
 
-        private bool TryBuildSnapshotLocked(out PhaseEntryPermissionSnapshot snapshot)
+        private static bool ShouldPublishSnapshot(PhaseEntryReadinessFactSnapshot snapshot)
         {
-            snapshot = PhaseEntryPermissionSnapshot.Empty;
+            if (!snapshot.IsValid || !snapshot.CanonicalSignature.IsValid)
+            {
+                return false;
+            }
+
+            if (snapshot.Kind == PhaseEntryReadinessFactKind.Partial && !snapshot.PhaseEntryIdentity.IsValid)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool TryBuildSnapshotLocked(out PhaseEntryReadinessFactSnapshot snapshot)
+        {
+            snapshot = PhaseEntryReadinessFactSnapshot.Empty;
 
             if (!_hasActivePhaseEntryIdentity)
             {
-                snapshot = new PhaseEntryPermissionSnapshot(
+                snapshot = new PhaseEntryReadinessFactSnapshot(
                     PhaseEntryCanonicalSignature.Empty,
-                    PhaseEntryReadinessStatus.Unknown,
-                    PhaseEntryReadinessReasonKind.WaitingForPhaseLocalEntryReady,
-                    "waiting_for_phase_local_entry_ready",
+                    PhaseEntryReadinessFactKind.Unknown,
+                    PhaseEntryReadinessReasonKind.WaitingForPhaseLocalEntryFact,
+                    "waiting_for_phase_local_entry_fact",
                     hasPhaseLocalEntryReady: false,
                     hasMatchingActorsReady: false,
                     hasMatchingSceneTransitionCompleted: false,
@@ -488,7 +513,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 
             if (!_hasPhaseLocalEntryReady || !_currentPhaseLocalEntryReady.HasCanonicalPayload)
             {
-                snapshot = new PhaseEntryPermissionSnapshot(
+                snapshot = new PhaseEntryReadinessFactSnapshot(
                     new PhaseEntryCanonicalSignature(
                         _activePhaseEntryIdentity,
                         string.Empty,
@@ -499,9 +524,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                         _activePhaseEntryIdentity.RouteId,
                         _activePhaseEntryIdentity.RouteKind,
                         _activePhaseEntryIdentity.SceneName),
-                    PhaseEntryReadinessStatus.Blocked,
-                    PhaseEntryReadinessReasonKind.WaitingForPhaseLocalEntryReady,
-                    "waiting_for_phase_local_entry_ready",
+                    PhaseEntryReadinessFactKind.Partial,
+                    PhaseEntryReadinessReasonKind.WaitingForPhaseLocalEntryFact,
+                    "waiting_for_phase_local_entry_fact",
                     hasPhaseLocalEntryReady: false,
                     hasMatchingActorsReady: false,
                     hasMatchingSceneTransitionCompleted: _hasSceneTransitionCompleted,
@@ -536,45 +561,45 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 
             if (!hasParticipationSnapshot)
             {
-                snapshot = BuildBlockedSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForParticipationSnapshot, "waiting_for_participation_snapshot", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
+                snapshot = BuildPartialSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForParticipationSnapshot, "waiting_for_participation_snapshot", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
                 return true;
             }
 
             if (!participationAllowsGameplay)
             {
-                snapshot = BuildBlockedSnapshot(signature, PhaseEntryReadinessReasonKind.ContextMismatch, "participation_not_ready_for_gameplay", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
+                snapshot = BuildPartialSnapshot(signature, PhaseEntryReadinessReasonKind.ContextMismatch, "participation_not_ready_for_gameplay", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
                 return true;
             }
 
             if (!hasPhaseRuntimeSnapshot)
             {
-                snapshot = BuildBlockedSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForPhaseRuntimeSnapshot, "waiting_for_phase_runtime_snapshot", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
+                snapshot = BuildPartialSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForPhaseRuntimeSnapshot, "waiting_for_phase_runtime_snapshot", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
                 return true;
             }
 
             if (!hasMatchingActors)
             {
-                snapshot = BuildBlockedSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForActorsCycleCompleted, "waiting_for_matching_actors_cycle_completed", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
+                snapshot = BuildPartialSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForActorsCycleCompleted, "waiting_for_matching_actors_cycle_completed", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
                 return true;
             }
 
             if (!hasMatchingScene)
             {
-                snapshot = BuildBlockedSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForSceneTransitionCompleted, "waiting_for_matching_scene_transition_completed", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
+                snapshot = BuildPartialSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForSceneTransitionCompleted, "waiting_for_matching_scene_transition_completed", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
                 return true;
             }
 
             if (!hasMatchingIntro)
             {
-                snapshot = BuildBlockedSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForIntroStageCompleted, "waiting_for_matching_intro_stage_completed", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
+                snapshot = BuildPartialSnapshot(signature, PhaseEntryReadinessReasonKind.WaitingForIntroStageCompleted, "waiting_for_matching_intro_stage_completed", hasMatchingActors, hasMatchingScene, hasMatchingIntro, hasParticipationSnapshot, participationAllowsGameplay, hasPhaseRuntimeSnapshot, gameLoopAlreadyPlaying);
                 return true;
             }
 
-            snapshot = new PhaseEntryPermissionSnapshot(
+            snapshot = new PhaseEntryReadinessFactSnapshot(
                 signature,
-                PhaseEntryReadinessStatus.Ready,
-                PhaseEntryReadinessReasonKind.Ready,
-                "phase_entry_ready",
+                PhaseEntryReadinessFactKind.Observed,
+                PhaseEntryReadinessReasonKind.CanonicalFactObserved,
+                "phase_entry_fact_observed",
                 hasPhaseLocalEntryReady: true,
                 hasMatchingActorsReady: true,
                 hasMatchingSceneTransitionCompleted: true,
@@ -587,7 +612,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             return true;
         }
 
-        private PhaseEntryPermissionSnapshot BuildBlockedSnapshot(
+        private PhaseEntryReadinessFactSnapshot BuildPartialSnapshot(
             PhaseEntryCanonicalSignature signature,
             PhaseEntryReadinessReasonKind reasonKind,
             string reason,
@@ -599,9 +624,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             bool hasPhaseRuntimeSnapshot,
             bool gameLoopAlreadyPlaying)
         {
-            return new PhaseEntryPermissionSnapshot(
+            return new PhaseEntryReadinessFactSnapshot(
                 signature,
-                PhaseEntryReadinessStatus.Blocked,
+                PhaseEntryReadinessFactKind.Partial,
                 reasonKind,
                 reason,
                 hasPhaseLocalEntryReady: true,
@@ -693,9 +718,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 evt.SceneName);
         }
 
-        private static bool AreEquivalent(PhaseEntryPermissionSnapshot left, PhaseEntryPermissionSnapshot right)
+        private static bool AreEquivalent(PhaseEntryReadinessFactSnapshot left, PhaseEntryReadinessFactSnapshot right)
         {
-            return left.Status == right.Status &&
+            return left.Kind == right.Kind &&
                    left.ReasonKind == right.ReasonKind &&
                    string.Equals(left.Reason, right.Reason, StringComparison.Ordinal) &&
                    string.Equals(left.CanonicalSignature.Signature, right.CanonicalSignature.Signature, StringComparison.Ordinal) &&
@@ -764,7 +789,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 
             _lastStaleFactSource = string.Empty;
 
-            DebugUtility.LogVerbose<PhaseEntryReadinessCoordinator>(
+            DebugUtility.LogVerbose<PhaseEntryReadinessFactProducer>(
                 $"[OBS][SessionIntegration][PhaseEntryReadiness] ActivePhaseEntryOpened source='{AsText(source)}' phaseEntryId='{AsText(identity.PhaseEntryId)}' routeId='{routeId}' routeKind='{routeKind}' scene='{AsText(sceneName)}'.",
                 DebugUtility.Colors.Info);
         }
@@ -785,7 +810,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             string activePhaseEntryId = _hasActivePhaseEntryIdentity
                 ? _activePhaseEntryIdentity.PhaseEntryId
                 : _currentPhaseLocalEntryReady.PhaseEntryIdentity.PhaseEntryId;
-            DebugUtility.LogVerbose<PhaseEntryReadinessCoordinator>(
+            DebugUtility.LogVerbose<PhaseEntryReadinessFactProducer>(
                 $"[OBS][SessionIntegration][PhaseEntryReadiness] StaleFactIgnored source='{source}' signature='{AsText(signature)}' activePhaseEntryId='{AsText(activePhaseEntryId)}' activeCycleSignature='{AsText(_currentPhaseLocalEntryReady.CycleSignature)}'.",
                 DebugUtility.Colors.Info);
         }

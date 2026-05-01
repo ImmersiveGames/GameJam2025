@@ -132,6 +132,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                     expectedPhaseLocalEntryReady,
                     resultAllowsPhaseLocalEntryReady);
 
+                PublishGameplayInputModeCommandOrFail(
+                    phaseLocalEntryReadyEvent,
+                    SessionTransitionContextSource,
+                    normalizedReason);
+
                 publishedPhaseLocalEntryReady = true;
             }
 
@@ -164,6 +169,39 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
                 $"[OBS][GameplaySessionFlow][SessionTransition] PhaseLocalEntryReadyPublished traceId='{ObservabilityTraceFormatter.BuildCycleTraceId(phaseLocalEntryReadyEvent.CycleSignature)}' source='{Normalize(source)}' dispatchPort='{Normalize(dispatchPortName)}' published='true' payloadSource='{Normalize(payloadSource)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' runContinuation='{phaseLocalEntryReadyEvent.Plan.Context.ResolvedContinuation}' executionKind='{phaseLocalEntryReadyEvent.Plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' execution='{phaseLocalEntryReadyEvent.Plan.Execution}' routeId='{phaseLocalEntryReadyEvent.RouteId}' routeKind='{phaseLocalEntryReadyEvent.RouteKind}' scene='{phaseLocalEntryReadyEvent.SceneName}' actorSetRef='{phaseLocalEntryReadyEvent.ActorSetRef}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' participationSignature='{phaseLocalEntryReadyEvent.ParticipationSignature}' reason='{Normalize(normalizedReason)}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private static void PublishGameplayInputModeCommandOrFail(
+            SessionTransitionPhaseLocalEntryReadyEvent phaseLocalEntryReadyEvent,
+            string source,
+            string reason)
+        {
+            if (!phaseLocalEntryReadyEvent.HasCanonicalPayload)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Nao foi possivel publicar o comando de Gameplay InputMode porque o PhaseLocalEntryReady nao tem payload canonico. source='{Normalize(source)}' reason='{Normalize(reason)}'.");
+            }
+
+            SessionTransitionGameplayInputModeCommandEvent commandEvent = new(
+                phaseLocalEntryReadyEvent,
+                source,
+                reason);
+
+            if (!commandEvent.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Comando de Gameplay InputMode invalido ao publicar SessionTransition command. source='{Normalize(source)}' reason='{Normalize(reason)}' phaseEntryIdentity='{phaseLocalEntryReadyEvent.PhaseEntryIdentity}'.");
+            }
+
+            DebugUtility.Log<SessionTransitionOrchestrator>(
+                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayInputModeCommandResolved source='{Normalize(source)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' phaseEntryIdentity='{commandEvent.PhaseEntryIdentity}' sessionSignature='{commandEvent.SessionSignature}' phaseSignature='{commandEvent.PhaseSignature}' cycleSignature='{commandEvent.CycleSignature}' reason='{Normalize(reason)}'.",
+                DebugUtility.Colors.Info);
+
+            EventBus<SessionTransitionGameplayInputModeCommandEvent>.Raise(commandEvent);
+
+            DebugUtility.Log<SessionTransitionOrchestrator>(
+                $"[OBS][GameplaySessionFlow][SessionTransition] GameplayInputModeCommandPublished source='{Normalize(source)}' origin='{phaseLocalEntryReadyEvent.Plan.Context.Origin}' intent='{phaseLocalEntryReadyEvent.Plan.IntentKind}' phaseEntryIdentity='{commandEvent.PhaseEntryIdentity}' sessionSignature='{commandEvent.SessionSignature}' phaseSignature='{commandEvent.PhaseSignature}' cycleSignature='{commandEvent.CycleSignature}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Success);
         }
 
