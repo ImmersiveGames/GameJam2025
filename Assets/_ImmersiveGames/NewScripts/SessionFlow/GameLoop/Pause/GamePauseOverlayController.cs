@@ -87,20 +87,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         private void Start()
         {
             EnsureDependenciesInjected();
+            ValidateWiringOrFailFast("Start");
 
-            if (overlayRoot == null)
+            // Safety: no boot, deve começar oculto (root desativado no prefab).
+            // Não publica evento aqui; apenas garante estado de UI consistente.
+            if (overlayRoot.activeSelf)
             {
-                DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay] overlayRoot nao configurado no Inspector.");
-            }
-            else
-            {
-                // Safety: no boot, deve começar oculto (root desativado no prefab).
-                // Não publica evento aqui; apenas garante estado de UI consistente.
-                if (overlayRoot.activeSelf)
-                {
-                    TrySetOverlayActive(false);
-                }
+                TrySetOverlayActive(false);
             }
         }
 
@@ -140,12 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         public void Show()
         {
             EnsureDependenciesInjected();
-            if (_pauseCommands == null)
-            {
-                DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay][Intent] IPauseCommands indisponivel; intent de pause nao delegada.");
-                return;
-            }
+            ValidateWiringOrFailFast("Show");
 
             DebugUtility.Log(typeof(GamePauseOverlayController),
                 $"[OBS][PauseOverlay][Intent] Pause solicitado pelo contexto visual local. reason='{showReason}'.",
@@ -165,12 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         public void Hide()
         {
             EnsureDependenciesInjected();
-            if (_pauseCommands == null)
-            {
-                DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay][Intent] IPauseCommands indisponivel; intent de resume nao delegada.");
-                return;
-            }
+            ValidateWiringOrFailFast("Hide");
 
             DebugUtility.Log(typeof(GamePauseOverlayController),
                 $"[OBS][PauseOverlay][Intent] Resume solicitado pelo contexto visual local. reason='{hideReason}'.",
@@ -192,6 +175,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         public void ReturnToMenuFrontend()
         {
             EnsureDependenciesInjected();
+            ValidateWiringOrFailFast("ReturnToMenuFrontend");
 
             DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
                 $"[PauseOverlay][Intent] ReturnToMenuFrontend delegado ao executor real IGameNavigationService. reason='{ExitToMenuReason}'.",
@@ -227,13 +211,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         public void Toggle()
         {
             EnsureDependenciesInjected();
-
-            if (_pauseStateService == null)
-            {
-                DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay] IPauseStateService indisponivel; Toggle de intent ignorado.");
-                return;
-            }
+            ValidateWiringOrFailFast("Toggle");
 
             if (_pauseStateService.IsPaused)
             {
@@ -323,6 +301,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         private void ShowLocal(string reason)
         {
             EnsureDependenciesInjected();
+            ValidateOverlayRootOrFailFast("ShowLocal");
 
             if (!TrySetOverlayActive(true))
             {
@@ -339,6 +318,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         private void HideLocal(string reason)
         {
             EnsureDependenciesInjected();
+            ValidateOverlayRootOrFailFast("HideLocal");
 
             if (overlayRoot != null && !overlayRoot.activeSelf)
             {
@@ -368,13 +348,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         private void PublishFrontendMenuInputMode(string reason)
         {
             EnsureDependenciesInjected();
-
-            if (_sessionIntegrationInputModeEmitter == null)
-            {
-                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para FrontendMenu input mode. reason='{reason}'.");
-                return;
-            }
+            ValidateInputModeEmitterOrFailFast("PublishFrontendMenuInputMode");
 
             _sessionIntegrationInputModeEmitter.RequestFrontendMenuInputMode(reason, "PauseOverlay");
         }
@@ -382,13 +356,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
         private void PublishPauseOverlayInputMode(string reason)
         {
             EnsureDependenciesInjected();
-
-            if (_sessionIntegrationInputModeEmitter == null)
-            {
-                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para PauseOverlay input mode. reason='{reason}'.");
-                return;
-            }
+            ValidateInputModeEmitterOrFailFast("PublishPauseOverlayInputMode");
 
             _sessionIntegrationInputModeEmitter.RequestPauseOverlayInputMode(reason, "PauseOverlay");
         }
@@ -436,28 +404,78 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
             var provider = DependencyManager.Provider;
             if (provider == null)
             {
-                return;
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    "[FATAL][H1][PauseOverlay] fail_fast_dependency_injection_failed reason='dependency_provider_unavailable'.");
             }
 
             try
             {
                 provider.InjectDependencies(this);
                 _dependenciesInjected = true;
+                DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
+                    "[OBS][PauseOverlay] wiring_validated dependency_injection='ok'.",
+                    DebugUtility.Colors.Info);
             }
-            catch
+            catch (Exception ex)
             {
                 _dependenciesInjected = false;
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][PauseOverlay] fail_fast_dependency_injection_failed ex='{ex.GetType().Name}: {ex.Message}'.");
             }
+        }
+
+        private void ValidateWiringOrFailFast(string operation)
+        {
+            if (_pauseCommands == null)
+            {
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][PauseOverlay] fail_fast_missing_pause_commands operation='{operation}'.");
+            }
+
+            if (_pauseStateService == null)
+            {
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][PauseOverlay] fail_fast_missing_pause_state_service operation='{operation}'.");
+            }
+
+            if (_navigationService == null && operation == "ReturnToMenuFrontend")
+            {
+                HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                    $"[FATAL][H1][Navigation] IGameNavigationService indisponivel para ReturnToMenuFrontend. reason='{ExitToMenuReason}'.");
+            }
+
+            ValidateOverlayRootOrFailFast(operation);
+
+            DebugUtility.LogVerbose(typeof(GamePauseOverlayController),
+                $"[OBS][PauseOverlay] wiring_validated operation='{operation}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void ValidateOverlayRootOrFailFast(string operation)
+        {
+            if (overlayRoot != null)
+            {
+                return;
+            }
+
+            HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                $"[FATAL][H1][PauseOverlay] fail_fast_missing_overlay_root operation='{operation}'.");
+        }
+
+        private void ValidateInputModeEmitterOrFailFast(string operation)
+        {
+            if (_sessionIntegrationInputModeEmitter != null)
+            {
+                return;
+            }
+
+            HardFailFastH1.Trigger(typeof(GamePauseOverlayController),
+                $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel operation='{operation}'.");
         }
 
         private bool TrySetOverlayActive(bool active)
         {
-            if (overlayRoot == null)
-            {
-                DebugUtility.LogWarning(typeof(GamePauseOverlayController),
-                    "[PauseOverlay] overlayRoot nao configurado. Operacao ignorada.");
-                return false;
-            }
+            ValidateOverlayRootOrFailFast(nameof(TrySetOverlayActive));
 
             if (overlayRoot.activeSelf == active)
             {
@@ -474,10 +492,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Pause
 
         private void CloseOverlayExplicitly(string reason)
         {
-            if (overlayRoot == null)
-            {
-                return;
-            }
+            ValidateOverlayRootOrFailFast(nameof(CloseOverlayExplicitly));
 
             if (!overlayRoot.activeSelf)
             {

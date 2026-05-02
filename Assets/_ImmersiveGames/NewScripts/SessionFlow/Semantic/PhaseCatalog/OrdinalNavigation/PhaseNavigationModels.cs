@@ -15,7 +15,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
         InvalidCatalog = 5,
         SpecificPhaseIdInvalid = 6,
         SpecificPhaseMissing = 7,
-        TargetAlreadyCurrent = 8
+        TargetAlreadyCurrent = 8,
+        Deferred = 9
     }
 
     public enum PhaseNavigationRequestKind
@@ -93,6 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
         public string FromPhaseId => CurrentPhaseRef != null && CurrentPhaseRef.PhaseId.IsValid ? CurrentPhaseRef.PhaseId.Value : string.Empty;
         public string ToPhaseId => TargetPhaseRef != null && TargetPhaseRef.PhaseId.IsValid ? TargetPhaseRef.PhaseId.Value : string.Empty;
         public bool HasSelectionContext => Outcome == PhaseNavigationOutcome.Changed && SelectionContext.IsValid;
+        public bool IsDeferred => Outcome == PhaseNavigationOutcome.Deferred;
         public bool IsBlockedAtBoundary =>
             Outcome == PhaseNavigationOutcome.BlockedAtFirst ||
             Outcome == PhaseNavigationOutcome.BlockedAtLast;

@@ -55,6 +55,16 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     return;
                 }
 
+                if (mode == InputModeRequestKind.PauseOverlay)
+                {
+                    DebugUtility.LogVerbose<InputModeService>(
+                        $"[InputMode] skipped_no_player_input_pause_overlay mode='{mode}' reason='{resolvedReason}'.",
+                        DebugUtility.Colors.Info);
+                    _currentMode = mode;
+                    PublishModeChanged(previousMode, mode, resolvedReason);
+                    return;
+                }
+
                 FailFastMissingPlayerInput(mode, resolvedReason);
                 return;
             }

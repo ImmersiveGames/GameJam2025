@@ -26,8 +26,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                 return;
             }
 
-            IGameplaySessionFlowContinuityService continuityService = ResolveGlobalOrFail<IGameplaySessionFlowContinuityService>(
-                "IGameplaySessionFlowContinuityService missing from global DI before session transition composition.");
+            ISessionActivityPhaseChangeCascadeService continuityService = ResolveGlobalOrFail<ISessionActivityPhaseChangeCascadeService>(
+                "ISessionActivityPhaseChangeCascadeService missing from global DI before session transition composition.");
 
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionPlanResolver>(out var existingResolver) || existingResolver == null)
             {
@@ -43,8 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     new SessionTransitionAdvancePhaseExecutionService(
                         ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before advance phase execution service composition."),
                         ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before advance phase execution service composition."),
-                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before advance phase execution service composition."),
-                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before advance phase execution service composition.")));
+                        continuityService));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionAdvancePhaseExecutionService registered in global DI.",
                     DebugUtility.Colors.Info);
@@ -56,8 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     new SessionTransitionPhaseOrdinalNavigationExecutionService(
                         ResolveGlobalOrFail<IRestartContextService>("IRestartContextService missing from global DI before phase ordinal navigation execution service composition."),
                         ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before phase ordinal navigation execution service composition."),
-                        ResolveGlobalOrFail<GameplayPhaseFlowService>("GameplayPhaseFlowService missing from global DI before phase ordinal navigation execution service composition."),
-                        ResolveGlobalOrFail<ISceneCompositionExecutor>("ISceneCompositionExecutor missing from global DI before phase ordinal navigation execution service composition.")));
+                        continuityService));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] ISessionTransitionPhaseOrdinalNavigationExecutionService registered in global DI.",
                     DebugUtility.Colors.Info);
@@ -118,6 +116,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     "IGameplayParticipationFlowService missing from global DI before SessionTransitionOrchestrator composition.");
                 IIntroStageOperationalContractResolver introStageOperationalContractResolver = ResolveGlobalOrFail<IIntroStageOperationalContractResolver>(
                     "IIntroStageOperationalContractResolver missing from global DI before SessionTransitionOrchestrator composition.");
+                ISceneCompositionExecutor sceneCompositionExecutor = ResolveGlobalOrFail<ISceneCompositionExecutor>(
+                    "ISceneCompositionExecutor missing from global DI before SessionTransitionOrchestrator composition.");
 
                 DependencyManager.Provider.RegisterGlobal(new SessionTransitionOrchestrator(
                     planResolver,
@@ -126,7 +126,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     routeActorSetContext,
                     phaseRuntimeService,
                     participationFlowService,
-                    introStageOperationalContractResolver));
+                    introStageOperationalContractResolver,
+                    sceneCompositionExecutor,
+                    ResolveGlobalOrFail<IPhaseCatalogNavigationService>("IPhaseCatalogNavigationService missing from global DI before SessionTransitionOrchestrator composition.")));
                 DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
                     "[OBS][GameplaySessionFlow][SessionTransition] SessionTransitionOrchestrator registered in global DI.",
                     DebugUtility.Colors.Info);

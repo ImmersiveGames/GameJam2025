@@ -6,12 +6,15 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
@@ -190,49 +193,49 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
     {
         public static void EnsureComposed(BootstrapConfigAsset bootstrapConfig)
         {
-            EnsureGameplaySessionFlowContinuityService(bootstrapConfig);
+            EnsureSessionActivityPhaseChangeCascadeService(bootstrapConfig);
         }
 
-        private static void EnsureGameplaySessionFlowContinuityService(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsureSessionActivityPhaseChangeCascadeService(BootstrapConfigAsset bootstrapConfig)
         {
-            if (DependencyManager.Provider.TryGetGlobal<IGameplaySessionFlowContinuityService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<ISessionActivityPhaseChangeCascadeService>(out var existing) && existing != null)
             {
                 return;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationNavigationHandoffService>(out var navigationHandoffService) || navigationHandoffService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationNavigationHandoffService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISessionIntegrationNavigationHandoffService ausente no DI global antes de registrar o ISessionActivityPhaseChangeCascadeService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IRestartContextService>(out var restartContextService) || restartContextService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IRestartContextService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IRestartContextService ausente no DI global antes de registrar o ISessionActivityPhaseChangeCascadeService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IPhaseResetOperationalHandoffService>(out var phaseResetOperationalHandoffService) || phaseResetOperationalHandoffService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseResetOperationalHandoffService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseResetOperationalHandoffService ausente no DI global antes de registrar o ISessionActivityPhaseChangeCascadeService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IPhaseCatalogNavigationService>(out var phaseCatalogNavigationService) || phaseCatalogNavigationService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseCatalogNavigationService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IPhaseCatalogNavigationService ausente no DI global antes de registrar o ISessionActivityPhaseChangeCascadeService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<GameplayPhaseFlowService>(out var phaseFlowService) || phaseFlowService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] GameplayPhaseFlowService ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] GameplayPhaseFlowService ausente no DI global antes de registrar o ISessionActivityPhaseChangeCascadeService.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneCompositionExecutor>(out var sceneCompositionExecutor) || sceneCompositionExecutor == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISceneCompositionExecutor ausente no DI global antes de registrar o IGameplaySessionFlowContinuityService.");
+                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] ISceneCompositionExecutor ausente no DI global antes de registrar o ISessionActivityPhaseChangeCascadeService.");
             }
 
             IPhaseResetExecutor phaseResetExecutor = new PhaseResetExecutor(restartContextService, phaseResetOperationalHandoffService);
 
-            var service = new GameplaySessionFlowContinuityService(
+            var service = new SessionActivityPhaseChangeCascadeService(
                 navigationHandoffService,
                 restartContextService,
                 phaseResetExecutor,
@@ -240,10 +243,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 phaseFlowService,
                 sceneCompositionExecutor);
 
-            DependencyManager.Provider.RegisterGlobal<IGameplaySessionFlowContinuityService>(service);
+            DependencyManager.Provider.RegisterGlobal<ISessionActivityPhaseChangeCascadeService>(service);
 
             DebugUtility.LogVerbose(typeof(SessionIntegrationContinuityRuntimeComposition),
-                "[OBS][SessionIntegration][Operational] IGameplaySessionFlowContinuityService registrado como continuity seam canonical.",
+                "[OBS][SessionIntegration][Operational] ISessionActivityPhaseChangeCascadeService registrado como continuity seam canonical.",
                 DebugUtility.Colors.Info);
         }
 

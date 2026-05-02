@@ -71,15 +71,28 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNa
             }
 
             ValidateCurrentSnapshotMatchesCatalogOrFail(currentSnapshot, navigationPlan, reason);
-            _phaseCatalogNavigationService.Commit(navigationPlan);
 
             SessionTransitionContext context = BuildSessionTransitionContextOrFail(request, navigationPlan, reason);
-            await _sessionTransitionOrchestrator.ExecuteAsync(context, ct);
+            SessionTransitionExecutionDispatchResult dispatchResult = await _sessionTransitionOrchestrator.ExecuteAsync(context, ct);
 
-            _phaseCatalogNavigationService.ClearPendingTarget(reason);
+            if (dispatchResult.Status == SessionTransitionExecutionDispatchStatus.DeferredPipelineHandoff)
+            {
+                DebugUtility.Log<PhaseOrdinalNavigationRequestService>(
+                    $"[OBS][QA][PhaseNavigation] ordinal_navigation_deferred_to_session_activity_cascade kind='{request.Kind}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(navigationPlan.TargetPhaseRef)}' routedTo='SessionTransitionOrchestrator' phaseLocalEntryPublisher='SessionTransitionOrchestrator' reason='{reason}' detail='{Normalize(dispatchResult.Detail)}'.",
+                    DebugUtility.Colors.Info);
+
+                return new PhaseNavigationResult(
+                    navigationPlan.Request,
+                    PhaseNavigationOutcome.Deferred,
+                    navigationPlan.CurrentCommitted,
+                    navigationPlan.CatalogName,
+                    navigationPlan.TraversalMode,
+                    navigationPlan.WasWrapped,
+                    default);
+            }
 
             DebugUtility.Log<PhaseOrdinalNavigationRequestService>(
-                $"[OBS][QA][PhaseNavigation] ordinal_navigation_completed kind='{request.Kind}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(navigationPlan.TargetPhaseRef)}' routedTo='SessionTransitionOrchestrator' phaseLocalEntryPublisher='SessionTransitionOrchestrator' reason='{reason}'.",
+                $"[OBS][QA][PhaseNavigation] ordinal_navigation_completed kind='{request.Kind}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(navigationPlan.TargetPhaseRef)}' routedTo='SessionTransitionOrchestrator' phaseLocalEntryPublisher='SessionTransitionOrchestrator' reason='{reason}' executionStatus='{dispatchResult.Status}'.",
                 DebugUtility.Colors.Success);
 
             return new PhaseNavigationResult(

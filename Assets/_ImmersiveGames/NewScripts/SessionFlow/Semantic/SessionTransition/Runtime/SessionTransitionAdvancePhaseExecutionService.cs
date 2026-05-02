@@ -1,12 +1,11 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
@@ -16,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 {
     public interface ISessionTransitionAdvancePhaseExecutionService
     {
-        Task<PhaseNavigationResult> AdvanceAsync(SessionTransitionPlan plan, CancellationToken ct = default);
+        PhaseNavigationResult Advance(SessionTransitionPlan plan, CancellationToken ct = default);
     }
 
     /// <summary>
@@ -30,22 +29,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
         private readonly IRestartContextService _restartContextService;
         private readonly IPhaseCatalogNavigationService _phaseCatalogNavigationService;
-        private readonly GameplayPhaseFlowService _gameplayPhaseFlowService;
-        private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
+        private readonly ISessionActivityPhaseChangeCascadeService _cascadeService;
 
         public SessionTransitionAdvancePhaseExecutionService(
             IRestartContextService restartContextService,
             IPhaseCatalogNavigationService phaseCatalogNavigationService,
-            GameplayPhaseFlowService gameplayPhaseFlowService,
-            ISceneCompositionExecutor sceneCompositionExecutor)
+            ISessionActivityPhaseChangeCascadeService cascadeService)
         {
             _restartContextService = restartContextService ?? throw new ArgumentNullException(nameof(restartContextService));
             _phaseCatalogNavigationService = phaseCatalogNavigationService ?? throw new ArgumentNullException(nameof(phaseCatalogNavigationService));
-            _gameplayPhaseFlowService = gameplayPhaseFlowService ?? throw new ArgumentNullException(nameof(gameplayPhaseFlowService));
-            _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
+            _cascadeService = cascadeService ?? throw new ArgumentNullException(nameof(cascadeService));
         }
 
-        public async Task<PhaseNavigationResult> AdvanceAsync(SessionTransitionPlan plan, CancellationToken ct = default)
+        public PhaseNavigationResult Advance(SessionTransitionPlan plan, CancellationToken ct = default)
         {
             if (!plan.IsValid || plan.Execution.Kind != SessionTransitionExecutionKind.NextPhase)
             {
@@ -62,73 +58,28 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             }
 
             ValidateCurrentSnapshotMatchesCatalogOrFail(currentSnapshot, navigationPlan, reason);
-            _phaseCatalogNavigationService.Commit(navigationPlan);
 
-            PhaseNavigationSelectionContext selectionContext = await ApplyTargetPhaseAsync(
-                navigationPlan,
-                currentSnapshot,
-                reason,
-                Source,
-                ct);
+            SessionActivityPhaseChangeCascadeResolution resolution = _cascadeService.BeginPhaseChangeCascade(
+                operation: "AdvancePhase",
+                navigationKind: PhaseOrdinalNavigationKind.Next,
+                direction: PhaseNavigationDirection.Next,
+                targetPhaseRef: navigationPlan.TargetPhaseRef,
+                navigationPlan: navigationPlan,
+                reason: reason,
+                source: Source,
+                plan: plan,
+                ct: ct);
 
-            _phaseCatalogNavigationService.ClearPendingTarget(reason);
+            if (resolution.ResultPresentationDisposition == SessionActivityPhaseChangeCascadeStageDisposition.Execute)
+            {
+                _cascadeService.OpenPhaseChangeCascadeResultPresentation(
+                    resolution,
+                    navigationPlan,
+                    plan,
+                    Source);
+            }
 
-            DebugUtility.Log<SessionTransitionAdvancePhaseExecutionService>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] advance_phase_content_apply_completed source='{Source}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(navigationPlan.TargetPhaseRef)}' reason='{reason}'.",
-                DebugUtility.Colors.Success);
-
-            return new PhaseNavigationResult(
-                navigationPlan.Request,
-                PhaseNavigationOutcome.Changed,
-                navigationPlan.CurrentCommitted,
-                navigationPlan.CatalogName,
-                navigationPlan.TraversalMode,
-                navigationPlan.WasWrapped,
-                selectionContext);
-        }
-
-        private async Task<PhaseNavigationSelectionContext> ApplyTargetPhaseAsync(
-            PhaseCatalogNavigationPlan navigationPlan,
-            GameplayStartSnapshot currentSnapshot,
-            string reason,
-            string source,
-            CancellationToken ct)
-        {
-            ct.ThrowIfCancellationRequested();
-
-            PhaseDefinitionAsset targetPhaseRef = navigationPlan.TargetPhaseRef;
-            PhaseDefinitionSelectedEvent phaseSelectedEvent = _gameplayPhaseFlowService.PublishPhaseDefinitionSelected(
-                targetPhaseRef,
-                currentSnapshot.MacroRouteId,
-                currentSnapshot.MacroRouteRef,
-                reason);
-
-            SceneCompositionRequest applyRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
-                targetPhaseRef,
-                reason,
-                phaseSelectedEvent.SelectionSignature,
-                forceFullReload: false);
-
-            DebugUtility.Log<SessionTransitionAdvancePhaseExecutionService>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] advance_phase_content_apply_started source='{source}' fromPhase='{DescribePhase(navigationPlan.CurrentCommitted)}' toPhase='{DescribePhase(targetPhaseRef)}' scenesToLoad=[{string.Join(",", applyRequest.ScenesToLoad)}] reason='{reason}'.",
-                DebugUtility.Colors.Info);
-
-            await _sceneCompositionExecutor.ApplyAsync(applyRequest);
-
-            PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
-                targetPhaseRef,
-                applyRequest.ScenesToLoad,
-                applyRequest.ActiveScene,
-                source);
-
-            return new PhaseNavigationSelectionContext(
-                currentSnapshot,
-                targetPhaseRef,
-                phaseSelectedEvent,
-                reason,
-                ResolveTargetSceneName(applyRequest),
-                navigationPlan.Direction,
-                forceFullReload: false);
+            return BuildDeferredResult(navigationPlan);
         }
 
         private GameplayStartSnapshot ResolveCurrentSnapshotOrFail(string reason)
@@ -168,14 +119,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 default);
         }
 
-        private static string ResolveTargetSceneName(SceneCompositionRequest applyRequest)
+        private static PhaseNavigationResult BuildDeferredResult(PhaseCatalogNavigationPlan navigationPlan)
         {
-            if (applyRequest.ScenesToLoad != null && applyRequest.ScenesToLoad.Count > 0)
-            {
-                return applyRequest.ScenesToLoad[0];
-            }
-
-            return applyRequest.ActiveScene;
+            return new PhaseNavigationResult(
+                navigationPlan.Request,
+                PhaseNavigationOutcome.Deferred,
+                navigationPlan.CurrentCommitted,
+                navigationPlan.CatalogName,
+                navigationPlan.TraversalMode,
+                navigationPlan.WasWrapped,
+                default);
         }
 
         private static string DescribePhase(PhaseDefinitionAsset phase)

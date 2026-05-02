@@ -33,6 +33,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
         }
 
         [Serializable]
+        public sealed class RunResultStageBlock
+        {
+            public bool hasRunResultStage;
+            public List<string> parameters = new();
+        }
+
+        [Serializable]
         public sealed class PhaseContentEntry
         {
             public string localId = string.Empty;
@@ -46,10 +53,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
         [Header("Content")]
         [SerializeField] private PhaseContentBlock content = new();
 
+        [Header("Result Presentation")]
+        [SerializeField] private RunResultStageBlock runResultStage = new();
+
         public PhaseIdentityBlock Identity => identity;
         public PhaseContentBlock Content => content;
+        public RunResultStageBlock RunResultStage => runResultStage;
 
         public PhaseDefinitionId PhaseId => identity != null ? identity.phaseId : PhaseDefinitionId.None;
+        public bool HasPhaseResultPresentation => runResultStage != null && runResultStage.hasRunResultStage;
+        public bool HasResultPresentation => HasPhaseResultPresentation;
 
         public void ValidateOrFail(string owner = null)
         {
@@ -75,6 +88,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
             }
 
             ValidateContentBlock(assetOwner);
+            ValidateResultPresentationBlock();
         }
 
 #if UNITY_EDITOR
@@ -114,6 +128,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring
                         throw new InvalidOperationException($"[FATAL][Config][PhaseDefinition] Content entry missing role. asset='{assetOwner}', phaseId='{PhaseId}', localId='{entry.localId}'.");
                     }
                 });
+        }
+
+        private void ValidateResultPresentationBlock()
+        {
+            if (runResultStage == null)
+            {
+                runResultStage = new RunResultStageBlock();
+            }
+
+            if (runResultStage.parameters == null)
+            {
+                runResultStage.parameters = new List<string>();
+            }
         }
 
         private static void ValidateEntries<T>(

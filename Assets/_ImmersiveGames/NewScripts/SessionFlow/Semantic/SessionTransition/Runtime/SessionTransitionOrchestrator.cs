@@ -7,22 +7,26 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Continuity;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.OrdinalNavigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runtime
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SessionTransitionOrchestrator
+    public sealed class SessionTransitionOrchestrator : IDisposable
     {
         private const string SessionTransitionContextSource = "SessionTransitionContext";
 
@@ -33,6 +37,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
         private readonly IGameplayParticipationFlowService _participationFlowService;
         private readonly IIntroStageOperationalContractResolver _introStageOperationalContractResolver;
+        private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
+        private readonly IPhaseCatalogNavigationService _phaseCatalogNavigationService;
+        private readonly EventBinding<SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent> _phaseChangeCascadeRequestedBinding;
+        private bool _disposed;
 
         public SessionTransitionOrchestrator(
             SessionTransitionPlanResolver planResolver,
@@ -41,7 +49,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             ISceneFlowRouteActorSetRefContext routeActorSetContext,
             IGameplayPhaseRuntimeService phaseRuntimeService,
             IGameplayParticipationFlowService participationFlowService,
-            IIntroStageOperationalContractResolver introStageOperationalContractResolver)
+            IIntroStageOperationalContractResolver introStageOperationalContractResolver,
+            ISceneCompositionExecutor sceneCompositionExecutor,
+            IPhaseCatalogNavigationService phaseCatalogNavigationService)
         {
             _planResolver = planResolver ?? throw new ArgumentNullException(nameof(planResolver));
             _executionPort = executionPort ?? throw new ArgumentNullException(nameof(executionPort));
@@ -50,9 +60,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _phaseRuntimeService = phaseRuntimeService ?? throw new ArgumentNullException(nameof(phaseRuntimeService));
             _participationFlowService = participationFlowService ?? throw new ArgumentNullException(nameof(participationFlowService));
             _introStageOperationalContractResolver = introStageOperationalContractResolver ?? throw new ArgumentNullException(nameof(introStageOperationalContractResolver));
+            _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
+            _phaseCatalogNavigationService = phaseCatalogNavigationService ?? throw new ArgumentNullException(nameof(phaseCatalogNavigationService));
+            _phaseChangeCascadeRequestedBinding = new EventBinding<SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent>(OnPhaseChangeCascadePipelineHandoffRequested);
+            EventBus<SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent>.Register(_phaseChangeCascadeRequestedBinding);
         }
 
-        public async Task ExecuteAsync(SessionTransitionContext context, CancellationToken ct = default)
+        public async Task<SessionTransitionExecutionDispatchResult> ExecuteAsync(SessionTransitionContext context, CancellationToken ct = default)
         {
             if (!context.IsValid)
             {
@@ -85,18 +99,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 : await _executionPort.DispatchAsync(plan, ct);
 
             bool resultAllowsPhaseLocalEntryReady = executionResult.AllowsPhaseLocalEntryReady;
+            bool handlesImmediatePhaseLocalEntryReady = usesGameplayPreparePort;
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
                 $"[OBS][GameplaySessionFlow][SessionTransition] ExecutionDispatchCompleted source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' runContinuation='{plan.Context.ResolvedContinuation}' composition='{plan.Composition}' execution='{plan.Execution}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='false' payloadSource='<not_resolved>' dispatchPort='{dispatchPortName}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.",
                 resultAllowsPhaseLocalEntryReady ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
-            if (expectedPhaseLocalEntryReady && !resultAllowsPhaseLocalEntryReady)
+            if (handlesImmediatePhaseLocalEntryReady && expectedPhaseLocalEntryReady && !resultAllowsPhaseLocalEntryReady)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
                     $"[FATAL][H1][SessionTransition] Execution contract expects PhaseLocalEntryReady, but the operational result did not allow publication. source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.");
             }
 
-            if (!expectedPhaseLocalEntryReady && resultAllowsPhaseLocalEntryReady)
+            if (handlesImmediatePhaseLocalEntryReady && !expectedPhaseLocalEntryReady && resultAllowsPhaseLocalEntryReady)
             {
                 HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
                     $"[FATAL][H1][SessionTransition] Execution contract does not expect PhaseLocalEntryReady, but the operational result allowed publication. source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' wasExecuted='{executionResult.WasExecuted}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' failureReason='{Normalize(executionResult.FailureReason)}' detail='{Normalize(executionResult.Detail)}' reason='{normalizedReason}'.");
@@ -107,14 +122,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 DebugUtility.Log<SessionTransitionOrchestrator>(
                     $"[OBS][GameplaySessionFlow][SessionTransition] SkipNoExecution source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='false' payloadSource='<none>' reason='{normalizedReason}'.",
                     DebugUtility.Colors.Warning);
-                return;
+                return executionResult;
             }
 
             bool publishedPhaseLocalEntryReady = false;
             string resolvedPayloadSource = "<none>";
             string executeTraceId = ObservabilityTraceFormatter.BuildCycleTraceId(signature);
 
-            if (expectedPhaseLocalEntryReady && resultAllowsPhaseLocalEntryReady)
+            if (handlesImmediatePhaseLocalEntryReady && expectedPhaseLocalEntryReady && resultAllowsPhaseLocalEntryReady)
             {
                 bool publishedFromDispatchResult = executionResult.TryGetPhaseLocalEntryReadyEvent(out var phaseLocalEntryReadyEvent);
                 resolvedPayloadSource = publishedFromDispatchResult ? "dispatch_result" : "post_dispatch_runtime";
@@ -150,10 +165,128 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
                 publishedPhaseLocalEntryReady = true;
             }
+            else if (!handlesImmediatePhaseLocalEntryReady && executionResult.WasExecuted)
+            {
+                DebugUtility.Log<SessionTransitionOrchestrator>(
+                    $"[OBS][GameplaySessionFlow][SessionTransition] OrdinalNavigationPipelineDelegated source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' reason='{normalizedReason}' detail='{Normalize(executionResult.Detail)}'.",
+                    DebugUtility.Colors.Info);
+            }
 
             DebugUtility.Log<SessionTransitionOrchestrator>(
-                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted traceId='{executeTraceId}' source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' runContinuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='{publishedPhaseLocalEntryReady}' payloadSource='{resolvedPayloadSource}' reason='{normalizedReason}'.",
+                $"[OBS][GameplaySessionFlow][SessionTransition] ExecuteCompleted traceId='{executeTraceId}' source='{SessionTransitionContextSource}' origin='{plan.Context.Origin}' intent='{plan.IntentKind}' signature='{signature}' runContinuation='{plan.Context.ResolvedContinuation}' executionKind='{plan.Execution.Kind}' executionStatus='{executionResult.Status}' expectedPhaseLocalEntryReady='{expectedPhaseLocalEntryReady}' resultAllowsPhaseLocalEntryReady='{resultAllowsPhaseLocalEntryReady}' published='{publishedPhaseLocalEntryReady}' payloadSource='{resolvedPayloadSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
+
+            return executionResult;
+        }
+
+        public void PublishPhaseLocalEntryReadyPipelineForPlan(
+            SessionTransitionPlan plan,
+            string source,
+            string reason,
+            string dispatchPortName = "SessionActivityPhaseChangeCascade")
+        {
+            SessionTransitionPhaseLocalEntryReadyEvent phaseLocalEntryReadyEvent = BuildPlanPhaseLocalEntryReadyEventOrFail(
+                plan,
+                source);
+
+            PublishIntroStageActivationOrFail(
+                phaseLocalEntryReadyEvent,
+                source,
+                reason);
+
+            PublishPhaseLocalEntryReadyOrFail(
+                phaseLocalEntryReadyEvent,
+                source,
+                dispatchPortName,
+                "cascade_accepted",
+                reason,
+                publishedFromDispatchResult: false,
+                expectedPhaseLocalEntryReady: true,
+                resultAllowsPhaseLocalEntryReady: true);
+
+            PublishGameplayInputModeCommandOrFail(
+                phaseLocalEntryReadyEvent,
+                source,
+                reason);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            EventBus<SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent>.Unregister(_phaseChangeCascadeRequestedBinding);
+        }
+
+        private async void OnPhaseChangeCascadePipelineHandoffRequested(SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent evt)
+        {
+            try
+            {
+                await ApplyPhaseChangePipelineHandoffAsync(evt);
+            }
+            catch (Exception ex)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Phase change cascade handoff requested handler failed. operation='{evt?.Resolution.Operation}' reason='{Normalize(evt?.Resolution.Reason)}' exceptionType='{ex.GetType().Name}' exceptionMessage='{Normalize(ex.Message)}'.",
+                    ex);
+            }
+        }
+
+        private async Task ApplyPhaseChangePipelineHandoffAsync(SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent evt)
+        {
+            if (_disposed || evt == null || !evt.Resolution.IsValid || !evt.Plan.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Phase change cascade handoff request invalid. operation='{evt?.Resolution.Operation}' reason='{Normalize(evt?.Resolution.Reason)}'.");
+            }
+
+            PhaseDefinitionAsset targetPhaseRef = evt.Resolution.TargetPhaseRef;
+            string source = Normalize(evt.Source);
+            string reason = Normalize(evt.Resolution.Reason);
+            string correlationId = string.IsNullOrWhiteSpace(evt.Plan.ContextSignature)
+                ? evt.Resolution.CurrentPhaseRuntimeSignature
+                : evt.Plan.ContextSignature;
+
+            SceneCompositionRequest applyRequest = PhaseDefinitionSceneCompositionRequestFactory.CreateApplyRequest(
+                targetPhaseRef,
+                reason,
+                correlationId,
+                forceFullReload: false);
+
+            SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(applyRequest, CancellationToken.None);
+            if (!compositionResult.Success)
+            {
+                HardFailFastH1.Trigger(typeof(SessionTransitionOrchestrator),
+                    $"[FATAL][H1][SessionTransition] Phase change pipeline handoff accepted scene composition failed. targetPhase='{evt.Resolution.TargetPhaseId}' reason='{reason}' correlationId='{correlationId}'.");
+            }
+
+            _phaseCatalogNavigationService.Commit(evt.NavigationPlan);
+
+            try
+            {
+                DebugUtility.Log<SessionTransitionOrchestrator>(
+                    $"[OBS][GameplaySessionFlow][SessionTransition] PhaseChangePipelineHandoffAccepted source='{source}' operation='{evt.Resolution.Operation}' targetPhase='{evt.Resolution.TargetPhaseId}' reason='{reason}' correlationId='{correlationId}'.",
+                    DebugUtility.Colors.Success);
+
+                PhaseContentSceneRuntimeApplier.RecordAppliedPhaseDefinition(
+                    targetPhaseRef,
+                    applyRequest.ScenesToLoad,
+                    applyRequest.ActiveScene,
+                    source);
+
+                PublishPhaseLocalEntryReadyPipelineForPlan(
+                    evt.Plan,
+                    source,
+                    reason,
+                    dispatchPortName: "SessionActivityPhaseChangeCascade");
+            }
+            finally
+            {
+                _phaseCatalogNavigationService.ClearPendingTarget(reason);
+            }
         }
 
         private void PublishIntroStageActivationOrFail(

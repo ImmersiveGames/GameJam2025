@@ -7,6 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts
         Victory = 1,
         Defeat = 2,
         Exit = 3,
+        PhaseChange = 4,
     }
 
     public enum RunResultStageCompletionKind

@@ -39,6 +39,16 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         private const float ButtonHeight = 32f;
         private const float ButtonSpacing = 6f;
         private const float SectionSpacing = 8f;
+        private const string CommandResultChanged = "Changed";
+        private const string CommandResultRejectedNotReady = "RejectedNotReady";
+        private const string CommandResultRejectedAlreadyExecuting = "RejectedAlreadyExecuting";
+        private const string CommandResultRejectedInvalidInput = "RejectedInvalidInput";
+        private const string CommandResultFailed = "Failed";
+        private const string ExecutionBlockedReasonExecuting = "executing";
+        private const string ExecutionBlockedReasonWaitingForOperationalReady = "waiting_for_operational_ready";
+        private const string ExecutionBlockedReasonAlreadyExecuting = "already_executing";
+        private const string ExecutionBlockedReasonPipelineRejected = "pipeline_rejected";
+        private const string ExecutionBlockedReasonFailedException = "failed_exception";
 
         [Header("Layout")]
         [SerializeField] private Rect panelRect = new(0f, 0f, PanelWidth, PanelHeight);
@@ -74,6 +84,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         private string _resolvedNextPhaseId = string.Empty;
         private string _resolvedPreviousPhaseId = string.Empty;
         private string _executionBlockedReason = string.Empty;
+        private string _executionBlockedReasonOverride = string.Empty;
         private string _lastCommandResult = "<none>";
         private string _lastCommandRejectedReason = "<none>";
         private string _operationalStateReason = string.Empty;
@@ -121,6 +132,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             UnregisterOperationalStateSubscription();
             UnregisterInteractionReadinessSubscription();
             _isExecutingRequest = false;
+            _executionBlockedReasonOverride = string.Empty;
         }
 
         private void OnDestroy()
@@ -165,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             string nextLabel = BuildNavigationButtonLabel("Next", _catalogCapabilityNext);
 
             GUILayout.BeginHorizontal();
-            GUI.enabled = previousEnabled && _executionAllowedNow && _catalogCapabilityPrevious && !_isExecutingRequest;
+            GUI.enabled = previousEnabled && _catalogCapabilityPrevious;
             if (GUILayout.Button(previousLabel, _buttonStyle, GUILayout.Height(42f)))
             {
                 _ = ExecuteOrdinalNavigationAsync(
@@ -176,7 +188,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
                     action: "PreviousPhaseOrdinal");
             }
 
-            GUI.enabled = previousEnabled && _executionAllowedNow && _catalogCapabilityNext && !_isExecutingRequest;
+            GUI.enabled = previousEnabled && _catalogCapabilityNext;
             if (GUILayout.Button(nextLabel, _buttonStyle, GUILayout.Height(42f)))
             {
                 _ = ExecuteOrdinalNavigationAsync(
@@ -187,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
                     action: "NextPhaseOrdinal");
             }
 
-            GUI.enabled = previousEnabled && _executionAllowedNow && !_isExecutingRequest;
+            GUI.enabled = previousEnabled;
             if (GUILayout.Button("Go First", _buttonStyle, GUILayout.Height(42f)))
             {
                 _ = ExecuteOrdinalNavigationAsync(
@@ -206,8 +218,6 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             GUILayout.BeginHorizontal();
             _specificPhaseId = GUILayout.TextField(_specificPhaseId ?? string.Empty, GUILayout.ExpandWidth(true));
             bool specificButtonEnabled = previousEnabled &&
-                                         _executionAllowedNow &&
-                                         !_isExecutingRequest &&
                                          !string.IsNullOrWhiteSpace(_specificPhaseId);
             GUI.enabled = specificButtonEnabled;
             if (GUILayout.Button("Go To", _buttonStyle, GUILayout.Height(42f), GUILayout.Width(88f)))
@@ -232,16 +242,21 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
         {
             if (_isExecutingRequest)
             {
+                _lastCommandResult = CommandResultRejectedAlreadyExecuting;
+                _lastCommandRejectedReason = ExecutionBlockedReasonAlreadyExecuting;
+                _executionBlockedReasonOverride = ExecutionBlockedReasonAlreadyExecuting;
                 DebugUtility.LogVerbose<PhaseNavigationQaPanel>(
-                    $"[OBS][QA][PhaseNavigation][Execute] action='{action}' guard_ignored='true' kind='{kind}' reason='{reason}'.",
+                    $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' kind='{kind}' target='{resolvedTarget}' outcome='RejectedAlreadyExecuting' reason='{ExecutionBlockedReasonAlreadyExecuting}' source='PhaseOrdinalNavigationRequestService' requestReason='{reason}'.",
                     DebugUtility.Colors.Info);
+                RefreshView($"{action}/AlreadyExecuting");
                 return;
             }
 
             if (!_executionAllowedNow)
             {
-                _lastCommandResult = "RejectedNotReady";
+                _lastCommandResult = CommandResultRejectedNotReady;
                 _lastCommandRejectedReason = _executionBlockedReason;
+                _executionBlockedReason = ExecutionBlockedReasonWaitingForOperationalReady;
                 DebugUtility.LogWarning<PhaseNavigationQaPanel>(
                     $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' kind='{kind}' target='{resolvedTarget}' outcome='RejectedNotReady' reason='{_executionBlockedReason}' source='PhaseOrdinalNavigationRequestService' requestReason='{reason}'.");
                 RefreshView($"{action}/RejectedNotReady");
@@ -260,6 +275,10 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             try
             {
                 DebugUtility.Log<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationRequestStarted action='{action}' kind='{kind}' target='{resolvedTarget}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+
+                DebugUtility.Log<PhaseNavigationQaPanel>(
                     $"[OBS][QA][PhaseNavigation][Execute] action='{action}' stage='OrdinalNavigationRequested' kind='{kind}' currentPhase='{DescribePhaseId(GetCurrentPhase() != null ? GetCurrentPhase().PhaseId : default)}' target='{resolvedTarget}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
@@ -267,16 +286,26 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
                     new PhaseOrdinalNavigationRequest(kind, targetPhaseId, reason),
                     CancellationToken.None);
 
+                DebugUtility.Log<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationRequestCompleted action='{action}' kind='{kind}' target='{resolvedTarget}' outcome='{result.Outcome}' reason='{reason}'.",
+                    result.Outcome == PhaseNavigationOutcome.Changed ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+
                 RecordAndLogCommandResult(action, result, resolvedTarget, reason);
             }
             catch (Exception ex)
             {
+                DebugUtility.LogWarning<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationRequestFailed action='{action}' kind='{kind}' target='{resolvedTarget}' reason='{reason}' exceptionType='{ex.GetType().Name}' exceptionMessage='{ex.Message}'.");
                 RecordAndLogCommandFailure(action, resolvedTarget, reason, ex);
                 RefreshView($"{action}/Failed");
             }
             finally
             {
                 _isExecutingRequest = false;
+                _executionBlockedReasonOverride = string.Empty;
+                DebugUtility.Log<PhaseNavigationQaPanel>(
+                    $"[OBS][QA][PhaseNavigation] QaNavigationRequestFinallyCleared action='{action}' kind='{kind}' target='{resolvedTarget}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
                 RefreshView($"{action}/Finished");
             }
         }
@@ -338,6 +367,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             }
 
             _lastCommandRejectedReason = result.Outcome.ToString();
+            _executionBlockedReason = ExecutionBlockedReasonPipelineRejected;
             DebugUtility.LogWarning<PhaseNavigationQaPanel>(
                 $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' target='{target}' outcome='{result.Outcome}' reason='{_lastCommandRejectedReason}' source='PhaseCatalog' requestReason='{reason}'.");
         }
@@ -345,8 +375,9 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
 
         private void RecordAndLogCommandFailure(string action, string target, string reason, Exception ex)
         {
-            _lastCommandResult = "Failed";
+            _lastCommandResult = CommandResultFailed;
             _lastCommandRejectedReason = $"{ex.GetType().Name}: {ex.Message}";
+            _executionBlockedReason = ExecutionBlockedReasonFailedException;
             DebugUtility.LogWarning<PhaseNavigationQaPanel>(
                 $"[OBS][QA][PhaseNavigation] QaNavigationCommandRejected action='{action}' target='{target}' outcome='Failed' reason='{_lastCommandRejectedReason}' source='PhaseCatalog' requestReason='{reason}'.");
         }
@@ -628,9 +659,29 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
             bool canResolveFromCatalog,
             bool isGameplayActive)
         {
+            if (!string.IsNullOrWhiteSpace(_executionBlockedReasonOverride))
+            {
+                return _executionBlockedReasonOverride;
+            }
+
             if (currentPhase == null)
             {
                 return "no_current_phase";
+            }
+
+            if (_isExecutingRequest)
+            {
+                return ExecutionBlockedReasonExecuting;
+            }
+
+            if (string.Equals(_lastCommandResult, CommandResultFailed, StringComparison.Ordinal))
+            {
+                return ExecutionBlockedReasonFailedException;
+            }
+
+            if (string.Equals(_lastCommandResult, CommandResultRejectedNotReady, StringComparison.Ordinal))
+            {
+                return ExecutionBlockedReasonWaitingForOperationalReady;
             }
 
             if (!canResolveFromCatalog)
@@ -655,7 +706,19 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.QA
 
             if (!isGameplayActive)
             {
-                return "waiting_for_operational_ready";
+                return ExecutionBlockedReasonWaitingForOperationalReady;
+            }
+
+            if (_executionAllowedNow)
+            {
+                return "ready";
+            }
+
+            if (!string.IsNullOrWhiteSpace(_lastCommandResult) &&
+                !string.Equals(_lastCommandResult, "<none>", StringComparison.Ordinal) &&
+                !string.Equals(_lastCommandResult, CommandResultChanged, StringComparison.Ordinal))
+            {
+                return ExecutionBlockedReasonPipelineRejected;
             }
 
             return "not_ready";

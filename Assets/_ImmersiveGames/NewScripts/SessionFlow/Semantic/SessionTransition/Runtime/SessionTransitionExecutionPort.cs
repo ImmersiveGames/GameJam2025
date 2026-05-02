@@ -19,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         Rejected = 3,
         Unsupported = 4,
         Unconfirmed = 5,
+        DeferredPipelineHandoff = 6,
     }
 
     public readonly struct SessionTransitionExecutionDispatchResult
@@ -150,6 +151,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 phaseLocalEntryReadyEvent: default);
         }
 
+        public static SessionTransitionExecutionDispatchResult DeferredPipelineHandoff(
+            SessionTransitionExecutionKind executionKind,
+            string detail)
+        {
+            return new SessionTransitionExecutionDispatchResult(
+                executionKind,
+                SessionTransitionExecutionDispatchStatus.DeferredPipelineHandoff,
+                wasExecuted: true,
+                allowsPhaseLocalEntryReady: false,
+                failureReason: string.Empty,
+                detail: detail,
+                hasPhaseLocalEntryReadyEvent: false,
+                phaseLocalEntryReadyEvent: default);
+        }
+
         public bool TryGetPhaseLocalEntryReadyEvent(out SessionTransitionPhaseLocalEntryReadyEvent phaseLocalEntryReadyEvent)
         {
             phaseLocalEntryReadyEvent = _phaseLocalEntryReadyEvent;
@@ -169,12 +185,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
     public sealed class SessionTransitionExecutionPort : ISessionTransitionExecutionPort
     {
-        private readonly IGameplaySessionFlowContinuityService _continuityService;
+        private readonly ISessionActivityPhaseChangeCascadeService _continuityService;
         private readonly ISessionTransitionAdvancePhaseExecutionService _advancePhaseExecutionService;
         private readonly ISessionTransitionPhaseOrdinalNavigationExecutionService _phaseOrdinalNavigationExecutionService;
 
         public SessionTransitionExecutionPort(
-            IGameplaySessionFlowContinuityService continuityService,
+            ISessionActivityPhaseChangeCascadeService continuityService,
             ISessionTransitionAdvancePhaseExecutionService advancePhaseExecutionService,
             ISessionTransitionPhaseOrdinalNavigationExecutionService phaseOrdinalNavigationExecutionService)
         {
@@ -220,32 +236,46 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
 
             if (executionKind == SessionTransitionExecutionKind.NextPhase)
             {
-                PhaseNavigationResult navigationResult = await _advancePhaseExecutionService.AdvanceAsync(plan, ct);
+                PhaseNavigationResult navigationResult = _advancePhaseExecutionService.Advance(plan, ct);
+                if (navigationResult.Outcome == PhaseNavigationOutcome.Deferred)
+                {
+                    return SessionTransitionExecutionDispatchResult.DeferredPipelineHandoff(
+                        executionKind,
+                        $"NextPhase registered deferred pipeline handoff. from='{navigationResult.FromPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
+                }
+
                 if (navigationResult.Outcome != PhaseNavigationOutcome.Changed || !navigationResult.HasSelectionContext)
                 {
                     return SessionTransitionExecutionDispatchResult.Rejected(
                         executionKind,
                         $"PhaseNavigationOutcome.{navigationResult.Outcome}",
-                        $"NextPhase did not commit a phase change. from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
+                        $"NextPhase did not commit a phase change. from='{navigationResult.FromPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
                 }
 
-                return SessionTransitionExecutionDispatchResult.PhaseLocalEntryReadyConfirmed(
+                return SessionTransitionExecutionDispatchResult.ExecutedWithoutPhaseLocalEntryReady(
                     executionKind,
                     $"NextPhase committed by canonical advance execution. from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' outcome='{navigationResult.Outcome}' wasWrapped='{navigationResult.WasWrapped}'.");
             }
 
             if (executionKind == SessionTransitionExecutionKind.PhaseOrdinalNavigation)
             {
-                PhaseNavigationResult navigationResult = await _phaseOrdinalNavigationExecutionService.NavigateAsync(plan, ct);
+                PhaseNavigationResult navigationResult = _phaseOrdinalNavigationExecutionService.Navigate(plan, ct);
+                if (navigationResult.Outcome == PhaseNavigationOutcome.Deferred)
+                {
+                    return SessionTransitionExecutionDispatchResult.DeferredPipelineHandoff(
+                        executionKind,
+                        $"PhaseOrdinalNavigation registered deferred pipeline handoff. kind='{plan.Context.OrdinalNavigationKind}' target='{Normalize(plan.Context.OrdinalNavigationTargetPhaseId)}' from='{navigationResult.FromPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
+                }
+
                 if (navigationResult.Outcome != PhaseNavigationOutcome.Changed || !navigationResult.HasSelectionContext)
                 {
                     return SessionTransitionExecutionDispatchResult.Rejected(
                         executionKind,
                         $"PhaseNavigationOutcome.{navigationResult.Outcome}",
-                        $"PhaseOrdinalNavigation did not apply a phase change. kind='{plan.Context.OrdinalNavigationKind}' target='{Normalize(plan.Context.OrdinalNavigationTargetPhaseId)}' from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
+                        $"PhaseOrdinalNavigation did not apply a phase change. kind='{plan.Context.OrdinalNavigationKind}' target='{Normalize(plan.Context.OrdinalNavigationTargetPhaseId)}' from='{navigationResult.FromPhaseId}' reason='{Normalize(navigationResult.Reason)}'.");
                 }
 
-                return SessionTransitionExecutionDispatchResult.PhaseLocalEntryReadyConfirmed(
+                return SessionTransitionExecutionDispatchResult.ExecutedWithoutPhaseLocalEntryReady(
                     executionKind,
                     $"PhaseOrdinalNavigation applied by canonical execution. kind='{plan.Context.OrdinalNavigationKind}' target='{Normalize(plan.Context.OrdinalNavigationTargetPhaseId)}' from='{navigationResult.FromPhaseId}' to='{navigationResult.ToPhaseId}' outcome='{navigationResult.Outcome}'.");
             }

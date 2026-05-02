@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
@@ -63,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 
             var loaderAdapter = SceneFlowAdapterFactory.CreateLoaderAdapter();
             var fadeAdapter = SceneFlowAdapterFactory.CreateFadeAdapter(DependencyManager.Provider);
-            var completionGate = ResolveOrComposeCompletionGate();
+            var completionGate = ResolveRequired<ISceneTransitionCompletionGate>();
             var navigationPolicy = ResolveRequired<INavigationPolicy>();
             var routeGuard = ResolveRequired<IRouteGuard>();
             var routeResetPolicy = ResolveRequired<IRouteResetPolicy>();
@@ -81,23 +80,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             DebugUtility.LogVerbose(typeof(SceneFlowBootstrap),
                 $"[SceneFlow] SceneTransitionService composto no runtime (Loader={loaderAdapter.GetType().Name}, FadeAdapter={fadeAdapter.GetType().Name}, Gate={completionGate.GetType().Name}, Policy={navigationPolicy.GetType().Name}, RouteGuard={routeGuard.GetType().Name}, RouteResetPolicy={routeResetPolicy.GetType().Name}).",
                 DebugUtility.Colors.Info);
-        }
-
-        private static ISceneTransitionCompletionGate ResolveOrComposeCompletionGate()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
-            {
-                return existingGate;
-            }
-
-            var fallbackGate = new WorldResetCompletionGate(timeoutMs: 20000);
-            DependencyManager.Provider.RegisterGlobal<ISceneTransitionCompletionGate>(fallbackGate, allowOverride: true);
-
-            DebugUtility.LogVerbose(typeof(SceneFlowBootstrap),
-                "[SceneFlow] Fallback ISceneTransitionCompletionGate composto via WorldResetCompletionGate.",
-                DebugUtility.Colors.Info);
-
-            return fallbackGate;
         }
 
         private static void EnsureInputModeBridge()
@@ -210,6 +192,13 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             if (DependencyManager.Provider.TryGetGlobal<T>(out var service) && service != null)
             {
                 return service;
+            }
+
+            if (typeof(T) == typeof(ISceneTransitionCompletionGate))
+            {
+                throw new InvalidOperationException(
+                    "[FATAL][Config][SceneFlow] ISceneTransitionCompletionGate obrigatorio ausente no DI global antes da composicao runtime. " +
+                    "O gate canonico deve ser registrado por SessionFlow / GameplaySessionFlowCompletionGateComposer antes de SceneFlowBootstrap.");
             }
 
             throw new InvalidOperationException($"[FATAL][Config][SceneFlow] {typeof(T).Name} obrigatorio ausente no DI global antes da composicao runtime.");
