@@ -1,5 +1,5 @@
 using System;
-namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate
 {
     /// <summary>
     /// Controla se a "simulação" (lógica de gameplay) deve rodar ou não,
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
     /// - O Gate é infraestrutura (não domínio). Ele NÃO decide "se uma ação pode acontecer";
     ///   ele apenas sinaliza se a simulação está bloqueada por alguma condição infra.
     /// </summary>
-    public interface ISimulationGateService
+    public interface ILegacySimulationGateService
     {
         /// <summary>Gate está aberto (nenhum token ativo)?</summary>
         bool IsOpen { get; }

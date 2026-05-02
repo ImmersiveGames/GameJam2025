@@ -1,0 +1,318 @@
+using System;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline;
+using UnityEngine;
+
+namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate
+{
+    public enum SimulationGateCommandKind
+    {
+        Unknown = 0,
+        BlockActivitySimulation = 1,
+        ReleaseActivitySimulation = 2,
+        BlockSessionSimulation = 3,
+        ReleaseSessionSimulation = 4,
+    }
+
+    public enum SimulationGateFactKind
+    {
+        Unknown = 0,
+        ActivitySimulationBlocked = 1,
+        ActivitySimulationReleased = 2,
+        SessionSimulationBlocked = 3,
+        SessionSimulationReleased = 4,
+        SimulationGateCommandRejected = 5,
+    }
+
+    [Serializable]
+    public readonly struct SimulationGateIdentity : IEquatable<SimulationGateIdentity>
+    {
+        private readonly string _pipelineId;
+        private readonly string _sessionStateId;
+        private readonly string _activityId;
+        private readonly int _activityOrdinal;
+        private readonly int _entrySequence;
+        private readonly SessionActivityStage _stage;
+        private readonly string _source;
+        private readonly string _reason;
+
+        public SimulationGateIdentity(
+            string pipelineId,
+            string sessionStateId,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence,
+            SessionActivityStage stage,
+            string source,
+            string reason)
+        {
+            this._pipelineId = Normalize(pipelineId);
+            this._sessionStateId = Normalize(sessionStateId);
+            this._activityId = Normalize(activityId);
+            this._activityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            this._entrySequence = entrySequence < 0 ? 0 : entrySequence;
+            this._stage = stage;
+            this._source = Normalize(source);
+            this._reason = Normalize(reason);
+        }
+
+        public string PipelineId => _pipelineId ?? string.Empty;
+        public string SessionStateId => _sessionStateId ?? string.Empty;
+        public string ActivityId => _activityId ?? string.Empty;
+        public int ActivityOrdinal => _activityOrdinal;
+        public int EntrySequence => _entrySequence;
+        public SessionActivityStage Stage => _stage;
+        public string Source => _source ?? string.Empty;
+        public string Reason => _reason ?? string.Empty;
+
+        public bool HasSessionScope =>
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            !string.IsNullOrWhiteSpace(Source) &&
+            !string.IsNullOrWhiteSpace(Reason);
+
+        public bool HasActivityScope =>
+            HasSessionScope &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            EntrySequence > 0 &&
+            Stage != SessionActivityStage.Unknown;
+
+        public bool MatchesSessionScope(SimulationGateIdentity other)
+        {
+            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal);
+        }
+
+        public bool MatchesActivityScope(SimulationGateIdentity other)
+        {
+            return MatchesSessionScope(other) &&
+                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                   ActivityOrdinal == other.ActivityOrdinal &&
+                   EntrySequence == other.EntrySequence &&
+                   Stage == other.Stage;
+        }
+
+        public bool Equals(SimulationGateIdentity other)
+        {
+            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                   ActivityOrdinal == other.ActivityOrdinal &&
+                   EntrySequence == other.EntrySequence &&
+                   Stage == other.Stage &&
+                   string.Equals(Source, other.Source, StringComparison.Ordinal) &&
+                   string.Equals(Reason, other.Reason, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj) => obj is SimulationGateIdentity other && Equals(other);
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(
+                PipelineId ?? string.Empty,
+                SessionStateId ?? string.Empty,
+                ActivityId ?? string.Empty,
+                ActivityOrdinal,
+                EntrySequence,
+                Stage,
+                Source ?? string.Empty,
+                Reason ?? string.Empty);
+        }
+
+        public override string ToString()
+        {
+            return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', stage='{Stage}', source='{Source}', reason='{Reason}'";
+        }
+
+        public static bool operator ==(SimulationGateIdentity left, SimulationGateIdentity right) => left.Equals(right);
+        public static bool operator !=(SimulationGateIdentity left, SimulationGateIdentity right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [Serializable]
+    public readonly struct SimulationGateCommand
+    {
+        public SimulationGateCommand(
+            SimulationGateCommandKind kind,
+            SimulationGateIdentity identity,
+            string source,
+            string reason)
+        {
+            Kind = kind;
+            Identity = identity;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SimulationGateCommandKind Kind { get; }
+        public SimulationGateIdentity Identity { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Kind != SimulationGateCommandKind.Unknown;
+
+        public override string ToString()
+        {
+            return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [Serializable]
+    public readonly struct SimulationGateFact
+    {
+        public SimulationGateFact(
+            SimulationGateFactKind kind,
+            SimulationGateIdentity identity,
+            string source,
+            string reason,
+            string message)
+        {
+            Kind = kind;
+            Identity = identity;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+            Message = Normalize(message);
+        }
+
+        public SimulationGateFactKind Kind { get; }
+        public SimulationGateIdentity Identity { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public string Message { get; }
+
+        public bool IsValid => Kind != SimulationGateFactKind.Unknown;
+
+        public override string ToString()
+        {
+            return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', message='{Message}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [Serializable]
+    public readonly struct SimulationGateSnapshot
+    {
+        public SimulationGateSnapshot(
+            SimulationGateCommandKind commandKind,
+            SimulationGateIdentity commandIdentity,
+            bool sessionBlocked,
+            SimulationGateIdentity sessionIdentity,
+            bool activityBlocked,
+            SimulationGateIdentity activityIdentity,
+            SimulationGateFact lastFact,
+            string source,
+            string reason,
+            string message)
+        {
+            CommandKind = commandKind;
+            CommandIdentity = commandIdentity;
+            SessionBlocked = sessionBlocked;
+            SessionIdentity = sessionIdentity;
+            ActivityBlocked = activityBlocked;
+            ActivityIdentity = activityIdentity;
+            LastFact = lastFact;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+            Message = Normalize(message);
+        }
+
+        public SimulationGateCommandKind CommandKind { get; }
+        public SimulationGateIdentity CommandIdentity { get; }
+        public bool SessionBlocked { get; }
+        public SimulationGateIdentity SessionIdentity { get; }
+        public bool ActivityBlocked { get; }
+        public SimulationGateIdentity ActivityIdentity { get; }
+        public SimulationGateFact LastFact { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public string Message { get; }
+
+        public bool IsValid => true;
+
+        public override string ToString()
+        {
+            return $"commandKind='{CommandKind}', commandIdentity='{CommandIdentity}', sessionBlocked='{SessionBlocked}', sessionIdentity='{SessionIdentity}', activityBlocked='{ActivityBlocked}', activityIdentity='{ActivityIdentity}', lastFact='{LastFact}', source='{Source}', reason='{Reason}', message='{Message}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [Serializable]
+    public sealed class SimulationGateState
+    {
+        public bool SessionBlocked { get; internal set; }
+        public SimulationGateIdentity SessionIdentity { get; internal set; }
+        public bool ActivityBlocked { get; internal set; }
+        public SimulationGateIdentity ActivityIdentity { get; internal set; }
+        public SimulationGateFact LastFact { get; internal set; }
+        public SimulationGateSnapshot LastSnapshot { get; internal set; }
+
+        public void Reset()
+        {
+            SessionBlocked = false;
+            SessionIdentity = default;
+            ActivityBlocked = false;
+            ActivityIdentity = default;
+            LastFact = default;
+            LastSnapshot = default;
+        }
+
+        public override string ToString()
+        {
+            return $"sessionBlocked='{SessionBlocked}', sessionIdentity='{SessionIdentity}', activityBlocked='{ActivityBlocked}', activityIdentity='{ActivityIdentity}', lastFact='{LastFact}', lastSnapshot='{LastSnapshot}'";
+        }
+    }
+
+    [Serializable]
+    public readonly struct SimulationGateResult
+    {
+        public SimulationGateResult(
+            SimulationGateCommand command,
+            IReadOnlyList<SimulationGateFact> facts,
+            SimulationGateSnapshot snapshot,
+            string reason)
+        {
+            Command = command;
+            Facts = facts ?? Array.Empty<SimulationGateFact>();
+            Snapshot = snapshot;
+            Reason = Normalize(reason);
+        }
+
+        public SimulationGateCommand Command { get; }
+        public IReadOnlyList<SimulationGateFact> Facts { get; }
+        public SimulationGateSnapshot Snapshot { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Facts.Count > 0;
+
+        public bool IsRejected => Facts.Count > 0 && Facts[Facts.Count - 1].Kind == SimulationGateFactKind.SimulationGateCommandRejected;
+        public bool IsAccepted => !IsRejected;
+
+        public override string ToString()
+        {
+            return $"command='{Command}', factsCount='{Facts.Count}', reason='{Reason}', snapshot='{Snapshot}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+}

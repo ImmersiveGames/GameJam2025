@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         private CharacterController _characterController;
         private Rigidbody _rigidbody;
         private PlayerActor _actor;
-        private ISimulationGateService _gateService;
+        private ILegacySimulationGateService _gateService;
         private IGameplayStateGate _gameplayStateService;
 
         private bool _gateSubscribed;

@@ -1,12 +1,12 @@
 /*
  * ChangeLog
  * - GamePauseGateBridge e GameplayStateGate deixaram o root e passaram para os modulos donos.
- * - Entrada de infraestrutura mínima (SimulationGate/WorldReset/SceneReset/DI) para NewScripts.
+ * - Entrada de infraestrutura mínima (LegacySimulationGate/WorldReset/SceneReset/DI) para NewScripts.
  *
  * Ajustes (jan/2026):
  * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
  *   - ResolvePlayerActor IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
- *   - ResolvePlayerActor ISimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
+ *   - ResolvePlayerActor ILegacySimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
  * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual do SceneFlow).
  *
  * Nota (QA):

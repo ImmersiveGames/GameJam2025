@@ -1,6 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using UnityEngine;
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
         public bool IsArmed => _moveLoggingArmed;
 
         public void LogIfChanged(
-            ISimulationGateService gateService,
+            ILegacySimulationGateService gateService,
             GameplayStateSnapshot snapshot,
             StateDependentMoveDecision decision,
             StateDependentServiceState resolvedState,

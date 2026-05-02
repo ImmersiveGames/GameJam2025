@@ -4,8 +4,8 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate.Interop;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate.Interop;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
@@ -123,9 +123,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ILegacySimulationGateService>(out var gateService) || gateService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] ISimulationGateService ausente no DI global antes de registrar o GamePauseGateBridge.");
+                throw new InvalidOperationException("[FATAL][Config][GameLoop] ILegacySimulationGateService ausente no DI global antes de registrar o GamePauseGateBridge.");
             }
 
             var bridge = new GamePauseGateBridge(gateService);

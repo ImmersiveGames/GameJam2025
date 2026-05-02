@@ -44,7 +44,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
         private IOldActorRegistry _actorRegistry;
         private IPlayerDomain _playerDomain;
         private IEaterDomain _eaterDomain;
-        private IOldSimulationGateService _gate;
+        private IOldLegacySimulationGateService _gate;
 
         private int _requestSerial;
         private bool _inProgress;
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             if (_gate == null)
             {
                 DebugUtility.LogWarning<ResetOrchestratorBehaviour>(
-                    "IOldSimulationGateService n�o encontrado (global). Reset ficar� desprotegido (sem gate).",
+                    "IOldLegacySimulationGateService n�o encontrado (global). Reset ficar� desprotegido (sem gate).",
                     this);
             }
 
@@ -165,7 +165,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
             {
                 if (_gate != null)
                 {
-                    gateHandle = _gate.Acquire(OldSimulationGateTokens.SoftReset);
+                    gateHandle = _gate.Acquire(OldLegacySimulationGateTokens.SoftReset);
                 }
 
                 EventBus<GameResetStartedEvent>.Raise(new GameResetStartedEvent());

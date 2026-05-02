@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate
 {
     /// <summary>
     /// Implementação thread-safe do gate baseada em tokens com ref-count.
@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
     /// - ReleaseAll(token) = remove completamente o token (QA/emergência).
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SimulationGateService : ISimulationGateService
+    public sealed class LegacySimulationGateService : ILegacySimulationGateService
     {
         private readonly Dictionary<string, int> _tokenCounts = new(StringComparer.Ordinal);
         private readonly object _lock = new();
@@ -24,10 +24,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
         // Mantemos contador de "tokens distintos ativos" por performance e clareza.
         private int _activeTokenTypes;
 
-        public SimulationGateService()
+        public LegacySimulationGateService()
         {
             _mainThreadContext = SynchronizationContext.Current
-                ?? throw new InvalidOperationException("SimulationGateService exige SynchronizationContext da main thread.");
+                ?? throw new InvalidOperationException("LegacySimulationGateService exige SynchronizationContext da main thread.");
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
         }
 
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
         {
             if (string.IsNullOrWhiteSpace(token))
             {
-                DebugUtility.LogWarning<SimulationGateService>("Acquire chamado com token nulo/vazio. Ignorando.");
+                DebugUtility.LogWarning<LegacySimulationGateService>("Acquire chamado com token nulo/vazio. Ignorando.");
                 return new ReleaseHandle(this, string.Empty, shouldRelease: false);
             }
 
@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
                 RaiseGateChanged(isOpenNow);
             }
 
-            DebugUtility.LogVerbose<SimulationGateService>(
+            DebugUtility.LogVerbose<LegacySimulationGateService>(
                 $"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
 
             // Handle libera UMA aquisição (ref-count).
@@ -135,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
 
             if (!removedAny)
             {
-                DebugUtility.LogVerbose<SimulationGateService>(
+                DebugUtility.LogVerbose<LegacySimulationGateService>(
                     $"[Gate] ReleaseAll token='{token}' ignorado (token não estava ativo).");
                 return;
             }
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
                 RaiseGateChanged(isOpenNow);
             }
 
-            DebugUtility.LogWarning<SimulationGateService>(
+            DebugUtility.LogWarning<LegacySimulationGateService>(
                 $"[Gate] ReleaseAll token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen} (QA/emergência)");
         }
 
@@ -206,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
 
             if (!removed)
             {
-                DebugUtility.LogVerbose<SimulationGateService>(
+                DebugUtility.LogVerbose<LegacySimulationGateService>(
                     $"[Gate] Release token='{token}' ignorado (token não estava ativo).");
                 return;
             }
@@ -216,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
                 RaiseGateChanged(isOpenNow);
             }
 
-            DebugUtility.LogVerbose<SimulationGateService>(
+            DebugUtility.LogVerbose<LegacySimulationGateService>(
                 $"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
         }
 
@@ -238,7 +238,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<SimulationGateService>($"Exception ao disparar GateChanged: {ex}");
+                DebugUtility.LogError<LegacySimulationGateService>($"Exception ao disparar GateChanged: {ex}");
             }
         }
 
@@ -250,31 +250,31 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<SimulationGateService>($"Exception ao disparar GateChanged: {ex}");
+                DebugUtility.LogError<LegacySimulationGateService>($"Exception ao disparar GateChanged: {ex}");
             }
         }
 
         private readonly struct GateChangedDispatchState
         {
-            public GateChangedDispatchState(SimulationGateService service, bool isOpen)
+            public GateChangedDispatchState(LegacySimulationGateService service, bool isOpen)
             {
                 Service = service;
                 IsOpen = isOpen;
             }
 
-            public SimulationGateService Service { get; }
+            public LegacySimulationGateService Service { get; }
             public bool IsOpen { get; }
         }
 
         [DebugLevel(DebugLevel.Verbose)]
         private sealed class ReleaseHandle : IDisposable
         {
-            private readonly SimulationGateService _service;
+            private readonly LegacySimulationGateService _service;
             private readonly string _token;
             private readonly bool _shouldRelease;
             private bool _disposed;
 
-            public ReleaseHandle(SimulationGateService service, string token, bool shouldRelease)
+            public ReleaseHandle(LegacySimulationGateService service, string token, bool shouldRelease)
             {
                 _service = service;
                 _token = token;

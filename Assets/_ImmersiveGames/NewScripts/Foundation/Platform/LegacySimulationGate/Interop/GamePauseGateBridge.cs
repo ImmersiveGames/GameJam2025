@@ -2,15 +2,15 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
-namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate.Interop
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate.Interop
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GamePauseGateBridge : IDisposable
     {
-        private const string PauseToken = SimulationGateTokens.Pause;
+        private const string PauseToken = LegacySimulationGateTokens.Pause;
         private const string ReasonPauseStateChanged = "PauseStateChangedEvent";
 
-        private readonly ISimulationGateService _gateService;
+        private readonly ILegacySimulationGateService _gateService;
         private readonly EventBinding<PauseStateChangedEvent> _pauseStateBinding;
         private IDisposable _activeHandle;
         private bool _bindingsRegistered;
@@ -18,9 +18,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate.Interop
 
         // Bridge legitima: conecta o gate global ao estado de pause emitido pelo GameLoopService.
         // Nasce no GameLoopBootstrap, depois que o GameLoopService ja foi composto.
-        public GamePauseGateBridge(ISimulationGateService gateService)
+        public GamePauseGateBridge(ILegacySimulationGateService gateService)
         {
-            _gateService = gateService ?? throw new InvalidOperationException("[FATAL][Config][PauseBridge] ISimulationGateService obrigatorio ausente para GamePauseGateBridge.");
+            _gateService = gateService ?? throw new InvalidOperationException("[FATAL][Config][PauseBridge] ILegacySimulationGateService obrigatorio ausente para GamePauseGateBridge.");
             _pauseStateBinding = new EventBinding<PauseStateChangedEvent>(OnPauseStateChanged);
             TryRegisterBindings();
         }
@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate.Interop
                 _bindingsRegistered = true;
 
                 DebugUtility.LogVerbose<GamePauseGateBridge>(
-                    "[PauseBridge] Registrado no evento PauseStateChangedEvent -> SimulationGate com owner ISimulationGateService explícito.");
+                    "[PauseBridge] Registrado no evento PauseStateChangedEvent -> LegacySimulationGate com owner ILegacySimulationGateService explícito.");
             }
             catch (Exception ex)
             {

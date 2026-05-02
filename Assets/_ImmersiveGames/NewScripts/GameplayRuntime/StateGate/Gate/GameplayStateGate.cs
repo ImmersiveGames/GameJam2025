@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.RuntimeSignals;
 using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 {
     /// <summary>
     /// Gate de ações baseado em:
-    /// - SimulationGate (bloqueia quando gate fechado, ex.: transição/reset)
+    /// - LegacySimulationGate (bloqueia quando gate fechado, ex.: transição/reset)
     /// - Pausa (token Pause e eventos de pausa)
     /// - Readiness técnica de SceneFlow
     /// - Readiness operacional canônica de ActorsExecution
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
     // It does not own the final gameplay-release signal.
     public sealed class GameplayStateGate : IGameplayStateGate
     {
-        private ISimulationGateService _gateService;
+        private ILegacySimulationGateService _gateService;
         private IGameLoopService _gameLoopService;
         private IGameplayInteractionReadinessService _interactionReadinessService;
 
@@ -45,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
 
         public event Action<GameplayOperationalStateSnapshot> OperationalStateChanged;
 
-        public GameplayStateGate(ISimulationGateService gateService = null)
+        public GameplayStateGate(ILegacySimulationGateService gateService = null)
         {
             _gateService = gateService;
 
@@ -207,7 +207,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
                 return;
             }
 
-            _gateChangedHandler = OnSimulationGateChanged;
+            _gateChangedHandler = OnLegacySimulationGateChanged;
             _gateService.GateChanged += _gateChangedHandler;
             _gateEventsSubscribed = true;
         }
@@ -362,10 +362,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Gate
             PublishOperationalStateIfChanged("gameplay_interaction_readiness_changed");
         }
 
-        private void OnSimulationGateChanged(bool isOpen)
+        private void OnLegacySimulationGateChanged(bool isOpen)
         {
             DebugUtility.LogVerbose<GameplayStateGate>(
-                $"[OBS][GRS] SimulationGateChangedEvent consumed consumer='{nameof(GameplayStateGate)}' gateOpen='{isOpen.ToString().ToLowerInvariant()}'.",
+                $"[OBS][GRS] LegacySimulationGateChangedEvent consumed consumer='{nameof(GameplayStateGate)}' gateOpen='{isOpen.ToString().ToLowerInvariant()}'.",
                 DebugUtility.Colors.Info);
 
             PublishOperationalStateIfChanged("simulation_gate_changed");

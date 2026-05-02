@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline
 {
@@ -8,12 +9,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private readonly SessionActivityMiniCatalog _catalog;
         private readonly SessionActivityRuntimeState _state;
+        private readonly SimulationGateService _simulationGate;
         private readonly string _sessionId;
 
         public SessionActivityPipeline(SessionActivityMiniCatalog catalog, string sessionId = "SessionActivitySandboxSession")
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
+            _simulationGate = new SimulationGateService();
             _sessionId = Normalize(sessionId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -29,6 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
 
         public SessionActivityRuntimeState State => _state;
         public SessionActivityMiniCatalog Catalog => _catalog;
+        public SimulationGateState GateState => _simulationGate.State;
 
         public SessionActivityCommand BuildStartCommand(string source, string reason)
         {
@@ -300,6 +304,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
 
             SessionActivityDefinition current = _state.CurrentDefinition;
             int currentEntrySequence = _state.CurrentEntrySequence;
+            ReleaseActivityGateIfBlocked(command);
             _state.SetSimulationState(SessionActivitySimulationState.Stopped);
             SessionActivityIdentity deactivationIdentity = BuildIdentity(current, SessionActivityStage.Deactivation, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationIdentity, SessionActivityStage.Deactivation);
@@ -426,6 +431,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             List<SessionActivitySnapshot> snapshots)
         {
             int currentEntrySequence = _state.CurrentEntrySequence;
+            ReleaseActivityGateIfBlocked(command);
             _state.SetSimulationState(SessionActivitySimulationState.Stopped);
             SessionActivityIdentity deactivationIdentity = BuildIdentity(current, SessionActivityStage.Deactivation, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationIdentity, SessionActivityStage.Deactivation);
@@ -517,6 +523,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 throw new InvalidOperationException("Simulation state is invalid for pause.");
             }
 
+            SimulationGateResult gateResult = ApplyActivityGateCommand(SimulationGateCommandKind.BlockActivitySimulation, command);
+            if (gateResult.IsRejected)
+            {
+                EmitRejected(
+                    command,
+                    facts,
+                    gateResult.Reason,
+                    $"SimulationGate rejected pause command. {gateResult.Snapshot}",
+                    _state.CurrentIdentity,
+                    true);
+                return;
+            }
+
             _state.SetSimulationState(SessionActivitySimulationState.Paused);
             EmitFact(facts, SessionActivityFactKind.SimulationPaused, _state.CurrentIdentity, command.Source, command.Reason, "Simulation paused.");
             EmitSnapshot(snapshots, "simulation_paused", command.Source, command.Reason, "Simulation paused.");
@@ -545,9 +564,112 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 throw new InvalidOperationException("Simulation state is invalid for resume.");
             }
 
+            SimulationGateResult gateResult = ApplyActivityGateCommand(SimulationGateCommandKind.ReleaseActivitySimulation, command);
+            if (gateResult.IsRejected)
+            {
+                EmitRejected(
+                    command,
+                    facts,
+                    gateResult.Reason,
+                    $"SimulationGate rejected resume command. {gateResult.Snapshot}",
+                    _state.CurrentIdentity,
+                    true);
+                return;
+            }
+
             _state.SetSimulationState(SessionActivitySimulationState.Running);
             EmitFact(facts, SessionActivityFactKind.SimulationResumed, _state.CurrentIdentity, command.Source, command.Reason, "Simulation resumed.");
             EmitSnapshot(snapshots, "simulation_resumed", command.Source, command.Reason, "Simulation resumed.");
+        }
+
+        private SimulationGateResult ApplyActivityGateCommand(
+            SimulationGateCommandKind gateCommandKind,
+            SessionActivityCommand command)
+        {
+            SimulationGateCommand gateCommand = BuildActivityGateCommand(gateCommandKind, command);
+            SimulationGateResult gateResult = _simulationGate.Execute(gateCommand);
+            RecordSimulationGateResult(gateResult);
+
+            return gateResult;
+        }
+
+        private void ReleaseActivityGateIfBlocked(SessionActivityCommand command)
+        {
+            if (_state.CurrentSimulationState == SessionActivitySimulationState.Paused && !_simulationGate.State.ActivityBlocked)
+            {
+                throw new InvalidOperationException("Paused activity requires a blocked simulation gate.");
+            }
+
+            if (!_simulationGate.State.ActivityBlocked)
+            {
+                return;
+            }
+
+            SessionActivityIdentity currentIdentity = _state.CurrentIdentity;
+            if (!currentIdentity.IsValid)
+            {
+                throw new InvalidOperationException("Activity gate release requires an active identity.");
+            }
+
+            SimulationGateIdentity expectedGateIdentity = BuildActivityGateIdentity(currentIdentity, command.Source, command.Reason);
+            if (!_simulationGate.State.ActivityIdentity.MatchesActivityScope(expectedGateIdentity))
+            {
+                throw new InvalidOperationException("Activity gate is blocked by a foreign identity.");
+            }
+
+            SimulationGateResult gateResult = _simulationGate.Execute(BuildActivityGateCommand(SimulationGateCommandKind.ReleaseActivitySimulation, command));
+            RecordSimulationGateResult(gateResult);
+
+            if (gateResult.IsRejected)
+            {
+                throw new InvalidOperationException($"SimulationGate rejected release command. reason='{gateResult.Reason}'.");
+            }
+        }
+
+        private SimulationGateCommand BuildActivityGateCommand(
+            SimulationGateCommandKind gateCommandKind,
+            SessionActivityCommand command)
+        {
+            return new SimulationGateCommand(
+                gateCommandKind,
+                BuildActivityGateIdentity(_state.CurrentIdentity, command.Source, command.Reason),
+                command.Source,
+                command.Reason);
+        }
+
+        private static SimulationGateIdentity BuildActivityGateIdentity(
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            return new SimulationGateIdentity(
+                identity.PipelineId,
+                identity.SessionId,
+                identity.ActivityId,
+                identity.ActivityOrdinal,
+                identity.EntrySequence,
+                identity.Stage,
+                source,
+                reason);
+        }
+
+        private void RecordSimulationGateResult(SimulationGateResult gateResult)
+        {
+            if (!gateResult.IsValid)
+            {
+                throw new InvalidOperationException("SimulationGate result is invalid.");
+            }
+
+            if (gateResult.Facts.Count == 0)
+            {
+                throw new InvalidOperationException("SimulationGate result emitted no facts.");
+            }
+
+            SimulationGateFact fact = gateResult.Facts[gateResult.Facts.Count - 1];
+            SimulationGateSnapshot snapshot = gateResult.Snapshot;
+            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] commandKind='{gateResult.Command.Kind}' factKind='{fact.Kind}' pipelineId='{snapshot.CommandIdentity.PipelineId}' sessionStateId='{snapshot.CommandIdentity.SessionStateId}' activityId='{snapshot.CommandIdentity.ActivityId}' activityOrdinal='{snapshot.CommandIdentity.ActivityOrdinal}' entrySequence='{snapshot.CommandIdentity.EntrySequence}' stage='{snapshot.CommandIdentity.Stage}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' source='{snapshot.Source}' reason='{snapshot.Reason}' decisionSource='pipeline.command'.");
+            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] fact='{fact}'");
+            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] snapshot='{snapshot}'");
         }
 
         private bool EnsureExpectedStage(

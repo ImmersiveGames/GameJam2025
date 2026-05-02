@@ -2,7 +2,7 @@
 
 ## Objetivo
 Validar um ciclo mínimo de Session Activity isolado do gameplay legado, em Base 1.1, sem acionar owners do gameplay legado/Base 1.0.
-O sandbox usa identificação própria `Sandbox`; `Overlay` foi apenas o escudo provisório inicial.
+O sandbox usa identificação própria `Sandbox`. `Overlay` foi apenas o escudo provisório inicial.
 
 ## Fluxo feliz validado
 1. `StartDemo`
@@ -115,13 +115,97 @@ Navegação enquanto pausado:
 3. A próxima entrada em `GameplayRunning` começa como `Running`.
 4. `PauseSimulation` não vaza para a próxima activity.
 
-Relação futura com Gate:
+## SimulationGate canônico Base 1.1
+O `SimulationGate` é `Pipeline Adapter`.
+Ele executa bloqueio/liberação e não decide lifecycle.
+Quem decide `PauseSimulation` / `ResumeSimulation` é o `SessionActivityPipeline`.
+Quem decide navegação, restart e deactivation é o `SessionActivityPipeline`.
+O `SimulationGate` apenas obedece `Pipeline Command` e emite `fact` e `snapshot`.
 
-1. `PauseSimulation` / `ResumeSimulation` são decisões do `SessionActivityPipeline`.
-2. Um gate futuro deve ser `Pipeline Adapter`.
-3. O gate executa bloqueio/liberação.
-4. O gate não decide lifecycle.
-5. `GameLoop`, `InputModes` e `Gates` reais ainda não foram testados neste sandbox v0.
+O novo `SimulationGate` não usa:
+
+1. `LegacySimulationGate`
+2. `LegacySimulationGateTokens`
+3. string tokens
+4. `ref-count`
+5. `IDisposable`
+6. `GateChanged`
+7. `ReleaseAll`
+8. `EventBus`
+9. `GamePauseGateBridge`
+
+Comandos do gate:
+
+1. `BlockActivitySimulation`
+2. `ReleaseActivitySimulation`
+3. `BlockSessionSimulation`
+4. `ReleaseSessionSimulation`
+
+Facts do gate:
+
+1. `ActivitySimulationBlocked`
+2. `ActivitySimulationReleased`
+3. `SessionSimulationBlocked`
+4. `SessionSimulationReleased`
+5. `SimulationGateCommandRejected`
+
+`gateState` expõe:
+
+1. `sessionBlocked`
+2. `sessionIdentity`
+3. `activityBlocked`
+4. `activityIdentity`
+5. `lastFact`
+6. `lastSnapshot`
+
+Identidade obrigatória para comandos de activity:
+
+1. `pipelineId`
+2. `sessionStateId`
+3. `activityId`
+4. `activityOrdinal`
+5. `entrySequence`
+6. `stage`
+7. `source`
+8. `reason`
+
+Regras validadas:
+
+1. `PauseSimulation` em `GameplayRunning` gera `BlockActivitySimulation`.
+2. `ResumeSimulation` em `GameplayRunning` pausado gera `ReleaseActivitySimulation`.
+3. `PauseSimulation` não muda `stage`.
+4. `PauseSimulation` não muda `activity`.
+5. `PauseSimulation` não muda `entrySequence`.
+6. `PauseSimulation` não cria `handoff`.
+7. `ResumeSimulation` não muda `stage`.
+8. `ResumeSimulation` não muda `activity`.
+9. `ResumeSimulation` não muda `entrySequence`.
+10. `ResumeSimulation` não cria `handoff`.
+
+Navegação enquanto pausado:
+
+1. Se a activity pausada navega para outra activity, o pipeline emite `ReleaseActivitySimulation` para a identity antiga.
+2. A activity antiga entra em `Deactivation`.
+3. O `handoff` é preparado para a nova activity.
+4. A nova activity entra em `GameplayRunning` com `simulationState Running`.
+5. `gateState.activityBlocked` termina `False`.
+6. Não sobra bloqueio stale da activity anterior.
+
+Restart enquanto pausado:
+
+1. Se `activity_02 entrySequence=2` está pausada, `RestartCurrentActivity` libera o gate da `entrySequence=2`.
+2. Depois cria nova entrada com `entrySequence=3`.
+3. A nova execução entra em `GameplayRunning`.
+4. `gateState.activityBlocked` termina `False`.
+5. O gate não confunde a execução antiga com a nova.
+
+Relação com stale/foreign:
+
+1. `entrySequence` participa da identidade operacional.
+2. Comando velho ou foreign não pode alterar o gate ativo.
+3. Rejeições do gate devem ser explícitas.
+
+`GameLoop`, `InputModes` e `Gates` reais ainda não foram testados neste sandbox v0.
 
 ## Regras validadas
 1. Comando fora de ordem é rejeitado.
@@ -135,21 +219,21 @@ Relação futura com Gate:
 9. `Pipeline Handoff` transporta `from` e `to` com `entrySequence`.
 10. `stale/foreign` considera `entrySequence` na validação da identidade.
 11. `PauseSimulation` / `ResumeSimulation` respeitam `simulationState`, `stage` e `entrySequence` sem alterar lifecycle.
+12. `SimulationGate` rejeita comandos stale/foreign de forma explícita e sem alterar o estado ativo.
 
 ## Limites do sandbox
 1. Não testa gameplay real.
-2. Não testa actors.
-3. Não testa `GameLoop`.
-4. Não testa `InputModes`.
-5. Não substitui `SessionTransition`.
-6. Não depende mais de `routeKind='Overlay'` como semântica do sandbox.
+2. Não testa actors reais.
+3. Não testa `GameLoop` real.
+4. Não testa `InputModes` reais.
+5. Não testa `Gates` reais.
+6. Não substitui `SessionTransition`.
 7. Ainda não testa `IntroStage` real.
 8. Ainda não testa `PostRun` real.
-9. Ainda não testa `Actors` reais.
-10. Ainda não testa `GameLoop` real.
-11. Ainda não testa `InputModes` reais.
-12. Ainda não testa `Gates` reais.
-13. Ainda não testa `Save` ou `Loading` reais.
+9. Ainda não testa `Save` real.
+10. Ainda não testa `Loading` real.
+11. Não depende mais de `routeKind='Overlay'` como semântica do sandbox.
+12. O `SimulationGate` atual só executa bloqueio/liberação no sandbox, sem plugar efeitos externos.
 
 ## Regras de proteção
 1. Não chamar `GameplaySessionFlow`, `SessionTransition`, `GameplayPhaseFlow`, `GameLoop`, `InputModes`, `Gates` ou `ActorsExecution`.
@@ -158,3 +242,11 @@ Relação futura com Gate:
 4. O pipeline decide lifecycle.
 5. Mensagens antigas ou de outro ciclo não podem alterar o ciclo ativo.
 6. `SceneFlow/Navigation` continua como `Pipeline Adapter`, não owner do ciclo.
+7. O `SimulationGate` não tem ownership de lifecycle.
+
+## Resumo final
+O sandbox v0 agora prova lifecycle de activity, navegação canônica, pause/resume e `SimulationGate` canônico Base 1.1.
+`SessionActivityPipeline` decide.
+`SimulationGate` executa.
+Host/painel só enviam `Pipeline Command`.
+Não há ownership de lifecycle dentro do gate.

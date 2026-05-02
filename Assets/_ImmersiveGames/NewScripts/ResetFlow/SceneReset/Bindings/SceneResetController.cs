@@ -2,7 +2,7 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime;
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
         [Header("Debug")]
         [SerializeField] private bool verboseLogs = true;
 
-        private ISimulationGateService _gateService;
+        private ILegacySimulationGateService _gateService;
         private IWorldSpawnServiceRegistry _spawnRegistry;
         private IActorRegistry _actorRegistry;
         private ISpawnResetParticipationReadPort _participationReadPort;
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                 return;
             }
 
-            if (_gateService != null && _gateService.IsTokenActive(SimulationGateTokens.SceneTransition))
+            if (_gateService != null && _gateService.IsTokenActive(LegacySimulationGateTokens.SceneTransition))
             {
                 if (verboseLogs)
                 {
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
                     reason,
                     new[] { WorldResetScope.Players },
                     WorldResetFlags.SoftReset),
-                gateToken: SimulationGateTokens.SoftReset);
+                gateToken: LegacySimulationGateTokens.SoftReset);
         }
 
         private async Task<WorldResetLocalExecutionResult> RunResetInternalAsync(

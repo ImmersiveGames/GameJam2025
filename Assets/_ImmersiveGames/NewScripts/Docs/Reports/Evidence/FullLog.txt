@@ -442,7 +442,7 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.
 
 <color=#A8DEED>[VERBOSE] [GameLoopSceneFlowSyncCoordinator] [OBS][GameLoopSceneFlow][Operational] TransitionStarted recebido. expectedSignature='r:to-menu|rk:Frontend|ge:None|a:MenuScene|f:1|l:UIGlobalScene|MenuScene|u:NewBootstrap|GameplayScene'. (@ 5.13s)</color>
 
-<color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS] SimulationGateChangedEvent consumed consumer='GameplayStateGate' gateOpen='false'. (@ 5.13s)</color>
+<color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS] LegacySimulationGateChangedEvent consumed consumer='GameplayStateGate' gateOpen='false'. (@ 5.13s)</color>
 
 <color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS][OperationalState] GameplayOperationalStateChanged gateOpen='false' sceneReady='false' actorsOperationalReady='false' interactionReady='false' gameRunStarted='false' paused='false' gameLoopState='' activeTokens='1' reason='simulation_gate_changed' consumer='GameplayStateGate'. (@ 5.13s)</color>
 
@@ -558,7 +558,7 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.
 
 <color=#A8DEED>[VERBOSE] [GameLoopSceneFlowSyncCoordinator] [OBS][GameLoopSceneFlow][Operational] Sync concluido. routeId='to-menu' activeScene='MenuScene'. Chamando RequestReset() no GameLoop. (@ 5.98s)</color>
 
-<color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS] SimulationGateChangedEvent consumed consumer='GameplayStateGate' gateOpen='true'. (@ 5.98s)</color>
+<color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS] LegacySimulationGateChangedEvent consumed consumer='GameplayStateGate' gateOpen='true'. (@ 5.98s)</color>
 
 <color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS][OperationalState] GameplayOperationalStateChanged gateOpen='true' sceneReady='false' actorsOperationalReady='false' interactionReady='false' gameRunStarted='false' paused='false' gameLoopState='' activeTokens='0' reason='simulation_gate_changed' consumer='GameplayStateGate'. (@ 5.98s)</color>
 
@@ -596,7 +596,7 @@ NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.
 
 <color=#A8DEED>[VERBOSE] [GameplayInteractionReadinessService] [OBS][SessionIntegration][GameplayInteractionReady] SceneTransitionStarted reset routeKind='Gameplay' routeId='to-gameplay' reason='Menu/PlayButton'. (@ 7.11s)</color>
 
-<color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS] SimulationGateChangedEvent consumed consumer='GameplayStateGate' gateOpen='false'. (@ 7.11s)</color>
+<color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS] LegacySimulationGateChangedEvent consumed consumer='GameplayStateGate' gateOpen='false'. (@ 7.11s)</color>
 
 <color=#A8DEED>[VERBOSE] [GameplayStateGate] [OBS][GRS][OperationalState] GameplayOperationalStateChanged gateOpen='false' sceneReady='false' actorsOperationalReady='false' interactionReady='false' gameRunStarted='false' paused='false' gameLoopState='' activeTokens='1' reason='simulation_gate_changed' consumer='GameplayStateGate'. (@ 7.11s)</color>
 

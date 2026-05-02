@@ -1,16 +1,16 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
 {
     internal sealed class SceneResetGateLease
     {
-        private readonly ISimulationGateService _gateService;
+        private readonly ILegacySimulationGateService _gateService;
         private readonly string _gateToken;
         private IDisposable _gateHandle;
         private bool _gateAcquired;
 
-        public SceneResetGateLease(ISimulationGateService gateService, string gateToken)
+        public SceneResetGateLease(ILegacySimulationGateService gateService, string gateToken)
         {
             _gateService = gateService;
             _gateToken = gateToken ?? string.Empty;
@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
             if (_gateService == null || string.IsNullOrWhiteSpace(_gateToken))
             {
                 DebugUtility.LogWarning(typeof(SceneResetPipeline),
-                    "ISimulationGateService ausente: reset seguirá sem gate.");
+                    "ILegacySimulationGateService ausente: reset seguirá sem gate.");
                 return;
             }
 

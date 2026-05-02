@@ -24,11 +24,11 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         /// <summary>
         /// Acesso tardio ao gate global. N�o falha caso o servi�o ainda n�o exista.
         /// </summary>
-        protected IOldSimulationGateService Gate
+        protected IOldLegacySimulationGateService Gate
         {
             get
             {
-                return DependencyManager.Provider.TryGetGlobal<IOldSimulationGateService>(out var gate) ? gate : null;
+                return DependencyManager.Provider.TryGetGlobal<IOldLegacySimulationGateService>(out var gate) ? gate : null;
             }
         }
 
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnEnter()
         {
-            AcquireGate(OldSimulationGateTokens.Menu);
+            AcquireGate(OldLegacySimulationGateTokens.Menu);
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
             EventBus<ActorStateChangedEvent>.Raise(new ActorStateChangedEvent(false));
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnExit()
         {
-            ReleaseGate(OldSimulationGateTokens.Menu);
+            ReleaseGate(OldLegacySimulationGateTokens.Menu);
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
             EventBus<ActorStateChangedEvent>.Raise(new ActorStateChangedEvent(true));
@@ -142,14 +142,14 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         public override void OnEnter()
         {
             // Libera tokens conhecidos de forma defensiva e silenciosa (idempotente).
-            ReleaseGate(OldSimulationGateTokens.Menu);
-            ReleaseGate(OldSimulationGateTokens.Pause);
-            ReleaseGate(OldSimulationGateTokens.GameOver);
-            ReleaseGate(OldSimulationGateTokens.Victory);
-            ReleaseGate(OldSimulationGateTokens.SceneTransition);
-            ReleaseGate(OldSimulationGateTokens.Cinematic);
-            ReleaseGate(OldSimulationGateTokens.SoftReset);
-            ReleaseGate(OldSimulationGateTokens.Loading);
+            ReleaseGate(OldLegacySimulationGateTokens.Menu);
+            ReleaseGate(OldLegacySimulationGateTokens.Pause);
+            ReleaseGate(OldLegacySimulationGateTokens.GameOver);
+            ReleaseGate(OldLegacySimulationGateTokens.Victory);
+            ReleaseGate(OldLegacySimulationGateTokens.SceneTransition);
+            ReleaseGate(OldLegacySimulationGateTokens.Cinematic);
+            ReleaseGate(OldLegacySimulationGateTokens.SoftReset);
+            ReleaseGate(OldLegacySimulationGateTokens.Loading);
 
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
             EventBus<ActorStateChangedEvent>.Raise(new ActorStateChangedEvent(true));
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnEnter()
         {
-            AcquireGate(OldSimulationGateTokens.Pause);
+            AcquireGate(OldLegacySimulationGateTokens.Pause);
 
             Time.timeScale = 0f;
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(false));
@@ -179,7 +179,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnExit()
         {
-            ReleaseGate(OldSimulationGateTokens.Pause);
+            ReleaseGate(OldLegacySimulationGateTokens.Pause);
 
             Time.timeScale = 1f;
             EventBus<StateChangedEvent>.Raise(new StateChangedEvent(true));
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         public override void OnEnter()
         {
             Debug.Log("Gate IsOpen=" + Gate?.IsOpen);
-            AcquireGate(OldSimulationGateTokens.GameOver);
+            AcquireGate(OldLegacySimulationGateTokens.GameOver);
 
             // IMPORTANTE: estado terminal N�O deve congelar timeScale; overlay/anima��es precisam continuar.
             Time.timeScale = 1f;
@@ -214,7 +214,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnExit()
         {
-            ReleaseGate(OldSimulationGateTokens.GameOver);
+            ReleaseGate(OldLegacySimulationGateTokens.GameOver);
 
             // Normaliza por seguran�a.
             Time.timeScale = 1f;
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
         public override void OnEnter()
         {
             Debug.Log("Gate IsOpen=" + Gate?.IsOpen);
-            AcquireGate(OldSimulationGateTokens.Victory);
+            AcquireGate(OldLegacySimulationGateTokens.Victory);
 
             // IMPORTANTE: estado terminal N�O deve congelar timeScale; overlay/anima��es precisam continuar.
             Time.timeScale = 1f;
@@ -247,7 +247,7 @@ namespace _ImmersiveGames.Scripts.StateMachineSystems.GameStates
 
         public override void OnExit()
         {
-            ReleaseGate(OldSimulationGateTokens.Victory);
+            ReleaseGate(OldLegacySimulationGateTokens.Victory);
 
             // Normaliza por seguran�a.
             Time.timeScale = 1f;

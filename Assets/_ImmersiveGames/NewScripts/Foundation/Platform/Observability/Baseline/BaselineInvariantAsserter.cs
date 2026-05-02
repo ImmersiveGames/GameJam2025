@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Observability.Baseline
     /// <summary>
     /// Opt-in (dev/QA) asserter para tornar o Baseline 2.0 "autofail":
     /// valida ordem de eventos SceneFlow, emissão do ResetCompleted antes do FadeOut,
-    /// coerência de tokens do SimulationGate e idempotência de fim de run.
+    /// coerência de tokens do LegacySimulationGate e idempotência de fim de run.
     ///
     /// Importante:
     /// - Não é parte do pipeline de produção por padrão.
@@ -29,12 +29,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Observability.Baseline
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class BaselineInvariantAsserter : IDisposable
     {
-        private const string SceneTransitionToken = SimulationGateTokens.SceneTransition;
-        private const string PauseToken = SimulationGateTokens.Pause;
+        private const string SceneTransitionToken = LegacySimulationGateTokens.SceneTransition;
+        private const string PauseToken = LegacySimulationGateTokens.Pause;
 
         private readonly Dictionary<string, TransitionState> _statesBySignature = new();
 
-        private ISimulationGateService _gate;
+        private ILegacySimulationGateService _gate;
         private bool _disposed;
 
         // Run tracking
@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Observability.Baseline
                     return true;
                 }
 
-                provider.TryGetGlobal<ISimulationGateService>(out var gate);
+                provider.TryGetGlobal<ILegacySimulationGateService>(out var gate);
 
                 var instance = new BaselineInvariantAsserter(gate);
                 provider.RegisterGlobal(instance, allowOverride: false);
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Observability.Baseline
             }
         }
 
-        public BaselineInvariantAsserter(ISimulationGateService gate)
+        public BaselineInvariantAsserter(ILegacySimulationGateService gate)
         {
             _gate = gate;
 
@@ -603,7 +603,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Observability.Baseline
                     return false;
                 }
 
-                if (provider.TryGetGlobal<ISimulationGateService>(out var resolved) && resolved != null)
+                if (provider.TryGetGlobal<ILegacySimulationGateService>(out var resolved) && resolved != null)
                 {
                     _gate = resolved;
                     return true;

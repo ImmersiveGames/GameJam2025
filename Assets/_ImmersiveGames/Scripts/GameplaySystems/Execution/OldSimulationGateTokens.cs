@@ -4,7 +4,7 @@
     /// Tokens padrão para bloquear/liberar simulação.
     /// Evita "string solta" espalhada.
     /// </summary>
-    public static class OldSimulationGateTokens
+    public static class OldLegacySimulationGateTokens
     {
         public const string Menu = "state.menu";
         public const string Pause = "state.pause";

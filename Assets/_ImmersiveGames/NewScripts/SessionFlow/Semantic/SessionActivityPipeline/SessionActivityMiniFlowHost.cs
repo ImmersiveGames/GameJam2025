@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline
@@ -17,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
 
         public SessionActivityRuntimeState State => _pipeline != null ? _pipeline.State : null;
         public SessionActivityMiniCatalog Catalog => _catalog;
+        public SimulationGateState GateState => _pipeline != null ? _pipeline.GateState : null;
 
         private void Awake()
         {
@@ -120,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             builder.AppendLine($"pipelineId='{State.PipelineId}' sessionStateId='{State.SessionId}'");
             builder.AppendLine($"entrySequence='{State.CurrentEntrySequence}'");
             builder.AppendLine($"simulationState='{State.CurrentSimulationState}'");
+            builder.AppendLine($"gateState='{GateState}'");
             builder.AppendLine($"catalog='{_catalog.Summary}'");
             builder.AppendLine($"started='{State.HasStarted}' completed='{State.HasCompleted}' stage='{State.CurrentStage}'");
             builder.AppendLine($"definition='{State.CurrentDefinition}'");
@@ -166,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             }
 
             string outcome = result.Kind.ToString();
-            Debug.Log($"[OBS][SessionActivityPipeline][Host] action='{action}' outcome='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}'");
+            Debug.Log($"[OBS][SessionActivityPipeline][Host] action='{action}' outcome='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}' gateState='{GateState}'");
 
             for (int index = 0; index < result.Facts.Count; index++)
             {
@@ -195,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
 
         private string BuildHostBanner()
         {
-            return $"[OBS][SessionActivityPipeline][Host] initialized sessionId='{sessionId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}' catalog='{_catalog.Summary}'";
+            return $"[OBS][SessionActivityPipeline][Host] initialized sessionId='{sessionId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
         }
     }
 }

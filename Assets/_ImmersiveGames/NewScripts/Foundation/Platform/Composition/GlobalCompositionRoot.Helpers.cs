@@ -1,6 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -46,14 +46,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
         }
 
-        private static ISimulationGateService ResolveSimulationGateServiceOrFail()
+        private static ILegacySimulationGateService ResolveLegacySimulationGateServiceOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) && gateService != null)
+            if (DependencyManager.Provider.TryGetGlobal<ILegacySimulationGateService>(out var gateService) && gateService != null)
             {
                 return gateService;
             }
 
-            throw new InvalidOperationException("[FATAL][Config][GlobalCompositionRoot] ISimulationGateService obrigatorio ausente no DI global.");
+            throw new InvalidOperationException("[FATAL][Config][GlobalCompositionRoot] ILegacySimulationGateService obrigatorio ausente no DI global.");
         }
     }
 }

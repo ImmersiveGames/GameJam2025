@@ -1,5 +1,5 @@
 using System;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Context;
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
             return true;
         }
 
-        public StateDependentServiceState ResolveServiceState(ISimulationGateService gateService, IGameLoopService gameLoopService)
+        public StateDependentServiceState ResolveServiceState(ILegacySimulationGateService gateService, IGameLoopService gameLoopService)
         {
             if (IsPausedOnlyByGate(gateService))
             {
@@ -190,14 +190,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
             return _state;
         }
 
-        public bool IsPausedOnlyByGate(ISimulationGateService gateService)
+        public bool IsPausedOnlyByGate(ILegacySimulationGateService gateService)
         {
             if (gateService == null)
             {
                 return false;
             }
 
-            if (!gateService.IsTokenActive(SimulationGateTokens.Pause))
+            if (!gateService.IsTokenActive(LegacySimulationGateTokens.Pause))
             {
                 return false;
             }
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
             return gateService.ActiveTokenCount == 1;
         }
 
-        public bool IsInfraReady(ISimulationGateService gateService)
+        public bool IsInfraReady(ILegacySimulationGateService gateService)
         {
             if (gateService is { IsOpen: false })
             {
@@ -221,7 +221,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
         }
 
         public bool EvaluateMoveAllowed(
-            ISimulationGateService gateService,
+            ILegacySimulationGateService gateService,
             IGameLoopService gameLoopService,
             out StateDependentMoveDecision decision,
             out StateDependentServiceState resolvedState,

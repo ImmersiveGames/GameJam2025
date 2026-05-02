@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Integration;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Runtime
         private readonly string _sceneName;
 
         public SceneResetContext(
-            ISimulationGateService gateService,
+            ILegacySimulationGateService gateService,
             IReadOnlyList<IWorldSpawnService> spawnServices,
             IActorRegistry actorRegistry,
             ISpawnResetParticipationReadPort participationReadPort,

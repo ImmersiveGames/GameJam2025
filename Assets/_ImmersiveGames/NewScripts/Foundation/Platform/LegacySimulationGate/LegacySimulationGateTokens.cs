@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
+namespace _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate
 {
     /// <summary>
     /// Tokens padrão para bloquear/liberar simulação.
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate
     /// - Evite usar "state.*" para macro-estados (ready/gameover/victory) como fonte de verdade;
     ///   isso deve vir do GameLoop/StateMachine e eventos, não do Gate.
     /// </summary>
-    public static class SimulationGateTokens
+    public static class LegacySimulationGateTokens
     {
         // Estado especial suportado (pausa).
         public const string Pause = "state.pause";

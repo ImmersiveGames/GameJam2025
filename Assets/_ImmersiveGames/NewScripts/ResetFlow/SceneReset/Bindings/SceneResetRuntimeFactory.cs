@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
     internal sealed class SceneResetRuntimeFactory
     {
         private readonly string _sceneName;
-        private readonly ISimulationGateService _gateService;
+        private readonly ILegacySimulationGateService _gateService;
         private readonly IWorldSpawnServiceRegistry _spawnRegistry;
         private readonly IActorRegistry _actorRegistry;
         private readonly IDependencyProvider _provider;
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
 
         public SceneResetRuntimeFactory(
             string sceneName,
-            ISimulationGateService gateService,
+            ILegacySimulationGateService gateService,
             IWorldSpawnServiceRegistry spawnRegistry,
             IActorRegistry actorRegistry,
             IDependencyProvider provider,
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Bindings
             if (_gateService == null)
             {
                 DebugUtility.LogWarning(typeof(SceneResetController),
-                    $"ISimulationGateService nao injetado para a cena '{_sceneName}'. Reset seguira sem gate.");
+                    $"ILegacySimulationGateService nao injetado para a cena '{_sceneName}'. Reset seguira sem gate.");
             }
 
             if (verboseLogs)

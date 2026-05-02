@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline
@@ -283,6 +284,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             builder.AppendLine($"pipelineId='{host.State.PipelineId}' sessionStateId='{host.State.SessionId}'");
             builder.AppendLine($"entrySequence='{host.State.CurrentEntrySequence}'");
             builder.AppendLine($"simulationState='{host.State.CurrentSimulationState}'");
+            builder.AppendLine($"gateState='{host.GateState}'");
             builder.AppendLine($"started='{host.State.HasStarted}' completed='{host.State.HasCompleted}' stage='{host.State.CurrentStage}' currentActivity='{host.State.CurrentDefinition.ActivityId}'");
             builder.AppendLine($"definition='{host.State.CurrentDefinition}'");
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
@@ -316,10 +318,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             builder.AppendLine($"sessionStateId='{host.State.SessionId}'");
             builder.AppendLine($"entrySequence='{host.State.CurrentEntrySequence}'");
             builder.AppendLine($"simulationState='{host.State.CurrentSimulationState}'");
+            builder.AppendLine($"gateState='{host.GateState}'");
             builder.AppendLine($"started='{host.State.HasStarted}' completed='{host.State.HasCompleted}' stage='{host.State.CurrentStage}'");
             builder.AppendLine($"currentActivity='{host.State.CurrentDefinition.ActivityId}'");
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
+            if (host.GateState != null)
+            {
+                builder.AppendLine($"gateSessionBlocked='{host.GateState.SessionBlocked}' gateActivityBlocked='{host.GateState.ActivityBlocked}'");
+                builder.AppendLine($"gateLastFact='{host.GateState.LastFact}'");
+                builder.AppendLine($"gateLastSnapshot='{host.GateState.LastSnapshot}'");
+            }
             return builder.ToString().TrimEnd();
         }
 

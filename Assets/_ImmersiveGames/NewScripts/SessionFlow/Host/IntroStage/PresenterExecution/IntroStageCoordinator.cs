@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class IntroStageCoordinator : IIntroStageCoordinator
     {
-        private const string SimulationGateToken = SimulationGateTokens.GameplaySimulation;
+        private const string LegacySimulationGateToken = LegacySimulationGateTokens.GameplaySimulation;
 
         private readonly object _sync = new();
         private string _activeSignature = string.Empty;
@@ -335,7 +335,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                     return;
                 }
 
-                gateLease = AcquireSimulationGateOrFail(signature, routeLabel, targetScene, reason);
+                gateLease = AcquireLegacySimulationGateOrFail(signature, routeLabel, targetScene, reason);
 
                 controlService.BeginIntroStage(context);
                 Task<IntroStageCompletionResult> completionTask = WaitForCompletionAsync(context, CancellationToken.None);
@@ -448,7 +448,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                 {
                     gateLease.Dispose();
                     DebugUtility.Log<IntroStageCoordinator>(
-                        $"[OBS][IntroStageCoordinator] GameplaySimulationUnblocked token='{SimulationGateTokens.GameplaySimulation}' contextSignature='{signature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' (intro gate released).",
+                        $"[OBS][IntroStageCoordinator] GameplaySimulationUnblocked token='{LegacySimulationGateTokens.GameplaySimulation}' contextSignature='{signature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' routeKind='{routeLabel}' target='{targetScene}' reason='{reason}' (intro gate released).",
                         DebugUtility.Colors.Info);
                 }
 
@@ -515,22 +515,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
             throw new InvalidOperationException("IGameLoopService is required.");
         }
 
-        private static IDisposable AcquireSimulationGateOrFail(
+        private static IDisposable AcquireLegacySimulationGateOrFail(
             string signature,
             string routeKind,
             string targetScene,
             string reason)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISimulationGateService>(out var gateService) || gateService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<ILegacySimulationGateService>(out var gateService) || gateService == null)
             {
                 HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
-                    $"[FATAL][H1][GameLoop] ISimulationGateService obrigatorio ausente para bloquear IntroStage. signature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.");
+                    $"[FATAL][H1][GameLoop] ILegacySimulationGateService obrigatorio ausente para bloquear IntroStage. signature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.");
             }
 
-            IDisposable lease = gateService!.Acquire(SimulationGateTokens.GameplaySimulation);
+            IDisposable lease = gateService!.Acquire(LegacySimulationGateTokens.GameplaySimulation);
 
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageCoordinator] GameplaySimulationBlocked token='{SimulationGateTokens.GameplaySimulation}' contextSignature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.",
+                $"[OBS][IntroStageCoordinator] GameplaySimulationBlocked token='{LegacySimulationGateTokens.GameplaySimulation}' contextSignature='{signature}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return lease;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.ResetFlow.Interop.Runtime;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Application;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Guards;
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
             RegisterIfMissing<IWorldResetRequestService>(
                 () => new WorldResetRequestService(
                     ResolveRequired<IWorldResetService>("IWorldResetService"),
-                    ResolveRequired<ISimulationGateService>("ISimulationGateService")),
+                    ResolveRequired<ILegacySimulationGateService>("ILegacySimulationGateService")),
                 "[WorldReset] IWorldResetRequestService ja registrado no DI global.",
                 "[WorldReset] IWorldResetRequestService registrado no DI global.");
         }
@@ -131,12 +131,12 @@ namespace _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers
 
             IDependencyProvider provider = ResolveRequired<IDependencyProvider>("IDependencyProvider");
             IWorldResetPolicy policy = ResolveRequired<IWorldResetPolicy>("IWorldResetPolicy");
-            ISimulationGateService gateService = ResolveRequired<ISimulationGateService>("ISimulationGateService");
+            ILegacySimulationGateService gateService = ResolveRequired<ILegacySimulationGateService>("ILegacySimulationGateService");
             IWorldResetLocalExecutorRegistry localExecutorRegistry = ResolveRequired<IWorldResetLocalExecutorRegistry>("IWorldResetLocalExecutorRegistry");
 
             var guards = new List<IWorldResetGuard>(1)
             {
-                new SimulationGateWorldResetGuard(gateService)
+                new LegacySimulationGateWorldResetGuard(gateService)
             };
 
             var validators = new List<IWorldResetValidator>(1)

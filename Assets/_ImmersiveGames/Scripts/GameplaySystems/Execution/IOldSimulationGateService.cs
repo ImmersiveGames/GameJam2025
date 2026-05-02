@@ -13,7 +13,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
     /// Padrão recomendado: cada sistema/domínio/estado adquire um token no OnEnter
     /// e libera no OnExit (ou via IDisposable).
     /// </summary>
-    public interface IOldSimulationGateService
+    public interface IOldLegacySimulationGateService
     {
         /// <summary>Gate está aberto (nenhum token ativo)?</summary>
         bool IsOpen { get; }

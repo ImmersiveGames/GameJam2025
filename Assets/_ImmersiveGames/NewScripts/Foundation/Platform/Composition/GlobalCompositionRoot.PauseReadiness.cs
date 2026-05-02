@@ -1,6 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -10,11 +10,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         // Readiness gate
         // --------------------------------------------------------------------
 
-        private static void InitializeReadinessGate(ISimulationGateService gateService)
+        private static void InitializeReadinessGate(ILegacySimulationGateService gateService)
         {
             if (gateService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][GlobalCompositionRoot] ISimulationGateService obrigatorio ausente para inicializar readiness.");
+                throw new InvalidOperationException("[FATAL][Config][GlobalCompositionRoot] ILegacySimulationGateService obrigatorio ausente para inicializar readiness.");
             }
 
             if (DependencyManager.Provider.TryGetGlobal<GameReadinessService>(out var registered) && registered != null)
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             DependencyManager.Provider.RegisterGlobal(_gameReadinessService);
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → SimulationGate).",
+                "[Readiness] GameReadinessService inicializado e registrado no DI global (Scene Flow → LegacySimulationGate).",
                 DebugUtility.Colors.Info);
         }
 

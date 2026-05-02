@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.QA
         [SerializeField] private string defaultVictoryReason = "QA ForceVictory";
 
         [Header("QA Gate Token (independente da FSM)")]
-        [Tooltip("Token de QA para fechar/abrir o SimulationGate sem envolver FSM e sem mexer no Time.timeScale.")]
+        [Tooltip("Token de QA para fechar/abrir o LegacySimulationGate sem envolver FSM e sem mexer no Time.timeScale.")]
         [SerializeField] private string qaPauseGateToken = "qa.pause";
 
         [Header("Reset IN-PLACE (Orchestrator)")]
@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.QA
         [Tooltip("Se true, quando ResetInPlace(AllActorsInScene) concluir com sucesso, tamb�m reseta o GameTimer para a dura��o configurada.")]
         [SerializeField] private bool resetTimerOnInPlaceAllActors = true;
 
-        private IOldSimulationGateService _gateService;
+        private IOldLegacySimulationGateService _gateService;
         private bool _qaGateTokenHeld;
 
         private void Awake()
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.Scripts.QA
             }
 
             var provider = DependencyManager.Provider;
-            if (provider != null && provider.TryGetGlobal<IOldSimulationGateService>(out var gate))
+            if (provider != null && provider.TryGetGlobal<IOldLegacySimulationGateService>(out var gate))
             {
                 _gateService = gate;
                 return true;
@@ -355,7 +355,7 @@ namespace _ImmersiveGames.Scripts.QA
             if (!TryResolveGateService())
             {
                 DebugUtility.LogWarning<MenuContextController>(
-                    "[MenuContext][QA Gate] IOldSimulationGateService n�o encontrado no DI.");
+                    "[MenuContext][QA Gate] IOldLegacySimulationGateService n�o encontrado no DI.");
                 return;
             }
 
@@ -382,7 +382,7 @@ namespace _ImmersiveGames.Scripts.QA
             if (!TryResolveGateService())
             {
                 DebugUtility.LogWarning<MenuContextController>(
-                    "[MenuContext][QA Gate] IOldSimulationGateService n�o encontrado no DI.");
+                    "[MenuContext][QA Gate] IOldLegacySimulationGateService n�o encontrado no DI.");
                 return;
             }
 

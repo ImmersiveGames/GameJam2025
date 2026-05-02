@@ -2,7 +2,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
+using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
     /// <summary>
     /// Orquestra readiness do jogo em resposta ao Scene Flow.
     /// Consome transições para refletir gate/readiness; não decide reset nem policy de rota.
-    /// Bloqueia simulação durante transições de cena usando ISimulationGateService
+    /// Bloqueia simulação durante transições de cena usando ILegacySimulationGateService
     /// e emite snapshots de readiness via EventBus para consumidores (ex.: GameplayStateGate).
     ///
     /// Nota: baseline/QA pode não disparar Scene Flow; para isso existe SetGameplayReady(...) para sinalização manual.
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameReadinessService : IDisposable
     {
-        private readonly ISimulationGateService? _gateService;
+        private readonly ILegacySimulationGateService? _gateService;
 
         private IDisposable? _activeGateHandle;
         private bool _gameplayReady;
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
         private bool _hasLastSnapshot;
         private ReadinessSnapshot _lastSnapshot;
 
-        public GameReadinessService(ISimulationGateService gateService)
+        public GameReadinessService(ILegacySimulationGateService gateService)
         {
             _gateService = gateService;
 
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
                 _gateService.GateChanged += OnGateChanged;
             }
 
-            DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado como consumidor de Scene Flow -> SimulationGate.");
+            DebugUtility.LogVerbose<GameReadinessService>("[Readiness] GameReadinessService registrado como consumidor de Scene Flow -> LegacySimulationGate.");
 
             // Snapshot inicial (útil em bootstrap/QA). Publica apenas se houver mudança (primeira vez sempre publica).
             PublishSnapshot("bootstrap", force: false);
@@ -181,14 +181,14 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
             if (_gateService == null)
             {
                 DebugUtility.LogError<GameReadinessService>(
-                    "[Readiness] ISimulationGateService indisponível. Não foi possível bloquear a simulação durante a transição.");
+                    "[Readiness] ILegacySimulationGateService indisponível. Não foi possível bloquear a simulação durante a transição.");
                 return;
             }
 
-            _activeGateHandle = _gateService.Acquire(SimulationGateTokens.SceneTransition);
+            _activeGateHandle = _gateService.Acquire(LegacySimulationGateTokens.SceneTransition);
 
             DebugUtility.LogVerbose<GameReadinessService>(
-                $"[Readiness] SimulationGate adquirido com token='{SimulationGateTokens.SceneTransition}'. Active={_gateService.ActiveTokenCount}. IsOpen={_gateService.IsOpen}");
+                $"[Readiness] LegacySimulationGate adquirido com token='{LegacySimulationGateTokens.SceneTransition}'. Active={_gateService.ActiveTokenCount}. IsOpen={_gateService.IsOpen}");
         }
 
         private void ReleaseGateHandle()
@@ -204,7 +204,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<GameReadinessService>($"[Readiness] Erro ao liberar SimulationGate: {ex}");
+                DebugUtility.LogError<GameReadinessService>($"[Readiness] Erro ao liberar LegacySimulationGate: {ex}");
             }
             finally
             {

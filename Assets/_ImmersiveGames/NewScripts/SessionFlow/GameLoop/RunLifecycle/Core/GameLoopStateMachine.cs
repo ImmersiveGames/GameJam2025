@@ -106,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         /// Capability map por estado macro do GameLoop.
         ///
         /// Importante:
-        /// - Este metodo NAO e gate-aware (nao consulta SimulationGate/Readiness).
+        /// - Este metodo NAO e gate-aware (nao consulta LegacySimulationGate/Readiness).
         /// - Nao deve ser usado como autorizacao final de gameplay.
         /// - A decisao final deve ocorrer em IGameplayStateGate (gate-aware).
         /// </summary>
