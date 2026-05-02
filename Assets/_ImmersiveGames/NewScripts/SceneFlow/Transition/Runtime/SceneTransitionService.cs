@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
             EnsureTransitionProfileOrFailFast(hydratedRequest);
             var context = BuildContextWithResetDecision(hydratedRequest, routeDefinition);
             string signature = SceneTransitionSignature.Compute(context) ?? string.Empty;
-            LogResolvedRouteForObservability(hydratedRequest, signature);
+            LogResolvedRouteForObservability(hydratedRequest, routeDefinition, signature);
 
             DebugUtility.Log<SceneTransitionService>(
                 $"[OBS][SceneFlow] RouteAppliedPolicy routeId='{context.RouteId}' requiresWorldReset={context.RequiresWorldReset} decisionSource='{context.ResetDecisionSource}' decisionReason='{context.ResetDecisionReason}' signature='{signature}'.",
@@ -223,10 +223,12 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
             throw new InvalidOperationException(message);
         }
 
-        private static void LogResolvedRouteForObservability(SceneTransitionRequest request, string signature)
+        private static void LogResolvedRouteForObservability(SceneTransitionRequest request, SceneRouteDefinition? routeDefinition, string signature)
         {
+            string routeProfileId = routeDefinition.HasValue ? routeDefinition.Value.RouteProfile.ProfileId.ToString() : "<none>";
+            string routeProfileClass = routeDefinition.HasValue ? routeDefinition.Value.RouteProfile.RouteClass.ToString() : "<none>";
             DebugUtility.Log<SceneTransitionService>(
-                $"[OBS][SceneFlow] RouteApplied routeId='{request.RouteId}' scenesToLoadCount={request.ScenesToLoad.Count} activeScene='{request.TargetActiveScene}' transitionProfile='{request.TransitionProfileName}' signature='{signature}'.",
+                $"[OBS][SceneFlow] RouteApplied routeId='{request.RouteId}' scenesToLoadCount={request.ScenesToLoad.Count} activeScene='{request.TargetActiveScene}' transitionProfile='{request.TransitionProfileName}' signature='{signature}' routeProfileId='{routeProfileId}' routeProfileClass='{routeProfileClass}'.",
                 DebugUtility.Colors.Info);
         }
 

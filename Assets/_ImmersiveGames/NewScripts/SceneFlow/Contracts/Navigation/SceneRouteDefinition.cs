@@ -8,7 +8,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
         Unspecified = 0,
         Frontend = 1,
         Gameplay = 2,
-        Overlay = 3
+        Overlay = 3,
+        Sandbox = 4
     }
 
     /// <summary>
@@ -22,6 +23,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
         public SceneRouteKind RouteKind { get; }
         public bool RequiresWorldReset { get; }
         public bool HasPhaseDefinitionCatalog { get; }
+        public SceneRouteProfile RouteProfile { get; }
+        public bool HasRouteProfile => RouteProfile.IsValid;
 
         public SceneRouteDefinition(
             IReadOnlyList<string> scenesToLoad,
@@ -29,7 +32,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
             string targetActiveScene,
             SceneRouteKind routeKind,
             bool requiresWorldReset,
-            bool hasPhaseDefinitionCatalog)
+            bool hasPhaseDefinitionCatalog,
+            SceneRouteProfile routeProfile)
         {
             ScenesToLoad = scenesToLoad ?? Array.Empty<string>();
             ScenesToUnload = scenesToUnload ?? Array.Empty<string>();
@@ -37,6 +41,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
             RouteKind = routeKind;
             RequiresWorldReset = requiresWorldReset;
             HasPhaseDefinitionCatalog = hasPhaseDefinitionCatalog;
+            RouteProfile = routeProfile;
         }
 
         public bool HasSceneData =>
@@ -45,7 +50,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
             !string.IsNullOrWhiteSpace(TargetActiveScene);
 
         public override string ToString()
-            => $"active='{TargetActiveScene}', kind='{RouteKind}', requiresWorldReset={RequiresWorldReset}, phaseCatalogPresent={HasPhaseDefinitionCatalog}, load=[{FormatList(ScenesToLoad)}], unload=[{FormatList(ScenesToUnload)}]";
+            => $"active='{TargetActiveScene}', kind='{RouteKind}', requiresWorldReset={RequiresWorldReset}, phaseCatalogPresent={HasPhaseDefinitionCatalog}, profile='{RouteProfile.ProfileId}', load=[{FormatList(ScenesToLoad)}], unload=[{FormatList(ScenesToUnload)}]";
 
         private static string FormatList(IEnumerable<string> list)
             => string.Join(", ", list.Where(entry => !string.IsNullOrWhiteSpace(entry)));

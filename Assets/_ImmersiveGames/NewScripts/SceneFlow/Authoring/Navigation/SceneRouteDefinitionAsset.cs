@@ -33,11 +33,14 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
         [SerializeField] private SceneRouteKind routeKind = SceneRouteKind.Unspecified;
         [SerializeField] private bool requiresWorldReset;
         [SerializeField] private PhaseDefinitionCatalogAsset phaseDefinitionCatalog;
+        // Base 1.1: profile explicito; routeKind segue como classificacao da rota.
+        [SerializeField] private SceneRouteProfileAsset routeProfile;
 
         public SceneRouteId RouteId => routeId;
         public SceneRouteKind RouteKind => routeKind;
         public bool RequiresWorldReset => requiresWorldReset;
         public PhaseDefinitionCatalogAsset PhaseDefinitionCatalog => phaseDefinitionCatalog;
+        public SceneRouteProfileAsset RouteProfile => routeProfile;
 
         public SceneRouteDefinition ToDefinition()
         {
@@ -46,12 +49,16 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
             string[] load = ResolveKeys(scenesToLoadKeys, nameof(scenesToLoadKeys));
             string[] unload = ResolveKeys(scenesToUnloadKeys, nameof(scenesToUnloadKeys));
             string active = ResolveSingleKey(targetActiveSceneKey, nameof(targetActiveSceneKey));
+            SceneRouteProfile profile = routeProfile.ToProfile();
 
             DebugUtility.Log(typeof(SceneRouteDefinitionAsset),
                 $"[OBS][SceneFlow] RouteSceneListResolved routeId='{routeId}' field='{nameof(scenesToUnloadKeys)}' scenes=[{FormatSceneDetails(unload)}].",
                 DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(SceneRouteDefinitionAsset),
+                $"[OBS][SceneFlow] RouteProfileResolved routeId='{routeId}' routeKind='{routeKind}' routeProfileAsset='{routeProfile.name}' routeProfileId='{profile.ProfileId}' routeProfileClass='{profile.RouteClass}'.",
+                DebugUtility.Colors.Info);
 
-            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog != null);
+            return new SceneRouteDefinition(load, unload, active, routeKind, requiresWorldReset, phaseDefinitionCatalog != null, profile);
         }
 
         public void ValidateRoutePolicyOrFailFast()
@@ -93,6 +100,23 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation
             if (routeKind == SceneRouteKind.Unspecified)
             {
                 return $"routeId='{routeId}' com RouteKind='{SceneRouteKind.Unspecified}' e invalido para policy de reset.";
+            }
+
+            if (routeProfile == null)
+            {
+                return $"routeId='{routeId}' exige SceneRouteProfileAsset configurado.";
+            }
+
+            string profileValidationError = routeProfile.GetValidationError();
+            if (!string.IsNullOrWhiteSpace(profileValidationError))
+            {
+                return $"routeId='{routeId}' possui SceneRouteProfileAsset invalido. detail='{profileValidationError}'";
+            }
+
+            SceneRouteProfile profile = routeProfile.ToProfile();
+            if (!profile.MatchesRouteKind(routeKind))
+            {
+                return $"routeId='{routeId}' RouteKind='{routeKind}' deve coincidir com profile.RouteClass='{profile.RouteClass}'.";
             }
 
             if (routeKind == SceneRouteKind.Gameplay && !requiresWorldReset)

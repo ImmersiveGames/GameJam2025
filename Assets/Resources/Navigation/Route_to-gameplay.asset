@@ -24,3 +24,4 @@ MonoBehaviour:
   routeKind: 2
   requiresWorldReset: 1
   phaseDefinitionCatalog: {fileID: 11400000, guid: 89c160ee6bc342d1974c05b7be372e79, type: 2}
+  routeProfile: {fileID: 11400000, guid: 1a2b3c4d5e6f708192a3b4c5d6e7f809, type: 2}

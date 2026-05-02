@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             ValidateGameplayRouteOrFail(routeId, gameplayEntry, normalizedReason);
 
             DebugUtility.Log(typeof(GameNavigationService),
-                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched using canonical phase catalog runtime state; GameplaySessionFlow consome pendingTarget/currentCommitted no prepare phase-side.",
+                "[OBS][NavigationCore][Operational] StartGameplayRouteAsync dispatched using canonical route payload and style resolution.",
                 DebugUtility.Colors.Info);
 
             var routeEntry = new GameNavigationEntry(routeId, gameplayEntry.StyleRef, normalizedPayload, gameplayEntry.RouteRef);
@@ -93,6 +93,71 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
             }
 
             return ExecuteCoreIntentAsync(intent, reason);
+        }
+
+        public async Task NavigateToRoute(SceneRouteId routeId, string reason = null)
+        {
+            if (!routeId.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(GameNavigationService),
+                    $"[FATAL][H1][NavigationCore] NavigateToRoute with invalid routeId. routeId='{routeId}' reason='{reason ?? "<null>"}'.");
+            }
+
+            if (Interlocked.CompareExchange(ref _navigationInProgress, 1, 0) == 1)
+            {
+                DebugUtility.LogWarning(typeof(GameNavigationService),
+                    $"[NavigationCore][Operational] Navigation already in progress. Ignoring routeId='{routeId}'.");
+                return;
+            }
+
+            try
+            {
+                if (!_catalog.TryGet(routeId.Value, out GameNavigationEntry entry) || !entry.IsValid)
+                {
+                    HardFailFastH1.Trigger(typeof(GameNavigationService),
+                        $"[FATAL][H1][NavigationCore] Missing explicit route entry. routeId='{routeId}' reason='{reason ?? "<null>"}'.");
+                }
+
+                if (entry.RouteRef == null)
+                {
+                    HardFailFastH1.Trigger(typeof(GameNavigationService),
+                        $"[FATAL][H1][NavigationCore] Route entry without direct routeRef. routeId='{routeId}' reason='{reason ?? "<null>"}'.");
+                }
+
+                string normalizedReason = string.IsNullOrWhiteSpace(reason) ? $"Navigation/Route:{routeId}" : reason.Trim();
+                SceneRouteDefinition routeDefinition = entry.RouteRef.ToDefinition();
+                SceneTransitionPayload payload = routeDefinition.RouteKind == SceneRouteKind.Gameplay
+                    ? SceneTransitionPayload.GameplayInitialEntry
+                    : SceneTransitionPayload.Empty;
+                TransitionStyleDefinition definition = ResolveStyle(entry);
+
+                var request = new SceneTransitionRequest(
+                    routeDefinition,
+                    routeId,
+                    entry.StyleRef,
+                    payload,
+                    definition.Profile,
+                    useFade: definition.UseFade,
+                    requestedBy: normalizedReason,
+                    reason: normalizedReason,
+                    resolvedRouteRef: entry.RouteRef);
+
+                string signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
+                DebugUtility.Log(typeof(GameNavigationService),
+                    $"[OBS][NavigationCore] DispatchRoute -> routeId='{routeId}', style='{request.StyleLabel}', reason='{normalizedReason}', signature='{signature}', routeKind='{routeDefinition.RouteKind}', routeProfileId='{routeDefinition.RouteProfile.ProfileId}', routeProfileAsset='{entry.RouteRef.RouteProfile.name}'.",
+                    DebugUtility.Colors.Info);
+
+                await _sceneFlow.TransitionAsync(request);
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(GameNavigationService),
+                    $"[NavigationCore][Operational] Exception while navigating route. routeId='{routeId}', reason='{reason ?? "<null>"}', ex={ex}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _navigationInProgress, 0);
+            }
         }
 
         private async Task ExecuteCoreIntentAsync(GameNavigationIntentKind intent, string reason)
@@ -176,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
 
             string signature = SceneTransitionSignature.Compute(SceneTransitionSignature.BuildContext(request));
             DebugUtility.Log(typeof(GameNavigationService),
-                $"[OBS][NavigationCore] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', gameplayEntryKind='{request.Payload.GameplayEntryKind}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}'.",
+                $"[OBS][NavigationCore] DispatchIntent -> intentId='{intentId}', sceneRouteId='{entry.RouteId}', style='{request.StyleLabel}', reason='{reason ?? "<null>"}', signature='{signature}', gameplayEntryKind='{request.Payload.GameplayEntryKind}', UseFade={request.UseFade}, Profile='{request.TransitionProfileName}', routeProfileId='{routeDefinition.RouteProfile.ProfileId}', routeProfileAsset='{entry.RouteRef.RouteProfile.name}'.",
                 DebugUtility.Colors.Info);
 
             await _sceneFlow.TransitionAsync(request);
