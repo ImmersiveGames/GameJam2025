@@ -31,15 +31,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         {
             if (autoStart)
             {
-                StartDemo();
+                DebugDirectStart();
             }
         }
 
+        [Obsolete("Use DebugDirectStart for explicit QA-only direct start.")]
         public void StartDemo()
         {
+            DebugDirectStart();
+        }
+
+        public void DebugDirectStart()
+        {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.Start("SessionActivityMiniFlowHost", "Start Activity 01");
-            LogResult("StartDemo", result);
+            SessionActivityCommandResult result = _pipeline.DebugDirectStart("SessionActivityMiniFlowHost", "Start Activity 01");
+            LogResult("DebugDirectStart", result);
         }
 
         public void CompleteCurrentActivity()

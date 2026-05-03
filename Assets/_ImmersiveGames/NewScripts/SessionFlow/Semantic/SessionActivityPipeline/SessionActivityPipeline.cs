@@ -88,6 +88,77 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             return Execute(BuildStartCommand(source, reason));
         }
 
+        public SessionActivityCommandResult DebugDirectStart(string source, string reason)
+        {
+            return Start(source, reason);
+        }
+
+        public SessionActivityCommandResult StartFromPreparedHandoff(
+            _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline.SessionActivityEntryHandoff handoff,
+            string source,
+            string reason)
+        {
+            if (!handoff.IsValid)
+            {
+                throw new InvalidOperationException("SessionActivityEntryHandoff is invalid.");
+            }
+
+            if (IsTerminalCompleted())
+            {
+                return RejectTerminalCommand(SessionActivityCommandKind.StartDemo, source, reason);
+            }
+
+            if (_state.HasStarted)
+            {
+                return RejectStartCommand(source, reason);
+            }
+
+            SessionActivityDefinition initialDefinition = ResolveActivityByIdOrFail(handoff.ActivityId);
+            if (initialDefinition.ActivityOrdinal != handoff.ActivityOrdinal)
+            {
+                throw new InvalidOperationException($"Prepared handoff activity ordinal mismatch. expected='{initialDefinition.ActivityOrdinal}' got='{handoff.ActivityOrdinal}'.");
+            }
+
+            if (handoff.EntrySequence <= 0)
+            {
+                throw new InvalidOperationException("Prepared handoff requires a positive entry sequence.");
+            }
+
+            SessionActivityIdentity activationIdentity = BuildIdentity(initialDefinition, SessionActivityStage.ActivationExecuting, handoff.EntrySequence);
+            SessionActivityCommand command = new(
+                SessionActivityCommandKind.StartDemo,
+                activationIdentity,
+                source,
+                reason);
+
+            List<SessionActivityFact> emittedFacts = new();
+            List<SessionActivitySnapshot> emittedSnapshots = new();
+
+            if (TryRejectStaleOrForeignCommand(command, emittedFacts, out SessionActivityCommandResult rejectedResult))
+            {
+                return rejectedResult;
+            }
+
+            _state.Reset(PipelineId, _sessionId);
+            _state.SetCurrentDefinition(initialDefinition);
+            _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivationExecuting);
+            _state.MarkStarted();
+            _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff handoff='{handoff}' source='{source}' reason='{reason}'");
+
+            EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "Mini pipeline started from prepared handoff.");
+            EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
+
+            EnterActivity(initialDefinition, command, emittedFacts, emittedSnapshots, handoff.EntrySequence);
+
+            SessionActivityCommandResult result = new(
+                SessionActivityCommandResultKind.Accepted,
+                command,
+                emittedFacts,
+                emittedFacts.Count > 0 ? emittedFacts[emittedFacts.Count - 1].Reason : string.Empty);
+            _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff_completed handoff='{handoff}' result='{result.Kind}'");
+            return result;
+        }
+
         public SessionActivityCommandResult CompleteCurrentActivity(string source, string reason)
         {
             if (IsTerminalCompleted())
