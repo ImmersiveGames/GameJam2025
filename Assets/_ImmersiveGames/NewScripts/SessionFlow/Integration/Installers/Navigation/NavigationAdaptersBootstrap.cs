@@ -4,8 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation
 {
     /// <summary>
@@ -30,13 +28,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigati
                 throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] BootstrapConfigAsset required and missing to compose adapters runtime.");
             }
 
-            EnsureGameLoopInputBridge();
             EnsureFrontendQuitService();
 
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(NavigationAdaptersBootstrap),
-                "[OBS][NavigationAdapters][Operational] Runtime composition completed. scope='GameLoopInputCommandBridge + FrontendQuitService'.",
+                "[OBS][NavigationAdapters][Operational] Runtime composition completed. scope='FrontendQuitService'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -55,30 +52,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigati
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureGameLoopInputBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GameLoopInputCommandBridge>(out _))
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] IGameLoopService missing from global DI before composing GameLoopInputCommandBridge.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] IGameNavigationService missing from global DI before composing GameLoopInputCommandBridge.");
-            }
-
-            var bridge = new GameLoopInputCommandBridge(gameLoopService, navigationService);
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(NavigationAdaptersBootstrap),
-                "[OBS][NavigationAdapters][Operational] GameLoopInputCommandBridge composed after NavigationService became available.",
-                DebugUtility.Colors.Info);
-        }
     }
 }
 

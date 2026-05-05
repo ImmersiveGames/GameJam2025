@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation
 {
@@ -98,11 +97,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigati
             if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][NavigationCore] IGameNavigationService missing from global DI before module composition checkpoint.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<GameLoopInputCommandBridge>(out var inputBridge) || inputBridge == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][NavigationAdapters] GameLoopInputCommandBridge missing from global DI before module composition checkpoint.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IFrontendQuitService>(out var frontendQuitService) || frontendQuitService == null)
