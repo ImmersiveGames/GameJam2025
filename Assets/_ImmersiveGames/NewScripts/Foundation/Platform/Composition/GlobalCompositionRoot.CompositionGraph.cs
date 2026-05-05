@@ -12,6 +12,7 @@ using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
 using _ImmersiveGames.NewScripts.SceneFlow.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
@@ -117,6 +118,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     bootstrapDependencies: System.Array.Empty<string>()),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SessionOperationalNavigationCompositionDescriptor.Descriptor),
             };
         }
 

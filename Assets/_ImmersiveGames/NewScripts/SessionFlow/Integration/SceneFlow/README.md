@@ -1,5 +1,10 @@
 # SessionFlow / Integration / SceneFlow
 
-`SessionOperationalRouteTransitionBridge` observa e fecha o fluxo de `Boot -> Menu` e `Menu -> Sandbox` para o `SessionOperationalPipeline`.
+`SessionOperationalRouteTransitionBridge` observa a transicao tecnica do `SessionOperationalPipeline`.
 
-No profile `Base11Sandbox`, `SceneFlowInputModeBridge` emite `InputModeRequestEvent` diretamente quando `SessionIntegration` nao esta composto. Nao ha dependencia obrigatoria de `IntroStage`, `GameLoop` ou `RunEndRail` neste caminho minimo.
+No profile `Base11Sandbox`, `SessionOperationalNavigationComposer` compoe:
+- `Base11SandboxStartupNavigationProducer`
+- `SessionOperationalNavigationService`
+- `ISessionOperationalTransitionPort` via `SceneFlowSessionOperationalTransitionAdapter` temporario
+
+`SceneFlowInputModeBridge` emite `InputModeRequestEvent` diretamente quando `SessionIntegration` nao esta composto. Nao ha dependencia obrigatoria de `IntroStage`, `GameLoop` ou `RunEndRail` neste caminho minimo.

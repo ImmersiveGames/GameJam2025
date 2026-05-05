@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
@@ -51,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
         private EventBinding<NewRunDecisionCompletedEvent> _runDecisionCompletedBinding;
         private EventBinding<GameRunStartedEvent> _runStartedBinding;
         private bool _registered;
+        private bool _sandboxSkipped;
         private bool _isVisible;
         private bool _actionRequested;
         private readonly Queue<Action> _mainThreadActions = new();
@@ -64,6 +66,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
         private void Awake()
         {
             _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+
+            if (ShouldSkipForBase11Sandbox())
+            {
+                _sandboxSkipped = true;
+                DebugUtility.Log(typeof(PostRunOverlayController),
+                    $"[OBS][Base11Sandbox][UI] post_run_overlay_skipped reason='sandbox_no_run_end' scene='{gameObject.scene.name}'.",
+                    DebugUtility.Colors.Info);
+                gameObject.SetActive(false);
+                enabled = false;
+                return;
+            }
 
             if (rootCanvasGroup == null)
             {
@@ -84,19 +97,42 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
         private void Start()
         {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
             EnsureDependenciesInjected();
         }
 
         private void Update()
         {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
             DrainMainThreadActions();
         }
 
 
-        private void OnEnable() => RegisterBindings();
+        private void OnEnable()
+        {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
+            RegisterBindings();
+        }
 
         private void OnDisable()
         {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
             UnregisterBindings();
             if (_presenterHost != null)
             {
@@ -106,6 +142,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
         private void OnDestroy()
         {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
             UnregisterBindings();
         }
 
@@ -459,6 +500,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
 
         private void EnsureDependenciesInjected()
         {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
             if (_dependenciesInjected)
             {
                 return;
@@ -481,8 +527,31 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindi
             }
         }
 
+        private bool ShouldSkipForBase11Sandbox()
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var resolvedRuntimeModeConfig) &&
+                resolvedRuntimeModeConfig != null)
+            {
+                return resolvedRuntimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
+            }
+
+            RuntimeModeConfig runtimeModeConfig = Resources.Load<RuntimeModeConfig>(RuntimeModeConfig.DefaultResourcesPath);
+            if (runtimeModeConfig == null)
+            {
+                return false;
+            }
+
+            return runtimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
+        }
+
         private void ValidateReferences()
         {
+            if (_sandboxSkipped)
+            {
+                return;
+            }
+
             if (rootCanvasGroup == null)
             {
                 DebugUtility.LogWarning<IRunDecisionStagePresenter>("[OBS][GameplaySessionFlow][RunDecision] rootCanvasGroup nao configurado no Inspector.");

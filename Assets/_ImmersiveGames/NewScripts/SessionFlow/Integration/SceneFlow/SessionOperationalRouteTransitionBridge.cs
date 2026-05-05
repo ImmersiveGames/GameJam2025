@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
@@ -15,9 +16,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
     public sealed class SessionOperationalRouteTransitionBridge : IDisposable
     {
         private const string BridgeSource = "runtime_composition";
-        private const string BootToMenuTargetScene = "MenuScene";
-        private const string MenuToSandboxTargetScene = "SessionActivitySandboxScene";
-
         private readonly SessionOperationalPipeline _pipeline;
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private readonly EventBinding<SceneTransitionFadeInCompletedEvent> _fadeInCompletedBinding;
@@ -27,15 +25,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         private readonly string _source;
 
         private bool _disposed;
+        private bool _hasActiveOperation;
+        private bool _activeOperationCompleted;
         private string _activeTransitionSignature = string.Empty;
         private string _activeRouteOperationId = string.Empty;
+        private string _activeRouteId = string.Empty;
+        private string _activeRouteProfileId = string.Empty;
         private int _transitionSequence;
 
         public SessionOperationalRouteTransitionBridge(
             SessionOperationalPipeline pipeline = null,
             string source = "runtime_composition")
         {
-            _pipeline = pipeline ?? new SessionOperationalPipeline();
+            if (pipeline != null)
+            {
+                _pipeline = pipeline;
+            }
+            else if (DependencyManager.Provider.TryGetGlobal<SessionOperationalPipeline>(out var existingPipeline) && existingPipeline != null)
+            {
+                _pipeline = existingPipeline;
+            }
+            else
+            {
+                _pipeline = new SessionOperationalPipeline();
+                DependencyManager.Provider.RegisterGlobal(_pipeline);
+            }
+
             _source = Normalize(source);
             if (string.IsNullOrWhiteSpace(_source))
             {
@@ -85,12 +100,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 return;
             }
 
-            if (!TryStartNewCycle(evt.context, "SceneTransitionStartedEvent", transitionId, routeId, routeProfileId, out string routeOperationId))
+            if (!TryOpenNewOperation(evt.context, "SceneTransitionStartedEvent", transitionId, routeId, routeProfileId, out string routeOperationId, out int transitionSequence, out bool openedNewOperation))
             {
                 return;
             }
 
-            if (!EmitStartedStages(evt.context, routeOperationId, transitionId, routeId, routeProfileId))
+            if (!openedNewOperation)
+            {
+                LogObservedEvent("SceneTransitionStartedEvent", evt.context, routeOperationId, transitionSequence);
+                return;
+            }
+
+            if (!EmitStartedStages(evt.context, routeOperationId, transitionId, transitionSequence, routeId, routeProfileId))
             {
                 DebugUtility.LogWarning<SessionOperationalRouteTransitionBridge>(
                     $"[OBS][SessionOperationalPipeline][Bridge] start stage sequence rejected routeId='{routeId}' signature='{transitionId}'.");
@@ -99,28 +120,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
         private void OnFadeInCompleted(SceneTransitionFadeInCompletedEvent evt)
         {
-            LogObservedEvent("SceneTransitionFadeInCompletedEvent", evt.context, _activeRouteOperationId, _transitionSequence);
-
-            if (!MatchesActiveTransition(evt.context, "SceneTransitionFadeInCompletedEvent"))
+            if (!TryResolveActiveOperation(evt.context, "SceneTransitionFadeInCompletedEvent", false, out string routeOperationId, out string transitionId, out int transitionSequence, out string routeId, out string routeProfileId))
             {
                 return;
             }
+
+            LogObservedEvent("SceneTransitionFadeInCompletedEvent", evt.context, routeOperationId, transitionSequence);
         }
 
         private void OnScenesReady(SceneTransitionScenesReadyEvent evt)
         {
-            LogObservedEvent("SceneTransitionScenesReadyEvent", evt.context, _activeRouteOperationId, _transitionSequence);
-
-            if (!MatchesActiveTransition(evt.context, "SceneTransitionScenesReadyEvent"))
+            if (!TryResolveActiveOperation(evt.context, "SceneTransitionScenesReadyEvent", false, out string routeOperationId, out string transitionId, out int transitionSequence, out string routeId, out string routeProfileId))
             {
                 return;
             }
 
-            string routeOperationId = _activeRouteOperationId;
-            string transitionId = SceneTransitionSignature.Compute(evt.context);
-            string routeId = Normalize(evt.context.RouteId.Value);
-            string routeProfileId = ResolveRouteProfileId(evt.context);
-            int transitionSequence = _transitionSequence;
+            LogObservedEvent("SceneTransitionScenesReadyEvent", evt.context, routeOperationId, transitionSequence);
             string reason = Normalize(evt.context.Reason);
 
             if (!TryEmitStage(
@@ -267,28 +282,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
         private void OnBeforeFadeOut(SceneTransitionBeforeFadeOutEvent evt)
         {
-            LogObservedEvent("SceneTransitionBeforeFadeOutEvent", evt.context, _activeRouteOperationId, _transitionSequence);
-
-            if (!MatchesActiveTransition(evt.context, "SceneTransitionBeforeFadeOutEvent"))
+            if (!TryResolveActiveOperation(evt.context, "SceneTransitionBeforeFadeOutEvent", false, out string routeOperationId, out string transitionId, out int transitionSequence, out string routeId, out string routeProfileId))
             {
                 return;
             }
+
+            LogObservedEvent("SceneTransitionBeforeFadeOutEvent", evt.context, routeOperationId, transitionSequence);
         }
 
         private void OnCompleted(SceneTransitionCompletedEvent evt)
         {
-            LogObservedEvent("SceneTransitionCompletedEvent", evt.context, _activeRouteOperationId, _transitionSequence);
-
-            if (!MatchesActiveTransition(evt.context, "SceneTransitionCompletedEvent"))
+            if (!TryResolveActiveOperation(evt.context, "SceneTransitionCompletedEvent", true, out string routeOperationId, out string transitionId, out int transitionSequence, out string routeId, out string routeProfileId))
             {
                 return;
             }
 
-            string routeOperationId = _activeRouteOperationId;
-            string transitionId = SceneTransitionSignature.Compute(evt.context);
-            string routeId = Normalize(evt.context.RouteId.Value);
-            string routeProfileId = ResolveRouteProfileId(evt.context);
-            int transitionSequence = _transitionSequence;
+            LogObservedEvent("SceneTransitionCompletedEvent", evt.context, routeOperationId, transitionSequence);
             string reason = Normalize(evt.context.Reason);
 
             if (!TryEmitStage(
@@ -305,7 +314,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 return;
             }
 
-            TryEmitStage(
+            bool completedObserved = TryEmitStage(
                 "SceneTransitionCompletedEvent",
                 "Completed",
                 SessionOperationalStage.Completed,
@@ -315,17 +324,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 routeId,
                 routeProfileId,
                 () => _pipeline.TryCompleteRouteOperation(routeOperationId, transitionId, transitionSequence, routeId, routeProfileId, _source, reason));
+
+            if (completedObserved)
+            {
+                _hasActiveOperation = false;
+                _activeOperationCompleted = true;
+                _activeTransitionSignature = string.Empty;
+                _activeRouteOperationId = string.Empty;
+                _activeRouteId = string.Empty;
+                _activeRouteProfileId = string.Empty;
+            }
         }
 
         private bool EmitStartedStages(
             SceneTransitionContext context,
             string routeOperationId,
             string transitionId,
+            int transitionSequence,
             string routeId,
             string routeProfileId)
         {
-            int transitionSequence = _transitionSequence;
-
             if (!TryEmitStage(
                     "SceneTransitionStartedEvent",
                     "RouteOperationStarted",
@@ -394,25 +412,38 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 () => _pipeline.TryObserveTransitionStarted(routeOperationId, transitionId, transitionSequence, routeId, routeProfileId, _source, Normalize(context.Reason)));
         }
 
-        private bool TryStartNewCycle(
+        private bool TryOpenNewOperation(
             SceneTransitionContext context,
             string eventName,
             string transitionId,
             string routeId,
             string routeProfileId,
-            out string routeOperationId)
+            out string routeOperationId,
+            out int transitionSequence,
+            out bool openedNewOperation)
         {
             routeOperationId = string.Empty;
+            transitionSequence = 0;
+            openedNewOperation = false;
 
-            if (string.Equals(_activeTransitionSignature, transitionId, StringComparison.Ordinal) && !_pipeline.State.HasCompleted)
+            if (_hasActiveOperation && !_activeOperationCompleted)
             {
-                LogRejected(eventName, routeOperationId, transitionId, _transitionSequence, routeId);
-                return false;
-            }
+                if (string.Equals(_activeTransitionSignature, transitionId, StringComparison.Ordinal))
+                {
+                    if (!string.Equals(_activeRouteId, routeId, StringComparison.Ordinal) ||
+                        !string.Equals(_activeRouteProfileId, routeProfileId, StringComparison.Ordinal))
+                    {
+                        LogRejected(eventName, _activeRouteOperationId, transitionId, _transitionSequence, routeId);
+                        return false;
+                    }
 
-            if (!string.IsNullOrWhiteSpace(_activeTransitionSignature) && !_pipeline.State.HasCompleted)
-            {
-                LogRejected(eventName, routeOperationId, transitionId, _transitionSequence, routeId);
+                    routeOperationId = _activeRouteOperationId;
+                    transitionSequence = _transitionSequence;
+                    openedNewOperation = false;
+                    return true;
+                }
+
+                LogRejected(eventName, _activeRouteOperationId, transitionId, _transitionSequence, routeId);
                 return false;
             }
 
@@ -435,26 +466,59 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             }
 
             _transitionSequence = nextTransitionSequence;
+            transitionSequence = nextTransitionSequence;
+            _hasActiveOperation = true;
+            _activeOperationCompleted = false;
             _activeTransitionSignature = transitionId;
             _activeRouteOperationId = routeOperationId;
+            _activeRouteId = routeId;
+            _activeRouteProfileId = routeProfileId;
+            openedNewOperation = true;
             return started;
         }
 
-        private bool MatchesActiveTransition(SceneTransitionContext context, string eventName)
+        private bool TryResolveActiveOperation(
+            SceneTransitionContext context,
+            string eventName,
+            bool acceptCompletedOperation,
+            out string routeOperationId,
+            out string transitionId,
+            out int transitionSequence,
+            out string routeId,
+            out string routeProfileId)
         {
-            if (!_pipeline.State.HasStarted || string.IsNullOrWhiteSpace(_activeTransitionSignature))
+            routeOperationId = string.Empty;
+            transitionId = SceneTransitionSignature.Compute(context);
+            transitionSequence = _transitionSequence;
+            routeId = Normalize(context.RouteId.Value);
+            routeProfileId = ResolveRouteProfileId(context);
+
+            if (!_hasActiveOperation || string.IsNullOrWhiteSpace(_activeTransitionSignature))
             {
-                LogRejected(eventName, _activeRouteOperationId, SceneTransitionSignature.Compute(context), _transitionSequence, Normalize(context.RouteId.Value));
+                LogRejected(eventName, _activeRouteOperationId, transitionId, transitionSequence, routeId);
                 return false;
             }
 
-            string signature = SceneTransitionSignature.Compute(context);
-            if (!string.Equals(signature, _activeTransitionSignature, StringComparison.Ordinal))
+            if (!string.Equals(transitionId, _activeTransitionSignature, StringComparison.Ordinal))
             {
-                LogRejected(eventName, _activeRouteOperationId, signature, _transitionSequence, Normalize(context.RouteId.Value));
+                LogRejected(eventName, _activeRouteOperationId, transitionId, transitionSequence, routeId);
                 return false;
             }
 
+            if (!string.Equals(routeId, _activeRouteId, StringComparison.Ordinal) ||
+                !string.Equals(routeProfileId, _activeRouteProfileId, StringComparison.Ordinal))
+            {
+                LogRejected(eventName, _activeRouteOperationId, transitionId, transitionSequence, routeId);
+                return false;
+            }
+
+            if (_activeOperationCompleted && !acceptCompletedOperation)
+            {
+                LogRejected(eventName, _activeRouteOperationId, transitionId, transitionSequence, routeId);
+                return false;
+            }
+
+            routeOperationId = _activeRouteOperationId;
             return true;
         }
 
@@ -469,7 +533,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             transitionId = SceneTransitionSignature.Compute(context);
             routeProfileId = ResolveRouteProfileId(context);
 
-            if (!IsObservedRoute(context))
+            if (!context.RouteId.IsValid)
             {
                 LogRejected(eventName, string.Empty, transitionId, 0, routeId);
                 return false;
@@ -478,24 +542,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             return true;
         }
 
-        private static bool IsObservedRoute(SceneTransitionContext context)
-        {
-            string targetActiveScene = Normalize(context.TargetActiveScene);
-
-            if (string.Equals(targetActiveScene, BootToMenuTargetScene, StringComparison.Ordinal) &&
-                context.RouteKind == SceneRouteKind.Frontend)
-            {
-                return true;
-            }
-
-            if (string.Equals(targetActiveScene, MenuToSandboxTargetScene, StringComparison.Ordinal) &&
-                context.RouteKind == SceneRouteKind.Sandbox)
-            {
-                return true;
-            }
-
-            return false;
-        }
 
         private static string BuildRouteOperationId(
             string routeId,

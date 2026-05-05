@@ -1,4 +1,12 @@
 # SessionOperationalPipeline v0
 
-Ponte temporária de observabilidade para marcar rota/transição.
-Este rail não inicia a camada posterior e não produz handoff operacional.
+Rail operacional canônico do Base11Sandbox para intenção de navegação e handoff técnico de transição.
+
+Fluxo:
+- `NavigateToRoute`
+- `RouteResolved`
+- `RequestRouteTransition`
+- `ISessionOperationalTransitionPort` via `SceneFlowSessionOperationalTransitionAdapter` temporario
+- `SceneTransitionStarted`
+
+O profile `Base11Sandbox` compõe este rail para `BootStartPlanRequestedEvent -> NavigateToRoute(routeId='to-menu')`.
