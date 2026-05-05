@@ -9,7 +9,6 @@ using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.RunReset;
@@ -55,13 +54,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             var gameLoopService = ResolveRequiredGameLoopService();
             gameLoopService.Initialize();
 
-            LegacyPauseCompatibilityInstaller.Install();
             RunPipelineBridgeInstaller.Install();
             IntroStageIntegrationInstaller.Install();
             SessionOperationalStartupRouteInstaller.Install();
 
             EnsureDriver();
-            LegacyPauseCompatibilityInstaller.ComposeRuntime();
             RunPipelineRuntimeBridgeComposer.ComposeRuntime();
             _startupRouteAdapter = SessionOperationalStartupRouteInstaller.ComposeRuntime(bootstrapConfig, gameLoopService);
             EnsureGameLoopModuleComposition();
@@ -69,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(GameLoopBootstrap),
-                "[OBS][GameLoop][Core] Runtime composition concluida. scope='core executor + legacy pause compat + delegated run pipeline runtime bridge composer + startup-route adapter'.",
+                "[OBS][GameLoop][Core] Runtime composition concluida. scope='core executor + delegated run pipeline runtime bridge composer + startup-route adapter'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -116,8 +113,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RequireGlobal<IGameRunEndRequestService>("IGameRunEndRequestService");
             RequireGlobal<IGameRunPlayingStateGuard>("IGameRunPlayingStateGuard");
             RequireGlobal<IGameRunOutcomeService>("IGameRunOutcomeService");
-            RequireGlobal<IGameLoopCommands>("IGameLoopCommands");
-            RequireGlobal<IPauseCommands>("IPauseCommands");
             RequireGlobal<GameRunOutcomeRequestBridge>("GameRunOutcomeRequestBridge");
 
             if (_startupRouteAdapter == null)
@@ -126,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             }
 
             DebugUtility.Log(typeof(GameLoopBootstrap),
-                "[OBS][GameLoop][Core] Runtime composition consolidada. scope='core executor + compatibility + delegated run pipeline runtime bridge composer + startup-route adapter'.",
+                "[OBS][GameLoop][Core] Runtime composition consolidada. scope='core executor + delegated run pipeline runtime bridge composer + startup-route adapter'.",
                 DebugUtility.Colors.Info);
         }
 

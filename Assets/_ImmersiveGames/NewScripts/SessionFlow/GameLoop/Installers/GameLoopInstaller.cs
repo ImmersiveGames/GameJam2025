@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
     /// Aggregator legado temporario.
     /// Mantido apenas por compatibilidade enquanto os installers nomeados assumem ownership real.
     /// </summary>
-    [Obsolete("Use the named installers: GameLoopCoreInstaller, LegacyPauseCompatibilityInstaller, RunPipelineBridgeInstaller, IntroStageIntegrationInstaller, SessionOperationalStartupRouteInstaller.")]
+    [Obsolete("Use the named installers: GameLoopCoreInstaller, RunPipelineBridgeInstaller, IntroStageIntegrationInstaller, SessionOperationalStartupRouteInstaller.")]
     public static class GameLoopInstaller
     {
         private static bool _installed;
@@ -20,7 +20,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             }
 
             GameLoopCoreInstaller.Install();
-            LegacyPauseCompatibilityInstaller.Install();
             RunPipelineBridgeInstaller.Install();
             IntroStageIntegrationInstaller.Install();
             SessionOperationalStartupRouteInstaller.Install();
