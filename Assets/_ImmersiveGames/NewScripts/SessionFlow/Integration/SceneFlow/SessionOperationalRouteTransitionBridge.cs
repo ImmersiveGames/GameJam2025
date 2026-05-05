@@ -195,6 +195,52 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             if (!TryEmitStage(
                     "SceneTransitionScenesReadyEvent",
+                    "InputCapabilityPrepared",
+                    SessionOperationalStage.InputCapabilityPrepared,
+                    routeOperationId,
+                    transitionId,
+                    transitionSequence,
+                    routeId,
+                    routeProfileId,
+                    () => _pipeline.TryObserveInputCapabilityPrepared(
+                        routeOperationId,
+                        transitionId,
+                        transitionSequence,
+                        routeId,
+                        routeProfileId,
+                        ResolveRouteClass(evt.context.RouteKind),
+                        ResolveInitialInputMode(evt.context.RouteKind),
+                        _source,
+                        reason)))
+            {
+                return;
+            }
+
+            if (!TryEmitStage(
+                    "SceneTransitionScenesReadyEvent",
+                    "InitialInputModePrepared",
+                    SessionOperationalStage.InitialInputModePrepared,
+                    routeOperationId,
+                    transitionId,
+                    transitionSequence,
+                    routeId,
+                    routeProfileId,
+                    () => _pipeline.TryObserveInitialInputModePrepared(
+                        routeOperationId,
+                        transitionId,
+                        transitionSequence,
+                        routeId,
+                        routeProfileId,
+                        ResolveRouteClass(evt.context.RouteKind),
+                        ResolveInitialInputMode(evt.context.RouteKind),
+                        _source,
+                        reason)))
+            {
+                return;
+            }
+
+            if (!TryEmitStage(
+                    "SceneTransitionScenesReadyEvent",
                     "PauseCapabilityPrepared",
                     SessionOperationalStage.PauseCapabilityPrepared,
                     routeOperationId,
@@ -536,6 +582,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             }
 
             return Normalize(context.TransitionProfileName);
+        }
+
+        private static string ResolveRouteClass(SceneRouteKind routeKind)
+        {
+            return Normalize(routeKind.ToString());
+        }
+
+        private static SessionOperationalInputModeKind ResolveInitialInputMode(SceneRouteKind routeKind)
+        {
+            return routeKind switch
+            {
+                SceneRouteKind.Frontend => SessionOperationalInputModeKind.FrontendMenu,
+                SceneRouteKind.Sandbox => SessionOperationalInputModeKind.ActivityDefault,
+                SceneRouteKind.Gameplay => SessionOperationalInputModeKind.ActivityDefault,
+                _ => SessionOperationalInputModeKind.Unknown,
+            };
         }
     }
 }

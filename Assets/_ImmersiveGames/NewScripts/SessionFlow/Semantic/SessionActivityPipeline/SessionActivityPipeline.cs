@@ -12,22 +12,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private readonly SessionActivityRuntimeState _state;
         private readonly SimulationGateService _simulationGate;
         private readonly ISessionActivityPauseOverlayAdapter _pauseOverlayAdapter;
+        private readonly ISessionActivityInputModeAdapter _inputModeAdapter;
         private readonly string _sessionId;
-
-        public SessionActivityPipeline(SessionActivityMiniCatalog catalog, string sessionId = "SessionActivitySandboxSession")
-            : this(catalog, sessionId, null)
-        {
-        }
 
         public SessionActivityPipeline(
             SessionActivityMiniCatalog catalog,
             string sessionId,
-            ISessionActivityPauseOverlayAdapter pauseOverlayAdapter)
+            ISessionActivityPauseOverlayAdapter pauseOverlayAdapter,
+            ISessionActivityInputModeAdapter inputModeAdapter)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
             _simulationGate = new SimulationGateService();
-            _pauseOverlayAdapter = pauseOverlayAdapter ?? new NoOpSessionActivityPauseOverlayAdapter();
+            _pauseOverlayAdapter = pauseOverlayAdapter ?? throw new ArgumentNullException(nameof(pauseOverlayAdapter));
+            _inputModeAdapter = inputModeAdapter ?? throw new ArgumentNullException(nameof(inputModeAdapter));
             _sessionId = Normalize(sessionId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -748,6 +746,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                     ? "Pause accepted."
                     : "Resume accepted.");
 
+            ApplyActivityInputMode(
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? SessionActivityInputModeKind.PauseOverlay
+                    : SessionActivityInputModeKind.ActivityGameplay,
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? SessionActivityFactKind.PauseResolved
+                    : SessionActivityFactKind.ResumeResolved,
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? "pause_resolved"
+                    : "resume_resolved",
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? "Pause accepted."
+                    : "Resume accepted.",
+                command);
+
             return new SessionActivityCommandResult(
                 SessionActivityCommandResultKind.Accepted,
                 command,
@@ -851,6 +864,29 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 DebugUtility.Colors.Warning);
 
             return fact;
+        }
+
+        private void ApplyActivityInputMode(
+            SessionActivityInputModeKind mode,
+            SessionActivityFactKind reasonFactKind,
+            string snapshotKind,
+            string message,
+            SessionActivityCommand command)
+        {
+            SessionActivityInputModeCommand inputModeCommand = new(
+                mode,
+                _state.CurrentIdentity,
+                command.Source,
+                reasonFactKind.ToString());
+
+            SessionActivityInputModeObservation observation = _inputModeAdapter.Apply(inputModeCommand);
+            if (!observation.IsValid)
+            {
+                throw new InvalidOperationException("SessionActivityInputModeAdapter returned an invalid observation.");
+            }
+
+            _state.AppendTrace(
+                $"[OBS][SessionActivityPipeline][InputMode] command='ApplyActivityInputMode' mode='{mode}' reason='{reasonFactKind}' snapshot='{snapshotKind}' message='{message}' outcome='{observation.Outcome}' identity='{_state.CurrentIdentity}' source='{command.Source}' reasonText='{command.Reason}'");
         }
 
         private SimulationGateResult ApplyActivityGateCommand(
@@ -1487,15 +1523,5 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
-        private sealed class NoOpSessionActivityPauseOverlayAdapter : ISessionActivityPauseOverlayAdapter
-        {
-            public void Show(SessionActivityIdentity identity, string source, string reason)
-            {
-            }
-
-            public void Hide(SessionActivityIdentity identity, string source, string reason)
-            {
-            }
-        }
     }
 }

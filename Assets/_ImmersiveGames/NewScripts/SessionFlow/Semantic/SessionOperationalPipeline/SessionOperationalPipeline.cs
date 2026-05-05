@@ -262,6 +262,54 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 "Session operational setup no-op.");
         }
 
+        public bool TryObserveInputCapabilityPrepared(
+            string routeOperationId,
+            string transitionId,
+            int transitionSequence,
+            string routeId,
+            string routeProfileId,
+            string routeClass,
+            SessionOperationalInputModeKind initialInputMode,
+            string source,
+            string reason)
+        {
+            _state.SetInputModeContext(Normalize(routeClass), initialInputMode);
+            return TryRecordStage(
+                SessionOperationalStage.InputCapabilityPrepared,
+                routeOperationId,
+                transitionId,
+                transitionSequence,
+                routeId,
+                routeProfileId,
+                source,
+                reason,
+                "Input capability prepared.");
+        }
+
+        public bool TryObserveInitialInputModePrepared(
+            string routeOperationId,
+            string transitionId,
+            int transitionSequence,
+            string routeId,
+            string routeProfileId,
+            string routeClass,
+            SessionOperationalInputModeKind initialInputMode,
+            string source,
+            string reason)
+        {
+            _state.SetInputModeContext(Normalize(routeClass), initialInputMode);
+            return TryRecordStage(
+                SessionOperationalStage.InitialInputModePrepared,
+                routeOperationId,
+                transitionId,
+                transitionSequence,
+                routeId,
+                routeProfileId,
+                source,
+                reason,
+                "Initial input mode prepared.");
+        }
+
         public bool TryObservePauseCapabilityPrepared(
             string routeOperationId,
             string transitionId,
@@ -354,7 +402,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
         public string DumpState()
         {
-            return $"[OBS][SessionOperationalPipeline] pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
+            return $"[OBS][SessionOperationalPipeline] pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
         }
 
         private bool TryRecordStage(
@@ -439,6 +487,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             _state.AppendFact(fact);
             _state.AppendTrace(
                 $"[OBS][SessionOperationalPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeOperationId='{fact.Identity.RouteOperationId}' transitionId='{fact.Identity.TransitionId}' transitionSequence='{fact.Identity.TransitionSequence}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
+
+            if (stage == SessionOperationalStage.InputCapabilityPrepared ||
+                stage == SessionOperationalStage.InitialInputModePrepared)
+            {
+                _state.AppendTrace(
+                    $"[OBS][SessionOperationalPipeline][InputMode] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' routeClass='{Normalize(_state.RouteClass)}' routeKind='{Normalize(_state.RouteClass)}' initialInputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
+            }
 
             if (stage == SessionOperationalStage.Completed)
             {
@@ -528,6 +583,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 SessionOperationalStage.RoutePhysicalApplyObserved => SessionOperationalFactKind.RoutePhysicalApplyObserved,
                 SessionOperationalStage.ScenesReadyObserved => SessionOperationalFactKind.ScenesReadyObserved,
                 SessionOperationalStage.SessionOperationalSetupNoOp => SessionOperationalFactKind.SessionOperationalSetupNoOp,
+                SessionOperationalStage.InputCapabilityPrepared => SessionOperationalFactKind.InputCapabilityPrepared,
+                SessionOperationalStage.InitialInputModePrepared => SessionOperationalFactKind.InitialInputModePrepared,
                 SessionOperationalStage.PauseCapabilityPrepared => SessionOperationalFactKind.PauseCapabilityPrepared,
                 SessionOperationalStage.ReadyToOpenCurtain => SessionOperationalFactKind.ReadyToOpenCurtain,
                 SessionOperationalStage.TransitionCompletedObserved => SessionOperationalFactKind.TransitionCompletedObserved,

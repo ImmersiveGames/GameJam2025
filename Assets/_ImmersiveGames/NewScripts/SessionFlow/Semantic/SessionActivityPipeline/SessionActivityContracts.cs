@@ -393,4 +393,78 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         void Show(SessionActivityIdentity identity, string source, string reason);
         void Hide(SessionActivityIdentity identity, string source, string reason);
     }
+
+    public enum SessionActivityInputModeKind
+    {
+        Unknown = 0,
+        ActivityGameplay = 1,
+        PauseOverlay = 2,
+        Disabled = 3,
+    }
+
+    public readonly struct SessionActivityInputModeCommand
+    {
+        public SessionActivityInputModeCommand(
+            SessionActivityInputModeKind kind,
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            Kind = kind;
+            Identity = identity;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityInputModeKind Kind { get; }
+        public SessionActivityIdentity Identity { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Kind != SessionActivityInputModeKind.Unknown &&
+            Identity.IsValid &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionActivityInputModeObservation
+    {
+        public SessionActivityInputModeObservation(
+            SessionActivityInputModeCommand command,
+            string fact,
+            string snapshot,
+            string outcome)
+        {
+            Command = command;
+            Fact = Normalize(fact);
+            Snapshot = Normalize(snapshot);
+            Outcome = Normalize(outcome);
+        }
+
+        public SessionActivityInputModeCommand Command { get; }
+        public string Fact { get; }
+        public string Snapshot { get; }
+        public string Outcome { get; }
+
+        public bool IsValid =>
+            Command.IsValid &&
+            !string.IsNullOrWhiteSpace(Fact) &&
+            !string.IsNullOrWhiteSpace(Snapshot) &&
+            !string.IsNullOrWhiteSpace(Outcome);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public interface ISessionActivityInputModeAdapter
+    {
+        SessionActivityInputModeObservation Apply(SessionActivityInputModeCommand command);
+    }
 }

@@ -13,6 +13,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public int TransitionSequence { get; internal set; }
         public string RouteId { get; internal set; }
         public string RouteProfileId { get; internal set; }
+        public string RouteClass { get; internal set; }
+        public SessionOperationalInputModeKind CurrentInitialInputMode { get; internal set; }
         public bool HasStarted { get; internal set; }
         public bool HasCompleted { get; internal set; }
         public SessionOperationalStage CurrentStage { get; internal set; }
@@ -35,6 +37,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             TransitionSequence = transitionSequence;
             RouteId = routeId;
             RouteProfileId = routeProfileId;
+            RouteClass = string.Empty;
+            CurrentInitialInputMode = SessionOperationalInputModeKind.Unknown;
             HasStarted = false;
             HasCompleted = false;
             CurrentStage = SessionOperationalStage.Unknown;
@@ -62,6 +66,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             RouteProfileId = identity.RouteProfileId;
             RouteOperationId = identity.RouteOperationId;
             TransitionId = identity.TransitionId;
+        }
+
+        public void SetInputModeContext(string routeClass, SessionOperationalInputModeKind initialInputMode)
+        {
+            RouteClass = routeClass;
+            CurrentInitialInputMode = initialInputMode;
         }
 
         public void AppendFact(SessionOperationalFact fact)

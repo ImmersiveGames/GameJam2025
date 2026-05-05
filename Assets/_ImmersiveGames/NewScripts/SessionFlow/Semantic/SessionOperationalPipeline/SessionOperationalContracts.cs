@@ -16,10 +16,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        PauseCapabilityPrepared = 11,
-        ReadyToOpenCurtain = 12,
-        TransitionCompletedObserved = 13,
-        Completed = 14,
+        InputCapabilityPrepared = 11,
+        InitialInputModePrepared = 12,
+        PauseCapabilityPrepared = 13,
+        ReadyToOpenCurtain = 14,
+        TransitionCompletedObserved = 15,
+        Completed = 16,
     }
 
     public readonly struct SessionOperationalIdentity : IEquatable<SessionOperationalIdentity>
@@ -137,11 +139,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        PauseCapabilityPrepared = 11,
-        ReadyToOpenCurtain = 12,
-        TransitionCompletedObserved = 13,
-        Completed = 14,
-        IgnoredForeignOrStale = 15,
+        InputCapabilityPrepared = 11,
+        InitialInputModePrepared = 12,
+        PauseCapabilityPrepared = 13,
+        ReadyToOpenCurtain = 14,
+        TransitionCompletedObserved = 15,
+        Completed = 16,
+        IgnoredForeignOrStale = 17,
+    }
+
+    public enum SessionOperationalInputModeKind
+    {
+        Unknown = 0,
+        FrontendMenu = 1,
+        ActivityDefault = 2,
     }
 
     public readonly struct SessionOperationalFact

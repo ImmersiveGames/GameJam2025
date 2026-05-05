@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SessionActivityPipeline;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 using UnityEngine;
@@ -24,7 +25,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private void Awake()
         {
             _catalog = new SessionActivityMiniCatalog();
-            _pipeline = new SessionActivityPipeline(_catalog, sessionId, new SessionActivityPauseOverlayAdapter());
+            _pipeline = new SessionActivityPipeline(
+                _catalog,
+                sessionId,
+                new SessionActivityPauseOverlayAdapter(),
+                new SessionActivityInputModeAdapter());
             Debug.Log(BuildHostBanner());
         }
 
