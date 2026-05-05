@@ -1,10 +1,6 @@
-using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands
 {
     public interface IPauseCommands
@@ -13,24 +9,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands
         void RequestResume(string reason = null);
     }
 
-    /*
-     * Auditoria (GameLoopCommands)
-     * - GamePauseCommandEvent(bool isPaused, string reason) -> EventBus<GamePauseCommandEvent>.Raise(new GamePauseCommandEvent(true/false, reason)).
-     * - GameResumeRequestedEvent(string reason) -> EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent(reason)).
-     * - GameRunEndRequestedEvent(GameRunOutcome outcome, string reason) -> IGameRunEndRequestService.RequestRunEnd(...)
-     *   (publica EventBus<GameRunEndRequestedEvent> dentro do serviço).
-     * - GameRunEndedEvent(GameRunOutcome outcome, string reason) -> publicado pelo GameRunOutcomeService via EventBus<GameRunEndedEvent>.
-     * - ExitToMenu => dispatch direto ao owner canonico downstream (GameplaySessionFlow/Navigation).
-     */
+    /// <summary>
+    /// Fachada legada temporaria para pause/resume.
+    /// Victory/Defeat pertencem ao Run Pipeline.
+    /// ExitToMenu pertence a Route/SessionOperational.
+    /// </summary>
     public sealed class GameLoopCommands : IGameLoopCommands
     {
-        private readonly IGameRunEndRequestService _runEndRequestService;
-        private const string DefaultExitToMenuReason = "GameLoopCommands/ExitToMenu";
-        public GameLoopCommands(IGameRunEndRequestService runEndRequestService)
-        {
-            _runEndRequestService = runEndRequestService;
-        }
-
         public void RequestPause(string reason = null)
         {
             DebugUtility.Log(typeof(GameLoopCommands),
@@ -46,87 +31,5 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands
 
             EventBus<GameResumeRequestedEvent>.Raise(new GameResumeRequestedEvent(reason));
         }
-
-        public void RequestVictory(string reason)
-        {
-            string normalizedReason = GameLoopReasonFormatter.NormalizeRequired(reason);
-
-            DebugUtility.Log(typeof(GameLoopCommands),
-                $"[GameLoopCommands] RequestVictory reason='{normalizedReason}'");
-
-            RequestRunEnd(GameRunOutcome.Victory, normalizedReason);
-        }
-
-        public void RequestDefeat(string reason)
-        {
-            string normalizedReason = GameLoopReasonFormatter.NormalizeRequired(reason);
-
-            DebugUtility.Log(typeof(GameLoopCommands),
-                $"[GameLoopCommands] RequestDefeat reason='{normalizedReason}'");
-
-            RequestRunEnd(GameRunOutcome.Defeat, normalizedReason);
-        }
-
-        public void RequestExitToMenu(string reason)
-        {
-            string normalizedReason = GameLoopReasonFormatter.NormalizeOptional(reason, DefaultExitToMenuReason);
-
-            DebugUtility.Log(typeof(GameLoopCommands),
-                $"[GameLoopCommands] RequestExitToMenu reason='{normalizedReason}'");
-
-            IGameNavigationService navigationService = ResolveRequiredNavigationServiceOrFail(normalizedReason);
-            _ = ObserveAsync(navigationService.GoToMenuAsync(normalizedReason), normalizedReason, "ExitToMenu");
-        }
-
-        private static async System.Threading.Tasks.Task ObserveAsync(System.Threading.Tasks.Task task, string reason, string actionName)
-        {
-            try
-            {
-                await task.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                DebugUtility.LogError(typeof(GameLoopCommands),
-                    $"[GameLoopCommands] {actionName} failed reason='{reason}'. ex={ex}");
-            }
-        }
-
-        private static IGameNavigationService ResolveRequiredNavigationServiceOrFail(string reason)
-        {
-            if (DependencyManager.Provider == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][Navigation] ExitToMenu requested without DependencyManager.Provider. reason='{reason}'.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameNavigationService>(out var navigationService) || navigationService == null)
-            {
-                HardFailFastH1.Trigger(typeof(GameLoopCommands),
-                    $"[FATAL][H1][Navigation] ExitToMenu requested without IGameNavigationService. reason='{reason}'.");
-            }
-
-            return navigationService;
-        }
-
-        private void RequestRunEnd(GameRunOutcome outcome, string reason)
-        {
-            if (_runEndRequestService != null)
-            {
-                _runEndRequestService.RequestRunEnd(outcome, reason);
-                return;
-            }
-
-            if (DependencyManager.HasInstance &&
-                DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var runEndRequestService) &&
-                runEndRequestService != null)
-            {
-                runEndRequestService.RequestRunEnd(outcome, reason);
-                return;
-            }
-
-            DebugUtility.LogWarning(typeof(GameLoopCommands),
-                "[GameLoopCommands] IGameRunEndRequestService indisponível. Ignorando RequestRunEnd.");
-        }
     }
 }
-

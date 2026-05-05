@@ -16,9 +16,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        ReadyToOpenCurtain = 11,
-        TransitionCompletedObserved = 12,
-        Completed = 13,
+        PauseCapabilityPrepared = 11,
+        ReadyToOpenCurtain = 12,
+        TransitionCompletedObserved = 13,
+        Completed = 14,
     }
 
     public readonly struct SessionOperationalIdentity : IEquatable<SessionOperationalIdentity>
@@ -136,10 +137,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        ReadyToOpenCurtain = 11,
-        TransitionCompletedObserved = 12,
-        Completed = 13,
-        IgnoredForeignOrStale = 14,
+        PauseCapabilityPrepared = 11,
+        ReadyToOpenCurtain = 12,
+        TransitionCompletedObserved = 13,
+        Completed = 14,
+        IgnoredForeignOrStale = 15,
     }
 
     public readonly struct SessionOperationalFact

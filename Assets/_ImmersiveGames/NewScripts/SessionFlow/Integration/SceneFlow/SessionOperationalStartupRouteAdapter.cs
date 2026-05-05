@@ -9,12 +9,16 @@ using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 {
-    public sealed partial class GameLoopSceneFlowSyncCoordinator : IDisposable
+    /// <summary>
+    /// Adapter temporario de StartupRoute para observar o fluxo Boot/Route/SceneFlow.
+    /// O GameLoop executa estado; este adapter apenas observa o legado e despacha o reset tecnico.
+    /// </summary>
+    public sealed partial class SessionOperationalStartupRouteAdapter : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
         private readonly IGameLoopService _gameLoop;
         private readonly IFadeService _fadeService;
-        private readonly IGameLoopSceneFlowSyncDecisionService _syncDecisionService;
+        private readonly ISessionOperationalStartupRouteDecisionService _syncDecisionService;
         private readonly SceneTransitionRequest _startPlan;
         private readonly GameLoopEventSubscriptionSet _subscriptions = new();
 
@@ -33,22 +37,22 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
         private bool _disposed;
 
-        public GameLoopSceneFlowSyncCoordinator(
+        public SessionOperationalStartupRouteAdapter(
             ISceneTransitionService sceneFlow,
             IGameLoopService gameLoop,
             IFadeService fadeService,
-            IGameLoopSceneFlowSyncDecisionService syncDecisionService,
+            ISessionOperationalStartupRouteDecisionService syncDecisionService,
             SceneTransitionRequest startPlan)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
-            _gameLoop = gameLoop ?? throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IGameLoopService obrigatorio ausente para o coordinator.");
+            _gameLoop = gameLoop ?? throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IGameLoopService obrigatorio ausente para o adapter.");
             _fadeService = fadeService;
-            _syncDecisionService = syncDecisionService ?? throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IGameLoopSceneFlowSyncDecisionService obrigatorio ausente para o coordinator.");
+            _syncDecisionService = syncDecisionService ?? throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] ISessionOperationalStartupRouteDecisionService obrigatorio ausente para o adapter.");
             _startPlan = ValidateStartPlanOrFailFast(startPlan);
 
             if (_startPlan.UseFade && _fadeService == null)
             {
-                FailFastConfig("GameLoopSceneFlowSyncCoordinator requires IFadeService when startPlan.UseFade is true.");
+                FailFastConfig("SessionOperationalStartupRouteAdapter requires IFadeService when startPlan.UseFade is true.");
             }
 
             _startRequestedBinding = new EventBinding<BootStartPlanRequestedEvent>(_ => OnStartRequestedCommon());
@@ -61,8 +65,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             _subscriptions.Register(_transitionCompletedBinding);
             _subscriptions.Register(_worldResetCompletedBinding);
 
-            DebugUtility.Log(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[OBS][GameLoopSceneFlow][Operational] Coordinator registrado. StartPlan: Load=[{string.Join(", ", _startPlan.ScenesToLoad)}], Unload=[{string.Join(", ", _startPlan.ScenesToUnload)}], Active='{_startPlan.TargetActiveScene}', UseFade={_startPlan.UseFade}, Style='{_startPlan.StyleLabel}'.");
+            DebugUtility.Log(typeof(SessionOperationalStartupRouteAdapter),
+                $"[OBS][SessionOperationalPipeline][StartupRoute] startupRouteRequested registered source='runtime_composition' routeId='{_startPlan.RouteId}' targetActiveScene='{_startPlan.TargetActiveScene}' useFade={_startPlan.UseFade} style='{_startPlan.StyleLabel}' load=[{string.Join(", ", _startPlan.ScenesToLoad)}] unload=[{string.Join(", ", _startPlan.ScenesToUnload)}].");
         }
 
         public void Dispose()
@@ -80,8 +84,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         {
             if (_startInProgress)
             {
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    "[OBS][GameLoopSceneFlow][Operational] Start REQUEST ignorado (ja em progresso).",
+                DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                    "[OBS][SessionOperationalPipeline][StartupRoute] startupRouteRequested ignored reason='already_in_progress'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -89,8 +93,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             _startInProgress = true;
             ResetStartState();
 
-            DebugUtility.Log(typeof(GameLoopSceneFlowSyncCoordinator),
-                "[OBS][GameLoopSceneFlow][Operational] Start REQUEST recebido. Disparando transicao de cenas...");
+            DebugUtility.Log(typeof(SessionOperationalStartupRouteAdapter),
+                $"[OBS][SessionOperationalPipeline][StartupRoute] startupRouteRequested routeId='{_startPlan.RouteId}' targetActiveScene='{_startPlan.TargetActiveScene}' source='runtime_composition'.");
 
             _ = StartTransitionAsync();
         }
@@ -109,8 +113,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             catch (Exception ex)
             {
                 _startInProgress = false;
-                HardFailFastH1.Trigger(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[FATAL][H1][GameLoopSceneFlow] Falha ao executar TransitionAsync(startPlan). ex={ex}",
+                HardFailFastH1.Trigger(typeof(SessionOperationalStartupRouteAdapter),
+                    $"[FATAL][H1][SessionOperationalPipeline] Falha ao executar TransitionAsync(startPlan). ex={ex}",
                     ex);
             }
         }
@@ -119,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         {
             if (_fadeService == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][GameLoopSceneFlow] IFadeService obrigatorio ausente para o startPlan com fade habilitado.");
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IFadeService obrigatorio ausente para o startPlan com fade habilitado.");
             }
 
             await _fadeService.EnsureReadyAsync();
@@ -129,11 +133,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         {
             if (!ShouldHandleTransition(evt.context))
             {
+                LogRejectedForeignOrStale();
                 return;
             }
 
-            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[OBS][GameLoopSceneFlow][Operational] TransitionStarted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                $"[OBS][SessionOperationalPipeline][StartupRoute] sceneTransitionStartedObserved routeId='{evt.context.RouteId}' targetActiveScene='{evt.context.TargetActiveScene}' reason='{evt.context.Reason}' contextSignature='{evt.context.ContextSignature}' expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -141,6 +146,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         {
             if (!ShouldHandleTransition(evt.context))
             {
+                LogRejectedForeignOrStale();
                 return;
             }
 
@@ -149,25 +155,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             if (!_syncDecisionService.IsTransitionSignatureAccepted(_expectedContextSignature, ctxSig))
             {
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[OBS][GameLoopSceneFlow][Operational] TransitionCompleted ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{ctxSig}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                    $"[OBS][SessionOperationalPipeline][StartupRoute] rejected reason='stale_or_foreign_event' event='SceneTransitionCompletedEvent' expectedSignature='{_expectedContextSignature ?? "<null>"}' receivedSignature='{ctxSig}' routeId='{evt.context.RouteId}' targetActiveScene='{evt.context.TargetActiveScene}' reason='{evt.context.Reason}' contextSignature='{evt.context.ContextSignature}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             _transitionCompleted = true;
 
-            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[OBS][GameLoopSceneFlow][Operational] TransitionCompleted recebido. expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                $"[OBS][SessionOperationalPipeline][StartupRoute] sceneTransitionCompletedObserved routeId='{evt.context.RouteId}' targetActiveScene='{evt.context.TargetActiveScene}' reason='{evt.context.Reason}' contextSignature='{evt.context.ContextSignature}' expectedSignature='{_expectedContextSignature ?? "<null>"}'.",
                 DebugUtility.Colors.Info);
 
-            TryIssueGameLoopSync();
+            TryIssueStartupRouteSync();
         }
 
         private void OnWorldResetCompleted(WorldResetCompletedEvent evt)
         {
             if (!_startInProgress)
             {
+                LogRejectedForeignOrStale();
                 return;
             }
 
@@ -179,16 +186,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             if (signatureDecision.Kind == WorldResetSyncSignatureDecisionKind.RejectedMismatch)
             {
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (signature mismatch). expected='{_expectedContextSignature}', got='{evt.ContextSignature}', outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                    $"[OBS][SessionOperationalPipeline][StartupRoute] rejected reason='stale_or_foreign_event' event='WorldResetCompletedEvent' expectedSignature='{_expectedContextSignature ?? "<null>"}' receivedSignature='{evt.ContextSignature ?? string.Empty}' outcome='{evt.Outcome}' reason='{evt.Reason ?? "<null>"}' detail='{evt.Detail ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             if (signatureDecision.Kind == WorldResetSyncSignatureDecisionKind.RejectedMissingWithExpected)
             {
-                DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                    $"[OBS][GameLoopSceneFlow][Operational] WorldResetCompletedEvent ignorado (sem assinatura, mas expectedSignature='{_expectedContextSignature}'). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+                DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                    $"[OBS][SessionOperationalPipeline][StartupRoute] rejected reason='stale_or_foreign_event' event='WorldResetCompletedEvent' expectedSignature='{_expectedContextSignature ?? "<null>"}' receivedSignature='' outcome='{evt.Outcome}' reason='{evt.Reason ?? "<null>"}' detail='{evt.Detail ?? "<null>"}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -200,11 +207,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             _worldResetCompleted = true;
 
-            DebugUtility.LogVerbose(typeof(GameLoopSceneFlowSyncCoordinator),
-                $"[OBS][GameLoopSceneFlow][Operational] WorldReset concluido (ou skip). outcome='{evt.Outcome}', reason='{evt.Reason ?? "<null>"}', detail='{evt.Detail ?? "<null>"}'.",
+            DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                $"[OBS][SessionOperationalPipeline][StartupRoute] worldResetCompletedObserved routeId='{evt.MacroRouteId}' targetScene='{evt.TargetScene}' contextSignature='{evt.ContextSignature}' sourceSignature='{evt.SourceSignature}' outcome='{evt.Outcome}' reason='{evt.Reason}' detail='{evt.Detail}'.",
                 DebugUtility.Colors.Info);
 
-            TryIssueGameLoopSync();
+            TryIssueStartupRouteSync();
         }
 
         private bool IsMatchingStartPlan(SceneTransitionContext context)
@@ -264,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             return true;
         }
 
-        private void TryIssueGameLoopSync()
+        private void TryIssueStartupRouteSync()
         {
             if (!_syncDecisionService.CanCompleteSync(
                     _startInProgress,
@@ -281,8 +288,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             var gameLoop = _gameLoop;
             gameLoop.Initialize();
 
-            DebugUtility.LogVerbose<GameLoopSceneFlowSyncCoordinator>(
-                $"[OBS][GameLoopSceneFlow][Operational] Sync concluido. routeId='{_startPlan.RouteId}' activeScene='{_startPlan.TargetActiveScene}'. Chamando RequestReset() no GameLoop.",
+            DebugUtility.LogVerbose<SessionOperationalStartupRouteAdapter>(
+                $"[OBS][SessionOperationalPipeline][StartupRoute] loopResetCommandDispatched routeId='{_startPlan.RouteId}' targetActiveScene='{_startPlan.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
 
             gameLoop.RequestReset();
@@ -293,17 +300,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         {
             if (startPlan == null)
             {
-                FailFastConfig("GameLoopSceneFlowSyncCoordinator requires a non-null startPlan.");
+                FailFastConfig("SessionOperationalStartupRouteAdapter requires a non-null startPlan.");
             }
 
             if (!startPlan.RouteId.IsValid)
             {
-                FailFastConfig($"GameLoopSceneFlowSyncCoordinator requires a valid startPlan RouteId. routeId='{startPlan.RouteId}'.");
+                FailFastConfig($"SessionOperationalStartupRouteAdapter requires a valid startPlan RouteId. routeId='{startPlan.RouteId}'.");
             }
 
             if (string.IsNullOrWhiteSpace(startPlan.TargetActiveScene))
             {
-                FailFastConfig($"GameLoopSceneFlowSyncCoordinator requires a non-empty startPlan TargetActiveScene. routeId='{startPlan.RouteId}'.");
+                FailFastConfig($"SessionOperationalStartupRouteAdapter requires a non-empty startPlan TargetActiveScene. routeId='{startPlan.RouteId}'.");
             }
 
             return startPlan;
@@ -311,13 +318,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
         private static void FailFastConfig(string message)
         {
-            string fatalMessage = $"[FATAL][Config][GameLoopSceneFlow] {message}";
-            DebugUtility.LogError(typeof(GameLoopSceneFlowSyncCoordinator), fatalMessage);
+            string fatalMessage = $"[FATAL][Config][SessionOperationalPipeline] {message}";
+            DebugUtility.LogError(typeof(SessionOperationalStartupRouteAdapter), fatalMessage);
             throw new InvalidOperationException(fatalMessage);
+        }
+
+        private void LogRejectedForeignOrStale()
+        {
+            DebugUtility.LogVerbose(typeof(SessionOperationalStartupRouteAdapter),
+                "[OBS][SessionOperationalPipeline][StartupRoute] rejected reason='stale_or_foreign_event'.",
+                DebugUtility.Colors.Info);
         }
     }
 
-    public interface IGameLoopSceneFlowSyncDecisionService
+    public interface ISessionOperationalStartupRouteDecisionService
     {
         bool IsTransitionSignatureAccepted(string expectedSignature, string receivedSignature);
         WorldResetSyncSignatureDecision DecideWorldResetSignature(string expectedSignature, string receivedSignature);
@@ -350,7 +364,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         public string ResolvedExpectedSignature { get; }
     }
 
-    public sealed class GameLoopSceneFlowSyncDecisionService : IGameLoopSceneFlowSyncDecisionService
+    public sealed class SessionOperationalStartupRouteDecisionService : ISessionOperationalStartupRouteDecisionService
     {
         public bool IsTransitionSignatureAccepted(string expectedSignature, string receivedSignature)
         {

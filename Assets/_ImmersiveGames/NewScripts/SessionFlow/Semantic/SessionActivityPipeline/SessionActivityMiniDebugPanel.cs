@@ -91,20 +91,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             DumpState();
         }
 
+        [ContextMenu("RequestPause")]
+        public void RequestPause()
+        {
+            EnsureHost();
+            host.RequestPause();
+            DumpState();
+        }
+
+        [ContextMenu("RequestResume")]
+        public void RequestResume()
+        {
+            EnsureHost();
+            host.RequestResume();
+            DumpState();
+        }
+
         [ContextMenu("PauseSimulation")]
         public void PauseSimulation()
         {
-            EnsureHost();
-            host.PauseSimulation();
-            DumpState();
+            RequestPause();
         }
 
         [ContextMenu("ResumeSimulation")]
         public void ResumeSimulation()
         {
-            EnsureHost();
-            host.ResumeSimulation();
-            DumpState();
+            RequestResume();
         }
 
         [ContextMenu("SendStaleActivity01Command")]
@@ -212,16 +224,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
 
             GUILayout.Space(SectionSpacing);
 
-            if (GUILayout.Button("PauseSimulation", _buttonStyle))
+            if (GUILayout.Button("RequestPause", _buttonStyle))
             {
-                PauseSimulation();
+                RequestPause();
             }
 
             GUILayout.Space(SectionSpacing);
 
-            if (GUILayout.Button("ResumeSimulation", _buttonStyle))
+            if (GUILayout.Button("RequestResume", _buttonStyle))
             {
-                ResumeSimulation();
+                RequestResume();
             }
 
             GUILayout.Space(SectionSpacing);

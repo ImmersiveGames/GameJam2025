@@ -262,6 +262,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 "Session operational setup no-op.");
         }
 
+        public bool TryObservePauseCapabilityPrepared(
+            string routeOperationId,
+            string transitionId,
+            int transitionSequence,
+            string routeId,
+            string routeProfileId,
+            string source,
+            string reason)
+        {
+            return TryRecordStage(
+                SessionOperationalStage.PauseCapabilityPrepared,
+                routeOperationId,
+                transitionId,
+                transitionSequence,
+                routeId,
+                routeProfileId,
+                source,
+                reason,
+                "Pause capability prepared.");
+        }
+
         public bool TryObserveReadyToOpenCurtain(
             string routeOperationId,
             string transitionId,
@@ -507,6 +528,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 SessionOperationalStage.RoutePhysicalApplyObserved => SessionOperationalFactKind.RoutePhysicalApplyObserved,
                 SessionOperationalStage.ScenesReadyObserved => SessionOperationalFactKind.ScenesReadyObserved,
                 SessionOperationalStage.SessionOperationalSetupNoOp => SessionOperationalFactKind.SessionOperationalSetupNoOp,
+                SessionOperationalStage.PauseCapabilityPrepared => SessionOperationalFactKind.PauseCapabilityPrepared,
                 SessionOperationalStage.ReadyToOpenCurtain => SessionOperationalFactKind.ReadyToOpenCurtain,
                 SessionOperationalStage.TransitionCompletedObserved => SessionOperationalFactKind.TransitionCompletedObserved,
                 SessionOperationalStage.Completed => SessionOperationalFactKind.Completed,

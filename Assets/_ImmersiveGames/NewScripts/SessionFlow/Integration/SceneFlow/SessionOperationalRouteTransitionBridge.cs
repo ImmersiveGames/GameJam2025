@@ -193,6 +193,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 return;
             }
 
+            if (!TryEmitStage(
+                    "SceneTransitionScenesReadyEvent",
+                    "PauseCapabilityPrepared",
+                    SessionOperationalStage.PauseCapabilityPrepared,
+                    routeOperationId,
+                    transitionId,
+                    transitionSequence,
+                    routeId,
+                    routeProfileId,
+                    () => _pipeline.TryObservePauseCapabilityPrepared(routeOperationId, transitionId, transitionSequence, routeId, routeProfileId, _source, reason)))
+            {
+                return;
+            }
+
             TryEmitStage(
                 "SceneTransitionScenesReadyEvent",
                 "ReadyToOpenCurtain",

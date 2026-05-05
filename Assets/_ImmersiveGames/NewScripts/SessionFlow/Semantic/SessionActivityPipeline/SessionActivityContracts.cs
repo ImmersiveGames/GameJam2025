@@ -161,8 +161,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         RestartCurrentActivity = 6,
         GoToActivity01 = 7,
         GoToActivity02 = 8,
-        PauseSimulation = 9,
-        ResumeSimulation = 10,
+        PauseRequested = 9,
+        ResumeRequested = 10,
+        PauseSimulation = 11,
+        ResumeSimulation = 12,
     }
 
     public readonly struct SessionActivityCommand
@@ -217,6 +219,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         CommandRejected = 12,
         SimulationPaused = 13,
         SimulationResumed = 14,
+        PauseResolved = 15,
+        ResumeResolved = 16,
+        PauseRejected = 17,
+        ResumeRejected = 18,
     }
 
     public readonly struct SessionActivityFact
@@ -380,5 +386,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
+    }
+
+    public interface ISessionActivityPauseOverlayAdapter
+    {
+        void Show(SessionActivityIdentity identity, string source, string reason);
+        void Hide(SessionActivityIdentity identity, string source, string reason);
     }
 }

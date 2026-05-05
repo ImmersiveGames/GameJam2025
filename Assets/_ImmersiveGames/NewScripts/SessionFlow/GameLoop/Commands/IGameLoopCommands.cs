@@ -1,13 +1,11 @@
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Commands
 {
     /// <summary>
-    /// API oficial para disparar comandos de gameplay (pause/resume/victory/defeat/exit-to-menu).
+    /// Fachada legada temporaria para comandos de pause/resume.
+    /// Victory/Defeat pertencem ao Run Pipeline e ExitToMenu pertence a Route/SessionOperational.
     /// </summary>
     public interface IGameLoopCommands : IPauseCommands
     {
-        void RequestVictory(string reason);
-        void RequestDefeat(string reason);
-        void RequestExitToMenu(string reason);
     }
 }
 

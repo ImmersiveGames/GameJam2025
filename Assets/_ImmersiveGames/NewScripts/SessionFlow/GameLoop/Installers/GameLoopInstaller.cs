@@ -134,14 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
         {
             RegisterIfMissing<IGameLoopCommands>(
                 () =>
-                {
-                    if (!DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var runEndRequestService) || runEndRequestService == null)
-                    {
-                        throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunEndRequestService ausente ao registrar IGameLoopCommands.");
-                    }
-
-                    return new GameLoopCommands(runEndRequestService);
-                },
+                    new GameLoopCommands(),
                 "[GameLoop] IGameLoopCommands ja registrado no DI global.",
                 "[GameLoop] GameLoopCommands registrado no DI global.");
         }

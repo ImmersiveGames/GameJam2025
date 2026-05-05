@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.SessionActivityPipeline;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 using UnityEngine;
 
@@ -23,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private void Awake()
         {
             _catalog = new SessionActivityMiniCatalog();
-            _pipeline = new SessionActivityPipeline(_catalog, sessionId);
+            _pipeline = new SessionActivityPipeline(_catalog, sessionId, new SessionActivityPauseOverlayAdapter());
             Debug.Log(BuildHostBanner());
         }
 
@@ -97,18 +98,30 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             LogResult("GoToActivity02", result);
         }
 
-        public void PauseSimulation()
+        public void RequestPause()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.PauseSimulation("SessionActivityMiniFlowHost", "Pause simulation");
-            LogResult("PauseSimulation", result);
+            SessionActivityCommandResult result = _pipeline.PauseRequested("SessionActivityMiniFlowHost", "Request pause");
+            LogResult("RequestPause", result);
         }
 
-        public void ResumeSimulation()
+        public void RequestResume()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.ResumeSimulation("SessionActivityMiniFlowHost", "Resume simulation");
-            LogResult("ResumeSimulation", result);
+            SessionActivityCommandResult result = _pipeline.ResumeRequested("SessionActivityMiniFlowHost", "Request resume");
+            LogResult("RequestResume", result);
+        }
+
+        [Obsolete("Use RequestPause instead.")]
+        public void PauseSimulation()
+        {
+            RequestPause();
+        }
+
+        [Obsolete("Use RequestResume instead.")]
+        public void ResumeSimulation()
+        {
+            RequestResume();
         }
 
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)

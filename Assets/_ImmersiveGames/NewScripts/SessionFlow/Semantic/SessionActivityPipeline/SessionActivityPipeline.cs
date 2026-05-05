@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline
@@ -10,13 +11,23 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private readonly SessionActivityMiniCatalog _catalog;
         private readonly SessionActivityRuntimeState _state;
         private readonly SimulationGateService _simulationGate;
+        private readonly ISessionActivityPauseOverlayAdapter _pauseOverlayAdapter;
         private readonly string _sessionId;
 
         public SessionActivityPipeline(SessionActivityMiniCatalog catalog, string sessionId = "SessionActivitySandboxSession")
+            : this(catalog, sessionId, null)
+        {
+        }
+
+        public SessionActivityPipeline(
+            SessionActivityMiniCatalog catalog,
+            string sessionId,
+            ISessionActivityPauseOverlayAdapter pauseOverlayAdapter)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
             _simulationGate = new SimulationGateService();
+            _pauseOverlayAdapter = pauseOverlayAdapter ?? new NoOpSessionActivityPauseOverlayAdapter();
             _sessionId = Normalize(sessionId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -236,14 +247,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             return ExecuteNavigationCommand(SessionActivityCommandKind.GoToActivity02, source, reason);
         }
 
-        public SessionActivityCommandResult PauseSimulation(string source, string reason)
+        public SessionActivityCommandResult PauseRequested(string source, string reason)
         {
-            return ExecuteSimulationCommand(SessionActivityCommandKind.PauseSimulation, source, reason);
+            return ExecutePauseRequested(source, reason);
         }
 
+        public SessionActivityCommandResult ResumeRequested(string source, string reason)
+        {
+            return ExecuteResumeRequested(source, reason);
+        }
+
+        [Obsolete("Use PauseRequested instead.")]
+        public SessionActivityCommandResult PauseSimulation(string source, string reason)
+        {
+            return PauseRequested(source, reason);
+        }
+
+        [Obsolete("Use ResumeRequested instead.")]
         public SessionActivityCommandResult ResumeSimulation(string source, string reason)
         {
-            return ExecuteSimulationCommand(SessionActivityCommandKind.ResumeSimulation, source, reason);
+            return ResumeRequested(source, reason);
         }
 
         public SessionActivityCommandResult Execute(SessionActivityCommand command)
@@ -258,11 +281,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 return RejectTerminalCommand(command.Kind, command.Source, command.Reason);
             }
 
-            if ((command.Kind == SessionActivityCommandKind.PauseSimulation ||
-                command.Kind == SessionActivityCommandKind.ResumeSimulation) &&
-                !_state.HasStarted)
+            if (command.Kind == SessionActivityCommandKind.PauseRequested ||
+                command.Kind == SessionActivityCommandKind.PauseSimulation)
             {
-                return RejectWithoutActiveIdentity(command.Kind, command.Source, command.Reason, "pipeline_not_started");
+                return ExecutePauseRequested(command.Source, command.Reason, command.Identity);
+            }
+
+            if (command.Kind == SessionActivityCommandKind.ResumeRequested ||
+                command.Kind == SessionActivityCommandKind.ResumeSimulation)
+            {
+                return ExecuteResumeRequested(command.Source, command.Reason, command.Identity);
             }
 
             List<SessionActivityFact> emittedFacts = new();
@@ -290,12 +318,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 case SessionActivityCommandKind.GoToActivity01:
                 case SessionActivityCommandKind.GoToActivity02:
                     EmitNavigation(command, emittedFacts, emittedSnapshots);
-                    break;
-                case SessionActivityCommandKind.PauseSimulation:
-                    EmitPauseSimulation(command, emittedFacts, emittedSnapshots);
-                    break;
-                case SessionActivityCommandKind.ResumeSimulation:
-                    EmitResumeSimulation(command, emittedFacts, emittedSnapshots);
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported command kind '{command.Kind}'.");
@@ -571,86 +593,264 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             EmitSnapshot(snapshots, "gameplay_running_entered", command.Source, command.Reason, $"'{definition.ActivityId}' running.");
         }
 
-        private void EmitPauseSimulation(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
+        private SessionActivityCommandResult ExecutePauseRequested(string source, string reason)
         {
-            if (!EnsureExpectedStage(command, facts, SessionActivityStage.GameplayRunning, "pause_simulation"))
-            {
-                return;
-            }
-
-            if (!EnsureIdentityMatches(command, facts, _state.CurrentIdentity, "pause_simulation"))
-            {
-                return;
-            }
-
-            if (_state.CurrentSimulationState == SessionActivitySimulationState.Paused)
-            {
-                EmitRejected(command, facts, "simulation_already_paused", "Simulation is already paused.", _state.CurrentIdentity, true);
-                return;
-            }
-
-            if (_state.CurrentSimulationState != SessionActivitySimulationState.Running)
-            {
-                throw new InvalidOperationException("Simulation state is invalid for pause.");
-            }
-
-            SimulationGateResult gateResult = ApplyActivityGateCommand(SimulationGateCommandKind.BlockActivitySimulation, command);
-            if (gateResult.IsRejected)
-            {
-                EmitRejected(
-                    command,
-                    facts,
-                    gateResult.Reason,
-                    $"SimulationGate rejected pause command. {gateResult.Snapshot}",
-                    _state.CurrentIdentity,
-                    true);
-                return;
-            }
-
-            _state.SetSimulationState(SessionActivitySimulationState.Paused);
-            EmitFact(facts, SessionActivityFactKind.SimulationPaused, _state.CurrentIdentity, command.Source, command.Reason, "Simulation paused.");
-            EmitSnapshot(snapshots, "simulation_paused", command.Source, command.Reason, "Simulation paused.");
+            return ExecutePauseRequested(BuildPauseCommand(SessionActivityCommandKind.PauseRequested, source, reason));
         }
 
-        private void EmitResumeSimulation(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
+        private SessionActivityCommandResult ExecutePauseRequested(string source, string reason, SessionActivityIdentity identity)
         {
-            if (!EnsureExpectedStage(command, facts, SessionActivityStage.GameplayRunning, "resume_simulation"))
+            SessionActivityCommand command = identity.IsValid
+                ? new SessionActivityCommand(SessionActivityCommandKind.PauseRequested, identity, source, reason)
+                : BuildPauseCommand(SessionActivityCommandKind.PauseRequested, source, reason);
+
+            return ExecutePauseRequested(command);
+        }
+
+        private SessionActivityCommandResult ExecuteResumeRequested(string source, string reason)
+        {
+            return ExecuteResumeRequested(BuildPauseCommand(SessionActivityCommandKind.ResumeRequested, source, reason));
+        }
+
+        private SessionActivityCommandResult ExecuteResumeRequested(string source, string reason, SessionActivityIdentity identity)
+        {
+            SessionActivityCommand command = identity.IsValid
+                ? new SessionActivityCommand(SessionActivityCommandKind.ResumeRequested, identity, source, reason)
+                : BuildPauseCommand(SessionActivityCommandKind.ResumeRequested, source, reason);
+
+            return ExecuteResumeRequested(command);
+        }
+
+        private SessionActivityCommandResult ExecutePauseRequested(SessionActivityCommand command)
+        {
+            return ExecutePauseOrResume(
+                command,
+                SessionActivityCommandKind.PauseRequested,
+                SessionActivitySimulationState.Paused,
+                SimulationGateCommandKind.BlockActivitySimulation,
+                "pause_requested",
+                "Pause requested.");
+        }
+
+        private SessionActivityCommandResult ExecuteResumeRequested(SessionActivityCommand command)
+        {
+            return ExecutePauseOrResume(
+                command,
+                SessionActivityCommandKind.ResumeRequested,
+                SessionActivitySimulationState.Running,
+                SimulationGateCommandKind.ReleaseActivitySimulation,
+                "resume_requested",
+                "Resume requested.");
+        }
+
+        private SessionActivityCommandResult ExecutePauseOrResume(
+            SessionActivityCommand command,
+            SessionActivityCommandKind expectedKind,
+            SessionActivitySimulationState targetState,
+            SimulationGateCommandKind gateCommandKind,
+            string snapshotKind,
+            string message)
+        {
+            if (IsTerminalCompleted())
             {
-                return;
+                return RejectTerminalCommand(command.Kind, command.Source, command.Reason);
             }
 
-            if (!EnsureIdentityMatches(command, facts, _state.CurrentIdentity, "resume_simulation"))
+            if (!_state.HasStarted)
             {
-                return;
+                return RejectWithoutActiveIdentity(command.Kind, command.Source, command.Reason, "pipeline_not_started");
             }
 
-            if (_state.CurrentSimulationState == SessionActivitySimulationState.Running)
+            if (_state.CurrentStage != SessionActivityStage.GameplayRunning)
             {
-                EmitRejected(command, facts, "simulation_not_paused", "Simulation is not paused.", _state.CurrentIdentity, true);
-                return;
-            }
-
-            if (_state.CurrentSimulationState != SessionActivitySimulationState.Paused)
-            {
-                throw new InvalidOperationException("Simulation state is invalid for resume.");
-            }
-
-            SimulationGateResult gateResult = ApplyActivityGateCommand(SimulationGateCommandKind.ReleaseActivitySimulation, command);
-            if (gateResult.IsRejected)
-            {
-                EmitRejected(
+                return RejectPauseCommand(
                     command,
-                    facts,
-                    gateResult.Reason,
-                    $"SimulationGate rejected resume command. {gateResult.Snapshot}",
-                    _state.CurrentIdentity,
-                    true);
-                return;
+                    "unexpected_stage",
+                    $"Operation '{expectedKind}' requires stage '{SessionActivityStage.GameplayRunning}', but current stage is '{_state.CurrentStage}'.");
             }
 
-            _state.SetSimulationState(SessionActivitySimulationState.Running);
-            EmitFact(facts, SessionActivityFactKind.SimulationResumed, _state.CurrentIdentity, command.Source, command.Reason, "Simulation resumed.");
-            EmitSnapshot(snapshots, "simulation_resumed", command.Source, command.Reason, "Simulation resumed.");
+            if (!command.Identity.IsValid || !_state.CurrentIdentity.IsValid || command.Identity != _state.CurrentIdentity)
+            {
+                return RejectPauseCommand(
+                    command,
+                    "stale_or_foreign_command",
+                    $"Command identity '{command.Identity}' does not match the active cycle identity '{_state.CurrentIdentity}'.");
+            }
+
+            if (expectedKind == SessionActivityCommandKind.PauseRequested)
+            {
+                if (_state.CurrentSimulationState == SessionActivitySimulationState.Paused)
+                {
+                    return RejectPauseCommand(command, "simulation_already_paused", "Simulation is already paused.");
+                }
+
+                if (_state.CurrentSimulationState != SessionActivitySimulationState.Running)
+                {
+                    throw new InvalidOperationException("Simulation state is invalid for pause.");
+                }
+            }
+            else
+            {
+                if (_state.CurrentSimulationState == SessionActivitySimulationState.Running)
+                {
+                    return RejectPauseCommand(command, "simulation_not_paused", "Simulation is not paused.");
+                }
+
+                if (_state.CurrentSimulationState != SessionActivitySimulationState.Paused)
+                {
+                    throw new InvalidOperationException("Simulation state is invalid for resume.");
+                }
+            }
+
+            List<SessionActivityFact> emittedFacts = new();
+            List<SessionActivitySnapshot> emittedSnapshots = new();
+
+            if (expectedKind == SessionActivityCommandKind.PauseRequested)
+            {
+                SimulationGateResult gateResult = ApplyActivityGateCommand(gateCommandKind, command);
+                if (gateResult.IsRejected)
+                {
+                    return RejectPauseCommand(
+                        command,
+                        gateResult.Reason,
+                        $"SimulationGate rejected pause command. {gateResult.Snapshot}");
+                }
+
+                _state.SetSimulationState(targetState);
+                _pauseOverlayAdapter.Show(_state.CurrentIdentity, command.Source, command.Reason);
+            }
+            else
+            {
+                _state.SetSimulationState(targetState);
+                _pauseOverlayAdapter.Hide(_state.CurrentIdentity, command.Source, command.Reason);
+
+                SimulationGateResult gateResult = ApplyActivityGateCommand(gateCommandKind, command);
+                if (gateResult.IsRejected)
+                {
+                    return RejectPauseCommand(
+                        command,
+                        gateResult.Reason,
+                        $"SimulationGate rejected resume command. {gateResult.Snapshot}");
+                }
+            }
+
+            EmitPauseResolution(
+                command,
+                emittedFacts,
+                emittedSnapshots,
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? SessionActivityFactKind.PauseResolved
+                    : SessionActivityFactKind.ResumeResolved,
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? "pause_resolved"
+                    : "resume_resolved",
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? "Pause accepted."
+                    : "Resume accepted.");
+
+            return new SessionActivityCommandResult(
+                SessionActivityCommandResultKind.Accepted,
+                command,
+                emittedFacts,
+                emittedFacts.Count > 0 ? emittedFacts[emittedFacts.Count - 1].Reason : string.Empty);
+        }
+
+        private SessionActivityCommand BuildPauseCommand(SessionActivityCommandKind kind, string source, string reason)
+        {
+            if (_state.CurrentIdentity.IsValid)
+            {
+                return new SessionActivityCommand(kind, _state.CurrentIdentity, source, reason);
+            }
+
+            return BuildNoActiveIdentityCommand(kind, source, reason);
+        }
+
+        private SessionActivityCommandResult RejectPauseCommand(
+            SessionActivityCommand command,
+            string reason,
+            string message)
+        {
+            List<SessionActivityFact> rejectedFacts = new();
+            List<SessionActivitySnapshot> rejectedSnapshots = new();
+            EmitPauseRejection(
+                command,
+                rejectedFacts,
+                rejectedSnapshots,
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? SessionActivityFactKind.PauseRejected
+                    : SessionActivityFactKind.ResumeRejected,
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? "pause_rejected"
+                    : "resume_rejected",
+                command.Kind == SessionActivityCommandKind.PauseRequested
+                    ? "Pause rejected."
+                    : "Resume rejected.",
+                reason,
+                message);
+
+            return new SessionActivityCommandResult(
+                SessionActivityCommandResultKind.Rejected,
+                command,
+                rejectedFacts,
+                reason);
+        }
+
+        private void EmitPauseResolution(
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityFactKind factKind,
+            string snapshotKind,
+            string message)
+        {
+            SessionActivityFact fact = EmitFact(
+                facts,
+                factKind,
+                _state.CurrentIdentity,
+                command.Source,
+                command.Reason,
+                message);
+
+            EmitSnapshot(snapshots, snapshotKind, command.Source, command.Reason, message);
+
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_simulationGate.State}' identity='{_state.CurrentIdentity}' reason='{command.Reason}' source='{command.Source}' outcome='accepted'.",
+                DebugUtility.Colors.Success);
+
+            if (!fact.IsValid)
+            {
+                throw new InvalidOperationException($"{factKind} fact is invalid.");
+            }
+        }
+
+        private SessionActivityFact EmitPauseRejection(
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityFactKind factKind,
+            string snapshotKind,
+            string message,
+            string reason,
+            string detailMessage)
+        {
+            SessionActivityFact fact = EmitFact(
+                facts,
+                factKind,
+                command.Identity,
+                command.Source,
+                reason,
+                detailMessage);
+
+            EmitSnapshot(snapshots, snapshotKind, command.Source, reason, message);
+
+            _state.AppendTrace(
+                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_simulationGate.State}' identity='{command.Identity}' reason='{reason}' source='{command.Source}' message='{detailMessage}' outcome='rejected'.");
+
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_simulationGate.State}' identity='{command.Identity}' reason='{reason}' source='{command.Source}' outcome='rejected'.",
+                DebugUtility.Colors.Warning);
+
+            return fact;
         }
 
         private SimulationGateResult ApplyActivityGateCommand(
@@ -1049,7 +1249,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 }
             }
 
-            if (kind == SessionActivityCommandKind.PauseSimulation ||
+            if (kind == SessionActivityCommandKind.PauseRequested ||
+                kind == SessionActivityCommandKind.ResumeRequested ||
+                kind == SessionActivityCommandKind.PauseSimulation ||
                 kind == SessionActivityCommandKind.ResumeSimulation)
             {
                 return _state.CurrentIdentity;
@@ -1283,6 +1485,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private sealed class NoOpSessionActivityPauseOverlayAdapter : ISessionActivityPauseOverlayAdapter
+        {
+            public void Show(SessionActivityIdentity identity, string source, string reason)
+            {
+            }
+
+            public void Hide(SessionActivityIdentity identity, string source, string reason)
+            {
+            }
         }
     }
 }
