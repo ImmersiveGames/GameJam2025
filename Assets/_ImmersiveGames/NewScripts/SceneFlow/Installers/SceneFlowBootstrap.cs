@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 {
     /// <summary>
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
     {
         private static bool _runtimeComposed;
         private static SceneFlowInputModeBridge _inputModeBridge;
+        private static SessionOperationalRouteTransitionBridge _sessionOperationalRouteTransitionBridge;
         private static LoadingHudOrchestrator _loadingHudOrchestrator;
         private static LoadingProgressOrchestrator _loadingProgressOrchestrator;
 
@@ -41,6 +43,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 
             EnsureSceneTransitionService();
             EnsureRouteActorSetRefContext();
+            EnsureSessionOperationalRouteTransitionBridge();
             EnsureInputModeBridge();
             EnsureLoadingOrchestrators();
             EnsureFadeReadyAsync();
@@ -113,6 +116,22 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             DebugUtility.Log(typeof(SceneFlowBootstrap),
                 "[OBS][ActorsExecution] Route actor-set context composed (SceneFlow owner).",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalRouteTransitionBridge()
+        {
+            if (_sessionOperationalRouteTransitionBridge != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionOperationalRouteTransitionBridge>(out var existingBridge) && existingBridge != null)
+            {
+                _sessionOperationalRouteTransitionBridge = existingBridge;
+                return;
+            }
+
+            _sessionOperationalRouteTransitionBridge = new SessionOperationalRouteTransitionBridge();
         }
 
         private static void EnsureLoadingOrchestrators()

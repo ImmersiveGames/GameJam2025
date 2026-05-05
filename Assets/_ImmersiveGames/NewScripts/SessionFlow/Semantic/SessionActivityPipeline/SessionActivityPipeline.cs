@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         }
 
         public SessionActivityCommandResult StartFromPreparedHandoff(
-            _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline.SessionActivityEntryHandoff handoff,
+            SessionActivityEntryHandoff handoff,
             string source,
             string reason)
         {
