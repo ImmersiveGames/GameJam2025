@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     {
         private static void InstallGameLoopServices()
         {
-            GameLoopInstaller.Install();
+            GameLoopCoreInstaller.Install();
         }
 
         private static void BootstrapGameLoopRuntime(BootstrapConfigAsset bootstrapConfig)

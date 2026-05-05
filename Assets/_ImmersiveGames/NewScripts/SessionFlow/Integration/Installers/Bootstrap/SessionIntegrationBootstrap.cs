@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
@@ -36,10 +37,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 return;
             }
 
+            IntroStageIntegrationInstaller.Install();
+
             _installerPhaseComposed = true;
 
             DebugUtility.Log(typeof(SessionIntegrationBootstrap),
-                "[OBS][SessionIntegration][Operational] Installer phase no-op completed; runtime composition deferred to Navigation-backed bootstrap phase.",
+                "[OBS][SessionIntegration][Operational] Installer phase completed; IntroStage contracts composed before SessionTransitionBootstrap.",
                 DebugUtility.Colors.Info);
         }
 

@@ -1,0 +1,14 @@
+# GameLoop
+
+`GameLoop` aqui e apenas o executor tecnico de estado.
+
+Separacao atual:
+- `GameLoopCoreInstaller`: core do loop e contratos diretos.
+- `LegacyPauseCompatibilityInstaller`: compatibilidade temporaria de pause legado.
+- `RunPipelineBridgeInstaller`: integracao de servicos do Run Pipeline.
+- `RunPipelineRuntimeBridgeComposer`: adapter temporario Unity-driven do `GameRunEndedEventBridge`.
+- `SessionOperationalStartupRouteInstaller`: adapter temporario de startup route do SessionOperationalPipeline.
+
+`GameLoopInstaller` e `GameLoopBootstrap` permanecem como agregadores temporarios durante a migracao Base 1.1.
+Nao devem ser tratados como owners semanticos de rota, session, activity, run ou IntroStage.
+O `GameLoopCore` nao e owner de `Run Pipeline` nem de `IntroStage`.

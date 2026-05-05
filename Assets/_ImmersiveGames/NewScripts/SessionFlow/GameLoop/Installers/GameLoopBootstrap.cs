@@ -1,11 +1,7 @@
 using System;
-using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bridges;
-using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
-using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate.Interop;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
@@ -22,21 +18,21 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage.GameLoopRunOutcome;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
 {
     /// <summary>
     /// Runtime composer do GameLoop.
     ///
     /// Responsabilidade:
-    /// - ativar o GameLoop depois que os installers relevantes concluíram;
-    /// - compor bridges, driver e sync runtime do módulo;
-    /// - não registrar contratos de boot.
+    /// - ativar o GameLoop depois que os installers relevantes concluÃ­ram;
+    /// - delegar composicao de Run/Intro/StartupRoute para composers nomeados;
+    /// - nao registrar contratos de boot.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     public sealed class GameLoopBootstrap : MonoBehaviour
     {
         private const string DriverObjectName = "[NewScripts] GameLoopInputDriver";
-        private const string RunEndBridgeObjectName = "[NewScripts] GameRunEndedEventBridge";
 
         private static bool _runtimeComposed;
         private static SessionOperationalStartupRouteAdapter _startupRouteAdapter;
@@ -55,24 +51,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 throw new InvalidOperationException("[FATAL][Config][GameLoop] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
+            GameLoopCoreInstaller.Install();
             var gameLoopService = ResolveRequiredGameLoopService();
             gameLoopService.Initialize();
 
-            EnsureAudioPauseDuckingBridge();
-            EnsurePauseBridge();
-            EnsureGameRunRuntimeServices();
-            EnsureOutcomeEventInputBridge();
-            EnsureRunEndBridgeRuntimeServices();
-            EnsureRunEndEventBridge();
+            LegacyPauseCompatibilityInstaller.Install();
+            RunPipelineBridgeInstaller.Install();
+            IntroStageIntegrationInstaller.Install();
+            SessionOperationalStartupRouteInstaller.Install();
+
             EnsureDriver();
-            EnsureStartupRouteSyncDecisionService();
-            EnsureSessionOperationalStartupRouteAdapter(bootstrapConfig, gameLoopService);
+            LegacyPauseCompatibilityInstaller.ComposeRuntime();
+            RunPipelineRuntimeBridgeComposer.ComposeRuntime();
+            _startupRouteAdapter = SessionOperationalStartupRouteInstaller.ComposeRuntime(bootstrapConfig, gameLoopService);
             EnsureGameLoopModuleComposition();
 
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(GameLoopBootstrap),
-                "[OBS][GameLoop][Operational] Runtime composition concluida.",
+                "[OBS][GameLoop][Core] Runtime composition concluida. scope='core executor + legacy pause compat + delegated run pipeline runtime bridge composer + startup-route adapter'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -96,132 +93,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameLoopService ausente no DI global antes da composicao runtime.");
         }
 
-        private static void EnsureAudioPauseDuckingBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<AudioPauseDuckingBridge>(out _))
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IAudioBgmService ausente no DI global antes de registrar o AudioPauseDuckingBridge.");
-            }
-
-            var bridge = AudioPauseDuckingBridge.EnsureCreated(bgmService);
-            DependencyManager.Provider.RegisterGlobal(bridge);
-
-            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                "[Audio][BOOT] AudioPauseDuckingBridge composed after GameLoopService became available.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void EnsurePauseBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GamePauseGateBridge>(out _))
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<ILegacySimulationGateService>(out var gateService) || gateService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] ILegacySimulationGateService ausente no DI global antes de registrar o GamePauseGateBridge.");
-            }
-
-            var bridge = new GamePauseGateBridge(gateService);
-            DependencyManager.Provider.RegisterGlobal(bridge);
-        }
-
-        private static void EnsureGameRunRuntimeServices()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var endRequest) || endRequest == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunEndRequestService ausente no DI global antes da composicao runtime.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var gameplayStateGuard) || gameplayStateGuard == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunPlayingStateGuard ausente no DI global antes da composicao runtime.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcome) || outcome == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunOutcomeService ausente no DI global antes da composicao runtime.");
-            }
-        }
-
-        private static void EnsureOutcomeEventInputBridge()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<GameRunOutcomeRequestBridge>(out _))
-            {
-                return;
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameRunOutcomeService>(out var outcomeService) || outcomeService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IGameRunOutcomeService ausente no DI global antes de registrar o GameRunOutcomeRequestBridge.");
-            }
-
-            var bridge = new GameRunOutcomeRequestBridge(outcomeService);
-            DependencyManager.Provider.RegisterGlobal(bridge);
-        }
-
-        private static void EnsureRunEndEventBridge()
-        {
-            if (FindFirstObjectByType<GameRunEndedEventBridge>() != null)
-            {
-                throw new InvalidOperationException(
-                    "[FATAL][Config][GameLoop] GameRunEndedEventBridge must not be placed in a scene/prefab or created outside GameLoopBootstrap. Use the canonical composition path only.");
-            }
-
-            EnsureRunEndBridgeRuntimeServices();
-
-            var go = new GameObject(RunEndBridgeObjectName);
-            go.SetActive(false);
-            go.AddComponent<GameRunEndedEventBridge>();
-            InitializeRunEndEventBridge(go);
-            DontDestroyOnLoad(go);
-            go.SetActive(true);
-        }
-
-        private static void InitializeRunEndEventBridge(GameObject bridgeObject)
-        {
-            if (bridgeObject == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] RunEnd bridge GameObject ausente ao inicializar GameRunEndedEventBridge.");
-            }
-
-            if (!bridgeObject.TryGetComponent<GameRunEndedEventBridge>(out var bridge) || bridge == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] GameRunEndedEventBridge ausente no GameObject de composição.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunEndMaterializationService>(out var runEndMaterializationService) || runEndMaterializationService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunEndMaterializationService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationSelectionRoutingService>(out var runContinuationSelectionRoutingService) || runContinuationSelectionRoutingService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunContinuationSelectionRoutingService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IRunContinuationOwnershipService>(out var runContinuationOwnershipService) || runContinuationOwnershipService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][GameLoop] IRunContinuationOwnershipService ausente apos RunEndBridgeRuntimeComposer.ComposeOrFail().");
-            }
-
-            bridge.Initialize(
-                runEndMaterializationService,
-                runContinuationSelectionRoutingService,
-                runContinuationOwnershipService);
-        }
-
-        private static void EnsureRunEndBridgeRuntimeServices()
-        {
-            RunEndBridgeRuntimeComposer.ComposeOrFail();
-        }
-
         private static void EnsureDriver()
         {
             if (FindFirstObjectByType<GameLoopInputDriver>() != null)
@@ -232,68 +103,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             var go = new GameObject(DriverObjectName);
             go.AddComponent<GameLoopInputDriver>();
             DontDestroyOnLoad(go);
-        }
 
-        private static void EnsureSessionOperationalStartupRouteAdapter(BootstrapConfigAsset bootstrapConfig, IGameLoopService gameLoopService)
-        {
-            if (_startupRouteAdapter != null)
-            {
-                return;
-            }
-
-            // Este adapter pertence ao SessionOperationalPipeline/StartupRoute.
-            // O GameLoop recebe apenas o comando tecnico de reset; a decisao de boot/rota fica fora do loop.
-            if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] ISceneTransitionService ausente no DI global antes de compor o startup route adapter.");
-            }
-
-            var bootStartRoute = ResolveBootStartRouteOrFailFast(bootstrapConfig);
-            StartupTransitionResolution startup = ResolveRequiredStartupTransition(bootstrapConfig);
-            IFadeService fadeService = startup.UseFade ? ResolveRequiredFadeService() : null;
-            ISessionOperationalStartupRouteDecisionService syncDecisionService = ResolveRequiredStartupRouteSyncDecisionService();
-
-            var startPlan = new SceneTransitionRequest(
-                bootStartRoute.ToDefinition(),
-                routeId: bootStartRoute.RouteId,
-                transitionStyle: startup.StyleRef,
-                payload: SceneTransitionPayload.Empty,
-                transitionProfile: startup.Profile,
-                useFade: startup.UseFade,
-                requestedBy: "Boot/StartPlan",
-                reason: "Boot/StartPlan",
-                resolvedRouteRef: bootStartRoute);
-
-            _startupRouteAdapter = new SessionOperationalStartupRouteAdapter(sceneFlow, gameLoopService, fadeService, syncDecisionService, startPlan);
-
-            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                $"[OBS][SessionOperationalPipeline][StartupRoute] startupRouteRequested source='runtime_composition' routeId='{bootStartRoute.RouteId}' routeRef='{bootStartRoute.name}' style='{startup.StyleLabel}' profile='{startup.ProfileLabel}' profileAsset='{startup.Profile.name}'.",
+            DebugUtility.Log(typeof(GameLoopBootstrap),
+                "[OBS][GameLoop][Core] GameLoopInputDriver composto.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static void EnsureStartupRouteSyncDecisionService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalStartupRouteDecisionService>(out var existing) && existing != null)
-            {
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal<ISessionOperationalStartupRouteDecisionService>(
-                new SessionOperationalStartupRouteDecisionService());
-
-            DebugUtility.LogVerbose(typeof(GameLoopBootstrap),
-                "[OBS][SessionOperationalPipeline][StartupRoute] Sync decision service registrado no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static ISessionOperationalStartupRouteDecisionService ResolveRequiredStartupRouteSyncDecisionService()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalStartupRouteDecisionService>(out var syncDecisionService) && syncDecisionService != null)
-            {
-                return syncDecisionService;
-            }
-
-            throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] ISessionOperationalStartupRouteDecisionService ausente no DI global antes de compor o startup route adapter.");
         }
 
         private static void EnsureGameLoopModuleComposition()
@@ -313,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             }
 
             DebugUtility.Log(typeof(GameLoopBootstrap),
-                "[OBS][GameLoop][Operational] Runtime composition consolidada. scope='loop executor + startup-route adapter + run bridges'.",
+                "[OBS][GameLoop][Core] Runtime composition consolidada. scope='core executor + compatibility + delegated run pipeline runtime bridge composer + startup-route adapter'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -414,4 +227,3 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
 
     }
 }
-

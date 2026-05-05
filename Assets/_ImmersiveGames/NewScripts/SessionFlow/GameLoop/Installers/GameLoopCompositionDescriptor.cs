@@ -8,11 +8,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 moduleId: "GameLoop",
                 installerDependencies: System.Array.Empty<string>(),
                 bootstrapDependencies: new[] { "SceneFlow", "SessionIntegration" },
-                installer: _ => GameLoopInstaller.Install(),
+                installer: _ => GameLoopCoreInstaller.Install(),
                 bootstrap: bootstrapConfig => GameLoopBootstrap.ComposeRuntime(bootstrapConfig),
-                installerEntry: "GameLoopInstaller.Install",
+                installerEntry: "GameLoopCoreInstaller.Install",
                 runtimeComposerEntry: "GameLoopBootstrap.ComposeRuntime",
-                description: "GameLoop boundary: lifecycle macro, play, pause, resume, run-start, run-end.");
+                description: "GameLoop boundary: core executor only; integrations are split into named installers.");
     }
 }
 

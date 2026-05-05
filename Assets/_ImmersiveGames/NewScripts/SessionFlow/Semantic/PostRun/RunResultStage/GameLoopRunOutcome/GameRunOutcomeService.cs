@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             _subscriptions.Register(_runEndedObservedBinding);
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                "[OBS][GameLoop][Operational] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>.");
+                "[OBS][RunPipeline][Outcome] GameRunOutcomeService registrado no EventBus<GameRunStartedEvent> e observando EventBus<GameRunEndedEvent>.");
         }
 
         public bool TryEnd(GameRunOutcome outcome, string reason = null)
@@ -51,21 +51,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             if (outcome != GameRunOutcome.Victory && outcome != GameRunOutcome.Defeat)
             {
                 DebugUtility.LogWarning<GameRunOutcomeService>(
-                    $"[GameLoop][Operational] TryEnd ignorado: Outcome invalido/nao terminal ({outcome}). Reason='{GameLoopReasonFormatter.Format(reason)}'.");
+                    $"[RunPipeline][Outcome] TryEnd ignorado: Outcome invalido/nao terminal ({outcome}). Reason='{GameLoopReasonFormatter.Format(reason)}'.");
                 return false;
             }
 
             if (!_playingStateGuard.IsInActiveGameplay(out string stateName))
             {
                 DebugUtility.LogVerbose<GameRunOutcomeService>(
-                    $"[GameLoop][Operational] TryEnd ignorado: GameLoop nao esta em Playing (state={stateName}). Outcome={outcome}, Reason='{GameLoopReasonFormatter.Format(reason)}'.");
+                    $"[RunPipeline][Outcome] TryEnd ignorado: GameLoop nao esta em Playing (state={stateName}). Outcome={outcome}, Reason='{GameLoopReasonFormatter.Format(reason)}'.");
                 return false;
             }
 
             if (_hasEndedThisRun)
             {
                 DebugUtility.LogVerbose<GameRunOutcomeService>(
-                    $"[GameLoop][Operational] TryEnd suprimido: fim de run ja publicado nesta run. Outcome={outcome}, Reason='{GameLoopReasonFormatter.Format(reason)}'.");
+                    $"[RunPipeline][Outcome] TryEnd suprimido: fim de run ja publicado nesta run. Outcome={outcome}, Reason='{GameLoopReasonFormatter.Format(reason)}'.");
                 return false;
             }
 
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             _gameLoopService.RequestRunEnd();
 
             DebugUtility.Log<GameRunOutcomeService>(
-                $"[OBS][GameLoop][Operational] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent' handshake='GameLoop.RequestRunEnd'.");
+                $"[OBS][RunPipeline][Outcome] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent' handshake='GameLoop.RequestRunEnd'.");
 
             EventBus<GameRunEndedEvent>.Raise(new GameRunEndedEvent(outcome, reason));
             return true;
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             _hasEndedThisRun = false;
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                $"[OBS][GameLoop][Operational] GameRunStartedEvent observado -> rearmando GameRunOutcomeService. state={evt?.StateId}");
+                $"[OBS][RunPipeline][Outcome] GameRunStartedEvent observado -> rearmando GameRunOutcomeService. state={evt?.StateId}");
         }
 
         private void OnRunEndedObserved(GameRunEndedEvent evt)
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             _hasEndedThisRun = true;
 
             DebugUtility.LogVerbose<GameRunOutcomeService>(
-                $"[OBS][GameLoop][Operational] GameRunEndedEvent observado externamente -> marcando HasEnded=true. Outcome={evt.Outcome}, Reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
+                $"[OBS][RunPipeline][Outcome] GameRunEndedEvent observado externamente -> marcando HasEnded=true. Outcome={evt.Outcome}, Reason='{GameLoopReasonFormatter.Format(evt.Reason)}'.");
         }
 
         public void Dispose()
