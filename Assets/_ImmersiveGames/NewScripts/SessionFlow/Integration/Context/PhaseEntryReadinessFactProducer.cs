@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
@@ -211,7 +210,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
 
         private readonly IGameplayParticipationFlowService _participationFlowService;
         private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
-        private readonly IGameLoopService _gameLoopService;
         private PhaseEntryIdentity _activePhaseEntryIdentity;
         private bool _hasActivePhaseEntryIdentity;
 
@@ -240,11 +238,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             if (!DependencyManager.Provider.TryGetGlobal<IGameplayPhaseRuntimeService>(out _phaseRuntimeService) || _phaseRuntimeService == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameplayPhaseRuntimeService ausente para compor PhaseEntryReadinessFactProducer.");
-            }
-
-            if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out _gameLoopService) || _gameLoopService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionIntegration] IGameLoopService ausente para compor PhaseEntryReadinessFactProducer.");
             }
 
             _phaseLocalEntryReadyBinding = new EventBinding<SessionTransitionPhaseLocalEntryReadyEvent>(OnPhaseLocalEntryReady);
@@ -509,7 +502,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                     hasParticipationSnapshot: false,
                     participationAllowsGameplay: false,
                     hasPhaseRuntimeSnapshot: false,
-                    gameLoopAlreadyPlaying: IsGameLoopPlaying(),
+                    gameLoopAlreadyPlaying: false,
                     staleFactSource: _lastStaleFactSource);
                 return true;
             }
@@ -537,7 +530,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                     hasParticipationSnapshot: false,
                     participationAllowsGameplay: false,
                     hasPhaseRuntimeSnapshot: _hasPhaseRuntimeMaterialized,
-                    gameLoopAlreadyPlaying: IsGameLoopPlaying(),
+                    gameLoopAlreadyPlaying: false,
                     staleFactSource: _lastStaleFactSource);
                 return true;
             }
@@ -560,7 +553,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
             bool hasMatchingIntro = _hasIntroStageCompleted &&
                                     MatchesCurrentEntry(_currentIntroStageCompleted, _currentPhaseLocalEntryReady) &&
                                     IsIntroCompleted(_currentIntroStageCompleted);
-            bool gameLoopAlreadyPlaying = IsGameLoopPlaying();
+            bool gameLoopAlreadyPlaying = false;
 
             if (!hasParticipationSnapshot)
             {
@@ -642,9 +635,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Context
                 gameLoopAlreadyPlaying: gameLoopAlreadyPlaying,
                 staleFactSource: _lastStaleFactSource);
         }
-
-        private bool IsGameLoopPlaying()
-            => string.Equals(_gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
 
         private static bool MatchesCurrentEntry(
             ActorsOperationalMaterializationCycleCompletedEvent actorsCycle,

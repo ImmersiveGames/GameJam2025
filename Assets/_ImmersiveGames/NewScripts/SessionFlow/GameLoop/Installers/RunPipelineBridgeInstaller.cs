@@ -46,17 +46,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             RegisterIfMissing<IGameRunOutcomeService>(
                 () =>
                 {
-                    if (!DependencyManager.Provider.TryGetGlobal<IGameRunPlayingStateGuard>(out var gameplayStateGuard) || gameplayStateGuard == null)
+                    if (!DependencyManager.Provider.TryGetGlobal<IGameRunEndRequestService>(out var runEndRequestService) || runEndRequestService == null)
                     {
-                        throw new InvalidOperationException("[FATAL][Config][RunPipeline] IGameRunPlayingStateGuard ausente ao registrar IGameRunOutcomeService.");
+                        throw new InvalidOperationException("[FATAL][Config][RunPipeline] IGameRunEndRequestService ausente ao registrar IGameRunOutcomeService.");
                     }
 
-                    if (!DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) || gameLoopService == null)
-                    {
-                        throw new InvalidOperationException("[FATAL][Config][RunPipeline] IGameLoopService ausente ao registrar IGameRunOutcomeService.");
-                    }
-
-                    return new GameRunOutcomeService(gameplayStateGuard, gameLoopService);
+                    return new GameRunOutcomeService(runEndRequestService);
                 },
                 "[RunPipeline][Integration] IGameRunOutcomeService ja registrado no DI global.",
                 "[RunPipeline][Integration] GameRunOutcomeService registrado no DI global.");

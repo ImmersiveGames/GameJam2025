@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
                 moduleId: "RunEndRail",
-                installerDependencies: new[] { "GameLoop" },
+                installerDependencies: System.Array.Empty<string>(),
                 bootstrapDependencies: System.Array.Empty<string>(),
                 installer: _ => RunEndRailInstaller.Install(),
                 bootstrap: null,

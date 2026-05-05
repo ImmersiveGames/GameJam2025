@@ -16,8 +16,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate.In
         private bool _bindingsRegistered;
         private bool _disposed;
 
-        // Bridge legitima: conecta o gate global ao estado de pause emitido pelo GameLoopService.
-        // Nasce no GameLoopBootstrap, depois que o GameLoopService ja foi composto.
+        // Bridge legitima: conecta o gate global ao estado de pause do rail canônico de sessão.
+        // Nasce depois da composição do runtime de pausa/simulação.
         public GamePauseGateBridge(ILegacySimulationGateService gateService)
         {
             _gateService = gateService ?? throw new InvalidOperationException("[FATAL][Config][PauseBridge] ILegacySimulationGateService obrigatorio ausente para GamePauseGateBridge.");

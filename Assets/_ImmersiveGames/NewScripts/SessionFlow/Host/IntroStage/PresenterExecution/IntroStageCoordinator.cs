@@ -8,7 +8,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
@@ -38,7 +37,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
 
             IIntroStageControlService controlService = ResolveIntroStageControlServiceOrFail();
             IActorsGameplayOperationalReadinessService operationalReadinessService = ResolveOperationalReadinessServiceOrFail();
-            IGameLoopService gameLoopService = ResolveGameLoopServiceOrFail();
 
             string signature = NormalizeSignature(context.ContextSignature);
             string executionSignature = NormalizeSignature(context.ExecutionSignature);
@@ -237,8 +235,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                             reason,
                             "actors_readiness_callback",
                             "GameplayStartReady",
-                            context.Session.PhaseEntryIdentity,
-                            gameLoopService);
+                            context.Session.PhaseEntryIdentity);
                         releaseRequested = true;
                         startReleaseSource.TrySetResult(true);
                     }
@@ -325,8 +322,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                             reason,
                             "no_content_immediate",
                             "GameplayStartReady",
-                            context.Session.PhaseEntryIdentity,
-                            gameLoopService);
+                            context.Session.PhaseEntryIdentity);
                         releaseRequested = true;
                         startReleaseSource.TrySetResult(true);
                     }
@@ -423,8 +419,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                         reason,
                         "intro_completion_immediate",
                         "GameplayStartReady",
-                        context.Session.PhaseEntryIdentity,
-                        gameLoopService);
+                        context.Session.PhaseEntryIdentity);
                     releaseRequested = true;
                     startReleaseSource.TrySetResult(true);
                 }
@@ -500,19 +495,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
                 "[FATAL][H1][GameLoop] IActorsGameplayOperationalReadinessService obrigatorio ausente para coordenar o release do GameLoop.");
 
             throw new InvalidOperationException("IActorsGameplayOperationalReadinessService is required.");
-        }
-
-        private static IGameLoopService ResolveGameLoopServiceOrFail()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoopService) && gameLoopService != null)
-            {
-                return gameLoopService;
-            }
-
-            HardFailFastH1.Trigger(typeof(IntroStageCoordinator),
-                "[FATAL][H1][GameLoop] IGameLoopService obrigatorio ausente para liberar o start operacional.");
-
-            throw new InvalidOperationException("IGameLoopService is required.");
         }
 
         private static IDisposable AcquireLegacySimulationGateOrFail(
@@ -692,37 +674,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Host.IntroStage.PresenterExecut
             string reason,
             string sourcePath,
             string releaseReason,
-            PhaseEntryIdentity phaseEntryIdentity,
-            IGameLoopService gameLoopService)
+            PhaseEntryIdentity phaseEntryIdentity)
         {
-            bool alreadyPlaying = string.Equals(gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), StringComparison.Ordinal);
             string phaseEntryIdentityText = phaseEntryIdentity.IsValid
                 ? NormalizeValue(phaseEntryIdentity.ToString())
                 : string.Empty;
-            GameLoopSignalIdentity loopIdentity = new GameLoopSignalIdentity(
-                phaseEntryIdentity: phaseEntryIdentityText,
-                sessionSignature: contextSignature,
-                entrySignature: executionSignature,
-                cycleSignature: cycleSignature,
-                reason: reason,
-                source: nameof(IntroStageCoordinator),
-                handshake: nameof(IntroStageCoordinator),
-                routeKind: routeKind,
-                targetScene: targetScene);
 
             DebugUtility.Log<IntroStageCoordinator>(
-                $"[OBS][IntroStageCoordinator] GameLoopStartReleased signature='{contextSignature}' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{entrySignature}' cycleSignature='{NormalizeSignature(cycleSignature)}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}' releaseReason='{releaseReason}' sourcePath='{sourcePath}' alreadyPlaying='{alreadyPlaying.ToString().ToLowerInvariant()}'.",
+                $"[OBS][IntroStageCoordinator] GameLoopStartReleased signature='{contextSignature}' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' entrySignature='{entrySignature}' cycleSignature='{NormalizeSignature(cycleSignature)}' routeKind='{routeKind}' target='{targetScene}' reason='{reason}' releaseReason='{releaseReason}' sourcePath='{sourcePath}' alreadyPlaying='false'.",
                 DebugUtility.Colors.Info);
-
-            if (alreadyPlaying)
-            {
-                DebugUtility.Log<IntroStageCoordinator>(
-                    $"[OBS][IntroStageCoordinator] GameLoopStartRequestSkipped reason='already_playing' contextSignature='{contextSignature}' executionSignature='{executionSignature}' phaseLocalEntrySequence='{phaseLocalEntrySequence}' routeKind='{routeKind}' target='{targetScene}' sourcePath='{sourcePath}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            gameLoopService.RequestStart(reason, loopIdentity);
         }
 
         private static void LogGameplayStartReady(

@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation;
+using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Ownership;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Result;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers
@@ -27,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers
             RegisterRunResultStagePresenterHost();
             RegisterRunDecisionStagePresenterHost();
             RegisterRunEndRailResultService();
+            RunPipelineBridgeInstaller.Install();
             RegisterRunEndIntentOwnershipService();
             RegisterRunContinuationOwnershipService();
             RegisterRunDecisionOwnershipService();

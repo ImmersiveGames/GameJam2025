@@ -9,7 +9,6 @@ using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
@@ -39,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 DebugUtility.Colors.Info);
         }
 
-        public static SessionOperationalStartupRouteAdapter ComposeRuntime(BootstrapConfigAsset bootstrapConfig, IGameLoopService gameLoopService)
+        public static SessionOperationalStartupRouteAdapter ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
             if (_runtimeComposed)
             {
@@ -49,11 +48,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
             if (bootstrapConfig == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] BootstrapConfigAsset obrigatorio ausente para compor o startup route adapter.");
-            }
-
-            if (gameLoopService == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IGameLoopService obrigatorio ausente para compor o startup route adapter.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISceneTransitionService>(out var sceneFlow) || sceneFlow == null)
@@ -77,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers
                 reason: "Boot/StartPlan",
                 resolvedRouteRef: bootStartRoute);
 
-            _startupRouteAdapter = new SessionOperationalStartupRouteAdapter(sceneFlow, gameLoopService, fadeService, syncDecisionService, startPlan);
+            _startupRouteAdapter = new SessionOperationalStartupRouteAdapter(sceneFlow, fadeService, syncDecisionService, startPlan);
 
             _runtimeComposed = true;
 

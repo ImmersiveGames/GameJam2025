@@ -10,13 +10,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
     /// Regras:
     /// - Publica <see cref="GameRunEndedEvent"/> no maximo uma vez por run.
     /// - Um novo <see cref="GameRunStartedEvent"/> rearma o servico para a proxima run.
-    /// - Para evitar efeitos colaterais, o fim de run so e aceito quando o GameLoop esta em Playing.
+    /// - O consumidor de request faz a deduplicacao e o rearmamento por run.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameRunOutcomeService : IGameRunOutcomeService, IDisposable
     {
-        private readonly IGameRunPlayingStateGuard _playingStateGuard;
-        private readonly IGameLoopService _gameLoopService;
+        private readonly IGameRunEndRequestService _runEndRequestService;
         private readonly GameLoopEventSubscriptionSet _subscriptions = new();
         private readonly EventBinding<GameRunStartedEvent> _runStartedBinding;
         private readonly EventBinding<GameRunEndedEvent> _runEndedObservedBinding;
@@ -26,10 +25,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
 
         public bool HasEnded => _hasEndedThisRun;
 
-        public GameRunOutcomeService(IGameRunPlayingStateGuard playingStateGuard, IGameLoopService gameLoopService)
+        public GameRunOutcomeService(IGameRunEndRequestService runEndRequestService)
         {
-            _playingStateGuard = playingStateGuard ?? throw new ArgumentNullException(nameof(playingStateGuard));
-            _gameLoopService = gameLoopService ?? throw new ArgumentNullException(nameof(gameLoopService));
+            _runEndRequestService = runEndRequestService ?? throw new ArgumentNullException(nameof(runEndRequestService));
 
             _runStartedBinding = new EventBinding<GameRunStartedEvent>(OnRunStarted);
             _runEndedObservedBinding = new EventBinding<GameRunEndedEvent>(OnRunEndedObserved);
@@ -55,13 +53,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
                 return false;
             }
 
-            if (!_playingStateGuard.IsInActiveGameplay(out string stateName))
-            {
-                DebugUtility.LogVerbose<GameRunOutcomeService>(
-                    $"[RunPipeline][Outcome] TryEnd ignorado: GameLoop nao esta em Playing (state={stateName}). Outcome={outcome}, Reason='{GameLoopReasonFormatter.Format(reason)}'.");
-                return false;
-            }
-
             if (_hasEndedThisRun)
             {
                 DebugUtility.LogVerbose<GameRunOutcomeService>(
@@ -71,10 +62,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
 
             _hasEndedThisRun = true;
 
-            _gameLoopService.RequestRunEnd();
+            _runEndRequestService.RequestRunEnd(outcome, reason);
 
             DebugUtility.Log<GameRunOutcomeService>(
-                $"[OBS][RunPipeline][Outcome] GameRunEndAccepted state='{stateName}' outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent' handshake='GameLoop.RequestRunEnd'.");
+                $"[OBS][RunPipeline][Outcome] GameRunEndAccepted outcome='{outcome}' reason='{GameLoopReasonFormatter.Format(reason)}' publish='GameRunEndedEvent' handshake='IGameRunEndRequestService'.");
 
             EventBus<GameRunEndedEvent>.Raise(new GameRunEndedEvent(outcome, reason));
             return true;
@@ -105,11 +96,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             }
 
             if (evt.Outcome != GameRunOutcome.Victory && evt.Outcome != GameRunOutcome.Defeat)
-            {
-                return;
-            }
-
-            if (!_playingStateGuard.IsInActiveGameplay(out _))
             {
                 return;
             }

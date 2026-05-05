@@ -1,20 +1,26 @@
 # GameLoop
 
-`GameLoop` aqui e apenas o executor tecnico de estado.
+O ciclo legado `GameLoopService`/`GameLoopStateMachine` foi removido.
 
-Separacao atual:
-- `GameLoopCoreInstaller`: core do loop e contratos diretos.
-- `RunPipelineBridgeInstaller`: integracao de servicos do Run Pipeline.
-- `RunPipelineRuntimeBridgeComposer`: adapter temporario Unity-driven do `GameRunEndedEventBridge`.
-- `SessionOperationalStartupRouteInstaller`: adapter temporario de startup route do SessionOperationalPipeline.
+Estado atual do módulo:
+- `GameLoop` não é owner de lifecycle.
+- `Pause`/`Resume` canônicos pertencem ao `SessionActivityPipeline`.
+- `Run outcome` é tratado pelo `Run Pipeline`.
+- `IntroStage` e `StartupRoute` não devem depender de `GameLoop` para liberar start/reset.
+- Nenhum ticker runtime é mantido para o ciclo legado.
 
-`GameLoopInstaller` e `GameLoopBootstrap` permanecem como agregadores temporarios durante a migracao Base 1.1.
-Nao devem ser tratados como owners semanticos de rota, session, activity, run ou IntroStage.
-O `GameLoopCore` nao e owner de `Pause`, `Run Pipeline` nem de `IntroStage`.
+Peças que permanecem aqui são helpers/bridges de transição ou contratos residuais que ainda são usados por outros módulos:
+- `IntroStageIntegrationInstaller`
+- `SessionOperationalStartupRouteInstaller`
+- `RunPipelineBridgeInstaller`
+- `GameLoopContracts`
+- `GameLoopEvents`
+- `GameLoopEventSubscriptionSet`
+- `GameLoopReasonFormatter`
+- `GameLoopStateTransitionEffects`
+- `GameLoopStartRequestEmitter`
 
-Notas de migracao:
-- `GameLoopInputCommandBridge` foi removido e nao deve ser reintroduzido como bridge ativa legada.
-- `Pause`/`Resume` canonicos pertencem ao `SessionActivityPipeline`.
-- `Play` e `navigation` futuros devem entrar por um producer canonico de `Navigation`/`SessionOperational`.
-- `Run outcome` pertence ao `Run Pipeline`.
-- A UI de pause legada foi removida deste rail e sera recriada depois em formato canonico.
+Notas de migração:
+- `GameLoopInputCommandBridge`, `GameLoopCommands`, `IPauseCommands`, `LegacyPauseCompatibilityInstaller`, `GamePauseOverlayController`, `AudioPauseDuckingBridge` e `GameLoopInputDriver` foram removidos.
+- UI/botões legados não devem ser remendados aqui.
+- Qualquer producer canônico novo deve entrar pelos rails de `Navigation`, `SessionOperational`, `SessionActivityPipeline` ou `Run Pipeline`.

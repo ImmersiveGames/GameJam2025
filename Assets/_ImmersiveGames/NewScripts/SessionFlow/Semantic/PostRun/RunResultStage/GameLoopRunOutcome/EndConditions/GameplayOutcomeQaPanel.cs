@@ -24,7 +24,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
         [SerializeField] private string title = "Run Outcome QA";
 
         [Inject] private IGameRunEndRequestService _endRequest;
-        [Inject] private IGameLoopService _gameLoopService;
         [Inject] private IGameplaySessionContextService _sessionContextService;
         [Inject] private IGameplayPhaseRuntimeService _phaseRuntimeService;
         [Inject] private IGameplayParticipationFlowService _participationFlowService;
@@ -107,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
         {
             EnsureDependenciesInjected();
 
-            if (_endRequest == null || _gameLoopService == null)
+            if (_endRequest == null)
             {
                 return false;
             }
@@ -117,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
                 return false;
             }
 
-            return string.Equals(_gameLoopService.CurrentStateIdName, nameof(GameLoopStateId.Playing), System.StringComparison.Ordinal);
+            return true;
         }
 
         private void RequestOutcome(GameRunOutcome outcome, string reason)
@@ -152,11 +151,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.RunResultStage
             if (_endRequest == null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _endRequest);
-            }
-
-            if (_gameLoopService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _gameLoopService);
             }
 
             if (_sessionContextService == null)

@@ -5,13 +5,11 @@
  *
  * Ajustes (jan/2026):
  * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
- *   - ResolvePlayerActor IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
  *   - ResolvePlayerActor ILegacySimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
  * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual do SceneFlow).
  *
  * Nota (QA):
- * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do sync
- *   para que overrides de QA no DI sejam observados.
+ * - O coordinator deve resolver dependências no momento do sync para que overrides de QA no DI sejam observados.
  *
  * Reorganização (jan/2026):
  * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.

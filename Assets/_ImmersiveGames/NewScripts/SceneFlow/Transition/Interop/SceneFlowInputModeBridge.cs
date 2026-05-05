@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
     /// <summary>
     /// OWNER: sincronizacao de intencao de InputMode orientada por eventos de transicao.
     /// NAO E OWNER: execucao da transicao de cena e seus gates.
-    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; delega a emissao canonica ao SessionIntegration.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; usa SessionIntegration quando presente e, no profile Base11Sandbox, emite InputModeRequestEvent diretamente de forma explicita.
     /// Fases tocadas: TransitionStarted e TransitionCompleted.
     /// </summary>
     public sealed class SceneFlowInputModeBridge : IDisposable
@@ -130,11 +130,26 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
             string reason,
             string signature)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) || sessionIntegration == null)
+            if (DependencyManager.Provider.TryGetGlobal<ISessionIntegrationInputModeEmitter>(out var sessionIntegration) && sessionIntegration != null)
             {
-                HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
-                    $"[FATAL][H1][SessionIntegration] ISessionIntegrationInputModeEmitter indisponivel para request de InputMode kind='{requestKind}' reason='{reason}' signature='{signature}'.");
-                return;
+                switch (requestKind)
+                {
+                    case InputModeRequestKind.Gameplay:
+                        HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                            $"[FATAL][H1][InputModes] SceneFlowInputModeBridge nao e owner de Gameplay input. reason='{reason}' signature='{signature}'.");
+                        return;
+                    case InputModeRequestKind.FrontendMenu:
+                        sessionIntegration.RequestFrontendMenuInputMode(reason, "SceneFlow", signature);
+                        return;
+                    case InputModeRequestKind.PauseOverlay:
+                        sessionIntegration.RequestPauseOverlayInputMode(reason, "SceneFlow", signature);
+                        return;
+                    case InputModeRequestKind.Unspecified:
+                    default:
+                        HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                            $"[FATAL][H1][InputModes] Unsupported request kind '{requestKind}' while delegating SceneFlow input mode.");
+                        return;
+                }
             }
 
             switch (requestKind)
@@ -144,10 +159,26 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
                         $"[FATAL][H1][InputModes] SceneFlowInputModeBridge nao e owner de Gameplay input. reason='{reason}' signature='{signature}'.");
                     return;
                 case InputModeRequestKind.FrontendMenu:
-                    sessionIntegration.RequestFrontendMenuInputMode(reason, "SceneFlow", signature);
+                    EventBus<InputModeRequestEvent>.Raise(new InputModeRequestEvent(
+                        InputModeRequestKind.FrontendMenu,
+                        reason,
+                        "SceneFlow",
+                        signature));
+
+                    DebugUtility.Log(typeof(SceneFlowInputModeBridge),
+                        $"[OBS][InputMode] Requested mode='FrontendMenu' source='SceneFlow' signature='{signature}' reason='{reason}' (direct-event, no SessionIntegration emitter).",
+                        DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.PauseOverlay:
-                    sessionIntegration.RequestPauseOverlayInputMode(reason, "SceneFlow", signature);
+                    EventBus<InputModeRequestEvent>.Raise(new InputModeRequestEvent(
+                        InputModeRequestKind.PauseOverlay,
+                        reason,
+                        "SceneFlow",
+                        signature));
+
+                    DebugUtility.Log(typeof(SceneFlowInputModeBridge),
+                        $"[OBS][InputMode] Requested mode='PauseOverlay' source='SceneFlow' signature='{signature}' reason='{reason}' (direct-event, no SessionIntegration emitter).",
+                        DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.Unspecified:
                 default:

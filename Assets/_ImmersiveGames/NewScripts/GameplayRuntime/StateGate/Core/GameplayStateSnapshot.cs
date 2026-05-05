@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
             return true;
         }
 
-        public StateDependentServiceState ResolveServiceState(ILegacySimulationGateService gateService, IGameLoopService gameLoopService)
+        public StateDependentServiceState ResolveServiceState(ILegacySimulationGateService gateService)
         {
             if (IsPausedOnlyByGate(gateService))
             {
@@ -171,19 +171,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
                 return StateDependentServiceState.Ready;
             }
 
-            StateDependentServiceState? loopState = ResolveFromGameLoop(gameLoopService);
-            if (loopState == StateDependentServiceState.Paused)
+            if (_hasGameRunStarted)
             {
-                return StateDependentServiceState.Paused;
-            }
-
-            if (_hasGameRunStarted || loopState == StateDependentServiceState.Playing)
-            {
-                if (loopState.HasValue)
-                {
-                    return loopState.Value;
-                }
-
                 return StateDependentServiceState.Playing;
             }
 
@@ -222,13 +211,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
 
         public bool EvaluateMoveAllowed(
             ILegacySimulationGateService gateService,
-            IGameLoopService gameLoopService,
             out StateDependentMoveDecision decision,
             out StateDependentServiceState resolvedState,
             out string loopStateName)
         {
-            resolvedState = ResolveServiceState(gateService, gameLoopService);
-            loopStateName = gameLoopService?.CurrentStateIdName ?? string.Empty;
+            resolvedState = ResolveServiceState(gateService);
+            loopStateName = resolvedState.ToString();
 
             if (gateService is { IsOpen: false })
             {
@@ -252,29 +240,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core
             return true;
         }
 
-        private static StateDependentServiceState? ResolveFromGameLoop(IGameLoopService gameLoopService)
-        {
-            if (gameLoopService == null)
-            {
-                return null;
-            }
-
-            string name = gameLoopService.CurrentStateIdName;
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return null;
-            }
-
-            return name switch
-            {
-                nameof(GameLoopStateId.Playing) => StateDependentServiceState.Playing,
-                nameof(GameLoopStateId.Paused) => StateDependentServiceState.Paused,
-                nameof(GameLoopStateId.Ready) => StateDependentServiceState.Ready,
-                nameof(GameLoopStateId.Boot) => StateDependentServiceState.Ready,
-                nameof(GameLoopStateId.RunEnded) => StateDependentServiceState.Ready,
-                _ => null
-            };
-        }
     }
 }
 

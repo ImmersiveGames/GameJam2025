@@ -30,19 +30,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
         void OnGameActivityChanged(bool isActive);
     }
 
-    public interface IGameLoopService : IDisposable
-    {
-        void Initialize();
-        void Tick(float dt);
-        void RequestStart(string reason = null, GameLoopSignalIdentity identity = null);
-        void RequestPause(string reason = null, GameLoopSignalIdentity identity = null);
-        void RequestResume(string reason = null, GameLoopSignalIdentity identity = null);
-        void RequestReady();
-        void RequestReset(string reason = null, GameLoopSignalIdentity identity = null);
-        void RequestRunEnd(string reason = null, GameLoopSignalIdentity identity = null);
-        string CurrentStateIdName { get; }
-    }
-
     /// <summary>
     /// Helpers canônicos para classificar o ciclo macro do GameLoop.
     /// Mantém a leitura dos estados explícita sem alterar os contratos públicos existentes.
@@ -62,26 +49,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core
             => stateId == GameLoopStateId.RunEnded;
     }
 
-    public interface IPauseStateService
-    {
-        bool IsPaused { get; }
-    }
-
     /// <summary>
-    /// Policy compartilhada para validar se o GameLoop está em gameplay ativo.
-    /// Centraliza a regra de "Playing" para serviços de run.
-    /// </summary>
-    public interface IGameRunPlayingStateGuard
-    {
-        /// <summary>
-        /// Retorna true quando o GameLoop está em gameplay ativo (Playing).
-        /// Também devolve o nome atual do estado para logs/diagnóstico.
-        /// </summary>
-        bool IsInActiveGameplay(out string stateName);
-    }
-
-    /// <summary>
-    /// Serviço de domínio para encerrar a run atual (vitória/derrota) de forma idempotente.
+     /// Serviço de domínio para encerrar a run atual (vitória/derrota) de forma idempotente.
     ///
     /// Regras:
     /// - Publica <see cref="GameRunEndedEvent"/> no máximo uma vez por run.

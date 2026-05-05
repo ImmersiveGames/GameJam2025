@@ -2,8 +2,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ContentContract;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
@@ -126,7 +124,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
                 string normalizedReason = NormalizeValue(reason);
                 string actionName = wasSkipped ? "SkipIntroStage" : "CompleteIntroStage";
-                string gameLoopState = NormalizeValue(ResolveGameLoopStateName());
                 var logContext = BuildSafeLogContext(context);
                 string signature = logContext.Signature;
                 string routeKind = logContext.RouteKind;
@@ -135,13 +132,13 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                 if (!wasActive)
                 {
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageControlService] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='not_active' state='{gameLoopState}' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                        $"[OBS][IntroStageControlService] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='ignored' ignoreReason='not_active' state='<none>' executionState='{previousState}' isActive=false signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.Log<IntroStageControlService>(
-                    $"[OBS][IntroStageControlService] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='{gameLoopState}' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
+                    $"[OBS][IntroStageControlService] {actionName} received reason='{normalizedReason}' skip={wasSkipped.ToString().ToLowerInvariant()} decision='applied' state='<none>' executionState='{_state}' isActive=true signature='{signature}' routeKind='{routeKind}' target='{targetScene}'.",
                     DebugUtility.Colors.Info);
 
                 if (string.Equals(normalizedReason, "timeout", StringComparison.OrdinalIgnoreCase))
@@ -156,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
                     string canonicalReason = PhaseFlowSignalVocabulary.CanonicalizeCompletionReason(normalizedReason, wasSkipped);
 
                     DebugUtility.Log<IntroStageControlService>(
-                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='{canonicalSource}' handshake='GameLoop.RequestStart' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{canonicalReason}'.",
+                        $"[OBS][IntroStageControlService] IntroStageCompletedPublished source='{canonicalSource}' handshake='SessionActivityPipeline' signature='{signature}' routeKind='{routeKind}' target='{targetScene}' skipped={wasSkipped.ToString().ToLowerInvariant()} reason='{canonicalReason}'.",
                         DebugUtility.Colors.Info);
 
                     EventBus<IntroStageCompletedEvent>.Raise(new IntroStageCompletedEvent(
@@ -176,15 +173,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.ExecuteSkip
 
         private static string NormalizeValue(string? value)
             => string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
-
-        private static string ResolveGameLoopStateName()
-        {
-            return DependencyManager.Provider != null
-                   && DependencyManager.Provider.TryGetGlobal<IGameLoopService>(out var gameLoop)
-                   && gameLoop != null
-                ? gameLoop.CurrentStateIdName
-                : "<none>";
-        }
 
         private static IntroStageLogContext BuildSafeLogContext(IntroStageContext context)
         {

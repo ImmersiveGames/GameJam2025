@@ -59,6 +59,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public InputModesSettings inputModes = new();
 
         /// <summary>
+        /// Profile de composição global usado pelo bootstrap.
+        /// Base11Sandbox remove rails legados do caminho.
+        /// </summary>
+        [Header("Composition Profile")]
+        [Tooltip("Seleciona o profile de composição global. Base11Sandbox remove rails legados do caminho.")]
+        public CompositionProfileKind compositionProfile = CompositionProfileKind.Base11Sandbox;
+
+        /// <summary>
         /// Configurações do reporter de degradação: dedupe, resumos periódicos e limite de chaves.
         /// </summary>
         [Serializable]
@@ -188,6 +196,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         /// Com cooldown em segundos: mesma chave só é logada se passou o intervalo.
         /// </summary>
         CooldownSeconds = 1
+    }
+
+    /// <summary>
+    /// Profile explícito de composição global.
+    /// </summary>
+    public enum CompositionProfileKind
+    {
+        LegacyCompatible = 0,
+        Base11Sandbox = 1
     }
 }
 

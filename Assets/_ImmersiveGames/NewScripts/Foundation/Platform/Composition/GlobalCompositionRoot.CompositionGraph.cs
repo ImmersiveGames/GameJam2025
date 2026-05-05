@@ -3,13 +3,13 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers;
 using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
 using _ImmersiveGames.NewScripts.SceneFlow.Installers;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition;
@@ -43,9 +43,20 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrap: null,
                 bootstrapDependencies: System.Array.Empty<string>()));
 
-            bool phaseEnabled = ResolveGameplayPhaseEnablementOrFail(bootstrapConfig);
+            CompositionProfileKind compositionProfile = ResolveCompositionProfileOrFail(bootstrapConfig);
 
-            steps.AddRange(GetModuleCompositionSteps(phaseEnabled));
+            if (compositionProfile == CompositionProfileKind.Base11Sandbox)
+            {
+                DebugUtility.Log(typeof(GlobalCompositionRoot),
+                    "[OBS][Composition][Profile] Base11Sandbox ativo: rails legados fora do profile minimo.",
+                    DebugUtility.Colors.Info);
+                steps.AddRange(GetBase11SandboxCompositionSteps());
+            }
+            else
+            {
+                bool phaseEnabled = ResolveGameplayPhaseEnablementOrFail(bootstrapConfig);
+                steps.AddRange(GetLegacyCompositionSteps(phaseEnabled));
+            }
 
             steps.Add(new CompositionPipelineStep(
                 id: "SceneComposition",
@@ -57,7 +68,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return steps;
         }
 
-        private static IReadOnlyList<CompositionPipelineStep> GetModuleCompositionSteps(bool phaseEnabled)
+        private static IReadOnlyList<CompositionPipelineStep> GetLegacyCompositionSteps(bool phaseEnabled)
         {
             // Ordem intencional:
             // - Installer: Audio antes de Preferences (Preferences depende do Audio instalado).
@@ -68,7 +79,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(InputModesCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SessionIntegrationCompositionDescriptor.Descriptor),
@@ -93,6 +103,37 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             return steps;
+        }
+
+        private static IReadOnlyList<CompositionPipelineStep> GetBase11SandboxCompositionSteps()
+        {
+            return new List<CompositionPipelineStep>(3)
+            {
+                new CompositionPipelineStep(
+                    id: "InputModes",
+                    installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
+                    installerDependencies: new[] { "RuntimePolicy" },
+                    bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
+                    bootstrapDependencies: System.Array.Empty<string>()),
+                CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
+            };
+        }
+
+        private static CompositionProfileKind ResolveCompositionProfileOrFail(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig == null)
+            {
+                throw new System.InvalidOperationException("[FATAL][Config][Composition] BootstrapConfigAsset obrigatorio ausente para resolver compositionProfile.");
+            }
+
+            RuntimeModeConfig runtimeModeConfig = bootstrapConfig.RuntimeModeConfig;
+            if (runtimeModeConfig == null)
+            {
+                throw new System.InvalidOperationException($"[FATAL][Config][Composition] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset. bootstrap='{bootstrapConfig.name}'.");
+            }
+
+            return runtimeModeConfig.compositionProfile;
         }
 
         private static bool ResolveGameplayPhaseEnablementOrFail(BootstrapConfigAsset bootstrapConfig)

@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EventBus<WorldResetCompletedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[EventBus] EventBus inicializado (GameLoop + GameplaySessionFlow + SceneFlow + WorldReset).",
+                "[EventBus] EventBus inicializado (SessionActivityPipeline + SceneFlow).",
                 DebugUtility.Colors.Info);
 
             EnsureLoadingOrchestratorsRegisteredAfterEventBusReset();

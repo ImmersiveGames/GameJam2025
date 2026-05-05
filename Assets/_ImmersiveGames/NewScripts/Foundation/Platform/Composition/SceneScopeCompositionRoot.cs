@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
 using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
@@ -23,6 +24,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     /// </summary>
     public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
     {
+        private static readonly HashSet<string> Base11SandboxNoActorScopeScenes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "NewBootstrap",
+            "MenuScene",
+            "SessionActivitySandboxScene"
+        };
+
         private string _sceneName = string.Empty;
         private bool _registered;
         private WorldSpawnServiceFactory _spawnServiceFactory;
@@ -41,13 +49,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             var provider = DependencyManager.Provider;
-            if (!provider.TryGetGlobal<IActorSpawnArchetypeRegistry>(out var spawnArchetypeRegistry) || spawnArchetypeRegistry == null)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] IActorSpawnArchetypeRegistry ausente antes de compor scene scope scene='{_sceneName}'.");
-            }
-            _spawnServiceFactory = new WorldSpawnServiceFactory(spawnArchetypeRegistry);
-
             provider.RegisterForScene<ISceneScopeMarker>(
                 _sceneName,
                 new SceneScopeMarker(),
@@ -63,6 +64,24 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
                 $"Scene bootstrap root ready: {BuildTransformPath(worldRoot)}");
+
+            if (ShouldSkipActorsScope(provider, out string skipReason))
+            {
+                DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                    $"[OBS][ActorsExecution][SceneScope] actors_scope_skipped reason='{skipReason}' scene='{_sceneName}'.",
+                    DebugUtility.Colors.Info);
+
+                _registered = true;
+                DebugUtility.Log(typeof(SceneScopeCompositionRoot), $"Scene scope created: {_sceneName}");
+                return;
+            }
+
+            if (!provider.TryGetGlobal<IActorSpawnArchetypeRegistry>(out var spawnArchetypeRegistry) || spawnArchetypeRegistry == null)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] IActorSpawnArchetypeRegistry ausente antes de compor scene scope scene='{_sceneName}'.");
+            }
+            _spawnServiceFactory = new WorldSpawnServiceFactory(spawnArchetypeRegistry);
 
             var actorRegistry = new ActorRegistry();
             provider.RegisterForScene<IActorRegistry>(
@@ -298,6 +317,57 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static string AsText(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
+        }
+
+        private bool ShouldSkipActorsScope(IDependencyProvider provider, out string reason)
+        {
+            reason = string.Empty;
+
+            if (!IsBase11SandboxProfile(provider))
+            {
+                return false;
+            }
+
+            if (Base11SandboxNoActorScopeScenes.Contains(_sceneName))
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            if (!provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            if (!actorSetRefContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out _))
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            if (!actorSetRef.IsValid || routeKind == SceneRouteKind.Unspecified)
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsBase11SandboxProfile(IDependencyProvider provider)
+        {
+            if (provider == null)
+            {
+                return false;
+            }
+
+            if (!provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
+            {
+                return false;
+            }
+
+            return runtimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
         }
 
         private SceneCanonicalClassification ResolveSceneCanonicalClassificationOrFail(IDependencyProvider provider)

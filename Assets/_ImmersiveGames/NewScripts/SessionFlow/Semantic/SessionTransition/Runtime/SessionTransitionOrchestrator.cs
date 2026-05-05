@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
         private readonly ISceneFlowRouteActorSetRefContext _routeActorSetContext;
         private readonly IGameplayPhaseRuntimeService _phaseRuntimeService;
         private readonly IGameplayParticipationFlowService _participationFlowService;
-        private readonly IIntroStageOperationalContractResolver _introStageOperationalContractResolver;
+        private readonly IIntroStageOperationalContractResolver? _introStageOperationalContractResolver;
         private readonly ISceneCompositionExecutor _sceneCompositionExecutor;
         private readonly IPhaseCatalogNavigationService _phaseCatalogNavigationService;
         private readonly EventBinding<SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent> _phaseChangeCascadeRequestedBinding;
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             ISceneFlowRouteActorSetRefContext routeActorSetContext,
             IGameplayPhaseRuntimeService phaseRuntimeService,
             IGameplayParticipationFlowService participationFlowService,
-            IIntroStageOperationalContractResolver introStageOperationalContractResolver,
+            IIntroStageOperationalContractResolver? introStageOperationalContractResolver,
             ISceneCompositionExecutor sceneCompositionExecutor,
             IPhaseCatalogNavigationService phaseCatalogNavigationService)
         {
@@ -59,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             _routeActorSetContext = routeActorSetContext ?? throw new ArgumentNullException(nameof(routeActorSetContext));
             _phaseRuntimeService = phaseRuntimeService ?? throw new ArgumentNullException(nameof(phaseRuntimeService));
             _participationFlowService = participationFlowService ?? throw new ArgumentNullException(nameof(participationFlowService));
-            _introStageOperationalContractResolver = introStageOperationalContractResolver ?? throw new ArgumentNullException(nameof(introStageOperationalContractResolver));
+            _introStageOperationalContractResolver = introStageOperationalContractResolver;
             _sceneCompositionExecutor = sceneCompositionExecutor ?? throw new ArgumentNullException(nameof(sceneCompositionExecutor));
             _phaseCatalogNavigationService = phaseCatalogNavigationService ?? throw new ArgumentNullException(nameof(phaseCatalogNavigationService));
             _phaseChangeCascadeRequestedBinding = new EventBinding<SessionActivityPhaseChangeCascadePipelineHandoffRequestedEvent>(OnPhaseChangeCascadePipelineHandoffRequested);
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                         normalizedReason);
                 }
 
-                PublishIntroStageActivationOrFail(
+                PublishIntroStageActivationOrSkip(
                     phaseLocalEntryReadyEvent,
                     SessionTransitionContextSource,
                     normalizedReason);
@@ -189,7 +189,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
                 plan,
                 source);
 
-            PublishIntroStageActivationOrFail(
+            PublishIntroStageActivationOrSkip(
                 phaseLocalEntryReadyEvent,
                 source,
                 reason);
@@ -287,6 +287,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Runt
             {
                 _phaseCatalogNavigationService.ClearPendingTarget(reason);
             }
+        }
+
+        private void PublishIntroStageActivationOrSkip(
+            SessionTransitionPhaseLocalEntryReadyEvent phaseLocalEntryReadyEvent,
+            string source,
+            string normalizedReason)
+        {
+            if (_introStageOperationalContractResolver == null)
+            {
+                DebugUtility.Log<SessionTransitionOrchestrator>(
+                    $"[OBS][GameplaySessionFlow][SessionTransition] IntroStage activation skipped as no-content source='{Normalize(source)}' phaseEntryIdentity='{phaseLocalEntryReadyEvent.PhaseEntryIdentity}' sessionSignature='{phaseLocalEntryReadyEvent.SessionSignature}' phaseSignature='{phaseLocalEntryReadyEvent.PhaseSignature}' cycleSignature='{phaseLocalEntryReadyEvent.CycleSignature}' reason='{Normalize(normalizedReason)}' activationStage='SessionActivityPipeline.ActivationEntered'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            PublishIntroStageActivationOrFail(
+                phaseLocalEntryReadyEvent,
+                source,
+                normalizedReason);
         }
 
         private void PublishIntroStageActivationOrFail(

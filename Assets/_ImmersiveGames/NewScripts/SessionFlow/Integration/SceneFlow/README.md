@@ -1,5 +1,5 @@
 # SessionFlow / Integration / SceneFlow
 
-`SessionOperationalStartupRouteAdapter` e os demais bridges deste diretório observam o fluxo legado de `Boot -> Menu` e `Menu -> Sandbox`.
+`SessionOperationalRouteTransitionBridge` observa e fecha o fluxo de `Boot -> Menu` e `Menu -> Sandbox` para o `SessionOperationalPipeline`.
 
-O `GameLoop` conceitual fica restrito ao executor técnico de estado. Este adapter de startup route e temporario e sera rebaixado/removido quando o `SessionOperationalPipeline` assumir ownership real da rota.
+No profile `Base11Sandbox`, `SceneFlowInputModeBridge` emite `InputModeRequestEvent` diretamente quando `SessionIntegration` nao esta composto. Nao ha dependencia obrigatoria de `IntroStage`, `GameLoop` ou `RunEndRail` neste caminho minimo.

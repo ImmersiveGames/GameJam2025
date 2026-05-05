@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
@@ -15,7 +14,6 @@ using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.PhaseRuntime;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.SessionContext;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.IntroStage.Eligibility;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.Participation.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Authoring;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PhaseCatalog.Contracts;
@@ -37,12 +35,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstra
                 return;
             }
 
-            IntroStageIntegrationInstaller.Install();
-
             _installerPhaseComposed = true;
 
             DebugUtility.Log(typeof(SessionIntegrationBootstrap),
-                "[OBS][SessionIntegration][Operational] Installer phase completed; IntroStage contracts composed before SessionTransitionBootstrap.",
+                "[OBS][SessionIntegration][Operational] Installer phase completed; IntroStage legacy contracts not required for sandbox boot.",
                 DebugUtility.Colors.Info);
         }
 

@@ -2,21 +2,20 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 {
     /// <summary>
     /// Adapter temporario de StartupRoute para observar o fluxo Boot/Route/SceneFlow.
-    /// O GameLoop executa estado; este adapter apenas observa o legado e despacha o reset tecnico.
+    /// Este adapter apenas observa o sync operacional e encerra a sincronizacao quando a rota completa.
     /// </summary>
     public sealed partial class SessionOperationalStartupRouteAdapter : IDisposable
     {
         private readonly ISceneTransitionService _sceneFlow;
-        private readonly IGameLoopService _gameLoop;
         private readonly IFadeService _fadeService;
         private readonly ISessionOperationalStartupRouteDecisionService _syncDecisionService;
         private readonly SceneTransitionRequest _startPlan;
@@ -39,13 +38,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
         public SessionOperationalStartupRouteAdapter(
             ISceneTransitionService sceneFlow,
-            IGameLoopService gameLoop,
             IFadeService fadeService,
             ISessionOperationalStartupRouteDecisionService syncDecisionService,
             SceneTransitionRequest startPlan)
         {
             _sceneFlow = sceneFlow ?? throw new ArgumentNullException(nameof(sceneFlow));
-            _gameLoop = gameLoop ?? throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IGameLoopService obrigatorio ausente para o adapter.");
             _fadeService = fadeService;
             _syncDecisionService = syncDecisionService ?? throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] ISessionOperationalStartupRouteDecisionService obrigatorio ausente para o adapter.");
             _startPlan = ValidateStartPlanOrFailFast(startPlan);
@@ -285,14 +282,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             }
 
             _syncIssued = true;
-            var gameLoop = _gameLoop;
-            gameLoop.Initialize();
-
             DebugUtility.LogVerbose<SessionOperationalStartupRouteAdapter>(
-                $"[OBS][SessionOperationalPipeline][StartupRoute] loopResetCommandDispatched routeId='{_startPlan.RouteId}' targetActiveScene='{_startPlan.TargetActiveScene}'.",
+                $"[OBS][SessionOperationalPipeline][StartupRoute] startupRouteSyncCompleted routeId='{_startPlan.RouteId}' targetActiveScene='{_startPlan.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
-
-            gameLoop.RequestReset();
             _startInProgress = false;
         }
 

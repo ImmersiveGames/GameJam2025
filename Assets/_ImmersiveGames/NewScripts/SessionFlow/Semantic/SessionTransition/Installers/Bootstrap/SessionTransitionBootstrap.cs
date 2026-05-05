@@ -90,15 +90,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     DebugUtility.Colors.Info);
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IIntroStageOperationalContractResolver>(out var existingIntroStageOperationalContractResolver) || existingIntroStageOperationalContractResolver == null)
-            {
-                DependencyManager.Provider.RegisterGlobal<IIntroStageOperationalContractResolver>(
-                    new IntroStageOperationalContractResolver(
-                        ResolveGlobalOrFail<IIntroStagePresenterScopeResolver>("IIntroStagePresenterScopeResolver missing from global DI before intro stage operational contract resolver composition.")));
-                DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
-                    "[OBS][GameplaySessionFlow][SessionTransition] IIntroStageOperationalContractResolver registered in global DI.",
-                    DebugUtility.Colors.Info);
-            }
+            IIntroStageOperationalContractResolver? introStageOperationalContractResolver =
+                ResolveOptionalIntroStageOperationalContractResolver();
 
             if (!DependencyManager.Provider.TryGetGlobal<SessionTransitionOrchestrator>(out var existingOrchestrator) || existingOrchestrator == null)
             {
@@ -114,8 +107,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
                     "IGameplayPhaseRuntimeService missing from global DI before SessionTransitionOrchestrator composition.");
                 IGameplayParticipationFlowService participationFlowService = ResolveGlobalOrFail<IGameplayParticipationFlowService>(
                     "IGameplayParticipationFlowService missing from global DI before SessionTransitionOrchestrator composition.");
-                IIntroStageOperationalContractResolver introStageOperationalContractResolver = ResolveGlobalOrFail<IIntroStageOperationalContractResolver>(
-                    "IIntroStageOperationalContractResolver missing from global DI before SessionTransitionOrchestrator composition.");
                 ISceneCompositionExecutor sceneCompositionExecutor = ResolveGlobalOrFail<ISceneCompositionExecutor>(
                     "ISceneCompositionExecutor missing from global DI before SessionTransitionOrchestrator composition.");
 
@@ -177,6 +168,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionTransition.Inst
             }
 
             return value;
+        }
+
+        private static IIntroStageOperationalContractResolver? ResolveOptionalIntroStageOperationalContractResolver()
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<IIntroStageOperationalContractResolver>(out var resolver) &&
+                resolver != null)
+            {
+                return resolver;
+            }
+
+            DebugUtility.LogVerbose(typeof(SessionTransitionBootstrap),
+                "[OBS][GameplaySessionFlow][SessionTransition] IntroStage legacy contract resolver not present; sandbox uses SessionActivityPipeline.ActivationEntered and skips IntroStage activation composition.",
+                DebugUtility.Colors.Info);
+            return null;
         }
 
     }

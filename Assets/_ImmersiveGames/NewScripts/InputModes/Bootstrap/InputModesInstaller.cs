@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound;
+using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
@@ -73,7 +74,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
         private static void EnsureCanonicalInputModeService(string playerMapName, string menuMapName)
         {
-            IActorsOperationalBindingQueryPort operationalBindingQueryPort = ResolveOperationalBindingQueryPortOrFail();
+            RuntimeModeConfig runtimeConfig = ResolveRuntimeModeConfigOrFail();
+            IActorsOperationalBindingQueryPort operationalBindingQueryPort = ResolveOperationalBindingQueryPortOrFail(runtimeConfig);
 
             if (DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var existingService) && existingService != null)
             {
@@ -112,15 +114,67 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static IActorsOperationalBindingQueryPort ResolveOperationalBindingQueryPortOrFail()
+        private static IActorsOperationalBindingQueryPort ResolveOperationalBindingQueryPortOrFail(RuntimeModeConfig runtimeConfig)
         {
             if (DependencyManager.Provider.TryGetGlobal<IActorsOperationalBindingQueryPort>(out var queryPort) && queryPort != null)
             {
                 return queryPort;
             }
 
+            if (runtimeConfig != null && runtimeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox)
+            {
+                var sandboxQueryPort = new Base11SandboxOperationalBindingQueryPort();
+                DependencyManager.Provider.RegisterGlobal<IActorsOperationalBindingQueryPort>(sandboxQueryPort);
+
+                DebugUtility.Log(typeof(InputModesInstaller),
+                    "[OBS][InputModes][Installer] Base11Sandbox registrou IActorsOperationalBindingQueryPort no-op para manter InputModes sem ActorsSystem.",
+                    DebugUtility.Colors.Info);
+
+                return sandboxQueryPort;
+            }
+
             throw new InvalidOperationException(
                 "[FATAL][Config][InputModes] IActorsOperationalBindingQueryPort obrigatorio ausente no DI global antes de instalar InputModes.");
+        }
+
+        private sealed class Base11SandboxOperationalBindingQueryPort : IActorsOperationalBindingQueryPort
+        {
+            public ActorsOperationalBindingSnapshot Current => ActorsOperationalBindingSnapshot.Empty;
+
+            public bool TryGetCurrent(out ActorsOperationalBindingSnapshot snapshot)
+            {
+                snapshot = ActorsOperationalBindingSnapshot.Empty;
+                return false;
+            }
+
+            public bool TryGetByAxisActorId(AxisActorId axisActorId, out ActorsOperationalBindingEntry entry)
+            {
+                entry = default;
+                return false;
+            }
+
+            public bool TryGetByParticipantId(string participantId, out ActorsOperationalBindingEntry entry)
+            {
+                entry = default;
+                return false;
+            }
+
+            public bool TryGetByRuntimeActorId(RuntimeActorId runtimeActorId, out ActorsOperationalBindingEntry entry)
+            {
+                entry = default;
+                return false;
+            }
+
+            public bool TryGetAll(System.Collections.Generic.List<ActorsOperationalBindingEntry> target)
+            {
+                if (target == null)
+                {
+                    return false;
+                }
+
+                target.Clear();
+                return false;
+            }
         }
     }
 }

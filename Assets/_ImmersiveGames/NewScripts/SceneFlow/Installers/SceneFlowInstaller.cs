@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
@@ -39,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             RegisterNavigationPolicy();
             RegisterRouteGuard();
             RegisterRouteResetPolicy();
+            RegisterTransitionCompletionGate(bootstrapConfig);
             EnsureRouteActorSetRefContext();
             RegisterLoadingServices(bootstrapConfig);
 
@@ -93,6 +95,24 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
                 () => new SceneRouteResetPolicy(),
                 "[SceneFlow] IRouteResetPolicy ja registrado no DI global.",
                 "[SceneFlow] IRouteResetPolicy registrado no DI global (SceneRouteResetPolicy).");
+        }
+
+        private static void RegisterTransitionCompletionGate(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISceneTransitionCompletionGate>(out var existingGate) && existingGate != null)
+            {
+                return;
+            }
+
+            if (ResolveCompositionProfile(bootstrapConfig) != CompositionProfileKind.Base11Sandbox)
+            {
+                return;
+            }
+
+            RegisterIfMissing<ISceneTransitionCompletionGate>(
+                () => new Base11SandboxTransitionCompletionGate(),
+                "[SceneFlow] ISceneTransitionCompletionGate ja registrado no DI global.",
+                "[SceneFlow] ISceneTransitionCompletionGate registrado no DI global (Base11SandboxTransitionCompletionGate).");
         }
 
         public static void EnsureRouteActorSetRefContext()
@@ -244,6 +264,22 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             }
 
             return true;
+        }
+
+        private static CompositionProfileKind ResolveCompositionProfile(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SceneFlow] BootstrapConfigAsset obrigatorio ausente para resolver composition profile.");
+            }
+
+            RuntimeModeConfig runtimeModeConfig = bootstrapConfig.RuntimeModeConfig;
+            if (runtimeModeConfig == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SceneFlow] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset. bootstrap='{bootstrapConfig.name}'.");
+            }
+
+            return runtimeModeConfig.compositionProfile;
         }
 
         private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)
