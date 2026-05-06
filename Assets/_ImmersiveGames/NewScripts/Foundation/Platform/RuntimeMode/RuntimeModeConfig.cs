@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -65,6 +66,21 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Header("Composition Profile")]
         [Tooltip("Seleciona o profile de composição global. Base11Sandbox remove rails legados do caminho.")]
         public CompositionProfileKind compositionProfile = CompositionProfileKind.Base11Sandbox;
+
+        /// <summary>
+        /// Rota inicial explícita do profile Base11Sandbox.
+        /// Não é um default implícito: o bootstrap falha se estiver ausente ou inválido.
+        /// </summary>
+        [Header("Base11 Sandbox")]
+        [Tooltip("Refer�ncia direta para a rota inicial do Base11Sandbox.")]
+        [SerializeField] private SceneRouteDefinitionAsset startupRouteDefinition;
+
+        /// <summary>
+        /// Referência direta para a rota inicial do Base11Sandbox.
+        /// </summary>
+        [Header("Base11 Sandbox")]
+        [Tooltip("Referência direta para a rota inicial do Base11Sandbox.")]
+        public SceneRouteDefinitionAsset StartupRouteDefinition => startupRouteDefinition;
 
         /// <summary>
         /// Configurações do reporter de degradação: dedupe, resumos periódicos e limite de chaves.
@@ -207,4 +223,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         Base11Sandbox = 1
     }
 }
+
+
 

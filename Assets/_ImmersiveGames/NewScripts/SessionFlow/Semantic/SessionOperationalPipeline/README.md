@@ -9,4 +9,5 @@ Fluxo:
 - `ISessionOperationalTransitionPort` via `SceneFlowSessionOperationalTransitionAdapter` temporario
 - `SceneTransitionStarted`
 
-O profile `Base11Sandbox` compõe este rail para `BootStartPlanRequestedEvent -> NavigateToRoute(routeId='to-menu')`.
+O profile `Base11Sandbox` compõe este rail para `BootStartPlanRequestedEvent -> NavigateToRoute(startupRouteDefinition configurado no RuntimeModeConfig)`.
+

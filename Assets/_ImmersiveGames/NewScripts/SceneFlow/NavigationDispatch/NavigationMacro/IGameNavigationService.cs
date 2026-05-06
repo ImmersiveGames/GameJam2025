@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro
 {
@@ -11,7 +12,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacr
         SceneRouteId ResolveGameplayRouteIdOrFail();
         Task StartGameplayRouteAsync(SceneRouteId routeId, SceneTransitionPayload payload, string reason = null);
         Task NavigateAsync(GameNavigationIntentKind intent, string reason = null);
-        Task NavigateToRoute(SceneRouteId routeId, string reason = null);
+        Task NavigateToRoute(SceneRouteDefinitionAsset routeDefinition, string reason = null);
+        Task NavigateToResolvedRoute(_ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline.SessionOperationalResolvedRoute resolvedRoute, string reason = null);
     }
 }
 

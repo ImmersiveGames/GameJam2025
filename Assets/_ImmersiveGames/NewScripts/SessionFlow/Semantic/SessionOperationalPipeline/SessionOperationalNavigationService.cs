@@ -46,17 +46,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
         public void NavigateToRoute(NavigateToRouteCommand command)
         {
-            NavigateToRoute(command.RouteId, command.Source, command.Reason);
+            NavigateToRoute(command.RouteDefinition, command.Source, command.Reason);
         }
 
-        public void NavigateToRoute(SceneRouteId routeId, string source, string reason)
+        public void NavigateToRoute(SceneRouteDefinitionAsset routeDefinition, string source, string reason)
         {
             if (_disposed)
             {
                 return;
             }
 
-            NavigateToRouteInternal(new NavigateToRouteCommand(routeId, source, reason));
+            NavigateToRouteInternal(new NavigateToRouteCommand(routeDefinition, source, reason));
         }
 
         private void NavigateToRouteInternal(NavigateToRouteCommand command)
@@ -72,24 +72,47 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 $"[OBS][SessionOperationalPipeline][Navigation] command='NavigateToRoute' routeId='{command.RouteId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            if (!_catalog.TryGet(command.RouteId.Value, out GameNavigationEntry entry) || !entry.IsValid || entry.RouteRef == null)
+            if (command.RouteDefinition == null)
             {
                 DebugUtility.LogWarning<SessionOperationalNavigationService>(
-                    $"[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_not_resolved' routeId='{command.RouteId}' source='{command.Source}' reason='{command.Reason}'.");
+                    "[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_definition_missing'.");
+                return;
+            }
+
+            SceneRouteId routeId = command.RouteDefinition.RouteId;
+            if (!routeId.IsValid)
+            {
+                DebugUtility.LogWarning<SessionOperationalNavigationService>(
+                    $"[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_definition_invalid' routeId='{routeId}' source='{command.Source}' reason='{command.Reason}'.");
+                return;
+            }
+
+            if (!_catalog.TryGet(routeId.Value, out GameNavigationEntry entry) || !entry.IsValid || entry.RouteRef == null)
+            {
+                DebugUtility.LogWarning<SessionOperationalNavigationService>(
+                    $"[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_not_resolved' routeId='{routeId}' source='{command.Source}' reason='{command.Reason}'.");
+                return;
+            }
+
+            if (!ReferenceEquals(entry.RouteRef, command.RouteDefinition))
+            {
+                DebugUtility.LogWarning<SessionOperationalNavigationService>(
+                    $"[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_definition_mismatch' routeId='{routeId}' source='{command.Source}' reason='{command.Reason}'.");
                 return;
             }
 
             TransitionStyleDefinition styleDefinition = entry.StyleRef.ToDefinitionOrFail(
                 nameof(SessionOperationalNavigationService),
-                $"NavigateToRoute routeId='{command.RouteId}'");
+                $"NavigateToRoute routeId='{routeId}'");
 
-            SceneRouteDefinition routeDefinition = entry.RouteRef.ToDefinition();
+            SceneRouteDefinition routeDefinition = command.RouteDefinition.ToDefinition();
             SceneTransitionPayload payload = routeDefinition.RouteKind == SceneRouteKind.Gameplay
                 ? SceneTransitionPayload.GameplayInitialEntry
                 : SceneTransitionPayload.Empty;
+            SceneRouteProfile routeProfile = routeDefinition.RouteProfile;
 
             string routeProfileId = ResolveRouteProfileId(entry.RouteRef);
-            string transitionId = ComputeTransitionSignature(routeDefinition, entry.RouteRef, entry.StyleRef, command.RouteId, payload, styleDefinition);
+            string transitionId = ComputeTransitionSignature(routeDefinition, entry.RouteRef, entry.StyleRef, routeId, payload, styleDefinition);
             int sequence;
             string routeOperationId;
 
@@ -97,20 +120,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             {
                 _routeSequence += 1;
                 sequence = _routeSequence;
-                routeOperationId = BuildRouteOperationId(command.RouteId, routeProfileId, routeDefinition.TargetActiveScene, sequence, transitionId);
+                routeOperationId = BuildRouteOperationId(routeId, routeProfileId, routeDefinition.TargetActiveScene, sequence, transitionId);
             }
 
             if (!_pipeline.TryBeginRouteOperation(
                     routeOperationId,
                     transitionId,
                     sequence,
-                    command.RouteId.Value,
+                    routeId.Value,
                     routeProfileId,
                     command.Source,
                     command.Reason))
             {
                 DebugUtility.LogWarning<SessionOperationalNavigationService>(
-                    $"[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_operation_start_rejected' routeId='{command.RouteId}' source='{command.Source}' reason='{command.Reason}'.");
+                    $"[OBS][SessionOperationalPipeline][Navigation] command rejected reason='route_operation_start_rejected' routeId='{routeId}' source='{command.Source}' reason='{command.Reason}'.");
                 return;
             }
 
@@ -118,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                     routeOperationId,
                     transitionId,
                     sequence,
-                    command.RouteId.Value,
+                    routeId.Value,
                     routeProfileId,
                     command.Source,
                     command.Reason))
@@ -127,17 +150,38 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
 
             DebugUtility.Log(typeof(SessionOperationalNavigationService),
-                $"[OBS][SessionOperationalPipeline][Navigation] fact='NavigationIntentObserved' routeId='{command.RouteId}' routeProfileId='{routeProfileId}' routeKind='{routeDefinition.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][SessionOperationalPipeline][Navigation] fact='NavigationIntentObserved' routeId='{routeId}' routeProfileId='{routeProfileId}' routeKind='{routeDefinition.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            RouteResolvedFact resolvedFact = new(command.RouteId, routeProfileId, routeDefinition.RouteKind, command.Source, command.Reason);
+            SessionOperationalResolvedRoute resolvedRoute = new(
+                command.RouteId,
+                routeProfileId,
+                routeDefinition.RouteKind,
+                routeDefinition.TargetActiveScene,
+                entry.RouteRef,
+                entry.RouteRef.RouteProfile,
+                entry.StyleRef,
+                routeDefinition,
+                routeProfile,
+                styleDefinition,
+                payload,
+                command.Source,
+                command.Reason);
+
+            if (!resolvedRoute.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionOperationalNavigationService),
+                    $"[FATAL][Config][SessionOperationalPipeline] RouteResolved payload invalido para routeId='{command.RouteId}' source='{command.Source}' reason='{command.Reason}'.");
+            }
+
+            RouteResolvedFact resolvedFact = new(resolvedRoute, command.Source, command.Reason);
             EventBus<RouteResolvedFact>.Raise(resolvedFact);
 
             if (!_pipeline.TryObserveRouteResolved(
                     routeOperationId,
                     transitionId,
                     sequence,
-                    command.RouteId.Value,
+                    routeId.Value,
                     routeProfileId,
                     command.Source,
                     command.Reason))
@@ -146,14 +190,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
 
             DebugUtility.Log(typeof(SessionOperationalNavigationService),
-                $"[OBS][SessionOperationalPipeline][Navigation] fact='RouteResolved' routeId='{command.RouteId}' routeProfileId='{routeProfileId}' routeKind='{routeDefinition.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][SessionOperationalPipeline][Navigation] fact='RouteResolved' routeId='{resolvedRoute.RouteId}' routeProfileId='{resolvedRoute.RouteProfileId}' routeKind='{resolvedRoute.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             if (!_pipeline.TryObserveTransitionRequested(
                     routeOperationId,
                     transitionId,
                     sequence,
-                    command.RouteId.Value,
+                    routeId.Value,
                     routeProfileId,
                     command.Source,
                     command.Reason))
@@ -162,13 +206,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
 
             DebugUtility.Log(typeof(SessionOperationalNavigationService),
-                $"[OBS][SessionOperationalPipeline][Transition] command='RequestRouteTransition' routeId='{command.RouteId}' routeProfileId='{routeProfileId}' routeKind='{routeDefinition.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][SessionOperationalPipeline][Transition] command='RequestRouteTransition' routeId='{resolvedRoute.RouteId}' routeProfileId='{resolvedRoute.RouteProfileId}' routeKind='{resolvedRoute.RouteKind}' resolvedRoute='true' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             _transitionPort.RequestRouteTransition(new RequestRouteTransitionCommand(
-                command.RouteId,
-                routeProfileId,
-                routeDefinition.RouteKind,
+                resolvedRoute,
                 command.Source,
                 command.Reason));
         }

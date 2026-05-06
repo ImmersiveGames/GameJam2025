@@ -40,23 +40,23 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             }
 
             DebugUtility.Log(typeof(SceneFlowSessionOperationalTransitionAdapter),
-                $"[OBS][SessionOperationalPipeline][Transition] command='RequestRouteTransition' routeId='{command.RouteId}' routeProfileId='{command.RouteProfileId}' routeKind='{command.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][SessionOperationalPipeline][Transition] adapter='SceneFlowSessionOperationalTransitionAdapter' command='RequestRouteTransition' routeId='{command.RouteId}' routeProfileId='{command.RouteProfileId}' routeKind='{command.RouteKind}' resolvedRoute='true' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            Task dispatchTask = _navigationService.NavigateToRoute(command.RouteId, command.Reason);
+            Task dispatchTask = _navigationService.NavigateToResolvedRoute(command.ResolvedRoute, command.Reason);
             dispatchTask.ContinueWith(completed =>
             {
                 if (!completed.IsFaulted)
                 {
                     DebugUtility.Log(typeof(SceneFlowSessionOperationalTransitionAdapter),
-                        $"[OBS][SessionOperationalPipeline][Transition] dispatched routeId='{command.RouteId}' routeProfileId='{command.RouteProfileId}' routeKind='{command.RouteKind}' source='{command.Source}' reason='{command.Reason}'.",
+                        $"[OBS][SessionOperationalPipeline][Transition] adapter='SceneFlowSessionOperationalTransitionAdapter' dispatched routeId='{command.RouteId}' routeProfileId='{command.RouteProfileId}' routeKind='{command.RouteKind}' resolvedRoute='true' source='{command.Source}' reason='{command.Reason}'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 Exception exception = completed.Exception?.GetBaseException() ?? completed.Exception;
                 DebugUtility.LogError(typeof(SceneFlowSessionOperationalTransitionAdapter),
-                    $"[OBS][SessionOperationalPipeline][Transition] dispatch_failed routeId='{command.RouteId}' routeProfileId='{command.RouteProfileId}' routeKind='{command.RouteKind}' source='{command.Source}' reason='{command.Reason}' exceptionType='{exception?.GetType().Name}' exceptionMessage='{exception?.Message}'.");
+                    $"[OBS][SessionOperationalPipeline][Transition] adapter='SceneFlowSessionOperationalTransitionAdapter' dispatch_failed routeId='{command.RouteId}' routeProfileId='{command.RouteProfileId}' routeKind='{command.RouteKind}' resolvedRoute='true' source='{command.Source}' reason='{command.Reason}' exceptionType='{exception?.GetType().Name}' exceptionMessage='{exception?.Message}'.");
             }, TaskScheduler.Default);
         }
     }

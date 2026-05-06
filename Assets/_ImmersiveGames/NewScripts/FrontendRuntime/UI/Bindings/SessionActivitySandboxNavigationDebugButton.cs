@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
@@ -14,11 +15,11 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         private const string SandboxButtonReason = "Frontend/SandboxButton";
 
         [Header("Sandbox")]
-        [SerializeField] private string routeId = "to-session-activity-sandbox";
+        [SerializeField] private SceneRouteDefinitionAsset routeDefinition;
 
         protected override bool OnClickCore(string _)
         {
-            if (!TryResolveRouteId(out SceneRouteId resolvedRouteId))
+            if (!TryResolveRouteDefinition(out SceneRouteDefinitionAsset resolvedRouteDefinition))
             {
                 return false;
             }
@@ -30,32 +31,33 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
                 return false;
             }
 
+            SceneRouteId resolvedRouteId = resolvedRouteDefinition.RouteId;
             DebugUtility.LogVerbose<SessionActivitySandboxNavigationDebugButton>(
                 $"[OBS][FrontendUI][QA] SessionActivitySandbox navigation requested routeId='{resolvedRouteId}' source='{SandboxButtonSource}' reason='{SandboxButtonReason}'.",
                 DebugUtility.Colors.Info);
 
-            navigationService.NavigateToRoute(resolvedRouteId, SandboxButtonSource, SandboxButtonReason);
+            navigationService.NavigateToRoute(resolvedRouteDefinition, SandboxButtonSource, SandboxButtonReason);
             return true;
         }
 
-        private bool TryResolveRouteId(out SceneRouteId resolvedRouteId)
+        private bool TryResolveRouteDefinition(out SceneRouteDefinitionAsset resolvedRouteDefinition)
         {
-            resolvedRouteId = SceneRouteId.None;
-            if (string.IsNullOrWhiteSpace(routeId))
+            resolvedRouteDefinition = null;
+            if (routeDefinition == null)
             {
                 DebugUtility.LogWarning<SessionActivitySandboxNavigationDebugButton>(
-                    "[OBS][FrontendUI][QA] Sandbox navigation button rejected because routeId is empty.");
+                    "[OBS][FrontendUI][QA] Sandbox navigation button rejected because routeDefinition is missing.");
                 return false;
             }
 
-            resolvedRouteId = SceneRouteId.FromName(routeId);
-            if (!resolvedRouteId.IsValid)
+            if (!routeDefinition.RouteId.IsValid)
             {
                 DebugUtility.LogWarning<SessionActivitySandboxNavigationDebugButton>(
-                    $"[OBS][FrontendUI][QA] Sandbox navigation button rejected because routeId is invalid. routeId='{routeId}'.");
+                    $"[OBS][FrontendUI][QA] Sandbox navigation button rejected because routeDefinition has invalid routeId. routeId='{routeDefinition.RouteId}'.");
                 return false;
             }
 
+            resolvedRouteDefinition = routeDefinition;
             return true;
         }
     }
