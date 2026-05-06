@@ -46,11 +46,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
         public void NavigateToRoute(NavigateToRouteCommand command)
         {
+            NavigateToRoute(command.RouteId, command.Source, command.Reason);
+        }
+
+        public void NavigateToRoute(SceneRouteId routeId, string source, string reason)
+        {
             if (_disposed)
             {
                 return;
             }
 
+            NavigateToRouteInternal(new NavigateToRouteCommand(routeId, source, reason));
+        }
+
+        private void NavigateToRouteInternal(NavigateToRouteCommand command)
+        {
             if (!command.IsValid)
             {
                 DebugUtility.LogWarning<SessionOperationalNavigationService>(
@@ -165,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
         private void OnNavigateToRoute(NavigateToRouteCommand command)
         {
-            NavigateToRoute(command);
+            NavigateToRouteInternal(command);
         }
 
         private static string ResolveRouteProfileId(SceneRouteDefinitionAsset routeRef)
