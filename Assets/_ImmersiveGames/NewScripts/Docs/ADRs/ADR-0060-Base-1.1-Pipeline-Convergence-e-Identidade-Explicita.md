@@ -62,3 +62,21 @@ ADRs anteriores viram histórico de referência em `Docs/ADRs/Historico/`.
 - `ADR-0049`
 - `ADR-0050`
 - `ADR-0051`
+
+## Materializacao Base11Sandbox - checkpoint congelado
+
+Evidencia de runtime consolidada no checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`:
+
+- rota operacional minima por asset direto;
+- `SessionOperationalRouteAsset` como contrato de rota, nao como policy;
+- `SessionOperationalPipeline` como owner de comando, completude e handoff;
+- `Base11SandboxOperationalRouteTransitionAdapter` como adapter executor;
+- `SceneCompositionExecutor` como executor fisico;
+- `SessionActivityPipeline` como owner do ciclo interno de activity.
+
+Este checkpoint confirma, na pratica, a decisao central deste ADR:
+
+- pipelines decidem;
+- adapters executam side-effects;
+- identity explicita protege o ciclo;
+- foreign/stale events permanecem inertes.

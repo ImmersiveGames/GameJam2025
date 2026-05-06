@@ -9,9 +9,10 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
     public static class InputModesRuntimeComposer
     {
         private const string CanonicalTrail =
-            "InputModeRequestEvent->InputModeCoordinator->IInputModeService->InputModeChangedEvent";
+            "InputModeRequestEvent->InputModeCoordinator->IInputModeService";
 
         private static bool _runtimeComposed;
+        private static Base11SandboxSessionOperationalInputModeAdapter _base11SandboxSessionOperationalInputModeAdapter;
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
@@ -22,9 +23,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 return;
             }
 
-            _ = bootstrapConfig;
+            if (bootstrapConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModes] BootstrapConfigAsset obrigatorio ausente para compor o runtime de InputModes.");
+            }
 
             EnsureCanonicalTrailOrFail(requireCoordinator: false);
+            EnsureBase11SandboxInputModeAdapter(bootstrapConfig);
             EnsureCoordinatorOrFail();
             EnsureCanonicalTrailOrFail(requireCoordinator: true);
 
@@ -50,6 +55,32 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
             DebugUtility.Log(typeof(InputModesRuntimeComposer),
                 "[OBS][InputModes][Pipeline] coordinator='registered'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureBase11SandboxInputModeAdapter(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig?.RuntimeModeConfig?.compositionProfile != Foundation.Platform.RuntimeMode.CompositionProfileKind.Base11Sandbox)
+            {
+                return;
+            }
+
+            if (_base11SandboxSessionOperationalInputModeAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<Base11SandboxSessionOperationalInputModeAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _base11SandboxSessionOperationalInputModeAdapter = existingAdapter;
+                return;
+            }
+
+            _base11SandboxSessionOperationalInputModeAdapter = new Base11SandboxSessionOperationalInputModeAdapter();
+            DependencyManager.Provider.RegisterGlobal(_base11SandboxSessionOperationalInputModeAdapter);
+
+            DebugUtility.Log(typeof(InputModesRuntimeComposer),
+                "[OBS][InputModes][Pipeline] adapter='Base11SandboxSessionOperationalInputModeAdapter' registered for Base11Sandbox.",
                 DebugUtility.Colors.Info);
         }
 

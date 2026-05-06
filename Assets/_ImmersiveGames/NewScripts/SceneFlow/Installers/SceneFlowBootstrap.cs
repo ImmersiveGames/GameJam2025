@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 {
     /// <summary>
@@ -24,6 +25,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
         private static bool _runtimeComposed;
         private static SceneFlowInputModeBridge _inputModeBridge;
         private static SessionOperationalRouteTransitionBridge _sessionOperationalRouteTransitionBridge;
+        private static Base11SandboxOperationalRouteTransitionAdapter _base11SandboxOperationalRouteTransitionAdapter;
         private static LoadingHudOrchestrator _loadingHudOrchestrator;
         private static LoadingProgressOrchestrator _loadingProgressOrchestrator;
 
@@ -44,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             EnsureSceneTransitionService();
             EnsureRouteActorSetRefContext();
             EnsureSessionOperationalRouteTransitionBridge();
+            EnsureBase11SandboxOperationalRouteTransitionAdapter();
             EnsureInputModeBridge();
             EnsureLoadingOrchestrators();
             EnsureFadeReadyAsync();
@@ -134,6 +137,25 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             _sessionOperationalRouteTransitionBridge = new SessionOperationalRouteTransitionBridge();
         }
 
+        private static void EnsureBase11SandboxOperationalRouteTransitionAdapter()
+        {
+            if (_base11SandboxOperationalRouteTransitionAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<Base11SandboxOperationalRouteTransitionAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _base11SandboxOperationalRouteTransitionAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<ISessionOperationalRouteTransitionExecutor>(_base11SandboxOperationalRouteTransitionAdapter);
+                return;
+            }
+
+            _base11SandboxOperationalRouteTransitionAdapter = new Base11SandboxOperationalRouteTransitionAdapter();
+            DependencyManager.Provider.RegisterGlobal(_base11SandboxOperationalRouteTransitionAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISessionOperationalRouteTransitionExecutor>(_base11SandboxOperationalRouteTransitionAdapter);
+        }
+
         private static void EnsureLoadingOrchestrators()
         {
             ResolveRequired<ILoadingPresentationService>();
@@ -197,6 +219,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             ResolveRequired<ILoadingPresentationService>();
             ResolveRequired<ILoadingHudService>();
             ResolveRequired<IFadeService>();
+            ResolveRequired<Base11SandboxOperationalRouteTransitionAdapter>();
             ResolveRequired<SceneFlowInputModeBridge>();
             ResolveRequired<LoadingHudOrchestrator>();
             ResolveRequired<LoadingProgressOrchestrator>();

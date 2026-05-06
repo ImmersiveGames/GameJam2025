@@ -27,12 +27,19 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         public string Source { get; }
         public string Reason { get; }
 
-        public bool IsValid =>
+        public bool HasResolvedActivity =>
             !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
+            ActivityOrdinal > 0;
+
+        public bool IsEntryOnly =>
+            string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal == 0;
+
+        public bool IsValid =>
+            EntrySequence >= 0 &&
             !string.IsNullOrWhiteSpace(SessionStateId) &&
-            !string.IsNullOrWhiteSpace(Source);
+            !string.IsNullOrWhiteSpace(Source) &&
+            (HasResolvedActivity || IsEntryOnly);
 
         public bool Equals(SessionActivityEntryHandoff other)
         {
@@ -66,7 +73,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         public override string ToString()
         {
             return IsValid
-                ? $"activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', sessionStateId='{SessionStateId}'"
+                ? HasResolvedActivity
+                    ? $"activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', sessionStateId='{SessionStateId}'"
+                    : EntrySequence > 0
+                        ? $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='{EntrySequence}', sessionStateId='{SessionStateId}'"
+                        : $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>', sessionStateId='{SessionStateId}'"
                 : "<none>";
         }
 

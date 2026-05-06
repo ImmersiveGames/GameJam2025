@@ -5,7 +5,7 @@ using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline
 {
-    public sealed class SessionActivityPipeline
+    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver
     {
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private readonly SessionActivityMiniCatalog _catalog;
@@ -42,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         public SessionActivityRuntimeState State => _state;
         public SessionActivityMiniCatalog Catalog => _catalog;
         public SimulationGateState GateState => _simulationGate.State;
+        public string SessionId => _sessionId;
 
         public SessionActivityCommand BuildStartCommand(string source, string reason)
         {
@@ -122,18 +123,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 return RejectStartCommand(source, reason);
             }
 
-            SessionActivityDefinition initialDefinition = ResolveActivityByIdOrFail(handoff.ActivityId);
-            if (initialDefinition.ActivityOrdinal != handoff.ActivityOrdinal)
+            if (!string.Equals(handoff.SessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                return RejectPreparedHandoff(
+                    handoff,
+                    source,
+                    reason,
+                    "stale_or_foreign_handoff",
+                    $"Prepared handoff session state '{handoff.SessionStateId}' does not match pipeline session '{_sessionId}'.");
+            }
+
+            SessionActivityDefinition initialDefinition = handoff.HasResolvedActivity
+                ? ResolveActivityByIdOrFail(handoff.ActivityId)
+                : ResolveActivityByOrdinalOrFail(1);
+
+            if (handoff.HasResolvedActivity && initialDefinition.ActivityOrdinal != handoff.ActivityOrdinal)
             {
                 throw new InvalidOperationException($"Prepared handoff activity ordinal mismatch. expected='{initialDefinition.ActivityOrdinal}' got='{handoff.ActivityOrdinal}'.");
             }
 
-            if (handoff.EntrySequence <= 0)
+            int entrySequence = ResolveNextEntrySequence();
+            if (entrySequence <= 0)
             {
-                throw new InvalidOperationException("Prepared handoff requires a positive entry sequence.");
+                throw new InvalidOperationException("Prepared handoff could not allocate the next entry sequence.");
             }
 
-            SessionActivityIdentity activationIdentity = BuildIdentity(initialDefinition, SessionActivityStage.ActivationExecuting, handoff.EntrySequence);
+            SessionActivityIdentity activationIdentity = BuildIdentity(initialDefinition, SessionActivityStage.ActivationExecuting, entrySequence);
             SessionActivityCommand command = new(
                 SessionActivityCommandKind.StartDemo,
                 activationIdentity,
@@ -152,12 +167,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivationExecuting);
             _state.MarkStarted();
+            if (!handoff.HasResolvedActivity)
+            {
+                _state.AppendTrace($"[OBS][SessionActivityPipeline] FirstCatalogActivityResolved activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' handoff='{handoff}' source='{source}' reason='{reason}'");
+            }
             _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff handoff='{handoff}' source='{source}' reason='{reason}'");
+            _state.AppendTrace($"[OBS][SessionActivityPipeline] SessionActivityEntryHandoffAccepted handoff='{handoff}' source='{source}' reason='{reason}'");
 
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "Mini pipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
 
-            EnterActivity(initialDefinition, command, emittedFacts, emittedSnapshots, handoff.EntrySequence);
+            EnterActivity(initialDefinition, command, emittedFacts, emittedSnapshots, entrySequence);
 
             SessionActivityCommandResult result = new(
                 SessionActivityCommandResultKind.Accepted,
@@ -1155,6 +1175,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 command,
                 rejectedFacts,
                 "no_handoff_available");
+        }
+
+        private SessionActivityCommandResult RejectPreparedHandoff(
+            SessionActivityEntryHandoff handoff,
+            string source,
+            string reason,
+            string rejectionReason,
+            string message)
+        {
+            SessionActivityDefinition firstDefinition = ResolveActivityByOrdinalOrFail(1);
+            int entrySequence = ResolveNextEntrySequence();
+            SessionActivityCommand command = new(
+                SessionActivityCommandKind.StartDemo,
+                BuildIdentity(firstDefinition, SessionActivityStage.ActivationExecuting, entrySequence),
+                source,
+                reason);
+
+            List<SessionActivityFact> rejectedFacts = new();
+            EmitRejected(command, rejectedFacts, rejectionReason, message, command.Identity, true);
+            _state.AppendTrace($"[OBS][SessionActivityPipeline] SessionActivityEntryHandoffRejected handoff='{handoff}' source='{source}' reason='{reason}' rejectionReason='{rejectionReason}' message='{message}'");
+
+            return new SessionActivityCommandResult(
+                SessionActivityCommandResultKind.Rejected,
+                command,
+                rejectedFacts,
+                rejectionReason);
         }
 
         private SessionActivityCommandResult RejectStageForSimulation(SessionActivityCommandKind kind, string source, string reason, string rejectionReason)

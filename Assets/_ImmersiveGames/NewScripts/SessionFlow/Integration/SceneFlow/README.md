@@ -7,4 +7,4 @@ No profile `Base11Sandbox`, `SessionOperationalNavigationComposer` compoe:
 - `SessionOperationalNavigationService`
 - `ISessionOperationalTransitionPort` via `SceneFlowSessionOperationalTransitionAdapter` temporario
 
-`SceneFlowInputModeBridge` emite `InputModeRequestEvent` diretamente quando `SessionIntegration` nao esta composto. Nao ha dependencia obrigatoria de `IntroStage`, `GameLoop` ou `RunEndRail` neste caminho minimo.
+`SceneFlowInputModeBridge` continua sendo um bridge tecnico para o legado fora do Base11Sandbox. No Base11Sandbox, a intencao de input fica observada ou deferida no adapter tecnico do `SessionOperationalPipeline`, sem retornar ownership de `SceneFlow`.

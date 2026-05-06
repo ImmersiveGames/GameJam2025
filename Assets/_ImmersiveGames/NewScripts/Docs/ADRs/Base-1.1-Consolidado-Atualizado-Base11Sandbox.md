@@ -706,3 +706,23 @@ SessionActivityPipeline Start: PASS
 Pause/Resume: PASS
 InputMode real: próximo bloco
 ```
+
+---
+
+## Checkpoint Base11Sandbox Minimal Route + Session Activity Cycle - PASS
+
+O checkpoint validado e congelado da Base 1.1 para este recorte e:
+
+```text
+Base11Sandbox Minimal Route + Session Activity Cycle - PASS
+```
+
+Leitura executiva do checkpoint:
+
+- `SessionOperationalRouteAsset` e o contrato minimo de rota operacional;
+- `SessionOperationalPipeline` decide comando, completion e handoff;
+- `Base11SandboxOperationalRouteTransitionAdapter` executa somente side-effects fisicos;
+- `SceneCompositionExecutor` aplica a composicao em ordem segura;
+- `SessionActivityPipeline` resolve a primeira activity e aloca `entrySequence`.
+
+Este documento permanece como consolidacao de trabalho e evidencia textual do checkpoint congelado.

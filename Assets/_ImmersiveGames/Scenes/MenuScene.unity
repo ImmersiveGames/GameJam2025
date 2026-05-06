@@ -975,15 +975,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 854577500}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f0d7c4a2c5b41b1a44fa8f2f0ac2111, type: 3}
+  m_Script: {fileID: 11500000, guid: 2e5d0f6a4b2d4b2d9f88b7d7ed7f4d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   button: {fileID: 854577503}
-  reason: Frontend/SandboxButton
+  reason: Frontend/RouteButton
   ignoreClicksForSecondsAfterEnable: 0.25
   clearEventSystemSelectionOnEnable: 1
   disableButtonDuringAction: 0
-  routeDefinition: {fileID: 11400000, guid: 4cbf5e2f66c04aa7a7f4d7d54b08a111, type: 2}
+  routeDefinition: {fileID: 11400000, guid: 1a1cbc9355ac4c146886da39e7ef2a37, type: 2}
+  reasonOverride: 
 --- !u!114 &854577503
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1029,7 +1030,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 854577502}
-        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings.SessionActivitySandboxNavigationDebugButton,
+        m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings.SessionOperationalRouteButtonBinder,
           Assembly-CSharp
         m_MethodName: OnClick
         m_Mode: 1
@@ -27828,4 +27829,3 @@ SceneRoots:
   - {fileID: 700441316}
   - {fileID: 606554097}
   - {fileID: 1256861815}
-

@@ -29,6 +29,5 @@ MonoBehaviour:
     playerActionMapName: Player
     menuActionMapName: UI
     logVerbose: 1
-  startupRouteDefinition: {fileID: 11400000, guid: 6537287d00db3e745bed3369507fad91, type: 2}
-
-
+  compositionProfile: 1
+  startupRouteDefinition: {fileID: 11400000, guid: 3dcb89a390cab8841813e8637f4f4d84, type: 2}

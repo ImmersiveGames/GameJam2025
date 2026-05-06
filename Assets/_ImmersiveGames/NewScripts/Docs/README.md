@@ -90,3 +90,16 @@ Esta pasta separa o canon vivo, a documentacao operacional e o historico arquiva
 - O canon vivo prevalece sobre docs historicos.
 - Referencias legadas servem apenas para rastreio, migracao ou archive.
 - O baseline ativo nao deve usar linguagem historica como fonte operacional principal.
+
+## Base 1.1 / Base11Sandbox
+
+- `Docs/ADRs/MiniADRs/MiniADR-Base11Sandbox-Operational-Routing-and-SessionActivity-Handoff.md`
+- `Docs/ADRs/Base-1.1-Consolidado-Atualizado-Base11Sandbox.md`
+- `Docs/ADRs/Base-1.1-Matriz-Inicial-de-Migracao.md`
+- `Docs/ADRs/Base-1.1-Plano-de-Migracao-Pipeline-Convergence.md`
+
+Checkpoint congelado:
+
+```text
+Base11Sandbox Minimal Route + Session Activity Cycle - PASS
+```

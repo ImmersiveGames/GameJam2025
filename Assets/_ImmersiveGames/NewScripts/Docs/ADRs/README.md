@@ -59,3 +59,16 @@ Se um ADR histórico conflitar com a Base 1.1:
 - não abrir exceção local;
 - não usar compatibilidade narrativa;
 - aplicar a precedência normativa deste índice.
+
+## Checkpoint Base11Sandbox congelado
+
+O checkpoint validado da Base 1.1 para o sandbox minimo e:
+
+- `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`
+
+Referencias de materializacao:
+
+- `Docs/ADRs/MiniADRs/MiniADR-Base11Sandbox-Operational-Routing-and-SessionActivity-Handoff.md`
+- `Docs/ADRs/Base-1.1-Consolidado-Atualizado-Base11Sandbox.md`
+- `Docs/ADRs/Base-1.1-Matriz-Inicial-de-Migracao.md`
+- `Docs/ADRs/Base-1.1-Plano-de-Migracao-Pipeline-Convergence.md`

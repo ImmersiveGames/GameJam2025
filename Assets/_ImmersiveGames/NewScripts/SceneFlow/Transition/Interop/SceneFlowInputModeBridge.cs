@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
@@ -17,11 +18,12 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
     /// Semantica:
     /// - Gameplay: nao solicita InputMode; readiness operacional pertence a ActorsExecution.
     /// - Startup/Frontend: solicita InputMode de menu.
+    /// - Base11Sandbox: nao aplica InputMode; o command nasce no SessionOperationalPipeline.
     /// </summary>
     /// <summary>
     /// OWNER: sincronizacao de intencao de InputMode orientada por eventos de transicao.
     /// NAO E OWNER: execucao da transicao de cena e seus gates.
-    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; usa SessionIntegration quando presente e, no profile Base11Sandbox, emite InputModeRequestEvent diretamente de forma explicita.
+    /// PUBLISH/CONSUME: consome SceneTransitionStartedEvent e SceneTransitionCompletedEvent; usa SessionIntegration quando presente; no profile Base11Sandbox, apenas observa e nao aplica InputMode.
     /// Fases tocadas: TransitionStarted e TransitionCompleted.
     /// </summary>
     public sealed class SceneFlowInputModeBridge : IDisposable
@@ -89,6 +91,14 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
             string dedupeKey = signature;
             string activeScene = SceneManager.GetActiveScene().name ?? string.Empty;
 
+            if (IsBase11Sandbox())
+            {
+                DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
+                    $"[OBS][InputMode] SceneFlowInputModeBridge skipped in Base11Sandbox. signature='{signature}' routeKind='{evt.context.RouteKind}' targetScene='{evt.context.TargetActiveScene}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             if (!string.IsNullOrWhiteSpace(_lastProcessedSignature)
                 && string.Equals(_lastProcessedSignature, dedupeKey, StringComparison.Ordinal))
             {
@@ -123,6 +133,25 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop
             DebugUtility.LogVerbose<SceneFlowInputModeBridge>(
                 $"[InputMode] RouteKind nao reconhecido ('{evt.context.RouteKind}'); input mode nao alterado. targetScene='{evt.context.TargetActiveScene}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static bool IsBase11Sandbox()
+        {
+            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
+            {
+                HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                    "[FATAL][H1][InputModes] DependencyManager indisponivel ao avaliar o profile Base11Sandbox.");
+                return false;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
+            {
+                HardFailFastH1.Trigger(typeof(SceneFlowInputModeBridge),
+                    "[FATAL][H1][InputModes] RuntimeModeConfig obrigatorio ausente ao avaliar o profile Base11Sandbox.");
+                return false;
+            }
+
+            return runtimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
         }
 
         private static void PublishInputModeRequest(

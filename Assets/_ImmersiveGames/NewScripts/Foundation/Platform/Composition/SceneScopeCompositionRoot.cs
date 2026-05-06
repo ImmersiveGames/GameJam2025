@@ -323,15 +323,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             reason = string.Empty;
 
-            if (!IsBase11SandboxProfile(provider))
-            {
-                return false;
-            }
-
             if (Base11SandboxNoActorScopeScenes.Contains(_sceneName))
             {
                 reason = "base11_sandbox_no_actor_set";
                 return true;
+            }
+
+            if (!IsBase11SandboxProfile(provider))
+            {
+                return false;
             }
 
             if (!provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)

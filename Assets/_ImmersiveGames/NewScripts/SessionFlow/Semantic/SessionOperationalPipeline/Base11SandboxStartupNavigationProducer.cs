@@ -3,8 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline
@@ -43,16 +41,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             _hasPublished = true;
 
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            SceneRouteDefinitionAsset startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
-            SceneRouteId routeId = startupRoute.RouteId;
+            SessionOperationalRouteAsset startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
             DebugUtility.Log(typeof(Base11SandboxStartupNavigationProducer),
-                $"[OBS][SessionOperationalPipeline][Navigation] boot_start_plan observed routeId='{routeId}' source='Base11SandboxStartupNavigationProducer' reason='base11_sandbox_startup_route'.",
+                $"[OBS][SessionOperationalPipeline][Navigation] boot_start_plan observed routeIdentity='{startupRoute.RouteIdentity}' source='Base11SandboxStartupNavigationProducer' reason='base11_sandbox_startup_route'.",
                 DebugUtility.Colors.Info);
 
-            EventBus<NavigateToRouteCommand>.Raise(new NavigateToRouteCommand(
+            SessionOperationalPipeline pipeline = ResolvePipelineOrFail();
+            _ = pipeline.RequestOperationalRouteAsync(
                 startupRoute,
                 source: nameof(Base11SandboxStartupNavigationProducer),
-                reason: "base11_sandbox_startup_route"));
+                reason: "base11_sandbox_startup_route");
         }
 
         private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
@@ -81,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             return runtimeModeConfig;
         }
 
-        private static SceneRouteDefinitionAsset ResolveStartupRouteOrFail(RuntimeModeConfig runtimeModeConfig)
+        private static SessionOperationalRouteAsset ResolveStartupRouteOrFail(RuntimeModeConfig runtimeModeConfig)
         {
             if (runtimeModeConfig == null)
             {
@@ -95,21 +93,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 throw new InvalidOperationException(message);
             }
 
-            if (!runtimeModeConfig.StartupRouteDefinition.RouteId.IsValid)
+            if (!runtimeModeConfig.StartupRouteDefinition.IsValid)
             {
                 string message = "[FATAL][Config][SessionOperationalPipeline] startupRouteDefinition asset invalida para Base11Sandbox.";
                 DebugUtility.LogError(typeof(Base11SandboxStartupNavigationProducer), message);
                 throw new InvalidOperationException(message);
             }
 
-            if (runtimeModeConfig.StartupRouteDefinition.RouteProfile == null)
+            return runtimeModeConfig.StartupRouteDefinition;
+        }
+
+        private static SessionOperationalPipeline ResolvePipelineOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<SessionOperationalPipeline>(out var pipeline) && pipeline != null)
             {
-                string message = "[FATAL][Config][SessionOperationalPipeline] startupRouteDefinition asset sem SceneRouteProfile para Base11Sandbox.";
-                DebugUtility.LogError(typeof(Base11SandboxStartupNavigationProducer), message);
-                throw new InvalidOperationException(message);
+                return pipeline;
             }
 
-            return runtimeModeConfig.StartupRouteDefinition;
+            string message = "[FATAL][Config][SessionOperationalPipeline] SessionOperationalPipeline obrigatorio ausente para o Base11Sandbox.";
+            DebugUtility.LogError(typeof(Base11SandboxStartupNavigationProducer), message);
+            throw new InvalidOperationException(message);
         }
     }
 }

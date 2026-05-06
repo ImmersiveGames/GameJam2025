@@ -54,3 +54,20 @@ Regra complementar:
 - `ADR-0059`
 - `ADR-0040`
 - `ADR-0038`
+
+## Materializacao Base11Sandbox - checkpoint congelado
+
+O checkpoint validado confirmou a regra deste ADR sem ambiguidade:
+
+- `SessionOperationalPipeline` emite `OperationalRouteCommand` e `OperationalRouteCompleted`;
+- `Base11SandboxOperationalRouteTransitionAdapter` so executa `load/unload/set-active`;
+- `SessionActivityEntryHandoff` e produzido pelo pipeline, nao pelo adapter;
+- `SceneCompositionExecutor` permanece estritamente executor fisico;
+- `SessionActivityPipeline` decide a entrada de activity e o controle interno do ciclo.
+
+Leitura congelada:
+
+- comando nao e efeito;
+- fato nao e decisao;
+- adapter nao e owner de semantica;
+- policy continua concentrada no pipeline.

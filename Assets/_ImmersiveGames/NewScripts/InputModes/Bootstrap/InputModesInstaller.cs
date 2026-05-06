@@ -1,6 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound;
-using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
@@ -74,9 +72,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
         private static void EnsureCanonicalInputModeService(string playerMapName, string menuMapName)
         {
-            RuntimeModeConfig runtimeConfig = ResolveRuntimeModeConfigOrFail();
-            IActorsOperationalBindingQueryPort operationalBindingQueryPort = ResolveOperationalBindingQueryPortOrFail(runtimeConfig);
-
             if (DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var existingService) && existingService != null)
             {
                 if (existingService is not InputModeService)
@@ -90,21 +85,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                     DependencyManager.Provider.RegisterGlobal<IInputModeStateService>((InputModeService)existingService);
                 }
 
-                if (!DependencyManager.Provider.TryGetGlobal<IPlayerInputLocator>(out var existingLocator) || existingLocator == null)
-                {
-                    DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(new PlayerInputLocator(operationalBindingQueryPort));
-                }
-
                 DebugUtility.LogVerbose(typeof(InputModesInstaller),
                     "[OBS][InputModes][Installer] Canonical IInputModeService already present.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            var playerInputLocator = new PlayerInputLocator(operationalBindingQueryPort);
-            var inputModeService = new InputModeService(playerInputLocator, playerMapName, menuMapName);
-
-            DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(playerInputLocator);
+            var inputModeService = new InputModeService(playerMapName, menuMapName);
             DependencyManager.Provider.RegisterGlobal<IInputModeService>(inputModeService);
             DependencyManager.Provider.RegisterGlobal<IInputModeStateService>(inputModeService);
             DependencyManager.Provider.RegisterGlobal(inputModeService);
@@ -112,69 +99,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             DebugUtility.LogVerbose(typeof(InputModesInstaller),
                 $"[OBS][InputModes][Installer] Canonical IInputModeService registered playerMap='{playerMapName}' menuMap='{menuMapName}'.",
                 DebugUtility.Colors.Info);
-        }
-
-        private static IActorsOperationalBindingQueryPort ResolveOperationalBindingQueryPortOrFail(RuntimeModeConfig runtimeConfig)
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IActorsOperationalBindingQueryPort>(out var queryPort) && queryPort != null)
-            {
-                return queryPort;
-            }
-
-            if (runtimeConfig != null && runtimeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox)
-            {
-                var sandboxQueryPort = new Base11SandboxOperationalBindingQueryPort();
-                DependencyManager.Provider.RegisterGlobal<IActorsOperationalBindingQueryPort>(sandboxQueryPort);
-
-                DebugUtility.Log(typeof(InputModesInstaller),
-                    "[OBS][InputModes][Installer] Base11Sandbox registrou IActorsOperationalBindingQueryPort no-op para manter InputModes sem ActorsSystem.",
-                    DebugUtility.Colors.Info);
-
-                return sandboxQueryPort;
-            }
-
-            throw new InvalidOperationException(
-                "[FATAL][Config][InputModes] IActorsOperationalBindingQueryPort obrigatorio ausente no DI global antes de instalar InputModes.");
-        }
-
-        private sealed class Base11SandboxOperationalBindingQueryPort : IActorsOperationalBindingQueryPort
-        {
-            public ActorsOperationalBindingSnapshot Current => ActorsOperationalBindingSnapshot.Empty;
-
-            public bool TryGetCurrent(out ActorsOperationalBindingSnapshot snapshot)
-            {
-                snapshot = ActorsOperationalBindingSnapshot.Empty;
-                return false;
-            }
-
-            public bool TryGetByAxisActorId(AxisActorId axisActorId, out ActorsOperationalBindingEntry entry)
-            {
-                entry = default;
-                return false;
-            }
-
-            public bool TryGetByParticipantId(string participantId, out ActorsOperationalBindingEntry entry)
-            {
-                entry = default;
-                return false;
-            }
-
-            public bool TryGetByRuntimeActorId(RuntimeActorId runtimeActorId, out ActorsOperationalBindingEntry entry)
-            {
-                entry = default;
-                return false;
-            }
-
-            public bool TryGetAll(System.Collections.Generic.List<ActorsOperationalBindingEntry> target)
-            {
-                if (target == null)
-                {
-                    return false;
-                }
-
-                target.Clear();
-                return false;
-            }
         }
     }
 }

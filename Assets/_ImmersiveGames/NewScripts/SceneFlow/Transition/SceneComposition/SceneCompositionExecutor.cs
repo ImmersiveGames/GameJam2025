@@ -27,21 +27,20 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                     activeScene: request.ActiveScene);
             }
 
-            List<string> removedScenes = await UnloadScenesAsync(request.ScenesToUnload, ct);
+            bool activeSceneAlreadyLoaded = IsSceneLoaded(request.ActiveScene);
+            bool activeSceneScheduledToLoad = IsSceneScheduledToLoad(request.ActiveScene, request.ScenesToLoad);
+
             List<string> addedScenes = await LoadScenesAsync(request.ScenesToLoad, ct);
+            EnsureActiveSceneAvailableOrFail(request.ActiveScene, activeSceneAlreadyLoaded, activeSceneScheduledToLoad, request.CorrelationId, request.Reason);
             ApplyActiveSceneIfRequested(request.ActiveScene, request.CorrelationId, request.Reason);
+            List<string> removedScenes = await UnloadScenesAsync(request.ScenesToUnload, request.ActiveScene, ct);
 
             string addedList = string.Join(",", addedScenes);
             string removedList = string.Join(",", removedScenes);
-            bool isClear = request.ScenesToLoad.Count == 0 && request.ScenesToUnload.Count > 0 && string.IsNullOrWhiteSpace(request.ActiveScene);
             string activeSceneLabel = string.IsNullOrWhiteSpace(request.ActiveScene) ? "<none>" : request.ActiveScene;
 
-            string scopePrefix = GetScopePrefix(request.Scope);
-
             DebugUtility.Log<SceneCompositionExecutor>(
-                isClear
-                    ? $"[OBS][SceneComposition] {scopePrefix}CompositionCleared correlationId='{request.CorrelationId}' scenesRemoved=[{removedList}] removedCount={removedScenes.Count} activeScene='{activeSceneLabel}' reason='{request.Reason}'."
-                    : $"[OBS][SceneComposition] {scopePrefix}CompositionApplied correlationId='{request.CorrelationId}' scenesToLoad=[{string.Join(",", request.ScenesToLoad)}] scenesToUnload=[{string.Join(",", request.ScenesToUnload)}] addedScenes=[{addedList}] removedScenes=[{removedList}] activeScene='{activeSceneLabel}' addedCount={addedScenes.Count} removedCount={removedScenes.Count} reason='{request.Reason}'.",
+                $"[OBS][SceneComposition] LocalCompositionApplied correlationId='{request.CorrelationId}' scenesToLoad=[{string.Join(",", request.ScenesToLoad)}] scenesToUnload=[{string.Join(",", request.ScenesToUnload)}] addedScenes=[{addedList}] removedScenes=[{removedList}] activeScene='{activeSceneLabel}' addedCount={addedScenes.Count} removedCount={removedScenes.Count} reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
 
             return new SceneCompositionResult(
@@ -54,10 +53,11 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                 activeScene: request.ActiveScene);
         }
 
-        private static async Task<List<string>> UnloadScenesAsync(IReadOnlyList<string> scenesToUnload, CancellationToken ct)
+        private static async Task<List<string>> UnloadScenesAsync(IReadOnlyList<string> scenesToUnload, string activeSceneName, CancellationToken ct)
         {
             List<string> removedScenes = new List<string>();
             HashSet<string> dedupe = new HashSet<string>(System.StringComparer.Ordinal);
+            string normalizedActiveScene = NormalizeSceneName(activeSceneName);
 
             if (scenesToUnload == null)
             {
@@ -74,11 +74,21 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                     continue;
                 }
 
+                if (!string.IsNullOrWhiteSpace(normalizedActiveScene) &&
+                    string.Equals(sceneName, normalizedActiveScene, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
                 Scene scene = SceneManager.GetSceneByName(sceneName);
                 if (!scene.IsValid() || !scene.isLoaded)
                 {
                     continue;
                 }
+
+                DebugUtility.Log<SceneCompositionExecutor>(
+                    $"[OBS][SceneComposition] UnloadSceneStarted scene='{sceneName}'.",
+                    DebugUtility.Colors.Info);
 
                 AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(scene);
                 if (unloadOperation == null)
@@ -94,6 +104,9 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                 }
 
                 removedScenes.Add(sceneName);
+                DebugUtility.Log<SceneCompositionExecutor>(
+                    $"[OBS][SceneComposition] UnloadSceneCompleted scene='{sceneName}'.",
+                    DebugUtility.Colors.Info);
             }
 
             return removedScenes;
@@ -122,6 +135,10 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                 Scene scene = SceneManager.GetSceneByName(sceneName);
                 if (!scene.IsValid() || !scene.isLoaded)
                 {
+                    DebugUtility.Log<SceneCompositionExecutor>(
+                        $"[OBS][SceneComposition] LoadSceneStarted scene='{sceneName}'.",
+                        DebugUtility.Colors.Info);
+
                     AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
                     if (loadOperation == null)
                     {
@@ -134,6 +151,16 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                         ct.ThrowIfCancellationRequested();
                         await Task.Yield();
                     }
+
+                    DebugUtility.Log<SceneCompositionExecutor>(
+                        $"[OBS][SceneComposition] LoadSceneCompleted scene='{sceneName}'.",
+                        DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    DebugUtility.Log<SceneCompositionExecutor>(
+                        $"[OBS][SceneComposition] LoadSceneCompleted scene='{sceneName}' alreadyLoaded='true'.",
+                        DebugUtility.Colors.Info);
                 }
 
                 addedScenes.Add(sceneName);
@@ -161,6 +188,10 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
                 HardFailFastH1.Trigger(typeof(SceneCompositionExecutor),
                     $"[FATAL][H1][SceneComposition] Failed to set active scene='{activeSceneName}'. correlationId='{correlationId}' reason='{reason}'.");
             }
+
+            DebugUtility.Log<SceneCompositionExecutor>(
+                $"[OBS][SceneComposition] SetActiveScene scene='{activeSceneName}' correlationId='{correlationId}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
 
 
@@ -185,6 +216,62 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition
             HardFailFastH1.Trigger(typeof(SceneCompositionExecutor),
                 $"[FATAL][H1][SceneComposition] Empty scene name detected during phase='{phase}'.");
             return string.Empty;
+        }
+
+        private static string NormalizeSceneName(string sceneName)
+        {
+            return string.IsNullOrWhiteSpace(sceneName) ? string.Empty : sceneName.Trim();
+        }
+
+        private static bool IsSceneLoaded(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            Scene scene = SceneManager.GetSceneByName(sceneName.Trim());
+            return scene.IsValid() && scene.isLoaded;
+        }
+
+        private static bool IsSceneScheduledToLoad(string activeSceneName, IReadOnlyList<string> scenesToLoad)
+        {
+            if (string.IsNullOrWhiteSpace(activeSceneName) || scenesToLoad == null)
+            {
+                return false;
+            }
+
+            string normalizedActiveScene = activeSceneName.Trim();
+            for (int i = 0; i < scenesToLoad.Count; i++)
+            {
+                string sceneName = scenesToLoad[i];
+                if (!string.IsNullOrWhiteSpace(sceneName) &&
+                    string.Equals(sceneName.Trim(), normalizedActiveScene, System.StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void EnsureActiveSceneAvailableOrFail(
+            string activeSceneName,
+            bool activeSceneAlreadyLoaded,
+            bool activeSceneScheduledToLoad,
+            string correlationId,
+            string reason)
+        {
+            if (string.IsNullOrWhiteSpace(activeSceneName))
+            {
+                return;
+            }
+
+            if (!activeSceneAlreadyLoaded && !activeSceneScheduledToLoad)
+            {
+                HardFailFastH1.Trigger(typeof(SceneCompositionExecutor),
+                    $"[FATAL][H1][SceneComposition] Active scene '{activeSceneName}' is neither loaded nor scheduled to load. correlationId='{correlationId}' reason='{reason}'.");
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.InputModes;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SessionActivityPipeline;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SimulationGate;
@@ -20,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
 
         public SessionActivityRuntimeState State => _pipeline != null ? _pipeline.State : null;
         public SessionActivityMiniCatalog Catalog => _catalog;
+        public SessionActivityPipeline Pipeline => _pipeline;
         public SimulationGateState GateState => _pipeline != null ? _pipeline.GateState : null;
 
         private void Awake()
@@ -30,6 +32,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
                 sessionId,
                 new SessionActivityPauseOverlayAdapter(),
                 new SessionActivityInputModeAdapter());
+            RegisterGlobal(_catalog);
+            RegisterGlobal(_pipeline);
+            RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
             Debug.Log(BuildHostBanner());
         }
 
@@ -50,70 +55,70 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         public void DebugDirectStart()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.DebugDirectStart("SessionActivityMiniFlowHost", "Start Activity 01");
+            SessionActivityCommandResult result = _pipeline.DebugDirectStart(QaSource("DebugDirectStart"), QaReason("DebugDirectStart"));
             LogResult("DebugDirectStart", result);
         }
 
         public void CompleteCurrentActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.CompleteCurrentActivity("SessionActivityMiniFlowHost", "Complete current activity");
+            SessionActivityCommandResult result = _pipeline.CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
             LogResult("CompleteCurrentActivity", result);
         }
 
         public void ContinueToNextActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.ContinueToNextActivity("SessionActivityMiniFlowHost", "Continue to next activity");
+            SessionActivityCommandResult result = _pipeline.ContinueToNextActivity(QaSource("ContinueToNextActivity"), QaReason("ContinueToNextActivity"));
             LogResult("ContinueToNextActivity", result);
         }
 
         public void GoToNextActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToNextActivity("SessionActivityMiniFlowHost", "Go to next activity");
+            SessionActivityCommandResult result = _pipeline.GoToNextActivity(QaSource("GoToNextActivity"), QaReason("GoToNextActivity"));
             LogResult("GoToNextActivity", result);
         }
 
         public void GoToPreviousActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToPreviousActivity("SessionActivityMiniFlowHost", "Go to previous activity");
+            SessionActivityCommandResult result = _pipeline.GoToPreviousActivity(QaSource("GoToPreviousActivity"), QaReason("GoToPreviousActivity"));
             LogResult("GoToPreviousActivity", result);
         }
 
         public void RestartCurrentActivity()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.RestartCurrentActivity("SessionActivityMiniFlowHost", "Restart current activity");
+            SessionActivityCommandResult result = _pipeline.RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
             LogResult("RestartCurrentActivity", result);
         }
 
         public void GoToActivity01()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToActivity01("SessionActivityMiniFlowHost", "Go to activity 01");
+            SessionActivityCommandResult result = _pipeline.GoToActivity01(QaSource("GoToActivity01"), QaReason("GoToActivity01"));
             LogResult("GoToActivity01", result);
         }
 
         public void GoToActivity02()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToActivity02("SessionActivityMiniFlowHost", "Go to activity 02");
+            SessionActivityCommandResult result = _pipeline.GoToActivity02(QaSource("GoToActivity02"), QaReason("GoToActivity02"));
             LogResult("GoToActivity02", result);
         }
 
         public void RequestPause()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.PauseRequested("SessionActivityMiniFlowHost", "Request pause");
+            SessionActivityCommandResult result = _pipeline.PauseRequested(QaSource("RequestPause"), QaReason("RequestPause"));
             LogResult("RequestPause", result);
         }
 
         public void RequestResume()
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.ResumeRequested("SessionActivityMiniFlowHost", "Request resume");
+            SessionActivityCommandResult result = _pipeline.ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
             LogResult("RequestResume", result);
         }
 
@@ -223,6 +228,36 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipelin
         private string BuildHostBanner()
         {
             return $"[OBS][SessionActivityPipeline][Host] initialized sessionId='{sessionId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
+        }
+
+        private static string QaSource(string action)
+        {
+            return $"SessionActivityMiniFlowHost/QA/{action}";
+        }
+
+        private static string QaReason(string action)
+        {
+            return $"SessionActivityMiniFlowHost/QA/{action}";
+        }
+
+        private static void RegisterGlobal<T>(T instance) where T : class
+        {
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            {
+                if (!ReferenceEquals(existing, instance))
+                {
+                    throw new InvalidOperationException($"Global dependency '{typeof(T).Name}' is already registered with a different instance.");
+                }
+
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal(instance);
         }
     }
 }

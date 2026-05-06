@@ -12,6 +12,7 @@ using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
 using _ImmersiveGames.NewScripts.SceneFlow.Installers;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers;
@@ -116,9 +117,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     installerDependencies: new[] { "RuntimePolicy" },
                     bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
                     bootstrapDependencies: System.Array.Empty<string>()),
-                CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(SessionOperationalNavigationCompositionDescriptor.Descriptor),
+                new CompositionPipelineStep(
+                    id: "Base11SandboxOperationalRouting",
+                    installer: bootstrapConfig => Base11SandboxOperationalRoutingComposer.Install(bootstrapConfig),
+                    installerDependencies: new[] { "RuntimePolicy" },
+                    bootstrap: bootstrapConfig => Base11SandboxOperationalRoutingComposer.ComposeRuntime(bootstrapConfig),
+                    bootstrapDependencies: new[] { "InputModes" }),
             };
         }
 
