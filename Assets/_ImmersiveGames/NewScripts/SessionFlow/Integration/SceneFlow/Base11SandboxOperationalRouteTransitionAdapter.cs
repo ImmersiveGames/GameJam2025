@@ -38,8 +38,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                     SceneCompositionScope.Local,
                     reason,
                     command.RouteOperationId,
-                    ResolveSceneNames(command.ScenesToLoad, nameof(command.ScenesToLoad)),
-                    ResolveSceneNames(command.ScenesToUnload, nameof(command.ScenesToUnload)),
+                    ResolveSceneNames(command.FinalScenesToLoad, nameof(command.FinalScenesToLoad)),
+                    ResolveSceneNames(command.FinalScenesToUnload, nameof(command.FinalScenesToUnload)),
                     activeSceneName));
 
             if (!compositionResult.Success)

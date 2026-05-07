@@ -13,12 +13,10 @@ MonoBehaviour:
   m_Name: Route_BootToMenu
   m_EditorClassIdentifier: 
   routeIdentity: Route_BootToMenu
-  scenesToLoad:
-  - MenuScene
-  - UIGlobalScene
+  scenesToLoad: []
   scenesToUnload:
-  - SessionActivitySandboxScene
-  - NewBootstrap
-  activeScene: MenuScene
+  - {fileID: 11400000, guid: f9cac371e22e64c428a4ad390b70ebc7, type: 2}
+  activeScene: {fileID: 11400000, guid: 9f596f1f913249fda9e8d36a85bd1302, type: 2}
+  unloadPreviousRouteOwnedScenes: 1
   completionHandoff: 0
   handoffSessionStateId: 

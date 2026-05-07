@@ -27,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         [SerializeField] private List<SceneKeyAsset> scenesToLoad = new();
         [SerializeField] private List<SceneKeyAsset> scenesToUnload = new();
         [SerializeField] private SceneKeyAsset activeScene;
+        [SerializeField] private bool unloadPreviousRouteOwnedScenes;
 
         [Header("Completion")]
         [SerializeField] private SessionOperationalRouteCompletionHandoffKind completionHandoff = SessionOperationalRouteCompletionHandoffKind.NoHandoff;
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => scenesToLoad;
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => scenesToUnload;
         public SceneKeyAsset ActiveSceneKey => activeScene;
+        public bool UnloadPreviousRouteOwnedScenes => unloadPreviousRouteOwnedScenes;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
 
@@ -167,7 +169,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string transitionId,
             int routeSequence,
             string source,
-            string reason)
+            string reason,
+            IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
+            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
+            IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
         {
             return new SessionOperationalRouteCommand(
                 this,
@@ -175,7 +180,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 transitionId,
                 routeSequence,
                 source,
-                reason);
+                reason,
+                finalScenesToLoad,
+                autoScenesToUnload,
+                finalScenesToUnload);
         }
 
         private static string Normalize(string value)
@@ -296,7 +304,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string transitionId,
             int routeSequence,
             string source,
-            string reason)
+            string reason,
+            IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
+            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
+            IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
         {
             Route = route;
             RouteOperationId = Normalize(routeOperationId);
@@ -304,6 +315,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             Source = Normalize(source);
             Reason = Normalize(reason);
+            FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
+            AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
+            FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
         }
 
         public SessionOperationalRouteAsset Route { get; }
@@ -315,6 +329,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public string RouteIdentity => Route != null ? Route.RouteIdentity : string.Empty;
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<SceneKeyAsset>();
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<SceneKeyAsset>();
+        public IReadOnlyList<SceneKeyAsset> FinalScenesToLoad { get; }
+        public IReadOnlyList<SceneKeyAsset> AutoScenesToUnload { get; }
+        public IReadOnlyList<SceneKeyAsset> FinalScenesToUnload { get; }
         public SceneKeyAsset ActiveSceneKey => Route != null ? Route.ActiveSceneKey : null;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => Route != null ? Route.CompletionHandoff : SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         public string HandoffSessionStateId => Route != null ? Route.HandoffSessionStateId : string.Empty;
@@ -325,13 +342,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
+            FinalScenesToLoad != null &&
+            FinalScenesToLoad.Count > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
 
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', source='{Source}', reason='{Reason}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
 

@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   routeIdentity: Route_MenuToSessionActivitySandbox
   scenesToLoad: []
-  scenesToUnload:
-  - MenuScene
-  activeScene: SessionActivitySandboxScene
+  scenesToUnload: []
+  activeScene: {fileID: 11400000, guid: 6d7c5d8df2a24cf0b7ab4fcb2b0fd111, type: 2}
+  unloadPreviousRouteOwnedScenes: 1
   completionHandoff: 1
   handoffSessionStateId: SessionActivitySandboxSession

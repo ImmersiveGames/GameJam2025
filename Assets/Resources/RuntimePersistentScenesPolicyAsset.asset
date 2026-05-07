@@ -12,5 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7adcdfd90ce4d2346a4fe87f0ebf7518, type: 3}
   m_Name: RuntimePersistentScenesPolicyAsset
   m_EditorClassIdentifier: 
-  policyId: 
-  entries: []
+  policyId: Default.Scenes.persistent
+  entries:
+  - sceneKey: {fileID: 11400000, guid: c779a1ffa44042768a83865fefeb5893, type: 2}
+    role: 0
+    required: 1
+  - sceneKey: {fileID: 11400000, guid: 7983f5c5a711411887b7d73dd12c6702, type: 2}
+    role: 1
+    required: 1
+  - sceneKey: {fileID: 11400000, guid: c4d7b5c1f4a24d6e9d7b9b3f2c6a1e88, type: 2}
+    role: 2
+    required: 1

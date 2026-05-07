@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   modeOverride: 0
   bootstrapConfig: {fileID: 11400000, guid: b3f866decfd85714db622d024b341b0a, type: 2}
+  runtimePersistentScenesPolicy: {fileID: 11400000, guid: 5cb9202de0bb9304c867f0d410f61dab, type: 2}
   reporter:
     dedupStrategy: 1
     cooldownSeconds: 5

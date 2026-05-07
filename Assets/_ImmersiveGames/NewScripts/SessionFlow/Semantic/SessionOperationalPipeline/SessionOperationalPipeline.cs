@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -17,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         private readonly string _sessionOperationalPipelineId;
         private readonly object _sandboxRouteSync = new();
         private int _sandboxRouteSequence;
+        private SessionOperationalRouteSnapshot _lastCompletedRouteSnapshot;
         private bool _hasActiveSandboxRouteOperation;
         private string _activeSandboxRouteOperationId = string.Empty;
         private string _activeSandboxTransitionId = string.Empty;
@@ -53,11 +55,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
             ValidatePersistentScenesPolicyOrFail(route);
             ISessionOperationalRouteTransitionExecutor routeExecutor = ResolveRouteExecutorOrFail();
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
 
             string routeIdentity = route.RouteIdentity;
             string sourceText = Normalize(source);
             string reasonText = Normalize(reason);
             string activeSceneName = ResolveSceneName(route.ActiveSceneKey, nameof(route.ActiveSceneKey));
+            SessionOperationalRouteLoadPlan loadPlan = default;
+            SessionOperationalRouteSnapshot previousCompletedRoute = default;
+            SessionOperationalRouteUnloadPlan unloadPlan = default;
 
             string routeOperationId;
             string transitionId;
@@ -76,6 +83,25 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 routeSequence = _sandboxRouteSequence;
                 routeOperationId = BuildRouteOperationId(routeIdentity, activeSceneName, routeSequence);
                 transitionId = BuildTransitionId(routeIdentity, activeSceneName, routeSequence);
+                loadPlan = ResolveRouteLoadPlanOrFail(route, persistentScenesPolicy, activeSceneName);
+                previousCompletedRoute = _lastCompletedRouteSnapshot;
+                unloadPlan = ResolveRouteUnloadPlanOrFail(
+                    route,
+                    previousCompletedRoute,
+                    persistentScenesPolicy,
+                    loadPlan.FinalScenesToLoad,
+                    activeSceneName);
+
+                if (route.UnloadPreviousRouteOwnedScenes)
+                {
+                    LogPreviousRouteUnloadPlan(
+                        previousCompletedRoute,
+                        routeIdentity,
+                        unloadPlan.ExplicitScenesToUnload,
+                        unloadPlan.AutoScenesToUnload,
+                        unloadPlan.FinalScenesToUnload);
+                }
+
                 _hasActiveSandboxRouteOperation = true;
                 _activeSandboxRouteOperationId = routeOperationId;
                 _activeSandboxTransitionId = transitionId;
@@ -87,7 +113,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 transitionId,
                 routeSequence,
                 sourceText,
-                reasonText);
+                reasonText,
+                loadPlan.FinalScenesToLoad,
+                unloadPlan.AutoScenesToUnload,
+                unloadPlan.FinalScenesToUnload);
 
             _state.Reset(
                 _sessionOperationalPipelineId,
@@ -98,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 routeIdentity);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' source='{sourceText}' reason='{reasonText}'.",
+                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
             try
@@ -114,6 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                     DebugUtility.Colors.Success);
 
                 CompleteSandboxRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
+                RecordLastCompletedRouteSnapshot(route, routeSequence, loadPlan.FinalScenesToLoad);
 
                 if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
                 {
@@ -846,6 +876,405 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string message = "[FATAL][Config][SessionOperationalRoute] RuntimeModeConfig obrigatorio ausente para validar persistent scenes.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
+        }
+
+        private static SessionOperationalRouteLoadPlan ResolveRouteLoadPlanOrFail(
+            SessionOperationalRouteAsset route,
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
+            string activeSceneName)
+        {
+            if (route == null)
+            {
+                throw new ArgumentNullException(nameof(route));
+            }
+
+            IReadOnlyList<SceneKeyAsset> explicitScenesToLoad = route.ScenesToLoad ?? Array.Empty<SceneKeyAsset>();
+            HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrEmpty(persistentScenesPolicy);
+            string normalizedActiveSceneName = Normalize(activeSceneName);
+            bool activeSceneImplicitLoad = !ContainsScene(explicitScenesToLoad, normalizedActiveSceneName);
+            List<SceneKeyAsset> finalScenesToLoad = new();
+            HashSet<string> dedupe = new(StringComparer.Ordinal);
+
+            AppendActiveSceneKeyToLoadPlan(route.ActiveSceneKey, finalScenesToLoad, dedupe);
+            AppendAdditionalSceneKeysToLoadPlan(
+                explicitScenesToLoad,
+                finalScenesToLoad,
+                dedupe,
+                persistentSceneSet,
+                normalizedActiveSceneName);
+
+            if (finalScenesToLoad.Count == 0)
+            {
+                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                    $"[FATAL][Config][SessionOperationalPipeline] finalScenesToLoad cannot be empty routeIdentity='{route.RouteIdentity}'.");
+            }
+
+            return new SessionOperationalRouteLoadPlan(
+                activeSceneImplicitLoad,
+                finalScenesToLoad);
+        }
+
+        private static SessionOperationalRouteUnloadPlan ResolveRouteUnloadPlanOrFail(
+            SessionOperationalRouteAsset route,
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
+            IReadOnlyList<SceneKeyAsset> currentRouteLoadedSceneKeys,
+            string currentActiveSceneName)
+        {
+            IReadOnlyList<SceneKeyAsset> explicitScenesToUnload = route.ScenesToUnload ?? Array.Empty<SceneKeyAsset>();
+            HashSet<string> currentRouteLoadSceneSet = BuildSceneSetOrEmpty(currentRouteLoadedSceneKeys);
+            string normalizedCurrentActiveSceneName = Normalize(currentActiveSceneName);
+
+            IReadOnlyList<SceneKeyAsset> autoScenesToUnload = ResolveAutoScenesToUnloadOrFail(
+                route,
+                previousCompletedRoute,
+                persistentScenesPolicy,
+                currentRouteLoadSceneSet,
+                normalizedCurrentActiveSceneName);
+
+            IReadOnlyList<SceneKeyAsset> finalScenesToUnload = BuildFinalScenesToUnload(
+                explicitScenesToUnload,
+                autoScenesToUnload,
+                currentRouteLoadSceneSet,
+                normalizedCurrentActiveSceneName);
+
+            return new SessionOperationalRouteUnloadPlan(
+                previousCompletedRoute.RouteIdentity,
+                explicitScenesToUnload,
+                autoScenesToUnload,
+                finalScenesToUnload);
+        }
+
+        private static IReadOnlyList<SceneKeyAsset> ResolveAutoScenesToUnloadOrFail(
+            SessionOperationalRouteAsset route,
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
+            HashSet<string> currentRouteLoadSceneSet,
+            string currentActiveSceneName)
+        {
+            if (route == null || !route.UnloadPreviousRouteOwnedScenes || !previousCompletedRoute.IsValid)
+            {
+                return Array.Empty<SceneKeyAsset>();
+            }
+
+            HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrEmpty(persistentScenesPolicy);
+            IReadOnlyList<SceneKeyAsset> previousSceneKeys = previousCompletedRoute.RouteOwnedLoadedSceneKeys ?? Array.Empty<SceneKeyAsset>();
+            List<SceneKeyAsset> autoScenesToUnload = new(previousSceneKeys.Count);
+            HashSet<string> dedupe = new(StringComparer.Ordinal);
+
+            for (int i = 0; i < previousSceneKeys.Count; i++)
+            {
+                SceneKeyAsset sceneKey = previousSceneKeys[i];
+                string sceneName = ResolveSceneName(sceneKey, $"previousCompletedRoute.routeOwnedLoadedSceneKeys[{i}]");
+
+                if (persistentSceneSet.Contains(sceneName))
+                {
+                    HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                        $"[FATAL][Config][SessionOperationalPipeline] previous completed route snapshot contains runtime persistent scene. routeIdentity='{previousCompletedRoute.RouteIdentity}' scene='{sceneName}'.");
+                }
+
+                if ((currentRouteLoadSceneSet != null && currentRouteLoadSceneSet.Contains(sceneName)) ||
+                    (!string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                if (!dedupe.Add(sceneName))
+                {
+                    continue;
+                }
+
+                autoScenesToUnload.Add(sceneKey);
+            }
+
+            return autoScenesToUnload.Count == 0 ? Array.Empty<SceneKeyAsset>() : autoScenesToUnload;
+        }
+
+        private static IReadOnlyList<SceneKeyAsset> BuildFinalScenesToUnload(
+            IReadOnlyList<SceneKeyAsset> explicitScenesToUnload,
+            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
+            HashSet<string> currentRouteLoadSceneSet,
+            string currentActiveSceneName)
+        {
+            List<SceneKeyAsset> finalScenesToUnload = new();
+            HashSet<string> dedupe = new(StringComparer.Ordinal);
+
+            AppendSceneKeysToFinalUnload(finalScenesToUnload, dedupe, explicitScenesToUnload, currentRouteLoadSceneSet, currentActiveSceneName);
+            AppendSceneKeysToFinalUnload(finalScenesToUnload, dedupe, autoScenesToUnload, currentRouteLoadSceneSet, currentActiveSceneName);
+
+            return finalScenesToUnload.Count == 0 ? Array.Empty<SceneKeyAsset>() : finalScenesToUnload;
+        }
+
+        private static void AppendSceneKeysToFinalUnload(
+            List<SceneKeyAsset> finalScenesToUnload,
+            HashSet<string> dedupe,
+            IReadOnlyList<SceneKeyAsset> sceneKeys,
+            HashSet<string> currentRouteLoadSceneSet,
+            string currentActiveSceneName)
+        {
+            if (sceneKeys == null || sceneKeys.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < sceneKeys.Count; i++)
+            {
+                SceneKeyAsset sceneKey = sceneKeys[i];
+                string sceneName = ResolveSceneName(sceneKey, $"scenesToUnload[{i}]");
+
+                if ((currentRouteLoadSceneSet != null && currentRouteLoadSceneSet.Contains(sceneName)) ||
+                    (!string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                if (!dedupe.Add(sceneName))
+                {
+                    continue;
+                }
+
+                finalScenesToUnload.Add(sceneKey);
+            }
+        }
+
+        private static HashSet<string> BuildSceneSetOrEmpty(IReadOnlyList<SceneKeyAsset> sceneKeys)
+        {
+            HashSet<string> sceneSet = new(StringComparer.Ordinal);
+
+            if (sceneKeys == null)
+            {
+                return sceneSet;
+            }
+
+            for (int i = 0; i < sceneKeys.Count; i++)
+            {
+                string sceneName = ResolveSceneName(sceneKeys[i], $"sceneKeys[{i}]");
+                sceneSet.Add(sceneName);
+            }
+
+            return sceneSet;
+        }
+
+        private static bool ContainsScene(IReadOnlyList<SceneKeyAsset> scenes, string sceneName)
+        {
+            if (scenes == null || string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            string normalizedSceneName = Normalize(sceneName);
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                string currentSceneName = ResolveSceneName(scenes[i], $"scenes[{i}]");
+                if (string.Equals(currentSceneName, normalizedSceneName, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void AppendActiveSceneKeyToLoadPlan(
+            SceneKeyAsset activeSceneKey,
+            List<SceneKeyAsset> finalScenesToLoad,
+            HashSet<string> dedupe)
+        {
+            string activeSceneName = ResolveSceneName(activeSceneKey, nameof(activeSceneKey));
+            if (!dedupe.Add(activeSceneName))
+            {
+                return;
+            }
+
+            finalScenesToLoad.Add(activeSceneKey);
+        }
+
+        private static void AppendAdditionalSceneKeysToLoadPlan(
+            IReadOnlyList<SceneKeyAsset> scenesToLoad,
+            List<SceneKeyAsset> finalScenesToLoad,
+            HashSet<string> dedupe,
+            HashSet<string> persistentSceneSet,
+            string activeSceneName)
+        {
+            if (scenesToLoad == null || scenesToLoad.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < scenesToLoad.Count; i++)
+            {
+                SceneKeyAsset sceneKey = scenesToLoad[i];
+                string sceneName = ResolveSceneName(sceneKey, $"scenesToLoad[{i}]");
+
+                if (persistentSceneSet.Contains(sceneName))
+                {
+                    HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                        $"[FATAL][Config][SessionOperationalPipeline] scenesToLoad cannot contain runtime persistent scene='{sceneName}'.");
+                }
+
+                if (!string.IsNullOrWhiteSpace(activeSceneName) && string.Equals(sceneName, activeSceneName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!dedupe.Add(sceneName))
+                {
+                    continue;
+                }
+
+                finalScenesToLoad.Add(sceneKey);
+            }
+        }
+
+        private static HashSet<string> BuildPersistentSceneSetOrEmpty(RuntimePersistentScenesPolicyAsset persistentScenesPolicy)
+        {
+            if (persistentScenesPolicy == null)
+            {
+                return new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            IReadOnlyList<string> persistentSceneNames = persistentScenesPolicy.ResolveSceneNamesOrFail(nameof(SessionOperationalPipeline));
+            return new HashSet<string>(persistentSceneNames, StringComparer.Ordinal);
+        }
+
+        private static IReadOnlyList<string> ResolveSceneNames(IReadOnlyList<SceneKeyAsset> sceneKeys, string fieldName)
+        {
+            if (sceneKeys == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                    $"[FATAL][Config][SessionOperationalPipeline] {fieldName} is required.");
+            }
+
+            if (sceneKeys.Count == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            List<string> sceneNames = new(sceneKeys.Count);
+            HashSet<string> dedupe = new(StringComparer.Ordinal);
+
+            for (int i = 0; i < sceneKeys.Count; i++)
+            {
+                string sceneName = ResolveSceneName(sceneKeys[i], $"{fieldName}[{i}]");
+                if (!dedupe.Add(sceneName))
+                {
+                    continue;
+                }
+
+                sceneNames.Add(sceneName);
+            }
+
+            return sceneNames.Count == 0 ? Array.Empty<string>() : sceneNames;
+        }
+
+        private void RecordLastCompletedRouteSnapshot(SessionOperationalRouteAsset route, int routeSequence, IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
+        {
+            if (route == null)
+            {
+                return;
+            }
+
+            SessionOperationalRouteSnapshot snapshot = new(
+                route.RouteIdentity,
+                routeSequence,
+                route.ActiveSceneKey,
+                finalScenesToLoad);
+
+            if (!snapshot.IsValid)
+            {
+                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                    $"[FATAL][Config][SessionOperationalPipeline] failed to record last completed route snapshot routeIdentity='{route.RouteIdentity}' routeSequence='{routeSequence}'.");
+            }
+
+            _lastCompletedRouteSnapshot = snapshot;
+        }
+
+        private readonly struct SessionOperationalRouteLoadPlan
+        {
+            public SessionOperationalRouteLoadPlan(
+                bool activeSceneImplicitLoad,
+                IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
+            {
+                ActiveSceneImplicitLoad = activeSceneImplicitLoad;
+                FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
+            }
+
+            public bool ActiveSceneImplicitLoad { get; }
+            public IReadOnlyList<SceneKeyAsset> FinalScenesToLoad { get; }
+        }
+
+        private static string FormatSceneNames(IReadOnlyList<SceneKeyAsset> sceneKeys)
+        {
+            if (sceneKeys == null || sceneKeys.Count == 0)
+            {
+                return "<none>";
+            }
+
+            List<string> sceneNames = new(sceneKeys.Count);
+            for (int i = 0; i < sceneKeys.Count; i++)
+            {
+                sceneNames.Add(ResolveSceneName(sceneKeys[i], $"sceneKeys[{i}]"));
+            }
+
+            return string.Join(", ", sceneNames);
+        }
+
+        private static void LogPreviousRouteUnloadPlan(
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            string currentRouteIdentity,
+            IReadOnlyList<SceneKeyAsset> explicitScenesToUnload,
+            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
+            IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
+        {
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Route] unload='previous_route_owned_scenes_applied' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousRouteActiveSceneKey='{previousCompletedRoute.ActiveSceneKey?.name ?? string.Empty}' previousRouteOwnedSceneKeys=[{FormatSceneNames(previousCompletedRoute.RouteOwnedLoadedSceneKeys)}] autoScenesToUnload=[{FormatSceneNames(autoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(explicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(finalScenesToUnload)}].",
+                DebugUtility.Colors.Info);
+        }
+
+        private readonly struct SessionOperationalRouteSnapshot
+        {
+            public SessionOperationalRouteSnapshot(
+                string routeIdentity,
+                int routeSequence,
+                SceneKeyAsset activeSceneKey,
+                IReadOnlyList<SceneKeyAsset> routeOwnedLoadedSceneKeys)
+            {
+                RouteIdentity = Normalize(routeIdentity);
+                RouteSequence = routeSequence < 0 ? 0 : routeSequence;
+                ActiveSceneKey = activeSceneKey;
+                RouteOwnedLoadedSceneKeys = routeOwnedLoadedSceneKeys ?? throw new ArgumentNullException(nameof(routeOwnedLoadedSceneKeys));
+            }
+
+            public string RouteIdentity { get; }
+            public int RouteSequence { get; }
+            public SceneKeyAsset ActiveSceneKey { get; }
+            public IReadOnlyList<SceneKeyAsset> RouteOwnedLoadedSceneKeys { get; }
+
+            public bool IsValid =>
+                !string.IsNullOrWhiteSpace(RouteIdentity) &&
+                RouteSequence > 0 &&
+                ActiveSceneKey != null &&
+                RouteOwnedLoadedSceneKeys != null;
+        }
+
+        private readonly struct SessionOperationalRouteUnloadPlan
+        {
+            public SessionOperationalRouteUnloadPlan(
+                string previousRouteIdentity,
+                IReadOnlyList<SceneKeyAsset> explicitScenesToUnload,
+                IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
+                IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
+            {
+                PreviousRouteIdentity = Normalize(previousRouteIdentity);
+                ExplicitScenesToUnload = explicitScenesToUnload ?? throw new ArgumentNullException(nameof(explicitScenesToUnload));
+                AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
+                FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
+            }
+
+            public string PreviousRouteIdentity { get; }
+            public IReadOnlyList<SceneKeyAsset> ExplicitScenesToUnload { get; }
+            public IReadOnlyList<SceneKeyAsset> AutoScenesToUnload { get; }
+            public IReadOnlyList<SceneKeyAsset> FinalScenesToUnload { get; }
         }
 
         private SessionOperationalResult CompleteSandboxRouteOperation(
