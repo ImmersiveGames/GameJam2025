@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
@@ -24,6 +26,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             string source = Normalize(command.Source);
             string reason = Normalize(command.Reason);
             string activeSceneName = ResolveSceneName(command.ActiveSceneKey, nameof(command.ActiveSceneKey));
+
+            ValidatePersistentScenesPolicyOrFail(command);
 
             DebugUtility.Log(typeof(Base11SandboxOperationalRouteTransitionAdapter),
                 $"[OBS][SessionOperationalPipeline][Route] adapter='Base11SandboxOperationalRouteTransitionAdapter' action='ApplyOperationalRoute' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{command.ActiveSceneKey.name}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' completionHandoff='{command.CompletionHandoff}' source='{source}' reason='{reason}'.",
@@ -87,6 +91,36 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             }
 
             return resolved;
+        }
+
+        private static void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
+        {
+            if (command.Route == null)
+            {
+                HardFailFastH1.Trigger(
+                    typeof(Base11SandboxOperationalRouteTransitionAdapter),
+                    "[FATAL][Config][SessionOperationalPipeline] SessionOperationalRouteCommand.Route is required.");
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
+            {
+                HardFailFastH1.Trigger(
+                    typeof(Base11SandboxOperationalRouteTransitionAdapter),
+                    "[FATAL][Config][SessionOperationalPipeline] RuntimeModeConfig obrigatorio ausente para validar persistent scenes.");
+            }
+
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+            if (persistentScenesPolicy == null)
+            {
+                return;
+            }
+
+            if (!command.Route.TryValidateAgainstPersistentScenesPolicy(persistentScenesPolicy, out string validationError))
+            {
+                HardFailFastH1.Trigger(
+                    typeof(Base11SandboxOperationalRouteTransitionAdapter),
+                    $"[FATAL][Config][SessionOperationalPipeline] {validationError}");
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline;
 
@@ -50,6 +51,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 throw new InvalidOperationException(message);
             }
 
+            ValidatePersistentScenesPolicyOrFail(route);
             ISessionOperationalRouteTransitionExecutor routeExecutor = ResolveRouteExecutorOrFail();
 
             string routeIdentity = route.RouteIdentity;
@@ -812,6 +814,36 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
 
             string message = "[FATAL][Config][SessionOperationalPipeline] ISessionActivityEntryHandoffReceiver obrigatorio ausente para o trilho do Base11Sandbox.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
+        private static void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteAsset route)
+        {
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+
+            if (persistentScenesPolicy == null)
+            {
+                return;
+            }
+
+            if (!route.TryValidateAgainstPersistentScenesPolicy(persistentScenesPolicy, out string validationError))
+            {
+                string message = $"[FATAL][Config][SessionOperationalRoute] {validationError}";
+                DebugUtility.LogError<SessionOperationalPipeline>(message);
+                throw new InvalidOperationException(message);
+            }
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) && runtimeModeConfig != null)
+            {
+                return runtimeModeConfig;
+            }
+
+            string message = "[FATAL][Config][SessionOperationalRoute] RuntimeModeConfig obrigatorio ausente para validar persistent scenes.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }

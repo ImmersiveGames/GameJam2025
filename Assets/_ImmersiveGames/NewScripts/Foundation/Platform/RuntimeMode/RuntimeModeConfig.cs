@@ -39,7 +39,17 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [FormerlySerializedAs("BootstrapConfig")]
         [SerializeField] private BootstrapConfigAsset bootstrapConfig;
 
+        [Obsolete("BootstrapConfig is legacy and must not be used by the canonical Base11Sandbox rail. Use RuntimeModeConfig.RuntimePersistentScenesPolicy and RuntimeModeConfig.StartupRouteDefinition instead.")]
         public BootstrapConfigAsset BootstrapConfig => bootstrapConfig;
+
+        /// <summary>
+        /// Política canônica de cenas persistentes do modo de runtime atual.
+        /// </summary>
+        [Header("Runtime Persistent Scenes")]
+        [Tooltip("Policy asset with runtime-support scenes that must stay loaded while the runtime mode is active.")]
+        [SerializeField] private RuntimePersistentScenesPolicyAsset runtimePersistentScenesPolicy;
+
+        public RuntimePersistentScenesPolicyAsset RuntimePersistentScenesPolicy => runtimePersistentScenesPolicy;
 
         /// <summary>
         /// ConfiguraÃ§Ãµes do reporter de degradaÃ§Ã£o (dedupe, resumo, etc).

@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
@@ -13,9 +13,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         private static SessionOperationalPipeline _sessionOperationalPipeline;
         private static Base11SandboxOperationalRouteTransitionAdapter _routeTransitionAdapter;
 
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
+        public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
-            ValidateBootstrapConfigOrFail(bootstrapConfig);
+            ValidateRuntimeModeConfigOrFail(runtimeModeConfig);
             EnsureStartupRouteEmitter();
 
             DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 DebugUtility.Colors.Info);
         }
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(Base11SandboxOperationalRoutingComposer));
 
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
                 return;
             }
 
-            ValidateBootstrapConfigOrFail(bootstrapConfig);
+            ValidateRuntimeModeConfigOrFail(runtimeModeConfig);
             EnsureStartupRouteEmitter();
 
             EnsureSessionOperationalPipeline();
@@ -56,14 +56,14 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             _startupRouteEmitter = SessionOperationalStartupRouteEmitter.EnsureInstalled();
         }
 
-        private static void ValidateBootstrapConfigOrFail(BootstrapConfigAsset bootstrapConfig)
+        private static void ValidateRuntimeModeConfigOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            if (bootstrapConfig == null)
+            if (runtimeModeConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] BootstrapConfigAsset obrigatorio ausente para compor o routing do Base11Sandbox.");
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] RuntimeModeConfig obrigatorio ausente para compor o routing do Base11Sandbox.");
             }
 
-            if (bootstrapConfig.RuntimeModeConfig == null || bootstrapConfig.RuntimeModeConfig.compositionProfile != Foundation.Platform.RuntimeMode.CompositionProfileKind.Base11Sandbox)
+            if (runtimeModeConfig.compositionProfile != CompositionProfileKind.Base11Sandbox)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] Base11SandboxOperationalRoutingComposer requer compositionProfile=Base11Sandbox.");
             }

@@ -45,14 +45,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrap: null,
                 bootstrapDependencies: System.Array.Empty<string>()));
 
-            CompositionProfileKind compositionProfile = ResolveCompositionProfileOrFail(bootstrapConfig);
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFailFast(bootstrapConfig);
+            CompositionProfileKind compositionProfile = runtimeModeConfig.compositionProfile;
 
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
             {
                 DebugUtility.Log(typeof(GlobalCompositionRoot),
                     "[OBS][Composition][Profile] Base11Sandbox ativo: rails legados fora do profile minimo.",
                     DebugUtility.Colors.Info);
-                steps.AddRange(GetBase11SandboxCompositionSteps());
+                steps.AddRange(GetBase11SandboxCompositionSteps(bootstrapConfig, runtimeModeConfig));
             }
             else
             {
@@ -107,7 +108,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return steps;
         }
 
-        private static IReadOnlyList<CompositionPipelineStep> GetBase11SandboxCompositionSteps()
+        private static IReadOnlyList<CompositionPipelineStep> GetBase11SandboxCompositionSteps(
+            BootstrapConfigAsset bootstrapConfig,
+            RuntimeModeConfig runtimeModeConfig)
         {
             return new List<CompositionPipelineStep>(3)
             {
@@ -118,28 +121,18 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
                     bootstrapDependencies: System.Array.Empty<string>()),
                 new CompositionPipelineStep(
-                    id: "Base11SandboxOperationalRouting",
-                    installer: bootstrapConfig => Base11SandboxOperationalRoutingComposer.Install(bootstrapConfig),
+                    id: "RuntimePersistentScenes",
+                    installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),
                     installerDependencies: new[] { "RuntimePolicy" },
-                    bootstrap: bootstrapConfig => Base11SandboxOperationalRoutingComposer.ComposeRuntime(bootstrapConfig),
+                    bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
                     bootstrapDependencies: new[] { "InputModes" }),
+                new CompositionPipelineStep(
+                    id: "Base11SandboxOperationalRouting",
+                    installer: _ => Base11SandboxOperationalRoutingComposer.Install(runtimeModeConfig),
+                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes" },
+                    bootstrap: _ => Base11SandboxOperationalRoutingComposer.ComposeRuntime(runtimeModeConfig),
+                    bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes" }),
             };
-        }
-
-        private static CompositionProfileKind ResolveCompositionProfileOrFail(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (bootstrapConfig == null)
-            {
-                throw new System.InvalidOperationException("[FATAL][Config][Composition] BootstrapConfigAsset obrigatorio ausente para resolver compositionProfile.");
-            }
-
-            RuntimeModeConfig runtimeModeConfig = bootstrapConfig.RuntimeModeConfig;
-            if (runtimeModeConfig == null)
-            {
-                throw new System.InvalidOperationException($"[FATAL][Config][Composition] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset. bootstrap='{bootstrapConfig.name}'.");
-            }
-
-            return runtimeModeConfig.compositionProfile;
         }
 
         private static bool ResolveGameplayPhaseEnablementOrFail(BootstrapConfigAsset bootstrapConfig)

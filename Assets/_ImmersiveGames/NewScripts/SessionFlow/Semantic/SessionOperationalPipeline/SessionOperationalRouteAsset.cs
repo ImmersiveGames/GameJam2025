@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using UnityEngine;
 
@@ -118,6 +119,49 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             return true;
         }
 
+        public bool TryValidateAgainstPersistentScenesPolicy(
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
+            out string errorMessage)
+        {
+            if (!TryValidate(out errorMessage))
+            {
+                return false;
+            }
+
+            if (persistentScenesPolicy == null)
+            {
+                errorMessage = string.Empty;
+                return true;
+            }
+
+            IReadOnlyList<string> persistentSceneNames = persistentScenesPolicy.ResolveSceneNamesOrFail(nameof(SessionOperationalRouteAsset));
+            HashSet<string> persistentSceneSet = new(persistentSceneNames, StringComparer.Ordinal);
+
+            if (!TryResolveSceneName(ActiveSceneKey, nameof(activeScene), out string activeSceneName, out errorMessage))
+            {
+                return false;
+            }
+
+            if (persistentSceneSet.Contains(activeSceneName))
+            {
+                errorMessage = $"activeScene cannot be runtime persistent routeIdentity='{RouteIdentity}' activeScene='{activeSceneName}' policyId='{persistentScenesPolicy.PolicyId}'.";
+                return false;
+            }
+
+            if (TryFindSceneConflict(scenesToLoad, persistentSceneSet, nameof(scenesToLoad), RouteIdentity, out errorMessage))
+            {
+                return false;
+            }
+
+            if (TryFindSceneConflict(scenesToUnload, persistentSceneSet, nameof(scenesToUnload), RouteIdentity, out errorMessage))
+            {
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
         public SessionOperationalRouteCommand CreateCommand(
             string routeOperationId,
             string transitionId,
@@ -205,6 +249,37 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
                 if (string.Equals(normalized, normalizedSceneName, StringComparison.Ordinal))
                 {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryFindSceneConflict(
+            IReadOnlyList<SceneKeyAsset> scenes,
+            HashSet<string> persistentSceneSet,
+            string fieldName,
+            string routeIdentity,
+            out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            if (scenes == null || persistentSceneSet == null || persistentSceneSet.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                if (!TryResolveSceneName(scenes[i], $"{fieldName}[{i}]", out string normalizedSceneName, out errorMessage))
+                {
+                    return true;
+                }
+
+                if (persistentSceneSet.Contains(normalizedSceneName))
+                {
+                    errorMessage = $"{fieldName} cannot contain runtime persistent scene='{normalizedSceneName}'. routeIdentity='{routeIdentity}'.";
                     return true;
                 }
             }

@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             EventBus<BootStartPlanRequestedEvent>.Unregister(_binding);
         }
 
-        private void OnBootStartPlanRequested(BootStartPlanRequestedEvent evt)
+        private async void OnBootStartPlanRequested(BootStartPlanRequestedEvent evt)
         {
             if (_disposed || _hasPublished)
             {
@@ -40,17 +40,27 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
             _hasPublished = true;
 
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            SessionOperationalRouteAsset startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
-            DebugUtility.Log(typeof(Base11SandboxStartupNavigationProducer),
-                $"[OBS][SessionOperationalPipeline][Navigation] boot_start_plan observed routeIdentity='{startupRoute.RouteIdentity}' source='Base11SandboxStartupNavigationProducer' reason='base11_sandbox_startup_route'.",
-                DebugUtility.Colors.Info);
+            try
+            {
+                RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+                await RuntimePersistentScenesComposition.AwaitGuaranteedAsync(runtimeModeConfig);
+                SessionOperationalRouteAsset startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
+                DebugUtility.Log(typeof(Base11SandboxStartupNavigationProducer),
+                    $"[OBS][SessionOperationalPipeline][Navigation] boot_start_plan observed routeIdentity='{startupRoute.RouteIdentity}' source='Base11SandboxStartupNavigationProducer' reason='base11_sandbox_startup_route'.",
+                    DebugUtility.Colors.Info);
 
-            SessionOperationalPipeline pipeline = ResolvePipelineOrFail();
-            _ = pipeline.RequestOperationalRouteAsync(
-                startupRoute,
-                source: nameof(Base11SandboxStartupNavigationProducer),
-                reason: "base11_sandbox_startup_route");
+                SessionOperationalPipeline pipeline = ResolvePipelineOrFail();
+                _ = pipeline.RequestOperationalRouteAsync(
+                    startupRoute,
+                    source: nameof(Base11SandboxStartupNavigationProducer),
+                    reason: "base11_sandbox_startup_route");
+            }
+            catch (Exception ex)
+            {
+                DebugUtility.LogError(typeof(Base11SandboxStartupNavigationProducer),
+                    $"[FATAL][Config][SessionOperationalPipeline] boot_start_plan handling failed exceptionType='{ex.GetType().Name}' exceptionMessage='{ex.Message}'.");
+                throw;
+            }
         }
 
         private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()

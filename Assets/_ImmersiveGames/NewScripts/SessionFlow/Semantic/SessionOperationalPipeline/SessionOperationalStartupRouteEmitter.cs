@@ -86,6 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             try
             {
                 RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+                await RuntimePersistentScenesComposition.AwaitGuaranteedAsync(runtimeModeConfig);
                 SessionOperationalRouteAsset startupRoute = ResolveStartupRouteOrFail(runtimeModeConfig);
                 SessionOperationalPipeline pipeline = ResolvePipelineOrFail();
 
