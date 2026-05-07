@@ -13,12 +13,8 @@ MonoBehaviour:
   m_Name: Route_MenuToSessionActivitySandbox
   m_EditorClassIdentifier: 
   routeIdentity: Route_MenuToSessionActivitySandbox
-  scenesToLoad:
-  - UIGlobalScene
-  - SessionActivitySandboxScene
+  scenesToLoad: []
   scenesToUnload:
-  - NewBootstrap
-  - GameplayScene
   - MenuScene
   activeScene: SessionActivitySandboxScene
   completionHandoff: 1

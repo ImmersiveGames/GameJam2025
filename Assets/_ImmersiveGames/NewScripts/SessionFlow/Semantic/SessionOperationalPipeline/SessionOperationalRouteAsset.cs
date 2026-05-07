@@ -1,7 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline
@@ -22,18 +23,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         [SerializeField] private string routeIdentity;
 
         [Header("Scenes")]
-        [SerializeField] private List<string> scenesToLoad = new();
-        [SerializeField] private List<string> scenesToUnload = new();
-        [SerializeField] private string activeScene;
+        [SerializeField] private List<SceneKeyAsset> scenesToLoad = new();
+        [SerializeField] private List<SceneKeyAsset> scenesToUnload = new();
+        [SerializeField] private SceneKeyAsset activeScene;
 
         [Header("Completion")]
         [SerializeField] private SessionOperationalRouteCompletionHandoffKind completionHandoff = SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         [SerializeField] private string handoffSessionStateId;
 
         public string RouteIdentity => Normalize(routeIdentity);
-        public IReadOnlyList<string> ScenesToLoad => scenesToLoad;
-        public IReadOnlyList<string> ScenesToUnload => scenesToUnload;
-        public string ActiveScene => Normalize(activeScene);
+        public IReadOnlyList<SceneKeyAsset> ScenesToLoad => scenesToLoad;
+        public IReadOnlyList<SceneKeyAsset> ScenesToUnload => scenesToUnload;
+        public SceneKeyAsset ActiveSceneKey => activeScene;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
 
@@ -45,6 +46,20 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void OnValidate()
+        {
+            if (TryValidate(out string errorMessage) || string.IsNullOrWhiteSpace(errorMessage))
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(
+                typeof(SessionOperationalRouteAsset),
+                $"[Config][Editor] routeIdentity='{RouteIdentity}' invalida. detail='{errorMessage}'");
+        }
+#endif
+
         public bool TryValidate(out string errorMessage)
         {
             if (string.IsNullOrWhiteSpace(RouteIdentity))
@@ -53,9 +68,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(ActiveScene))
+            if (!TryResolveSceneName(ActiveSceneKey, nameof(activeScene), out string activeSceneName, out errorMessage))
             {
-                errorMessage = "activeScene is required.";
                 return false;
             }
 
@@ -65,21 +79,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 return false;
             }
 
-            if (HasDuplicates(scenesToLoad, out string duplicateLoadScene))
+            if (!ValidateSceneList(scenesToLoad, nameof(scenesToLoad), out string loadValidationError))
             {
-                errorMessage = $"scenesToLoad contains duplicate scene='{duplicateLoadScene}'.";
+                errorMessage = loadValidationError;
                 return false;
             }
 
-            if (HasDuplicates(scenesToUnload, out string duplicateUnloadScene))
+            if (!ValidateSceneList(scenesToUnload, nameof(scenesToUnload), out string unloadValidationError))
             {
-                errorMessage = $"scenesToUnload contains duplicate scene='{duplicateUnloadScene}'.";
+                errorMessage = unloadValidationError;
                 return false;
             }
 
-            if (ContainsScene(scenesToUnload, ActiveScene))
+            if (ContainsScene(scenesToUnload, activeSceneName))
             {
-                errorMessage = $"activeScene cannot be listed in scenesToUnload routeIdentity='{RouteIdentity}' activeScene='{ActiveScene}'.";
+                errorMessage = $"activeScene cannot be listed in scenesToUnload routeIdentity='{RouteIdentity}' activeScene='{activeSceneName}'.";
                 return false;
             }
 
@@ -125,35 +139,56 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
-        private static bool HasDuplicates(IReadOnlyList<string> scenes, out string duplicateScene)
+        private static bool TryResolveSceneName(SceneKeyAsset sceneKey, string fieldName, out string sceneName, out string errorMessage)
         {
-            duplicateScene = string.Empty;
+            sceneName = string.Empty;
+            errorMessage = string.Empty;
+
+            if (sceneKey == null)
+            {
+                errorMessage = $"{fieldName} is required.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(sceneKey.SceneName))
+            {
+                errorMessage = $"{fieldName} requires a SceneKeyAsset with a non-empty SceneName. asset='{sceneKey.name}'.";
+                return false;
+            }
+
+            sceneName = sceneKey.SceneName.Trim();
+            return true;
+        }
+
+        private static bool ValidateSceneList(IReadOnlyList<SceneKeyAsset> scenes, string fieldName, out string errorMessage)
+        {
+            errorMessage = string.Empty;
 
             if (scenes == null)
             {
+                errorMessage = $"{fieldName} is required.";
                 return false;
             }
 
             HashSet<string> dedupe = new(StringComparer.Ordinal);
             for (int i = 0; i < scenes.Count; i++)
             {
-                string normalized = Normalize(scenes[i]);
-                if (string.IsNullOrWhiteSpace(normalized))
+                if (!TryResolveSceneName(scenes[i], $"{fieldName}[{i}]", out string normalized, out errorMessage))
                 {
-                    continue;
+                    return false;
                 }
 
                 if (!dedupe.Add(normalized))
                 {
-                    duplicateScene = normalized;
-                    return true;
+                    errorMessage = $"{fieldName} contains duplicate scene='{normalized}'.";
+                    return false;
                 }
             }
 
-            return false;
+            return true;
         }
 
-        private static bool ContainsScene(IReadOnlyList<string> scenes, string sceneName)
+        private static bool ContainsScene(IReadOnlyList<SceneKeyAsset> scenes, string sceneName)
         {
             if (scenes == null || string.IsNullOrWhiteSpace(sceneName))
             {
@@ -163,9 +198,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string normalizedSceneName = Normalize(sceneName);
             for (int i = 0; i < scenes.Count; i++)
             {
-                string normalized = Normalize(scenes[i]);
-                if (!string.IsNullOrWhiteSpace(normalized) &&
-                    string.Equals(normalized, normalizedSceneName, StringComparison.Ordinal))
+                if (!TryResolveSceneName(scenes[i], $"scenes[{i}]", out string normalized, out _))
+                {
+                    continue;
+                }
+
+                if (string.Equals(normalized, normalizedSceneName, StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -200,9 +238,9 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public string Source { get; }
         public string Reason { get; }
         public string RouteIdentity => Route != null ? Route.RouteIdentity : string.Empty;
-        public IReadOnlyList<string> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<string>();
-        public IReadOnlyList<string> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<string>();
-        public string ActiveScene => Route != null ? Route.ActiveScene : string.Empty;
+        public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<SceneKeyAsset>();
+        public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<SceneKeyAsset>();
+        public SceneKeyAsset ActiveSceneKey => Route != null ? Route.ActiveSceneKey : null;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => Route != null ? Route.CompletionHandoff : SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         public string HandoffSessionStateId => Route != null ? Route.HandoffSessionStateId : string.Empty;
 
@@ -218,8 +256,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ActiveScene}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', source='{Source}', reason='{Reason}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', source='{Source}', reason='{Reason}'"
                 : "<none>";
+        }
+
+        private static string ResolveSceneName(SceneKeyAsset sceneKey)
+        {
+            if (sceneKey == null || string.IsNullOrWhiteSpace(sceneKey.SceneName))
+            {
+                return string.Empty;
+            }
+
+            return sceneKey.SceneName.Trim();
         }
 
         private static string Normalize(string value)

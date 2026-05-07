@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline
@@ -54,6 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string routeIdentity = route.RouteIdentity;
             string sourceText = Normalize(source);
             string reasonText = Normalize(reason);
+            string activeSceneName = ResolveSceneName(route.ActiveSceneKey, nameof(route.ActiveSceneKey));
 
             string routeOperationId;
             string transitionId;
@@ -70,8 +72,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
                 _sandboxRouteSequence += 1;
                 routeSequence = _sandboxRouteSequence;
-                routeOperationId = BuildRouteOperationId(routeIdentity, route.ActiveScene, routeSequence);
-                transitionId = BuildTransitionId(routeIdentity, route.ActiveScene, routeSequence);
+                routeOperationId = BuildRouteOperationId(routeIdentity, activeSceneName, routeSequence);
+                transitionId = BuildTransitionId(routeIdentity, activeSceneName, routeSequence);
                 _hasActiveSandboxRouteOperation = true;
                 _activeSandboxRouteOperationId = routeOperationId;
                 _activeSandboxTransitionId = transitionId;
@@ -94,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 routeIdentity);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{route.ActiveScene}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' source='{sourceText}' reason='{reasonText}'.",
+                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
             try
@@ -761,6 +763,23 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string ResolveSceneName(SceneKeyAsset sceneKey, string fieldName)
+        {
+            if (sceneKey == null)
+            {
+                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                    $"[FATAL][Config][SessionOperationalPipeline] {fieldName} is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(sceneKey.SceneName))
+            {
+                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
+                    $"[FATAL][Config][SessionOperationalPipeline] {fieldName} requires a SceneKeyAsset with a non-empty SceneName. asset='{sceneKey.name}'.");
+            }
+
+            return sceneKey.SceneName.Trim();
         }
 
         private static string BuildRouteOperationId(string routeIdentity, string activeScene, int sequence)

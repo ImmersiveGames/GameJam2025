@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   routeIdentity: Route_BootToMenu
   scenesToLoad:
-  - UIGlobalScene
   - MenuScene
+  - UIGlobalScene
   scenesToUnload:
+  - SessionActivitySandboxScene
   - NewBootstrap
-  - GameplayScene
   activeScene: MenuScene
   completionHandoff: 0
   handoffSessionStateId: 
