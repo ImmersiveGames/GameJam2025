@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Services;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -34,8 +33,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
         private PlanetInteractService _interactService;
 
         private IActor _actor;
-
-        [Inject] private IStateDependentService _stateService;
 
         private bool _actionBound;
 
@@ -169,10 +166,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
                 return;
             }
 
-            if (_stateService != null && !_stateService.CanExecuteAction(OldActionType.Interact))
-            {
-                return;
-            }
 
             _interactService.TryInteractWithPlanet(
                 transform,
@@ -203,11 +196,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         public Task Reset_RebindAsync(ResetContext ctx)
         {
-            // Seguran�a: re-injeta depend�ncias se necess�rio e garante bind.
-            if (_stateService == null)
-            {
-                DependencyManager.Provider.InjectDependencies(this);
-            }
 
             ResolveAction();
             UnbindAction();

@@ -2,8 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityUtils;
@@ -50,7 +48,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         private void Initialize()
         {
-            OldGameManagerStateMachine.Instance.InitializeStateMachine(this);
+
 
             _gameStartEvent = new EventBinding<GameStartEvent>(OnGameStart);
             EventBus<GameStartEvent>.Register(_gameStartEvent);
@@ -91,16 +89,16 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         public bool IsGameActive()
         {
-            return OldGameManagerStateMachine.Instance.CurrentState?.IsGameActive() ?? false;
+            return true;
+        }
+        public void ResetGame()
+        {
+            throw new System.NotImplementedException();
         }
 
         public bool TryTriggerGameOver(string reason = null)
         {
-            if (!IsCurrentState<OldPlayingState>())
-            {
-                DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
-                return false;
-            }
+
 
             DebugUtility.LogVerbose<GameManager>($"Disparando GameOver. Razão: {reason ?? "(não informada)"}.");
             EventBus<GameOverEvent>.Raise(new GameOverEvent());
@@ -109,11 +107,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
 
         public bool TryTriggerVictory(string reason = null)
         {
-            if (!IsCurrentState<OldPlayingState>())
-            {
-                DebugUtility.LogWarning<GameManager>(StateGuardLogPrefix);
-                return false;
-            }
 
             DebugUtility.LogVerbose<GameManager>($"Disparando Victory. Razão: {reason ?? "(não informada)"}.");
             EventBus<GameVictoryEvent>.Raise(new GameVictoryEvent());
@@ -136,11 +129,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return;
             }
 
-            if (!IsCurrentState<OldMenuState>())
-            {
-                return;
-            }
-
             _lastStartRequestFrame = Time.frameCount;
 
             DebugUtility.LogVerbose<GameManager>("Solicitação de início de jogo recebida.");
@@ -154,10 +142,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return;
             }
 
-            if (!IsCurrentState<OldPlayingState>())
-            {
-                return;
-            }
 
             _lastPauseRequestFrame = Time.frameCount;
 
@@ -172,11 +156,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 return;
             }
 
-            if (!IsCurrentState<OldPausedState>())
-            {
-                return;
-            }
-
             _lastResumeRequestFrame = Time.frameCount;
 
             DebugUtility.LogVerbose<GameManager>("Solicitação de retomada recebida.");
@@ -186,7 +165,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         private void OnResetRequested(OldGameResetRequestedEvent _)
         {
             DebugUtility.LogVerbose<GameManager>("Solicitação de reset recebida.");
-            ResetGame(); // Implementado na partial SceneFlow
         }
 
         private void OnReturnToMenuRequested(GameReturnToMenuRequestedEvent _)
@@ -199,17 +177,12 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
             _lastReturnToMenuRequestFrame = Time.frameCount;
 
             DebugUtility.LogVerbose<GameManager>("Solicitação de retorno ao menu recebida.");
-            ReturnToMenu(); // Implementado na partial SceneFlow
         }
 
         #endregion
 
         #region Internal helpers & DI
 
-        private bool IsCurrentState<T>() where T : OldGameStateBase
-        {
-            return OldGameManagerStateMachine.Instance.CurrentState is T;
-        }
 
         private void ConfigureDebug()
         {
@@ -232,12 +205,6 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
                 provider.RegisterGlobal(gameConfig, allowOverride: true);
             }
 
-            if (!provider.TryGetGlobal<OldGameManagerStateMachine>(out _))
-            {
-                provider.RegisterGlobal(OldGameManagerStateMachine.Instance, allowOverride: true);
-            }
-
-            EnsureSceneTransitionServices(); // Implementado na partial SceneFlow
         }
 
         private DebugManager ResolveDebugManager()

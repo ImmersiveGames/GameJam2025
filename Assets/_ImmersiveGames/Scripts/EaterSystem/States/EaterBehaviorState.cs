@@ -1,6 +1,6 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
 
 namespace _ImmersiveGames.Scripts.EaterSystem.States
@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
     /// <summary>
     /// Estado base sem regras enquanto o comportamento completo é reimplementado.
     /// </summary>
-    internal abstract class EaterBehaviorState : IOldIState
+    internal abstract class EaterBehaviorState : IState
     {
         protected EaterBehaviorState(string stateName)
         {
@@ -48,7 +48,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             LogStateEvent("Saiu");
         }
 
-        public virtual bool CanPerformAction(OldActionType action)
+        public virtual bool CanPerformAction(object action)
         {
             return true;
         }

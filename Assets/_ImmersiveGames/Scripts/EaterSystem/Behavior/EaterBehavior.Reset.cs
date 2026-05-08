@@ -76,7 +76,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             TryEnsureAutoFlowBridge();
 
             // A state machine só é construída quando inexistente; o método é idempotente e evita duplicar transições/bindings internos.
-            EnsureStatesInitialized();
 
             if (_autoFlowBridge != null)
             {
@@ -139,30 +138,12 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
         private void DisposePredicates()
         {
-            // Predicados descartáveis possuem bindings em EventBus e precisam ser liberados para evitar leaks.
-            _deathPredicate?.Dispose();
-            _revivePredicate?.Dispose();
-            _planetUnmarkedPredicate?.Dispose();
 
-            _deathPredicate = null;
-            _revivePredicate = null;
-            _wanderingTimeoutPredicate = null;
-            _hungryChasingPredicate = null;
-            _chasingEatingPredicate = null;
-            _planetUnmarkedPredicate = null;
-            _eatingHungryPredicate = null;
-            _eatingWanderingPredicate = null;
-            _missingMasterForPredicatesLogged = false;
         }
 
         private void ResetStateMachineCache()
         {
-            _stateMachine = null;
-            _wanderingState = null;
-            _hungryState = null;
-            _chasingState = null;
-            _eatingState = null;
-            _deathState = null;
+
         }
 
         private void ResetDependencyCaches()
