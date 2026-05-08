@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -134,6 +135,15 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                     DebugUtility.Colors.Info);
             }
 
+            SessionOperationalRouteAudioCommand audioCommand = BuildRouteAudioCommandOrFail(
+                route,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+
             SessionOperationalRouteCommand command = route.CreateCommand(
                 routeOperationId,
                 transitionId,
@@ -142,6 +152,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 reasonText,
                 route.TransitionMode,
                 route.TransitionProfile,
+                audioCommand,
                 loadPlan.FinalScenesToLoad,
                 unloadPlan.AutoScenesToUnload,
                 unloadPlan.FinalScenesToUnload);
@@ -348,10 +359,53 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                     }
                 }
 
+                if (command.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
+                {
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        BuildAudioPipelineLog(
+                            "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioSkipped",
+                            command,
+                            sourceText,
+                            reasonText,
+                            "skipReason='route_audio_disabled'"),
+                        DebugUtility.Colors.Info);
+                }
+                else
+                {
+                    ISessionOperationalAudioAdapter audioAdapter = ResolveAudioAdapterOrFail();
+
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        BuildAudioPipelineLog(
+                            "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioStarted",
+                            command,
+                            sourceText,
+                            reasonText,
+                            $"cueType='{ResolveRouteAudioCueTypeOrFail(command.Audio.RouteAudioCue)}'"),
+                        DebugUtility.Colors.Info);
+
+                    audioAdapter.PlayRouteRevealAudio(command);
+
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        BuildAudioPipelineLog(
+                            "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioSubmitted",
+                            command,
+                            sourceText,
+                            reasonText,
+                            $"cueType='{ResolveRouteAudioCueTypeOrFail(command.Audio.RouteAudioCue)}'"),
+                        DebugUtility.Colors.Success);
+                }
+
                 if (command.UsesTransition)
                 {
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        $"[OBS][SessionOperationalPipeline][Fade] fadeOutStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.",
+                        DebugUtility.Colors.Info);
                     await fadeAdapter.FadeOutAsync(command);
                     fadeOutCompleted = true;
+
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        $"[OBS][SessionOperationalPipeline][Fade] fadeOutCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.",
+                        DebugUtility.Colors.Success);
                 }
 
                 CompleteSandboxRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
@@ -1213,6 +1267,107 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
 
             return loadingCommand;
+        }
+
+        private static ISessionOperationalAudioAdapter ResolveAudioAdapterOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalAudioAdapter>(out var audioAdapter) && audioAdapter != null)
+            {
+                return audioAdapter;
+            }
+
+            string message = "[FATAL][Config][SessionOperationalPipeline][Audio] ISessionOperationalAudioAdapter obrigatorio ausente para routeAudio cue.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
+        private static string ResolveRouteAudioCueTypeOrFail(AudioCueAsset cue)
+        {
+            if (cue is AudioBgmCueAsset)
+            {
+                return nameof(AudioBgmCueAsset);
+            }
+
+            if (cue is AudioSfxCueAsset)
+            {
+                return nameof(AudioSfxCueAsset);
+            }
+
+            string cueType = cue == null ? "<null>" : cue.GetType().Name;
+            string message = $"[FATAL][Config][SessionOperationalPipeline][Audio] unsupported routeAudioCue type='{cueType}'.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
+        private static string BuildAudioPipelineLog(
+            string prefix,
+            SessionOperationalRouteCommand command,
+            string source,
+            string reason,
+            string extra)
+        {
+            return $"{prefix} routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeAudioMode='{command.Audio.RouteAudioMode}' routeAudioTiming='{command.Audio.RouteAudioTiming}' routeAudioCue='{command.Audio.RouteAudioCueName}' stopPreviousRouteAudio='{command.Audio.StopPreviousRouteAudio}' source='{source}' reason='{reason}' {extra}.";
+        }
+
+        private static SessionOperationalRouteAudioCommand BuildRouteAudioCommandOrFail(
+            SessionOperationalRouteAsset route,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
+        {
+            if (route == null)
+            {
+                throw new ArgumentNullException(nameof(route));
+            }
+
+            SessionOperationalRouteAudioMode routeAudioMode = route.RouteAudioMode;
+            AudioCueAsset routeAudioCue = routeAudioMode == SessionOperationalRouteAudioMode.Cue
+                ? route.RouteAudioCue
+                : null;
+            SessionOperationalRouteAudioTiming routeAudioTiming = route.RouteAudioTiming;
+            bool stopPreviousRouteAudio = route.StopPreviousRouteAudio;
+
+            if (routeAudioTiming != SessionOperationalRouteAudioTiming.BeforeFadeOut)
+            {
+                string message =
+                    $"[FATAL][Config][SessionOperationalPipeline][Audio] routeAudioTiming must be BeforeFadeOut routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioTiming='{routeAudioTiming}' source='{source}' reason='{reason}'.";
+
+                DebugUtility.LogError<SessionOperationalPipeline>(message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (routeAudioMode == SessionOperationalRouteAudioMode.Cue && routeAudioCue == null)
+            {
+                string message =
+                    $"[FATAL][Config][SessionOperationalPipeline][Audio] routeAudioCue is required when routeAudioMode=Cue routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}'.";
+
+                DebugUtility.LogError<SessionOperationalPipeline>(message);
+                throw new InvalidOperationException(message);
+            }
+
+            SessionOperationalRouteAudioCommand audioCommand = new(
+                routeAudioMode,
+                routeAudioCue,
+                routeAudioTiming,
+                stopPreviousRouteAudio);
+
+            if (!audioCommand.IsValid)
+            {
+                string message =
+                    $"[FATAL][Config][SessionOperationalPipeline][Audio] invalid audio payload routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioMode='{routeAudioMode}' routeAudioTiming='{routeAudioTiming}' routeAudioCue='{audioCommand.RouteAudioCueName}' stopPreviousRouteAudio='{stopPreviousRouteAudio}' source='{source}' reason='{reason}'.";
+
+                DebugUtility.LogError<SessionOperationalPipeline>(message);
+                throw new InvalidOperationException(message);
+            }
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Audio] RouteAudioPlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioMode='{routeAudioMode}' routeAudioTiming='{routeAudioTiming}' routeAudioCue='{audioCommand.RouteAudioCueName}' stopPreviousRouteAudio='{stopPreviousRouteAudio}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            return audioCommand;
         }
 
         private static SessionOperationalLoadingFact CreateLoadingFact(

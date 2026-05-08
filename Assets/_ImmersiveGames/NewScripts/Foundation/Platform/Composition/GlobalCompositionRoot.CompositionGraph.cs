@@ -112,8 +112,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             BootstrapConfigAsset bootstrapConfig,
             RuntimeModeConfig runtimeModeConfig)
         {
-            return new List<CompositionPipelineStep>(3)
+            return new List<CompositionPipelineStep>(5)
             {
+                CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 new CompositionPipelineStep(
                     id: "InputModes",
                     installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),

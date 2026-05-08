@@ -5,6 +5,8 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
     /// <summary>
@@ -26,13 +28,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 return;
             }
 
-            if (bootstrapConfig == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio ausente para instalar Audio.");
-            }
-
-            AudioDefaultsAsset audioDefaults = bootstrapConfig.AudioDefaults
-                ?? throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio: AudioDefaults ausente.");
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+            AudioDefaultsAsset audioDefaults = ResolveAudioDefaultsOrFail(runtimeModeConfig);
 
             RegisterAudioDefaults(audioDefaults);
             RegisterAudioSettings();
@@ -45,10 +42,38 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
+        private static AudioDefaultsAsset ResolveAudioDefaultsOrFail(RuntimeModeConfig runtimeModeConfig)
+        {
+            if (runtimeModeConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para resolver AudioDefaultsAsset.");
+            }
+
+            AudioDefaultsAsset audioDefaults = runtimeModeConfig.AudioDefaults
+                ?? throw new InvalidOperationException("[FATAL][Config][Audio] AudioDefaultsAsset obrigatorio ausente no RuntimeModeConfig.");
+
+            return audioDefaults;
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) && runtimeModeConfig != null)
+            {
+                return runtimeModeConfig;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente antes de instalar Audio.");
+        }
+
         private static void RegisterAudioDefaults(AudioDefaultsAsset audioDefaults)
         {
             if (DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var existing) && existing != null)
             {
+                if (!ReferenceEquals(existing, audioDefaults))
+                {
+                    throw new InvalidOperationException("[FATAL][Config][Audio] AudioDefaultsAsset conflitante ja registrada no DI.");
+                }
+
                 DebugUtility.LogVerbose(
                     typeof(AudioInstaller),
                     "[Audio][BOOT] AudioDefaultsAsset already registered in DI.",
@@ -123,4 +148,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
         }
     }
 }
-

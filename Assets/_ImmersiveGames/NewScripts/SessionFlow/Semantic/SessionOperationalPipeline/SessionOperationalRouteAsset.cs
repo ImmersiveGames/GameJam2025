@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
@@ -19,6 +20,17 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
     {
         None = 0,
         Profile = 1,
+    }
+
+    public enum SessionOperationalRouteAudioMode
+    {
+        None = 0,
+        Cue = 1,
+    }
+
+    public enum SessionOperationalRouteAudioTiming
+    {
+        BeforeFadeOut = 0,
     }
 
     [CreateAssetMenu(
@@ -48,6 +60,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         [SerializeField] private SessionOperationalRouteCompletionHandoffKind completionHandoff = SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         [SerializeField] private string handoffSessionStateId;
 
+        [Header("Audio")]
+        [SerializeField] private SessionOperationalRouteAudioMode routeAudioMode = SessionOperationalRouteAudioMode.None;
+        [SerializeField] private AudioCueAsset routeAudioCue;
+        [SerializeField] private SessionOperationalRouteAudioTiming routeAudioTiming = SessionOperationalRouteAudioTiming.BeforeFadeOut;
+        [SerializeField] private bool stopPreviousRouteAudio;
+
         public string RouteIdentity => Normalize(routeIdentity);
         public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile TransitionProfile => transitionProfile;
@@ -59,6 +77,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public bool UnloadPreviousRouteOwnedScenes => unloadPreviousRouteOwnedScenes;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
+        public SessionOperationalRouteAudioMode RouteAudioMode => routeAudioMode;
+        public AudioCueAsset RouteAudioCue => routeAudioCue;
+        public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
+        public bool StopPreviousRouteAudio => stopPreviousRouteAudio;
         public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
         public bool UsesLoading => LoadingMode != SessionOperationalRouteLoadingMode.None;
         public string LoadingProfileLabel => loadingProfile != null && !string.IsNullOrWhiteSpace(loadingProfile.ProfileId) ? loadingProfile.ProfileId.Trim() : string.Empty;
@@ -191,6 +213,37 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 return false;
             }
 
+            bool validAudioMode =
+                routeAudioMode == SessionOperationalRouteAudioMode.None ||
+                routeAudioMode == SessionOperationalRouteAudioMode.Cue;
+
+            if (!validAudioMode)
+            {
+                errorMessage = $"routeAudioMode is invalid routeIdentity='{RouteIdentity}' routeAudioMode='{routeAudioMode}'.";
+                return false;
+            }
+
+            if (routeAudioMode == SessionOperationalRouteAudioMode.Cue)
+            {
+                if (routeAudioCue == null)
+                {
+                    errorMessage = $"routeAudioCue is required when routeAudioMode=Cue routeIdentity='{RouteIdentity}'.";
+                    return false;
+                }
+
+                if (!routeAudioCue.ValidateRuntime(out string routeAudioCueValidationError))
+                {
+                    errorMessage = $"routeAudioCue is invalid routeIdentity='{RouteIdentity}' cue='{routeAudioCue.name}' detail='{routeAudioCueValidationError}'.";
+                    return false;
+                }
+            }
+
+            if (routeAudioTiming != SessionOperationalRouteAudioTiming.BeforeFadeOut)
+            {
+                errorMessage = $"routeAudioTiming is invalid routeIdentity='{RouteIdentity}' routeAudioTiming='{routeAudioTiming}'.";
+                return false;
+            }
+
             errorMessage = string.Empty;
             return true;
         }
@@ -246,6 +299,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string reason,
             SessionOperationalRouteTransitionMode transitionMode,
             SceneTransitionProfile transitionProfile,
+            SessionOperationalRouteAudioCommand audioCommand,
             IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
             IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
@@ -259,6 +313,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 reason,
                 transitionMode,
                 transitionProfile,
+                audioCommand,
                 finalScenesToLoad,
                 autoScenesToUnload,
                 finalScenesToUnload);
@@ -385,6 +440,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string reason,
             SessionOperationalRouteTransitionMode transitionMode,
             SceneTransitionProfile transitionProfile,
+            SessionOperationalRouteAudioCommand audioCommand,
             IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
             IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
@@ -397,6 +453,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             Reason = Normalize(reason);
             TransitionMode = transitionMode;
             TransitionProfile = transitionProfile;
+            Audio = audioCommand;
             FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
             AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
             FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
@@ -410,6 +467,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public string Reason { get; }
         public SessionOperationalRouteTransitionMode TransitionMode { get; }
         public SceneTransitionProfile TransitionProfile { get; }
+        public SessionOperationalRouteAudioCommand Audio { get; }
         public string RouteIdentity => Route != null ? Route.RouteIdentity : string.Empty;
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<SceneKeyAsset>();
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<SceneKeyAsset>();
@@ -430,6 +488,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             RouteSequence > 0 &&
             (TransitionMode == SessionOperationalRouteTransitionMode.None || TransitionMode == SessionOperationalRouteTransitionMode.Profile) &&
             (!UsesTransition || (TransitionProfile != null && TransitionProfile.TryValidate(out _))) &&
+            Audio.IsValid &&
             FinalScenesToLoad != null &&
             FinalScenesToLoad.Count > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
@@ -438,7 +497,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', routeAudioMode='{Audio.RouteAudioMode}', routeAudioTiming='{Audio.RouteAudioTiming}', routeAudioCue='{Audio.RouteAudioCueName}', stopPreviousRouteAudio='{Audio.StopPreviousRouteAudio}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
 
@@ -455,6 +514,49 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionOperationalRouteAudioCommand
+    {
+        public SessionOperationalRouteAudioCommand(
+            SessionOperationalRouteAudioMode routeAudioMode,
+            AudioCueAsset routeAudioCue,
+            SessionOperationalRouteAudioTiming routeAudioTiming,
+            bool stopPreviousRouteAudio)
+        {
+            RouteAudioMode = routeAudioMode;
+            RouteAudioCue = routeAudioCue;
+            RouteAudioTiming = routeAudioTiming;
+            StopPreviousRouteAudio = stopPreviousRouteAudio;
+        }
+
+        public SessionOperationalRouteAudioMode RouteAudioMode { get; }
+        public AudioCueAsset RouteAudioCue { get; }
+        public SessionOperationalRouteAudioTiming RouteAudioTiming { get; }
+        public bool StopPreviousRouteAudio { get; }
+        public string RouteAudioCueName => RouteAudioCue != null ? RouteAudioCue.name : "<none>";
+
+        public bool IsValid
+        {
+            get
+            {
+                if (RouteAudioMode == SessionOperationalRouteAudioMode.None)
+                {
+                    return RouteAudioCue == null && RouteAudioTiming == SessionOperationalRouteAudioTiming.BeforeFadeOut;
+                }
+
+                return RouteAudioMode == SessionOperationalRouteAudioMode.Cue &&
+                       RouteAudioCue != null &&
+                       RouteAudioTiming == SessionOperationalRouteAudioTiming.BeforeFadeOut;
+            }
+        }
+
+        public override string ToString()
+        {
+            return IsValid
+                ? $"routeAudioMode='{RouteAudioMode}', routeAudioTiming='{RouteAudioTiming}', routeAudioCue='{RouteAudioCueName}', stopPreviousRouteAudio='{StopPreviousRouteAudio}'"
+                : "<none>";
         }
     }
 

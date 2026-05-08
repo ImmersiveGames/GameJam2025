@@ -9,8 +9,10 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
+
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
     /// <summary>
@@ -19,7 +21,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
     /// Responsabilidade:
     /// - compor o wiring operacional do Audio depois que os installers concluirem;
     /// - nao registrar contratos pre-runtime;
-    /// - nao mascarar ausencias de prerequisitos do installer.
+    /// - nao mascarar ausencias de prerequisitos do installer;
+    /// - manter o legado de route-driven BGM isolado do Base11Sandbox.
     /// </summary>
     public static class AudioRuntimeComposer
     {
@@ -39,11 +42,25 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
+            bool isBase11Sandbox = runtimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
+
             ApplyPreferencesToAudioSettings();
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
-            EnsureAudioBgmContextService(bootstrapConfig);
-            EnsureNavigationLevelRouteBgmBridge();
+
+            if (!isBase11Sandbox)
+            {
+                EnsureAudioBgmContextService(bootstrapConfig);
+                EnsureNavigationLevelRouteBgmBridge();
+            }
+            else
+            {
+                DebugUtility.LogVerbose(typeof(AudioRuntimeComposer),
+                    "[Audio][BGM][Bridge] Base11Sandbox canonical rail skips route-driven BGM context and bridge.",
+                    DebugUtility.Colors.Info);
+            }
+
             EnsureGlobalAudioService();
 
             _runtimeComposed = true;
@@ -51,6 +68,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
             DebugUtility.Log(typeof(AudioRuntimeComposer),
                 "[Audio] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) && runtimeModeConfig != null)
+            {
+                return runtimeModeConfig;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para compor o Audio.");
         }
 
         private static void EnsureAudioListenerHost()
@@ -178,4 +205,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
         }
     }
 }
-

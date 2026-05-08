@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                         $"[RuntimePolicy] RuntimeModeConfig carregado (asset='{config.name}').",
                         DebugUtility.Colors.Info);
                 }
+
             }
 
             // Provider configurável: o config agora é obrigatório no boot; o fallback do provider fica só para override explícito no asset.

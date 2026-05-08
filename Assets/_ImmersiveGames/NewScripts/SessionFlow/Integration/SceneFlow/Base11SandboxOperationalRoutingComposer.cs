@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         private static Base11SandboxOperationalRouteTransitionAdapter _routeTransitionAdapter;
         private static Base11SandboxSessionOperationalFadeAdapter _fadeAdapter;
         private static Base11SandboxSessionOperationalLoadingAdapter _loadingAdapter;
+        private static Base11SandboxSessionOperationalAudioAdapter _audioAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -38,6 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             EnsureStartupRouteEmitter();
 
             EnsureSessionOperationalPipeline();
+            EnsureSandboxAudioAdapter();
             EnsureSandboxFadeAdapter();
             EnsureSandboxLoadingAdapter();
             EnsureSandboxRouteExecutor();
@@ -114,6 +116,29 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='Base11SandboxOperationalRouteTransitionAdapter' registered for Base11Sandbox.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSandboxAudioAdapter()
+        {
+            if (_audioAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<Base11SandboxSessionOperationalAudioAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _audioAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<ISessionOperationalAudioAdapter>(_audioAdapter);
+                return;
+            }
+
+            _audioAdapter = new Base11SandboxSessionOperationalAudioAdapter();
+            DependencyManager.Provider.RegisterGlobal(_audioAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISessionOperationalAudioAdapter>(_audioAdapter);
+
+            DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='Base11SandboxSessionOperationalAudioAdapter' registered for Base11Sandbox.",
                 DebugUtility.Colors.Info);
         }
 

@@ -1,18 +1,20 @@
-﻿using System;
+using System;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 using UnityEngine;
 using UnityEngine.Serialization;
+
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     /// <summary>
-    /// ConfiguraÃ§Ã£o global (asset) para controlar o modo de execuÃ§Ã£o e a polÃ­tica do reporter de degradaÃ§Ã£o.
+    /// Configuração global (asset) para controlar o modo de execução e a política do reporter de degradação.
     ///
     /// Uso esperado:
     /// - Criar um asset em Resources com o nome "RuntimeModeConfig".
-    /// - O bootstrap canÃ´nico faz a resoluÃ§Ã£o explÃ­cita e falha cedo se o asset obrigatÃ³rio estiver ausente.
+    /// - O bootstrap canônico faz a resolução explícita e falha cedo se o asset obrigatório estiver ausente.
     /// </summary>
     [CreateAssetMenu(
         fileName = "RuntimeModeConfig",
@@ -21,22 +23,22 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     public sealed class RuntimeModeConfig : ScriptableObject
     {
         /// <summary>
-        /// Caminho canÃ´nico para carregamento via Resources.
+        /// Caminho canônico para carregamento via Resources.
         /// </summary>
         public const string DefaultResourcesPath = "RuntimeModeConfig";
 
         /// <summary>
-        /// Modo de execuÃ§Ã£o: Auto (automÃ¡tico), ForceStrict (strict mode) ou ForceRelease (release mode).
+        /// Modo de execução: Auto (automático), ForceStrict (strict mode) ou ForceRelease (release mode).
         /// </summary>
         [Header("Modo")]
-        [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: forÃ§a o modo, Ãºtil para testes.")]
+        [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: força o modo, útil para testes.")]
         public RuntimeModeOverride modeOverride = RuntimeModeOverride.Auto;
 
         /// <summary>
-        /// ConfiguraÃ§Ã£o raiz obrigatÃ³ria do NewScripts (resolvida pelo GlobalCompositionRoot).
+        /// Configuração raiz obrigatória do NewScripts (resolvida pelo GlobalCompositionRoot).
         /// </summary>
         [Header("Bootstrap")]
-        [Tooltip("Config raiz obrigatÃ³rio do NewScripts (resolvido pelo GlobalCompositionRoot).")]
+        [Tooltip("Config raiz obrigatória do NewScripts (resolvido pelo GlobalCompositionRoot).")]
         [FormerlySerializedAs("BootstrapConfig")]
         [SerializeField] private BootstrapConfigAsset bootstrapConfig;
 
@@ -51,6 +53,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [SerializeField] private RuntimePersistentScenesPolicyAsset runtimePersistentScenesPolicy;
 
         public RuntimePersistentScenesPolicyAsset RuntimePersistentScenesPolicy => runtimePersistentScenesPolicy;
+
+        /// <summary>
+        /// Defaults canônicos de áudio do modo de runtime atual.
+        /// </summary>
+        [Header("Audio")]
+        [Tooltip("Audio defaults asset canonical for the active runtime mode.")]
+        [InspectorName("AudioDefaults")]
+        [SerializeField] private AudioDefaultsAsset audioDefaults;
+
+        public AudioDefaultsAsset AudioDefaults => audioDefaults;
 
         /// <summary>
         /// Default loading policy for routes that opt into RuntimeDefault loading mode.
@@ -69,44 +81,44 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public RuntimeLoadingProfileAsset DefaultLoadingProfile => defaultLoadingProfile;
 
         /// <summary>
-        /// ConfiguraÃ§Ãµes do reporter de degradaÃ§Ã£o (dedupe, resumo, etc).
+        /// Configurações do reporter de degradação (dedupe, resumo, etc).
         /// </summary>
         [Header("Degraded Mode Reporter")]
         public DegradedReporterSettings reporter = new();
 
         /// <summary>
-        /// ConfiguraÃ§Ãµes de strictness aplicadas quando em modo Strict.
+        /// Configurações de strictness aplicadas quando em modo Strict.
         /// </summary>
         [Header("Strictness (somente em Strict)")]
         public StrictnessSettings strictness = new();
 
         /// <summary>
-        /// ConfiguraÃ§Ãµes do mÃ³dulo InputModes.
+        /// Configurações do módulo InputModes.
         /// </summary>
         [Header("Input Modes")]
         public InputModesSettings inputModes = new();
 
         /// <summary>
-        /// Profile de composiÃ§Ã£o global usado pelo bootstrap.
+        /// Profile de composição global usado pelo bootstrap.
         /// Base11Sandbox remove rails legados do caminho.
         /// </summary>
         [Header("Composition Profile")]
-        [Tooltip("Seleciona o profile de composiÃ§Ã£o global. Base11Sandbox remove rails legados do caminho.")]
+        [Tooltip("Seleciona o profile de composição global. Base11Sandbox remove rails legados do caminho.")]
         public CompositionProfileKind compositionProfile = CompositionProfileKind.Base11Sandbox;
 
         /// <summary>
-        /// Rota inicial explÃ­cita do profile Base11Sandbox.
-        /// NÃ£o Ã© um default implÃ­cito: o bootstrap falha se estiver ausente ou invÃ¡lido.
+        /// Rota inicial explícita do profile Base11Sandbox.
+        /// Não é um default implícito: o bootstrap falha se estiver ausente ou inválido.
         /// </summary>
         [Header("Base11 Sandbox")]
         [Tooltip("Referência direta para a rota inicial do Base11Sandbox.")]
         [SerializeField] private SessionOperationalRouteAsset startupRouteDefinition;
 
         /// <summary>
-        /// ReferÃªncia direta para a rota inicial do Base11Sandbox.
+        /// Referência direta para a rota inicial do Base11Sandbox.
         /// </summary>
         [Header("Base11 Sandbox")]
-        [Tooltip("ReferÃªncia direta para a rota inicial do Base11Sandbox.")]
+        [Tooltip("Referência direta para a rota inicial do Base11Sandbox.")]
         public SessionOperationalRouteAsset StartupRouteDefinition => startupRouteDefinition;
 
         public bool TryValidateLoadingConfiguration(out string errorMessage)
@@ -136,57 +148,80 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             return true;
         }
 
+        public bool TryValidateAudioConfiguration(out string errorMessage)
+        {
+            if (compositionProfile == CompositionProfileKind.Base11Sandbox)
+            {
+                if (audioDefaults == null)
+                {
+                    errorMessage = "audioDefaults is required when CompositionProfile=Base11Sandbox.";
+                    return false;
+                }
+            }
+            else if (audioDefaults == null)
+            {
+                errorMessage = "audioDefaults is required when set for non-Base11Sandbox profiles.";
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void OnValidate()
         {
-            if (TryValidateLoadingConfiguration(out string errorMessage) || string.IsNullOrWhiteSpace(errorMessage))
+            bool loadingValid = TryValidateLoadingConfiguration(out string loadingError) || string.IsNullOrWhiteSpace(loadingError);
+            bool audioValid = TryValidateAudioConfiguration(out string audioError) || string.IsNullOrWhiteSpace(audioError);
+
+            if (loadingValid && audioValid)
             {
                 return;
             }
 
-            DebugUtility.LogWarning(
-                typeof(RuntimeModeConfig),
-                $"[Config][Editor] RuntimeModeConfig loading invalid. detail='{errorMessage}'");
+            string errorMessage = !loadingValid ? loadingError : audioError;
+            DebugUtility.LogWarning(typeof(RuntimeModeConfig),
+                $"[Config][Editor] RuntimeModeConfig invalid. detail='{errorMessage}'");
         }
 #endif
 
         /// <summary>
-        /// ConfiguraÃ§Ãµes do reporter de degradaÃ§Ã£o: dedupe, resumos periÃ³dicos e limite de chaves.
+        /// Configurações do reporter de degradação: dedupe, resumos periódicos e limite de chaves.
         /// </summary>
         [Serializable]
         public sealed class DegradedReporterSettings
         {
             /// <summary>
-            /// EstratÃ©gia para evitar repetiÃ§Ã£o de logs de degradaÃ§Ã£o.
+            /// Estratégia para evitar repetição de logs de degradação.
             /// </summary>
-            [Tooltip("Como evitar repetiÃ§Ã£o de logs de degradaÃ§Ã£o.")]
+            [Tooltip("Como evitar repetição de logs de degradação.")]
             public DegradedDedupStrategy dedupStrategy = DegradedDedupStrategy.CooldownSeconds;
 
             /// <summary>
-            /// Intervalo mÃ­nimo (em segundos) entre logs iguais. Aplicado se DedupStrategy=CooldownSeconds.
+            /// Intervalo mínimo (em segundos) entre logs iguais. Aplicado se DedupStrategy=CooldownSeconds.
             /// </summary>
-            [Tooltip("Se DedupStrategy=CooldownSeconds, define o intervalo mÃ­nimo entre logs iguais (segundos).")]
+            [Tooltip("Se DedupStrategy=CooldownSeconds, define o intervalo mínimo entre logs iguais (segundos).")]
             [Range(0f, 60f)]
             public float cooldownSeconds = 5f;
 
             /// <summary>
-            /// Intervalo (em segundos) para emissÃ£o periÃ³dica de resumo. 0 desliga o resumo.
+            /// Intervalo (em segundos) para emissão periódica de resumo. 0 desliga o resumo.
             /// </summary>
-            [Tooltip("Emite um resumo periÃ³dico com contagens (0 desliga).")]
+            [Tooltip("Emite um resumo periódico com contagens (0 desliga).")]
             [Range(0f, 300f)]
             public float emitSummaryEverySeconds = 30f;
 
             /// <summary>
-            /// Limite mÃ¡ximo de chaves Ãºnicas rastreadas por sessÃ£o (proteÃ§Ã£o contra explosÃ£o de memory).
+            /// Limite máximo de chaves únicas rastreadas por sessão (proteção contra explosão de memory).
             /// </summary>
-            [Tooltip("Limite de chaves Ãºnicas rastreadas por sessÃ£o (proteÃ§Ã£o contra explosÃ£o de keys).")]
+            [Tooltip("Limite de chaves únicas rastreadas por sessão (proteção contra explosão de keys).")]
             [Range(16, 4096)]
             public int maxUniqueKeys = 256;
 
             /// <summary>
-            /// Se verdadeiro, imprime a primeira ocorrÃªncia imediatamente, mesmo com dedupe ligado.
+            /// Se verdadeiro, imprime a primeira ocorrência imediatamente, mesmo com dedupe ligado.
             /// </summary>
-            [Tooltip("Imprime a primeira ocorrÃªncia imediatamente, mesmo com dedupe ligado.")]
+            [Tooltip("Imprime a primeira ocorrência imediatamente, mesmo com dedupe ligado.")]
             public bool logFirstOccurrence = true;
 
             /// <summary>
@@ -197,27 +232,27 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         }
 
         /// <summary>
-        /// ConfiguraÃ§Ãµes de comportamento em modo Strict.
+        /// Configurações de comportamento em modo Strict.
         /// </summary>
         [Serializable]
         public sealed class StrictnessSettings
         {
             /// <summary>
-            /// Se verdadeiro, logs de degradaÃ§Ã£o sobem para erro (sem exceÃ§Ã£o).
+            /// Se verdadeiro, logs de degradação sobem para erro (sem exceção).
             /// </summary>
-            [Tooltip("Em Strict, logs de degradaÃ§Ã£o sobem para erro (sem exceÃ§Ã£o).")]
+            [Tooltip("Em Strict, logs de degradação sobem para erro (sem exceção).")]
             public bool degradedAsError = true;
 
             /// <summary>
-            /// Se verdadeiro, permite falhar hard (exceÃ§Ã£o) em casos de degradaÃ§Ã£o.
+            /// Se verdadeiro, permite falhar hard (exceção) em casos de degradação.
             /// Recomendado manter falso nesta fase.
             /// </summary>
-            [Tooltip("Em Strict, permite falhar hard (exceÃ§Ã£o) em casos de degradaÃ§Ã£o. Recomendado manter falso nesta fase.")]
+            [Tooltip("Em Strict, permite falhar hard (exceção) em casos de degradação. Recomendado manter falso nesta fase.")]
             public bool degradedAsException;
         }
 
         /// <summary>
-        /// ConfiguraÃ§Ãµes do mÃ³dulo InputModes.
+        /// Configurações do módulo InputModes.
         /// </summary>
         [Serializable]
         public sealed class InputModesSettings
@@ -241,49 +276,49 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             public string menuActionMapName = InputModesDefaults.MenuActionMapName;
 
             /// <summary>
-            /// Se verdadeiro, emite logs verbosos de configuraÃ§Ã£o/registro.
+            /// Se verdadeiro, emite logs verbosos de configuração/registro.
             /// </summary>
-            [Tooltip("Emite logs verbosos de configuraÃ§Ã£o/registro.")]
+            [Tooltip("Emite logs verbosos de configuração/registro.")]
             public bool logVerbose = true;
         }
     }
 
     /// <summary>
-    /// Define como o sistema deve se comportar em termos de modo de execuÃ§Ã£o.
+    /// Define como o sistema deve se comportar em termos de modo de execução.
     /// </summary>
     public enum RuntimeModeOverride
     {
         /// <summary>
-        /// Modo automÃ¡tico: o sistema decide entre Strict ou Release baseado no build.
+        /// Modo automático: o sistema decide entre Strict ou Release baseado no build.
         /// </summary>
         Auto = 0,
         /// <summary>
-        /// ForÃ§a modo Strict: validaÃ§Ãµes rÃ­gidas, erros em degradaÃ§Ã£o.
+        /// Força modo Strict: validações rígidas, erros em degradação.
         /// </summary>
         ForceStrict = 1,
         /// <summary>
-        /// ForÃ§a modo Release: lenient, tenta se recuperar de degradaÃ§Ã£o.
+        /// Força modo Release: lenient, tenta se recuperar de degradação.
         /// </summary>
         ForceRelease = 2
     }
 
     /// <summary>
-    /// EstratÃ©gia de dedupe para evitar repetiÃ§Ã£o excessiva de logs de degradaÃ§Ã£o.
+    /// Estratégia de dedupe para evitar repetição excessiva de logs de degradação.
     /// </summary>
     public enum DegradedDedupStrategy
     {
         /// <summary>
-        /// Uma Ãºnica vez por sessÃ£o: cada chave Ã© logada apenas uma vez.
+        /// Uma única vez por sessão: cada chave é logada apenas uma vez.
         /// </summary>
         PerSession = 0,
         /// <summary>
-        /// Com cooldown em segundos: mesma chave sÃ³ Ã© logada se passou o intervalo.
+        /// Com cooldown em segundos: mesma chave só é logada se passou o intervalo.
         /// </summary>
         CooldownSeconds = 1
     }
 
     /// <summary>
-    /// Profile explÃ­cito de composiÃ§Ã£o global.
+    /// Profile explícito de composição global.
     /// </summary>
     public enum CompositionProfileKind
     {
@@ -291,7 +326,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         Base11Sandbox = 1
     }
 }
-
-
-
-
