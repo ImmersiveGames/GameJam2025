@@ -608,7 +608,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             probeCue.name = $"{sourceCue.name}_SequenceProbeClone";
 
             selectedClipLengthSeconds = 0f;
-            sourceClipCount = sourceCue.Clips != null ? sourceCue.Clips.Count : 0;
+            sourceClipCount = sourceCue.Clips?.Count ?? 0;
             AudioClip selectedClip = null;
             float shortestLength = float.MaxValue;
 

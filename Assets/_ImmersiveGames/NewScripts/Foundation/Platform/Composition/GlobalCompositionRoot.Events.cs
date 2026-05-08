@@ -1,12 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Runtime;
+using _ImmersiveGames.NewScripts.SceneRouting.Transition.Runtime;
+using _ImmersiveGames.NewScripts.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -25,47 +20,21 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EventBus<PauseWillExitEvent>.Clear();
             EventBus<PauseStateChangedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
-            EventBus<GameLoopActivityChangedEvent>.Clear();
+            EventBus<RunLifecycleActivityChangedEvent>.Clear();
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
-            EventBus<PhaseDefinitionSelectedEvent>.Clear();
-            EventBus<PhaseResetCompletedEvent>.Clear();
-            PhaseContentSceneRuntimeApplier.RecordCleared();
 
-            // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
+            // Scene composition (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();
             EventBus<SceneTransitionFadeInCompletedEvent>.Clear();
             EventBus<SceneTransitionScenesReadyEvent>.Clear();
             EventBus<SceneTransitionBeforeFadeOutEvent>.Clear();
             EventBus<SceneTransitionCompletedEvent>.Clear();
 
-            // WorldReset/ResetInterop (NewScripts): completion gate depende deste evento.
-            EventBus<WorldResetCompletedEvent>.Clear();
-
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[EventBus] EventBus inicializado (GameLoop + GameplaySessionFlow + SceneFlow + WorldReset).",
+                "[EventBus] EventBus inicializado (SessionActivityPipeline + SceneComposition).",
                 DebugUtility.Colors.Info);
-
-            EnsureLoadingOrchestratorsRegisteredAfterEventBusReset();
-        }
-
-        private static void EnsureLoadingOrchestratorsRegisteredAfterEventBusReset()
-        {
-            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
-            {
-                return;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var hudOrchestrator) && hudOrchestrator != null)
-            {
-                hudOrchestrator.EnsureRegistered();
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<LoadingProgressOrchestrator>(out var progressOrchestrator) && progressOrchestrator != null)
-            {
-                progressOrchestrator.EnsureRegistered();
-            }
         }
 
     }

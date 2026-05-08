@@ -45,7 +45,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             CaptureInitialPoseIfNeeded();
             TryEnsureAutoFlowBridge();
             EnsureDesireService();
-            EnsureStatesInitialized();
         }
 
 #if UNITY_EDITOR
@@ -67,7 +66,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         private void Update()
         {
             _desireService?.Update();
-            _stateMachine?.Update();
         }
 
         private void OnDestroy()
@@ -77,16 +75,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 _desireService.EventDesireChanged -= HandleDesireChanged;
                 _desireService.Stop();
             }
-
-            _deathPredicate?.Dispose();
-            _deathPredicate = null;
-
-            _revivePredicate?.Dispose();
-            _revivePredicate = null;
-
-            _planetUnmarkedPredicate?.Dispose();
-            _planetUnmarkedPredicate = null;
-            _eatingWanderingPredicate = null;
         }
     }
 }

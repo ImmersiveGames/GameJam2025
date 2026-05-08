@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public override ActorKind SpawnedActorKind => ActorKind.Dummy;
 
-        public override bool IsRequiredForWorldReset => false;
+        public override bool IsRequiredForLifecycle => false;
 
         protected override IActor ResolveActor(GameObject instance)
         {

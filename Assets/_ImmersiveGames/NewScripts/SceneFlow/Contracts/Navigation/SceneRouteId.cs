@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
-namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
+namespace _ImmersiveGames.NewScripts.SceneRouting.Contracts.Navigation
 {
     /// <summary>
-    /// Identificador tipado para rotas do SceneFlow.
+    /// Identificador tipado para rotas de scene routing.
     ///
     /// Regras:
     /// - O valor é normalizado (trim + lower-invariant).

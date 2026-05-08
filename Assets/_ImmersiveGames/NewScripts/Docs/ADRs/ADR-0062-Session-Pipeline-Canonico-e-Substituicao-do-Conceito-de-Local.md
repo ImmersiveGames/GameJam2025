@@ -51,3 +51,19 @@ Regras:
 - `ADR-0055`
 - `ADR-0057`
 - `ADR-0050`
+
+## Materializacao Base11Sandbox - checkpoint congelado
+
+No checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`, a decisao deste ADR foi materializada assim:
+
+- `RuntimeModeConfig.startupRouteDefinition` aponta direto para a rota inicial;
+- o caminho `Boot -> Menu -> Sandbox` segue por `SessionOperationalPipeline`;
+- `SessionActivityPipeline` aceita o `Pipeline Handoff` e resolve a primeira activity pelo proprio catalogo;
+- `DebugDirectStart` continua como QA/tooling e rejeita apos o start canonico;
+- `Pause` e `Resume` permanecem no ciclo de activity sem reintroduzir ownership legada.
+
+Consolidacao do checkpoint:
+
+- o host local nao decide a sessao antes do momento canonico;
+- a ausencia de presenter ou activity valida continua sendo `skip/no-content` ou `observed_noop`, nao fallback silencioso;
+- a sessao relevante continua protegida por identidade explicita.

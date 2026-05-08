@@ -1,19 +1,14 @@
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.SimulationGate;
-using _ImmersiveGames.NewScripts.GameplayRuntime.GameplayReset.Core;
-using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     /// <summary>
     /// Controlador mínimo de movimento do Player no padrão NewScripts.
-    /// Gate-aware, reset-safe e com fallbacks para CharacterController, Rigidbody ou Transform.
+    /// Com fallbacks para CharacterController, Rigidbody ou Transform.
     /// </summary>
     [DisallowMultipleComponent]
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class PlayerMovementController : MonoBehaviour, IActorGroupGameplayResettable, IActorGroupGameplayResetTargetFilter, IActorGroupGameplayResetOrder
+    public sealed class PlayerMovementController : MonoBehaviour
     {
         [Header("Movement")]
         [SerializeField]
@@ -36,77 +31,35 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         [Tooltip("Leitor de input baseado em Input.GetAxis/Raw.")]
         private PlayerMoveInputReader moveInputReader;
 
-        [Header("Debug")]
-        [SerializeField]
-        [Tooltip("Emite logs verbosos quando o gate abre/fecha.")]
-        private bool logGateChanges;
-
         private CharacterController _characterController;
         private Rigidbody _rigidbody;
         private PlayerActor _actor;
-        private ISimulationGateService _gateService;
-        private IGameplayStateGate _gameplayStateService;
 
-        private bool _gateSubscribed;
-        private bool _gateOpen = true;
-
-        private bool _hasGateState;
-        private bool _lastGateOpen = true;
-
-        private bool _stateBlockedLogged;
-
-        private int _lastGateLogFrame = -1;
-        private bool _lastGateLogOpen;
-
-        private Vector3 _initialPosition;
-        private Quaternion _initialRotation;
-        private bool _hasInitialPose;
         private string _sceneName;
-
-        private bool _hasMovePermissionCached;
-        private bool _cachedMoveAllowed;
-
-        #region Reset Contracts
-
-        public int ResetOrder => -50;
-
-        public bool ShouldParticipate(ActorGroupGameplayResetTarget target)
-        {
-            return target == ActorGroupGameplayResetTarget.ByActorKind ||
-                   target == ActorGroupGameplayResetTarget.ActorIdSet;
-        }
-
-        #endregion
 
         #region Unity Lifecycle
 
         private void Awake()
         {
             CacheComponents();
-            CacheInitialPose();
             EnsureInputReader();
             ResolveServices();
-
-            ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
         }
 
         private void OnEnable()
         {
             EnsureInputReader();
             ResolveServices();
-            TryBindGateEvents();
             EnableInputIfAllowed();
         }
 
         private void OnDisable()
         {
             DisableInput();
-            UnbindGateEvents();
         }
 
         private void OnDestroy()
         {
-            UnbindGateEvents();
         }
 
         private void Update()
@@ -135,11 +88,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
         private void TickMovement(float deltaTime)
         {
-            _hasMovePermissionCached = false;
-
-            EnsureServicesResolved();
-            RefreshInputState();
-
             if (!CanSimulate())
             {
                 HaltHorizontalVelocity();
@@ -232,30 +180,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return false;
             }
 
-            if (!_gateOpen)
-            {
-                return false;
-            }
-
-            if (_gameplayStateService != null && !GetCachedMoveAllowed())
-            {
-                LogStateBlockedOnce();
-                return false;
-            }
-
             return true;
-        }
-
-        private bool GetCachedMoveAllowed()
-        {
-            if (_hasMovePermissionCached)
-            {
-                return _cachedMoveAllowed;
-            }
-
-            _hasMovePermissionCached = true;
-            _cachedMoveAllowed = _gameplayStateService == null || _gameplayStateService.CanExecuteGameplayAction(GameplayAction.Move);
-            return _cachedMoveAllowed;
         }
 
         private bool ShouldUseFixedUpdate()
@@ -265,135 +190,21 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
         #endregion
 
-        #region Gate / Services
+        #region Services
 
         private void ResolveServices()
         {
-            if (_gateService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _gateService);
-            }
-
-            if (_gameplayStateService == null)
-            {
-                DependencyManager.Provider.TryGetGlobal(out _gameplayStateService);
-            }
-
-            TryBindGateEvents();
-
-            ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
+            EnsureInputReader();
         }
 
-        public void InjectStateService(IGameplayStateGate gameplayStateService)
-        {
-            if (gameplayStateService == null)
-            {
-                return;
-            }
-
-            _gameplayStateService = gameplayStateService;
-            _hasMovePermissionCached = false;
-            _stateBlockedLogged = false;
-        }
-
-        private void EnsureServicesResolved()
-        {
-            if (_gateService == null || _gameplayStateService == null)
-            {
-                ResolveServices();
-            }
-        }
-
-        private void TryBindGateEvents()
-        {
-            if (_gateService == null || _gateSubscribed)
-            {
-                return;
-            }
-
-            _gateService.GateChanged += OnGateChanged;
-            _gateSubscribed = true;
-        }
-
-        private void UnbindGateEvents()
-        {
-            if (_gateService == null || !_gateSubscribed)
-            {
-                return;
-            }
-
-            _gateService.GateChanged -= OnGateChanged;
-            _gateSubscribed = false;
-        }
-
-        private void OnGateChanged(bool isOpen)
-        {
-            ApplyGateState(isOpen, verbose: false);
-        }
-
-        private void ApplyGateState(bool isOpen, bool verbose)
-        {
-            _gateOpen = isOpen;
-
-            if (_hasGateState && isOpen == _lastGateOpen)
-            {
-                RefreshInputState();
-                return;
-            }
-
-            _hasGateState = true;
-            _lastGateOpen = isOpen;
-
-            if (logGateChanges || verbose)
-            {
-                // Evita log duplicado no mesmo frame (principalmente em multiplayer/local split).
-                if (ShouldLogGateChange(isOpen))
-                {
-                    DebugUtility.LogVerbose<PlayerMovementController>(
-                        $"[Movement][Gate] GateChanged: open={isOpen}, scene='{_sceneName}', actor='{BuildGateLogContext()}'.");
-                }
-            }
-
-            if (!isOpen)
-            {
-                HaltHorizontalVelocity();
-            }
-
-            RefreshInputState();
-        }
-
-        private void RefreshInputState()
+        private void EnableInputIfAllowed()
         {
             if (moveInputReader == null)
             {
                 return;
             }
 
-            bool allowByState = _gameplayStateService == null || GetCachedMoveAllowed();
-            bool allow = _gateOpen && allowByState;
-
-            moveInputReader.SetInputEnabled(allow);
-
-            if (allow)
-            {
-                _stateBlockedLogged = false;
-            }
-            else
-            {
-                moveInputReader.ClearInput();
-            }
-        }
-
-        private void LogStateBlockedOnce()
-        {
-            if (_stateBlockedLogged)
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<PlayerMovementController>(
-                "[Movement][StateDependent] Movimento bloqueado por IGameplayStateGate.");
-            _stateBlockedLogged = true;
+            moveInputReader.SetInputEnabled(true);
         }
 
         #endregion
@@ -406,38 +217,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             _rigidbody = GetComponent<Rigidbody>();
             _actor = GetComponent<PlayerActor>();
             _sceneName = gameObject.scene.name;
-        }
-
-        private bool ShouldLogGateChange(bool isOpen)
-        {
-            int frame = Time.frameCount;
-            if (_lastGateLogFrame == frame && _lastGateLogOpen == isOpen)
-            {
-                return false;
-            }
-
-            _lastGateLogFrame = frame;
-            _lastGateLogOpen = isOpen;
-            return true;
-        }
-
-        private string BuildGateLogContext()
-        {
-            // O ActorId pode ainda nao existir no Awake do componente.
-            // O contrato canonico de observabilidade segura vem do spawn completed.
-            if (_actor != null && !string.IsNullOrWhiteSpace(_actor.ActorId))
-            {
-                return _actor.ActorId;
-            }
-
-            return $"{gameObject.name}#{gameObject.GetInstanceID()}";
-        }
-
-        private void CacheInitialPose()
-        {
-            _initialPosition = transform.position;
-            _initialRotation = transform.rotation;
-            _hasInitialPose = true;
         }
 
         private void EnsureInputReader()
@@ -458,64 +237,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         public void SetInputReader(PlayerMoveInputReader reader)
         {
             moveInputReader = reader;
-            RefreshInputState();
-        }
-
-        private void EnableInputIfAllowed()
-        {
-            if (moveInputReader == null)
-            {
-                return;
-            }
-
-            bool allowByState = _gameplayStateService == null || _gameplayStateService.CanExecuteGameplayAction(GameplayAction.Move);
-            bool allow = _gateOpen && allowByState;
-            moveInputReader.SetInputEnabled(allow);
+            EnableInputIfAllowed();
         }
 
         private void DisableInput()
         {
             moveInputReader?.SetInputEnabled(false);
-        }
-
-        #endregion
-
-        #region Resets (IActorGroupGameplayResettable)
-
-        public Task ResetCleanupAsync(ActorGroupGameplayResetContext ctx)
-        {
-            HaltHorizontalVelocity();
-            moveInputReader?.ClearInput();
-            DisableInput();
-            return Task.CompletedTask;
-        }
-
-        public Task ResetRestoreAsync(ActorGroupGameplayResetContext ctx)
-        {
-            if (_hasInitialPose)
-            {
-                if (_rigidbody != null)
-                {
-                    _rigidbody.position = _initialPosition;
-                    _rigidbody.rotation = _initialRotation;
-                    HaltHorizontalVelocity();
-                }
-                else
-                {
-                    transform.SetPositionAndRotation(_initialPosition, _initialRotation);
-                }
-            }
-
-            EnableInputIfAllowed();
-            return Task.CompletedTask;
-        }
-
-        public Task ResetRebindAsync(ActorGroupGameplayResetContext ctx)
-        {
-            ResolveServices();
-            ApplyGateState(_gateService?.IsOpen ?? true, verbose: false);
-            EnableInputIfAllowed();
-            return Task.CompletedTask;
         }
 
         #endregion

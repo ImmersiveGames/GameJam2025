@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation
+namespace _ImmersiveGames.NewScripts.SceneRouting.Contracts.Navigation
 {
     public enum SceneTransitionGameplayEntryKind
     {

@@ -51,3 +51,19 @@ Regras:
 - `ADR-0055`
 - `ADR-0057`
 - `ADR-0059`
+
+## Materializacao Base11Sandbox - checkpoint congelado
+
+O checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS` consolidou a regra de identidade explicita:
+
+- `routeIdentity` e obrigatoria e serve como identidade/log/guard;
+- `routeSequence` pertence ao `SessionOperationalPipeline`;
+- `entrySequence` pertence ao `SessionActivityPipeline`;
+- `SessionActivityEntryHandoff` nao reutiliza identidade operacional como identidade de activity;
+- `DebugDirectStart` nao compete com o ciclo canonico e rejeita apos o start valido.
+
+Conclusao operacional:
+
+- foreign/stale events continuam inertes;
+- o pipeline ativo so aceita eventos compativeis com a identidade corrente;
+- o checkpoint fecha a brecha entre identidade de rota e identidade de entrada da activity.

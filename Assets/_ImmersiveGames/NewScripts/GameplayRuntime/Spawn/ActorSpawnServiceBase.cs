@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         /// <summary>
         /// Indica se o actor deste servico deve existir apos o hard reset macro.
         /// </summary>
-        public virtual bool IsRequiredForWorldReset => false;
+        public virtual bool IsRequiredForLifecycle => false;
 
         public Task SpawnAsync(ActorSpawnRequest request)
         {
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                     ("semanticParticipantId", request.SemanticParticipantId),
                     ("spawnServiceName", request.SpawnServiceName),
                     ("scene", _context?.SceneName),
-                    ("requiredForWorldReset", request.RequiredForWorldReset),
+                    ("requiresLifecycleParticipation", request.RequiresLifecycleParticipation),
                     ("source", request.Source),
                     ("reason", request.Reason)));
 
@@ -218,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                 request.Source,
                 request.Reason,
                 request.ExecutionSignature,
-                IsRequiredForWorldReset);
+                IsRequiredForLifecycle);
 
             if (request.HasActorSpecId && string.IsNullOrWhiteSpace(completedEvent.ActorSpecId))
             {
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             string prefabName = _prefab != null ? _prefab.name : "<null>";
             string instanceName = _spawnedObject != null ? _spawnedObject.name : "<null>";
             DebugUtility.Log(GetType(),
-                $"Actor spawned: {_spawnedActor.ActorId} (kind={SpawnedActorKind}, requiredForWorldReset={IsRequiredForWorldReset}, prefab={prefabName}, instance={instanceName}, root={_context.WorldRoot?.name}, scene={_context.SceneName})");
+                $"Actor spawned: {_spawnedActor.ActorId} (kind={SpawnedActorKind}, requiresLifecycleParticipation={IsRequiredForLifecycle}, prefab={prefabName}, instance={instanceName}, root={_context.WorldRoot?.name}, scene={_context.SceneName})");
             DebugUtility.Log(GetType(), $"Registry count: {_actorRegistry.Count}");
 
             return Task.CompletedTask;

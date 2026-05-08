@@ -63,23 +63,28 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 case InputModeRequestKind.FrontendMenu:
                     service.SetFrontendMenu(evt.Reason);
-                    break;
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcome='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.Gameplay:
                     service.SetGameplay(evt.Reason);
-                    break;
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcome='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.PauseOverlay:
                     service.SetPauseOverlay(evt.Reason);
-                    break;
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcome='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.Unspecified:
                 default:
                     HardFailFastH1.Trigger(typeof(InputModeCoordinator),
                         $"[FATAL][H1][InputModes] Unsupported InputModeRequestKind '{evt.Kind}' key='{requestKey}'.");
                     return;
             }
-
-            DebugUtility.Log(typeof(InputModeCoordinator),
-                $"[OBS][InputModes] InputModeApplied kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
-                DebugUtility.Colors.Info);
         }
 
         private static string BuildRequestKey(InputModeRequestEvent evt)

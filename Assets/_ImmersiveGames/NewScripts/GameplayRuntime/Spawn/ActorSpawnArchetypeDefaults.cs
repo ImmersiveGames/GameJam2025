@@ -18,8 +18,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                     dependencies.ActorRegistry,
                     dependencies.Context,
                     actorSpec,
-                    actorSpec.PlaceholderBodyPrefab,
-                    dependencies.GameplayStateService)));
+                    actorSpec.PlaceholderBodyPrefab)));
 
             registry.Register(new ActorSpawnArchetypeRegistration(
                 Dummy,
@@ -37,8 +36,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                     dependencies.ActorRegistry,
                     dependencies.Context,
                     actorSpec,
-                    actorSpec.PlaceholderBodyPrefab,
-                    dependencies.GameplayStateService)));
+                    actorSpec.PlaceholderBodyPrefab)));
         }
 
         public static ActorKind MapRecipeToActorKind(ActorOperationalRecipeKind recipeKind)

@@ -210,8 +210,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             }
 
             _haltMovement = true;
-            Behavior.LookAt(targetCenter);
-            EnsureOrbitFreezeController().TryFreeze(Behavior, target);
             AlignToMinimumDistance(surfaceDirection, stopDistance, surfaceDistance);
             RegisterOrbitAnchor(target, targetCenter, stopDistance, surfaceDistance);
         }
@@ -410,16 +408,11 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         private void RegisterOrbitAnchor(Transform target, Vector3 targetCenter, float stopDistance, float surfaceDistance)
         {
-            if (Behavior == null)
-            {
-                return;
-            }
 
             float referenceSurfaceDistance = stopDistance > 0f
                 ? Mathf.Max(0f, stopDistance)
                 : Mathf.Max(0f, surfaceDistance);
 
-            Behavior.RegisterOrbitAnchor(target, targetCenter, referenceSurfaceDistance);
         }
     }
 }

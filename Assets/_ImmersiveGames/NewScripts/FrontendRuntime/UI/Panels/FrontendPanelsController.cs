@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Panels
 {
     /// <summary>
-    /// Controla painéis locais do Frontend/UI dentro do MenuScene (sem SceneFlow / sem GameLoop).
+    /// Controla painéis locais do Frontend/UI dentro do MenuScene (sem SceneRouting / sem RunLifecycle).
     ///
     /// Uso:
     /// - Configure uma lista de "Panels": cada item tem um PanelId e um Root (GameObject).

@@ -793,7 +793,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             }
 
             // Suprime apenas spam de observabilidade idempotente do catalogo de navegacao.
-            return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
+            return message.Contains("[OBS][SceneRouting] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                 message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal);
         }
         #endregion

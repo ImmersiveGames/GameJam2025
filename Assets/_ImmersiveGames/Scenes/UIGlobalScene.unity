@@ -302,10 +302,10 @@ RectTransform:
   - {fileID: 1342832426}
   m_Father: {fileID: 1801535684}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 80}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 1546.6667, y: -495}
+  m_SizeDelta: {x: 546.6667, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &559145753
 MonoBehaviour:
@@ -351,7 +351,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1769195222}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Gameplay.PostGame.PostGameOverlayController,
           Assembly-CSharp
         m_MethodName: OnClickExitToMenu
@@ -496,7 +496,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &644882519
 Transform:
   m_ObjectHideFlags: 0
@@ -665,7 +665,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &861514717
 Transform:
   m_ObjectHideFlags: 0
@@ -747,10 +747,10 @@ RectTransform:
   - {fileID: 1608547267}
   m_Father: {fileID: 1801535684}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 80}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 960, y: -495}
+  m_SizeDelta: {x: 546.6667, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1090074090
 MonoBehaviour:
@@ -834,7 +834,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1769195222}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Experience.PostRun.Presentation.Bindings.PostRunOverlayController,
           Assembly-CSharp
         m_MethodName: OnClickRetry
@@ -1369,10 +1369,10 @@ RectTransform:
   - {fileID: 795301502}
   m_Father: {fileID: 1801535684}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 80}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 373.33334, y: -495}
+  m_SizeDelta: {x: 546.6667, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1658248573
 MonoBehaviour:
@@ -1418,7 +1418,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1769195222}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.SessionFlow.Host.PostRun.Presentation.Bindings.PostRunOverlayController,
           Assembly-CSharp
         m_MethodName: OnClickRestart
@@ -1469,73 +1469,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1658248571}
   m_CullTransparentMesh: 1
---- !u!1 &1769195218
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1769195219}
-  - component: {fileID: 1769195221}
-  - component: {fileID: 1769195222}
-  m_Layer: 5
-  m_Name: PauseOverlay
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1769195219
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1769195218}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1769195221
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1769195218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3d82a8f76a961c4390b71721dd29dc2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  overlayRoot: {fileID: 644882518}
-  showReason: PauseOverlay/Show
-  hideReason: PauseOverlay/Hide
-  enableEscapeHotkey: 1
---- !u!114 &1769195222
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1769195218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9136e89eec07c1f428eccee52449fbca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rootCanvasGroup: {fileID: 40163667}
-  titleText: {fileID: 1137477974}
-  reasonText: {fileID: 2100922049}
-  retryButton: {fileID: 1090074092}
-  restartButton: {fileID: 1658248573}
-  exitToMenuButton: {fileID: 559145753}
 --- !u!1 &1801535683
 GameObject:
   m_ObjectHideFlags: 0
@@ -2051,7 +1984,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1769195221}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Gameplay.Pause.PauseOverlayController,
           Assembly-CSharp
         m_MethodName: Resume
@@ -2322,7 +2255,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1769195221}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: _ImmersiveGames.NewScripts.Gameplay.Pause.PauseOverlayController,
           Assembly-CSharp
         m_MethodName: ReturnToMenuFrontend
@@ -2592,5 +2525,4 @@ SceneRoots:
   - {fileID: 594504072}
   - {fileID: 128670550}
   - {fileID: 1081313265}
-  - {fileID: 1769195219}
   - {fileID: 985964097779200823}

@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SceneRouting.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneRouting.Transition.Runtime;
+using _ImmersiveGames.NewScripts.RunLifecycle.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
 {
@@ -21,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
         private readonly IProgressionSaveService _progressionSaveService;
         private readonly SaveIdentity _requiredIdentity;
         private readonly EventBinding<GameRunEndedEvent> _gameRunEndedBinding;
-        private readonly EventBinding<WorldResetCompletedEvent> _worldResetCompletedBinding;
         private readonly EventBinding<SceneTransitionCompletedEvent> _sceneTransitionCompletedBinding;
         private string _lastHandledTrailKey = string.Empty;
         private int _lastHandledFrame = -1;
@@ -44,11 +41,9 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             _progressionSaveService = progressionSaveService ?? throw new ArgumentNullException(nameof(progressionSaveService));
 
             _gameRunEndedBinding = new EventBinding<GameRunEndedEvent>(OnGameRunEnded);
-            _worldResetCompletedBinding = new EventBinding<WorldResetCompletedEvent>(OnWorldResetCompleted);
             _sceneTransitionCompletedBinding = new EventBinding<SceneTransitionCompletedEvent>(OnSceneTransitionCompleted);
 
             EventBus<GameRunEndedEvent>.Register(_gameRunEndedBinding);
-            EventBus<WorldResetCompletedEvent>.Register(_worldResetCompletedBinding);
             EventBus<SceneTransitionCompletedEvent>.Register(_sceneTransitionCompletedBinding);
 
             DebugUtility.Log(typeof(SaveOrchestrationService),
@@ -109,32 +104,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
                 SaveTargetDomain.PreferencesAndProgression,
                 allowSave: true,
                 routeKind: null,
-                requiresWorldReset: false,
+                requiresResetDelegation: false,
                 contextSignature: null,
-                outcomeLabel: evt.Outcome.ToString(),
-                trailKey: trailKey,
-                out reason);
-        }
-
-        public bool TryHandleWorldResetCompleted(
-            WorldResetCompletedEvent evt,
-            out string reason)
-        {
-            // Comentário: somente reset de Level concluído pode virar save.
-            // Macro reset, skip por policy e outros contextos permanecem no-op por design.
-            bool allowSave = evt.Kind == ResetKind.Level && evt.Outcome == WorldResetOutcome.Completed;
-            string trailKey = BuildContextTrailKey(
-                evt.ContextSignature,
-                $"worldreset:{evt.Kind}:{evt.Outcome}:{evt.Origin}:{evt.MacroRouteId}:{evt.TargetScene}");
-
-            return TryHandleHook(
-                SaveHookOrigin.WorldResetCompleted,
-                evt.Reason,
-                allowSave ? SaveTargetDomain.PreferencesAndProgression : SaveTargetDomain.None,
-                allowSave: allowSave,
-                routeKind: evt.Kind.ToString(),
-                requiresWorldReset: evt.Kind == ResetKind.Level,
-                contextSignature: evt.ContextSignature,
                 outcomeLabel: evt.Outcome.ToString(),
                 trailKey: trailKey,
                 out reason);
@@ -145,19 +116,19 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             out string reason)
         {
             // Comentário: este hook salva apenas quando a transição é de gameplay
-            // e o fluxo não delegou o reset ao WorldReset.
-            bool allowSave = evt.context.RouteKind == SceneRouteKind.Gameplay && !evt.context.RequiresWorldReset;
+            // e o fluxo não delegou a execução a um caminho externo.
+            bool allowSave = IsGameplaySceneTransition(evt.context) && !evt.context.RequiresResetDelegation;
             string trailKey = BuildContextTrailKey(
                 evt.context.ContextSignature,
-                $"transition:{evt.context.RouteKind}:{evt.context.RequiresWorldReset}:{evt.context.TargetActiveScene}");
+                $"transition:{GetRouteDisposition(evt.context)}:{evt.context.RequiresResetDelegation}:{evt.context.TargetActiveScene}");
 
             return TryHandleHook(
                 SaveHookOrigin.SceneTransitionCompleted,
                 evt.context.Reason,
                 allowSave ? SaveTargetDomain.PreferencesAndProgression : SaveTargetDomain.None,
                 allowSave: allowSave,
-                routeKind: evt.context.RouteKind.ToString(),
-                requiresWorldReset: evt.context.RequiresWorldReset,
+                routeKind: GetRouteDisposition(evt.context),
+                requiresResetDelegation: evt.context.RequiresResetDelegation,
                 contextSignature: evt.context.ContextSignature,
                 outcomeLabel: string.Empty,
                 trailKey: trailKey,
@@ -176,7 +147,6 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             try
             {
                 EventBus<GameRunEndedEvent>.Unregister(_gameRunEndedBinding);
-                EventBus<WorldResetCompletedEvent>.Unregister(_worldResetCompletedBinding);
                 EventBus<SceneTransitionCompletedEvent>.Unregister(_sceneTransitionCompletedBinding);
             }
             catch
@@ -194,11 +164,6 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             TryHandleGameRunEnded(evt, out _);
         }
 
-        private void OnWorldResetCompleted(WorldResetCompletedEvent evt)
-        {
-            TryHandleWorldResetCompleted(evt, out _);
-        }
-
         private void OnSceneTransitionCompleted(SceneTransitionCompletedEvent evt)
         {
             TryHandleSceneTransitionCompleted(evt, out _);
@@ -210,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             SaveTargetDomain targetDomain,
             bool allowSave,
             string routeKind,
-            bool requiresWorldReset,
+            bool requiresResetDelegation,
             string contextSignature,
             string outcomeLabel,
             string trailKey,
@@ -224,12 +189,12 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             int currentFrame = Time.frameCount;
 
             DebugUtility.Log(typeof(SaveOrchestrationService),
-                $"[OBS][Save] HookReceived origin='{origin}' targetDomain='{targetDomain}' reason='{normalizedReason}' identity={identityText} routeKind='{NormalizeOptional(routeKind)}' requiresWorldReset={requiresWorldReset} contextSignature='{NormalizeOptional(contextSignature)}' outcome='{NormalizeOptional(outcomeLabel)}'.",
+                $"[OBS][Save] HookReceived origin='{origin}' targetDomain='{targetDomain}' reason='{normalizedReason}' identity={identityText} routeKind='{NormalizeOptional(routeKind)}' requiresResetDelegation={requiresResetDelegation} contextSignature='{NormalizeOptional(contextSignature)}' outcome='{NormalizeOptional(outcomeLabel)}'.",
                 DebugUtility.Colors.Info);
 
             if (!shouldSave)
             {
-                reason = GetNoOpReason(origin, routeKind, requiresWorldReset, outcomeLabel);
+                reason = GetNoOpReason(origin, routeKind, requiresResetDelegation, outcomeLabel);
 
                 DebugUtility.Log(typeof(SaveOrchestrationService),
                     $"[OBS][Save] HookDecision origin='{origin}' decision='no_op' targetDomain='None' reason='{reason}' identity={identityText}.",
@@ -249,7 +214,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
 
             MarkTrailHandled(trailKey, currentFrame);
 
-            var progressionEntries = BuildProgressionEntries(origin, normalizedReason, routeKind, requiresWorldReset, contextSignature, outcomeLabel);
+            var progressionEntries = BuildProgressionEntries(origin, normalizedReason, routeKind, requiresResetDelegation, contextSignature, outcomeLabel);
             var progressionSnapshot = new ProgressionSnapshot(
                 _requiredIdentity.ProfileId,
                 _requiredIdentity.SlotId,
@@ -295,7 +260,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             SaveHookOrigin origin,
             string hookReason,
             string routeKind,
-            bool requiresWorldReset,
+            bool requiresResetDelegation,
             string contextSignature,
             string outcomeLabel)
         {
@@ -303,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
             {
                 ["hook_origin"] = origin.ToString(),
                 ["hook_reason"] = hookReason,
-                ["requires_world_reset"] = requiresWorldReset ? "true" : "false",
+                ["requires_reset_delegation"] = requiresResetDelegation ? "true" : "false",
                 ["context_signature"] = NormalizeOptional(contextSignature),
             };
 
@@ -372,35 +337,40 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration
         private static string GetNoOpReason(
             SaveHookOrigin origin,
             string routeKind,
-            bool requiresWorldReset,
+            bool requiresResetDelegation,
             string outcomeLabel)
         {
             // Comentário: no-op aqui é decisão canônica explícita, não ausência de consumer.
             // Cada origem só persiste quando o contexto realmente pertence ao rail de Save.
             if (origin == SaveHookOrigin.SceneTransitionCompleted)
             {
-                if (!string.Equals(routeKind, SceneRouteKind.Gameplay.ToString(), StringComparison.Ordinal))
+                if (!string.Equals(routeKind, "Gameplay", StringComparison.Ordinal))
                 {
                     return "scene_transition_frontend_context";
                 }
 
-                if (requiresWorldReset)
+                if (requiresResetDelegation)
                 {
-                    return "scene_transition_delegated_to_worldreset";
-                }
-            }
-
-            if (origin == SaveHookOrigin.WorldResetCompleted)
-            {
-                if (!string.Equals(routeKind, ResetKind.Level.ToString(), StringComparison.Ordinal))
-                {
-                    return outcomeLabel == WorldResetOutcome.SkippedByPolicy.ToString()
-                        ? "worldreset_macro_skipped_by_policy"
-                        : "worldreset_macro_context";
+                    return "scene_transition_delegated_to_external_flow";
                 }
             }
 
             return "save_skipped";
+        }
+
+        private static bool IsGameplaySceneTransition(SceneTransitionContext context)
+        {
+            if (context.GameplayEntryKind == SceneTransitionGameplayEntryKind.None)
+            {
+                return false;
+            }
+
+            return context.IsGameplayInitialEntry || context.IsGameplayReentry;
+        }
+
+        private static string GetRouteDisposition(SceneTransitionContext context)
+        {
+            return IsGameplaySceneTransition(context) ? "Gameplay" : "Frontend";
         }
 
         private bool IsDuplicateTrail(string trailKey, int frameCount)

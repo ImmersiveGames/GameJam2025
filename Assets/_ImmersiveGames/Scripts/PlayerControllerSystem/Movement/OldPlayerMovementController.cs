@@ -5,7 +5,6 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -38,7 +37,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
         private IPlayerDomain _playerDomain;
         private string _sceneName;
 
-        [Inject] private IStateDependentService _stateService;
 
         private bool _inputBound;
         private bool _cameraBound;
@@ -105,10 +103,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 
         private void FixedUpdate()
         {
-            if (_actor != null && (!_actor.IsActive || !_stateService.CanExecuteAction(OldActionType.Move)))
-            {
-                return;
-            }
 
             PerformMovement();
             PerformLook();

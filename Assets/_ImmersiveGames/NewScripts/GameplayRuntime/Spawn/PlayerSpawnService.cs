@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
-using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
@@ -14,25 +13,21 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
     /// </summary>
     public sealed class PlayerSpawnService : ActorSpawnServiceBase
     {
-        private readonly IGameplayStateGate _gameplayStateService;
-
         public PlayerSpawnService(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
             ActorSpecRecord actorSpec,
-            GameObject prefab,
-            IGameplayStateGate gameplayStateService)
+            GameObject prefab)
             : base(uniqueIdFactory, actorRegistry, context, actorSpec, prefab)
         {
-            _gameplayStateService = gameplayStateService;
         }
 
         public override string Name => nameof(PlayerSpawnService);
 
         public override ActorKind SpawnedActorKind => ActorKind.Player;
 
-        public override bool IsRequiredForWorldReset => true;
+        public override bool IsRequiredForLifecycle => true;
 
         protected override IActor ResolveActor(GameObject instance) =>
             PlayerSpawnActorResolver.ResolvePlayerActor(instance);
@@ -65,10 +60,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         {
             EnsureMovementStack(instance);
             LogParticipationBridge();
-            GameplayStateControllerInjector.TryInject<PlayerMovementController>(
-                instance,
-                _gameplayStateService,
-                static (controller, stateService) => controller.InjectStateService(stateService));
         }
 
         private static void EnsureMovementStack(GameObject instance)

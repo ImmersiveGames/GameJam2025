@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         [Tooltip("Se verdadeiro, registra automaticamente todos os GameplayExecutionParticipantBehaviour encontrados na cena.")]
         [SerializeField] private bool autoDiscoverParticipants = true;
 
-        private IOldSimulationGateService _gate;
+        private IOldLegacySimulationGateService _gate;
         private readonly HashSet<IGameplayExecutionParticipant> _participants = new();
 
         private bool _isExecutionAllowed = true;
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             if (!DependencyManager.Provider.TryGetGlobal(out _gate) || _gate == null)
             {
                 DebugUtility.LogWarning<GameplayExecutionCoordinator>(
-                    "IOldSimulationGateService n�o encontrado no DI global. Coordinator ficar� inativo.",
+                    "IOldLegacySimulationGateService n�o encontrado no DI global. Coordinator ficar� inativo.",
                     this);
                 return;
             }

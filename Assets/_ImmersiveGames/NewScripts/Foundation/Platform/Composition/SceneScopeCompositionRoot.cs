@@ -3,16 +3,12 @@ using System.Linq;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
-using _ImmersiveGames.NewScripts.ResetFlow.SceneReset.Hooks;
-using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
-using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
-using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.SceneRouting.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneRouting.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -23,6 +19,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     /// </summary>
     public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
     {
+        private static readonly HashSet<string> CanonicalNoActorScopeScenes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "NewBootstrap",
+            "MenuScene",
+            "SessionActivitySandboxScene"
+        };
+
         private string _sceneName = string.Empty;
         private bool _registered;
         private WorldSpawnServiceFactory _spawnServiceFactory;
@@ -41,13 +44,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             var provider = DependencyManager.Provider;
-            if (!provider.TryGetGlobal<IActorSpawnArchetypeRegistry>(out var spawnArchetypeRegistry) || spawnArchetypeRegistry == null)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] IActorSpawnArchetypeRegistry ausente antes de compor scene scope scene='{_sceneName}'.");
-            }
-            _spawnServiceFactory = new WorldSpawnServiceFactory(spawnArchetypeRegistry);
-
             provider.RegisterForScene<ISceneScopeMarker>(
                 _sceneName,
                 new SceneScopeMarker(),
@@ -63,6 +59,24 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
                 $"Scene bootstrap root ready: {BuildTransformPath(worldRoot)}");
+
+            if (ShouldSkipActorsScope(provider, out string skipReason))
+            {
+                DebugUtility.Log(typeof(SceneScopeCompositionRoot),
+                    $"[OBS][ActorsExecution][SceneScope] actors_scope_skipped reason='{skipReason}' scene='{_sceneName}'.",
+                    DebugUtility.Colors.Info);
+
+                _registered = true;
+                DebugUtility.Log(typeof(SceneScopeCompositionRoot), $"Scene scope created: {_sceneName}");
+                return;
+            }
+
+            if (!provider.TryGetGlobal<IActorSpawnArchetypeRegistry>(out var spawnArchetypeRegistry) || spawnArchetypeRegistry == null)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] IActorSpawnArchetypeRegistry ausente antes de compor scene scope scene='{_sceneName}'.");
+            }
+            _spawnServiceFactory = new WorldSpawnServiceFactory(spawnArchetypeRegistry);
 
             var actorRegistry = new ActorRegistry();
             provider.RegisterForScene<IActorRegistry>(
@@ -80,25 +94,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 spawnRegistry,
                 allowOverride: false);
 
-            SceneResetHookRegistry hookRegistry;
-            if (provider.TryGetForScene<SceneResetHookRegistry>(_sceneName, out var existingRegistry))
-            {
-                DebugUtility.LogError(typeof(SceneScopeCompositionRoot),
-                    $"SceneResetHookRegistry ja existe para a cena '{_sceneName}'. Segundo registro bloqueado.");
-                hookRegistry = existingRegistry;
-            }
-            else
-            {
-                hookRegistry = new SceneResetHookRegistry();
-                provider.RegisterForScene(
-                    _sceneName,
-                    hookRegistry,
-                    allowOverride: false);
-                DebugUtility.LogVerbose(typeof(SceneScopeCompositionRoot),
-                    $"SceneResetHookRegistry registrado para a cena '{_sceneName}'.");
-            }
-
-            RegisterActorGroupGameplayResetServices(provider, hookRegistry, worldRoot);
             RegisterSpawnServicesFromCanonicalActorSet(provider, spawnRegistry, actorRegistry, _worldSpawnContext);
 
             _registered = true;
@@ -129,10 +124,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             IActorRegistry actorRegistry,
             IWorldSpawnContext context)
         {
-            if (!provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
+            if (!provider.TryGetGlobal<ISceneRoutingRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] Missing ISceneFlowRouteActorSetRefContext for scene='{_sceneName}'. SceneScopeCompositionRoot nao escolhe elenco localmente.");
+                    $"[FATAL][Config][ActorsExecution] Missing ISceneRoutingRouteActorSetRefContext for scene='{_sceneName}'. SceneScopeCompositionRoot nao escolhe elenco localmente.");
             }
 
             if (!provider.TryGetGlobal<IActorSetSelectionService>(out var actorSetSelectionService) || actorSetSelectionService == null)
@@ -141,43 +136,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     $"[FATAL][Config][ActorsExecution] Missing IActorSetSelectionService for scene='{_sceneName}'.");
             }
 
-            if (!actorSetRefContext.TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string source))
+            if (!actorSetRefContext.TryGetCurrent(out ActorSetRef actorSetRef, out string routeIdentity, out string source))
             {
-                if (routeKind == SceneRouteKind.Unspecified)
-                {
-                    SceneCanonicalClassification classification = ResolveSceneCanonicalClassificationOrFail(provider);
-                    if (classification == SceneCanonicalClassification.Gameplay)
-                    {
-                        throw new InvalidOperationException(
-                            $"[FATAL][Config][ActorsExecution] Route context not resolved before gameplay scene scope spawn registration. scene='{_sceneName}' source='{AsText(source)}'.");
-                    }
-
-                    DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                        $"[OBS][ActorsExecution] Route context ainda nao resolvido; spawn canonico adiado para cena non-gameplay scene='{_sceneName}' classification='{classification}' source='{AsText(source)}'.",
-                        DebugUtility.Colors.Info);
-                    DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                        "Spawn services registered from canonical actor set: 0");
-                    return;
-                }
-
-                if (routeKind == SceneRouteKind.Gameplay)
-                {
-                    throw new InvalidOperationException(
-                        $"[FATAL][Config][ActorsExecution] Missing ActorSetRef in gameplay route context for scene='{_sceneName}'. source='{AsText(source)}'.");
-                }
-
-                DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                    $"[OBS][ActorsExecution] Non-gameplay scene sem ActorSetRef. Nenhum spawn registrado scene='{_sceneName}' routeKind='{routeKind}' source='{AsText(source)}'.",
-                    DebugUtility.Colors.Info);
-                DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                    "Spawn services registered from canonical actor set: 0");
-                return;
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][ActorsExecution] Missing ActorSetRef in route context for scene='{_sceneName}'. routeIdentity='{AsText(routeIdentity)}' source='{AsText(source)}'.");
             }
 
             if (!actorSetSelectionService.TryResolve(actorSetRef, out ActorSetResolvedSelection selection) || !selection.HasEntries)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] ActorSetRef sem resolucao actorSetRef='{actorSetRef.Value}' scene='{_sceneName}' routeKind='{routeKind}' source='{AsText(source)}'.");
+                    $"[FATAL][Config][ActorsExecution] ActorSetRef sem resolucao actorSetRef='{actorSetRef.Value}' scene='{_sceneName}' routeIdentity='{AsText(routeIdentity)}' source='{AsText(source)}'.");
             }
 
             int registeredCount = 0;
@@ -216,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
-                $"[OBS][ActorsExecution] ActorSelectionResolvedViaCanonicalContext actorSetRef='{actorSetRef.Value}' routeKind='{routeKind}' source='{AsText(source)}' registered='{registeredCount}' scene='{_sceneName}'.",
+                $"[OBS][ActorsExecution] ActorSelectionResolvedViaCanonicalContext actorSetRef='{actorSetRef.Value}' routeIdentity='{AsText(routeIdentity)}' source='{AsText(source)}' registered='{registeredCount}' scene='{_sceneName}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(SceneScopeCompositionRoot),
                 $"Spawn services registered from canonical actor set: {registeredCount}");
@@ -277,14 +245,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 $"WorldRoot selected: {BuildTransformPath(selectedRoot?.transform)}");
         }
 
-        private void RegisterSceneLifecycleHooks(
-            SceneResetHookRegistry hookRegistry,
-            Transform worldRoot)
-        {
-            _ = hookRegistry;
-            _ = worldRoot;
-        }
-
         private static string BuildTransformPath(Transform transform)
         {
             if (transform == null)
@@ -300,46 +260,55 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return string.IsNullOrWhiteSpace(value) ? "<none>" : value.Trim();
         }
 
-        private SceneCanonicalClassification ResolveSceneCanonicalClassificationOrFail(IDependencyProvider provider)
+        private bool ShouldSkipActorsScope(IDependencyProvider provider, out string reason)
         {
-            if (provider == null)
+            reason = string.Empty;
+
+            if (CanonicalNoActorScopeScenes.Contains(_sceneName))
             {
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] IDependencyProvider ausente ao classificar cena='{_sceneName}'.");
+                reason = "base11_sandbox_no_actor_set";
+                return true;
             }
 
-            if (!provider.TryGetGlobal<BootstrapConfigAsset>(out var bootstrapConfig) ||
-                bootstrapConfig == null ||
-                bootstrapConfig.NavigationCatalog == null)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] BootstrapConfigAsset/NavigationCatalog obrigatorio ausente para classificar cena='{_sceneName}' sem RouteActorSetRef resolvido.");
-            }
-
-            SceneRouteDefinitionAsset gameplayRouteRef = bootstrapConfig.NavigationCatalog.ResolveGameplayRouteRefOrFail();
-            SceneRouteDefinition gameplayRoute = gameplayRouteRef.ToDefinition();
-            if (IsSceneActiveTargetOfRoute(_sceneName, gameplayRoute))
-            {
-                return SceneCanonicalClassification.Gameplay;
-            }
-
-            GameNavigationEntry menuEntry = bootstrapConfig.NavigationCatalog.ResolveCoreOrFail(GameNavigationIntentKind.Menu);
-            if (menuEntry.RouteRef != null && IsSceneActiveTargetOfRoute(_sceneName, menuEntry.RouteRef.ToDefinition()))
-            {
-                return SceneCanonicalClassification.Frontend;
-            }
-
-            return SceneCanonicalClassification.BootstrapOrAuxiliary;
-        }
-
-        private static bool IsSceneActiveTargetOfRoute(string sceneName, SceneRouteDefinition routeDefinition)
-        {
-            if (string.IsNullOrWhiteSpace(sceneName))
+            if (!IsCanonicalProfile(provider))
             {
                 return false;
             }
 
-            return string.Equals(routeDefinition.TargetActiveScene, sceneName.Trim(), StringComparison.Ordinal);
+            if (!provider.TryGetGlobal<ISceneRoutingRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            if (!actorSetRefContext.TryGetCurrent(out ActorSetRef actorSetRef, out _, out _))
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            if (!actorSetRef.IsValid)
+            {
+                reason = "base11_sandbox_no_actor_set";
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsCanonicalProfile(IDependencyProvider provider)
+        {
+            if (provider == null)
+            {
+                return false;
+            }
+
+            if (!provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
+            {
+                return false;
+            }
+
+            return runtimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
         }
 
         private enum SceneCanonicalClassification

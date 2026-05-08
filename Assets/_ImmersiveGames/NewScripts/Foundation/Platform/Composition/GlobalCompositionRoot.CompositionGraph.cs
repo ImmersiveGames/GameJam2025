@@ -1,19 +1,11 @@
-using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.ActorsSystem.Integration.Bootstrap;
+﻿using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Integration.Bootstrap;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Installers;
-using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
-using _ImmersiveGames.NewScripts.SceneFlow.Installers;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.Installers;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Bootstrap;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Installers.Navigation;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.RuntimeComposition.Installers.PhaseDefinition;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.PostRun.Installers;
+using _ImmersiveGames.NewScripts.SessionOperational.Integration;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -43,9 +35,20 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrap: null,
                 bootstrapDependencies: System.Array.Empty<string>()));
 
-            bool phaseEnabled = ResolveGameplayPhaseEnablementOrFail(bootstrapConfig);
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFailFast(bootstrapConfig);
+            CompositionProfileKind compositionProfile = runtimeModeConfig.compositionProfile;
 
-            steps.AddRange(GetModuleCompositionSteps(phaseEnabled));
+            if (compositionProfile == CompositionProfileKind.Base11Sandbox)
+            {
+                DebugUtility.Log(typeof(GlobalCompositionRoot),
+                    "[OBS][Composition][Profile] SessionOperational runtime ativo: composicao nao canonica fora do profile minimo.",
+                    DebugUtility.Colors.Info);
+                steps.AddRange(GetSessionOperationalCompositionSteps(bootstrapConfig, runtimeModeConfig));
+            }
+            else
+            {
+                steps.AddRange(GetNonCanonicalCompositionSteps());
+            }
 
             steps.Add(new CompositionPipelineStep(
                 id: "SceneComposition",
@@ -57,63 +60,39 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return steps;
         }
 
-        private static IReadOnlyList<CompositionPipelineStep> GetModuleCompositionSteps(bool phaseEnabled)
+        private static IReadOnlyList<CompositionPipelineStep> GetNonCanonicalCompositionSteps()
         {
-            // Ordem intencional:
-            // - Installer: Audio antes de Preferences (Preferences depende do Audio instalado).
-            // - Bootstrap: Preferences antes de Audio (Audio depende do snapshot de Preferences).
-            var steps = new List<CompositionPipelineStep>(10)
+            return new List<CompositionPipelineStep>(0);
+        }
+
+        private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(
+            BootstrapConfigAsset bootstrapConfig,
+            RuntimeModeConfig runtimeModeConfig)
+        {
+            return new List<CompositionPipelineStep>(5)
             {
-                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(GameplayCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(InputModesCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(GameLoopCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(SceneFlowCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(NavigationCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(SessionIntegrationCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(ActorsSystemCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(WorldResetCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(RunEndRailCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
+                new CompositionPipelineStep(
+                    id: "InputModes",
+                    installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
+                    installerDependencies: new[] { "RuntimePolicy" },
+                    bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
+                    bootstrapDependencies: System.Array.Empty<string>()),
+                new CompositionPipelineStep(
+                    id: "RuntimePersistentScenes",
+                    installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),
+                    installerDependencies: new[] { "RuntimePolicy" },
+                    bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
+                    bootstrapDependencies: new[] { "InputModes" }),
+                new CompositionPipelineStep(
+                    id: "SessionOperationalRuntime",
+                    installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),
+                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes" },
+                    bootstrap: _ => SessionOperationalRuntimeComposer.ComposeRuntime(runtimeModeConfig),
+                    bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes" }),
             };
-
-            if (phaseEnabled)
-            {
-                steps.Insert(2, CompositionPipelineStep.FromDescriptor(PhaseDefinitionCompositionDescriptor.Descriptor));
-                DebugUtility.Log(typeof(GlobalCompositionRoot),
-                    "[OBS][Composition][GameplaySessionFlow] Phase rail enabled at seam='GameplaySessionFlow/PhaseDefinition'.",
-                    DebugUtility.Colors.Info);
-            }
-            else
-            {
-                DebugUtility.Log(typeof(GlobalCompositionRoot),
-                    "[OBS][Composition][GameplaySessionFlow] Phase rail skipped because route/context is phase-disabled. seam='GameplaySessionFlow/PhaseDefinition'.",
-                    DebugUtility.Colors.Info);
-            }
-
-            return steps;
         }
 
-        private static bool ResolveGameplayPhaseEnablementOrFail(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (bootstrapConfig == null)
-            {
-                throw new System.InvalidOperationException("[FATAL][Config][Composition] BootstrapConfigAsset obrigatorio ausente para resolver phase-enabled/phase-disabled.");
-            }
-
-            if (bootstrapConfig.NavigationCatalog == null)
-            {
-                throw new System.InvalidOperationException("[FATAL][Config][Composition] GameNavigationCatalog obrigatorio ausente para resolver phase-enabled/phase-disabled.");
-            }
-
-            bool phaseEnabled = bootstrapConfig.NavigationCatalog.IsGameplayPhaseEnabledOrFail();
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[OBS][Composition][GameplaySessionFlow] route-driven phase enablement resolved phaseEnabled={phaseEnabled}.",
-                DebugUtility.Colors.Info);
-            return phaseEnabled;
-        }
     }
 }
-
-

@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime
+namespace _ImmersiveGames.NewScripts.SceneRouting.Readiness.Runtime
 {
     /// <summary>
     /// Snapshot simples de readiness do jogo.
