@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -45,11 +44,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
 
-            RegisterIfMissing<IWorldResetPolicy>(() =>
-                new ProductionWorldResetPolicy(runtimeModeProvider, degradedReporter));
-
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter + IWorldResetPolicy registrados no DI global.",
+                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter registrados no DI global.",
                 DebugUtility.Colors.Info);
         }
 

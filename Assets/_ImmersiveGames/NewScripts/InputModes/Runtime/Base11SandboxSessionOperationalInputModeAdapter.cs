@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
+using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
@@ -111,3 +111,4 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         }
     }
 }
+

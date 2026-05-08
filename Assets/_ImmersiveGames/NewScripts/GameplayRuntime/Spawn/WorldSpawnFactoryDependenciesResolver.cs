@@ -2,8 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
-using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Integration.Contracts;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
@@ -48,16 +46,10 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
                     "IUniqueIdFactory missing. Spawn service cannot be created.");
                 return false;
             }
-
-            provider.TryGetGlobal(out IGameplayStateGate stateService);
-            provider.TryGetGlobal(out ISpawnResetParticipationReadPort participationReadPort);
-
             dependencies = new WorldSpawnFactoryDependencies(
                 uniqueIdFactory,
                 actorRegistry,
-                context,
-                stateService,
-                participationReadPort);
+                context);
 
             return true;
         }
@@ -68,21 +60,15 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         public WorldSpawnFactoryDependencies(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
-            IWorldSpawnContext context,
-            IGameplayStateGate gameplayStateService,
-            ISpawnResetParticipationReadPort participationReadPort)
+            IWorldSpawnContext context)
         {
             UniqueIdFactory = uniqueIdFactory;
             ActorRegistry = actorRegistry;
             Context = context;
-            GameplayStateService = gameplayStateService;
-            ParticipationReadPort = participationReadPort;
         }
 
         public IUniqueIdFactory UniqueIdFactory { get; }
         public IActorRegistry ActorRegistry { get; }
         public IWorldSpawnContext Context { get; }
-        public IGameplayStateGate GameplayStateService { get; }
-        public ISpawnResetParticipationReadPort ParticipationReadPort { get; }
     }
 }

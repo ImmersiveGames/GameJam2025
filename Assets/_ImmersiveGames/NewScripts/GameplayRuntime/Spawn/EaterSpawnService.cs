@@ -3,8 +3,6 @@ using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Movement;
-using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
@@ -14,25 +12,21 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
     /// </summary>
     public sealed class EaterSpawnService : ActorSpawnServiceBase
     {
-        private readonly IGameplayStateGate _gameplayStateService;
-
         public EaterSpawnService(
             IUniqueIdFactory uniqueIdFactory,
             IActorRegistry actorRegistry,
             IWorldSpawnContext context,
             ActorSpecRecord actorSpec,
-            GameObject prefab,
-            IGameplayStateGate gameplayStateService)
+            GameObject prefab)
             : base(uniqueIdFactory, actorRegistry, context, actorSpec, prefab)
         {
-            _gameplayStateService = gameplayStateService;
         }
 
         public override string Name => nameof(EaterSpawnService);
 
         public override ActorKind SpawnedActorKind => ActorKind.Eater;
 
-        public override bool IsRequiredForWorldReset => true;
+        public override bool IsRequiredForLifecycle => true;
 
         protected override IActor ResolveActor(GameObject instance)
         {
@@ -41,10 +35,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         protected override void OnPostInstantiate(GameObject instance)
         {
-            GameplayStateControllerInjector.TryInject<EaterRandomMovementController>(
-                instance,
-                _gameplayStateService,
-                static (controller, stateService) => controller.InjectStateService(stateService));
         }
     }
 }

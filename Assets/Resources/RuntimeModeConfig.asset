@@ -13,8 +13,10 @@ MonoBehaviour:
   m_Name: RuntimeModeConfig
   m_EditorClassIdentifier: 
   modeOverride: 0
-  bootstrapConfig: {fileID: 11400000, guid: b3f866decfd85714db622d024b341b0a, type: 2}
   runtimePersistentScenesPolicy: {fileID: 11400000, guid: 5cb9202de0bb9304c867f0d410f61dab, type: 2}
+  audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
+  defaultLoadingMode: 1
+  defaultLoadingProfile: {fileID: 0}
   reporter:
     dedupStrategy: 1
     cooldownSeconds: 5
@@ -31,4 +33,4 @@ MonoBehaviour:
     menuActionMapName: UI
     logVerbose: 1
   compositionProfile: 1
-  startupRouteDefinition: {fileID: 11400000, guid: 3dcb89a390cab8841813e8637f4f4d84, type: 2}
+  startupRouteDefinition: {fileID: 11400000, guid: 0a2fe18554df4b241b27733ced8e5b8a, type: 2}

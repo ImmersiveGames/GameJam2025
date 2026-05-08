@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
@@ -213,3 +213,4 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         Other = 5,
     }
 }
+

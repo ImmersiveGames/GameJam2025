@@ -8,6 +8,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore
     /// </summary>
     public interface ISceneFlowRouteActorSetRefContext
     {
-        bool TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string source);
+        bool TryGetCurrent(out ActorSetRef actorSetRef, out string routeIdentity, out string source);
     }
 }

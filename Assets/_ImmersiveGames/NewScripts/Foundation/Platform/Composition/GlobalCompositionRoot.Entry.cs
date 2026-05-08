@@ -1,12 +1,10 @@
 /*
  * ChangeLog
- * - GamePauseGateBridge e GameplayStateGate deixaram o root e passaram para os modulos donos.
- * - Entrada de infraestrutura mínima (LegacySimulationGate/WorldReset/SceneReset/DI) para NewScripts.
+ * - Entrada de infraestrutura mínima (Scene/DI) para NewScripts.
  *
  * Ajustes (jan/2026):
- * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
- *   - ResolvePlayerActor ILegacySimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
- * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual do SceneFlow).
+ * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0).
+ * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual).
  *
  * Nota (QA):
  * - O coordinator deve resolver dependências no momento do sync para que overrides de QA no DI sejam observados.
@@ -17,7 +15,6 @@
 
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
-using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -32,8 +29,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         // --------------------------------------------------------------------
 
         private static bool _initialized;
-        private static GameReadinessService _gameReadinessService;
-
         // --------------------------------------------------------------------
         // Entry
         // --------------------------------------------------------------------

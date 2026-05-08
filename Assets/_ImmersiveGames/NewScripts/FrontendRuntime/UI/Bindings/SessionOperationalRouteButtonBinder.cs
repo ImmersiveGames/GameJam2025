@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
+using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
@@ -93,3 +93,4 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         }
     }
 }
+

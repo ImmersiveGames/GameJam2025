@@ -1,7 +1,5 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
-using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Context;
-using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bridges;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Host;
@@ -11,7 +9,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
-using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
@@ -22,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
     /// - compor o wiring operacional do Audio depois que os installers concluirem;
     /// - nao registrar contratos pre-runtime;
     /// - nao mascarar ausencias de prerequisitos do installer;
-    /// - manter o legado de route-driven BGM isolado do Base11Sandbox.
+    /// - manter o runtime de playback isolado do trilho operacional.
     /// </summary>
     public static class AudioRuntimeComposer
     {
@@ -42,24 +39,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
             }
 
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            bool isBase11Sandbox = runtimeModeConfig.compositionProfile == CompositionProfileKind.Base11Sandbox;
+            ResolveRuntimeModeConfigOrFail();
 
             ApplyPreferencesToAudioSettings();
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
-
-            if (!isBase11Sandbox)
-            {
-                EnsureAudioBgmContextService(bootstrapConfig);
-                EnsureNavigationLevelRouteBgmBridge();
-            }
-            else
-            {
-                DebugUtility.LogVerbose(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Bridge] Base11Sandbox canonical rail skips route-driven BGM context and bridge.",
-                    DebugUtility.Colors.Info);
-            }
 
             EnsureGlobalAudioService();
 
@@ -123,44 +107,6 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 },
                 alreadyRegisteredMessage: "[Audio][BOOT] IAudioBgmService already registered.",
                 registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
-        }
-
-        private static void EnsureNavigationLevelRouteBgmBridge()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmContextService>(out var bgmContextService) || bgmContextService == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Bridge] Skipped registration: IAudioBgmContextService unavailable.");
-                return;
-            }
-
-            RegisterIfMissing<NavigationLevelRouteBgmBridge>(
-                () => new NavigationLevelRouteBgmBridge(bgmContextService),
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge registered in global DI.");
-        }
-
-        private static void EnsureAudioBgmContextService(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Context] Skipped registration: IAudioBgmService unavailable.");
-                return;
-            }
-
-            var navigationCatalog = bootstrapConfig.NavigationCatalog as GameNavigationCatalogAsset;
-            if (navigationCatalog == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Context] Skipped registration: NavigationCatalog missing in bootstrap.");
-                return;
-            }
-
-            RegisterIfMissing<IAudioBgmContextService>(
-                () => new AudioBgmContextService(bgmService, navigationCatalog),
-                "[Audio][BGM][Context] IAudioBgmContextService already registered in global DI.",
-                "[Audio][BGM][Context] IAudioBgmContextService registered in global DI.");
         }
 
         private static void EnsureGlobalAudioService()

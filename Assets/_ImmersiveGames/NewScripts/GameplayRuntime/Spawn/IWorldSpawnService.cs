@@ -24,9 +24,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
         string SpawnArchetypeId { get; }
 
         /// <summary>
-        /// Indica se este serviço participa da garantia mínima do hard reset macro.
+        /// Indica se este serviço participa da garantia mínima do ciclo de vida.
         /// </summary>
-        bool IsRequiredForWorldReset { get; }
+        bool IsRequiredForLifecycle { get; }
 
         Task SpawnAsync(ActorSpawnRequest request);
 

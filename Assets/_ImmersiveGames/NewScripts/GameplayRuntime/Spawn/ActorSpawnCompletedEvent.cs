@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             string source,
             string reason,
             string executionSignature,
-            bool requiredForWorldReset)
+            bool requiresLifecycleParticipation)
         {
             Actor = actor;
             ActorKind = actorKind;
@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
             Source = string.IsNullOrWhiteSpace(source) ? string.Empty : source.Trim();
             Reason = string.IsNullOrWhiteSpace(reason) ? string.Empty : reason.Trim();
             ExecutionSignature = string.IsNullOrWhiteSpace(executionSignature) ? string.Empty : executionSignature.Trim();
-            RequiredForWorldReset = requiredForWorldReset;
+            RequiresLifecycleParticipation = requiresLifecycleParticipation;
         }
 
         public IActor Actor { get; }
@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 
         public string ExecutionSignature { get; }
 
-        public bool RequiredForWorldReset { get; }
+        public bool RequiresLifecycleParticipation { get; }
 
         public bool HasActor => Actor != null;
         public bool HasAxisActorId => AxisActorId.IsValid;

@@ -1,12 +1,11 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.GameplayRuntime.StateGate.Core;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Movement
 {
     /// <summary>
     /// Controlador simples de movimentação aleatória para o Eater no pipeline NewScripts.
-    /// Respeita o IGameplayStateGate para bloquear/liberar a ação de movimento.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(EaterActor))]
@@ -26,39 +25,22 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Move
         [Tooltip("Quando true, aplica movimento no espaço local do Eater.")]
         private bool useLocalSpace;
 
-        private IGameplayStateGate _gameplayStateService;
         private Vector3 _currentDirection = Vector3.forward;
         private float _timeToNextDirection;
-        private bool _stateBlockedLogged;
         private string _sceneName;
 
         private void Awake()
         {
             _sceneName = gameObject.scene.name;
-            ResolveStateServiceOrDisable();
             _timeToNextDirection = 0f;
         }
 
         private void OnEnable()
         {
-            ResolveStateServiceOrDisable();
         }
 
         private void Update()
         {
-            if (_gameplayStateService == null)
-            {
-                return;
-            }
-
-            if (!_gameplayStateService.CanExecuteGameplayAction(GameplayAction.Move))
-            {
-                LogStateBlockedOnce();
-                return;
-            }
-
-            _stateBlockedLogged = false;
-
             float deltaTime = Time.deltaTime;
             _timeToNextDirection -= deltaTime;
 
@@ -75,41 +57,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Move
             transform.Translate(displacement, useLocalSpace ? Space.Self : Space.World);
         }
 
-        private void ResolveStateServiceOrDisable()
-        {
-            if (_gameplayStateService != null)
-            {
-                return;
-            }
-
-            DependencyManager.Provider.TryGetGlobal(out _gameplayStateService);
-
-            if (_gameplayStateService != null)
-            {
-                return;
-            }
-
-            DebugUtility.LogWarning(typeof(EaterRandomMovementController),
-                $"[EaterMovement] IGameplayStateGate não encontrado; movimento desativado. scene='{_sceneName}'.");
-            enabled = false;
-        }
-
-        public void InjectStateService(IGameplayStateGate gameplayStateService)
-        {
-            if (gameplayStateService == null)
-            {
-                return;
-            }
-
-            _gameplayStateService = gameplayStateService;
-            _stateBlockedLogged = false;
-
-            if (!enabled)
-            {
-                enabled = true;
-            }
-        }
-
         private Vector3 PickNewDirection()
         {
             for (int attempt = 0; attempt < 6; attempt++)
@@ -123,21 +70,5 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Move
 
             return Vector3.forward;
         }
-
-        private void LogStateBlockedOnce()
-        {
-            if (_stateBlockedLogged)
-            {
-                return;
-            }
-
-            DebugUtility.LogVerbose<EaterRandomMovementController>(
-                "[EaterMovement] Movement blocked by IGameplayStateGate.");
-            _stateBlockedLogged = true;
-        }
     }
 }
-
-
-
-

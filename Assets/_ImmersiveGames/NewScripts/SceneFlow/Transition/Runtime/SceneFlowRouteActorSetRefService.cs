@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
 
         private readonly EventBinding<SceneTransitionStartedEvent> _startedBinding;
         private ActorSetRef _currentActorSetRef;
-        private SceneRouteKind _currentRouteKind;
+        private string _currentRouteIdentity;
         private string _source;
         private bool _hasCurrent;
         private bool _disposed;
@@ -27,10 +27,10 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
             EventBus<SceneTransitionStartedEvent>.Register(_startedBinding);
         }
 
-        public bool TryGetCurrent(out ActorSetRef actorSetRef, out SceneRouteKind routeKind, out string source)
+        public bool TryGetCurrent(out ActorSetRef actorSetRef, out string routeIdentity, out string source)
         {
             actorSetRef = _currentActorSetRef;
-            routeKind = _currentRouteKind;
+            routeIdentity = _currentRouteIdentity ?? string.Empty;
             source = _source ?? string.Empty;
             return _hasCurrent;
         }
@@ -53,40 +53,25 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
                 return;
             }
 
-            SceneRouteKind routeKind = evt.context.RouteKind;
-            if (evt.context.RouteRef == null)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] Missing routeRef while resolving actor set behavior. routeId='{evt.context.RouteId}'.");
-            }
-
-            if (evt.context.RouteRef.RouteProfile == null)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] Missing route profile while resolving actor set behavior. routeId='{evt.context.RouteId}'.");
-            }
-
-            evt.context.RouteRef.RouteProfile.ValidateProfileOrFailFast();
-            SceneRouteProfile profile = evt.context.RouteRef.RouteProfile.ToProfile();
-            SceneRouteProfileActorSetBehavior actorSetBehavior = profile.ActorSetBehavior;
-
-            _currentRouteKind = routeKind;
+            string routeIdentity = evt.context.RouteIdentity;
+            _currentRouteIdentity = routeIdentity;
             _source = "SceneFlow/RouteMacro";
 
-            if (actorSetBehavior == SceneRouteProfileActorSetBehavior.GameplayRouteActorSet)
+            bool isGameplayEntry = evt.context.IsGameplayInitialEntry || evt.context.IsGameplayReentry;
+            if (isGameplayEntry)
             {
                 ActorSetRef actorSetRef = new(GameplayActorSetValue);
                 if (!actorSetRef.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][Config][ActorsExecution] Missing ActorSetRef mapping for routeProfileId='{profile.ProfileId}' actorSetBehavior='{actorSetBehavior}'.");
+                        $"[FATAL][Config][ActorsExecution] Missing ActorSetRef mapping for gameplay route. routeId='{evt.context.RouteId}'.");
                 }
 
                 _currentActorSetRef = actorSetRef;
                 _hasCurrent = true;
 
                 DebugUtility.Log(typeof(SceneFlowRouteActorSetRefService),
-                    $"[OBS][ActorsExecution] ActorSetRefChosen source='{_source}' routeKind='{routeKind}' routeProfileId='{profile.ProfileId}' actorSetBehavior='{actorSetBehavior}' decisionSource='routeProfile.actorSetBehavior' routeId='{evt.context.RouteId}' actorSetRef='{actorSetRef.Value}'.",
+                    $"[OBS][ActorsExecution] ActorSetRefChosen source='{_source}' routeIdentity='{routeIdentity}' decisionSource='gameplayEntry' routeId='{evt.context.RouteId}' actorSetRef='{actorSetRef.Value}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -95,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
             _hasCurrent = false;
 
             DebugUtility.Log(typeof(SceneFlowRouteActorSetRefService),
-                $"[OBS][ActorsExecution] ActorSetRefCleared source='{_source}' routeKind='{routeKind}' routeProfileId='{profile.ProfileId}' actorSetBehavior='{actorSetBehavior}' decisionSource='routeProfile.actorSetBehavior' routeId='{evt.context.RouteId}'.",
+                $"[OBS][ActorsExecution] ActorSetRefCleared source='{_source}' routeIdentity='{routeIdentity}' decisionSource='not_gameplay_entry' routeId='{evt.context.RouteId}'.",
                 DebugUtility.Colors.Info);
         }
     }

@@ -982,8 +982,8 @@ MonoBehaviour:
   reason: Frontend/RouteButton
   ignoreClicksForSecondsAfterEnable: 0.25
   clearEventSystemSelectionOnEnable: 1
-  disableButtonDuringAction: 0
-  routeDefinition: {fileID: 11400000, guid: 1a1cbc9355ac4c146886da39e7ef2a37, type: 2}
+  disableButtonDuringAction: 1
+  routeDefinition: {fileID: 11400000, guid: 47d43281373fbed4dbf10bcf1baf1bf9, type: 2}
   reasonOverride: 
 --- !u!114 &854577503
 MonoBehaviour:

@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime;
-using _ImmersiveGames.NewScripts.Foundation.Platform.LegacySimulationGate;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -19,14 +18,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             ExecuteInstallerPipeline(bootstrapConfig);
 
-            var gateService = ResolveLegacySimulationGateServiceOrFail();
-
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
 #endif
 
             ExecuteBootstrapPipeline(bootstrapConfig);
-            InitializeReadinessGate(gateService);
         }
 
         private static void ExecuteInstallerPipeline(BootstrapConfigAsset bootstrapConfig)
@@ -44,7 +40,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static void InstallGatesServices()
         {
             RegisterIfMissing<IUniqueIdFactory>(() => new UniqueIdFactory());
-            RegisterIfMissing<ILegacySimulationGateService>(() => new LegacySimulationGateService());
         }
 
         private static void InstallPoolingServices()

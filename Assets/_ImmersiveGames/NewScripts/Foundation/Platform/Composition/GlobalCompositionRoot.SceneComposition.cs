@@ -1,4 +1,4 @@
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
+﻿using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -12,4 +12,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
+
 

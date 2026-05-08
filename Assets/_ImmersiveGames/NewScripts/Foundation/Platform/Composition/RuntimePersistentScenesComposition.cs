@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.SceneComposition;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
+using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -138,3 +138,5 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
     }
 }
+
+
