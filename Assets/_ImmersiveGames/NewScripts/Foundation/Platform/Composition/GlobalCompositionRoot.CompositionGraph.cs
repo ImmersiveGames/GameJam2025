@@ -5,9 +5,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
-using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
-using _ImmersiveGames.NewScripts.SessionOperational.Integration.Base11Sandbox;
-using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+using _ImmersiveGames.NewScripts.SessionOperational.Integration;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -43,13 +41,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
             {
                 DebugUtility.Log(typeof(GlobalCompositionRoot),
-                    "[OBS][Composition][Profile] Base11Sandbox ativo: rails legados fora do profile minimo.",
+                    "[OBS][Composition][Profile] SessionOperational runtime ativo: composicao nao canonica fora do profile minimo.",
                     DebugUtility.Colors.Info);
-                steps.AddRange(GetBase11SandboxCompositionSteps(bootstrapConfig, runtimeModeConfig));
+                steps.AddRange(GetSessionOperationalCompositionSteps(bootstrapConfig, runtimeModeConfig));
             }
             else
             {
-                steps.AddRange(GetLegacyCompositionSteps());
+                steps.AddRange(GetNonCanonicalCompositionSteps());
             }
 
             steps.Add(new CompositionPipelineStep(
@@ -62,12 +60,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return steps;
         }
 
-        private static IReadOnlyList<CompositionPipelineStep> GetLegacyCompositionSteps()
+        private static IReadOnlyList<CompositionPipelineStep> GetNonCanonicalCompositionSteps()
         {
             return new List<CompositionPipelineStep>(0);
         }
 
-        private static IReadOnlyList<CompositionPipelineStep> GetBase11SandboxCompositionSteps(
+        private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(
             BootstrapConfigAsset bootstrapConfig,
             RuntimeModeConfig runtimeModeConfig)
         {
@@ -88,16 +86,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
                     bootstrapDependencies: new[] { "InputModes" }),
                 new CompositionPipelineStep(
-                    id: "Base11SandboxOperationalRouting",
-                    installer: _ => Base11SandboxOperationalRoutingComposer.Install(runtimeModeConfig),
+                    id: "SessionOperationalRuntime",
+                    installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),
                     installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes" },
-                    bootstrap: _ => Base11SandboxOperationalRoutingComposer.ComposeRuntime(runtimeModeConfig),
+                    bootstrap: _ => SessionOperationalRuntimeComposer.ComposeRuntime(runtimeModeConfig),
                     bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes" }),
             };
         }
 
     }
 }
-
-
-

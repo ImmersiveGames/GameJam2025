@@ -2,7 +2,7 @@
 namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
 {
     /// <summary>
-    /// ConfiguraÃ§Ã£o â€œcruaâ€ de fade (sem depender de SceneTransitionProfile).
+    /// Configuração "crua" de fade (sem depender de SceneTransitionProfile).
     /// </summary>
     public readonly struct FadeConfig
     {
@@ -24,5 +24,3 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
         public AnimationCurve FadeOutCurve { get; }
     }
 }
-
-

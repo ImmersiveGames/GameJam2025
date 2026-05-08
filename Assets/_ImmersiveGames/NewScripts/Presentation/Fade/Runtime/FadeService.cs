@@ -9,16 +9,16 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
 {
     /// <summary>
-    /// ServiÃ§o de Fade do NewScripts.
+    /// Serviço de Fade do NewScripts.
     ///
     /// Contrato:
     /// - Depende de uma FadeScene (Additive) contendo FadeController.
-    /// - NÃƒO cria UI "em voo" como fallback silencioso.
-    /// - Quando o fade Ã© solicitado (dur > 0), ausÃªncia de cena/controller Ã© tratada como falha.
+    /// - NÃO cria UI "em voo" como fallback silencioso.
+    /// - Quando o fade é solicitado (dur > 0), ausência de cena/controller é tratada como falha.
     ///
-    /// ObservaÃ§Ã£o:
-    /// - PolÃ­tica de degraded Ã© responsabilidade da camada de orquestraÃ§Ã£o.
-    ///   Este serviÃ§o apenas marca indisponibilidade e lanÃ§a erro explÃ­cito.
+    /// Observação:
+    /// - Política de degraded é responsabilidade da camada de orquestração.
+    ///   Este serviço apenas marca indisponibilidade e lança erro explícito.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class FadeService : IFadeService
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
 
         private FadeConfig _config;
 
-        // Defaults mÃ­nimos (ciclo mÃ­nimo).
+        // Defaults mínimos (ciclo mínimo).
         private static readonly FadeConfig DefaultConfig =
             new(
                 fadeInDuration: 0.5f,
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
 
         private bool IsNoOpFadeIn()
         {
-            // ComentÃ¡rio: no-op de fade Ã© uma configuraÃ§Ã£o vÃ¡lida (profile UseFade=false).
+            // Comentário: no-op de fade é uma configuração válida (profile UseFade=false).
             return _config.FadeInDuration <= 0f;
         }
 
@@ -118,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
             // Garantir que apenas uma tentativa ocorra por vez.
             if (!await _ensureGate.WaitAsync(0))
             {
-                // AlguÃ©m jÃ¡ estÃ¡ garantindo; aguardar breve yield e revalidar.
+                // Alguém já está garantindo; aguardar breve yield e revalidar.
                 await Task.Yield();
 
                 if (_controller != null)
@@ -195,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
 
         private static FadeController? FindControllerInScene(Scene scene)
         {
-            // ComentÃ¡rio: evita FindAnyObjectByType (custo + risco de pegar controller errado fora da FadeScene).
+            // Comentário: evita FindAnyObjectByType (custo + risco de pegar controller errado fora da FadeScene).
             try
             {
                 GameObject[] roots = scene.GetRootGameObjects();
@@ -210,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
             }
             catch (Exception)
             {
-                // ComentÃ¡rio: exceÃ§Ã£o aqui nÃ£o deve ser engolida silenciosamente; o mÃ©todo chamador tratarÃ¡ como falha.
+                // Comentário: exceção aqui não deve ser engolida silenciosamente; o método chamador tratará como falha.
             }
 
             return null;
@@ -229,5 +229,4 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Runtime
         }
     }
 }
-
 

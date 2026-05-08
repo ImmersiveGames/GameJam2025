@@ -1,5 +1,4 @@
-﻿using System;
-using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+﻿using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline

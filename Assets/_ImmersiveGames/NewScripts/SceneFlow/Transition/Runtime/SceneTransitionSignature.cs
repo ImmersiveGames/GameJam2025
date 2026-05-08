@@ -1,4 +1,4 @@
-namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.SceneRouting.Transition.Runtime
 {
     public static class SceneTransitionSignature
     {

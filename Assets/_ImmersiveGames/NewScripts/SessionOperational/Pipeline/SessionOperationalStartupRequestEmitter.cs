@@ -1,13 +1,13 @@
 ﻿using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.RunLifecycle.Core;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     /// <summary>
     /// Emite BootStartPlanRequestedEvent uma unica vez ao iniciar a cena.
-    /// Seam canonico de bootstrap/startup do Base11Sandbox.
+    /// Seam canonico de bootstrap/startup do rail operacional.
     /// </summary>
     [DefaultExecutionOrder(-900)]
     [DebugLevel(DebugLevel.Verbose)]

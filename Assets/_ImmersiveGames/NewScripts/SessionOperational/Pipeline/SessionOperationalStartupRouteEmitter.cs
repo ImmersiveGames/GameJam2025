@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.RunLifecycle.Core;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 _instance = new SessionOperationalStartupRouteEmitter();
                 if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
                 {
-                    throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][StartupRoute] DependencyManager indisponivel para registrar o emitter do Base11Sandbox.");
+                    throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][StartupRoute] DependencyManager indisponivel para registrar o emitter do rail operacional.");
                 }
 
                 DependencyManager.Provider.RegisterGlobal(_instance);
@@ -54,8 +54,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             DebugUtility.Log(typeof(SessionOperationalStartupRouteEmitter),
                 newlyCreated
-                    ? "[OBS][SessionOperationalPipeline][StartupRoute] emitter registered for Base11Sandbox."
-                    : "[OBS][SessionOperationalPipeline][StartupRoute] emitter rebound for Base11Sandbox.",
+                    ? "[OBS][SessionOperationalPipeline][StartupRoute] emitter registered for canonical startup rail."
+                    : "[OBS][SessionOperationalPipeline][StartupRoute] emitter rebound for canonical startup rail.",
                 DebugUtility.Colors.Info);
 
             return _instance;
@@ -122,14 +122,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             if (!DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
             {
-                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] RuntimeModeConfig obrigatorio ausente para o emitter do Base11Sandbox.";
+                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] RuntimeModeConfig obrigatorio ausente para o emitter do rail operacional.";
                 DebugUtility.LogError(typeof(SessionOperationalStartupRouteEmitter), message);
                 throw new InvalidOperationException(message);
             }
 
             if (runtimeModeConfig.compositionProfile != CompositionProfileKind.Base11Sandbox)
             {
-                string message = $"[FATAL][Config][SessionOperationalPipeline][StartupRoute] emitter requerido fora do Base11Sandbox. compositionProfile='{runtimeModeConfig.compositionProfile}'.";
+                string message = $"[FATAL][Config][SessionOperationalPipeline][StartupRoute] emitter requerido fora do profile canonical. compositionProfile='{runtimeModeConfig.compositionProfile}'.";
                 DebugUtility.LogError(typeof(SessionOperationalStartupRouteEmitter), message);
                 throw new InvalidOperationException(message);
             }
@@ -147,14 +147,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalRouteAsset startupRoute = runtimeModeConfig.StartupRouteDefinition;
             if (startupRoute == null)
             {
-                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition obrigatoria ausente para Base11Sandbox.";
+                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition obrigatoria ausente para o rail operacional.";
                 DebugUtility.LogError(typeof(SessionOperationalStartupRouteEmitter), message);
                 throw new InvalidOperationException(message);
             }
 
             if (!startupRoute.IsValid)
             {
-                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition asset invalida para Base11Sandbox.";
+                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition asset invalida para o rail operacional.";
                 DebugUtility.LogError(typeof(SessionOperationalStartupRouteEmitter), message);
                 throw new InvalidOperationException(message);
             }
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return pipeline;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] SessionOperationalPipeline obrigatorio ausente para o Base11Sandbox.";
+            string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] SessionOperationalPipeline obrigatorio ausente para o rail operacional.";
             DebugUtility.LogError(typeof(SessionOperationalStartupRouteEmitter), message);
             throw new InvalidOperationException(message);
         }

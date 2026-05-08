@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.SimulationGate
 {

@@ -7,9 +7,8 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
-using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
+using _ImmersiveGames.NewScripts.SceneRouting.Contracts.RuntimeCore;
+using _ImmersiveGames.NewScripts.SceneRouting.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -20,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     /// </summary>
     public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
     {
-        private static readonly HashSet<string> Base11SandboxNoActorScopeScenes = new(StringComparer.OrdinalIgnoreCase)
+        private static readonly HashSet<string> CanonicalNoActorScopeScenes = new(StringComparer.OrdinalIgnoreCase)
         {
             "NewBootstrap",
             "MenuScene",
@@ -125,10 +124,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             IActorRegistry actorRegistry,
             IWorldSpawnContext context)
         {
-            if (!provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
+            if (!provider.TryGetGlobal<ISceneRoutingRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActorsExecution] Missing ISceneFlowRouteActorSetRefContext for scene='{_sceneName}'. SceneScopeCompositionRoot nao escolhe elenco localmente.");
+                    $"[FATAL][Config][ActorsExecution] Missing ISceneRoutingRouteActorSetRefContext for scene='{_sceneName}'. SceneScopeCompositionRoot nao escolhe elenco localmente.");
             }
 
             if (!provider.TryGetGlobal<IActorSetSelectionService>(out var actorSetSelectionService) || actorSetSelectionService == null)
@@ -265,18 +264,18 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         {
             reason = string.Empty;
 
-            if (Base11SandboxNoActorScopeScenes.Contains(_sceneName))
+            if (CanonicalNoActorScopeScenes.Contains(_sceneName))
             {
                 reason = "base11_sandbox_no_actor_set";
                 return true;
             }
 
-            if (!IsBase11SandboxProfile(provider))
+            if (!IsCanonicalProfile(provider))
             {
                 return false;
             }
 
-            if (!provider.TryGetGlobal<ISceneFlowRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
+            if (!provider.TryGetGlobal<ISceneRoutingRouteActorSetRefContext>(out var actorSetRefContext) || actorSetRefContext == null)
             {
                 reason = "base11_sandbox_no_actor_set";
                 return true;
@@ -297,7 +296,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return false;
         }
 
-        private static bool IsBase11SandboxProfile(IDependencyProvider provider)
+        private static bool IsCanonicalProfile(IDependencyProvider provider)
         {
             if (provider == null)
             {

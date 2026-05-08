@@ -1,7 +1,6 @@
 ﻿using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
@@ -88,25 +87,25 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
         /// <summary>
         /// Profile de composiÃ§Ã£o global usado pelo bootstrap.
-        /// Base11Sandbox remove rails legados do caminho.
+        /// O profile canônico remove rails legados do caminho.
         /// </summary>
         [Header("Composition Profile")]
-        [Tooltip("Seleciona o profile de composiÃ§Ã£o global. Base11Sandbox remove rails legados do caminho.")]
+        [Tooltip("Seleciona o profile de composição global. O profile canônico remove rails legados do caminho.")]
         public CompositionProfileKind compositionProfile = CompositionProfileKind.Base11Sandbox;
 
         /// <summary>
-        /// Rota inicial explÃ­cita do profile Base11Sandbox.
+        /// Rota inicial explÃ­cita do profile canônico.
         /// NÃ£o Ã© um default implÃ­cito: o bootstrap falha se estiver ausente ou invÃ¡lido.
         /// </summary>
-        [Header("Base11 Sandbox")]
-        [Tooltip("ReferÃªncia direta para a rota inicial do Base11Sandbox.")]
+        [Header("Canonical Runtime")]
+        [Tooltip("Referência direta para a rota inicial do profile canônico.")]
         [SerializeField] private SessionOperationalRouteAsset startupRouteDefinition;
 
         /// <summary>
-        /// ReferÃªncia direta para a rota inicial do Base11Sandbox.
+        /// Referência direta para a rota inicial do profile canônico.
         /// </summary>
-        [Header("Base11 Sandbox")]
-        [Tooltip("ReferÃªncia direta para a rota inicial do Base11Sandbox.")]
+        [Header("Canonical Runtime")]
+        [Tooltip("Referência direta para a rota inicial do profile canônico.")]
         public SessionOperationalRouteAsset StartupRouteDefinition => startupRouteDefinition;
 
         public bool TryValidateLoadingConfiguration(out string errorMessage)
@@ -142,13 +141,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             {
                 if (audioDefaults == null)
                 {
-                    errorMessage = "audioDefaults is required when CompositionProfile=Base11Sandbox.";
+                    errorMessage = "audioDefaults is required when CompositionProfile=canonical profile.";
                     return false;
                 }
             }
             else if (audioDefaults == null)
             {
-                errorMessage = "audioDefaults is required when set for non-Base11Sandbox profiles.";
+                errorMessage = "audioDefaults is required when set for non-canonical profiles.";
                 return false;
             }
 
@@ -314,5 +313,3 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         Base11Sandbox = 1
     }
 }
-
-

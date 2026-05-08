@@ -7,8 +7,8 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
-using _ImmersiveGames.NewScripts.SessionOperational.Integration.Base11Sandbox;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
+using _ImmersiveGames.NewScripts.SessionOperational.Integration;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -18,13 +18,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private readonly SessionOperationalRuntimeState _state = new();
         private readonly string _sessionOperationalPipelineId;
-        private readonly object _sandboxRouteSync = new();
-        private int _sandboxRouteSequence;
+        private readonly object _operationalRouteSync = new();
+        private int _operationalRouteSequence;
         private SessionOperationalRouteSnapshot _lastCompletedRouteSnapshot;
-        private bool _hasActiveSandboxRouteOperation;
-        private string _activeSandboxRouteOperationId = string.Empty;
-        private string _activeSandboxTransitionId = string.Empty;
-        private string _activeSandboxRouteIdentity = string.Empty;
+        private bool _hasActiveOperationalRouteOperation;
+        private string _activeOperationalRouteOperationId = string.Empty;
+        private string _activeOperationalTransitionId = string.Empty;
+        private string _activeOperationalRouteIdentity = string.Empty;
 
         public SessionOperationalPipeline(string sessionOperationalPipelineId = DefaultPipelineId)
         {
@@ -79,17 +79,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             int routeSequence;
             SessionOperationalLoadingCommand loadingCommand;
 
-            lock (_sandboxRouteSync)
+            lock (_operationalRouteSync)
             {
-                if (_hasActiveSandboxRouteOperation)
+                if (_hasActiveOperationalRouteOperation)
                 {
                     DebugUtility.LogWarning<SessionOperationalPipeline>(
-                        $"[OBS][SessionOperationalPipeline][Route] rejected reason='stale_or_foreign_route' routeIdentity='{routeIdentity}' activeRouteIdentity='{_activeSandboxRouteIdentity}' activeRouteOperationId='{_activeSandboxRouteOperationId}' activeTransitionId='{_activeSandboxTransitionId}' source='{sourceText}' reason='{reasonText}'.");
-                    throw new InvalidOperationException("Sandbox route operation is already in flight.");
+                        $"[OBS][SessionOperationalPipeline][Route] rejected reason='stale_or_foreign_route' routeIdentity='{routeIdentity}' activeRouteIdentity='{_activeOperationalRouteIdentity}' activeRouteOperationId='{_activeOperationalRouteOperationId}' activeTransitionId='{_activeOperationalTransitionId}' source='{sourceText}' reason='{reasonText}'.");
+                    throw new InvalidOperationException("Operational route operation is already in flight.");
                 }
 
-                _sandboxRouteSequence += 1;
-                routeSequence = _sandboxRouteSequence;
+                _operationalRouteSequence += 1;
+                routeSequence = _operationalRouteSequence;
                 routeOperationId = BuildRouteOperationId(routeIdentity, activeSceneName, routeSequence);
                 transitionId = BuildTransitionId(routeIdentity, activeSceneName, routeSequence);
                 loadPlan = ResolveRouteLoadPlanOrFail(route, persistentScenesPolicy, activeSceneName);
@@ -111,10 +111,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         unloadPlan.FinalScenesToUnload);
                 }
 
-                _hasActiveSandboxRouteOperation = true;
-                _activeSandboxRouteOperationId = routeOperationId;
-                _activeSandboxTransitionId = transitionId;
-                _activeSandboxRouteIdentity = routeIdentity;
+                _hasActiveOperationalRouteOperation = true;
+                _activeOperationalRouteOperationId = routeOperationId;
+                _activeOperationalTransitionId = transitionId;
+                _activeOperationalRouteIdentity = routeIdentity;
             }
 
             loadingCommand = ResolveLoadingCommandOrFail(
@@ -271,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 SessionOperationalRouteCompletedFact adapterFact = await routeExecutor.ApplyOperationalRouteAsync(command);
                 if (!adapterFact.IsValid)
                 {
-                    throw new InvalidOperationException("Sandbox route executor returned an invalid completion fact.");
+                    throw new InvalidOperationException("Operational route executor returned an invalid completion fact.");
                 }
 
                 if (loadingCommand.IsEnabled)
@@ -408,7 +408,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         DebugUtility.Colors.Success);
                 }
 
-                CompleteSandboxRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
+                CompleteOperationalRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
                 RecordLastCompletedRouteSnapshot(route, routeSequence, loadPlan.FinalScenesToLoad);
 
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
@@ -490,12 +490,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
             finally
             {
-                lock (_sandboxRouteSync)
+                lock (_operationalRouteSync)
                 {
-                    _hasActiveSandboxRouteOperation = false;
-                    _activeSandboxRouteOperationId = string.Empty;
-                    _activeSandboxTransitionId = string.Empty;
-                    _activeSandboxRouteIdentity = string.Empty;
+                    _hasActiveOperationalRouteOperation = false;
+                    _activeOperationalRouteOperationId = string.Empty;
+                    _activeOperationalTransitionId = string.Empty;
+                    _activeOperationalRouteIdentity = string.Empty;
                 }
             }
         }
@@ -1129,7 +1129,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return executor;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalRouteTransitionExecutor obrigatorio ausente para o trilho do Base11Sandbox.";
+            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalRouteTransitionExecutor obrigatorio ausente para o trilho operacional.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }
@@ -1165,7 +1165,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return receiver;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionActivityEntryHandoffReceiver obrigatorio ausente para o trilho do Base11Sandbox.";
+            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionActivityEntryHandoffReceiver obrigatorio ausente para o trilho operacional.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }
@@ -1817,7 +1817,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             public IReadOnlyList<SceneKeyAsset> FinalScenesToUnload { get; }
         }
 
-        private SessionOperationalResult CompleteSandboxRouteOperation(
+        private SessionOperationalResult CompleteOperationalRouteOperation(
             string routeOperationId,
             string transitionId,
             int routeSequence,
@@ -1841,20 +1841,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 identity,
                 source,
                 reason,
-                "Sandbox route completed.");
+                "Operational route completed.");
 
             _state.SetCurrentIdentity(identity);
             _state.MarkStarted();
             _state.MarkCompleted();
             _state.AppendFact(fact);
             _state.AppendTrace(
-                $"[OBS][SessionOperationalPipeline] fact='OperationalRouteCompleted' stage='{identity.Stage}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' routeId='{identity.RouteId}' routeProfileId='{identity.RouteProfileId}' source='{source}' reason='{reason}' message='Sandbox route completed.'");
+                $"[OBS][SessionOperationalPipeline] fact='OperationalRouteCompleted' stage='{identity.Stage}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' routeId='{identity.RouteId}' routeProfileId='{identity.RouteProfileId}' source='{source}' reason='{reason}' message='Operational route completed.'");
 
             return new SessionOperationalResult(
                 SessionOperationalResultKind.Completed,
                 identity,
                 _state.Facts,
-                "Sandbox route completed.");
+                "Operational route completed.");
         }
     }
 }

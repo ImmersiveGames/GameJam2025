@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
-using _ImmersiveGames.NewScripts.SceneFlow.Contracts.Navigation;
+using _ImmersiveGames.NewScripts.SceneRouting.Contracts.Navigation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
-namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
+namespace _ImmersiveGames.NewScripts.SceneRouting.Transition.Runtime
 {
     public readonly struct SceneTransitionContext : IEquatable<SceneTransitionContext>
     {
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
         public string ResetDecisionSource { get; }
         public string ResetDecisionReason { get; }
         public SceneTransitionPayload Payload { get; }
-        public SceneTransitionGameplayEntryKind GameplayEntryKind => Payload != null ? Payload.GameplayEntryKind : SceneTransitionGameplayEntryKind.None;
+        public SceneTransitionGameplayEntryKind GameplayEntryKind => Payload?.GameplayEntryKind ?? SceneTransitionGameplayEntryKind.None;
         public bool IsGameplayInitialEntry => Payload != null && Payload.IsGameplayInitialEntry;
         public bool IsGameplayReentry => Payload != null && Payload.IsGameplayReentry;
         public string ContextSignature { get; }
@@ -163,4 +163,3 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime
     public readonly struct SceneTransitionBeforeFadeOutEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionBeforeFadeOutEvent(SceneTransitionContext context) { this.context = context; } }
     public readonly struct SceneTransitionCompletedEvent : IEvent { public readonly SceneTransitionContext context; public SceneTransitionCompletedEvent(SceneTransitionContext context) { this.context = context; } }
 }
-

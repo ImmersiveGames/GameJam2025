@@ -17,14 +17,14 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
     public sealed class MenuQuitButtonBinder : FrontendButtonBinderBase
     {
         private IFrontendQuitService _quitService;
-        private bool _isBase11SandboxProfile;
+        private bool _isCanonicalOperationalProfile;
 
         protected override void Awake()
         {
             base.Awake();
 
-            _isBase11SandboxProfile = IsBase11SandboxProfile();
-            if (_isBase11SandboxProfile)
+            _isCanonicalOperationalProfile = IsCanonicalOperationalProfile();
+            if (_isCanonicalOperationalProfile)
             {
                 if (button != null)
                 {
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
                 }
 
                 DebugUtility.Log<MenuQuitButtonBinder>(
-                    "[OBS][FrontendUI][Intent] Quit button observed_noop reason='base11_sandbox_no_frontend_quit'.");
+                    "[OBS][FrontendUI][Intent] Quit button observed_noop reason='canonical_no_frontend_quit'.");
                 return;
             }
 
@@ -49,10 +49,10 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             DebugUtility.Log<MenuQuitButtonBinder>(
                 $"[OBS][FrontendUI][Intent] Quit solicitado. reason='{actionReason}'.");
 
-            if (_isBase11SandboxProfile)
+            if (_isCanonicalOperationalProfile)
             {
                 DebugUtility.Log<MenuQuitButtonBinder>(
-                    "[OBS][FrontendUI][Intent] Quit button observed_noop reason='base11_sandbox_no_frontend_quit'.");
+                    "[OBS][FrontendUI][Intent] Quit button observed_noop reason='canonical_no_frontend_quit'.");
                 return false;
             }
 
@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             return true;
         }
 
-        private static bool IsBase11SandboxProfile()
+        private static bool IsCanonicalOperationalProfile()
         {
             if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
             {

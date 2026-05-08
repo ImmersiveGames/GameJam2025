@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 

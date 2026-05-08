@@ -8,8 +8,8 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
 {
     /// <summary>
     /// Controla o fade (CanvasGroup alpha) dentro da FadeScene.
-    /// - NÃ£o conhece SceneTransitionProfile diretamente (config vem de fora).
-    /// - Usa Time.unscaledDeltaTime para nÃ£o ser afetado por pausas/timeScale.
+    /// - Não conhece SceneTransitionProfile diretamente (config vem de fora).
+    /// - Usa Time.unscaledDeltaTime para não ser afetado por pausas/timeScale.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class FadeController : MonoBehaviour
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
         private string? _lastContextSignature;
         private string? _activeContextSignature;
 
-        // Evento para integraÃ§Ã£o com SceneFlow
+        // Evento para integração com presentation/fade e seus adaptadores canônicos.
         public event Action<string>? OnFadeComplete;
 
         // Permite que adaptadores definam explicitamente a signature antes do fade.
@@ -73,11 +73,11 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
             if (canvas == null)
             {
                 DebugUtility.LogWarning<FadeController>(
-                    "[Fade] Nenhum Canvas encontrado no FadeScene. OrdenaÃ§Ã£o nÃ£o serÃ¡ configurada.");
+                    "[Fade] Nenhum Canvas encontrado no FadeScene. Ordenação não será configurada.");
                 return;
             }
 
-            // ObservaÃ§Ã£o:
+            // Observação:
             // - Em Canvas raiz (sem parent Canvas), o Unity pode manter overrideSorting=false por design.
             // - Ainda assim, sortingOrder funciona normalmente para Canvas raiz.
             bool isRoot = canvas.isRootCanvas;
@@ -123,11 +123,12 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
             _fadeOutCurve = config.FadeOutCurve;
         }
 
-        // Compatibilidade: mÃ©todos existentes
+
+        // Compatibilidade: métodos existentes
         public Task FadeInAsync() => FadeInAsync("no-signature");
         public Task FadeOutAsync() => FadeOutAsync("no-signature");
 
-        // Novas assinaturas com contextSignature (propagaÃ§Ã£o)
+        // Novas assinaturas com contextSignature (propagação)
         public Task FadeInAsync(string? contextSignature) => FadeToAsync(1f, contextSignature);
         public Task FadeOutAsync(string? contextSignature) => FadeToAsync(0f, contextSignature);
 
@@ -138,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
                 return;
             }
 
-            // ResolvePlayerActor signature: usa contexto explÃ­cito quando houver; fallback para Ãºltimo contexto conhecido.
+            // Resolver signature: usa contexto explícito quando houver; fallback para último contexto conhecido.
             _activeContextSignature = ResolveContextSignature(contextSignature);
             string usedSignature = _activeContextSignature;
 
@@ -249,5 +250,4 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
         }
     }
 }
-
 

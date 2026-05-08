@@ -8,11 +8,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     {
         public static class Feature
         {
-            public const string SceneFlow = "SceneFlow";
+            public const string SceneRouting = "SceneRouting";
             public const string Loading = "Loading";
             public const string Fade = "Fade";
             public const string WorldLifecycle = "WorldLifecycle";
-            public const string GameLoop = "GameLoop";
+            public const string RunLifecycle = "RunLifecycle";
             public const string Gameplay = "Gameplay";
             public const string Levels = "Levels";
             public const string Navigation = "Navigation";

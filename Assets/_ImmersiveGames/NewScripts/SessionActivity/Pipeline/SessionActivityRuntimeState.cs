@@ -24,10 +24,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public IReadOnlyList<SessionActivitySnapshot> Snapshots => _snapshots;
         public IReadOnlyList<string> Trace => _trace;
 
-        public void Reset(string pipelineId, string sessionId)
+        public void Reset(string pipelineId, string sessionStateId)
         {
             PipelineId = pipelineId;
-            SessionId = sessionId;
+            SessionId = sessionStateId;
             HasStarted = false;
             HasCompleted = false;
             CurrentDefinition = default;

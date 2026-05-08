@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
+using _ImmersiveGames.NewScripts.SceneRouting.Transition.Runtime;
 
-namespace _ImmersiveGames.NewScripts.SceneFlow.Transition
+namespace _ImmersiveGames.NewScripts.SceneRouting.Transition
 {
     public interface ISceneTransitionCompletionGate
     {

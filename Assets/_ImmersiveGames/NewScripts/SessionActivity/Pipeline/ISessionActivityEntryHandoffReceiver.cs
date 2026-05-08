@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
+﻿namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public interface ISessionActivityEntryHandoffReceiver
     {

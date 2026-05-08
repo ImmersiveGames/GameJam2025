@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime

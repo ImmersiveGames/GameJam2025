@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
+﻿using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.SimulationGate
 {

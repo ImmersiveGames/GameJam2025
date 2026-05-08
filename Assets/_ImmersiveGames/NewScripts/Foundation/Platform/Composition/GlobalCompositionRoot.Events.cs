@@ -1,7 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.SceneRouting.Transition.Runtime;
+using _ImmersiveGames.NewScripts.RunLifecycle.Core;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -20,12 +20,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EventBus<PauseWillExitEvent>.Clear();
             EventBus<PauseStateChangedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
-            EventBus<GameLoopActivityChangedEvent>.Clear();
+            EventBus<RunLifecycleActivityChangedEvent>.Clear();
             EventBus<GameRunStartedEvent>.Clear();
             EventBus<GameRunEndedEvent>.Clear();
             EventBus<GameRunEndRequestedEvent>.Clear();
 
-            // Scene Flow (NewScripts): evita bindings duplicados quando domain reload está desativado.
+            // Scene composition (NewScripts): evita bindings duplicados quando domain reload está desativado.
             EventBus<SceneTransitionStartedEvent>.Clear();
             EventBus<SceneTransitionFadeInCompletedEvent>.Clear();
             EventBus<SceneTransitionScenesReadyEvent>.Clear();
@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EventBus<SceneTransitionCompletedEvent>.Clear();
 
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[EventBus] EventBus inicializado (SessionActivityPipeline + SceneFlow).",
+                "[EventBus] EventBus inicializado (SessionActivityPipeline + SceneComposition).",
                 DebugUtility.Colors.Info);
         }
 

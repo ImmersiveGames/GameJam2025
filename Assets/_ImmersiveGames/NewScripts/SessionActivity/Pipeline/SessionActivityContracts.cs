@@ -8,10 +8,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         Unknown = 0,
         ActivationExecuting = 1,
         ActivationSkippedNoContent = 2,
-        GameplayRunning = 3,
+        ActivityRunning = 3,
         Deactivation = 4,
-        PhaseResultPresentationExecuting = 5,
-        PhaseResultPresentationSkippedNoContent = 6,
+        ActivityResultPresentationExecuting = 5,
+        ActivityResultPresentationSkippedNoContent = 6,
         Completed = 7,
     }
 
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
     {
         public SessionActivityIdentity(
             string pipelineId,
-            string sessionId,
+            string sessionStateId,
             string activityId,
             int activityOrdinal,
             int entrySequence,
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string source)
         {
             PipelineId = Normalize(pipelineId);
-            SessionId = Normalize(sessionId);
+            SessionId = Normalize(sessionStateId);
             ActivityId = Normalize(activityId);
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
@@ -82,16 +82,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public override string ToString()
         {
             return IsValid
-                ? $"pipelineId='{PipelineId}', sessionId='{SessionId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', stage='{Stage}'"
+                ? $"pipelineId='{PipelineId}', sessionStateId='{SessionId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', stage='{Stage}'"
                 : "<none>";
         }
 
         public static bool operator ==(SessionActivityIdentity left, SessionActivityIdentity right) => left.Equals(right);
         public static bool operator !=(SessionActivityIdentity left, SessionActivityIdentity right) => !left.Equals(right);
 
-        private static string BuildCycleSignature(string pipelineId, string sessionId, string activityId, int activityOrdinal, int entrySequence, SessionActivityStage stage)
+        private static string BuildCycleSignature(string pipelineId, string sessionStateId, string activityId, int activityOrdinal, int entrySequence, SessionActivityStage stage)
         {
-            return $"{pipelineId}|{sessionId}|{activityId}|{activityOrdinal}|{entrySequence}|{stage}";
+            return $"{pipelineId}|{sessionStateId}|{activityId}|{activityOrdinal}|{entrySequence}|{stage}";
         }
 
         private static string Normalize(string value)
@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int activityOrdinal,
             bool hasActivation,
             bool hasGameplayContent,
-            bool hasPhaseResultPresentation,
+            bool hasActivityResult,
             string nextActivityId,
             string source)
         {
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             HasActivation = hasActivation;
             HasGameplayContent = hasGameplayContent;
-            HasPhaseResultPresentation = hasPhaseResultPresentation;
+            HasActivityResult = hasActivityResult;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
         }
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public int ActivityOrdinal { get; }
         public bool HasActivation { get; }
         public bool HasGameplayContent { get; }
-        public bool HasPhaseResultPresentation { get; }
+        public bool HasActivityResult { get; }
         public string NextActivityId { get; }
         public string Source { get; }
 
@@ -141,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activation='{HasActivation}', gameplay='{HasGameplayContent}', phaseResult='{HasPhaseResultPresentation}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activation='{HasActivation}', gameplay='{HasGameplayContent}', hasActivityResult='{HasActivityResult}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
     public enum SessionActivityCommandKind
     {
         Unknown = 0,
-        StartDemo = 1,
+        StartActivity = 1,
         CompleteCurrentActivity = 2,
         ContinueToNextActivity = 3,
         GoToNextActivity = 4,
@@ -211,8 +211,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         GameplayRunningEntered = 4,
         GameplayContentSkippedNoContent = 5,
         ActivityDeactivated = 6,
-        PhaseResultPresentationEntered = 7,
-        PhaseResultPresentationSkippedNoContent = 8,
+        ActivityResultPresentationEntered = 7,
+        ActivityResultPresentationSkippedNoContent = 8,
         ContinueAccepted = 9,
         ActivityHandoffPrepared = 10,
         PipelineCompleted = 11,

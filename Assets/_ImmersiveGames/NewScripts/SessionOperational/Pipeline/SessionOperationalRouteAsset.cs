@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     [CreateAssetMenu(
         fileName = "SessionOperationalRoute",
-        menuName = "ImmersiveGames/NewScripts/SessionFlow/OperationalRoute/SessionOperationalRoute",
+        menuName = "ImmersiveGames/NewScripts/Session Operational/Operational Route/SessionOperationalRoute",
         order = 40)]
     public sealed class SessionOperationalRouteAsset : ScriptableObject
     {
