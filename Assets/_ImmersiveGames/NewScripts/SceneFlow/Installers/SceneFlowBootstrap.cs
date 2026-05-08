@@ -5,29 +5,22 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Interop;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
+
 namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 {
     /// <summary>
     /// Runtime composer do SceneFlow.
-    ///
-    /// Responsabilidade:
-    /// - compor e ativar o runtime do SceneFlow depois que os installers relevantes concluíram;
-    /// - nao registrar contratos de boot.
     /// </summary>
     public static class SceneFlowBootstrap
     {
         private static bool _runtimeComposed;
         private static SceneFlowInputModeBridge _inputModeBridge;
-        private static SessionOperationalRouteTransitionBridge _sessionOperationalRouteTransitionBridge;
         private static Base11SandboxOperationalRouteTransitionAdapter _base11SandboxOperationalRouteTransitionAdapter;
-        private static LoadingHudOrchestrator _loadingHudOrchestrator;
-        private static LoadingProgressOrchestrator _loadingProgressOrchestrator;
 
         public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
         {
@@ -45,10 +38,8 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 
             EnsureSceneTransitionService();
             EnsureRouteActorSetRefContext();
-            EnsureSessionOperationalRouteTransitionBridge();
             EnsureBase11SandboxOperationalRouteTransitionAdapter();
             EnsureInputModeBridge();
-            EnsureLoadingOrchestrators();
             EnsureFadeReadyAsync();
             EnsureSceneFlowModuleComposition();
 
@@ -121,22 +112,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureSessionOperationalRouteTransitionBridge()
-        {
-            if (_sessionOperationalRouteTransitionBridge != null)
-            {
-                return;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<SessionOperationalRouteTransitionBridge>(out var existingBridge) && existingBridge != null)
-            {
-                _sessionOperationalRouteTransitionBridge = existingBridge;
-                return;
-            }
-
-            _sessionOperationalRouteTransitionBridge = new SessionOperationalRouteTransitionBridge();
-        }
-
         private static void EnsureBase11SandboxOperationalRouteTransitionAdapter()
         {
             if (_base11SandboxOperationalRouteTransitionAdapter != null)
@@ -154,38 +129,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             _base11SandboxOperationalRouteTransitionAdapter = new Base11SandboxOperationalRouteTransitionAdapter();
             DependencyManager.Provider.RegisterGlobal(_base11SandboxOperationalRouteTransitionAdapter);
             DependencyManager.Provider.RegisterGlobal<ISessionOperationalRouteTransitionExecutor>(_base11SandboxOperationalRouteTransitionAdapter);
-        }
-
-        private static void EnsureLoadingOrchestrators()
-        {
-            ResolveRequired<ILoadingPresentationService>();
-            ResolveRequired<ILoadingHudService>();
-
-            if (_loadingHudOrchestrator == null)
-            {
-                if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var existingHud) && existingHud != null)
-                {
-                    _loadingHudOrchestrator = existingHud;
-                }
-                else
-                {
-                    _loadingHudOrchestrator = new LoadingHudOrchestrator();
-                    DependencyManager.Provider.RegisterGlobal(_loadingHudOrchestrator);
-                }
-            }
-
-            if (_loadingProgressOrchestrator == null)
-            {
-                if (DependencyManager.Provider.TryGetGlobal<LoadingProgressOrchestrator>(out var existingProgress) && existingProgress != null)
-                {
-                    _loadingProgressOrchestrator = existingProgress;
-                }
-                else
-                {
-                    _loadingProgressOrchestrator = new LoadingProgressOrchestrator();
-                    DependencyManager.Provider.RegisterGlobal(_loadingProgressOrchestrator);
-                }
-            }
         }
 
         private static async void EnsureFadeReadyAsync()
@@ -216,13 +159,9 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             ResolveRequired<IRouteGuard>();
             ResolveRequired<IRouteResetPolicy>();
             ResolveRequired<ISceneFlowRouteActorSetRefContext>();
-            ResolveRequired<ILoadingPresentationService>();
-            ResolveRequired<ILoadingHudService>();
             ResolveRequired<IFadeService>();
             ResolveRequired<Base11SandboxOperationalRouteTransitionAdapter>();
             ResolveRequired<SceneFlowInputModeBridge>();
-            ResolveRequired<LoadingHudOrchestrator>();
-            ResolveRequired<LoadingProgressOrchestrator>();
 
             DebugUtility.Log(typeof(SceneFlowBootstrap),
                 "[OBS][SceneFlow] Runtime composition consolidada. scope='transition macro -> loading/fade -> navigation'.",
@@ -247,4 +186,3 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
         }
     }
 }
-

@@ -1,4 +1,5 @@
 ﻿using System;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
@@ -52,6 +53,22 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public RuntimePersistentScenesPolicyAsset RuntimePersistentScenesPolicy => runtimePersistentScenesPolicy;
 
         /// <summary>
+        /// Default loading policy for routes that opt into RuntimeDefault loading mode.
+        /// </summary>
+        [Header("Loading")]
+        [Tooltip("Default loading mode used when a route chooses RuntimeDefault.")]
+        [SerializeField] private SessionOperationalRouteLoadingMode defaultLoadingMode = SessionOperationalRouteLoadingMode.None;
+
+        /// <summary>
+        /// Default loading profile for routes that opt into RuntimeDefault loading mode.
+        /// </summary>
+        [Tooltip("Default loading profile used when DefaultLoadingMode=Profile.")]
+        [SerializeField] private RuntimeLoadingProfileAsset defaultLoadingProfile;
+
+        public SessionOperationalRouteLoadingMode DefaultLoadingMode => defaultLoadingMode;
+        public RuntimeLoadingProfileAsset DefaultLoadingProfile => defaultLoadingProfile;
+
+        /// <summary>
         /// ConfiguraÃ§Ãµes do reporter de degradaÃ§Ã£o (dedupe, resumo, etc).
         /// </summary>
         [Header("Degraded Mode Reporter")]
@@ -91,6 +108,47 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Header("Base11 Sandbox")]
         [Tooltip("ReferÃªncia direta para a rota inicial do Base11Sandbox.")]
         public SessionOperationalRouteAsset StartupRouteDefinition => startupRouteDefinition;
+
+        public bool TryValidateLoadingConfiguration(out string errorMessage)
+        {
+            if (defaultLoadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault)
+            {
+                errorMessage = "defaultLoadingMode cannot be RuntimeDefault.";
+                return false;
+            }
+
+            if (defaultLoadingMode == SessionOperationalRouteLoadingMode.Profile)
+            {
+                if (defaultLoadingProfile == null)
+                {
+                    errorMessage = "defaultLoadingProfile is required when DefaultLoadingMode=Profile.";
+                    return false;
+                }
+
+                if (!defaultLoadingProfile.TryValidate(out string profileValidationError))
+                {
+                    errorMessage = $"defaultLoadingProfile is invalid. detail='{profileValidationError}'.";
+                    return false;
+                }
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void OnValidate()
+        {
+            if (TryValidateLoadingConfiguration(out string errorMessage) || string.IsNullOrWhiteSpace(errorMessage))
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(
+                typeof(RuntimeModeConfig),
+                $"[Config][Editor] RuntimeModeConfig loading invalid. detail='{errorMessage}'");
+        }
+#endif
 
         /// <summary>
         /// ConfiguraÃ§Ãµes do reporter de degradaÃ§Ã£o: dedupe, resumos periÃ³dicos e limite de chaves.

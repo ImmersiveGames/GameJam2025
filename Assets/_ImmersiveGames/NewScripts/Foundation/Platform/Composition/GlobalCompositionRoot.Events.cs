@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Contracts;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Events;
@@ -46,26 +45,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
                 "[EventBus] EventBus inicializado (SessionActivityPipeline + SceneFlow).",
                 DebugUtility.Colors.Info);
-
-            EnsureLoadingOrchestratorsRegisteredAfterEventBusReset();
-        }
-
-        private static void EnsureLoadingOrchestratorsRegisteredAfterEventBusReset()
-        {
-            if (!DependencyManager.HasInstance || DependencyManager.Provider == null)
-            {
-                return;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<LoadingHudOrchestrator>(out var hudOrchestrator) && hudOrchestrator != null)
-            {
-                hudOrchestrator.EnsureRegistered();
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<LoadingProgressOrchestrator>(out var progressOrchestrator) && progressOrchestrator != null)
-            {
-                progressOrchestrator.EnsureRegistered();
-            }
         }
 
     }

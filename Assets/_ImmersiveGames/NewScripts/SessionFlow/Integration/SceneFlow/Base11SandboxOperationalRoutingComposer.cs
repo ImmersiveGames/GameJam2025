@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         private static SessionOperationalPipeline _sessionOperationalPipeline;
         private static Base11SandboxOperationalRouteTransitionAdapter _routeTransitionAdapter;
         private static Base11SandboxSessionOperationalFadeAdapter _fadeAdapter;
+        private static Base11SandboxSessionOperationalLoadingAdapter _loadingAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -38,6 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             EnsureSessionOperationalPipeline();
             EnsureSandboxFadeAdapter();
+            EnsureSandboxLoadingAdapter();
             EnsureSandboxRouteExecutor();
 
             _runtimeComposed = true;
@@ -135,6 +137,29 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='Base11SandboxSessionOperationalFadeAdapter' registered for Base11Sandbox.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSandboxLoadingAdapter()
+        {
+            if (_loadingAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<Base11SandboxSessionOperationalLoadingAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _loadingAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<ISessionOperationalLoadingAdapter>(_loadingAdapter);
+                return;
+            }
+
+            _loadingAdapter = new Base11SandboxSessionOperationalLoadingAdapter();
+            DependencyManager.Provider.RegisterGlobal(_loadingAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISessionOperationalLoadingAdapter>(_loadingAdapter);
+
+            DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='Base11SandboxSessionOperationalLoadingAdapter' registered for Base11Sandbox.",
                 DebugUtility.Colors.Info);
         }
     }

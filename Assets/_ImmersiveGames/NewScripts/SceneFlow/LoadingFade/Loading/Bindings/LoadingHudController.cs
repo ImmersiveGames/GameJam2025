@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using TMPro;
@@ -21,6 +22,10 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Bindings
         [SerializeField] private RectTransform spinnerTransform;
         [SerializeField] private float spinnerDegreesPerSecond = 180f;
 
+        [Header("Render Order")]
+        [Tooltip("SortingOrder do Canvas do Loading. Deve ficar acima do FadeScene para o loading encerrar visualmente antes do fadeOut.")]
+        [SerializeField] private int sortingOrder = 12000;
+
         private bool _isVisible;
         private string _currentMessage = DefaultLabel;
         private LoadingProgressSnapshot _currentProgress = new(0f, DefaultLabel);
@@ -32,11 +37,13 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Bindings
         public Image ProgressFillImage => progressFillImage;
         public GameObject SpinnerVisual => spinnerVisual;
         public RectTransform SpinnerTransform => spinnerTransform;
+        public int SortingOrder => sortingOrder;
 
         private void Awake()
         {
             ResolveReferences();
             ValidateConfigurationOrFail();
+            ConfigureCanvasSorting();
 
             SetVisible(false);
             ApplyLabel(null, null);
@@ -84,10 +91,34 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Bindings
             }
         }
 
+        public async Task ApplyProgressAndSettleAsync(LoadingProgressSnapshot snapshot, string contextSignature)
+        {
+            if (progressFillImage == null)
+            {
+                FailFast("progress_fill_missing", $"root='{name}' requires an Image for the progress fill. contextSignature='{contextSignature}'.");
+            }
+
+            ApplyProgress(snapshot);
+            ValidateProgressFillOrFail(snapshot, contextSignature);
+
+            UnityEngine.Canvas.ForceUpdateCanvases();
+
+            int startFrame = Time.frameCount;
+            await Task.Yield();
+            while (Time.frameCount == startFrame)
+            {
+                await Task.Yield();
+            }
+
+            UnityEngine.Canvas.ForceUpdateCanvases();
+            ValidateProgressFillOrFail(snapshot, contextSignature);
+        }
+
         public void EnsureConfiguredOrFail()
         {
             ResolveReferences();
             ValidateConfigurationOrFail();
+            ConfigureCanvasSorting();
         }
 
         private void SetVisible(bool visible)
@@ -139,6 +170,45 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Bindings
             if (spinnerTransform == null && spinnerVisual != null)
             {
                 spinnerTransform = spinnerVisual.transform as RectTransform;
+            }
+        }
+
+        private void ConfigureCanvasSorting()
+        {
+            if (canvas == null)
+            {
+                FailFast("canvas_missing", $"root='{name}' requires Canvas on the same GameObject.");
+            }
+
+            bool isRoot = canvas.isRootCanvas;
+            if (!isRoot)
+            {
+                canvas.overrideSorting = true;
+            }
+
+            canvas.sortingOrder = sortingOrder;
+        }
+
+        private void ValidateProgressFillOrFail(LoadingProgressSnapshot snapshot, string contextSignature)
+        {
+            if (progressFillImage == null)
+            {
+                FailFast("progress_fill_missing", $"root='{name}' requires an Image for the progress fill. contextSignature='{contextSignature}'.");
+            }
+
+            float expectedFillAmount = snapshot.NormalizedProgress;
+            float actualFillAmount = progressFillImage.fillAmount;
+            if (Mathf.Abs(actualFillAmount - expectedFillAmount) > 0.0001f)
+            {
+                FailFast("progress_fill_mismatch", $"root='{name}' expectedFill='{expectedFillAmount:0.###}' actualFill='{actualFillAmount:0.###}' contextSignature='{contextSignature}'.");
+            }
+
+            if (Mathf.Abs(expectedFillAmount - 1f) <= 0.0001f)
+            {
+                if (progressPercentText != null && progressPercentText.text != $"{snapshot.Percentage}%")
+                {
+                    FailFast("progress_text_mismatch", $"root='{name}' expectedText='{snapshot.Percentage}%' actualText='{progressPercentText.text}' contextSignature='{contextSignature}'.");
+                }
             }
         }
 

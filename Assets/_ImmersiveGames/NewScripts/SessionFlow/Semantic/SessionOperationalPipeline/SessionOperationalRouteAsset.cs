@@ -34,6 +34,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         [SerializeField] private SessionOperationalRouteTransitionMode transitionMode = SessionOperationalRouteTransitionMode.None;
         [SerializeField] private SceneTransitionProfile transitionProfile;
 
+        [Header("Loading")]
+        [SerializeField] private SessionOperationalRouteLoadingMode loadingMode = SessionOperationalRouteLoadingMode.RuntimeDefault;
+        [SerializeField] private RuntimeLoadingProfileAsset loadingProfile;
+
         [Header("Scenes")]
         [SerializeField] private List<SceneKeyAsset> scenesToLoad = new();
         [SerializeField] private List<SceneKeyAsset> scenesToUnload = new();
@@ -47,6 +51,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public string RouteIdentity => Normalize(routeIdentity);
         public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile TransitionProfile => transitionProfile;
+        public SessionOperationalRouteLoadingMode LoadingMode => loadingMode;
+        public RuntimeLoadingProfileAsset LoadingProfile => loadingProfile;
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => scenesToLoad;
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => scenesToUnload;
         public SceneKeyAsset ActiveSceneKey => activeScene;
@@ -54,6 +60,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
         public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
+        public bool UsesLoading => LoadingMode != SessionOperationalRouteLoadingMode.None;
+        public string LoadingProfileLabel => loadingProfile != null && !string.IsNullOrWhiteSpace(loadingProfile.ProfileId) ? loadingProfile.ProfileId.Trim() : string.Empty;
         public string TransitionProfileLabel => transitionProfile != null && !string.IsNullOrWhiteSpace(transitionProfile.name) ? transitionProfile.name.Trim() : string.Empty;
 
         public bool IsValid
@@ -107,6 +115,32 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 if (!transitionProfile.TryValidate(out string profileValidationError))
                 {
                     errorMessage = $"transitionProfile is invalid routeIdentity='{RouteIdentity}' profile='{TransitionProfileLabel}' detail='{profileValidationError}'.";
+                    return false;
+                }
+            }
+
+            bool validLoadingMode =
+                loadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault ||
+                loadingMode == SessionOperationalRouteLoadingMode.None ||
+                loadingMode == SessionOperationalRouteLoadingMode.Profile;
+
+            if (!validLoadingMode)
+            {
+                errorMessage = $"loadingMode is invalid routeIdentity='{RouteIdentity}' loadingMode='{loadingMode}'.";
+                return false;
+            }
+
+            if (loadingMode == SessionOperationalRouteLoadingMode.Profile)
+            {
+                if (loadingProfile == null)
+                {
+                    errorMessage = $"loadingProfile is required when loadingMode=Profile routeIdentity='{RouteIdentity}'.";
+                    return false;
+                }
+
+                if (!loadingProfile.TryValidate(out string loadingProfileValidationError))
+                {
+                    errorMessage = $"loadingProfile is invalid routeIdentity='{RouteIdentity}' profile='{LoadingProfileLabel}' detail='{loadingProfileValidationError}'.";
                     return false;
                 }
             }

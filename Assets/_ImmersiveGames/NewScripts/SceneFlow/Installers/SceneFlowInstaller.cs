@@ -6,18 +6,14 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 using _ImmersiveGames.NewScripts.SceneFlow.Contracts.RuntimeCore;
 using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Runtime;
-using _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Loading.Runtime;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition;
 using _ImmersiveGames.NewScripts.SceneFlow.Transition.Runtime;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
 {
     /// <summary>
     /// Installer do SceneFlow.
-    ///
-    /// Responsabilidade:
-    /// - registrar contratos, servicos, policies, guards e configs do modulo;
-    /// - nao compor runtime nem ativar bridges/event handlers.
     /// </summary>
     public static class SceneFlowInstaller
     {
@@ -42,7 +38,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             RegisterRouteResetPolicy();
             RegisterTransitionCompletionGate(bootstrapConfig);
             EnsureRouteActorSetRefContext();
-            RegisterLoadingServices(bootstrapConfig);
 
             _installed = true;
 
@@ -131,67 +126,6 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterLoadingServices(BootstrapConfigAsset bootstrapConfig)
-        {
-            var provider = DependencyManager.Provider;
-            bool hasPresentation = provider.TryGetGlobal<ILoadingPresentationService>(out var existingPresentation) && existingPresentation != null;
-            bool hasHud = provider.TryGetGlobal<ILoadingHudService>(out var existingHud) && existingHud != null;
-
-            if (hasPresentation && hasHud)
-            {
-                DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
-                    "[Loading] ILoadingPresentationService ja registrado no DI global.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            if (hasPresentation && !hasHud)
-            {
-                if (existingPresentation is ILoadingHudService loadingHudService)
-                {
-                    provider.RegisterGlobal(loadingHudService);
-                    DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
-                        "[Loading] ILoadingHudService registrado como alias do servico existente.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
-
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][Loading] ILoadingPresentationService existente nao implementa ILoadingHudService (tipo='{existingPresentation.GetType().Name}').");
-            }
-
-            if (hasHud && !hasPresentation)
-            {
-                if (existingHud is ILoadingPresentationService loadingPresentationService)
-                {
-                    provider.RegisterGlobal(loadingPresentationService);
-                    DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
-                        "[Loading] ILoadingPresentationService registrado como alias do servico existente.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
-
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][Loading] ILoadingHudService existente nao implementa ILoadingPresentationService (tipo='{existingHud.GetType().Name}').");
-            }
-
-            var runtimeMode = ResolveRequiredRuntimeModeProvider();
-            var degradedReporter = ResolveDegradedReporterIfNeeded(runtimeMode);
-            var loadingHudSceneKey = bootstrapConfig.LoadingHudSceneKey;
-            if (loadingHudSceneKey == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][Loading] Missing required BootstrapConfigAsset.loadingHudSceneKey.");
-            }
-
-            var concreteService = new LoadingHudService(runtimeMode, degradedReporter, loadingHudSceneKey);
-            DependencyManager.Provider.RegisterGlobal<ILoadingPresentationService>(concreteService);
-            DependencyManager.Provider.RegisterGlobal<ILoadingHudService>(concreteService);
-
-            DebugUtility.LogVerbose(typeof(SceneFlowInstaller),
-                "[Loading] ILoadingPresentationService e ILoadingHudService registrados no DI global.",
-                DebugUtility.Colors.Info);
-        }
-
         private static IRuntimeModeProvider ResolveRequiredRuntimeModeProvider()
         {
             if (DependencyManager.Provider.TryGetGlobal<IRuntimeModeProvider>(out var runtimeMode) && runtimeMode != null)
@@ -202,24 +136,17 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             throw new InvalidOperationException("[FATAL][Config][Loading] IRuntimeModeProvider obrigatorio ausente no DI global.");
         }
 
-        private static IDegradedModeReporter ResolveDegradedReporterIfNeeded(IRuntimeModeProvider runtimeMode)
+        private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string successMessage)
+            where T : class
         {
-            if (runtimeMode != null && !runtimeMode.IsStrict)
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
             {
-                if (DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter) && degradedReporter != null)
-                {
-                    return degradedReporter;
-                }
-
-                return null;
+                DebugUtility.LogVerbose(typeof(SceneFlowInstaller), alreadyRegisteredMessage, DebugUtility.Colors.Info);
+                return;
             }
 
-            if (DependencyManager.Provider.TryGetGlobal<IDegradedModeReporter>(out var strictReporter) && strictReporter != null)
-            {
-                return strictReporter;
-            }
-
-            throw new InvalidOperationException("[FATAL][Config][Loading] IDegradedModeReporter obrigatorio ausente em modo strict.");
+            DependencyManager.Provider.RegisterGlobal(factory());
+            DebugUtility.LogVerbose(typeof(SceneFlowInstaller), successMessage, DebugUtility.Colors.Info);
         }
 
         private static string ResolveFadeSceneName(BootstrapConfigAsset bootstrap, out string failureReason)
@@ -259,7 +186,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
             if (!Application.CanStreamedLevelBeLoaded(fadeSceneName))
             {
                 failureReason =
-                    $"[FATAL][Config][Fade] FadeScene ausente no Build Settings. asset='{bootstrapAssetName}', field='fadeSceneKey', keyAsset='{fadeSceneKeyAssetName}', scene='{fadeSceneName}'.";
+                    $"[FATAL][Config][Fade] Fade scene '{fadeSceneName}' not found in Build Settings. bootstrap='{bootstrapAssetName}', keyAsset='{fadeSceneKeyAssetName}'.";
                 return false;
             }
 
@@ -270,36 +197,16 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.Installers
         {
             if (bootstrapConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][SceneFlow] BootstrapConfigAsset obrigatorio ausente para resolver composition profile.");
+                throw new InvalidOperationException("[FATAL][Config][SceneFlow] BootstrapConfigAsset obrigatorio ausente para resolver CompositionProfile.");
             }
 
             RuntimeModeConfig runtimeModeConfig = bootstrapConfig.RuntimeModeConfig;
             if (runtimeModeConfig == null)
             {
-                throw new InvalidOperationException($"[FATAL][Config][SceneFlow] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset. bootstrap='{bootstrapConfig.name}'.");
+                throw new InvalidOperationException("[FATAL][Config][SceneFlow] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset para resolver CompositionProfile.");
             }
 
             return runtimeModeConfig.compositionProfile;
         }
-
-        private static void RegisterIfMissing<T>(Func<T> factory, string alreadyRegisteredMessage, string registeredMessage)
-            where T : class
-        {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(SceneFlowInstaller), alreadyRegisteredMessage, DebugUtility.Colors.Info);
-                return;
-            }
-
-            var instance = factory();
-            if (instance == null)
-            {
-                throw new InvalidOperationException($"Factory returned null while registering {typeof(T).Name}.");
-            }
-
-            DependencyManager.Provider.RegisterGlobal(instance);
-            DebugUtility.LogVerbose(typeof(SceneFlowInstaller), registeredMessage, DebugUtility.Colors.Info);
-        }
     }
 }
-

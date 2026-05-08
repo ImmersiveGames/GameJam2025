@@ -59,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
             ISessionOperationalFadeAdapter fadeAdapter = null;
+            ISessionOperationalLoadingAdapter loadingAdapter = null;
             if (route.UsesTransition)
             {
                 fadeAdapter = ResolveFadeAdapterOrFail();
@@ -75,6 +76,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string routeOperationId;
             string transitionId;
             int routeSequence;
+            SessionOperationalLoadingCommand loadingCommand;
 
             lock (_sandboxRouteSync)
             {
@@ -114,6 +116,24 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 _activeSandboxRouteIdentity = routeIdentity;
             }
 
+            loadingCommand = ResolveLoadingCommandOrFail(
+                route,
+                runtimeModeConfig,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+
+            if (loadingCommand.IsEnabled)
+            {
+                loadingAdapter = ResolveLoadingAdapterOrFail();
+
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][Loading] LoadingPlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' loadingScene='{loadingCommand.LoadingSceneName}' showImmediately='{loadingCommand.ShowImmediately}' hideAfterCompletion='{loadingCommand.HideAfterCompletion}' minimumVisibleSeconds='{loadingCommand.MinimumVisibleSeconds:0.###}' finalProgressHoldSeconds='{loadingCommand.FinalProgressHoldSeconds:0.###}' source='{sourceText}' reason='{reasonText}'.",
+                    DebugUtility.Colors.Info);
+            }
+
             SessionOperationalRouteCommand command = route.CreateCommand(
                 routeOperationId,
                 transitionId,
@@ -144,13 +164,97 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
 
             bool fadeInCompleted = false;
             bool fadeOutCompleted = false;
+            bool loadingStarted = false;
+            bool loadingCompleted = false;
+            bool loadingHidden = false;
 
             try
             {
+                if (loadingCommand.IsEnabled)
+                {
+                    await loadingAdapter.ShowLoadingAsync(
+                        loadingCommand,
+                        CreateLoadingFact(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.LoadingStarted,
+                            0f,
+                            "Loading started",
+                            "LoadingStarted"));
+                    loadingStarted = true;
+
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        $"[OBS][SessionOperationalPipeline][Loading] LoadingStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{sourceText}' reason='{reasonText}' showImmediately='{loadingCommand.ShowImmediately}'.",
+                        DebugUtility.Colors.Info);
+
+                    LogLoadingProgress(
+                        loadingCommand,
+                        SessionOperationalLoadingStage.LoadingStarted,
+                        0f,
+                        "Loading started",
+                        sourceText,
+                        reasonText);
+
+                    await loadingAdapter.UpdateLoadingAsync(
+                        loadingCommand,
+                        CreateLoadingFact(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.RoutePlanReady,
+                            0.10f,
+                            "Route plan ready",
+                            "RoutePlanReady"));
+
+                    LogLoadingProgress(
+                        loadingCommand,
+                        SessionOperationalLoadingStage.RoutePlanReady,
+                        0.10f,
+                        "Route plan ready",
+                        sourceText,
+                        reasonText);
+                }
+
                 if (command.UsesTransition)
                 {
                     await fadeAdapter.FadeInAsync(command);
                     fadeInCompleted = true;
+
+                    if (loadingCommand.IsEnabled)
+                    {
+                        await loadingAdapter.UpdateLoadingAsync(
+                            loadingCommand,
+                            CreateLoadingFact(
+                                loadingCommand,
+                                SessionOperationalLoadingStage.FadeInCompleted,
+                                0.20f,
+                                "Fade in completed",
+                                "FadeInCompleted"));
+
+                        LogLoadingProgress(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.FadeInCompleted,
+                            0.20f,
+                            "Fade in completed",
+                            sourceText,
+                            reasonText);
+                    }
+                }
+                else if (loadingCommand.IsEnabled)
+                {
+                    await loadingAdapter.UpdateLoadingAsync(
+                        loadingCommand,
+                        CreateLoadingFact(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.TransitionSkipped,
+                            0.20f,
+                            "Transition skipped",
+                            "TransitionSkipped"));
+
+                    LogLoadingProgress(
+                        loadingCommand,
+                        SessionOperationalLoadingStage.TransitionSkipped,
+                        0.20f,
+                        "Transition skipped",
+                        sourceText,
+                        reasonText);
                 }
 
                 SessionOperationalRouteCompletedFact adapterFact = await routeExecutor.ApplyOperationalRouteAsync(command);
@@ -159,18 +263,103 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                     throw new InvalidOperationException("Sandbox route executor returned an invalid completion fact.");
                 }
 
+                if (loadingCommand.IsEnabled)
+                {
+                    await loadingAdapter.UpdateLoadingAsync(
+                        loadingCommand,
+                        CreateLoadingFact(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.SceneCompositionCompleted,
+                            0.60f,
+                            "Scene composition completed",
+                            "SceneCompositionCompleted"));
+
+                    LogLoadingProgress(
+                        loadingCommand,
+                        SessionOperationalLoadingStage.SceneCompositionCompleted,
+                        0.60f,
+                        "Scene composition completed",
+                        sourceText,
+                        reasonText);
+
+                    await loadingAdapter.UpdateLoadingAsync(
+                        loadingCommand,
+                        CreateLoadingFact(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.MaterializationCompleted,
+                            0.80f,
+                            "Materialization completed",
+                            "MaterializationCompleted"));
+
+                    LogLoadingProgress(
+                        loadingCommand,
+                        SessionOperationalLoadingStage.MaterializationCompleted,
+                        0.80f,
+                        "Materialization completed",
+                        sourceText,
+                        reasonText);
+                }
+
+                if (loadingCommand.IsEnabled)
+                {
+                    await loadingAdapter.UpdateLoadingAsync(
+                        loadingCommand,
+                        CreateLoadingFact(
+                            loadingCommand,
+                            SessionOperationalLoadingStage.OperationalRouteCompleted,
+                            1.0f,
+                            "Operational route completed",
+                            "OperationalRouteCompleted"));
+                    loadingCompleted = true;
+
+                    LogLoadingProgress(
+                        loadingCommand,
+                        SessionOperationalLoadingStage.OperationalRouteCompleted,
+                        1.0f,
+                        "Operational route completed",
+                        sourceText,
+                        reasonText);
+
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        $"[OBS][SessionOperationalPipeline][Loading] LoadingCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{sourceText}' reason='{reasonText}' hideAfterCompletion='{loadingCommand.HideAfterCompletion}'.",
+                        DebugUtility.Colors.Success);
+
+                    if (loadingCommand.HideAfterCompletion)
+                    {
+                        await loadingAdapter.HideLoadingAsync(
+                            loadingCommand,
+                            CreateLoadingFact(
+                                loadingCommand,
+                                SessionOperationalLoadingStage.LoadingHidden,
+                                1.0f,
+                                "Loading hidden",
+                                "LoadingHidden"));
+                        loadingHidden = true;
+
+                        DebugUtility.Log(typeof(SessionOperationalPipeline),
+                            $"[OBS][SessionOperationalPipeline][Loading] LoadingHidden routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{sourceText}' reason='{reasonText}'.",
+                            DebugUtility.Colors.Success);
+                    }
+                    else
+                    {
+                        DebugUtility.Log(typeof(SessionOperationalPipeline),
+                            $"[OBS][SessionOperationalPipeline][Loading] LoadingHiddenSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{sourceText}' reason='{reasonText}' hideAfterCompletion='false'.",
+                            DebugUtility.Colors.Info);
+                    }
+                }
+
                 if (command.UsesTransition)
                 {
                     await fadeAdapter.FadeOutAsync(command);
                     fadeOutCompleted = true;
                 }
 
+                CompleteSandboxRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
+                RecordLastCompletedRouteSnapshot(route, routeSequence, loadPlan.FinalScenesToLoad);
+
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
                     $"[OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='{adapterFact.RouteIdentity}' routeOperationId='{adapterFact.RouteOperationId}' transitionId='{adapterFact.TransitionId}' routeSequence='{adapterFact.RouteSequence}' correlationId='{adapterFact.CorrelationId}' message='{adapterFact.Message}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}'.",
                     DebugUtility.Colors.Success);
-
-                CompleteSandboxRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
-                RecordLastCompletedRouteSnapshot(route, routeSequence, loadPlan.FinalScenesToLoad);
 
                 if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
                 {
@@ -185,6 +374,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                         throw new InvalidOperationException($"handoffSessionStateId '{route.HandoffSessionStateId}' does not match the active SessionActivityPipeline session '{activityReceiver.SessionId}'.");
                     }
 
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmitted' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry'.",
+                        DebugUtility.Colors.Info);
+
                     SessionActivityEntryHandoff handoff = new(
                         string.Empty,
                         0,
@@ -192,10 +385,6 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                         route.HandoffSessionStateId,
                         sourceText,
                         reasonText);
-
-                    DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmitted' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' handoff='{handoff}' source='{sourceText}' reason='{reasonText}'.",
-                        DebugUtility.Colors.Info);
 
                     SessionActivityCommandResult activityResult = activityReceiver.StartFromPreparedHandoff(handoff, sourceText, reasonText);
                     if (!activityResult.IsValid || activityResult.IsRejected)
@@ -208,6 +397,26 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
             catch (Exception ex)
             {
+                if (loadingCommand.IsEnabled && loadingStarted && !loadingHidden)
+                {
+                    try
+                    {
+                        await loadingAdapter.HideLoadingAsync(
+                            loadingCommand,
+                            CreateLoadingFact(
+                                loadingCommand,
+                                SessionOperationalLoadingStage.LoadingHidden,
+                                loadingCompleted ? 1.0f : 0.95f,
+                                loadingCompleted ? "Loading hidden" : "Loading hidden after failure",
+                                loadingCompleted ? "LoadingHidden" : "LoadingHiddenAfterFailure"));
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        DebugUtility.LogError<SessionOperationalPipeline>(
+                            $"[OBS][SessionOperationalPipeline][Loading] hide_cleanup_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' source='{sourceText}' reason='{reasonText}' exceptionType='{cleanupEx.GetType().Name}' exceptionMessage='{cleanupEx.Message}'.");
+                    }
+                }
+
                 if (command.UsesTransition && fadeInCompleted && !fadeOutCompleted)
                 {
                     try
@@ -888,6 +1097,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             throw new InvalidOperationException(message);
         }
 
+        private static ISessionOperationalLoadingAdapter ResolveLoadingAdapterOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalLoadingAdapter>(out var loadingAdapter) && loadingAdapter != null)
+            {
+                return loadingAdapter;
+            }
+
+            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalLoadingAdapter obrigatorio ausente para o rail canonico de loading.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
         private static ISessionActivityEntryHandoffReceiver ResolveActivityReceiverOrFail()
         {
             if (DependencyManager.Provider.TryGetGlobal<ISessionActivityEntryHandoffReceiver>(out var receiver) && receiver != null)
@@ -898,6 +1119,123 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             string message = "[FATAL][Config][SessionOperationalPipeline] ISessionActivityEntryHandoffReceiver obrigatorio ausente para o trilho do Base11Sandbox.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
+        }
+
+        private static SessionOperationalLoadingCommand ResolveLoadingCommandOrFail(
+            SessionOperationalRouteAsset route,
+            RuntimeModeConfig runtimeModeConfig,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
+        {
+            if (route == null)
+            {
+                throw new ArgumentNullException(nameof(route));
+            }
+
+            if (runtimeModeConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] RuntimeModeConfig obrigatorio ausente para resolver loading.");
+            }
+
+            SessionOperationalRouteLoadingMode effectiveLoadingMode = route.LoadingMode;
+            RuntimeLoadingProfileAsset effectiveLoadingProfile = route.LoadingProfile;
+
+            if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault)
+            {
+                if (!runtimeModeConfig.TryValidateLoadingConfiguration(out string runtimeLoadingValidationError))
+                {
+                    string message = $"[FATAL][Config][SessionOperationalPipeline] runtime loading config invalid. detail='{runtimeLoadingValidationError}'.";
+                    DebugUtility.LogError<SessionOperationalPipeline>(message);
+                    throw new InvalidOperationException(message);
+                }
+
+                effectiveLoadingMode = runtimeModeConfig.DefaultLoadingMode;
+                effectiveLoadingProfile = runtimeModeConfig.DefaultLoadingProfile;
+            }
+
+            if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.Profile)
+            {
+                if (effectiveLoadingProfile == null)
+                {
+                    string message = $"[FATAL][Config][SessionOperationalRoute] loadingProfile is required when loadingMode=Profile routeIdentity='{route.RouteIdentity}'.";
+                    DebugUtility.LogError<SessionOperationalPipeline>(message);
+                    throw new InvalidOperationException(message);
+                }
+
+                if (!effectiveLoadingProfile.TryValidate(out string profileValidationError))
+                {
+                    string message = $"[FATAL][Config][SessionOperationalRoute] loadingProfile is invalid routeIdentity='{route.RouteIdentity}' profile='{effectiveLoadingProfile.ProfileId}' detail='{profileValidationError}'.";
+                    DebugUtility.LogError<SessionOperationalPipeline>(message);
+                    throw new InvalidOperationException(message);
+                }
+            }
+            else if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.None)
+            {
+                effectiveLoadingProfile = null;
+            }
+
+            string loadingSceneName = string.Empty;
+            if (effectiveLoadingMode != SessionOperationalRouteLoadingMode.None)
+            {
+                RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+                if (persistentScenesPolicy == null)
+                {
+                    string message = $"[FATAL][Config][SessionOperationalPipeline] RuntimePersistentScenesPolicyAsset obrigatorio ausente para loading efetivo routeIdentity='{route.RouteIdentity}'.";
+                    DebugUtility.LogError<SessionOperationalPipeline>(message);
+                    throw new InvalidOperationException(message);
+                }
+
+                loadingSceneName = persistentScenesPolicy.ResolveSceneNameByRoleOrFail(
+                    RuntimePersistentSceneRole.Loading,
+                    nameof(SessionOperationalPipeline));
+            }
+
+            SessionOperationalLoadingCommand loadingCommand = new(
+                route.RouteIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                source,
+                reason,
+                effectiveLoadingMode,
+                effectiveLoadingProfile,
+                loadingSceneName,
+                effectiveLoadingProfile != null ? effectiveLoadingProfile.FinalProgressHoldSeconds : 0f);
+
+            if (!loadingCommand.IsValid)
+            {
+                string message = $"[FATAL][Config][SessionOperationalPipeline] loading command invalid routeIdentity='{route.RouteIdentity}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' loadingSceneName='{loadingCommand.LoadingSceneName}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.";
+                DebugUtility.LogError<SessionOperationalPipeline>(message);
+                throw new InvalidOperationException(message);
+            }
+
+            return loadingCommand;
+        }
+
+        private static SessionOperationalLoadingFact CreateLoadingFact(
+            SessionOperationalLoadingCommand command,
+            SessionOperationalLoadingStage stage,
+            float normalizedProgress,
+            string stepLabel,
+            string message)
+        {
+            return new SessionOperationalLoadingFact(command, stage, normalizedProgress, stepLabel, message);
+        }
+
+        private static void LogLoadingProgress(
+            SessionOperationalLoadingCommand command,
+            SessionOperationalLoadingStage stage,
+            float normalizedProgress,
+            string stepLabel,
+            string source,
+            string reason)
+        {
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Loading] LoadingProgress routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' loadingMode='{command.LoadingMode}' loadingProfile='{command.LoadingProfileId}' stage='{stage}' normalizedProgress='{normalizedProgress:0.###}' stepLabel='{stepLabel}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteAsset route)
