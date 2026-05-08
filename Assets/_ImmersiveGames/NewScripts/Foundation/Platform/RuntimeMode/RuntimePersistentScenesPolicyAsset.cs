@@ -98,6 +98,55 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             return sceneNames;
         }
 
+        public string ResolveSceneNameByRoleOrFail(RuntimePersistentSceneRole role, string owner)
+        {
+            if (!TryValidate(out string errorMessage))
+            {
+                HardFailFastH1.Trigger(
+                    typeof(RuntimePersistentScenesPolicyAsset),
+                    $"[FATAL][Config][RuntimeMode] RuntimePersistentScenesPolicyAsset invalida. owner='{Normalize(owner)}' policyId='{PolicyId}' detail='{errorMessage}'.");
+            }
+
+            string normalizedOwner = Normalize(owner);
+            string matchedSceneName = string.Empty;
+            bool hasMatch = false;
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                RuntimePersistentSceneEntry entry = entries[i];
+                if (entry == null || entry.Role != role)
+                {
+                    continue;
+                }
+
+                if (!TryResolveSceneName(entry, $"entries[{i}]", out string sceneName, out errorMessage))
+                {
+                    HardFailFastH1.Trigger(
+                        typeof(RuntimePersistentScenesPolicyAsset),
+                        $"[FATAL][Config][RuntimeMode] persistent scene role resolution failed. owner='{normalizedOwner}' policyId='{PolicyId}' role='{role}' detail='{errorMessage}'.");
+                }
+
+                if (hasMatch)
+                {
+                    HardFailFastH1.Trigger(
+                        typeof(RuntimePersistentScenesPolicyAsset),
+                        $"[FATAL][Config][RuntimeMode] duplicate persistent scene role detected. owner='{normalizedOwner}' policyId='{PolicyId}' role='{role}' firstScene='{matchedSceneName}' duplicateScene='{sceneName}'.");
+                }
+
+                matchedSceneName = sceneName;
+                hasMatch = true;
+            }
+
+            if (!hasMatch)
+            {
+                HardFailFastH1.Trigger(
+                    typeof(RuntimePersistentScenesPolicyAsset),
+                    $"[FATAL][Config][RuntimeMode] required persistent scene role not found. owner='{normalizedOwner}' policyId='{PolicyId}' role='{role}'.");
+            }
+
+            return matchedSceneName;
+        }
+
         private static bool TryResolveSceneName(
             RuntimePersistentSceneEntry entry,
             string fieldName,

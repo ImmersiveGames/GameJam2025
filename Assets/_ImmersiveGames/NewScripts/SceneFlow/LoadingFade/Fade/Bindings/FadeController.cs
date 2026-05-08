@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Bindings
         // Evento para integração com SceneFlow
         public event Action<string>? OnFadeComplete;
 
-        // Permite que adaptadores/SceneTransitionService definam explicitamente a signature antes do fade.
+        // Permite que adaptadores definam explicitamente a signature antes do fade.
         public void SetContextSignature(string? contextSignature)
         {
             if (!string.IsNullOrEmpty(contextSignature) && contextSignature != "no-signature")
@@ -95,16 +95,32 @@ namespace _ImmersiveGames.NewScripts.SceneFlow.LoadingFade.Fade.Bindings
 
         public void Configure(FadeConfig config)
         {
-            _fadeInDuration = config.FadeInDuration > 0f ? config.FadeInDuration : 0.5f;
-            _fadeOutDuration = config.FadeOutDuration > 0f ? config.FadeOutDuration : 0.5f;
+            if (config.FadeInDuration < 0f)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][Fade] fadeInDuration cannot be negative. value='{config.FadeInDuration}'.");
+            }
 
-            _fadeInCurve = config.FadeInCurve != null && config.FadeInCurve.keys != null && config.FadeInCurve.keys.Length > 0
-                ? config.FadeInCurve
-                : LinearCurve;
+            if (config.FadeOutDuration < 0f)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][Fade] fadeOutDuration cannot be negative. value='{config.FadeOutDuration}'.");
+            }
 
-            _fadeOutCurve = config.FadeOutCurve != null && config.FadeOutCurve.keys != null && config.FadeOutCurve.keys.Length > 0
-                ? config.FadeOutCurve
-                : LinearCurve;
+            if (config.FadeInCurve == null || config.FadeInCurve.keys == null || config.FadeInCurve.keys.Length == 0)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Fade] fadeInCurve is required.");
+            }
+
+            if (config.FadeOutCurve == null || config.FadeOutCurve.keys == null || config.FadeOutCurve.keys.Length == 0)
+            {
+                throw new InvalidOperationException("[FATAL][Config][Fade] fadeOutCurve is required.");
+            }
+
+            _fadeInDuration = config.FadeInDuration;
+            _fadeOutDuration = config.FadeOutDuration;
+
+            _fadeInCurve = config.FadeInCurve;
+
+            _fadeOutCurve = config.FadeOutCurve;
         }
 
         // Compatibilidade: métodos existentes

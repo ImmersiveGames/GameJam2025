@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow;
 using _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionActivityPipeline;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline
@@ -57,6 +58,11 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             ISessionOperationalRouteTransitionExecutor routeExecutor = ResolveRouteExecutorOrFail();
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+            ISessionOperationalFadeAdapter fadeAdapter = null;
+            if (route.UsesTransition)
+            {
+                fadeAdapter = ResolveFadeAdapterOrFail();
+            }
 
             string routeIdentity = route.RouteIdentity;
             string sourceText = Normalize(source);
@@ -114,6 +120,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 routeSequence,
                 sourceText,
                 reasonText,
+                route.TransitionMode,
+                route.TransitionProfile,
                 loadPlan.FinalScenesToLoad,
                 unloadPlan.AutoScenesToUnload,
                 unloadPlan.FinalScenesToUnload);
@@ -130,16 +138,35 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Transition] command='TransitionPlanReady' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.",
+                DebugUtility.Colors.Info);
+
+            bool fadeInCompleted = false;
+            bool fadeOutCompleted = false;
+
             try
             {
+                if (command.UsesTransition)
+                {
+                    await fadeAdapter.FadeInAsync(command);
+                    fadeInCompleted = true;
+                }
+
                 SessionOperationalRouteCompletedFact adapterFact = await routeExecutor.ApplyOperationalRouteAsync(command);
                 if (!adapterFact.IsValid)
                 {
                     throw new InvalidOperationException("Sandbox route executor returned an invalid completion fact.");
                 }
 
+                if (command.UsesTransition)
+                {
+                    await fadeAdapter.FadeOutAsync(command);
+                    fadeOutCompleted = true;
+                }
+
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][Route] fact='OperationalRouteCompleted' routeIdentity='{adapterFact.RouteIdentity}' routeOperationId='{adapterFact.RouteOperationId}' transitionId='{adapterFact.TransitionId}' routeSequence='{adapterFact.RouteSequence}' correlationId='{adapterFact.CorrelationId}' message='{adapterFact.Message}' source='{sourceText}' reason='{reasonText}'.",
+                    $"[OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='{adapterFact.RouteIdentity}' routeOperationId='{adapterFact.RouteOperationId}' transitionId='{adapterFact.TransitionId}' routeSequence='{adapterFact.RouteSequence}' correlationId='{adapterFact.CorrelationId}' message='{adapterFact.Message}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}'.",
                     DebugUtility.Colors.Success);
 
                 CompleteSandboxRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
@@ -181,8 +208,21 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
             catch (Exception ex)
             {
+                if (command.UsesTransition && fadeInCompleted && !fadeOutCompleted)
+                {
+                    try
+                    {
+                        await fadeAdapter.FadeOutAsync(command);
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        DebugUtility.LogError<SessionOperationalPipeline>(
+                            $"[OBS][SessionOperationalPipeline][Transition] fade_out_cleanup_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}' exceptionType='{cleanupEx.GetType().Name}' exceptionMessage='{cleanupEx.Message}'.");
+                    }
+                }
+
                 DebugUtility.LogError<SessionOperationalPipeline>(
-                    $"[OBS][SessionOperationalPipeline][Route] route_transition_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' exceptionType='{ex.GetType().Name}' exceptionMessage='{ex.Message}'.");
+                    $"[OBS][SessionOperationalPipeline][Transition] route_transition_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}' exceptionType='{ex.GetType().Name}' exceptionMessage='{ex.Message}'.");
                 throw;
             }
             finally
@@ -832,6 +872,18 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             }
 
             string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalRouteTransitionExecutor obrigatorio ausente para o trilho do Base11Sandbox.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
+        private static ISessionOperationalFadeAdapter ResolveFadeAdapterOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalFadeAdapter>(out var fadeAdapter) && fadeAdapter != null)
+            {
+                return fadeAdapter;
+            }
+
+            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalFadeAdapter obrigatorio ausente para transitionMode=Profile.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }

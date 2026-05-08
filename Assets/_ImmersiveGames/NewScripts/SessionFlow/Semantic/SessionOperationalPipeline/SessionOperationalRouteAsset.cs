@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SceneFlow.Authoring.Navigation;
+using _ImmersiveGames.NewScripts.SceneFlow.Transition.Bindings;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipeline
@@ -14,6 +15,12 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         SessionActivityEntry = 1,
     }
 
+    public enum SessionOperationalRouteTransitionMode
+    {
+        None = 0,
+        Profile = 1,
+    }
+
     [CreateAssetMenu(
         fileName = "SessionOperationalRoute",
         menuName = "ImmersiveGames/NewScripts/SessionFlow/OperationalRoute/SessionOperationalRoute",
@@ -22,6 +29,10 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
     {
         [Header("Identity")]
         [SerializeField] private string routeIdentity;
+
+        [Header("Transition")]
+        [SerializeField] private SessionOperationalRouteTransitionMode transitionMode = SessionOperationalRouteTransitionMode.None;
+        [SerializeField] private SceneTransitionProfile transitionProfile;
 
         [Header("Scenes")]
         [SerializeField] private List<SceneKeyAsset> scenesToLoad = new();
@@ -34,12 +45,16 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         [SerializeField] private string handoffSessionStateId;
 
         public string RouteIdentity => Normalize(routeIdentity);
+        public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
+        public SceneTransitionProfile TransitionProfile => transitionProfile;
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => scenesToLoad;
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => scenesToUnload;
         public SceneKeyAsset ActiveSceneKey => activeScene;
         public bool UnloadPreviousRouteOwnedScenes => unloadPreviousRouteOwnedScenes;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
+        public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
+        public string TransitionProfileLabel => transitionProfile != null && !string.IsNullOrWhiteSpace(transitionProfile.name) ? transitionProfile.name.Trim() : string.Empty;
 
         public bool IsValid
         {
@@ -69,6 +84,31 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             {
                 errorMessage = "routeIdentity is required.";
                 return false;
+            }
+
+            bool validTransitionMode =
+                transitionMode == SessionOperationalRouteTransitionMode.None ||
+                transitionMode == SessionOperationalRouteTransitionMode.Profile;
+
+            if (!validTransitionMode)
+            {
+                errorMessage = $"transitionMode is invalid routeIdentity='{RouteIdentity}' transitionMode='{transitionMode}'.";
+                return false;
+            }
+
+            if (transitionMode == SessionOperationalRouteTransitionMode.Profile)
+            {
+                if (transitionProfile == null)
+                {
+                    errorMessage = $"transitionProfile is required when transitionMode=Profile routeIdentity='{RouteIdentity}'.";
+                    return false;
+                }
+
+                if (!transitionProfile.TryValidate(out string profileValidationError))
+                {
+                    errorMessage = $"transitionProfile is invalid routeIdentity='{RouteIdentity}' profile='{TransitionProfileLabel}' detail='{profileValidationError}'.";
+                    return false;
+                }
             }
 
             if (!TryResolveSceneName(ActiveSceneKey, nameof(activeScene), out string activeSceneName, out errorMessage))
@@ -170,6 +210,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             int routeSequence,
             string source,
             string reason,
+            SessionOperationalRouteTransitionMode transitionMode,
+            SceneTransitionProfile transitionProfile,
             IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
             IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
@@ -181,6 +223,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
                 routeSequence,
                 source,
                 reason,
+                transitionMode,
+                transitionProfile,
                 finalScenesToLoad,
                 autoScenesToUnload,
                 finalScenesToUnload);
@@ -305,6 +349,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             int routeSequence,
             string source,
             string reason,
+            SessionOperationalRouteTransitionMode transitionMode,
+            SceneTransitionProfile transitionProfile,
             IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
             IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
@@ -315,6 +361,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             Source = Normalize(source);
             Reason = Normalize(reason);
+            TransitionMode = transitionMode;
+            TransitionProfile = transitionProfile;
             FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
             AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
             FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
@@ -326,6 +374,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public int RouteSequence { get; }
         public string Source { get; }
         public string Reason { get; }
+        public SessionOperationalRouteTransitionMode TransitionMode { get; }
+        public SceneTransitionProfile TransitionProfile { get; }
         public string RouteIdentity => Route != null ? Route.RouteIdentity : string.Empty;
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<SceneKeyAsset>();
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<SceneKeyAsset>();
@@ -335,6 +385,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public SceneKeyAsset ActiveSceneKey => Route != null ? Route.ActiveSceneKey : null;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => Route != null ? Route.CompletionHandoff : SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         public string HandoffSessionStateId => Route != null ? Route.HandoffSessionStateId : string.Empty;
+        public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
+        public string TransitionProfileLabel => TransitionProfile != null && !string.IsNullOrWhiteSpace(TransitionProfile.name) ? TransitionProfile.name.Trim() : string.Empty;
 
         public bool IsValid =>
             Route != null &&
@@ -342,6 +394,8 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
+            (TransitionMode == SessionOperationalRouteTransitionMode.None || TransitionMode == SessionOperationalRouteTransitionMode.Profile) &&
+            (!UsesTransition || (TransitionProfile != null && TransitionProfile.TryValidate(out _))) &&
             FinalScenesToLoad != null &&
             FinalScenesToLoad.Count > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
@@ -350,7 +404,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Semantic.SessionOperationalPipe
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
 

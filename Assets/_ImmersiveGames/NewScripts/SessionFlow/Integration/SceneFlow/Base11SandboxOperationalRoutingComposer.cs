@@ -12,6 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
         private static SessionOperationalStartupRouteEmitter _startupRouteEmitter;
         private static SessionOperationalPipeline _sessionOperationalPipeline;
         private static Base11SandboxOperationalRouteTransitionAdapter _routeTransitionAdapter;
+        private static Base11SandboxSessionOperationalFadeAdapter _fadeAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
             EnsureStartupRouteEmitter();
 
             EnsureSessionOperationalPipeline();
+            EnsureSandboxFadeAdapter();
             EnsureSandboxRouteExecutor();
 
             _runtimeComposed = true;
@@ -110,6 +112,29 @@ namespace _ImmersiveGames.NewScripts.SessionFlow.Integration.SceneFlow
 
             DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='Base11SandboxOperationalRouteTransitionAdapter' registered for Base11Sandbox.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSandboxFadeAdapter()
+        {
+            if (_fadeAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<Base11SandboxSessionOperationalFadeAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _fadeAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<ISessionOperationalFadeAdapter>(_fadeAdapter);
+                return;
+            }
+
+            _fadeAdapter = new Base11SandboxSessionOperationalFadeAdapter();
+            DependencyManager.Provider.RegisterGlobal(_fadeAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISessionOperationalFadeAdapter>(_fadeAdapter);
+
+            DebugUtility.Log(typeof(Base11SandboxOperationalRoutingComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='Base11SandboxSessionOperationalFadeAdapter' registered for Base11Sandbox.",
                 DebugUtility.Colors.Info);
         }
     }
