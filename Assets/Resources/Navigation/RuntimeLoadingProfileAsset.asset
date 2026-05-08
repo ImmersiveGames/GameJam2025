@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 692d9f6bd5278874badc00314282f2dc, type: 3}
   m_Name: RuntimeLoadingProfileAsset
   m_EditorClassIdentifier: 
-  profileId: 
+  profileId: loading.profile.default
   showImmediately: 1
   hideAfterCompletion: 1
-  minimumVisibleSeconds: 0
+  minimumVisibleSeconds: 0.5
+  finalProgressHoldSeconds: 0.5

@@ -13,6 +13,10 @@ MonoBehaviour:
   m_Name: Route_MenuToSessionActivitySandbox
   m_EditorClassIdentifier: 
   routeIdentity: Route_MenuToSessionActivitySandbox
+  transitionMode: 1
+  transitionProfile: {fileID: 11400000, guid: 384a994125a175d498624ae0c2407d77, type: 2}
+  loadingMode: 2
+  loadingProfile: {fileID: 11400000, guid: 81481f2098e923745a6a3b40b0ca524c, type: 2}
   scenesToLoad: []
   scenesToUnload: []
   activeScene: {fileID: 11400000, guid: 6d7c5d8df2a24cf0b7ab4fcb2b0fd111, type: 2}

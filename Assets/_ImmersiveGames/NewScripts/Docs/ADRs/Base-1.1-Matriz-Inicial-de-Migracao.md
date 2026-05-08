@@ -2,7 +2,7 @@
 
 ## Status
 - Atualizacao: checkpoint Base11Sandbox congelado
-- Fonte: ADRs 0060 a 0067 + miniADR do sandbox
+- Fonte: ADRs 0060 a 0070 + miniADR do sandbox
 
 ## Matriz
 
@@ -11,6 +11,9 @@
 | `NavigationCatalog` | fora do trilho ativo | legado removido do ciclo minimo | manter fora |
 | `GameNavigationService` | fora do trilho ativo | legacy contamination removida | nao reintroduzir |
 | `SceneTransitionService` | fora do trilho ativo | legacy contamination removida | nao reintroduzir |
+| `SceneFlowInstaller / SceneFlowBootstrap` | legado isolado | seam tecnico ainda necessario fora do Base11Sandbox | manter ate o segundo corte |
+| `SceneFlowFadeAdapter / FadeService` | seam tecnico | executor visual legado ainda usado fora do Base11Sandbox | manter enquanto houver rail legado |
+| `SceneTransitionRequest / SceneTransitionContext` | seam de integracao | contratos ainda usados por SessionFlow e Navigation legado | manter |
 | `SceneRouteDefinitionAsset` | substituido | trocado por `SessionOperationalRouteAsset` no trilho Base11Sandbox | migrado |
 | `SessionOperationalRouteAsset` | canonico | `SessionOperationalPipeline` usa como contrato de rota | manter |
 | `SessionOperationalPipeline` | canonico | owner do comando, completion e handoff | manter |
