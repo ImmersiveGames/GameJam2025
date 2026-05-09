@@ -74,19 +74,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             DumpState();
         }
 
-        [ContextMenu("GoToActivity01")]
-        public void GoToActivity01()
+        public void GoToActivity(string activityId)
         {
             EnsureHost();
-            host.GoToActivity01();
-            DumpState();
-        }
-
-        [ContextMenu("GoToActivity02")]
-        public void GoToActivity02()
-        {
-            EnsureHost();
-            host.GoToActivity02();
+            host.GoToActivity(activityId);
             DumpState();
         }
 
@@ -118,11 +109,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RequestResume();
         }
 
-        [ContextMenu("SendStaleActivity01Command")]
-        public void SendStaleActivity01Command()
+        [ContextMenu("SendStaleFirstActivityCommand")]
+        public void SendStaleFirstActivityCommand()
         {
             EnsureHost();
-            host.ExecuteCommand(BuildStaleActivity01Command(), "SendStaleActivity01Command");
+            host.ExecuteCommand(BuildStaleFirstActivityCommand(), "SendStaleFirstActivityCommand");
             DumpState();
         }
 
@@ -209,19 +200,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             GUILayout.Space(SectionSpacing);
 
-            if (GUILayout.Button("GoToActivity01", _buttonStyle))
+            for (int index = 0; index < host.Catalog.Definitions.Count; index++)
             {
-                GoToActivity01();
+                SessionActivityDefinition definition = host.Catalog.Definitions[index];
+                string label = $"GoToActivity '{definition.ActivityId}'";
+                if (GUILayout.Button(label, _buttonStyle))
+                {
+                    GoToActivity(definition.ActivityId);
+                }
+
+                GUILayout.Space(SectionSpacing);
             }
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("GoToActivity02", _buttonStyle))
-            {
-                GoToActivity02();
-            }
-
-            GUILayout.Space(SectionSpacing);
 
             if (GUILayout.Button("RequestPause", _buttonStyle))
             {
@@ -245,9 +234,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             GUILayout.Space(SectionSpacing);
             GUILayout.Label("Foreign/Stale QA", _labelStyle);
 
-            if (GUILayout.Button("SendStaleActivity01Command", _buttonStyle))
+            if (GUILayout.Button("SendStaleFirstActivityCommand", _buttonStyle))
             {
-                SendStaleActivity01Command();
+                SendStaleFirstActivityCommand();
             }
 
             GUILayout.Space(SectionSpacing);
@@ -343,14 +332,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return builder.ToString().TrimEnd();
         }
 
-        private SessionActivityCommand BuildStaleActivity01Command()
+        private SessionActivityCommand BuildStaleFirstActivityCommand()
         {
-            EnsureActiveIdentityOrFail("SendStaleActivity01Command");
+            EnsureActiveIdentityOrFail("SendStaleFirstActivityCommand");
+            if (!host.Catalog.TryGetFirst(out SessionActivityDefinition firstDefinition) || !firstDefinition.IsValid)
+            {
+                throw new InvalidOperationException("Stale command requires a valid first activity in runtime catalog.");
+            }
+
             SessionActivityIdentity identity = new(
                 host.State.PipelineId,
                 host.State.SessionId,
-                "activity_01",
-                1,
+                firstDefinition.ActivityId,
+                firstDefinition.ActivityOrdinal,
                 host.State.CurrentEntrySequence > 1 ? host.State.CurrentEntrySequence - 1 : 1,
                 SessionActivityStage.ActivityRunning,
                 "SessionActivityDebugPanel");
@@ -359,7 +353,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 SessionActivityCommandKind.CompleteCurrentActivity,
                 identity,
                 "SessionActivityDebugPanel",
-                "Send stale activity_01 command.");
+                "Send stale first activity command.");
         }
 
         private SessionActivityCommand BuildForeignSessionCommand()

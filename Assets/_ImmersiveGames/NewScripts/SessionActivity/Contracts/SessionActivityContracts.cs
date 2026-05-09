@@ -158,12 +158,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         GoToNextActivity = 4,
         GoToPreviousActivity = 5,
         RestartCurrentActivity = 6,
-        GoToActivity01 = 7,
-        GoToActivity02 = 8,
-        PauseRequested = 9,
-        ResumeRequested = 10,
-        PauseSimulation = 11,
-        ResumeSimulation = 12,
+        GoToActivity = 7,
+        PauseRequested = 8,
+        ResumeRequested = 9,
+        PauseSimulation = 10,
+        ResumeSimulation = 11,
     }
 
     public readonly struct SessionActivityCommand
@@ -172,27 +171,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityCommandKind kind,
             SessionActivityIdentity identity,
             string source,
-            string reason)
+            string reason,
+            string targetActivityId = null)
         {
             Kind = kind;
             Identity = identity;
             Source = Normalize(source);
             Reason = Normalize(reason);
+            TargetActivityId = Normalize(targetActivityId);
         }
 
         public SessionActivityCommandKind Kind { get; }
         public SessionActivityIdentity Identity { get; }
         public string Source { get; }
         public string Reason { get; }
+        public string TargetActivityId { get; }
 
         public bool IsValid =>
             Kind != SessionActivityCommandKind.Unknown &&
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(Source);
+            !string.IsNullOrWhiteSpace(Source) &&
+            (Kind != SessionActivityCommandKind.GoToActivity || !string.IsNullOrWhiteSpace(TargetActivityId));
 
         public override string ToString()
         {
-            return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}'";
+            return $"kind='{Kind}', identity='{Identity}', source='{Source}', reason='{Reason}', targetActivityId='{(string.IsNullOrWhiteSpace(TargetActivityId) ? "<none>" : TargetActivityId)}'";
         }
 
         private static string Normalize(string value)
@@ -207,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PipelineStarted = 1,
         ActivationEntered = 2,
         ActivationSkippedNoContent = 3,
-        GameplayRunningEntered = 4,
+        ActivityRunningEntered = 4,
         GameplayContentSkippedNoContent = 5,
         ActivityDeactivated = 6,
         ActivityResultPresentationEntered = 7,

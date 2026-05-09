@@ -23,7 +23,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             for (int index = 0; index < activities.Count; index++)
             {
                 ActivityAsset current = activities[index];
-                string nextActivityId = current.NextActivity != null ? current.NextActivity.ActivityId : string.Empty;
+                string nextActivityId = index + 1 < activities.Count
+                    ? activities[index + 1].ActivityId
+                    : string.Empty;
                 definitions.Add(new SessionActivityDefinition(
                     activityId: current.ActivityId,
                     displayName: current.DisplayName,
@@ -51,7 +53,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             }
 
             HashSet<string> ids = new(StringComparer.OrdinalIgnoreCase);
-            HashSet<ActivityAsset> set = new();
 
             for (int index = 0; index < activities.Count; index++)
             {
@@ -66,69 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 {
                     throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has duplicate activityId '{activity.ActivityId}'.");
                 }
-
-                set.Add(activity);
             }
-
-            for (int index = 0; index < activities.Count; index++)
-            {
-                ActivityAsset activity = activities[index];
-                ActivityAsset next = activity.NextActivity;
-                if (next == null)
-                {
-                    continue;
-                }
-
-                if (!set.Contains(next))
-                {
-                    throw new InvalidOperationException($"ActivityCatalogAsset '{name}' has nextActivity outside catalog for '{activity.ActivityId}'.");
-                }
-            }
-
-            ValidateNoCyclesOrThrow();
-        }
-
-        private void ValidateNoCyclesOrThrow()
-        {
-            Dictionary<ActivityAsset, int> colors = new();
-            for (int index = 0; index < activities.Count; index++)
-            {
-                ActivityAsset activity = activities[index];
-                if (!colors.ContainsKey(activity))
-                {
-                    colors.Add(activity, 0);
-                }
-            }
-
-            for (int index = 0; index < activities.Count; index++)
-            {
-                ActivityAsset activity = activities[index];
-                if (colors[activity] == 0)
-                {
-                    VisitOrThrow(activity, colors);
-                }
-            }
-        }
-
-        private static void VisitOrThrow(ActivityAsset activity, Dictionary<ActivityAsset, int> colors)
-        {
-            colors[activity] = 1;
-            ActivityAsset next = activity.NextActivity;
-            if (next != null)
-            {
-                int color = colors[next];
-                if (color == 1)
-                {
-                    throw new InvalidOperationException($"Cycle detected in nextActivity chain at '{activity.ActivityId}'.");
-                }
-
-                if (color == 0)
-                {
-                    VisitOrThrow(next, colors);
-                }
-            }
-
-            colors[activity] = 2;
         }
 
         private static string Normalize(string value)

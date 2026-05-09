@@ -33,10 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new ArgumentException("sessionStateId is required.", nameof(sessionStateId));
             }
 
-            if (!_catalog.TryGetFirst(out SessionActivityDefinition firstDefinition) || !firstDefinition.IsValid)
-            {
-                throw new InvalidOperationException("SessionActivityCatalog requires Activity 01.");
-            }
+            ResolveFirstActivityOrFail();
         }
 
         public SessionActivityRuntimeState State => _state;
@@ -46,10 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public SessionActivityCommand BuildStartCommand(string source, string reason)
         {
-            if (!_catalog.TryGetFirst(out SessionActivityDefinition firstDefinition) || !firstDefinition.IsValid)
-            {
-                throw new InvalidOperationException("Activity 01 is required to start the pipeline.");
-            }
+            SessionActivityDefinition firstDefinition = ResolveFirstActivityOrFail();
 
             return new SessionActivityCommand(
                 SessionActivityCommandKind.StartActivity,
@@ -135,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityDefinition initialDefinition = handoff.HasResolvedActivity
                 ? ResolveActivityByIdOrFail(handoff.ActivityId)
-                : ResolveActivityByOrdinalOrFail(1);
+                : ResolveFirstActivityOrFail();
 
             if (handoff.HasResolvedActivity && initialDefinition.ActivityOrdinal != handoff.ActivityOrdinal)
             {
@@ -255,14 +249,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return ExecuteNavigationCommand(SessionActivityCommandKind.RestartCurrentActivity, source, reason);
         }
 
-        public SessionActivityCommandResult GoToActivity01(string source, string reason)
+        public SessionActivityCommandResult GoToActivity(string activityId, string source, string reason)
         {
-            return ExecuteNavigationCommand(SessionActivityCommandKind.GoToActivity01, source, reason);
-        }
-
-        public SessionActivityCommandResult GoToActivity02(string source, string reason)
-        {
-            return ExecuteNavigationCommand(SessionActivityCommandKind.GoToActivity02, source, reason);
+            return ExecuteNavigationCommand(SessionActivityCommandKind.GoToActivity, source, reason, activityId);
         }
 
         public SessionActivityCommandResult PauseRequested(string source, string reason)
@@ -279,6 +268,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             if (!command.IsValid)
             {
+                if (command.Kind == SessionActivityCommandKind.GoToActivity && string.IsNullOrWhiteSpace(command.TargetActivityId))
+                {
+                    return RejectInvalidGoToActivityCommand(command);
+                }
+
                 throw new InvalidOperationException("SessionActivityCommand is invalid.");
             }
 
@@ -321,8 +315,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 case SessionActivityCommandKind.GoToNextActivity:
                 case SessionActivityCommandKind.GoToPreviousActivity:
                 case SessionActivityCommandKind.RestartCurrentActivity:
-                case SessionActivityCommandKind.GoToActivity01:
-                case SessionActivityCommandKind.GoToActivity02:
+                case SessionActivityCommandKind.GoToActivity:
                     EmitNavigation(command, emittedFacts, emittedSnapshots);
                     break;
                 default:
@@ -357,7 +350,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            SessionActivityDefinition firstDefinition = ResolveActivityByOrdinalOrFail(1);
+            SessionActivityDefinition firstDefinition = ResolveFirstActivityOrFail();
             int entrySequence = 1;
             SessionActivityIdentity activationIdentity = BuildIdentity(firstDefinition, SessionActivityStage.ActivationExecuting, entrySequence);
             SessionActivitySnapshot pipelineStartedSnapshot = new(
@@ -493,7 +486,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             int nextEntrySequence = ResolveNextEntrySequence();
 
-            if (!TryResolveNavigationTarget(command.Kind, current, out SessionActivityDefinition target, out string rejectionReason))
+            if (!TryResolveNavigationTarget(command, current, out SessionActivityDefinition target, out string rejectionReason))
             {
                 EmitRejected(
                     command,
@@ -595,7 +588,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityIdentity runningIdentity = BuildIdentity(definition, SessionActivityStage.ActivityRunning, entrySequence);
             _state.SetCurrentIdentity(runningIdentity, SessionActivityStage.ActivityRunning);
             _state.SetSimulationState(SessionActivitySimulationState.Running);
-            EmitFact(facts, SessionActivityFactKind.GameplayRunningEntered, runningIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' running.");
+            EmitFact(facts, SessionActivityFactKind.ActivityRunningEntered, runningIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' running.");
             EmitSnapshot(snapshots, "activity_running_entered", command.Source, command.Reason, $"'{definition.ActivityId}' running.");
         }
 
@@ -1017,7 +1010,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return false;
         }
 
-        private SessionActivityCommandResult ExecuteNavigationCommand(SessionActivityCommandKind kind, string source, string reason)
+        private SessionActivityCommandResult ExecuteNavigationCommand(SessionActivityCommandKind kind, string source, string reason, string targetActivityId = null)
         {
             if (IsTerminalCompleted())
             {
@@ -1034,7 +1027,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("Active pipeline identity is invalid.");
             }
 
-            return Execute(BuildNavigationCommand(kind, source, reason));
+            if (kind == SessionActivityCommandKind.GoToActivity && string.IsNullOrWhiteSpace(targetActivityId))
+            {
+                SessionActivityCommand invalidCommand = BuildNavigationCommand(kind, source, reason, targetActivityId);
+                return RejectInvalidGoToActivityCommand(invalidCommand);
+            }
+
+            return Execute(BuildNavigationCommand(kind, source, reason, targetActivityId));
         }
 
         private SessionActivityCommandResult ExecuteSimulationCommand(SessionActivityCommandKind kind, string source, string reason)
@@ -1172,7 +1171,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string rejectionReason,
             string message)
         {
-            SessionActivityDefinition firstDefinition = ResolveActivityByOrdinalOrFail(1);
+            SessionActivityDefinition firstDefinition = ResolveFirstActivityOrFail();
             int entrySequence = ResolveNextEntrySequence();
             SessionActivityCommand command = new(
                 SessionActivityCommandKind.StartActivity,
@@ -1238,6 +1237,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return _state.HasCompleted || _state.CurrentStage == SessionActivityStage.Completed;
         }
 
+        private SessionActivityCommandResult RejectInvalidGoToActivityCommand(SessionActivityCommand command)
+        {
+            if (!_state.CurrentIdentity.IsValid)
+            {
+                throw new InvalidOperationException("GoToActivity rejection requires an active identity.");
+            }
+
+            List<SessionActivityFact> rejectedFacts = new();
+            EmitRejected(
+                command,
+                rejectedFacts,
+                "target_activity_id_required",
+                "Navigation 'GoToActivity' requires a non-empty target activity id.",
+                _state.CurrentIdentity,
+                true);
+
+            return new SessionActivityCommandResult(
+                SessionActivityCommandResultKind.Rejected,
+                command,
+                rejectedFacts,
+                "target_activity_id_required");
+        }
+
         private bool TryRejectStaleOrForeignCommand(
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
@@ -1292,7 +1314,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     return _state.CurrentIdentity;
                 }
 
-                SessionActivityDefinition firstDefinition = ResolveActivityByOrdinalOrFail(1);
+                SessionActivityDefinition firstDefinition = ResolveFirstActivityOrFail();
                 return BuildIdentity(firstDefinition, SessionActivityStage.ActivationExecuting, 1);
             }
 
@@ -1330,8 +1352,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (kind == SessionActivityCommandKind.GoToNextActivity ||
                 kind == SessionActivityCommandKind.GoToPreviousActivity ||
                 kind == SessionActivityCommandKind.RestartCurrentActivity ||
-                kind == SessionActivityCommandKind.GoToActivity01 ||
-                kind == SessionActivityCommandKind.GoToActivity02)
+                kind == SessionActivityCommandKind.GoToActivity)
             {
                 return _state.CurrentIdentity;
             }
@@ -1341,7 +1362,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private SessionActivityCommand BuildNoActiveIdentityCommand(SessionActivityCommandKind kind, string source, string reason)
         {
-            SessionActivityDefinition firstDefinition = ResolveActivityByOrdinalOrFail(1);
+            SessionActivityDefinition firstDefinition = ResolveFirstActivityOrFail();
             return new SessionActivityCommand(
                 kind,
                 BuildIdentity(firstDefinition, SessionActivityStage.ActivationExecuting, 1),
@@ -1349,7 +1370,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason);
         }
 
-        private SessionActivityCommand BuildNavigationCommand(SessionActivityCommandKind kind, string source, string reason)
+        private SessionActivityCommand BuildNavigationCommand(SessionActivityCommandKind kind, string source, string reason, string targetActivityId = null)
         {
             if (!_state.CurrentIdentity.IsValid)
             {
@@ -1360,7 +1381,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 kind,
                 _state.CurrentIdentity,
                 source,
-                reason);
+                reason,
+                targetActivityId);
         }
 
         private SessionActivityDefinition ResolveActivityByOrdinalOrFail(int ordinal)
@@ -1393,11 +1415,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
         private bool TryResolveNavigationTarget(
-            SessionActivityCommandKind kind,
+            SessionActivityCommand command,
             SessionActivityDefinition current,
             out SessionActivityDefinition target,
             out string rejectionReason)
         {
+            SessionActivityCommandKind kind = command.Kind;
             target = default;
             rejectionReason = string.Empty;
 
@@ -1425,27 +1448,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     target = current;
                     return true;
 
-                case SessionActivityCommandKind.GoToActivity01:
-                    if (current.ActivityOrdinal == 1)
+                case SessionActivityCommandKind.GoToActivity:
+                    if (string.IsNullOrWhiteSpace(command.TargetActivityId))
+                    {
+                        rejectionReason = "target_activity_id_required";
+                        return false;
+                    }
+
+                    if (!TryResolveActivityById(command.TargetActivityId, out target, out rejectionReason))
+                    {
+                        return false;
+                    }
+
+                    if (string.Equals(current.ActivityId, target.ActivityId, StringComparison.OrdinalIgnoreCase))
                     {
                         rejectionReason = "already_on_activity";
                         return false;
                     }
 
-                    return TryResolveActivityByOrdinal(1, out target, out rejectionReason);
-
-                case SessionActivityCommandKind.GoToActivity02:
-                    if (current.ActivityOrdinal == 2)
-                    {
-                        rejectionReason = "already_on_activity";
-                        return false;
-                    }
-
-                    return TryResolveActivityByOrdinal(2, out target, out rejectionReason);
+                    return true;
 
                 default:
                     throw new InvalidOperationException($"Unsupported navigation command kind '{kind}'.");
             }
+        }
+
+        private SessionActivityDefinition ResolveFirstActivityOrFail()
+        {
+            if (_catalog.TryGetFirst(out SessionActivityDefinition definition) && definition.IsValid)
+            {
+                return definition;
+            }
+
+            throw new InvalidOperationException("SessionActivityCatalog requires a valid first activity.");
         }
 
         private bool TryResolveActivityByOrdinal(int ordinal, out SessionActivityDefinition definition, out string rejectionReason)
@@ -1461,6 +1496,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return false;
         }
 
+        private bool TryResolveActivityById(string activityId, out SessionActivityDefinition definition, out string rejectionReason)
+        {
+            if (string.IsNullOrWhiteSpace(activityId))
+            {
+                definition = default;
+                rejectionReason = "target_activity_id_required";
+                return false;
+            }
+
+            for (int index = 0; index < _catalog.Definitions.Count; index++)
+            {
+                SessionActivityDefinition candidate = _catalog.Definitions[index];
+                if (string.Equals(candidate.ActivityId, activityId, StringComparison.OrdinalIgnoreCase))
+                {
+                    definition = candidate;
+                    rejectionReason = string.Empty;
+                    return true;
+                }
+            }
+
+            definition = default;
+            rejectionReason = "target_activity_not_found";
+            return false;
+        }
+
         private static string ResolveNavigationRejectionMessage(
             SessionActivityCommandKind kind,
             SessionActivityDefinition current,
@@ -1470,6 +1530,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 "no_previous_activity" => $"Navigation '{kind}' has no previous activity before '{current.ActivityId}'.",
                 "no_next_activity" => $"Navigation '{kind}' has no next activity after '{current.ActivityId}'.",
+                "target_activity_id_required" => $"Navigation '{kind}' requires a non-empty target activity id.",
+                "target_activity_not_found" => $"Navigation '{kind}' target activity id was not found in the runtime catalog.",
                 "activity_not_found" => $"Navigation '{kind}' target activity was not found.",
                 _ => $"Navigation '{kind}' cannot proceed from activity '{current.ActivityId}'."
             };

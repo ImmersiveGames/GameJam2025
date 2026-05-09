@@ -94,18 +94,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             LogResult("RestartCurrentActivity", result);
         }
 
-        public void GoToActivity01()
+        public void GoToActivity(string activityId)
         {
             EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToActivity01(QaSource("GoToActivity01"), QaReason("GoToActivity01"));
-            LogResult("GoToActivity01", result);
-        }
-
-        public void GoToActivity02()
-        {
-            EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToActivity02(QaSource("GoToActivity02"), QaReason("GoToActivity02"));
-            LogResult("GoToActivity02", result);
+            SessionActivityCommandResult result = _pipeline.GoToActivity(activityId, QaSource("GoToActivity"), QaReason("GoToActivity"));
+            LogResult($"GoToActivity('{activityId}')", result);
         }
 
         public void RequestPause()

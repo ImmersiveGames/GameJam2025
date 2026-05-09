@@ -10,18 +10,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private bool hasActivation;
         [SerializeField] private bool hasGameplayContent;
         [SerializeField] private bool hasActivityResult;
-        [SerializeField] private ActivityAsset nextActivity;
 
         public string ActivityId => Normalize(activityId);
         public string DisplayName => Normalize(displayName);
         public bool HasActivation => hasActivation;
         public bool HasGameplayContent => hasGameplayContent;
         public bool HasActivityResult => hasActivityResult;
-        public ActivityAsset NextActivity => nextActivity;
 
         public void ValidateOrThrow()
         {
-            if (string.IsNullOrWhiteSpace(ActivityId))
+            if (string.IsNullOrWhiteSpace(activityId))
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' requires activityId.");
             }
@@ -31,9 +29,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException($"ActivityAsset '{name}' requires displayName.");
             }
 
-            if (ReferenceEquals(nextActivity, this))
+            if (!string.Equals(activityId, activityId.Trim(), StringComparison.Ordinal))
             {
-                throw new InvalidOperationException($"ActivityAsset '{name}' cannot point nextActivity to itself.");
+                throw new InvalidOperationException($"ActivityAsset '{name}' activityId cannot have leading or trailing spaces.");
+            }
+
+            if (ActivityId.Contains(" ", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' activityId cannot contain spaces.");
             }
         }
 

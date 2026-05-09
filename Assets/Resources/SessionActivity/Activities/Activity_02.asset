@@ -17,4 +17,4 @@ MonoBehaviour:
   hasActivation: 1
   hasGameplayContent: 1
   hasActivityResult: 0
-  nextActivity: {fileID: 0}
+

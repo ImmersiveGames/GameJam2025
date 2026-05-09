@@ -17,4 +17,4 @@ MonoBehaviour:
   hasActivation: 1
   hasGameplayContent: 1
   hasActivityResult: 1
-  nextActivity: {fileID: 11400000, guid: 489ed87ad55c44a8b48f37f42f0ea03d, type: 2}
+
