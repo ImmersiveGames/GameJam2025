@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 using System.Text;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
+using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
@@ -14,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         [Header("Config")]
         [SerializeField] private bool autoStart;
         [SerializeField] private string sessionStateId = "SessionActivitySandboxSession";
+        [SerializeField] private ActivityCatalogAsset activityCatalog;
 
         private SessionActivityCatalog _catalog;
         private SessionActivityPipeline _pipeline;
@@ -25,7 +27,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void Awake()
         {
-            _catalog = new SessionActivityCatalog();
+            if (activityCatalog == null)
+            {
+                throw new InvalidOperationException("SessionActivityHost requires activityCatalog.");
+            }
+
+            _catalog = activityCatalog.BuildRuntimeCatalog();
             _pipeline = new SessionActivityPipeline(
                 _catalog,
                 sessionStateId,
@@ -242,4 +249,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
+
+
 

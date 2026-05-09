@@ -197,7 +197,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoStart: 0
-  sessionId: SessionActivitySandboxSession
+  sessionStateId: SessionActivitySandboxSession
+  activityCatalog: {fileID: 11400000, guid: 1db19b58d43a4f6fa70ce41f06cb53d3, type: 2}
 --- !u!114 &300001
 MonoBehaviour:
   m_ObjectHideFlags: 0

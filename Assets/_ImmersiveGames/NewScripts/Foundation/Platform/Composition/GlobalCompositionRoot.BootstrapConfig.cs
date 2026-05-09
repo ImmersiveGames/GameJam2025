@@ -60,14 +60,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 }
             }
 
-            bootstrapConfig = Resources.Load<BootstrapConfigAsset>("Bootstrap/BootstrapConfig");
+            bootstrapConfig = Resources.Load<BootstrapConfigAsset>("Core/BootstrapConfig");
             if (bootstrapConfig == null)
             {
                 reason = "bootstrap_config_resource_missing";
                 return false;
             }
 
-            via = "Resources/Bootstrap/BootstrapConfig";
+            via = "Resources/Core/BootstrapConfig";
             _cachedBootstrapConfig = bootstrapConfig;
             _cachedBootstrapConfigVia = via;
 

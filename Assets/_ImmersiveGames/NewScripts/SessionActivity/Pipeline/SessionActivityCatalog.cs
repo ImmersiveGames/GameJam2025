@@ -6,33 +6,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public sealed class SessionActivityCatalog
     {
-        private const string CatalogSource = "SessionActivityCatalog";
         private readonly IReadOnlyList<SessionActivityDefinition> _definitions;
-
-        public SessionActivityCatalog()
-        {
-            _definitions = new[]
-            {
-                new SessionActivityDefinition(
-                    activityId: "activity_01",
-                    displayName: "Activity 01",
-                    activityOrdinal: 1,
-                    hasActivation: true,
-                    hasGameplayContent: true,
-                    hasActivityResult: true,
-                    nextActivityId: "activity_02",
-                    source: CatalogSource),
-                new SessionActivityDefinition(
-                    activityId: "activity_02",
-                    displayName: "Activity 02",
-                    activityOrdinal: 2,
-                    hasActivation: true,
-                    hasGameplayContent: true,
-                    hasActivityResult: false,
-                    nextActivityId: string.Empty,
-                    source: CatalogSource),
-            };
-        }
 
         public SessionActivityCatalog(IEnumerable<SessionActivityDefinition> definitions)
         {
@@ -52,6 +26,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (!materialized[index].IsValid)
                 {
                     throw new InvalidOperationException($"SessionActivityCatalog definition at index {index} is invalid.");
+                }
+            }
+
+            HashSet<string> ids = new(StringComparer.OrdinalIgnoreCase);
+            for (int index = 0; index < materialized.Length; index++)
+            {
+                if (!ids.Add(materialized[index].ActivityId))
+                {
+                    throw new InvalidOperationException($"SessionActivityCatalog has duplicate activityId '{materialized[index].ActivityId}'.");
                 }
             }
 
