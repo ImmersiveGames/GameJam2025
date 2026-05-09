@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "Preferences",
                 installerDependencies: new[] { "Audio" },
-                bootstrapDependencies: System.Array.Empty<string>(),
+                bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => PreferencesInstaller.Install(bootstrapConfig),
                 bootstrap: bootstrapConfig => PreferencesBootstrap.ComposeRuntime(bootstrapConfig),
                 installerEntry: "PreferencesInstaller.Install",

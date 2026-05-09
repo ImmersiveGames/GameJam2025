@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems
 {
     public interface IGameplayManager

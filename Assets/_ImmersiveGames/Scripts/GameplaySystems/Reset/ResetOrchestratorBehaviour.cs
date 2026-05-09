@@ -10,7 +10,6 @@ using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Execution;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 {
     [DisallowMultipleComponent]

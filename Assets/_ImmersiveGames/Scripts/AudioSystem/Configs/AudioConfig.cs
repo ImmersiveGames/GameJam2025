@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Audio;
-
 namespace _ImmersiveGames.Scripts.AudioSystem.Configs
 {
     /// <summary>

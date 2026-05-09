@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]

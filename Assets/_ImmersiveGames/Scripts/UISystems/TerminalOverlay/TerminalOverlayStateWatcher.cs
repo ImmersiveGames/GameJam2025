@@ -1,6 +1,6 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -8,7 +8,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
     {
         [SerializeField] private TerminalOverlayController overlay;
 
-        private System.Type _lastStateType;
+        private Type _lastStateType;
 
         private void Awake()
         {

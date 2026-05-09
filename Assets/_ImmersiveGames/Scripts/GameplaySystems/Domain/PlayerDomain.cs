@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
     public interface IPlayerDomain

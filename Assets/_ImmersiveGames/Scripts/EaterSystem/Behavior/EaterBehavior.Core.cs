@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.Scripts.AnimationSystems.Components;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     /// Controle básico do comportamento do Eater.
     /// Cria os estados conhecidos e integra com desejos, recursos, animação, etc.
     /// </summary>
-    [RequireComponent(typeof(EaterMaster), typeof(EaterAnimationController), typeof(AnimationSystems.Components.AnimationResolver))]
+    [RequireComponent(typeof(EaterMaster), typeof(EaterAnimationController), typeof(AnimationResolver))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
     public sealed partial class EaterBehavior : MonoBehaviour

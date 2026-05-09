@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "Save",
                 installerDependencies: new[] { "Preferences" },
-                bootstrapDependencies: System.Array.Empty<string>(),
+                bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => SaveInstaller.Install(bootstrapConfig),
                 bootstrap: null,
                 installerEntry: "SaveInstaller.Install",

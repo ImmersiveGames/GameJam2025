@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public sealed class SessionActivityCatalog

@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     public static class ActorSpawnArchetypeDefaults

@@ -1,8 +1,8 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
@@ -17,7 +17,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public string StateName { get; }
 
-        protected Behavior.EaterBehavior Behavior { get; private set; }
+        protected EaterBehavior Behavior { get; private set; }
 
         protected Transform Transform => Behavior != null ? Behavior.transform : null;
 
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected EaterConfigSo Config => Behavior != null ? Behavior.Config : null;
 
-        internal void Attach(Behavior.EaterBehavior behavior)
+        internal void Attach(EaterBehavior behavior)
         {
             Behavior = behavior;
         }

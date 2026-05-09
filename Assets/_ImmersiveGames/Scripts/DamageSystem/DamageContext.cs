@@ -1,7 +1,6 @@
 ﻿using System;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     [Serializable]

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Authoring;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Semantic
 {
     public readonly struct ActorSetResolvedSelection

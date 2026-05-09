@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.Tags;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
     /// <summary>

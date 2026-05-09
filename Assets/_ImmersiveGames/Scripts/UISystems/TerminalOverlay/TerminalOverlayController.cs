@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 {
     [DebugLevel(DebugLevel.Verbose)]

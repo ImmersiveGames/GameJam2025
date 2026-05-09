@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             new CompositionModuleDescriptor(
                 moduleId: "InputModes",
                 installerDependencies: new[] { "RuntimePolicy", "ActorsSystem" },
-                bootstrapDependencies: System.Array.Empty<string>(),
+                bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
                 bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
                 installerEntry: "InputModesInstaller.Install",

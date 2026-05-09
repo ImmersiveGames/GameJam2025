@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using _ImmersiveGames.Scripts.Utils;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Core
 {
     /// <summary>

@@ -5,7 +5,6 @@ using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
     /// <summary>

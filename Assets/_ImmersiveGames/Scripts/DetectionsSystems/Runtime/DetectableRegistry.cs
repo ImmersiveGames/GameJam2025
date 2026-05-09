@@ -1,7 +1,7 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
     /// <summary>
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
                 return set;
             }
 
-            return System.Array.Empty<IDetectable>();
+            return Array.Empty<IDetectable>();
         }
     }
 }

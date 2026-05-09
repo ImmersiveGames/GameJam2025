@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
@@ -63,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 
             if (_quitService == null)
             {
-                throw new System.InvalidOperationException(
+                throw new InvalidOperationException(
                     "[FATAL][Config][FrontendUI] IFrontendQuitService ausente. Nao foi possivel delegar a quit intent.");
             }
 

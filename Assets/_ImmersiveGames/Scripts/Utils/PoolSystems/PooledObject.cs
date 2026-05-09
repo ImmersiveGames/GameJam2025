@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public abstract class PooledObject : MonoBehaviour, IPoolable

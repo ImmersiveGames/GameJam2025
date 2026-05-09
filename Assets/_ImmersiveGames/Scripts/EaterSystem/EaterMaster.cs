@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     public sealed class EaterMaster : ActorMaster, IEaterActor

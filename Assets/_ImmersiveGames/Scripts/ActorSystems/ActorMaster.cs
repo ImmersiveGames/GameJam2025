@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils;
 using _ImmersiveGames.Scripts.Utils.Extensions;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DefaultExecutionOrder(-10), DebugLevel(DebugLevel.Warning)]

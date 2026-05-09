@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
     public interface IOldActorRegistry

@@ -2,6 +2,7 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
@@ -60,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
         private static void EnsureSessionOperationalInputModeAdapter(BootstrapConfigAsset bootstrapConfig)
         {
-            if (bootstrapConfig?.RuntimeModeConfig?.compositionProfile != Foundation.Platform.RuntimeMode.CompositionProfileKind.Base11Sandbox)
+            if (bootstrapConfig?.RuntimeModeConfig?.compositionProfile != CompositionProfileKind.Base11Sandbox)
             {
                 return;
             }

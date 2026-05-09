@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using ImprovedTimers;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>

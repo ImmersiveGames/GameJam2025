@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 {
     /// <summary>
@@ -683,7 +684,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
         }
 
-        private static string SafeName(UnityEngine.Object obj)
+        private static string SafeName(Object obj)
         {
             return obj != null ? obj.name : "null";
         }

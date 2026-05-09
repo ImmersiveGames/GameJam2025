@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionActivity.SimulationGate;
-
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver
@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private readonly SessionActivityCatalog _catalog;
         private readonly SessionActivityRuntimeState _state;
-        private readonly SimulationGateService _simulationGate;
+        private readonly SessionActivitySimulationGate _sessionActivitySimulationGate;
         private readonly ISessionActivityPauseOverlayAdapter _pauseOverlayAdapter;
         private readonly ISessionActivityInputModeAdapter _inputModeAdapter;
         private readonly string _sessionId;
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
-            _simulationGate = new SimulationGateService();
+            _sessionActivitySimulationGate = new SessionActivitySimulationGate();
             _pauseOverlayAdapter = pauseOverlayAdapter ?? throw new ArgumentNullException(nameof(pauseOverlayAdapter));
             _inputModeAdapter = inputModeAdapter ?? throw new ArgumentNullException(nameof(inputModeAdapter));
             _sessionId = Normalize(sessionStateId);
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public SessionActivityRuntimeState State => _state;
         public SessionActivityCatalog Catalog => _catalog;
-        public SimulationGateState GateState => _simulationGate.State;
+        public SimulationGateState GateState => _sessionActivitySimulationGate.State;
         public string SessionId => _sessionId;
 
         public SessionActivityCommand BuildStartCommand(string source, string reason)
@@ -835,7 +835,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitSnapshot(snapshots, snapshotKind, command.Source, command.Reason, message);
 
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_simulationGate.State}' identity='{_state.CurrentIdentity}' reason='{command.Reason}' source='{command.Source}' outcome='accepted'.",
+                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_sessionActivitySimulationGate.State}' identity='{_state.CurrentIdentity}' reason='{command.Reason}' source='{command.Source}' outcome='accepted'.",
                 DebugUtility.Colors.Success);
 
             if (!fact.IsValid)
@@ -865,10 +865,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitSnapshot(snapshots, snapshotKind, command.Source, reason, message);
 
             _state.AppendTrace(
-                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_simulationGate.State}' identity='{command.Identity}' reason='{reason}' source='{command.Source}' message='{detailMessage}' outcome='rejected'.");
+                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_sessionActivitySimulationGate.State}' identity='{command.Identity}' reason='{reason}' source='{command.Source}' message='{detailMessage}' outcome='rejected'.");
 
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_simulationGate.State}' identity='{command.Identity}' reason='{reason}' source='{command.Source}' outcome='rejected'.",
+                $"[OBS][SessionActivityPipeline][Pause] command='{command.Kind}' fact='{factKind}' simulationState='{_state.CurrentSimulationState}' gateState='{_sessionActivitySimulationGate.State}' identity='{command.Identity}' reason='{reason}' source='{command.Source}' outcome='rejected'.",
                 DebugUtility.Colors.Warning);
 
             return fact;
@@ -890,7 +890,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityInputModeObservation observation = _inputModeAdapter.Apply(inputModeCommand);
             if (!observation.IsValid)
             {
-                throw new InvalidOperationException("SessionActivityInputModeAdapter returned an invalid observation.");
+                throw new InvalidOperationException("InputModeAdapter returned an invalid observation.");
             }
 
             _state.AppendTrace(
@@ -902,7 +902,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityCommand command)
         {
             SimulationGateCommand gateCommand = BuildActivityGateCommand(gateCommandKind, command);
-            SimulationGateResult gateResult = _simulationGate.Execute(gateCommand);
+            SimulationGateResult gateResult = _sessionActivitySimulationGate.Execute(gateCommand);
             RecordSimulationGateResult(gateResult);
 
             return gateResult;
@@ -910,12 +910,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void ReleaseActivityGateIfBlocked(SessionActivityCommand command)
         {
-            if (_state.CurrentSimulationState == SessionActivitySimulationState.Paused && !_simulationGate.State.ActivityBlocked)
+            if (_state.CurrentSimulationState == SessionActivitySimulationState.Paused && !_sessionActivitySimulationGate.State.ActivityBlocked)
             {
                 throw new InvalidOperationException("Paused activity requires a blocked simulation gate.");
             }
 
-            if (!_simulationGate.State.ActivityBlocked)
+            if (!_sessionActivitySimulationGate.State.ActivityBlocked)
             {
                 return;
             }
@@ -927,12 +927,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SimulationGateIdentity expectedGateIdentity = BuildActivityGateIdentity(currentIdentity, command.Source, command.Reason);
-            if (!_simulationGate.State.ActivityIdentity.MatchesActivityScope(expectedGateIdentity))
+            if (!_sessionActivitySimulationGate.State.ActivityIdentity.MatchesActivityScope(expectedGateIdentity))
             {
                 throw new InvalidOperationException("Activity gate is blocked by a foreign identity.");
             }
 
-            SimulationGateResult gateResult = _simulationGate.Execute(BuildActivityGateCommand(SimulationGateCommandKind.ReleaseActivitySimulation, command));
+            SimulationGateResult gateResult = _sessionActivitySimulationGate.Execute(BuildActivityGateCommand(SimulationGateCommandKind.ReleaseActivitySimulation, command));
             RecordSimulationGateResult(gateResult);
 
             if (gateResult.IsRejected)

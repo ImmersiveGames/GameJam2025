@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Services
 {
 

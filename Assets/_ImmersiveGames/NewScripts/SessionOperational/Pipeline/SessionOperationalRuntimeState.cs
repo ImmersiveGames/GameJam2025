@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public sealed class SessionOperationalRuntimeState

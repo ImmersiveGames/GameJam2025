@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -6,7 +7,6 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.UI;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
 
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
             foreach (string actorId in actorIds)
             {
                 DebugUtility.LogVerbose<CanvasDebugUtility>($"\n👤 Actor: {actorId}");
-                foreach (RuntimeAttributeType resourceType in System.Enum.GetValues(typeof(RuntimeAttributeType)))
+                foreach (RuntimeAttributeType resourceType in Enum.GetValues(typeof(RuntimeAttributeType)))
                 {
                     var config = ResolveInstanceConfig(actorId, resourceType);
                     DebugUtility.LogVerbose<CanvasDebugUtility>($"   - {resourceType}: Config={config != null}, Style={config?.slotStyle != null} ({config?.slotStyle?.name})");

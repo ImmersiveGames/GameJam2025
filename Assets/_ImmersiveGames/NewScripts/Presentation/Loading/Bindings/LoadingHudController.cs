@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
             ApplyProgress(snapshot);
             ValidateProgressFillOrFail(snapshot, contextSignature);
 
-            UnityEngine.Canvas.ForceUpdateCanvases();
+            Canvas.ForceUpdateCanvases();
 
             int startFrame = Time.frameCount;
             await Task.Yield();
@@ -110,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
                 await Task.Yield();
             }
 
-            UnityEngine.Canvas.ForceUpdateCanvases();
+            Canvas.ForceUpdateCanvases();
             ValidateProgressFillOrFail(snapshot, contextSignature);
         }
 

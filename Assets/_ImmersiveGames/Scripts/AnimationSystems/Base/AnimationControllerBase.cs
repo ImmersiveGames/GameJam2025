@@ -5,7 +5,6 @@ using _ImmersiveGames.Scripts.AnimationSystems.Components;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using _ImmersiveGames.Scripts.AnimationSystems.Services;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 {
     public abstract class AnimationControllerBase : MonoBehaviour

@@ -1,5 +1,4 @@
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Config
 {
     [CreateAssetMenu(menuName = "ImmersiveGames/Legacy/Animation/Animation Config")]

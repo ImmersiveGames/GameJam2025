@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {
     [DisallowMultipleComponent]
@@ -13,14 +12,14 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         private const string RouteButtonSource = "SessionOperationalRouteButtonBinder";
 
         [Header("Route")]
-        [SerializeField] private SessionOperationalRouteAsset routeDefinition;
+        [SerializeField] private OperationalRouteAsset routeDefinition;
 
         [Header("Route")]
         [SerializeField] private string reasonOverride;
 
         protected override bool OnClickCore(string actionReason)
         {
-            if (!TryResolveRouteDefinition(out SessionOperationalRouteAsset resolvedRouteDefinition))
+            if (!TryResolveRouteDefinition(out OperationalRouteAsset resolvedRouteDefinition))
             {
                 return false;
             }
@@ -65,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             return true;
         }
 
-        private bool TryResolveRouteDefinition(out SessionOperationalRouteAsset resolvedRouteDefinition)
+        private bool TryResolveRouteDefinition(out OperationalRouteAsset resolvedRouteDefinition)
         {
             resolvedRouteDefinition = null;
 

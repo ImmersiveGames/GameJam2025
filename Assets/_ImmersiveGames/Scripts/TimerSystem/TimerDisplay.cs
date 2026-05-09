@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.TimerSystem.Events;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
     /// <summary>

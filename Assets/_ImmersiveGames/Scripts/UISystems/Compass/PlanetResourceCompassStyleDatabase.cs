@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.Scripts.PlanetSystems;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
     [CreateAssetMenu(fileName = "PlanetResourceCompassStyleDatabase", menuName = "ImmersiveGames/Legacy/UI/Compass/Planet Resource Style Database")]
     public class PlanetResourceCompassStyleDatabase : ScriptableObject
     {
-        [System.Serializable]
+        [Serializable]
         public class PlanetResourceCompassStyleEntry
         {
             [Tooltip("Tipo de recurso ao qual o estilo serÃ¡ aplicado.")]

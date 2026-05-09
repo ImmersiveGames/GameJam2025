@@ -2,8 +2,8 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
-
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>

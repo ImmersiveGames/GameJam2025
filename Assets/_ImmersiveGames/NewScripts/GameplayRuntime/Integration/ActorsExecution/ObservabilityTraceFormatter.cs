@@ -1,7 +1,7 @@
 using System;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 {
     internal static class ObservabilityTraceFormatter
@@ -97,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
                 case Enum enumeration:
                     return enumeration.ToString();
                 case IFormattable formattable:
-                    return formattable.ToString(null, System.Globalization.CultureInfo.InvariantCulture);
+                    return formattable.ToString(null, CultureInfo.InvariantCulture);
                 default:
                     return value.ToString();
             }
@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
             var builder = new StringBuilder(byteCount * 2);
             for (int index = 0; index < byteCount; index += 1)
             {
-                builder.Append(bytes[index].ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+                builder.Append(bytes[index].ToString("x2", CultureInfo.InvariantCulture));
             }
 
             return builder.ToString();

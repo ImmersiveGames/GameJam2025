@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Events;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
     public abstract class SkinConfigurable : MonoBehaviour

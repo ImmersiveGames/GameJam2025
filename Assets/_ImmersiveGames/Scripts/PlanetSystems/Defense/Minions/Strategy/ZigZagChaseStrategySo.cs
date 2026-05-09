@@ -37,7 +37,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions.Strategy
         {
             if (minion == null || target == null)
             {
-                DebugUtility.LogWarning<ZigZagChaseStrategySo>($"Minion ou Target nulo. Retornando null.");
+                DebugUtility.LogWarning<ZigZagChaseStrategySo>("Minion ou Target nulo. Retornando null.");
                 return null;
             }
 

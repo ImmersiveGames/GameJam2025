@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.TimerSystem.Events;
 using ImprovedTimers;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
     /// <summary>

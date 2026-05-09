@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
 using UnityEngine.Serialization;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.Configs
 {
     /// <summary>

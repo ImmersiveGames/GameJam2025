@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     public sealed partial class AudioGlobalSfxService
@@ -80,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             float categoryMultiplier = _settings != null ? Mathf.Max(0f, _settings.SfxCategoryMultiplier) : 1f;
             float baseVolume = Mathf.Clamp01(cue.BaseVolume);
             float jitter = Mathf.Clamp01(cue.RandomVolumeJitter);
-            float volumeJitter = jitter > 0f ? UnityEngine.Random.Range(1f - jitter, 1f + jitter) : 1f;
+            float volumeJitter = jitter > 0f ? Random.Range(1f - jitter, 1f + jitter) : 1f;
 
             source.clip = clip;
             source.outputAudioMixerGroup = _routing.ResolveSfxMixerGroup(cue);
@@ -88,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             source.spatialBlend = resolvedEmission.UseSpatial ? Mathf.Clamp01(resolvedEmission.SpatialBlend) : 0f;
             source.minDistance = Mathf.Max(0f, resolvedEmission.MinDistance);
             source.maxDistance = Mathf.Max(source.minDistance, resolvedEmission.MaxDistance);
-            source.pitch = Mathf.Clamp(UnityEngine.Random.Range(Mathf.Min(cue.PitchMin, cue.PitchMax), Mathf.Max(cue.PitchMin, cue.PitchMax)), 0.01f, 3f);
+            source.pitch = Mathf.Clamp(Random.Range(Mathf.Min(cue.PitchMin, cue.PitchMax), Mathf.Max(cue.PitchMin, cue.PitchMax)), 0.01f, 3f);
             source.volume = Mathf.Clamp01(baseVolume * volumeScale * masterVolume * sfxVolume * categoryMultiplier * volumeJitter);
             source.playOnAwake = false;
         }

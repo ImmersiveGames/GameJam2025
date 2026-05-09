@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 {
     /// <summary>

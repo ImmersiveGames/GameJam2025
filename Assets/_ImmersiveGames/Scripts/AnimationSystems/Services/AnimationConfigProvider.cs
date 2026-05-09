@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 {
     public class AnimationConfigProvider

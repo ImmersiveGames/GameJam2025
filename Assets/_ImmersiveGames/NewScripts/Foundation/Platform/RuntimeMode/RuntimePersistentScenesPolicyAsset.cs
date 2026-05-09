@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     [CreateAssetMenu(

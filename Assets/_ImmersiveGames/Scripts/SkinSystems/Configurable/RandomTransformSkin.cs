@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
     public class RandomTransformSkin : SkinConfigurable
@@ -47,7 +49,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             }
             if (showDebugLogs)
             {
-                DebugUtility.LogVerbose<RandomTransformSkin>($"Initialized");
+                DebugUtility.LogVerbose<RandomTransformSkin>("Initialized");
             }
         }
         #endregion
@@ -356,7 +358,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #endregion
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct TransformState
     {
         public Vector3 scale;

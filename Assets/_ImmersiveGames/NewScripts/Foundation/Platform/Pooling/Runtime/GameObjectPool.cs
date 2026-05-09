@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 {
     /// <summary>
@@ -121,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 }
 
                 CallPoolDestroyed(instance);
-                UnityEngine.Object.Destroy(instance);
+                Object.Destroy(instance);
             }
 
             _available.Clear();
@@ -144,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
                 return false;
             }
 
-            GameObject instance = UnityEngine.Object.Instantiate(Definition.Prefab, Host.AvailableRoot);
+            GameObject instance = Object.Instantiate(Definition.Prefab, Host.AvailableRoot);
             instance.name = $"{Definition.Prefab.name}_Pooled_{TotalCount + 1}";
             instance.SetActive(false);
 

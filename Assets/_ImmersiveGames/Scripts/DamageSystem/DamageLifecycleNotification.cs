@@ -1,5 +1,4 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
-
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     /// <summary>

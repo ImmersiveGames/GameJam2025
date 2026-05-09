@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
 {
     /// <summary>

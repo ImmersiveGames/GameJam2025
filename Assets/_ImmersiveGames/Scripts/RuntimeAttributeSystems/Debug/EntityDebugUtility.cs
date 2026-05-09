@@ -14,7 +14,6 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
 
@@ -848,7 +847,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                 var resourceSystem = bridge.GetResourceSystem();
                 if (resourceSystem != null)
                 {
-                    DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
+                    DebugUtility.LogWarning<EntityDebugUtility>("📊 Threshold Service Status:");
                     DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
 
                     foreach (var (resourceType, _) in resourceSystem.GetAll())

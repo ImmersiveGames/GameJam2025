@@ -9,7 +9,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
-
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
     /// <summary>

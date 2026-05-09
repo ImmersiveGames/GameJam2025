@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityEngine.Serialization;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>

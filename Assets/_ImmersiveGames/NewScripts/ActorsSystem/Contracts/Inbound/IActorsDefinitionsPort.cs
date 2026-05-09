@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
-
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound
 {
     /// <summary>

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     public delegate IWorldSpawnService ActorSpawnArchetypeFactory(ActorSpecRecord actorSpec, WorldSpawnFactoryDependencies dependencies);

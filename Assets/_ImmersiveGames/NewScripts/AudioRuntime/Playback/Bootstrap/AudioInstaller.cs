@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
     /// <summary>

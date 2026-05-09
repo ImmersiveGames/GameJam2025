@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
 

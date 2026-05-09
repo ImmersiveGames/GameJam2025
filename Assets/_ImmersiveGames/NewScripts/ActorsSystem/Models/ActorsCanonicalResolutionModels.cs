@@ -1,5 +1,4 @@
 using System;
-
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 {
     public readonly struct CanonicalActorOccurrence : IEquatable<CanonicalActorOccurrence>

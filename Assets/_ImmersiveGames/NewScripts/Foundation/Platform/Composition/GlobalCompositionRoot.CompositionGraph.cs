@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
-using _ImmersiveGames.NewScripts.SessionOperational.Integration;
+using _ImmersiveGames.NewScripts.SessionOperational.Runtime;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -17,23 +18,23 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             steps.Add(new CompositionPipelineStep(
                 id: "RuntimePolicy",
                 installer: _ => RegisterRuntimePolicyServices(),
-                installerDependencies: System.Array.Empty<string>(),
+                installerDependencies: Array.Empty<string>(),
                 bootstrap: null,
-                bootstrapDependencies: System.Array.Empty<string>()));
+                bootstrapDependencies: Array.Empty<string>()));
 
             steps.Add(new CompositionPipelineStep(
                 id: "Pooling",
                 installer: _ => InstallPoolingServices(),
-                installerDependencies: System.Array.Empty<string>(),
+                installerDependencies: Array.Empty<string>(),
                 bootstrap: null,
-                bootstrapDependencies: System.Array.Empty<string>()));
+                bootstrapDependencies: Array.Empty<string>()));
 
             steps.Add(new CompositionPipelineStep(
                 id: "Gates",
                 installer: _ => InstallGatesServices(),
-                installerDependencies: System.Array.Empty<string>(),
+                installerDependencies: Array.Empty<string>(),
                 bootstrap: null,
-                bootstrapDependencies: System.Array.Empty<string>()));
+                bootstrapDependencies: Array.Empty<string>()));
 
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFailFast(bootstrapConfig);
             CompositionProfileKind compositionProfile = runtimeModeConfig.compositionProfile;
@@ -53,9 +54,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             steps.Add(new CompositionPipelineStep(
                 id: "SceneComposition",
                 installer: _ => InstallSceneCompositionServices(),
-                installerDependencies: System.Array.Empty<string>(),
+                installerDependencies: Array.Empty<string>(),
                 bootstrap: null,
-                bootstrapDependencies: System.Array.Empty<string>()));
+                bootstrapDependencies: Array.Empty<string>()));
 
             return steps;
         }
@@ -78,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
                     installerDependencies: new[] { "RuntimePolicy" },
                     bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
-                    bootstrapDependencies: System.Array.Empty<string>()),
+                    bootstrapDependencies: Array.Empty<string>()),
                 new CompositionPipelineStep(
                     id: "RuntimePersistentScenes",
                     installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),

@@ -7,7 +7,7 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Runtime;
 using UnityEngine;
-
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
@@ -291,7 +291,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            int index = UnityEngine.Random.Range(0, entries.Count);
+            int index = Random.Range(0, entries.Count);
             return entries[index];
         }
 

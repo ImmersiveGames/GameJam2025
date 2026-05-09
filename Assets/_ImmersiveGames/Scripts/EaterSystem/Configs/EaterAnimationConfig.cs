@@ -1,6 +1,5 @@
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.Configs
 {
     /// <summary>

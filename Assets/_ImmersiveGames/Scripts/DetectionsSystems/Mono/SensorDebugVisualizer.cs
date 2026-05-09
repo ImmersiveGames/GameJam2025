@@ -2,8 +2,8 @@
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
+using UnityEditor;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
     [ExecuteInEditMode]
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
             if (showInfo && showLabels)
             {
                 string status = isDetecting ? $"{GetDetectionCountForConfig(config, sensorController.Service)}" : "-";
-                UnityEditor.Handles.Label(
+                Handles.Label(
                     sensorController.transform.position + Vector3.up * (config.Radius + 0.2f),
                     $"{config.DetectionType?.TypeName}\n{status}"
                 );

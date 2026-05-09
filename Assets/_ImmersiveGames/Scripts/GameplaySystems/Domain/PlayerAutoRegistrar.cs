@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
     [DisallowMultipleComponent]
@@ -42,7 +41,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
         private void Update()
         {
-            if (_actor == null || _registered == true || _waitingForActorId == false)
+            if (_actor == null || _registered || !_waitingForActorId)
             {
                 return;
             }
@@ -87,7 +86,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<PlayerAutoRegistrar>(
                     $"IPlayerDomain n�o encontrado para a cena '{sceneName}'. " +
-                    $"Garanta GameplayDomainBootstrapper nessa cena e maxSceneServices adequado.",
+                    "Garanta GameplayDomainBootstrapper nessa cena e maxSceneServices adequado.",
                     this);
                 _playerDomain = null;
                 return;

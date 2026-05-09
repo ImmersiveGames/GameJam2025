@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
-
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static class RuntimePersistentScenesComposition
@@ -122,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void EnsureStartupRouteCompatibilityOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            SessionOperationalRouteAsset startupRoute = runtimeModeConfig.StartupRouteDefinition;
+            OperationalRouteAsset startupRoute = runtimeModeConfig.StartupRouteDefinition;
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
 
             if (startupRoute == null || persistentScenesPolicy == null)

@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using UnityEditor;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
 {
     public interface IFrontendQuitService
@@ -17,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Runtime
                 $"[OBS][Quit][Execute] Quit executado no Editor. Stopping Play Mode. reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            UnityEditor.EditorApplication.isPlaying = false;
+            EditorApplication.isPlaying = false;
 #else
             DebugUtility.Log(typeof(FrontendQuitService),
                 $"[OBS][Quit][Execute] Quit executado em build. Application.Quit() reason='{normalizedReason}'.",

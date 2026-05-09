@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public sealed class SessionActivityRuntimeState

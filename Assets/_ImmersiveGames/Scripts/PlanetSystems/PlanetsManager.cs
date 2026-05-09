@@ -12,7 +12,6 @@ using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Verbose)]

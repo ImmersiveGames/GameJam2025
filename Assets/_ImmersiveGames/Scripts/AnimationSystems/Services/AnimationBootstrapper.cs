@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.AnimationSystems.Config;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 {
     public abstract class AnimationBootstrapper

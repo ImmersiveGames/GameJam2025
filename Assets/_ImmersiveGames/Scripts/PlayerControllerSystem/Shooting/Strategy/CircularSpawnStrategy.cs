@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy
 {
-    [System.Serializable]
+    [Serializable]
     public class CircularSpawnStrategy : ISpawnStrategy
     {
         [Header("Spawn Config")]

@@ -13,7 +13,6 @@ using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 {
     /// <summary>

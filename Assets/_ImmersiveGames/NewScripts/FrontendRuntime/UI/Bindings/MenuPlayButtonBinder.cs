@@ -1,6 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.RunLifecycle.Core;
+using _ImmersiveGames.NewScripts.RunPipeline.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {

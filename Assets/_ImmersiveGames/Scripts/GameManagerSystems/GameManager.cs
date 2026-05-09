@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -5,11 +6,10 @@ using _ImmersiveGames.Scripts.GameManagerSystems.Events;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     [DefaultExecutionOrder(-101)]
-    public sealed partial class GameManager : PersistentSingleton<GameManager>, IGameManager
+    public sealed class GameManager : PersistentSingleton<GameManager>, IGameManager
     {
         private const string StateGuardLogPrefix =
             "Operação inválida: o estado atual do GameManager não permite esta operação.";
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         [SerializeField] private GameConfig gameConfig;
 
         [Header("Debug")]
-        [SerializeField] private DebugManager _debugManager;
+        private DebugManager _debugManager;
 
         public GameConfig GameConfig => gameConfig;
 
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.Scripts.GameManagerSystems
         }
         public void ResetGame()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public bool TryTriggerGameOver(string reason = null)

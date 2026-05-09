@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.Scripts.PlanetSystems;
-
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     /// <summary>

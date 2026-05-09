@@ -1,7 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     public interface IWorldSpawnServiceRegistryReadPortProvider

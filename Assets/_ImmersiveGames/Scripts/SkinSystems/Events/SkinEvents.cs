@@ -1,6 +1,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Events
 {
     /// <summary>
@@ -39,10 +40,10 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Events
     public struct SkinInstancesCreatedEvent : IEvent
     {
         public ModelType ModelType { get; }
-        public UnityEngine.GameObject[] Instances { get; }
+        public GameObject[] Instances { get; }
         public IActor Actor { get; }
 
-        public SkinInstancesCreatedEvent(ModelType modelType, UnityEngine.GameObject[] instances, IActor actor)
+        public SkinInstancesCreatedEvent(ModelType modelType, GameObject[] instances, IActor actor)
         {
             ModelType = modelType;
             Instances = instances;

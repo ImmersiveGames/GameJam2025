@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Services;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 {
     [RequireComponent(typeof(PlayerInput))]

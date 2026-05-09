@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Managers
 {
     /// <summary>

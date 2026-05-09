@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
-    [System.Serializable]
+    [Serializable]
     public struct SkinDynamicData
     {
         public Vector3 scaleModifier;

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using UnityEngine;
 using UnityEngine.Serialization;
-
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Authoring
 {
     [CreateAssetMenu(

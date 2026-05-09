@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.SkinSystems.Configurable;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AudioSystem.Skins
 {
     public interface IActorSkinAudioProvider

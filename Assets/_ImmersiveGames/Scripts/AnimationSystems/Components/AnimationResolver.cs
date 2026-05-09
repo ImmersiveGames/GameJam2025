@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -8,7 +9,6 @@ using _ImmersiveGames.Scripts.SkinSystems.Controllers;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using _ImmersiveGames.Scripts.SkinSystems.Events;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {
     [DefaultExecutionOrder(-50)]
@@ -23,7 +23,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 
         private bool _listenersRegistered;
 
-        public event System.Action<Animator> OnAnimatorChanged;
+        public event Action<Animator> OnAnimatorChanged;
 
         public Animator GetAnimator() => _cachedAnimator ??= ResolveAnimator();
 

@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater.Movement
 {
     /// <summary>

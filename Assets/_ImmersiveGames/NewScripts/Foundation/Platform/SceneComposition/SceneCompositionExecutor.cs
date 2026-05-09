@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -56,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
         private static async Task<List<string>> UnloadScenesAsync(IReadOnlyList<string> scenesToUnload, string activeSceneName, CancellationToken ct)
         {
             List<string> removedScenes = new List<string>();
-            HashSet<string> dedupe = new HashSet<string>(System.StringComparer.Ordinal);
+            HashSet<string> dedupe = new HashSet<string>(StringComparer.Ordinal);
             string normalizedActiveScene = NormalizeSceneName(activeSceneName);
 
             if (scenesToUnload == null)
@@ -75,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
                 }
 
                 if (!string.IsNullOrWhiteSpace(normalizedActiveScene) &&
-                    string.Equals(sceneName, normalizedActiveScene, System.StringComparison.Ordinal))
+                    string.Equals(sceneName, normalizedActiveScene, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -115,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
         private static async Task<List<string>> LoadScenesAsync(IReadOnlyList<string> scenesToLoad, CancellationToken ct)
         {
             List<string> addedScenes = new List<string>();
-            HashSet<string> dedupe = new HashSet<string>(System.StringComparer.Ordinal);
+            HashSet<string> dedupe = new HashSet<string>(StringComparer.Ordinal);
 
             if (scenesToLoad == null)
             {
@@ -246,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition
             {
                 string sceneName = scenesToLoad[i];
                 if (!string.IsNullOrWhiteSpace(sceneName) &&
-                    string.Equals(sceneName.Trim(), normalizedActiveScene, System.StringComparison.Ordinal))
+                    string.Equals(sceneName.Trim(), normalizedActiveScene, StringComparison.Ordinal))
                 {
                     return true;
                 }

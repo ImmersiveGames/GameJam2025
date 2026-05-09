@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Text;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionActivity.Integration.InputModes;
-using _ImmersiveGames.NewScripts.SessionActivity.Integration.PauseOverlay;
-using _ImmersiveGames.NewScripts.SessionActivity.SimulationGate;
+using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
@@ -30,8 +29,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pipeline = new SessionActivityPipeline(
                 _catalog,
                 sessionStateId,
-                new SessionActivityPauseOverlayAdapter(),
-                new SessionActivityInputModeAdapter());
+                new PauseOverlayAdapter(),
+                new InputModeAdapter());
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);

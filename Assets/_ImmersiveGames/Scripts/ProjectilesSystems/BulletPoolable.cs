@@ -5,7 +5,6 @@ using _ImmersiveGames.Scripts.Tags;
 using _ImmersiveGames.Scripts.Utils.Extensions;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.ProjectilesSystems
 {
     [RequireComponent(typeof(Rigidbody)), DebugLevel(DebugLevel.Error)]

@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
     public abstract class AbstractDetectable : MonoBehaviour, IDetectable

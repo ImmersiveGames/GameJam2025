@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>

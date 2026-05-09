@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
     [DisallowMultipleComponent]
@@ -66,7 +65,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<EaterAutoRegistrar>(
                     $"IEaterDomain n�o encontrado para a cena '{sceneName}'. " +
-                    $"Garanta GameplayDomainBootstrapper nessa cena e maxSceneServices adequado.",
+                    "Garanta GameplayDomainBootstrapper nessa cena e maxSceneServices adequado.",
                     this);
                 _eaterDomain = null;
                 return false;

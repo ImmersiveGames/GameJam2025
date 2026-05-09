@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 {
     public class PlanetDefenseDetectable : AbstractDetectable

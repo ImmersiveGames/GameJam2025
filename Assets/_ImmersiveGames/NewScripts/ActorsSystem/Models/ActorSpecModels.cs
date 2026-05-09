@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-
 namespace _ImmersiveGames.NewScripts.ActorsSystem.Models
 {
     public enum ActorSpecSourceKind

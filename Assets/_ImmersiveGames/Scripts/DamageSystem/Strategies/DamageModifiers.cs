@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 {
     /// <summary>

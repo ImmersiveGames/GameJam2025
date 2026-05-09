@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
-using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
-using _ImmersiveGames.NewScripts.SessionOperational.Integration;
-
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public sealed class SessionOperationalPipeline
@@ -39,13 +39,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SessionOperationalRuntimeState State => _state;
 
         public async Task<SessionOperationalRouteCompletedFact> RequestOperationalRouteAsync(
-            SessionOperationalRouteAsset route,
+            OperationalRouteAsset route,
             string source,
             string reason)
         {
             if (route == null)
             {
-                throw new InvalidOperationException("SessionOperationalRouteAsset is required.");
+                throw new InvalidOperationException("OperationalRouteAsset is required.");
             }
 
             if (!route.TryValidate(out string routeValidationError))
@@ -56,11 +56,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             ValidatePersistentScenesPolicyOrFail(route);
-            ISessionOperationalRouteTransitionExecutor routeExecutor = ResolveRouteExecutorOrFail();
+            ISceneCompositionAdapter routeExecutor = ResolveRouteExecutorOrFail();
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
-            ISessionOperationalFadeAdapter fadeAdapter = null;
-            ISessionOperationalLoadingAdapter loadingAdapter = null;
+            IFadeAdapter fadeAdapter = null;
+            ILoadingAdapter loadingAdapter = null;
             if (route.UsesTransition)
             {
                 fadeAdapter = ResolveFadeAdapterOrFail();
@@ -372,7 +372,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
                 else
                 {
-                    ISessionOperationalAudioAdapter audioAdapter = ResolveAudioAdapterOrFail();
+                    IAudioAdapter audioAdapter = ResolveAudioAdapterOrFail();
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
                         BuildAudioPipelineLog(
@@ -1122,38 +1122,38 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return $"{Normalize(routeIdentity)}|{Normalize(activeScene)}|{sequence}|sandbox";
         }
 
-        private static ISessionOperationalRouteTransitionExecutor ResolveRouteExecutorOrFail()
+        private static ISceneCompositionAdapter ResolveRouteExecutorOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalRouteTransitionExecutor>(out var executor) && executor != null)
+            if (DependencyManager.Provider.TryGetGlobal<ISceneCompositionAdapter>(out var executor) && executor != null)
             {
                 return executor;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalRouteTransitionExecutor obrigatorio ausente para o trilho operacional.";
+            string message = "[FATAL][Config][SessionOperationalPipeline] ISceneCompositionAdapter obrigatorio ausente para o trilho operacional.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }
 
-        private static ISessionOperationalFadeAdapter ResolveFadeAdapterOrFail()
+        private static IFadeAdapter ResolveFadeAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalFadeAdapter>(out var fadeAdapter) && fadeAdapter != null)
+            if (DependencyManager.Provider.TryGetGlobal<IFadeAdapter>(out var fadeAdapter) && fadeAdapter != null)
             {
                 return fadeAdapter;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalFadeAdapter obrigatorio ausente para transitionMode=Profile.";
+            string message = "[FATAL][Config][SessionOperationalPipeline] IFadeAdapter obrigatorio ausente para transitionMode=Profile.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }
 
-        private static ISessionOperationalLoadingAdapter ResolveLoadingAdapterOrFail()
+        private static ILoadingAdapter ResolveLoadingAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalLoadingAdapter>(out var loadingAdapter) && loadingAdapter != null)
+            if (DependencyManager.Provider.TryGetGlobal<ILoadingAdapter>(out var loadingAdapter) && loadingAdapter != null)
             {
                 return loadingAdapter;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionOperationalLoadingAdapter obrigatorio ausente para o rail canonico de loading.";
+            string message = "[FATAL][Config][SessionOperationalPipeline] ILoadingAdapter obrigatorio ausente para o rail canonico de loading.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }
@@ -1171,7 +1171,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static SessionOperationalLoadingCommand ResolveLoadingCommandOrFail(
-            SessionOperationalRouteAsset route,
+            OperationalRouteAsset route,
             RuntimeModeConfig runtimeModeConfig,
             string routeOperationId,
             string transitionId,
@@ -1264,14 +1264,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return loadingCommand;
         }
 
-        private static ISessionOperationalAudioAdapter ResolveAudioAdapterOrFail()
+        private static IAudioAdapter ResolveAudioAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalAudioAdapter>(out var audioAdapter) && audioAdapter != null)
+            if (DependencyManager.Provider.TryGetGlobal<IAudioAdapter>(out var audioAdapter) && audioAdapter != null)
             {
                 return audioAdapter;
             }
 
-            string message = "[FATAL][Config][SessionOperationalPipeline][Audio] ISessionOperationalAudioAdapter obrigatorio ausente para routeAudio cue.";
+            string message = "[FATAL][Config][SessionOperationalPipeline][Audio] IAudioAdapter obrigatorio ausente para routeAudio cue.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
         }
@@ -1305,7 +1305,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static SessionOperationalRouteAudioCommand BuildRouteAudioCommandOrFail(
-            SessionOperationalRouteAsset route,
+            OperationalRouteAsset route,
             string routeIdentity,
             string routeOperationId,
             string transitionId,
@@ -1388,7 +1388,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 DebugUtility.Colors.Info);
         }
 
-        private static void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteAsset route)
+        private static void ValidatePersistentScenesPolicyOrFail(OperationalRouteAsset route)
         {
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
@@ -1419,7 +1419,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static SessionOperationalRouteLoadPlan ResolveRouteLoadPlanOrFail(
-            SessionOperationalRouteAsset route,
+            OperationalRouteAsset route,
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
             string activeSceneName)
         {
@@ -1455,7 +1455,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static SessionOperationalRouteUnloadPlan ResolveRouteUnloadPlanOrFail(
-            SessionOperationalRouteAsset route,
+            OperationalRouteAsset route,
             SessionOperationalRouteSnapshot previousCompletedRoute,
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
             IReadOnlyList<SceneKeyAsset> currentRouteLoadedSceneKeys,
@@ -1486,7 +1486,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static IReadOnlyList<SceneKeyAsset> ResolveAutoScenesToUnloadOrFail(
-            SessionOperationalRouteAsset route,
+            OperationalRouteAsset route,
             SessionOperationalRouteSnapshot previousCompletedRoute,
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
             HashSet<string> currentRouteLoadSceneSet,
@@ -1707,7 +1707,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return sceneNames.Count == 0 ? Array.Empty<string>() : sceneNames;
         }
 
-        private void RecordLastCompletedRouteSnapshot(SessionOperationalRouteAsset route, int routeSequence, IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
+        private void RecordLastCompletedRouteSnapshot(OperationalRouteAsset route, int routeSequence, IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
         {
             if (route == null)
             {

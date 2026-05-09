@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 {
     /// <summary>

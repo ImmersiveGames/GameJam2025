@@ -1,5 +1,4 @@
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>

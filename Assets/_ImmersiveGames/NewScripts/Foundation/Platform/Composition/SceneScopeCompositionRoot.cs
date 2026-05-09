@@ -1,23 +1,22 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using _ImmersiveGames.NewScripts.ActorsSystem.Integration.SceneRouting;
 using _ImmersiveGames.NewScripts.ActorsSystem.Models;
 using _ImmersiveGames.NewScripts.ActorsSystem.Semantic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneComposition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Spawn;
-using _ImmersiveGames.NewScripts.SceneRouting.Contracts.RuntimeCore;
-using _ImmersiveGames.NewScripts.SceneRouting.Readiness.Runtime;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     /// <summary>
     /// Inicializa servicos de escopo de cena para o NewScripts e garante limpeza deterministica.
     /// </summary>
-    public sealed partial class SceneScopeCompositionRoot : MonoBehaviour
+    public sealed class SceneScopeCompositionRoot : MonoBehaviour
     {
         private static readonly HashSet<string> CanonicalNoActorScopeScenes = new(StringComparer.OrdinalIgnoreCase)
         {

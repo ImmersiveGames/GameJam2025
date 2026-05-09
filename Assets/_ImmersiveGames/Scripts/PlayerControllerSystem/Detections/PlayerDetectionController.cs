@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 {
     public class PlayerDetectionController : AbstractDetector, IResetInterfaces, IResetScopeFilter, IResetOrder

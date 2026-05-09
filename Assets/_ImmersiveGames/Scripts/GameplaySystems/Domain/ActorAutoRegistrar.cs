@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
     [DisallowMultipleComponent]
@@ -54,7 +53,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 
         private void Start()
         {
-            if (_actor == null || _registered == true || _pendingRegister == false)
+            if (_actor == null || _registered || !_pendingRegister)
             {
                 return;
             }
@@ -70,7 +69,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
                     $"ActorId ainda vazio em Start para '{_actor.ActorName}'. " +
-                    $"Verifique se o ActorMaster est? gerando ActorId no Awake e se o OldUniqueIdFactory est? dispon?vel.",
+                    "Verifique se o ActorMaster est? gerando ActorId no Awake e se o OldUniqueIdFactory est? dispon?vel.",
                     this);
                 return;
             }
@@ -103,7 +102,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
             {
                 DebugUtility.LogWarning<ActorAutoRegistrar>(
                     $"IOldActorRegistry n?o encontrado para a cena '{sceneName}'. " +
-                    $"Garanta que existe um GameplayDomainBootstrapper nessa cena.",
+                    "Garanta que existe um GameplayDomainBootstrapper nessa cena.",
                     this);
                 _registry = null;
             }

@@ -1,5 +1,4 @@
 using System;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.ActorsExecution
 {
     public readonly struct ActorsMaterializationExecutionCycle

@@ -2,7 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.GameplayRuntime.ActorRegistry;
-
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Spawn
 {
     /// <summary>

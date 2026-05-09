@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         {
             if (target == null)
             {
-                throw new System.ArgumentNullException(nameof(target));
+                throw new ArgumentNullException(nameof(target));
             }
 
             // Cria o tween manualmente, interpolando de target.fillAmount até endValue
@@ -48,7 +49,7 @@ namespace _ImmersiveGames.Scripts.Utils.Extensions
         {
             if (target == null)
             {
-                throw new System.ArgumentNullException(nameof(target));
+                throw new ArgumentNullException(nameof(target));
             }
 
             Color startValue = target.color;

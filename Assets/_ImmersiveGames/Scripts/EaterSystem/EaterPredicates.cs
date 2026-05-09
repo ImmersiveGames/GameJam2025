@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     /// <summary>

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 {
     /// <summary>
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem.Strategies
 
         public float CalculateDamage(DamageContext ctx)
         {
-            bool isCritical = UnityEngine.Random.value <= Mathf.Clamp01(criticalChance);
+            bool isCritical = Random.value <= Mathf.Clamp01(criticalChance);
             float multiplier = Mathf.Max(1f, criticalMultiplier);
             return ctx.damageValue * (isCritical ? multiplier : 1f);
         }

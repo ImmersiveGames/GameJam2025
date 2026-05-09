@@ -9,7 +9,6 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using ImprovedTimers;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>

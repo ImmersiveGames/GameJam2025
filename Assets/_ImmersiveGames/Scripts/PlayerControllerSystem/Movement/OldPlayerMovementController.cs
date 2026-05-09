@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Movement
 {
     [RequireComponent(typeof(Rigidbody), typeof(PlayerInput))]

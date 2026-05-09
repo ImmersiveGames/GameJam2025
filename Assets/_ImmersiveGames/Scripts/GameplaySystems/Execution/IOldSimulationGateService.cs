@@ -1,5 +1,4 @@
 ﻿using System;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 {
     /// <summary>

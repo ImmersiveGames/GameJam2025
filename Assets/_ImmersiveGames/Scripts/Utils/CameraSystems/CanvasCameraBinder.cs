@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.CameraSystems;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 {
     /// <summary>
@@ -47,7 +46,6 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
                     $"[{name}] OldCameraResolverService n�o encontrado. CanvasCameraBinder desativado.",
                     this);
                 enabled = false;
-                return;
             }
         }
 

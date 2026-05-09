@@ -1,7 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Domain
 {
     public interface IEaterDomain

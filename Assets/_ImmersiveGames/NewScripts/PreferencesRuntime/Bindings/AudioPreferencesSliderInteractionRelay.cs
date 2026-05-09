@@ -175,7 +175,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IGlobalAudioService>(out globalAudioService) || globalAudioService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out globalAudioService) || globalAudioService == null)
             {
                 globalAudioService = null;
                 return false;

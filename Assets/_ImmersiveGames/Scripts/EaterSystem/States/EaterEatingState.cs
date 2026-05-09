@@ -5,7 +5,6 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using DG.Tweening;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
