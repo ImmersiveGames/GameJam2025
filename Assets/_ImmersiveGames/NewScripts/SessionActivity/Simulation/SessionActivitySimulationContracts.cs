@@ -3,27 +3,27 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 {
-    public enum SimulationGateCommandKind
+    public enum ActivityExecutionBlockingCommandKind
     {
         Unknown = 0,
-        BlockActivitySimulation = 1,
-        ReleaseActivitySimulation = 2,
+        BlockActivityExecution = 1,
+        ReleaseActivityExecution = 2,
         BlockSessionSimulation = 3,
         ReleaseSessionSimulation = 4,
     }
 
-    public enum SimulationGateFactKind
+    public enum ActivityExecutionBlockingFactKind
     {
         Unknown = 0,
-        ActivitySimulationBlocked = 1,
-        ActivitySimulationReleased = 2,
-        SessionSimulationBlocked = 3,
-        SessionSimulationReleased = 4,
-        SimulationGateCommandRejected = 5,
+        ActivityExecutionBlocked = 1,
+        ActivityExecutionReleased = 2,
+        SessionExecutionBlocked = 3,
+        SessionExecutionReleased = 4,
+        ActivityExecutionBlockingCommandRejected = 5,
     }
 
     [Serializable]
-    public readonly struct SimulationGateIdentity : IEquatable<SimulationGateIdentity>
+    public readonly struct ActivityExecutionBlockingIdentity : IEquatable<ActivityExecutionBlockingIdentity>
     {
         private readonly string _pipelineId;
         private readonly string _sessionStateId;
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         private readonly string _source;
         private readonly string _reason;
 
-        public SimulationGateIdentity(
+        public ActivityExecutionBlockingIdentity(
             string pipelineId,
             string sessionStateId,
             string activityId,
@@ -76,13 +76,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             EntrySequence > 0 &&
             Stage != SessionActivityStage.Unknown;
 
-        public bool MatchesSessionScope(SimulationGateIdentity other)
+        public bool MatchesSessionScope(ActivityExecutionBlockingIdentity other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal);
         }
 
-        public bool MatchesActivityScope(SimulationGateIdentity other)
+        public bool MatchesActivityScope(ActivityExecutionBlockingIdentity other)
         {
             return MatchesSessionScope(other) &&
                    string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
@@ -91,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                    Stage == other.Stage;
         }
 
-        public bool Equals(SimulationGateIdentity other)
+        public bool Equals(ActivityExecutionBlockingIdentity other)
         {
             return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
@@ -103,7 +103,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
                    string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
 
-        public override bool Equals(object obj) => obj is SimulationGateIdentity other && Equals(other);
+        public override bool Equals(object obj) => obj is ActivityExecutionBlockingIdentity other && Equals(other);
 
         public override int GetHashCode()
         {
@@ -123,8 +123,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', stage='{Stage}', source='{Source}', reason='{Reason}'";
         }
 
-        public static bool operator ==(SimulationGateIdentity left, SimulationGateIdentity right) => left.Equals(right);
-        public static bool operator !=(SimulationGateIdentity left, SimulationGateIdentity right) => !left.Equals(right);
+        public static bool operator ==(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right) => left.Equals(right);
+        public static bool operator !=(ActivityExecutionBlockingIdentity left, ActivityExecutionBlockingIdentity right) => !left.Equals(right);
 
         private static string Normalize(string value)
         {
@@ -133,11 +133,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     }
 
     [Serializable]
-    public readonly struct SimulationGateCommand
+    public readonly struct ActivityExecutionBlockingCommand
     {
-        public SimulationGateCommand(
-            SimulationGateCommandKind kind,
-            SimulationGateIdentity identity,
+        public ActivityExecutionBlockingCommand(
+            ActivityExecutionBlockingCommandKind kind,
+            ActivityExecutionBlockingIdentity identity,
             string source,
             string reason)
         {
@@ -147,12 +147,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             Reason = Normalize(reason);
         }
 
-        public SimulationGateCommandKind Kind { get; }
-        public SimulationGateIdentity Identity { get; }
+        public ActivityExecutionBlockingCommandKind Kind { get; }
+        public ActivityExecutionBlockingIdentity Identity { get; }
         public string Source { get; }
         public string Reason { get; }
 
-        public bool IsValid => Kind != SimulationGateCommandKind.Unknown;
+        public bool IsValid => Kind != ActivityExecutionBlockingCommandKind.Unknown;
 
         public override string ToString()
         {
@@ -169,8 +169,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     public readonly struct SimulationGateFact
     {
         public SimulationGateFact(
-            SimulationGateFactKind kind,
-            SimulationGateIdentity identity,
+            ActivityExecutionBlockingFactKind kind,
+            ActivityExecutionBlockingIdentity identity,
             string source,
             string reason,
             string message)
@@ -182,13 +182,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             Message = Normalize(message);
         }
 
-        public SimulationGateFactKind Kind { get; }
-        public SimulationGateIdentity Identity { get; }
+        public ActivityExecutionBlockingFactKind Kind { get; }
+        public ActivityExecutionBlockingIdentity Identity { get; }
         public string Source { get; }
         public string Reason { get; }
         public string Message { get; }
 
-        public bool IsValid => Kind != SimulationGateFactKind.Unknown;
+        public bool IsValid => Kind != ActivityExecutionBlockingFactKind.Unknown;
 
         public override string ToString()
         {
@@ -205,12 +205,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     public readonly struct SimulationGateSnapshot
     {
         public SimulationGateSnapshot(
-            SimulationGateCommandKind commandKind,
-            SimulationGateIdentity commandIdentity,
+            ActivityExecutionBlockingCommandKind commandKind,
+            ActivityExecutionBlockingIdentity commandIdentity,
             bool sessionBlocked,
-            SimulationGateIdentity sessionIdentity,
+            ActivityExecutionBlockingIdentity sessionIdentity,
             bool activityBlocked,
-            SimulationGateIdentity activityIdentity,
+            ActivityExecutionBlockingIdentity activityIdentity,
             SimulationGateFact lastFact,
             string source,
             string reason,
@@ -228,12 +228,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             Message = Normalize(message);
         }
 
-        public SimulationGateCommandKind CommandKind { get; }
-        public SimulationGateIdentity CommandIdentity { get; }
+        public ActivityExecutionBlockingCommandKind CommandKind { get; }
+        public ActivityExecutionBlockingIdentity CommandIdentity { get; }
         public bool SessionBlocked { get; }
-        public SimulationGateIdentity SessionIdentity { get; }
+        public ActivityExecutionBlockingIdentity SessionIdentity { get; }
         public bool ActivityBlocked { get; }
-        public SimulationGateIdentity ActivityIdentity { get; }
+        public ActivityExecutionBlockingIdentity ActivityIdentity { get; }
         public SimulationGateFact LastFact { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -253,12 +253,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     }
 
     [Serializable]
-    public sealed class SimulationGateState
+    public sealed class ActivityExecutionBlockingState
     {
         public bool SessionBlocked { get; internal set; }
-        public SimulationGateIdentity SessionIdentity { get; internal set; }
+        public ActivityExecutionBlockingIdentity SessionIdentity { get; internal set; }
         public bool ActivityBlocked { get; internal set; }
-        public SimulationGateIdentity ActivityIdentity { get; internal set; }
+        public ActivityExecutionBlockingIdentity ActivityIdentity { get; internal set; }
         public SimulationGateFact LastFact { get; internal set; }
         public SimulationGateSnapshot LastSnapshot { get; internal set; }
 
@@ -279,10 +279,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     }
 
     [Serializable]
-    public readonly struct SimulationGateResult
+    public readonly struct ActivityExecutionBlockingResult
     {
-        public SimulationGateResult(
-            SimulationGateCommand command,
+        public ActivityExecutionBlockingResult(
+            ActivityExecutionBlockingCommand command,
             IReadOnlyList<SimulationGateFact> facts,
             SimulationGateSnapshot snapshot,
             string reason)
@@ -293,14 +293,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             Reason = Normalize(reason);
         }
 
-        public SimulationGateCommand Command { get; }
+        public ActivityExecutionBlockingCommand Command { get; }
         public IReadOnlyList<SimulationGateFact> Facts { get; }
         public SimulationGateSnapshot Snapshot { get; }
         public string Reason { get; }
 
         public bool IsValid => Facts.Count > 0;
 
-        public bool IsRejected => Facts.Count > 0 && Facts[Facts.Count - 1].Kind == SimulationGateFactKind.SimulationGateCommandRejected;
+        public bool IsRejected => Facts.Count > 0 && Facts[Facts.Count - 1].Kind == ActivityExecutionBlockingFactKind.ActivityExecutionBlockingCommandRejected;
         public bool IsAccepted => !IsRejected;
 
         public override string ToString()

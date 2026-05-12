@@ -162,15 +162,15 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     /// REQUEST (intencao): "quero entrar em gameplay".
     /// Contrato canonico para intent de Play vinda de UI/Frontend.
     /// </summary>
-    public sealed class GamePlayRequestedEvent : IEvent
+    public sealed class RunActivationRequestedEvent : IEvent
     {
-        public GamePlayRequestedEvent(string reason = null, RunLifecycleSignalIdentity identity = null)
+        public RunActivationRequestedEvent(string reason = null, RunLifecycleSignalIdentity identity = null)
         {
             Reason = reason;
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
-                nameof(GamePlayRequestedEvent),
-                handshake: nameof(GamePlayRequestedEvent));
+                nameof(RunActivationRequestedEvent),
+                handshake: nameof(RunActivationRequestedEvent));
         }
 
         public string Reason { get; }
@@ -180,16 +180,16 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     /// <summary>
     /// Evento definitivo para pausa / despausa.
     /// </summary>
-    public sealed class GamePauseCommandEvent : IEvent
+    public sealed class RunPauseCommandEvent : IEvent
     {
-        public GamePauseCommandEvent(bool isPaused, string reason = null, RunLifecycleSignalIdentity identity = null)
+        public RunPauseCommandEvent(bool isPaused, string reason = null, RunLifecycleSignalIdentity identity = null)
         {
             IsPaused = isPaused;
             Reason = reason;
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
-                nameof(GamePauseCommandEvent),
-                handshake: nameof(GamePauseCommandEvent));
+                nameof(RunPauseCommandEvent),
+                handshake: nameof(RunPauseCommandEvent));
         }
 
         public bool IsPaused { get; }
@@ -218,15 +218,15 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     /// <summary>
     /// Hook oficial de observacao do estado canonico de pause.
     /// </summary>
-    public sealed class PauseStateChangedEvent : IEvent
+    public sealed class RunPauseStateChangedEvent : IEvent
     {
-        public PauseStateChangedEvent(bool isPaused, RunLifecycleSignalIdentity identity = null)
+        public RunPauseStateChangedEvent(bool isPaused, RunLifecycleSignalIdentity identity = null)
         {
             IsPaused = isPaused;
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 isPaused ? "pause_entered" : "pause_exited",
-                nameof(PauseStateChangedEvent),
-                handshake: nameof(PauseStateChangedEvent));
+                nameof(RunPauseStateChangedEvent),
+                handshake: nameof(RunPauseStateChangedEvent));
         }
 
         public bool IsPaused { get; }
@@ -236,7 +236,7 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     /// <summary>
     /// Resultado final da run atual.
     /// </summary>
-    public enum GameRunOutcome
+    public enum RunOutcomeKind
     {
         Unknown = 0,
         Victory = 1,
@@ -250,19 +250,19 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     /// Diferentes condicoes podem dispara-lo (timer, morte do player, objetivos, sequencia de eventos etc.)
     /// sem amarrar a logica de encerramento a um unico sistema.
     /// </summary>
-    public sealed class GameRunEndRequestedEvent : IEvent
+    public sealed class RunDeactivationRequestedEvent : IEvent
     {
-        public GameRunEndRequestedEvent(GameRunOutcome outcome, string reason = null, RunLifecycleSignalIdentity identity = null)
+        public RunDeactivationRequestedEvent(RunOutcomeKind outcomeKind, string reason = null, RunLifecycleSignalIdentity identity = null)
         {
-            Outcome = outcome;
+            OutcomeKind = outcomeKind;
             Reason = reason;
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
-                nameof(GameRunEndRequestedEvent),
-                handshake: nameof(GameRunEndRequestedEvent));
+                nameof(RunDeactivationRequestedEvent),
+                handshake: nameof(RunDeactivationRequestedEvent));
         }
 
-        public GameRunOutcome Outcome { get; }
+        public RunOutcomeKind OutcomeKind { get; }
         public string Reason { get; }
         public RunLifecycleSignalIdentity Identity { get; }
     }
@@ -270,22 +270,22 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
     /// <summary>
     /// Representa o fim da run atual do jogo, para orquestrar pos-gameplay.
     /// </summary>
-    public sealed class GameRunEndedEvent : IEvent
+    public sealed class RunDeactivationCompletedEvent : IEvent
     {
-        public GameRunEndedEvent(GameRunOutcome outcome, string reason = null, RunLifecycleSignalIdentity identity = null)
+        public RunDeactivationCompletedEvent(RunOutcomeKind outcomeKind, string reason = null, RunLifecycleSignalIdentity identity = null)
         {
-            Outcome = outcome;
+            OutcomeKind = outcomeKind;
             Reason = reason;
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 reason,
-                nameof(GameRunEndedEvent),
-                handshake: nameof(GameRunEndedEvent));
+                nameof(RunDeactivationCompletedEvent),
+                handshake: nameof(RunDeactivationCompletedEvent));
         }
 
         /// <summary>
         /// Resultado da run (vitoria/derrota).
         /// </summary>
-        public GameRunOutcome Outcome { get; }
+        public RunOutcomeKind OutcomeKind { get; }
 
         /// <summary>
         /// Texto livre para logs (ex.: "AllPlanetsDestroyed", "BossDefeated", "QA_ForcedEnd").

@@ -283,7 +283,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"host='{host.name}'");
             builder.AppendLine($"pipelineId='{host.State.PipelineId}' sessionStateId='{host.State.SessionId}'");
             builder.AppendLine($"entrySequence='{host.State.CurrentEntrySequence}'");
-            builder.AppendLine($"simulationState='{host.State.CurrentSimulationState}'");
+            builder.AppendLine($"executionState='{host.State.CurrentExecutionState}'");
             builder.AppendLine($"gateState='{host.GateState}'");
             builder.AppendLine($"started='{host.State.HasStarted}' completed='{host.State.HasCompleted}' stage='{host.State.CurrentStage}' currentActivity='{host.State.CurrentDefinition.ActivityId}'");
             builder.AppendLine($"definition='{host.State.CurrentDefinition}'");
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pipelineId='{host.State.PipelineId}'");
             builder.AppendLine($"sessionStateId='{host.State.SessionId}'");
             builder.AppendLine($"entrySequence='{host.State.CurrentEntrySequence}'");
-            builder.AppendLine($"simulationState='{host.State.CurrentSimulationState}'");
+            builder.AppendLine($"executionState='{host.State.CurrentExecutionState}'");
             builder.AppendLine($"gateState='{host.GateState}'");
             builder.AppendLine($"started='{host.State.HasStarted}' completed='{host.State.HasCompleted}' stage='{host.State.CurrentStage}'");
             builder.AppendLine($"currentActivity='{host.State.CurrentDefinition.ActivityId}'");

@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Completed = 7,
     }
 
-    public enum SessionActivitySimulationState
+    public enum ActivityExecutionState
     {
         Unknown = 0,
         Stopped = 1,

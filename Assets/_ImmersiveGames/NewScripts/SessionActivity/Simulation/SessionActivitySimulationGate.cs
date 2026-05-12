@@ -4,13 +4,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class SessionActivitySimulationGate
     {
-        private readonly SimulationGateState _state = new();
+        private readonly ActivityExecutionBlockingState _state = new();
 
-        public SimulationGateState State => _state;
+        public ActivityExecutionBlockingState State => _state;
 
-        public SimulationGateResult Execute(SimulationGateCommand command)
+        public ActivityExecutionBlockingResult Execute(ActivityExecutionBlockingCommand command)
         {
-            if (command.Kind == SimulationGateCommandKind.Unknown)
+            if (command.Kind == ActivityExecutionBlockingCommandKind.Unknown)
             {
                 return Reject(command, "unsupported_gate_command", "Unsupported gate command.");
             }
@@ -24,15 +24,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             return command.Kind switch
             {
-                SimulationGateCommandKind.BlockActivitySimulation => ExecuteBlockActivity(command),
-                SimulationGateCommandKind.ReleaseActivitySimulation => ExecuteReleaseActivity(command),
-                SimulationGateCommandKind.BlockSessionSimulation => ExecuteBlockSession(command),
-                SimulationGateCommandKind.ReleaseSessionSimulation => ExecuteReleaseSession(command),
+                ActivityExecutionBlockingCommandKind.BlockActivityExecution => ExecuteBlockActivity(command),
+                ActivityExecutionBlockingCommandKind.ReleaseActivityExecution => ExecuteReleaseActivity(command),
+                ActivityExecutionBlockingCommandKind.BlockSessionSimulation => ExecuteBlockSession(command),
+                ActivityExecutionBlockingCommandKind.ReleaseSessionSimulation => ExecuteReleaseSession(command),
                 _ => Reject(command, "unsupported_gate_command", $"Unsupported gate command '{command.Kind}'."),
             };
         }
 
-        private SimulationGateResult ExecuteBlockActivity(SimulationGateCommand command)
+        private ActivityExecutionBlockingResult ExecuteBlockActivity(ActivityExecutionBlockingCommand command)
         {
             if (!command.Identity.HasActivityScope)
             {
@@ -51,10 +51,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             _state.ActivityBlocked = true;
             _state.ActivityIdentity = command.Identity;
-            return Accept(command, SimulationGateFactKind.ActivitySimulationBlocked, "Activity simulation blocked.");
+            return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionBlocked, "Activity simulation blocked.");
         }
 
-        private SimulationGateResult ExecuteReleaseActivity(SimulationGateCommand command)
+        private ActivityExecutionBlockingResult ExecuteReleaseActivity(ActivityExecutionBlockingCommand command)
         {
             if (!command.Identity.HasActivityScope)
             {
@@ -73,10 +73,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             _state.ActivityBlocked = false;
             _state.ActivityIdentity = default;
-            return Accept(command, SimulationGateFactKind.ActivitySimulationReleased, "Activity simulation released.");
+            return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionReleased, "Activity simulation released.");
         }
 
-        private SimulationGateResult ExecuteBlockSession(SimulationGateCommand command)
+        private ActivityExecutionBlockingResult ExecuteBlockSession(ActivityExecutionBlockingCommand command)
         {
             if (!command.Identity.HasSessionScope)
             {
@@ -95,10 +95,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             _state.SessionBlocked = true;
             _state.SessionIdentity = command.Identity;
-            return Accept(command, SimulationGateFactKind.SessionSimulationBlocked, "Session simulation blocked.");
+            return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionBlocked, "Session simulation blocked.");
         }
 
-        private SimulationGateResult ExecuteReleaseSession(SimulationGateCommand command)
+        private ActivityExecutionBlockingResult ExecuteReleaseSession(ActivityExecutionBlockingCommand command)
         {
             if (!command.Identity.HasSessionScope)
             {
@@ -117,12 +117,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             _state.SessionBlocked = false;
             _state.SessionIdentity = default;
-            return Accept(command, SimulationGateFactKind.SessionSimulationReleased, "Session simulation released.");
+            return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionReleased, "Session simulation released.");
         }
 
-        private SimulationGateResult Accept(
-            SimulationGateCommand command,
-            SimulationGateFactKind factKind,
+        private ActivityExecutionBlockingResult Accept(
+            ActivityExecutionBlockingCommand command,
+            ActivityExecutionBlockingFactKind factKind,
             string message)
         {
             SimulationGateFact fact = new(
@@ -136,16 +136,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             UpdateDiagnostics(fact, snapshot);
             LogResult(command, fact, snapshot, accepted: true);
 
-            return new SimulationGateResult(command, new[] { fact }, snapshot, "accepted");
+            return new ActivityExecutionBlockingResult(command, new[] { fact }, snapshot, "accepted");
         }
 
-        private SimulationGateResult Reject(
-            SimulationGateCommand command,
+        private ActivityExecutionBlockingResult Reject(
+            ActivityExecutionBlockingCommand command,
             string rejectionReason,
             string message)
         {
             SimulationGateFact fact = new(
-                SimulationGateFactKind.SimulationGateCommandRejected,
+                ActivityExecutionBlockingFactKind.ActivityExecutionBlockingCommandRejected,
                 command.Identity,
                 command.Source,
                 rejectionReason,
@@ -155,11 +155,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             UpdateDiagnostics(fact, snapshot);
             LogResult(command, fact, snapshot, accepted: false);
 
-            return new SimulationGateResult(command, new[] { fact }, snapshot, rejectionReason);
+            return new ActivityExecutionBlockingResult(command, new[] { fact }, snapshot, rejectionReason);
         }
 
         private SimulationGateSnapshot BuildSnapshot(
-            SimulationGateCommand command,
+            ActivityExecutionBlockingCommand command,
             SimulationGateFact fact,
             string message)
         {
@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             _state.LastSnapshot = snapshot;
         }
 
-        private static void LogCommand(SimulationGateCommand command)
+        private static void LogCommand(ActivityExecutionBlockingCommand command)
         {
             DebugUtility.Log(typeof(SessionActivitySimulationGate),
                 $"[OBS][SimulationGate] commandKind='{command.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command'.",
@@ -190,13 +190,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         }
 
         private static void LogResult(
-            SimulationGateCommand command,
+            ActivityExecutionBlockingCommand command,
             SimulationGateFact fact,
             SimulationGateSnapshot snapshot,
             bool accepted)
         {
             DebugUtility.Log(typeof(SessionActivitySimulationGate),
-                $"[OBS][SimulationGate] commandKind='{command.Kind}' factKind='{fact.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command' outcome='{(accepted ? "accepted" : "rejected")}'.",
+                $"[OBS][SimulationGate] commandKind='{command.Kind}' factKind='{fact.Kind}' pipelineId='{command.Identity.PipelineId}' sessionStateId='{command.Identity.SessionStateId}' activityId='{command.Identity.ActivityId}' activityOrdinal='{command.Identity.ActivityOrdinal}' entrySequence='{command.Identity.EntrySequence}' stage='{command.Identity.Stage}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' source='{command.Source}' reason='{command.Reason}' decisionSource='pipeline.command' outcomeKind='{(accepted ? "accepted" : "rejected")}'.",
                 accepted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
 
             DebugUtility.Log(typeof(SessionActivitySimulationGate),

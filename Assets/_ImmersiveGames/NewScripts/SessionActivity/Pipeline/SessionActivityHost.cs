@@ -23,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityRuntimeState State => _pipeline?.State;
         public SessionActivityCatalog Catalog => _catalog;
         public SessionActivityPipeline Pipeline => _pipeline;
-        public SimulationGateState GateState => _pipeline?.GateState;
+        public ActivityExecutionBlockingState GateState => _pipeline?.GateState;
 
         private void Awake()
         {
@@ -131,7 +131,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"sessionStateId='{sessionStateId}' autoStart='{autoStart}'");
             builder.AppendLine($"pipelineId='{State.PipelineId}' sessionStateId='{State.SessionId}'");
             builder.AppendLine($"entrySequence='{State.CurrentEntrySequence}'");
-            builder.AppendLine($"simulationState='{State.CurrentSimulationState}'");
+            builder.AppendLine($"executionState='{State.CurrentExecutionState}'");
             builder.AppendLine($"gateState='{GateState}'");
             builder.AppendLine($"catalog='{_catalog.Summary}'");
             builder.AppendLine($"started='{State.HasStarted}' completed='{State.HasCompleted}' stage='{State.CurrentStage}'");
@@ -179,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             string outcome = result.Kind.ToString();
-            Debug.Log($"[OBS][SessionActivityPipeline][Host] action='{action}' outcome='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}' gateState='{GateState}'");
+            Debug.Log($"[OBS][SessionActivityPipeline][Host] action='{action}' outcomeKind='{outcome}' reason='{result.Reason}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}'");
 
             for (int index = 0; index < result.Facts.Count; index++)
             {
@@ -208,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private string BuildHostBanner()
         {
-            return $"[OBS][SessionActivityPipeline][Host] initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' simulationState='{State.CurrentSimulationState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
+            return $"[OBS][SessionActivityPipeline][Host] initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
         }
 
         private static string QaSource(string action)

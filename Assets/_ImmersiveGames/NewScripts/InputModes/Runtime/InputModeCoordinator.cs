@@ -64,19 +64,19 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 case InputModeRequestKind.FrontendMenu:
                     service.SetFrontendMenu(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcome='delegated'.",
+                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.Gameplay:
                     service.SetGameplay(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcome='delegated'.",
+                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.PauseOverlay:
                     service.SetPauseOverlay(evt.Reason);
                     DebugUtility.Log(typeof(InputModeCoordinator),
-                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcome='delegated'.",
+                        $"[OBS][InputModes] InputModeRequestDelegated kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
                 case InputModeRequestKind.Unspecified:

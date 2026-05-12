@@ -70,13 +70,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             if (command.InitialInputMode != SessionOperationalInputModeKind.FrontendMenu)
             {
                 DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
-                    $"[OBS][InputModes][Adapter] outcome='observed_noop' contextSignature='{command.ContextSignature}' initialInputMode='{command.InitialInputMode}' routeClass='{command.RouteClass}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][InputModes][Adapter] outcomeKind='observed_noop' contextSignature='{command.ContextSignature}' initialInputMode='{command.InitialInputMode}' routeClass='{command.RouteClass}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
-                $"[OBS][InputModes][Adapter] outcome='deferred_no_runtime_target' contextSignature='{command.ContextSignature}' initialInputMode='{command.InitialInputMode}' routeClass='{command.RouteClass}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][InputModes][Adapter] outcomeKind='deferred_no_runtime_target' contextSignature='{command.ContextSignature}' initialInputMode='{command.InitialInputMode}' routeClass='{command.RouteClass}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
             PublishFrontendMenuRequest(command);
         }

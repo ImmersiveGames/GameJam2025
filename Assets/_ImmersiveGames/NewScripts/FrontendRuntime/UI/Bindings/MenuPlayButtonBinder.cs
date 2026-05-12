@@ -19,14 +19,14 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         {
             string normalizedReason = string.IsNullOrWhiteSpace(actionReason) ? "Menu/PlayButton" : actionReason.Trim();
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[OBS][FrontendUI][Intent] MenuPlay -> GamePlayRequestedEvent reason='{normalizedReason}'.",
+                $"[OBS][FrontendUI][Intent] MenuPlay -> RunActivationRequestedEvent reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
                 "[OBS][FrontendUI][Delegate] Intent de Play delegada downstream para o backbone canonico.",
                 DebugUtility.Colors.Info);
 
-            EventBus<GamePlayRequestedEvent>.Raise(new GamePlayRequestedEvent(normalizedReason));
+            EventBus<RunActivationRequestedEvent>.Raise(new RunActivationRequestedEvent(normalizedReason));
 
             return true;
         }

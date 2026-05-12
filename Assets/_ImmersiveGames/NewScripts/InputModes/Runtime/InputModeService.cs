@@ -33,19 +33,19 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 case InputModeRequestKind.FrontendMenu:
                     DebugUtility.LogVerbose<InputModeService>(
-                        $"[OBS][InputModes] outcome='deferred_no_runtime_target' mode='FrontendMenu' reason='{resolvedReason}' target='<none>' actionMap='{_menuMapName}'.",
+                        $"[OBS][InputModes] outcomeKind='deferred_no_runtime_target' mode='FrontendMenu' reason='{resolvedReason}' target='<none>' actionMap='{_menuMapName}'.",
                         DebugUtility.Colors.Info);
                     return;
 
                 case InputModeRequestKind.Gameplay:
                     DebugUtility.LogVerbose<InputModeService>(
-                        $"[OBS][InputModes] outcome='observed_noop' mode='Gameplay' reason='{resolvedReason}' target='<none>' actionMap='{_playerMapName}'.",
+                        $"[OBS][InputModes] outcomeKind='observed_noop' mode='Gameplay' reason='{resolvedReason}' target='<none>' actionMap='{_playerMapName}'.",
                         DebugUtility.Colors.Info);
                     return;
 
                 case InputModeRequestKind.PauseOverlay:
                     DebugUtility.LogVerbose<InputModeService>(
-                        $"[OBS][InputModes] outcome='observed_noop' mode='PauseOverlay' reason='{resolvedReason}' target='<none>' actionMap='<none>' detail='pause overlay remains observed_noop in this stage.'.",
+                        $"[OBS][InputModes] outcomeKind='observed_noop' mode='PauseOverlay' reason='{resolvedReason}' target='<none>' actionMap='<none>' detail='pause overlay remains observed_noop in this stage.'.",
                         DebugUtility.Colors.Info);
                     return;
 
