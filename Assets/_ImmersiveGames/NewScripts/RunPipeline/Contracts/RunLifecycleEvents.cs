@@ -321,15 +321,15 @@ namespace _ImmersiveGames.NewScripts.RunPipeline.Contracts
         public bool IsActive { get; }
     }
 
-    public sealed class GameRunStartedEvent : IEvent
+    public sealed class RunStartEvent : IEvent
     {
-        public GameRunStartedEvent(RunLifecycleStateId stateId, RunLifecycleSignalIdentity identity = null)
+        public RunStartEvent(RunLifecycleStateId stateId, RunLifecycleSignalIdentity identity = null)
         {
             StateId = stateId;
             Identity = identity ?? RunLifecycleSignalIdentity.TechnicalInternal(
                 stateId.ToString(),
-                nameof(GameRunStartedEvent),
-                handshake: nameof(GameRunStartedEvent));
+                nameof(RunStartEvent),
+                handshake: nameof(RunStartEvent));
         }
 
         /// <summary>

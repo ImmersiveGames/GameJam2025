@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             {
                 if (_state.ActivityIdentity.MatchesActivityScope(command.Identity))
                 {
-                    return Reject(command, "gate_already_blocked", "Activity simulation is already blocked.");
+                    return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionBlocked, "Activity simulation already blocked. Idempotent no-op applied.");
                 }
 
                 return Reject(command, "stale_or_foreign_gate_command", "Activity simulation block belongs to a different identity.");
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             if (!_state.ActivityBlocked)
             {
-                return Reject(command, "gate_not_blocked", "Activity simulation is not blocked.");
+                return Accept(command, ActivityExecutionBlockingFactKind.ActivityExecutionReleased, "Activity simulation already released. Idempotent no-op applied.");
             }
 
             if (!_state.ActivityIdentity.MatchesActivityScope(command.Identity))
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
             {
                 if (_state.SessionIdentity.MatchesSessionScope(command.Identity))
                 {
-                    return Reject(command, "gate_already_blocked", "Session simulation is already blocked.");
+                    return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionBlocked, "Session simulation already blocked. Idempotent no-op applied.");
                 }
 
                 return Reject(command, "stale_or_foreign_gate_command", "Session simulation block belongs to a different identity.");
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
 
             if (!_state.SessionBlocked)
             {
-                return Reject(command, "gate_not_blocked", "Session simulation is not blocked.");
+                return Accept(command, ActivityExecutionBlockingFactKind.SessionExecutionReleased, "Session simulation already released. Idempotent no-op applied.");
             }
 
             if (!_state.SessionIdentity.MatchesSessionScope(command.Identity))

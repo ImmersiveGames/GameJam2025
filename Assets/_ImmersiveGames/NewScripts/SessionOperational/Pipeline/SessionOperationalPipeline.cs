@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -299,6 +300,34 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         sourceText,
                         reasonText);
 
+                }
+
+                if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
+                {
+                    if (string.IsNullOrWhiteSpace(route.HandoffSessionStateId))
+                    {
+                        throw new InvalidOperationException("handoffSessionStateId is required when completionHandoff=SessionActivityEntry.");
+                    }
+
+                    ActorPreparationIdentity actorPreparationIdentity = new(
+                        _sessionOperationalPipelineId,
+                        route.HandoffSessionStateId,
+                        routeIdentity,
+                        routeSequence,
+                        transitionId);
+                    ActorPreparationPlan actorPreparationPlan = new(
+                        actorPreparationIdentity,
+                        sourceText,
+                        reasonText);
+                    ActorPreparationResult actorPreparationResult = ActorPreparationStage.Execute(actorPreparationPlan);
+                    if (!actorPreparationResult.IsValid || !actorPreparationResult.IsObservedNoOp)
+                    {
+                        throw new InvalidOperationException("ActorPreparationStage returned an invalid result.");
+                    }
+                }
+
+                if (loadingCommand.IsEnabled)
+                {
                     await loadingAdapter.UpdateLoadingAsync(
                         loadingCommand,
                         CreateLoadingFact(
@@ -315,10 +344,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         "Materialization completed",
                         sourceText,
                         reasonText);
-                }
 
-                if (loadingCommand.IsEnabled)
-                {
                     await loadingAdapter.UpdateLoadingAsync(
                         loadingCommand,
                         CreateLoadingFact(
@@ -747,6 +773,27 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "Session operational setup no-op.");
         }
 
+        public bool TryObserveActorPreparationObserved(
+            string routeOperationId,
+            string transitionId,
+            int transitionSequence,
+            string routeId,
+            string routeProfileId,
+            string source,
+            string reason)
+        {
+            return TryRecordStage(
+                SessionOperationalStage.ActorPreparationObserved,
+                routeOperationId,
+                transitionId,
+                transitionSequence,
+                routeId,
+                routeProfileId,
+                source,
+                reason,
+                "Actor preparation observed no-op.");
+        }
+
         public bool TryObserveInputCapabilityPrepared(
             string routeOperationId,
             string transitionId,
@@ -982,20 +1029,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (stage == SessionOperationalStage.InitialInputModePrepared)
             {
-                SessionOperationalInputModeCommand inputModeCommand = new(
-                    identity,
-                    _state.CurrentInitialInputMode,
-                    _state.RouteClass);
-
-                if (!inputModeCommand.IsValid)
+                if (_state.CurrentInitialInputMode != SessionOperationalInputModeKind.FrontendMenu)
                 {
-                    throw new InvalidOperationException("Cannot emit invalid operational input mode command.");
+                    _state.AppendTrace(
+                        $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' outcomeKind='observed_noop' reason='initial_input_mode_policy' contextSignature='{identity.CycleSignature}' initialInputMode='{_state.CurrentInitialInputMode}' routeClass='{Normalize(_state.RouteClass)}' source='{identity.Source}' reasonDetail='{identity.Reason}'.");
                 }
+                else
+                {
+                    SessionOperationalInputModeCommand inputModeCommand = new(
+                        identity,
+                        _state.CurrentInitialInputMode,
+                        _state.RouteClass);
 
-                _state.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' contextSignature='{inputModeCommand.ContextSignature}' initialInputMode='{inputModeCommand.InitialInputMode}' routeClass='{inputModeCommand.RouteClass}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
+                    if (!inputModeCommand.IsValid)
+                    {
+                        throw new InvalidOperationException("Cannot emit invalid operational input mode command.");
+                    }
 
-                EventBus<SessionOperationalInputModeCommand>.Raise(inputModeCommand);
+                    _state.AppendTrace(
+                        $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' contextSignature='{inputModeCommand.ContextSignature}' initialInputMode='{inputModeCommand.InitialInputMode}' routeClass='{inputModeCommand.RouteClass}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
+
+                    EventBus<SessionOperationalInputModeCommand>.Raise(inputModeCommand);
+                }
             }
 
             if (stage == SessionOperationalStage.Completed)
@@ -1086,6 +1141,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 SessionOperationalStage.RoutePhysicalApplyObserved => SessionOperationalFactKind.RoutePhysicalApplyObserved,
                 SessionOperationalStage.ScenesReadyObserved => SessionOperationalFactKind.ScenesReadyObserved,
                 SessionOperationalStage.SessionOperationalSetupNoOp => SessionOperationalFactKind.SessionOperationalSetupNoOp,
+                SessionOperationalStage.ActorPreparationObserved => SessionOperationalFactKind.ActorPreparationObserved,
                 SessionOperationalStage.InputCapabilityPrepared => SessionOperationalFactKind.InputCapabilityPrepared,
                 SessionOperationalStage.InitialInputModePrepared => SessionOperationalFactKind.InitialInputModePrepared,
                 SessionOperationalStage.PauseCapabilityPrepared => SessionOperationalFactKind.PauseCapabilityPrepared,
@@ -1864,6 +1920,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 }
+
+
+
 
 
 

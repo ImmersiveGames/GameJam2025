@@ -16,12 +16,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        InputCapabilityPrepared = 11,
-        InitialInputModePrepared = 12,
-        PauseCapabilityPrepared = 13,
-        ReadyToOpenCurtain = 14,
-        TransitionCompletedObserved = 15,
-        Completed = 16,
+        ActorPreparationObserved = 11,
+        InputCapabilityPrepared = 12,
+        InitialInputModePrepared = 13,
+        PauseCapabilityPrepared = 14,
+        ReadyToOpenCurtain = 15,
+        TransitionCompletedObserved = 16,
+        Completed = 17,
     }
 
     public readonly struct SessionOperationalIdentity : IEquatable<SessionOperationalIdentity>
@@ -139,13 +140,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        InputCapabilityPrepared = 11,
-        InitialInputModePrepared = 12,
-        PauseCapabilityPrepared = 13,
-        ReadyToOpenCurtain = 14,
-        TransitionCompletedObserved = 15,
-        Completed = 16,
-        IgnoredForeignOrStale = 17,
+        ActorPreparationObserved = 11,
+        InputCapabilityPrepared = 12,
+        InitialInputModePrepared = 13,
+        PauseCapabilityPrepared = 14,
+        ReadyToOpenCurtain = 15,
+        TransitionCompletedObserved = 16,
+        Completed = 17,
+        IgnoredForeignOrStale = 18,
     }
 
     public enum SessionOperationalInputModeKind

@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             EventBus<RunPauseStateChangedEvent>.Clear();
             EventBus<GameResetRequestedEvent>.Clear();
             EventBus<RunLifecycleActivityChangedEvent>.Clear();
-            EventBus<GameRunStartedEvent>.Clear();
+            EventBus<RunStartEvent>.Clear();
             EventBus<RunDeactivationCompletedEvent>.Clear();
             EventBus<RunDeactivationRequestedEvent>.Clear();
 

@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
@@ -13,8 +12,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
     public sealed class InputModeCoordinator : IDisposable
     {
         private readonly EventBinding<InputModeRequestEvent> _requestBinding;
-        private int _lastRequestFrame = -1;
-        private string _lastRequestKey = string.Empty;
 
         public InputModeCoordinator()
         {
@@ -36,14 +33,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 $"[OBS][InputModes] InputModeRequested kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
                 DebugUtility.Colors.Info);
 
-            if (Time.frameCount == _lastRequestFrame && string.Equals(_lastRequestKey, requestKey, StringComparison.Ordinal))
-            {
-                DebugUtility.Log(typeof(InputModeCoordinator),
-                    $"[OBS][InputModes] InputModeRequestDeduped reason='same_frame' key='{requestKey}' contextSignature='{contextSignature}'",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
             if (!DependencyManager.HasInstance || DependencyManager.Provider == null ||
                 !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) || service == null)
             {
@@ -53,8 +42,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
 
             ApplyRequest(service, evt, requestKey, contextSignature);
-            _lastRequestFrame = Time.frameCount;
-            _lastRequestKey = requestKey;
         }
 
         private static void ApplyRequest(IInputModeService service, InputModeRequestEvent evt, string requestKey, string contextSignature)

@@ -66,19 +66,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     DebugUtility.Colors.Info);
                 return;
             }
-
-            if (command.InitialInputMode != SessionOperationalInputModeKind.FrontendMenu)
-            {
-                DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
-                    $"[OBS][InputModes][Adapter] outcomeKind='observed_noop' contextSignature='{command.ContextSignature}' initialInputMode='{command.InitialInputMode}' routeClass='{command.RouteClass}' source='{command.Source}' reason='{command.Reason}'.",
-                    DebugUtility.Colors.Info);
-                return;
-            }
-
-            DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
-                $"[OBS][InputModes][Adapter] outcomeKind='deferred_no_runtime_target' contextSignature='{command.ContextSignature}' initialInputMode='{command.InitialInputMode}' routeClass='{command.RouteClass}' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
-            PublishFrontendMenuRequest(command);
+            PublishInputModeRequest(command);
         }
 
         private static bool IsCurrentOperation(SessionOperationalInputModeCommand command, SessionOperationalPipeline pipeline)
@@ -96,18 +84,31 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                    string.Equals(state.CurrentIdentity.CycleSignature, command.ContextSignature, StringComparison.Ordinal);
         }
 
-        private static void PublishFrontendMenuRequest(SessionOperationalInputModeCommand command)
+        private static void PublishInputModeRequest(SessionOperationalInputModeCommand command)
         {
+            InputModeRequestKind kind = MapInputModeKindOrFail(command);
+
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(
-                    InputModeRequestKind.FrontendMenu,
+                    kind,
                     command.Reason,
                     "SessionOperationalPipeline",
                     command.ContextSignature));
 
             DebugUtility.Log(typeof(SessionOperationalInputModeAdapter),
-                $"[OBS][InputModes][Adapter] requested mode='FrontendMenu' source='SessionOperationalPipeline' contextSignature='{command.ContextSignature}' routeClass='{command.RouteClass}' reason='{command.Reason}'.",
+                $"[OBS][InputModes][Adapter] requested mode='{kind}' source='SessionOperationalPipeline' contextSignature='{command.ContextSignature}' routeClass='{command.RouteClass}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static InputModeRequestKind MapInputModeKindOrFail(SessionOperationalInputModeCommand command)
+        {
+            return command.InitialInputMode switch
+            {
+                SessionOperationalInputModeKind.FrontendMenu => InputModeRequestKind.FrontendMenu,
+                SessionOperationalInputModeKind.ActivityDefault => InputModeRequestKind.Gameplay,
+                _ => throw new InvalidOperationException(
+                    $"[FATAL][H1][InputModes] Unsupported SessionOperationalInputModeKind '{command.InitialInputMode}' contextSignature='{command.ContextSignature}'."),
+            };
         }
     }
 }
