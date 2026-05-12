@@ -7,14 +7,14 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
                 moduleId: "Save",
-                installerDependencies: new[] { "Preferences" },
+                installerDependencies: Array.Empty<string>(),
                 bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => SaveInstaller.Install(bootstrapConfig),
                 bootstrap: null,
                 installerEntry: "SaveInstaller.Install",
                 runtimeComposerEntry: null,
                 installerOnly: true,
-                description: "Canonical save orchestration and official hook rail.");
+                description: "Canonical save core composition with backend from SaveConfigAsset.");
     }
 }
 

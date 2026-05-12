@@ -32,6 +32,26 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         BeforeFadeOut = 0,
     }
 
+    public readonly struct RouteActivitySavePolicy
+    {
+        public RouteActivitySavePolicy(
+            bool loadActivitySaveOnEnter,
+            bool saveActivityOnExit)
+        {
+            LoadActivitySaveOnEnter = loadActivitySaveOnEnter;
+            SaveActivityOnExit = saveActivityOnExit;
+        }
+
+        public bool LoadActivitySaveOnEnter { get; }
+        public bool SaveActivityOnExit { get; }
+        public bool IsValid => true;
+
+        public override string ToString()
+        {
+            return $"loadActivitySaveOnEnter='{LoadActivitySaveOnEnter}' saveActivityOnExit='{SaveActivityOnExit}'";
+        }
+    }
+
     [CreateAssetMenu(
         fileName = "SessionOperationalRoute",
         menuName = "ImmersiveGames/NewScripts/Session Operational/Operational Route/OperationalRoute",
@@ -59,6 +79,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         [SerializeField] private SessionOperationalRouteCompletionHandoffKind completionHandoff = SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         [SerializeField] private string handoffSessionStateId;
 
+        [Header("Route Activity Save")]
+        [SerializeField] private bool loadActivitySaveOnEnter;
+        [SerializeField] private bool saveActivityOnExit;
+
         [Header("Audio")]
         [SerializeField] private SessionOperationalRouteAudioMode routeAudioMode = SessionOperationalRouteAudioMode.None;
         [SerializeField] private AudioCueAsset routeAudioCue;
@@ -76,6 +100,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool UnloadPreviousRouteOwnedScenes => unloadPreviousRouteOwnedScenes;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
+        public bool LoadActivitySaveOnEnter => loadActivitySaveOnEnter;
+        public bool SaveActivityOnExit => saveActivityOnExit;
+        public RouteActivitySavePolicy ActivitySavePolicy => new(loadActivitySaveOnEnter, saveActivityOnExit);
         public SessionOperationalRouteAudioMode RouteAudioMode => routeAudioMode;
         public AudioCueAsset RouteAudioCue => routeAudioCue;
         public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
@@ -212,6 +239,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
+            if (loadActivitySaveOnEnter && completionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
+            {
+                errorMessage = $"loadActivitySaveOnEnter requires completionHandoff=SessionActivityEntry routeIdentity='{RouteIdentity}' completionHandoff='{completionHandoff}'.";
+                return false;
+            }
+
+            if (saveActivityOnExit && completionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
+            {
+                errorMessage = $"saveActivityOnExit requires completionHandoff=SessionActivityEntry routeIdentity='{RouteIdentity}' completionHandoff='{completionHandoff}'.";
+                return false;
+            }
+
             bool validAudioMode =
                 routeAudioMode == SessionOperationalRouteAudioMode.None ||
                 routeAudioMode == SessionOperationalRouteAudioMode.Cue;
@@ -299,6 +338,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalRouteTransitionMode transitionMode,
             SceneTransitionProfile transitionProfile,
             SessionOperationalRouteAudioCommand audioCommand,
+            RouteActivitySavePolicy routeActivitySavePolicy,
             IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
             IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
@@ -313,6 +353,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 transitionMode,
                 transitionProfile,
                 audioCommand,
+                routeActivitySavePolicy,
                 finalScenesToLoad,
                 autoScenesToUnload,
                 finalScenesToUnload);
@@ -440,6 +481,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalRouteTransitionMode transitionMode,
             SceneTransitionProfile transitionProfile,
             SessionOperationalRouteAudioCommand audioCommand,
+            RouteActivitySavePolicy routeActivitySavePolicy,
             IReadOnlyList<SceneKeyAsset> finalScenesToLoad,
             IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
             IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
@@ -453,6 +495,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             TransitionMode = transitionMode;
             TransitionProfile = transitionProfile;
             Audio = audioCommand;
+            ActivitySavePolicy = routeActivitySavePolicy;
             FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
             AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
             FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
@@ -467,6 +510,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SessionOperationalRouteTransitionMode TransitionMode { get; }
         public SceneTransitionProfile TransitionProfile { get; }
         public SessionOperationalRouteAudioCommand Audio { get; }
+        public RouteActivitySavePolicy ActivitySavePolicy { get; }
         public string RouteIdentity => Route != null ? Route.RouteIdentity : string.Empty;
         public IReadOnlyList<SceneKeyAsset> ScenesToLoad => Route != null ? Route.ScenesToLoad : Array.Empty<SceneKeyAsset>();
         public IReadOnlyList<SceneKeyAsset> ScenesToUnload => Route != null ? Route.ScenesToUnload : Array.Empty<SceneKeyAsset>();
@@ -488,6 +532,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             (TransitionMode == SessionOperationalRouteTransitionMode.None || TransitionMode == SessionOperationalRouteTransitionMode.Profile) &&
             (!UsesTransition || (TransitionProfile != null && TransitionProfile.TryValidate(out _))) &&
             Audio.IsValid &&
+            ActivitySavePolicy.IsValid &&
             FinalScenesToLoad != null &&
             FinalScenesToLoad.Count > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
@@ -496,7 +541,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public override string ToString()
         {
             return IsValid
-                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', routeAudioMode='{Audio.RouteAudioMode}', routeAudioTiming='{Audio.RouteAudioTiming}', routeAudioCue='{Audio.RouteAudioCueName}', stopPreviousRouteAudio='{Audio.StopPreviousRouteAudio}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
+                ? $"routeIdentity='{RouteIdentity}', activeScene='{ResolveSceneName(ActiveSceneKey)}', activeSceneKey='{ActiveSceneKey.name}', routeOperationId='{RouteOperationId}', transitionId='{TransitionId}', routeSequence='{RouteSequence}', transitionMode='{TransitionMode}', transitionProfile='{TransitionProfileLabel}', routeAudioMode='{Audio.RouteAudioMode}', routeAudioTiming='{Audio.RouteAudioTiming}', routeAudioCue='{Audio.RouteAudioCueName}', stopPreviousRouteAudio='{Audio.StopPreviousRouteAudio}', completionHandoff='{CompletionHandoff}', handoffSessionStateId='{HandoffSessionStateId}', loadActivitySaveOnEnter='{ActivitySavePolicy.LoadActivitySaveOnEnter}', saveActivityOnExit='{ActivitySavePolicy.SaveActivityOnExit}', finalScenesToLoadCount='{FinalScenesToLoad.Count}', autoScenesToUnloadCount='{AutoScenesToUnload.Count}', finalScenesToUnloadCount='{FinalScenesToUnload.Count}', source='{Source}', reason='{Reason}'"
                 : "<none>";
         }
 

@@ -1,156 +1,114 @@
 using System;
-using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
-using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
+using _ImmersiveGames.NewScripts.SaveRuntime.Core;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
-using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Orchestration;
-using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Progression;
-using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Progression.Backends;
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
 {
     public static class SaveInstaller
     {
         private static bool _installed;
-        private static SaveOrchestrationService _orchestrationService;
 
         public static void Install(BootstrapConfigAsset bootstrapConfig)
         {
-            _ = bootstrapConfig;
-
             if (_installed)
             {
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out var preferencesState) || preferencesState == null)
-            {
-                throw new InvalidOperationException("[FATAL][Save] IPreferencesStateService obrigatorio ausente antes de instalar Save.");
-            }
+            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail(bootstrapConfig);
+            SaveConfigAsset saveConfig = runtimeModeConfig.SaveConfig
+                ?? throw new InvalidOperationException("[FATAL][Save] SaveConfigAsset obrigatorio ausente no RuntimeModeConfig.");
+            saveConfig.ValidateOrThrow();
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesSaveService>(out var preferencesSave) || preferencesSave == null)
-            {
-                throw new InvalidOperationException("[FATAL][Save] IPreferencesSaveService obrigatorio ausente antes de instalar Save.");
-            }
+            SaveBackendAsset backendAsset = saveConfig.Backend
+                ?? throw new InvalidOperationException($"[FATAL][Save] SaveConfigAsset '{saveConfig.name}' sem backend.");
+            ISaveBackend backend = backendAsset.CreateBackend()
+                ?? throw new InvalidOperationException($"[FATAL][Save] backend asset '{backendAsset.name}' retornou backend nulo.");
 
-            RegisterIfMissing<IProgressionBackend>(
-                factory: () => new InMemoryProgressionBackend(),
-                alreadyRegisteredMessage: "[Save][BOOT] IProgressionBackend already registered.",
-                registeredMessage: "[Save][BOOT] IProgressionBackend registered (InMemoryProgressionBackend).");
+            RegisterIfMissing<ISaveBackend>(
+                factory: () => backend,
+                alreadyRegisteredMessage: "[Save][BOOT] ISaveBackend already registered.",
+                registeredMessage: $"[Save][BOOT] ISaveBackend registered ({backend.BackendId}).");
 
-            if (!DependencyManager.Provider.TryGetGlobal<IProgressionBackend>(out var progressionBackend) || progressionBackend == null)
-            {
-                throw new InvalidOperationException("[FATAL][Save] IProgressionBackend obrigatorio ausente antes de instalar Save.");
-            }
+            SaveCoreService coreService = ResolveOrCreateSaveCoreService(backend);
+            SeedDefaultCurrentRecordIfMissing(coreService, saveConfig);
 
-            var progressionStateService = ResolveOrCreateProgressionService(progressionBackend);
-            var progressionSaveService = progressionStateService as IProgressionSaveService
-                ?? throw new InvalidOperationException("[FATAL][Save] ProgressionService nao implementa IProgressionSaveService.");
+            RegisterIfMissing<ISaveService>(
+                factory: () => coreService,
+                alreadyRegisteredMessage: "[Save][BOOT] ISaveService already registered.",
+                registeredMessage: "[Save][BOOT] ISaveService registered (SaveCoreService).");
 
-            InitializeProgressionSnapshot(progressionStateService, progressionSaveService);
-
-            var requiredIdentity = new SaveIdentity(ProgressionSnapshot.BootstrapProfileId, ProgressionSnapshot.BootstrapSlotId);
-            _orchestrationService = new SaveOrchestrationService(
-                requiredIdentity,
-                preferencesState,
-                preferencesSave,
-                progressionStateService,
-                progressionSaveService);
-
-            RegisterIfMissing<ISaveOrchestrationService>(
-                factory: () => _orchestrationService,
-                alreadyRegisteredMessage: "[Save][BOOT] ISaveOrchestrationService already registered.",
-                registeredMessage: "[Save][BOOT] ISaveOrchestrationService registered.");
+            RegisterIfMissing<ISaveStateService>(
+                factory: () => coreService,
+                alreadyRegisteredMessage: "[Save][BOOT] ISaveStateService already registered.",
+                registeredMessage: "[Save][BOOT] ISaveStateService registered (SaveCoreService).");
 
             _installed = true;
 
             DebugUtility.Log(typeof(SaveInstaller),
-                $"[Save] Module installer concluded. identity={requiredIdentity}.",
+                $"[Save] Module installer concluded. backend='{backend.BackendId}' profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}' schemaVersion='{saveConfig.SchemaVersion}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static T ResolveOrCreate<T>(
-            string alreadyRegisteredMessage,
-            string registeredMessage) where T : class, new()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
-            {
-                DebugUtility.LogVerbose(typeof(SaveInstaller), alreadyRegisteredMessage, DebugUtility.Colors.Info);
-                return existing;
-            }
-
-            var instance = new T();
-            DependencyManager.Provider.RegisterGlobal(instance);
-            DebugUtility.LogVerbose(typeof(SaveInstaller), registeredMessage, DebugUtility.Colors.Info);
-            return instance;
-        }
-
-        private static ProgressionService ResolveOrCreateProgressionService(IProgressionBackend backend)
+        private static SaveCoreService ResolveOrCreateSaveCoreService(ISaveBackend backend)
         {
             if (backend == null)
             {
-                throw new InvalidOperationException("[FATAL][Save] IProgressionBackend obrigatorio ausente para construir ProgressionService.");
+                throw new InvalidOperationException("[FATAL][Save] ISaveBackend obrigatorio ausente para construir SaveCoreService.");
             }
 
-            if (DependencyManager.Provider.TryGetGlobal<ProgressionService>(out var existing) && existing != null)
+            if (DependencyManager.Provider.TryGetGlobal<SaveCoreService>(out var existing) && existing != null)
             {
                 DebugUtility.LogVerbose(typeof(SaveInstaller),
-                    "[Save][BOOT] ProgressionService already registered.",
+                    "[Save][BOOT] SaveCoreService already registered.",
                     DebugUtility.Colors.Info);
                 return existing;
             }
 
-            var instance = new ProgressionService(backend);
+            var instance = new SaveCoreService(backend);
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(SaveInstaller),
-                "[Save][BOOT] ProgressionService registered.",
+                "[Save][BOOT] SaveCoreService registered.",
                 DebugUtility.Colors.Info);
             return instance;
         }
 
-        private static void InitializeProgressionSnapshot(
-            IProgressionStateService progressionStateService,
-            IProgressionSaveService progressionSaveService)
+        private static void SeedDefaultCurrentRecordIfMissing(
+            SaveCoreService coreService,
+            SaveConfigAsset saveConfig)
         {
-            if (progressionStateService == null)
+            if (coreService == null)
             {
-                throw new ArgumentNullException(nameof(progressionStateService));
+                throw new ArgumentNullException(nameof(coreService));
             }
 
-            if (progressionSaveService == null)
+            if (saveConfig == null)
             {
-                throw new ArgumentNullException(nameof(progressionSaveService));
+                throw new ArgumentNullException(nameof(saveConfig));
             }
 
-            DebugUtility.LogVerbose(typeof(SaveInstaller),
-                $"[Save] progression load requested. backend='{progressionSaveService.BackendId}' profile='{ProgressionSnapshot.BootstrapProfileId}' slot='{ProgressionSnapshot.BootstrapSlotId}'.",
-                DebugUtility.Colors.Info);
-
-            bool loaded = progressionSaveService.TryLoad(
-                ProgressionSnapshot.BootstrapProfileId,
-                ProgressionSnapshot.BootstrapSlotId,
-                out var loadedSnapshot,
-                out string loadReason);
-
-            if (loaded && loadedSnapshot != null)
+            if (coreService.HasCurrent)
             {
-                progressionStateService.SetCurrent(loadedSnapshot, "Save/BootstrapLoad");
                 return;
             }
 
-            var bootstrapSnapshot = new ProgressionSnapshot(
-                ProgressionSnapshot.BootstrapProfileId,
-                ProgressionSnapshot.BootstrapSlotId,
-                new Dictionary<string, string>(),
-                revision: 0);
+            SaveIdentity identity = saveConfig.BuildDefaultIdentityOrFail();
+            SaveRecord record = new(
+                identity,
+                saveConfig.SchemaVersion,
+                revision: 0,
+                savedAtUtc: DateTime.UtcNow.ToString("O"),
+                entries: new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal));
 
-            progressionStateService.SetCurrent(bootstrapSnapshot, "Save/BootstrapSeed");
-
-            DebugUtility.LogVerbose(typeof(SaveInstaller),
-                $"[Save] bootstrap kept seed progression. backend='{progressionSaveService.BackendId}' reason='{loadReason}'.",
-                DebugUtility.Colors.Info);
+            if (!coreService.TrySetCurrent(record, "Save/BootstrapSeed", out string error))
+            {
+                throw new InvalidOperationException($"[FATAL][Save] Failed to seed current SaveRecord. reason='{error}'.");
+            }
         }
 
         private static void RegisterIfMissing<T>(
@@ -172,6 +130,17 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
 
             DependencyManager.Provider.RegisterGlobal(instance);
             DebugUtility.LogVerbose(typeof(SaveInstaller), registeredMessage, DebugUtility.Colors.Info);
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail(BootstrapConfigAsset bootstrapConfig)
+        {
+            if (bootstrapConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Save] BootstrapConfigAsset obrigatorio ausente antes de instalar Save.");
+            }
+
+            return bootstrapConfig.RuntimeModeConfig
+                ?? throw new InvalidOperationException($"[FATAL][Save] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset '{bootstrapConfig.name}'.");
         }
     }
 }

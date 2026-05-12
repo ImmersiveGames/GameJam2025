@@ -2,6 +2,12 @@
 using System.Collections.Generic;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
+    public enum ActivityCatalogAdvanceAtEndMode
+    {
+        StopAtEnd = 0,
+        LoopToFirst = 1,
+    }
+
     public enum SessionActivityStage
     {
         Unknown = 0,
@@ -225,6 +231,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ResumeResolved = 16,
         PauseRejected = 17,
         ResumeRejected = 18,
+        ActivityCatalogLooped = 19,
     }
 
     public readonly struct SessionActivityFact

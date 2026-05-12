@@ -1,0 +1,177 @@
+﻿flowchart TB
+%% =========================================================
+%% Base 1.1 - Pipeline Convergence
+%% Arquitetura atual canônica
+%% =========================================================
+
+    A["Base 1.1<br/>Pipeline Convergence"] --> B["Pipeline Identity<br/>Run / Session / Activity"]
+    B --> C["Foreign/Stale Event Guard<br/>eventos incompatíveis não alteram pipeline ativo"]
+
+%% -------------------------
+%% Authoring / Config
+%% -------------------------
+    subgraph CONFIG["Authoring / Config Assets"]
+        RuntimeModeConfig["RuntimeModeConfig"]
+        PersistentScenes["RuntimePersistentScenesPolicyAsset"]
+        RouteAsset["SessionOperationalRouteAsset"]
+        RouteDefinition["RouteDefinition<br/>routeId / scenesToLoad / scenesToUnload / targetActiveScene"]
+        RouteProfile["SceneRouteProfile<br/>gameplay / input / actors / save / loading / fade"]
+        ActivityCatalog["ActivityCatalogAsset"]
+        ActivityAsset["ActivityAsset"]
+        SaveConfig["SaveConfigAsset"]
+        SaveBackend["SaveBackendAsset / ISaveBackend"]
+    end
+
+    RuntimeModeConfig --> PersistentScenes
+    RuntimeModeConfig --> RouteAsset
+    RouteAsset --> RouteDefinition
+    RouteAsset --> RouteProfile
+    ActivityCatalog --> ActivityAsset
+    SaveConfig --> SaveBackend
+
+%% -------------------------
+%% Fact / Command Producers
+%% -------------------------
+    subgraph MODULES["Modules<br/>Pipeline Fact / Pipeline Command Producers"]
+        ReadinessFacts["Readiness Facts"]
+        ActivityFacts["Activity / Catalog Facts"]
+        RouteCommands["Route Commands"]
+        SaveCommands["Save / Load Commands"]
+        InputCommands["InputMode Commands"]
+        SimulationCommands["Simulation Commands"]
+        AudioCommands["Audio Commands"]
+    end
+
+    RouteDefinition --> RouteCommands
+    RouteProfile --> RouteCommands
+    ActivityCatalog --> ActivityFacts
+    SaveConfig --> SaveCommands
+
+%% -------------------------
+%% Pipelines
+%% -------------------------
+    subgraph PIPELINES["Pipeline Owners<br/>decidem ordem, lifecycle, policies e handoffs"]
+        RunPipeline["Run Pipeline<br/>Run lifecycle<br/>Deactivation / Continuity<br/>RunResult / RunDecision / PostRun"]
+        SessionOperationalPipeline["SessionOperationalPipeline<br/>Session Pipeline<br/>Route / Transition / Setup / Handoff"]
+        SessionActivityPipeline["SessionActivityPipeline<br/>Activity lifecycle<br/>Activation / Engagement / Closure"]
+    end
+
+    C --> RunPipeline
+    C --> SessionOperationalPipeline
+    C --> SessionActivityPipeline
+
+    RunPipeline -->|"coordena quando aplicável"| SessionOperationalPipeline
+    SessionOperationalPipeline -->|"SessionActivityEntryHandoff"| SessionActivityPipeline
+
+    ReadinessFacts --> SessionOperationalPipeline
+    ActivityFacts --> SessionActivityPipeline
+    RouteCommands --> SessionOperationalPipeline
+    SaveCommands --> RunPipeline
+    SaveCommands --> SessionOperationalPipeline
+    InputCommands --> SessionOperationalPipeline
+    SimulationCommands --> SessionActivityPipeline
+    AudioCommands --> SessionOperationalPipeline
+
+%% -------------------------
+%% Session Transition Envelope
+%% -------------------------
+    subgraph ENVELOPE["Session Transition Envelope<br/>cortina fechada"]
+        TransitionStarted["TransitionStarted"]
+        CurtainClosed["CurtainClosed"]
+        Teardown["SessionOperationalTeardown"]
+        RoutePhysicalApply["RoutePhysicalApply"]
+        Setup["SessionOperationalSetup"]
+        SelectActivity["SelectInitialActivity"]
+        HandoffPrepared["SessionActivityEntryHandoffPrepared"]
+        BeforeFadeOut["BeforeFadeOut"]
+        TransitionCompleted["TransitionCompleted"]
+        ActivityActivation["Activity Activation"]
+    end
+
+    SessionOperationalPipeline --> TransitionStarted
+    TransitionStarted --> CurtainClosed
+    CurtainClosed --> Teardown
+    Teardown --> RoutePhysicalApply
+    RoutePhysicalApply --> Setup
+    Setup --> SelectActivity
+    SelectActivity --> HandoffPrepared
+    HandoffPrepared --> BeforeFadeOut
+    BeforeFadeOut --> TransitionCompleted
+    TransitionCompleted --> ActivityActivation
+    ActivityActivation --> SessionActivityPipeline
+
+%% -------------------------
+%% Pipeline Adapters
+%% -------------------------
+    subgraph ADAPTERS["Pipeline Adapters<br/>executam side-effects comandados"]
+        LoadingAdapter["Base11SandboxSessionOperationalLoadingAdapter"]
+        FadeAdapter["Base11SandboxSessionOperationalFadeAdapter"]
+        RouteTransitionAdapter["Base11SandboxOperationalRouteTransitionAdapter"]
+        SceneFlowNavigationAdapter["SceneFlow / Navigation<br/>adapter físico, não owner"]
+        AudioAdapter["AudioAdapter"]
+        SaveAdapter["SaveAdapter"]
+        InputModeAdapter["InputMode Adapter"]
+        SimulationAdapter["Simulation / Gate Adapter"]
+    end
+
+    SessionOperationalPipeline -->|"OperationalRouteCommand"| LoadingAdapter
+    SessionOperationalPipeline -->|"Fade Command"| FadeAdapter
+    SessionOperationalPipeline -->|"Route Apply Command"| RouteTransitionAdapter
+    SessionOperationalPipeline -->|"Audio Command"| AudioAdapter
+    SessionOperationalPipeline -->|"InputMode Command"| InputModeAdapter
+    SessionOperationalPipeline -->|"Save Command se policy permitir"| SaveAdapter
+    SessionActivityPipeline -->|"Pause / Resume / Simulation Command"| SimulationAdapter
+    RunPipeline -->|"Save / Continuity Commands"| SaveAdapter
+
+    RouteTransitionAdapter --> SceneFlowNavigationAdapter
+
+%% -------------------------
+%% Executors
+%% -------------------------
+    subgraph EXECUTORS["Executors Técnicos<br/>aplicam estado/efeitos, não decidem lifecycle"]
+        SceneCompositionExecutor["SceneCompositionExecutor<br/>load / unload / set-active"]
+        LoadingHud["Loading HUD / Progress Runtime"]
+        FadeController["FadeController"]
+        AudioRuntime["AudioRuntime"]
+        SaveCoreService["SaveCoreService<br/>SaveAsync / LoadAsync / DeleteAsync"]
+        InputModeService["InputModeService"]
+        SimulationGate["SimulationGate / Gates"]
+        GameLoop["GameLoop"]
+    end
+
+    LoadingAdapter --> LoadingHud
+    FadeAdapter --> FadeController
+    SceneFlowNavigationAdapter --> SceneCompositionExecutor
+    AudioAdapter --> AudioRuntime
+    SaveAdapter --> SaveCoreService
+    InputModeAdapter --> InputModeService
+    SimulationAdapter --> SimulationGate
+    SimulationAdapter --> GameLoop
+
+%% -------------------------
+%% Activity Internals
+%% -------------------------
+    subgraph ACTIVITY["Session Activity Internals"]
+        IntroStage["IntroStage<br/>Activation Stage / Pipeline Policy"]
+        Engagement["Activity Engagement"]
+        ActivityClosure["Activity Closure"]
+        CatalogNavigation["Catalog Navigation<br/>ActivityCatalog order / loop count"]
+    end
+
+    SessionActivityPipeline --> IntroStage
+    IntroStage --> Engagement
+    Engagement --> ActivityClosure
+    SessionActivityPipeline --> CatalogNavigation
+
+%% -------------------------
+%% Save
+%% -------------------------
+    subgraph SAVE["SaveSystem Canonical"]
+        SaveEligibility["SaveEligibility<br/>SceneRouteProfile ou RunPipeline policy"]
+        BackendExecution["Backend Execution<br/>via ISaveBackend"]
+    end
+
+    RouteProfile --> SaveEligibility
+    RunPipeline --> SaveEligibility
+    SaveEligibility --> SaveAdapter
+    SaveCoreService --> BackendExecution

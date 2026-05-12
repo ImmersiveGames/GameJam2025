@@ -2,6 +2,7 @@
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
@@ -101,12 +102,17 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Tooltip("Referência direta para a rota inicial do profile canônico.")]
         [SerializeField] private OperationalRouteAsset startupRouteDefinition;
 
+        [Header("Save")]
+        [Tooltip("Referência direta para a configuração canônica do Save.")]
+        [SerializeField] private SaveConfigAsset saveConfig;
+
         /// <summary>
         /// Referência direta para a rota inicial do profile canônico.
         /// </summary>
         [Header("Canonical Runtime")]
         [Tooltip("Referência direta para a rota inicial do profile canônico.")]
         public OperationalRouteAsset StartupRouteDefinition => startupRouteDefinition;
+        public SaveConfigAsset SaveConfig => saveConfig;
 
         public bool TryValidateLoadingConfiguration(out string errorMessage)
         {

@@ -143,6 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 routeSequence,
                 sourceText,
                 reasonText);
+            RouteActivitySavePolicy routeActivitySavePolicy = route.ActivitySavePolicy;
 
             SessionOperationalRouteCommand command = route.CreateCommand(
                 routeOperationId,
@@ -153,6 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 route.TransitionMode,
                 route.TransitionProfile,
                 audioCommand,
+                routeActivitySavePolicy,
                 loadPlan.FinalScenesToLoad,
                 unloadPlan.AutoScenesToUnload,
                 unloadPlan.FinalScenesToUnload);
@@ -167,6 +169,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
                 $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' routeSequence='{routeSequence}' loadActivitySaveOnEnter='{routeActivitySavePolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePolicy.SaveActivityOnExit}' source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),

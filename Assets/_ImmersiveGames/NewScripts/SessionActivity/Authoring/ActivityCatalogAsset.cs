@@ -10,9 +10,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     {
         [SerializeField] private string catalogId;
         [SerializeField] private List<ActivityAsset> activities = new();
+        [SerializeField] private ActivityCatalogAdvanceAtEndMode advanceAtEndMode = ActivityCatalogAdvanceAtEndMode.StopAtEnd;
 
         public string CatalogId => Normalize(catalogId);
         public IReadOnlyList<ActivityAsset> Activities => activities;
+        public ActivityCatalogAdvanceAtEndMode AdvanceAtEndMode => advanceAtEndMode;
 
         public SessionActivityCatalog BuildRuntimeCatalog()
         {
@@ -37,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     source: source));
             }
 
-            return new SessionActivityCatalog(definitions);
+            return new SessionActivityCatalog(definitions, advanceAtEndMode);
         }
 
         public void ValidateOrThrow()

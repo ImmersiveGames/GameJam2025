@@ -23,6 +23,8 @@ MonoBehaviour:
   unloadPreviousRouteOwnedScenes: 1
   completionHandoff: 1
   handoffSessionStateId: SessionActivitySandboxSession
+  loadActivitySaveOnEnter: 1
+  saveActivityOnExit: 1
   routeAudioMode: 1
   routeAudioCue: {fileID: 11400000, guid: 8bdd0f6cc3520b24bae1d6e1e1b57835, type: 2}
   routeAudioTiming: 0

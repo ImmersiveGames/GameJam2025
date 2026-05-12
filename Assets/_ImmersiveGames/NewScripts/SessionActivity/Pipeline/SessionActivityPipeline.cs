@@ -486,7 +486,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             int nextEntrySequence = ResolveNextEntrySequence();
 
-            if (!TryResolveNavigationTarget(command, current, out SessionActivityDefinition target, out string rejectionReason))
+            if (!TryResolveNavigationTarget(command, current, out SessionActivityDefinition target, out bool wrapped, out string rejectionReason))
             {
                 EmitRejected(
                     command,
@@ -511,13 +511,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            EmitNavigationTransition(command, current, target, nextEntrySequence, facts, snapshots);
+            EmitNavigationTransition(command, current, target, wrapped, nextEntrySequence, facts, snapshots);
         }
 
         private void EmitNavigationTransition(
             SessionActivityCommand command,
             SessionActivityDefinition current,
             SessionActivityDefinition target,
+            bool wrapped,
             int targetEntrySequence,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -546,6 +547,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetHandoff(handoff);
             EmitFact(facts, SessionActivityFactKind.ActivityHandoffPrepared, targetActivationIdentity, command.Source, command.Reason, $"Handoff prepared for '{target.ActivityId}'.", handoff);
             EmitSnapshot(snapshots, "handoff_created", command.Source, command.Reason, $"Handoff prepared for '{target.ActivityId}'.");
+            if (wrapped)
+            {
+                _state.IncrementCatalogLoopCount();
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityCatalogLooped,
+                    targetActivationIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"Activity catalog looped from '{current.ActivityId}' to '{target.ActivityId}'. catalogLoopCount='{_state.CatalogLoopCount}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "catalog_looped",
+                    command.Source,
+                    command.Reason,
+                    $"Activity catalog looped from '{current.ActivityId}' to '{target.ActivityId}'. catalogLoopCount='{_state.CatalogLoopCount}'.");
+            }
 
             _state.ClearHandoff();
             _state.SetCurrentDefinition(target);
@@ -1418,22 +1436,35 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityCommand command,
             SessionActivityDefinition current,
             out SessionActivityDefinition target,
+            out bool wrapped,
             out string rejectionReason)
         {
             SessionActivityCommandKind kind = command.Kind;
             target = default;
+            wrapped = false;
             rejectionReason = string.Empty;
 
             switch (kind)
             {
                 case SessionActivityCommandKind.GoToNextActivity:
-                    if (!current.HasNextActivity)
+                    if (_catalog.TryGetNextOrdinal(current, out target))
+                    {
+                        return true;
+                    }
+
+                    if (_catalog.AdvanceAtEndMode == ActivityCatalogAdvanceAtEndMode.StopAtEnd)
                     {
                         rejectionReason = "no_next_activity";
                         return false;
                     }
 
-                    return TryResolveActivityByOrdinal(current.ActivityOrdinal + 1, out target, out rejectionReason);
+                    if (_catalog.TryGetNext(current, out target, out wrapped) && target.IsValid)
+                    {
+                        return true;
+                    }
+
+                    rejectionReason = "activity_not_found";
+                    return false;
 
                 case SessionActivityCommandKind.GoToPreviousActivity:
                     if (current.ActivityOrdinal <= 1)

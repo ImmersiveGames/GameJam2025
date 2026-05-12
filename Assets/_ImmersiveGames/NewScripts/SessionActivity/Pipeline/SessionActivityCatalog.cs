@@ -7,8 +7,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
     public sealed class SessionActivityCatalog
     {
         private readonly IReadOnlyList<SessionActivityDefinition> _definitions;
+        private readonly ActivityCatalogAdvanceAtEndMode _advanceAtEndMode;
 
-        public SessionActivityCatalog(IEnumerable<SessionActivityDefinition> definitions)
+        public SessionActivityCatalog(IEnumerable<SessionActivityDefinition> definitions, ActivityCatalogAdvanceAtEndMode advanceAtEndMode = ActivityCatalogAdvanceAtEndMode.StopAtEnd)
         {
             if (definitions == null)
             {
@@ -39,9 +40,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _definitions = materialized;
+            _advanceAtEndMode = advanceAtEndMode;
         }
 
         public IReadOnlyList<SessionActivityDefinition> Definitions => _definitions;
+        public ActivityCatalogAdvanceAtEndMode AdvanceAtEndMode => _advanceAtEndMode;
 
         public string Summary => string.Join(" | ", _definitions.Select(definition => definition.ToString()));
 
@@ -52,6 +55,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public bool TryGetNext(SessionActivityDefinition current, out SessionActivityDefinition next)
         {
+            return TryGetNext(current, out next, out _);
+        }
+
+        public bool TryGetNext(SessionActivityDefinition current, out SessionActivityDefinition next, out bool wrapped)
+        {
+            wrapped = false;
             if (!current.IsValid)
             {
                 next = default;
@@ -60,8 +69,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!current.HasNextActivity)
             {
-                next = default;
-                return false;
+                if (_advanceAtEndMode != ActivityCatalogAdvanceAtEndMode.LoopToFirst)
+                {
+                    next = default;
+                    return false;
+                }
+
+                bool hasFirst = TryGetFirst(out next) && next.IsValid;
+                wrapped = hasFirst;
+                return hasFirst;
             }
 
             for (int index = 0; index < _definitions.Count; index++)
@@ -74,8 +90,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
 
+            if (_advanceAtEndMode == ActivityCatalogAdvanceAtEndMode.LoopToFirst)
+            {
+                bool hasFirst = TryGetFirst(out next) && next.IsValid;
+                wrapped = hasFirst;
+                return hasFirst;
+            }
+
             next = default;
             return false;
+        }
+
+        public bool TryGetNextOrdinal(SessionActivityDefinition current, out SessionActivityDefinition next)
+        {
+            if (!current.IsValid)
+            {
+                next = default;
+                return false;
+            }
+
+            return TryGetByOrdinal(current.ActivityOrdinal + 1, out next) && next.IsValid;
         }
 
         public bool TryGetByOrdinal(int ordinal, out SessionActivityDefinition definition)

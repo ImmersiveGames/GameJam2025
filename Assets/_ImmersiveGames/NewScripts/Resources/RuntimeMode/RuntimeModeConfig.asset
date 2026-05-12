@@ -34,3 +34,4 @@ MonoBehaviour:
     logVerbose: 1
   compositionProfile: 1
   startupRouteDefinition: {fileID: 11400000, guid: 0a2fe18554df4b241b27733ced8e5b8a, type: 2}
+  saveConfig: {fileID: 11400000, guid: efb57b75a3bd4c1f8acc546a7ebaee36, type: 2}

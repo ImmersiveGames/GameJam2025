@@ -18,6 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityHandoff CurrentHandoff { get; internal set; }
         public int CurrentActivityIndex { get; internal set; }
         public int CurrentEntrySequence { get; internal set; }
+        public int CatalogLoopCount { get; internal set; }
         public SessionActivitySimulationState CurrentSimulationState { get; internal set; }
 
         public IReadOnlyList<SessionActivityFact> Facts => _facts;
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             CurrentHandoff = default;
             CurrentActivityIndex = 0;
             CurrentEntrySequence = 0;
+            CatalogLoopCount = 0;
             CurrentSimulationState = SessionActivitySimulationState.Stopped;
             _facts.Clear();
             _snapshots.Clear();
@@ -73,6 +75,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void SetSimulationState(SessionActivitySimulationState simulationState)
         {
             CurrentSimulationState = simulationState;
+        }
+
+        public void IncrementCatalogLoopCount()
+        {
+            CatalogLoopCount++;
         }
 
         public void ClearHandoff()
