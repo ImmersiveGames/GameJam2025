@@ -24,6 +24,10 @@ MonoBehaviour:
   unloadPreviousRouteOwnedScenes: 1
   completionHandoff: 0
   handoffSessionStateId: 
+  operationalSurfaceKind: 1
+  loadActivitySaveOnEnter: 0
+  saveActivityOnExit: 0
+  actorSetDefinition: {fileID: 0}
   routeAudioMode: 1
   routeAudioCue: {fileID: 11400000, guid: 25cf9ecd2e0df8c40bb384c00bcc510a, type: 2}
   routeAudioTiming: 0

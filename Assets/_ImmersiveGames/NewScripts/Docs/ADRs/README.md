@@ -15,6 +15,16 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 7. **ADR-0007** - Gates, InputModes e Simulation Executors
 8. **ADR-0008** - SaveSystem Canonical
 
+## ADRs Complementares (Propostos)
+
+9. **ADR-0009** - SessionModeProfile e Session Mode Resolution
+10. **ADR-0010** - Actor Preparation Flow, Player Participation e Unity PlayerInput
+
+Notas:
+- ADR-0009 separa a decisão de modo de sessão do fluxo de preparação de actors.
+- ADR-0010 depende do ADR-0009 para consumir o modo de sessão resolvido.
+- Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
+
 ## Precedência Normativa
 
 Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de precedência.

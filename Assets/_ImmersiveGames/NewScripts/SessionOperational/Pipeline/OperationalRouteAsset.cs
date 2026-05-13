@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
@@ -30,6 +31,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public enum SessionOperationalRouteAudioTiming
     {
         BeforeFadeOut = 0,
+    }
+
+    public enum OperationalSurfaceKind
+    {
+        None = 0,
+        FrontendMenu = 1,
+        SessionActivity = 2,
+        Overlay = 3,
+        LoadingOnly = 4,
     }
 
     public readonly struct RouteActivitySavePolicy
@@ -78,10 +88,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         [Header("Completion")]
         [SerializeField] private SessionOperationalRouteCompletionHandoffKind completionHandoff = SessionOperationalRouteCompletionHandoffKind.NoHandoff;
         [SerializeField] private string handoffSessionStateId;
+        [SerializeField] private OperationalSurfaceKind operationalSurfaceKind = OperationalSurfaceKind.None;
 
         [Header("Route Activity Save")]
         [SerializeField] private bool loadActivitySaveOnEnter;
         [SerializeField] private bool saveActivityOnExit;
+
+        [Header("Actor Preparation")]
+        [SerializeField] private ActorSetDefinitionAsset actorSetDefinition;
 
         [Header("Audio")]
         [SerializeField] private SessionOperationalRouteAudioMode routeAudioMode = SessionOperationalRouteAudioMode.None;
@@ -100,9 +114,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool UnloadPreviousRouteOwnedScenes => unloadPreviousRouteOwnedScenes;
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
+        public OperationalSurfaceKind OperationalSurfaceKind => operationalSurfaceKind;
         public bool LoadActivitySaveOnEnter => loadActivitySaveOnEnter;
         public bool SaveActivityOnExit => saveActivityOnExit;
         public RouteActivitySavePolicy ActivitySavePolicy => new(loadActivitySaveOnEnter, saveActivityOnExit);
+        public ActorSetDefinitionAsset ActorSetDefinition => actorSetDefinition;
         public SessionOperationalRouteAudioMode RouteAudioMode => routeAudioMode;
         public AudioCueAsset RouteAudioCue => routeAudioCue;
         public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
@@ -239,6 +255,36 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
+            bool validOperationalSurfaceKind =
+                operationalSurfaceKind == OperationalSurfaceKind.None ||
+                operationalSurfaceKind == OperationalSurfaceKind.FrontendMenu ||
+                operationalSurfaceKind == OperationalSurfaceKind.SessionActivity ||
+                operationalSurfaceKind == OperationalSurfaceKind.Overlay ||
+                operationalSurfaceKind == OperationalSurfaceKind.LoadingOnly;
+
+            if (!validOperationalSurfaceKind)
+            {
+                errorMessage = $"operationalSurfaceKind is invalid routeIdentity='{RouteIdentity}' operationalSurfaceKind='{operationalSurfaceKind}'.";
+                return false;
+            }
+
+            if (completionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry &&
+                operationalSurfaceKind != OperationalSurfaceKind.SessionActivity)
+            {
+                errorMessage = $"completionHandoff=SessionActivityEntry requires operationalSurfaceKind=SessionActivity routeIdentity='{RouteIdentity}' operationalSurfaceKind='{operationalSurfaceKind}'.";
+                return false;
+            }
+
+            if (completionHandoff == SessionOperationalRouteCompletionHandoffKind.NoHandoff &&
+                operationalSurfaceKind != OperationalSurfaceKind.None &&
+                operationalSurfaceKind != OperationalSurfaceKind.FrontendMenu &&
+                operationalSurfaceKind != OperationalSurfaceKind.Overlay &&
+                operationalSurfaceKind != OperationalSurfaceKind.LoadingOnly)
+            {
+                errorMessage = $"completionHandoff=NoHandoff requires operationalSurfaceKind in [None, FrontendMenu, Overlay, LoadingOnly] routeIdentity='{RouteIdentity}' operationalSurfaceKind='{operationalSurfaceKind}'.";
+                return false;
+            }
+
             if (loadActivitySaveOnEnter && completionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
             {
                 errorMessage = $"loadActivitySaveOnEnter requires completionHandoff=SessionActivityEntry routeIdentity='{RouteIdentity}' completionHandoff='{completionHandoff}'.";
@@ -248,6 +294,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (saveActivityOnExit && completionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
             {
                 errorMessage = $"saveActivityOnExit requires completionHandoff=SessionActivityEntry routeIdentity='{RouteIdentity}' completionHandoff='{completionHandoff}'.";
+                return false;
+            }
+
+            if (actorSetDefinition != null && !actorSetDefinition.TryValidate(out string actorSetValidationError))
+            {
+                errorMessage = $"actorSetDefinition is invalid routeIdentity='{RouteIdentity}' asset='{actorSetDefinition.name}' detail='{actorSetValidationError}'.";
                 return false;
             }
 
@@ -467,6 +519,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             return false;
         }
+
     }
 
     public readonly struct SessionOperationalRouteCommand

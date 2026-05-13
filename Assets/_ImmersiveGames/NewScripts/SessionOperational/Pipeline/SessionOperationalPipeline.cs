@@ -11,6 +11,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using UnityEngine.EventSystems;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public sealed class SessionOperationalPipeline
@@ -317,6 +318,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         transitionId);
                     ActorPreparationPlan actorPreparationPlan = new(
                         actorPreparationIdentity,
+                        route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry,
+                        new ActorSet(ResolveActorSetFromRoute(route)),
                         sourceText,
                         reasonText);
                     ActorPreparationResult actorPreparationResult = ActorPreparationStage.Execute(actorPreparationPlan);
@@ -325,6 +328,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         throw new InvalidOperationException("ActorPreparationStage returned an invalid result.");
                     }
                 }
+
+                _ = PrepareInputCapabilityOrFail(
+                    route,
+                    routeIdentity,
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    sourceText,
+                    reasonText);
 
                 if (loadingCommand.IsEnabled)
                 {
@@ -1364,6 +1376,71 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string extra)
         {
             return $"{prefix} routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeAudioMode='{command.Audio.RouteAudioMode}' routeAudioTiming='{command.Audio.RouteAudioTiming}' routeAudioCue='{command.Audio.RouteAudioCueName}' stopPreviousRouteAudio='{command.Audio.StopPreviousRouteAudio}' source='{source}' reason='{reason}' {extra}.";
+        }
+
+        private static SessionOperationalInputModeKind PrepareInputCapabilityOrFail(
+            OperationalRouteAsset route,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
+        {
+            if (route == null)
+            {
+                throw new ArgumentNullException(nameof(route));
+            }
+
+            SessionOperationalInputModeKind initialInputMode = ResolveInitialInputMode(route.OperationalSurfaceKind);
+            if (route.OperationalSurfaceKind == OperationalSurfaceKind.FrontendMenu)
+            {
+                if (initialInputMode != SessionOperationalInputModeKind.FrontendMenu)
+                {
+                    string modeMessage =
+                        $"[FATAL][Config][SessionOperationalInputCapability] FrontendMenu requires initialInputMode=FrontendMenu routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' source='{source}' reason='{reason}'.";
+                    DebugUtility.LogError<SessionOperationalPipeline>(modeMessage);
+                    throw new InvalidOperationException(modeMessage);
+                }
+
+                EventSystem eventSystem = EventSystem.current;
+                if (eventSystem == null)
+                {
+                    string eventSystemMessage =
+                        $"[FATAL][Config][SessionOperationalInputCapability] FrontendMenu requires EventSystem routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' source='{source}' reason='{reason}'.";
+                    DebugUtility.LogError<SessionOperationalPipeline>(eventSystemMessage);
+                    throw new InvalidOperationException(eventSystemMessage);
+                }
+
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' eventSystem='{eventSystem.name}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+
+                return initialInputMode;
+            }
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' eventSystem='<not_required>' outcome='observed_noop' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            return initialInputMode;
+        }
+
+        private static SessionOperationalInputModeKind ResolveInitialInputMode(OperationalSurfaceKind operationalSurfaceKind)
+        {
+            return operationalSurfaceKind == OperationalSurfaceKind.FrontendMenu
+                ? SessionOperationalInputModeKind.FrontendMenu
+                : SessionOperationalInputModeKind.ActivityDefault;
+        }
+
+        private static IReadOnlyList<ActorSetEntry> ResolveActorSetFromRoute(OperationalRouteAsset route)
+        {
+            if (route == null || route.ActorSetDefinition == null)
+            {
+                return Array.Empty<ActorSetEntry>();
+            }
+
+            return route.ActorSetDefinition.ResolveEntriesOrFail(nameof(SessionOperationalPipeline));
         }
 
         private static SessionOperationalRouteAudioCommand BuildRouteAudioCommandOrFail(
