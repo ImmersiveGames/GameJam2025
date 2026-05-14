@@ -4,32 +4,17 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
-    /// <summary>
-    /// Reporter canônico de DEGRADED_MODE.
-    ///
-    /// Regras:
-    /// - Se RuntimeModeConfig não estiver presente: mantém comportamento legado (dedupe por frame).
-    /// - Se RuntimeModeConfig estiver presente: suporta dedupe por sessão ou por cooldown, contagem e resumo periódico.
-    ///
-    /// Importante:
-    /// - Este serviço é "best-effort": nunca deve quebrar o jogo em Release por padrão.
-    /// - Em Strict, pode elevar severidade (erro / exceção) apenas se o config habilitar.
-    /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class DegradedModeReporter : IDegradedModeReporter
     {
-        // Legado: dedupe por frame para evitar spam em loops/acidentais.
-        private readonly HashSet<(string key, int frame)> _frameDedupe = new();
-
-        // Novo: tracking por sessão (key -> entry).
         private readonly Dictionary<string, Entry> _entries = new();
 
         private readonly IRuntimeModeProvider _runtimeModeProvider;
-        private readonly RuntimeModeConfig _config;
 
         private float _lastSummaryTime;
         private bool _droppedKeysWarned;
         private int _droppedKeyReports;
+        private bool _configSourceLogged;
 
         public DegradedModeReporter()
             : this(new UnityRuntimeModeProvider(), null)
@@ -44,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public DegradedModeReporter(IRuntimeModeProvider runtimeModeProvider, RuntimeModeConfig config)
         {
             _runtimeModeProvider = runtimeModeProvider ?? new UnityRuntimeModeProvider();
-            _config = config;
+            _ = config;
             _lastSummaryTime = Time.realtimeSinceStartup;
         }
 
@@ -62,31 +47,17 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 (string.IsNullOrWhiteSpace(signature) ? string.Empty : $" signature='{signature}'") +
                 (string.IsNullOrWhiteSpace(profile) ? string.Empty : $" profile='{profile}'");
 
-            // Sem config: mantém o comportamento atual (compatibilidade).
-            if (_config == null)
-            {
-                int frame = Time.frameCount;
-                var key = (baseMsg, frame);
-                if (!_frameDedupe.Add(key))
-                {
-                    return;
-                }
-
-                DebugUtility.LogWarning<DegradedModeReporter>(baseMsg);
-                return;
-            }
+            EffectiveRuntimePolicySettings settings = ResolveRuntimePolicySettingsOrFail();
 
             float now = Time.realtimeSinceStartup;
-            var settings = _config.reporter;
 
-            // Proteção contra explosão de keys.
             if (!_entries.TryGetValue(baseMsg, out var entry))
             {
-                if (_entries.Count >= settings.maxUniqueKeys)
+                if (_entries.Count >= settings.ReporterMaxUniqueKeys)
                 {
                     _droppedKeyReports++;
                     WarnDroppedKeysOnce(settings);
-                    MaybeEmitSummary(now);
+                    MaybeEmitSummary(now, settings);
                     return;
                 }
 
@@ -100,15 +71,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             if (shouldLog)
             {
                 string msg = baseMsg;
-                if (settings.includeCountInLog)
+                if (settings.ReporterIncludeCountInLog)
                 {
                     msg += $" count={entry.count}";
                 }
 
-                LogWithSeverity(msg);
+                LogWithSeverity(msg, settings);
 
-                // Strict hard-fail opcional (somente se config habilitar).
-                if (ShouldThrowInStrict())
+                if (ShouldThrowInStrict(settings))
                 {
                     throw new InvalidOperationException(msg);
                 }
@@ -117,10 +87,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 entry.loggedOnce = true;
             }
 
-            MaybeEmitSummary(now);
+            MaybeEmitSummary(now, settings);
         }
 
-        private void WarnDroppedKeysOnce(RuntimeModeConfig.DegradedReporterSettings settings)
+        private void WarnDroppedKeysOnce(EffectiveRuntimePolicySettings settings)
         {
             if (_droppedKeysWarned)
             {
@@ -131,39 +101,37 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
             string msg =
                 $"DEGRADED_MODE feature='{DegradedKeys.Feature.Infrastructure}' reason='{DegradedKeys.Reason.Fallback}' " +
-                $"detail='MaxUniqueKeys atingido ({settings.maxUniqueKeys}). Novas chaves não serão rastreadas.'";
+                $"detail='MaxUniqueKeys atingido ({settings.ReporterMaxUniqueKeys}). Novas chaves nao serao rastreadas.'";
 
             DebugUtility.LogWarning<DegradedModeReporter>(msg);
         }
 
-        private bool ShouldLogNow(Entry entry, float now, RuntimeModeConfig.DegradedReporterSettings settings)
+        private bool ShouldLogNow(Entry entry, float now, EffectiveRuntimePolicySettings settings)
         {
-            switch (settings.dedupStrategy)
+            switch (settings.ReporterDedupStrategy)
             {
                 case DegradedDedupStrategy.PerSession:
-                    // Loga apenas a primeira ocorrência (se permitido).
-                    return settings.logFirstOccurrence && !entry.loggedOnce;
+                    return settings.ReporterLogFirstOccurrence && !entry.loggedOnce;
 
                 case DegradedDedupStrategy.CooldownSeconds:
                 default:
-                    // Cooldown=0 -> sempre loga (sem dedupe).
-                    if (settings.cooldownSeconds <= 0f)
+                    if (settings.ReporterCooldownSeconds <= 0f)
                     {
-                        return settings.logFirstOccurrence || entry.count > 1;
+                        return settings.ReporterLogFirstOccurrence || entry.count > 1;
                     }
 
                     if (!entry.loggedOnce)
                     {
-                        return settings.logFirstOccurrence;
+                        return settings.ReporterLogFirstOccurrence;
                     }
 
-                    return now - entry.lastLogTime >= settings.cooldownSeconds;
+                    return now - entry.lastLogTime >= settings.ReporterCooldownSeconds;
             }
         }
 
-        private void MaybeEmitSummary(float now)
+        private void MaybeEmitSummary(float now, EffectiveRuntimePolicySettings settings)
         {
-            float interval = _config.reporter.emitSummaryEverySeconds;
+            float interval = settings.ReporterEmitSummaryEverySeconds;
             if (interval <= 0f)
             {
                 return;
@@ -182,7 +150,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 total += kv.Value.count;
             }
 
-            // Top 5 por count (sem LINQ).
             const int topN = 5;
             int[] topCounts = new int[topN];
             string[] topLabels = new string[topN];
@@ -191,7 +158,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             {
                 var e = kv.Value;
                 int c = e.count;
-                // Inserção simples em ranking.
                 for (int i = 0; i < topN; i++)
                 {
                     if (c <= topCounts[i])
@@ -199,7 +165,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                         continue;
                     }
 
-                    // Shift para baixo.
                     for (int j = topN - 1; j > i; j--)
                     {
                         topCounts[j] = topCounts[j - 1];
@@ -226,15 +191,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             string summary =
                 $"DEGRADED_SUMMARY uniqueKeys={_entries.Count} totalReports={total}" +
                 (_droppedKeyReports > 0 ? $" droppedReports={_droppedKeyReports}" : string.Empty) +
-                (string.IsNullOrWhiteSpace(topText) ? string.Empty : $" top=[{topText}]" );
+                (string.IsNullOrWhiteSpace(topText) ? string.Empty : $" top=[{topText}]");
 
             DebugUtility.LogVerbose<DegradedModeReporter>(summary, DebugUtility.Colors.Info);
         }
 
-        private void LogWithSeverity(string msg)
+        private void LogWithSeverity(string msg, EffectiveRuntimePolicySettings settings)
         {
-            // Em Strict, pode elevar severidade para erro (config).
-            if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict && _config.strictness.degradedAsError)
+            if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict && settings.StrictnessDegradedAsError)
             {
                 DebugUtility.LogError<DegradedModeReporter>(msg);
                 return;
@@ -243,14 +207,54 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             DebugUtility.LogWarning<DegradedModeReporter>(msg);
         }
 
-        private bool ShouldThrowInStrict()
+        private bool ShouldThrowInStrict(EffectiveRuntimePolicySettings settings)
         {
             if (_runtimeModeProvider == null)
             {
                 return false;
             }
 
-            return _runtimeModeProvider.IsStrict && _config.strictness.degradedAsException;
+            return _runtimeModeProvider.IsStrict && settings.StrictnessDegradedAsException;
+        }
+
+        private EffectiveRuntimePolicySettings ResolveRuntimePolicySettingsOrFail()
+        {
+            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            {
+                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                if (runtimePolicy == null)
+                {
+                    throw new InvalidOperationException("[FATAL][RuntimeMode][Degraded] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
+                }
+
+                EffectiveRuntimePolicySettings settings = EffectiveRuntimePolicySettings.FromRegistry(runtimePolicy);
+                if (!settings.IsValid)
+                {
+                    throw new InvalidOperationException("[FATAL][RuntimeMode][Degraded] RuntimeConfigRegistry invariant breach: RuntimePolicy reporter/strictness invalidos no snapshot.");
+                }
+
+                LogConfigSourceOnce("registry");
+                return settings;
+            }
+
+            throw new InvalidOperationException("[FATAL][RuntimeMode][Degraded] RuntimeConfigRegistry snapshot obrigatorio ausente para RuntimePolicy (reporter/strictness) migrado.");
+        }
+
+        private void LogConfigSourceOnce(string source)
+        {
+            if (_configSourceLogged)
+            {
+                return;
+            }
+
+            _configSourceLogged = true;
+
+            if (string.Equals(source, "registry", StringComparison.Ordinal))
+            {
+                DebugUtility.Log(typeof(DegradedModeReporter),
+                    "[OBS][RuntimePolicy][ConfigMigration] DegradedModeReporter using RuntimeConfigRegistry snapshot for reporter/strictness.",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private static string Sanitize(string value)
@@ -260,8 +264,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 return value;
             }
 
-            // Comentário: evita quebra de formato (aspas simples no payload).
-            return value.Replace("'", "’").Trim();
+            return value.Replace("'", "''").Trim();
         }
 
         private sealed class Entry
@@ -282,6 +285,57 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 loggedOnce = false;
             }
         }
+
+        private readonly struct EffectiveRuntimePolicySettings
+        {
+            private EffectiveRuntimePolicySettings(
+                bool hasRuntimePolicy,
+                DegradedDedupStrategy reporterDedupStrategy,
+                float reporterCooldownSeconds,
+                float reporterEmitSummaryEverySeconds,
+                int reporterMaxUniqueKeys,
+                bool reporterLogFirstOccurrence,
+                bool reporterIncludeCountInLog,
+                bool strictnessDegradedAsError,
+                bool strictnessDegradedAsException)
+            {
+                HasRuntimePolicy = hasRuntimePolicy;
+                ReporterDedupStrategy = reporterDedupStrategy;
+                ReporterCooldownSeconds = reporterCooldownSeconds;
+                ReporterEmitSummaryEverySeconds = reporterEmitSummaryEverySeconds;
+                ReporterMaxUniqueKeys = reporterMaxUniqueKeys;
+                ReporterLogFirstOccurrence = reporterLogFirstOccurrence;
+                ReporterIncludeCountInLog = reporterIncludeCountInLog;
+                StrictnessDegradedAsError = strictnessDegradedAsError;
+                StrictnessDegradedAsException = strictnessDegradedAsException;
+            }
+
+            public bool HasRuntimePolicy { get; }
+            public DegradedDedupStrategy ReporterDedupStrategy { get; }
+            public float ReporterCooldownSeconds { get; }
+            public float ReporterEmitSummaryEverySeconds { get; }
+            public int ReporterMaxUniqueKeys { get; }
+            public bool ReporterLogFirstOccurrence { get; }
+            public bool ReporterIncludeCountInLog { get; }
+            public bool StrictnessDegradedAsError { get; }
+            public bool StrictnessDegradedAsException { get; }
+
+            public bool IsValid => ReporterMaxUniqueKeys > 0;
+
+            public static EffectiveRuntimePolicySettings FromRegistry(IRuntimePolicyConfigGroupReadOnly source)
+            {
+                return new EffectiveRuntimePolicySettings(
+                    hasRuntimePolicy: true,
+                    reporterDedupStrategy: source.ReporterDedupStrategy,
+                    reporterCooldownSeconds: source.ReporterCooldownSeconds,
+                    reporterEmitSummaryEverySeconds: source.ReporterEmitSummaryEverySeconds,
+                    reporterMaxUniqueKeys: source.ReporterMaxUniqueKeys,
+                    reporterLogFirstOccurrence: source.ReporterLogFirstOccurrence,
+                    reporterIncludeCountInLog: source.ReporterIncludeCountInLog,
+                    strictnessDegradedAsError: source.StrictnessDegradedAsError,
+                    strictnessDegradedAsException: source.StrictnessDegradedAsException);
+            }
+
+        }
     }
 }
-

@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     {
         private static Task _guaranteeTask;
         private static RuntimeModeConfig _guaranteeRuntimeModeConfig;
+        private static bool _policySourceLogged;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -65,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static async Task EnsurePersistentScenesGuaranteedAsync(RuntimeModeConfig runtimeModeConfig)
         {
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
             if (persistentScenesPolicy == null)
             {
                 DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
@@ -121,8 +122,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static void EnsureStartupRouteCompatibilityOrFail(RuntimeModeConfig runtimeModeConfig)
         {
-            OperationalRouteAsset startupRoute = runtimeModeConfig.StartupRouteDefinition;
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+            OperationalRouteAsset startupRoute = SessionOperationalRuntimeConfigResolver.ResolveStartupRouteOrFail(runtimeModeConfig);
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
 
             if (startupRoute == null || persistentScenesPolicy == null)
             {
@@ -133,6 +134,45 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             {
                 throw new InvalidOperationException($"[FATAL][Config][RuntimeMode][PersistentScenes] {validationError}");
             }
+        }
+
+        private static RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(RuntimeModeConfig runtimeModeConfig)
+        {
+            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            {
+                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                if (runtimePolicy == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Config][RuntimeMode][PersistentScenes] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
+                }
+
+                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                string policyValidationError = string.Empty;
+                bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
+                if (!registryPolicyValid)
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][RuntimeMode][PersistentScenes] RuntimeConfigRegistry invariant breach: RuntimePersistentScenesPolicyAsset ausente/invalido no snapshot. detail='{policyValidationError}'.");
+                }
+
+                LogPolicySourceOnce(registryPolicy);
+                return registryPolicy;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][RuntimeMode][PersistentScenes] RuntimeConfigRegistry snapshot obrigatorio ausente para RuntimePersistentScenesPolicy migrado.");
+        }
+
+        private static void LogPolicySourceOnce(RuntimePersistentScenesPolicyAsset policy)
+        {
+            if (_policySourceLogged)
+            {
+                return;
+            }
+
+            _policySourceLogged = true;
+
+            DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
+                $"[OBS][RuntimePolicy][ConfigMigration] RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                DebugUtility.Colors.Info);
         }
     }
 }

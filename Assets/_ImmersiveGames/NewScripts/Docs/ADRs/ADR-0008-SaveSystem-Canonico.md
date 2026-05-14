@@ -18,7 +18,7 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 
 #### SaveConfigAsset
 - Configuração declarativa de save behavior.
-- Define policies de quando/como salvar.
+- Não define ownership de quando salvar; apenas parâmetros declarativos de execução.
 - Propriedade: qual save backend usar.
 - Propriedade: slots, serialization strategy, etc.
 
@@ -83,4 +83,11 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Base 1.1 formaliza save como adapter executado por pipelines.
 - Base 2.0 futura pode extrair save patterns se a Base 1.1 continuar provando estabilidade.
 
+---
+
+## Decisao Congelada de Ownership (Persistencia de Escolhas Runtime)
+
+- Escolhas runtime de jogador pertencem ao produtor correto (Activity, selecao, profile/loadout, objeto de dominio ou sistema especifico).
+- Inicializacao de sessao nao vira owner generico de persistencia dessas escolhas.
+- Save continua executor comandado pelos owners corretos via `Pipeline Command` e `Pipeline Policy`.
 

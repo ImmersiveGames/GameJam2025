@@ -21,9 +21,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
             }
 
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail(bootstrapConfig);
-            SaveConfigAsset saveConfig = runtimeModeConfig.SaveConfig
-                ?? throw new InvalidOperationException("[FATAL][Save] SaveConfigAsset obrigatorio ausente no RuntimeModeConfig.");
-            saveConfig.ValidateOrThrow();
+            SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
 
             SaveBackendAsset backendAsset = saveConfig.Backend
                 ?? throw new InvalidOperationException($"[FATAL][Save] SaveConfigAsset '{saveConfig.name}' sem backend.");

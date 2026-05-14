@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
+using _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap;
 using _ImmersiveGames.NewScripts.SessionOperational.Runtime;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -70,10 +71,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             BootstrapConfigAsset bootstrapConfig,
             RuntimeModeConfig runtimeModeConfig)
         {
-            return new List<CompositionPipelineStep>(5)
+            return new List<CompositionPipelineStep>(6)
             {
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 new CompositionPipelineStep(
                     id: "InputModes",
                     installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
@@ -89,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 new CompositionPipelineStep(
                     id: "SessionOperationalRuntime",
                     installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes" },
+                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes", "Save" },
                     bootstrap: _ => SessionOperationalRuntimeComposer.ComposeRuntime(runtimeModeConfig),
                     bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes" }),
             };

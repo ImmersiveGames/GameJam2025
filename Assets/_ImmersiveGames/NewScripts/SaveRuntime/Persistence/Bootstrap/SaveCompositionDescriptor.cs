@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
                 moduleId: "Save",
-                installerDependencies: Array.Empty<string>(),
+                installerDependencies: new[] { "RuntimePolicy" },
                 bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => SaveInstaller.Install(bootstrapConfig),
                 bootstrap: null,

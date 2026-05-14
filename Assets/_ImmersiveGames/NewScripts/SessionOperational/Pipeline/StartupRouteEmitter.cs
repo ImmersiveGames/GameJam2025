@@ -143,22 +143,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new ArgumentNullException(nameof(runtimeModeConfig));
             }
 
-            OperationalRouteAsset startupRoute = runtimeModeConfig.StartupRouteDefinition;
-            if (startupRoute == null)
+            try
             {
-                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition obrigatoria ausente para o rail operacional.";
-                DebugUtility.LogError(typeof(StartupRouteEmitter), message);
-                throw new InvalidOperationException(message);
+                return SessionOperationalRuntimeConfigResolver.ResolveStartupRouteOrFail(runtimeModeConfig);
             }
-
-            if (!startupRoute.IsValid)
+            catch (Exception ex)
             {
-                string message = "[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition asset invalida para o rail operacional.";
+                string message = $"[FATAL][Config][SessionOperationalPipeline][StartupRoute] startupRouteDefinition resolve failed. detail='{ex.Message}'.";
                 DebugUtility.LogError(typeof(StartupRouteEmitter), message);
-                throw new InvalidOperationException(message);
+                throw new InvalidOperationException(message, ex);
             }
-
-            return startupRoute;
         }
 
         private static SessionOperationalPipeline ResolvePipelineOrFail()

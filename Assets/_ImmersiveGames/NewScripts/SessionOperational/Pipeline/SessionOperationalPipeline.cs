@@ -8,10 +8,10 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
-using UnityEngine.EventSystems;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public sealed class SessionOperationalPipeline
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ValidatePersistentScenesPolicyOrFail(route);
             ISceneCompositionAdapter routeExecutor = ResolveRouteExecutorOrFail();
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
             IFadeAdapter fadeAdapter = null;
             ILoadingAdapter loadingAdapter = null;
             if (route.UsesTransition)
@@ -303,6 +303,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 }
 
+                _ = PrepareInputCapabilityOrFail(
+                    runtimeModeConfig,
+                    route,
+                    routeIdentity,
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    sourceText,
+                    reasonText);
+
                 if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
                 {
                     if (string.IsNullOrWhiteSpace(route.HandoffSessionStateId))
@@ -328,15 +338,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         throw new InvalidOperationException("ActorPreparationStage returned an invalid result.");
                     }
                 }
-
-                _ = PrepareInputCapabilityOrFail(
-                    route,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    sourceText,
-                    reasonText);
 
                 if (loadingCommand.IsEnabled)
                 {
@@ -1268,15 +1269,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault)
             {
-                if (!runtimeModeConfig.TryValidateLoadingConfiguration(out string runtimeLoadingValidationError))
-                {
-                    string message = $"[FATAL][Config][SessionOperationalPipeline] runtime loading config invalid. detail='{runtimeLoadingValidationError}'.";
-                    DebugUtility.LogError<SessionOperationalPipeline>(message);
-                    throw new InvalidOperationException(message);
-                }
+                SessionOperationalRuntimeLoadingDefaults loadingDefaults =
+                    SessionOperationalRuntimeConfigResolver.ResolveLoadingDefaultsOrFail(runtimeModeConfig);
 
-                effectiveLoadingMode = runtimeModeConfig.DefaultLoadingMode;
-                effectiveLoadingProfile = runtimeModeConfig.DefaultLoadingProfile;
+                effectiveLoadingMode = loadingDefaults.Mode;
+                effectiveLoadingProfile = loadingDefaults.Profile;
             }
 
             if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.Profile)
@@ -1303,7 +1300,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string loadingSceneName = string.Empty;
             if (effectiveLoadingMode != SessionOperationalRouteLoadingMode.None)
             {
-                RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+                RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
                 if (persistentScenesPolicy == null)
                 {
                     string message = $"[FATAL][Config][SessionOperationalPipeline] RuntimePersistentScenesPolicyAsset obrigatorio ausente para loading efetivo routeIdentity='{route.RouteIdentity}'.";
@@ -1379,6 +1376,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static SessionOperationalInputModeKind PrepareInputCapabilityOrFail(
+            RuntimeModeConfig runtimeModeConfig,
             OperationalRouteAsset route,
             string routeIdentity,
             string routeOperationId,
@@ -1403,17 +1401,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     throw new InvalidOperationException(modeMessage);
                 }
 
-                EventSystem eventSystem = EventSystem.current;
-                if (eventSystem == null)
-                {
-                    string eventSystemMessage =
-                        $"[FATAL][Config][SessionOperationalInputCapability] FrontendMenu requires EventSystem routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' source='{source}' reason='{reason}'.";
-                    DebugUtility.LogError<SessionOperationalPipeline>(eventSystemMessage);
-                    throw new InvalidOperationException(eventSystemMessage);
-                }
+                UnityOperationalInputRuntimeAdapter.PrepareOrFail(
+                    runtimeModeConfig,
+                    routeIdentity,
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    source,
+                    reason);
 
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' eventSystem='{eventSystem.name}' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
                 return initialInputMode;
@@ -1530,7 +1528,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private static void ValidatePersistentScenesPolicyOrFail(OperationalRouteAsset route)
         {
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
 
             if (persistentScenesPolicy == null)
             {

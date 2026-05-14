@@ -29,6 +29,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             }
 
             // Provider configurável: o config agora é obrigatório no boot; o fallback do provider fica só para override explícito no asset.
+            RuntimeConfigRegistry.InitializeOrFail(config);
+            DebugUtility.Log(typeof(GlobalCompositionRoot),
+                $"[RuntimePolicy] RuntimeConfigRegistry initialized from RuntimeModeConfig.RuntimeConfigSet (runtimeModeConfig='{config.name}' configSet='{config.RuntimeConfigSet.name}').",
+                DebugUtility.Colors.Info);
+
             RegisterIfMissing<IRuntimeModeProvider>(() =>
                 new ConfigurableRuntimeModeProvider(new UnityRuntimeModeProvider(), config));
 

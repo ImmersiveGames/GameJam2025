@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
     public sealed class SceneCompositionAdapter : ISceneCompositionAdapter
     {
         private readonly SceneCompositionExecutor _sceneCompositionExecutor = new();
+        private bool _policySourceLogged;
 
         public async Task<SessionOperationalRouteCompletedFact> ApplyOperationalRouteAsync(SessionOperationalRouteCommand command)
         {
@@ -92,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             return resolved;
         }
 
-        private static void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
+        private void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
         {
             if (command.Route == null)
             {
@@ -101,18 +102,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "[FATAL][Config][SessionOperationalPipeline] SessionOperationalRouteCommand.Route is required.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) || runtimeModeConfig == null)
-            {
-                HardFailFastH1.Trigger(
-                    typeof(SceneCompositionAdapter),
-                    "[FATAL][Config][SessionOperationalPipeline] RuntimeModeConfig obrigatorio ausente para validar persistent scenes.");
-            }
-
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
-            if (persistentScenesPolicy == null)
-            {
-                return;
-            }
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(command);
 
             if (!command.Route.TryValidateAgainstPersistentScenesPolicy(persistentScenesPolicy, out string validationError))
             {
@@ -120,6 +110,52 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     typeof(SceneCompositionAdapter),
                     $"[FATAL][Config][SessionOperationalPipeline] {validationError}");
             }
+        }
+
+        private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
+        {
+            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            {
+                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                if (runtimePolicy == null)
+                {
+                    HardFailFastH1.Trigger(
+                        typeof(SceneCompositionAdapter),
+                        "[FATAL][Config][SessionOperationalPipeline] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
+                }
+
+                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                string policyValidationError = string.Empty;
+                bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
+                if (!registryPolicyValid)
+                {
+                    HardFailFastH1.Trigger(
+                        typeof(SceneCompositionAdapter),
+                        $"[FATAL][Config][SessionOperationalPipeline] RuntimeConfigRegistry invariant breach: RuntimePersistentScenesPolicyAsset ausente/invalido no snapshot. detail='{policyValidationError}'.");
+                }
+
+                LogPolicySourceOnce(registryPolicy);
+                return registryPolicy;
+            }
+
+            HardFailFastH1.Trigger(
+                typeof(SceneCompositionAdapter),
+                "[FATAL][Config][SessionOperationalPipeline] RuntimeConfigRegistry snapshot obrigatorio ausente para RuntimePersistentScenesPolicy migrado.");
+            return null;
+        }
+
+        private void LogPolicySourceOnce(RuntimePersistentScenesPolicyAsset policy)
+        {
+            if (_policySourceLogged)
+            {
+                return;
+            }
+
+            _policySourceLogged = true;
+
+            DebugUtility.Log(typeof(SceneCompositionAdapter),
+                $"[OBS][RuntimePolicy][ConfigMigration] SceneCompositionAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                DebugUtility.Colors.Info);
         }
     }
 }

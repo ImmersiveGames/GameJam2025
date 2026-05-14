@@ -15,14 +15,27 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 7. **ADR-0007** - Gates, InputModes e Simulation Executors
 8. **ADR-0008** - SaveSystem Canonical
 
-## ADRs Complementares (Propostos)
+## ADRs Complementares (Propostos/Implementados)
 
-9. **ADR-0009** - SessionModeProfile e Session Mode Resolution
-10. **ADR-0010** - Actor Preparation Flow, Player Participation e Unity PlayerInput
+9. **ADR-0009** - Session Player Slots e Operational Input Runtime (CONGELADO - 2026-05-14)
+10. **ADR-0010** - Actor Preparation Flow, Player Participation e Unity PlayerInput (CONGELADO - 2026-05-14)
+11. **ADR-0011** - Runtime Configuration Registry and Config Sets (IMPLEMENTADO)
 
 Notas:
-- ADR-0009 separa a decisão de modo de sessão do fluxo de preparação de actors.
-- ADR-0010 depende do ADR-0009 para consumir o modo de sessão resolvido.
+- **ADR-0009** (congelado) congela o contrato operacional de:
+  - slots e validacao de PlayerInputManager;
+  - inicializacao de EventSystem persistente;
+  - inicializacao de InputSystemUIInputModule persistente;
+  - binding canonico de 10 UI actions via InputModesRuntimeConfigGroup.
+  - 11 decisoes congeladas sobre fail-fast, integridade, sequencia de binding.
+- **ADR-0010** (congelado) depende de ADR-0009 para validacao/init de slots e input operacional, permanecer focado em Actor Preparation **sem** materializacao de gameplay input ou player selection.
+- **ADR-0011** (implementado):
+  - `RuntimeModeConfig` permanece entrada canônica
+  - `RuntimeConfigSetAsset` agrupa configs por domínio
+  - `RuntimeConfigRegistry` valida e expõe snapshots read-only
+  - 5 grupos obrigatórios: RuntimePolicy, SessionOperational, Audio, Save, InputModes
+  - InputModesRuntimeConfigGroup congelado com `maxPlayerSlots`, `uiActionsAsset` e 10 `InputActionReferences` canonicas (ADR-0009)
+  - Checkpoint completo: nenhum item adiado.
 - Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
 
 ## Precedência Normativa
@@ -142,3 +155,6 @@ Se encontrar um conflito entre um ADR histórico e um ADR Base 1.1:
   - ADR-0066 → ADR-0007
   - ADR-0065 distribuído em ADR-0002 e ADR-0003
   - ADR-0008 (novo) → SaveSystem Canonical
+
+
+

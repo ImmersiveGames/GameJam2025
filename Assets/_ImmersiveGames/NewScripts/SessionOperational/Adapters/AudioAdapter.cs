@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -20,10 +21,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         private readonly object _sync = new();
         private PlaybackKind _previousPlaybackKind;
         private IAudioPlaybackHandle _previousSfxHandle;
+        private bool _configSourceLogged;
 
         public void PlayRouteRevealAudio(SessionOperationalRouteCommand command)
         {
             ValidateCommandOrFail(command);
+            EnsureAudioConfigSourceOrFail();
 
             if (command.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
             {
@@ -170,6 +173,31 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 _previousPlaybackKind = PlaybackKind.None;
                 _previousSfxHandle = null;
             }
+        }
+
+        private void EnsureAudioConfigSourceOrFail()
+        {
+            if (_configSourceLogged)
+            {
+                return;
+            }
+
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
+            {
+                AudioDefaultsAsset registryAudioDefaults = snapshot.AudioRuntime.AudioDefaults;
+                if (registryAudioDefaults == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] RuntimeConfigRegistry contract broken: snapshot.AudioRuntime.AudioDefaults obrigatorio ausente.");
+                }
+
+                _configSourceLogged = true;
+                DebugUtility.Log(typeof(AudioAdapter),
+                    $"[OBS][Audio][ConfigMigration] SessionOperational AudioAdapter using RuntimeConfigRegistry audio defaults. asset='{registryAudioDefaults.name}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] RuntimeConfigRegistry snapshot obrigatorio ausente para AudioDefaults migrado.");
         }
 
         private static void ValidateCommandOrFail(SessionOperationalRouteCommand command)

@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         private readonly object _sync = new();
         private FadeController _cachedController;
         private string _cachedSceneName = string.Empty;
+        private bool _policySourceLogged;
 
         public async Task FadeInAsync(SessionOperationalRouteCommand command)
         {
@@ -88,12 +89,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
             }
 
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = runtimeModeConfig.RuntimePersistentScenesPolicy;
-            if (persistentScenesPolicy == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] RuntimePersistentScenesPolicyAsset obrigatorio ausente para transitionMode=Profile.");
-            }
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail();
 
             string sceneName = persistentScenesPolicy.ResolveSceneNameByRoleOrFail(
                 RuntimePersistentSceneRole.Fade,
@@ -194,6 +190,45 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             return runtimeModeConfig;
+        }
+
+        private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail()
+        {
+            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            {
+                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                if (runtimePolicy == null)
+                {
+                    throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
+                }
+
+                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                string policyValidationError = string.Empty;
+                bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
+                if (!registryPolicyValid)
+                {
+                    throw new InvalidOperationException($"[FATAL][Config][SessionOperationalFade] RuntimeConfigRegistry invariant breach: RuntimePersistentScenesPolicyAsset ausente/invalido no snapshot. detail='{policyValidationError}'.");
+                }
+
+                LogPolicySourceOnce(registryPolicy);
+                return registryPolicy;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][SessionOperationalFade] RuntimeConfigRegistry snapshot obrigatorio ausente para RuntimePersistentScenesPolicy migrado.");
+        }
+
+        private void LogPolicySourceOnce(RuntimePersistentScenesPolicyAsset policy)
+        {
+            if (_policySourceLogged)
+            {
+                return;
+            }
+
+            _policySourceLogged = true;
+
+            DebugUtility.Log(typeof(FadeAdapter),
+                $"[OBS][RuntimePolicy][ConfigMigration] FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                DebugUtility.Colors.Info);
         }
 
         private static string BuildContextSignature(SessionOperationalRouteCommand command, string phase)
