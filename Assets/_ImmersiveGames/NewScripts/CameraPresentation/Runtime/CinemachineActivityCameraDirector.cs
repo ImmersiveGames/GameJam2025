@@ -1,5 +1,7 @@
-﻿using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using Unity.Cinemachine;
 using UnityEngine;
 
@@ -8,6 +10,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
     public sealed class CinemachineActivityCameraDirector : IActivityCameraDirector
     {
         private const int ActivityCameraPriority = 100;
+        private readonly IOperationalCameraProvider operationalCameraProvider;
+
+        public CinemachineActivityCameraDirector(IOperationalCameraProvider operationalCameraProvider)
+        {
+            this.operationalCameraProvider = operationalCameraProvider;
+        }
 
         public bool TryPrepareActivityCamera(
             ActivityCameraBindingCommand command,
@@ -20,27 +28,53 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
+            if (operationalCameraProvider == null)
+            {
+                reason = "operational_camera_provider_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (!operationalCameraProvider.TryGetCurrent(out OperationalCameraHandle operationalHandle, out reason))
+            {
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (operationalHandle == null)
+            {
+                reason = "operational_camera_handle_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (operationalHandle.UnityCamera == null)
+            {
+                reason = "operational_output_camera_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
+            if (!operationalHandle.HasCinemachineBrain)
+            {
+                reason = "operational_cinemachine_brain_missing";
+                result = ActivityCameraBindingResult.Failed(command, reason);
+                return false;
+            }
+
             GameObject rigInstance = Object.Instantiate(command.Requirement.CameraRigPrefab);
             rigInstance.name = BuildRigInstanceName(command);
 
-            if (!TryGetSingleCamera(rigInstance, out Camera unityCamera, out reason))
+            if (!EnsurePresentationRigHasNoUnityCamera(rigInstance, out reason))
             {
                 Object.Destroy(rigInstance);
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
             }
 
-            if (!TryGetSingleCinemachineBrain(rigInstance, out CinemachineBrain brain, out reason))
+            if (!EnsurePresentationRigHasNoCinemachineBrain(rigInstance, out reason))
             {
                 Object.Destroy(rigInstance);
-                result = ActivityCameraBindingResult.Failed(command, reason);
-                return false;
-            }
-
-            if (brain.OutputCamera != unityCamera)
-            {
-                Object.Destroy(rigInstance);
-                reason = "cinemachine_brain_output_camera_mismatch";
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
             }
@@ -56,10 +90,15 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             cinemachineCamera.Target.LookAtTarget = command.Requirement.LookAtTarget;
             cinemachineCamera.Priority = ActivityCameraPriority;
 
+            DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
+                $"[OBS][CameraPresentation][Director] ActivityCameraPrepared outputCamera='{operationalHandle.UnityCamera.name}' hasOperationalBrain='{operationalHandle.HasCinemachineBrain}' presentationRig='{rigInstance.name}' activityIdentity='{command.ActivityIdentity}' requirementId='{command.Requirement.RequirementId}'.",
+                DebugUtility.Colors.Info);
+
             reason = "activity_camera_ready";
-            result = ActivityCameraBindingResult.Ready(command, unityCamera, rigInstance, reason);
+            result = ActivityCameraBindingResult.Ready(command, operationalHandle.UnityCamera, rigInstance, reason);
             return true;
         }
+
         public bool TryReleaseActivityCamera(
             ActivityCameraBindingResult binding,
             out string reason)
@@ -90,59 +129,41 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
             Object.Destroy(binding.Handle.CameraRigInstance);
 
+            DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
+                $"[OBS][CameraPresentation][Director] ActivityCameraReleased outputCamera='{binding.Handle.UnityCamera?.name}' presentationRig='{binding.Handle.CameraRigInstance.name}' activityIdentity='{binding.Handle.ActivityIdentity}'.",
+                DebugUtility.Colors.Info);
+
             reason = "activity_camera_released";
             return true;
         }
 
-        private static bool TryGetSingleCamera(
+        private static bool EnsurePresentationRigHasNoUnityCamera(
             GameObject rigInstance,
-            out Camera camera,
             out string reason)
         {
             Camera[] cameras = rigInstance.GetComponentsInChildren<Camera>(true);
-
-            if (cameras.Length == 0)
+            if (cameras.Length > 0)
             {
-                camera = null;
-                reason = "unity_camera_missing";
+                reason = "presentation_rig_must_not_contain_unity_camera";
                 return false;
             }
 
-            if (cameras.Length > 1)
-            {
-                camera = null;
-                reason = "multiple_unity_cameras_found";
-                return false;
-            }
-
-            camera = cameras[0];
-            reason = "unity_camera_found";
+            reason = "presentation_rig_without_unity_camera";
             return true;
         }
 
-        private static bool TryGetSingleCinemachineBrain(
+        private static bool EnsurePresentationRigHasNoCinemachineBrain(
             GameObject rigInstance,
-            out CinemachineBrain brain,
             out string reason)
         {
             CinemachineBrain[] brains = rigInstance.GetComponentsInChildren<CinemachineBrain>(true);
-
-            if (brains.Length == 0)
+            if (brains.Length > 0)
             {
-                brain = null;
-                reason = "cinemachine_brain_missing";
+                reason = "presentation_rig_must_not_contain_cinemachine_brain";
                 return false;
             }
 
-            if (brains.Length > 1)
-            {
-                brain = null;
-                reason = "multiple_cinemachine_brains_found";
-                return false;
-            }
-
-            brain = brains[0];
-            reason = "cinemachine_brain_found";
+            reason = "presentation_rig_without_cinemachine_brain";
             return true;
         }
 

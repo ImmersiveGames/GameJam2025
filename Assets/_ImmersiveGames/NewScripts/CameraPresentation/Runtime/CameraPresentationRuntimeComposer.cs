@@ -1,5 +1,7 @@
-﻿using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
@@ -21,7 +23,41 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            IActivityCameraDirector director = new CinemachineActivityCameraDirector();
+            DependencyManager dependencyManager = DependencyManager.Instance;
+            if (dependencyManager == null)
+            {
+                reason = "dependency_manager_instance_missing";
+                result = CameraPresentationRuntimeCompositionResult.Failed(
+                    false,
+                    false,
+                    reason);
+
+                return false;
+            }
+
+            if (!dependencyManager.TryGetGlobal<IOperationalCameraProvider>(out var operationalCameraProvider))
+            {
+                reason = "operational_camera_provider_not_registered";
+                result = CameraPresentationRuntimeCompositionResult.Failed(
+                    false,
+                    false,
+                    reason);
+
+                return false;
+            }
+
+            if (operationalCameraProvider == null)
+            {
+                reason = "operational_camera_provider_null";
+                result = CameraPresentationRuntimeCompositionResult.Failed(
+                    false,
+                    false,
+                    reason);
+
+                return false;
+            }
+
+            IActivityCameraDirector director = new CinemachineActivityCameraDirector(operationalCameraProvider);
 
             if (!registry.TryRegister<IActivityCameraDirector>(director, out reason))
             {

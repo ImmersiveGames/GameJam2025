@@ -26,7 +26,7 @@ MonoBehaviour:
       degradedAsError: 1
       degradedAsException: 0
   sessionOperationalRuntime:
-    startupRouteDefinition: {fileID: 11400000, guid: a77146e5eb3ce7844adf0abd892ad29d, type: 2}
+    startupRouteDefinition: {fileID: 11400000, guid: 0a2fe18554df4b241b27733ced8e5b8a, type: 2}
     defaultLoadingMode: 2
     defaultLoadingProfile: {fileID: 11400000, guid: 81481f2098e923745a6a3b40b0ca524c, type: 2}
   preferencesRuntime:
