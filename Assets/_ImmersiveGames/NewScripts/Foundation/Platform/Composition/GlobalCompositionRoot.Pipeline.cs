@@ -1,8 +1,8 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
@@ -14,27 +14,27 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static void RegisterEssentialServicesOnly()
         {
             PrimeEventSystems();
-            var bootstrapConfig = GetRequiredBootstrapConfig(out _);
+            var runtimeModeConfig = GetRequiredRuntimeModeConfig(out _);
 
-            ExecuteInstallerPipeline(bootstrapConfig);
+            ExecuteInstallerPipeline(runtimeModeConfig);
 
 #if NEWSCRIPTS_BASELINE_ASSERTS
             RegisterBaselineAsserter();
 #endif
 
-            ExecuteBootstrapPipeline(bootstrapConfig);
+            ExecuteBootstrapPipeline(runtimeModeConfig);
         }
 
-        private static void ExecuteInstallerPipeline(BootstrapConfigAsset bootstrapConfig)
+        private static void ExecuteInstallerPipeline(RuntimeModeConfig runtimeModeConfig)
         {
-            var steps = GetCompositionPipelineSteps(bootstrapConfig);
-            CompositionPipelineExecutor.ExecuteInstallers(steps, bootstrapConfig);
+            var steps = GetCompositionPipelineSteps(runtimeModeConfig);
+            CompositionPipelineExecutor.ExecuteInstallers(steps, runtimeModeConfig);
         }
 
-        private static void ExecuteBootstrapPipeline(BootstrapConfigAsset bootstrapConfig)
+        private static void ExecuteBootstrapPipeline(RuntimeModeConfig runtimeModeConfig)
         {
-            var steps = GetCompositionPipelineSteps(bootstrapConfig);
-            CompositionPipelineExecutor.ExecuteBootstraps(steps, bootstrapConfig);
+            var steps = GetCompositionPipelineSteps(runtimeModeConfig);
+            CompositionPipelineExecutor.ExecuteBootstraps(steps, runtimeModeConfig);
         }
 
         private static void InstallGatesServices()

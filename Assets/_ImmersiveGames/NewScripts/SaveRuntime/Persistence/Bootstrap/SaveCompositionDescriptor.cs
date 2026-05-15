@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 moduleId: "Save",
                 installerDependencies: new[] { "RuntimePolicy" },
                 bootstrapDependencies: Array.Empty<string>(),
-                installer: bootstrapConfig => SaveInstaller.Install(bootstrapConfig),
+                installer: runtimeModeConfig => SaveInstaller.Install(runtimeModeConfig),
                 bootstrap: null,
                 installerEntry: "SaveInstaller.Install",
                 runtimeComposerEntry: null,

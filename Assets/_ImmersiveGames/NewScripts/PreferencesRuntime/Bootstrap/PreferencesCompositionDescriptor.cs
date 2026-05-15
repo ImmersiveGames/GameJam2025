@@ -9,8 +9,8 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 moduleId: "Preferences",
                 installerDependencies: new[] { "Audio" },
                 bootstrapDependencies: Array.Empty<string>(),
-                installer: bootstrapConfig => PreferencesInstaller.Install(bootstrapConfig),
-                bootstrap: bootstrapConfig => PreferencesBootstrap.ComposeRuntime(bootstrapConfig),
+                installer: runtimeModeConfig => PreferencesInstaller.Install(runtimeModeConfig),
+                bootstrap: runtimeModeConfig => PreferencesBootstrap.ComposeRuntime(runtimeModeConfig),
                 installerEntry: "PreferencesInstaller.Install",
                 runtimeComposerEntry: "PreferencesBootstrap.ComposeRuntime",
                 description: "Canonical audio and video preferences state and backend seam.");

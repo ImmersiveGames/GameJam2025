@@ -196,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             bool fallbacksEnabled,
             bool globalDebugEnabled = true,
             bool repeatedVerboseEnabled = true,
-            string source = "BootstrapFallbackHardcoded")
+            string source = "DirectFallbackHardcoded")
         {
             ApplyLoggingPolicyInternal(
                 globalDebugEnabled,
@@ -566,7 +566,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             _lastAppliedEarlyDefault = isEarlyDefault;
 
             string phase = isEarlyDefault ? "BOOT" : "STARTUP";
-            string policyFlavor = isEarlyDefault ? "EarlyDefault" : "BootstrapConfigAsset";
+            string policyFlavor = isEarlyDefault ? "EarlyDefault" : "RuntimeConfigRegistry";
             LogRuntimeModeObs(
                 $"[OBS][{phase}] LoggingPolicyApplied source='{source}' policy='{policyFlavor}' " +
                 $"defaultLevel='{defaultLevel}' activeRuleCount={_activeNamespaceRules.Count} " +

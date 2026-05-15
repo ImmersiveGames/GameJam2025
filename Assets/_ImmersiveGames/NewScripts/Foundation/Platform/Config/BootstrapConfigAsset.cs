@@ -8,17 +8,23 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Config
 {
     /// <summary>
-    /// Root configuration with the canonical infrastructure references.
+    /// Legacy configuration asset kept only for editor-time serialization compatibility.
+    /// Active Base 1.1 runtime path does not consume this asset.
     /// </summary>
+    [Obsolete("Legacy asset. Active runtime uses RuntimeModeConfig -> RuntimeConfigSetAsset -> RuntimeConfigRegistry.")]
     [CreateAssetMenu(
         fileName = "BootstrapConfigAsset",
         menuName = "ImmersiveGames/NewScripts/Infrastructure/Config/BootstrapConfigAsset",
         order = 20)]
     public sealed class BootstrapConfigAsset : ScriptableObject
     {
+        [Tooltip("LEGACY ONLY - not used by active Base 1.1 runtime path.")]
         [SerializeField] private LoggingConfigAsset loggingConfig;
+        [Tooltip("LEGACY ONLY - not used by active Base 1.1 runtime path.")]
         [SerializeField] private RuntimeModeConfig runtimeModeConfig;
+        [Tooltip("LEGACY ONLY - not used by active Base 1.1 runtime path.")]
         [SerializeField] private AudioDefaultsAsset audioDefaults;
+        [Tooltip("LEGACY ONLY - not used by active Base 1.1 runtime path.")]
         [SerializeField] private VideoDefaultsAsset videoDefaults;
 
         public LoggingConfigAsset LoggingConfig => loggingConfig;
@@ -28,23 +34,13 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Config
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (runtimeModeConfig == null)
-            {
-                string message =
-                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure runtimeModeConfig with a valid RuntimeModeConfig asset. asset='{name}'.";
-
-                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
-                throw new InvalidOperationException(message);
-            }
-
-            if (videoDefaults == null)
-            {
-                string message =
-                    $"[FATAL][Config] BootstrapConfigAsset invalid: configure videoDefaults with a valid VideoDefaultsAsset asset. asset='{name}'.";
-
-                DebugUtility.LogError(typeof(BootstrapConfigAsset), message);
-                throw new InvalidOperationException(message);
-            }
+            _ = loggingConfig;
+            _ = runtimeModeConfig;
+            _ = audioDefaults;
+            _ = videoDefaults;
+            DebugUtility.LogVerbose(typeof(BootstrapConfigAsset),
+                "[OBS][Config] BootstrapConfigAsset is legacy-only and not part of active Base 1.1 runtime config path.",
+                DebugUtility.Colors.Info);
         }
 #endif
     }

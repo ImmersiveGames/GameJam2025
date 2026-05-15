@@ -1,7 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
@@ -15,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
         private static bool _runtimeComposed;
         private static SessionOperationalInputModeAdapter _sessionOperationalInputModeAdapter;
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(InputModesRuntimeComposer));
 
@@ -24,13 +23,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 return;
             }
 
-            if (bootstrapConfig == null)
+            if (runtimeModeConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][InputModes] BootstrapConfigAsset obrigatorio ausente para compor o runtime de InputModes.");
+                throw new InvalidOperationException("[FATAL][Config][InputModes] RuntimeModeConfig obrigatorio ausente para compor o runtime de InputModes.");
             }
 
             EnsureCanonicalTrailOrFail(requireCoordinator: false);
-            EnsureSessionOperationalInputModeAdapter(bootstrapConfig);
+            EnsureSessionOperationalInputModeAdapter(runtimeModeConfig);
             EnsureCoordinatorOrFail();
             EnsureCanonicalTrailOrFail(requireCoordinator: true);
 
@@ -59,9 +58,9 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureSessionOperationalInputModeAdapter(BootstrapConfigAsset bootstrapConfig)
+        private static void EnsureSessionOperationalInputModeAdapter(RuntimeModeConfig runtimeModeConfig)
         {
-            if (bootstrapConfig?.RuntimeModeConfig?.compositionProfile != CompositionProfileKind.Base11Sandbox)
+            if (runtimeModeConfig.compositionProfile != CompositionProfileKind.Base11Sandbox)
             {
                 return;
             }

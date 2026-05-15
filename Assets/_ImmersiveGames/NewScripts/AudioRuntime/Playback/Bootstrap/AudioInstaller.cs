@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
@@ -20,15 +19,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
     {
         private static bool _installed;
 
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
+        public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
             if (_installed)
             {
                 return;
             }
 
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            AudioDefaultsAsset audioDefaults = ResolveAudioDefaultsOrFail(runtimeModeConfig);
+            _ = runtimeModeConfig ?? throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para instalar Audio.");
+            RuntimeModeConfig resolvedRuntimeModeConfig = ResolveRuntimeModeConfigOrFail();
+            AudioDefaultsAsset audioDefaults = ResolveAudioDefaultsOrFail(resolvedRuntimeModeConfig);
 
             RegisterAudioDefaults(audioDefaults);
             RegisterAudioSettings();

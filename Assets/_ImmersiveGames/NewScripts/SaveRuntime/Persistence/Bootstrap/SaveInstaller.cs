@@ -2,7 +2,6 @@ using System;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SaveRuntime.Core;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
@@ -13,14 +12,18 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
     {
         private static bool _installed;
 
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
+        public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
             if (_installed)
             {
                 return;
             }
 
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail(bootstrapConfig);
+            if (runtimeModeConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Save] RuntimeModeConfig obrigatorio ausente antes de instalar Save.");
+            }
+
             SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
 
             SaveBackendAsset backendAsset = saveConfig.Backend
@@ -130,16 +133,6 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
             DebugUtility.LogVerbose(typeof(SaveInstaller), registeredMessage, DebugUtility.Colors.Info);
         }
 
-        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (bootstrapConfig == null)
-            {
-                throw new InvalidOperationException("[FATAL][Save] BootstrapConfigAsset obrigatorio ausente antes de instalar Save.");
-            }
-
-            return bootstrapConfig.RuntimeModeConfig
-                ?? throw new InvalidOperationException($"[FATAL][Save] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset '{bootstrapConfig.name}'.");
-        }
     }
 }
 

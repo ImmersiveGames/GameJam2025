@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 {
@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
     {
         private static bool _runtimeComposed;
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(PreferencesBootstrap));
 
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 return;
             }
 
-            _ = bootstrapConfig;
+            _ = runtimeModeConfig;
 
             if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out var stateService) || stateService == null)
             {

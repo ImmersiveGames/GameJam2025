@@ -1,7 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
@@ -12,14 +11,14 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
         private static bool _installed;
         private static bool _defaultsAppliedLogged;
 
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
+        public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
             if (_installed)
             {
                 return;
             }
 
-            _ = bootstrapConfig;
+            _ = runtimeModeConfig;
 
             RuntimeModeConfig runtimeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimeModeConfig.InputModesSettings settings = runtimeConfig.inputModes;

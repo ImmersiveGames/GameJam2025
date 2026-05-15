@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap;
@@ -12,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static IReadOnlyList<CompositionPipelineStep> GetCompositionPipelineSteps(BootstrapConfigAsset bootstrapConfig)
+        private static IReadOnlyList<CompositionPipelineStep> GetCompositionPipelineSteps(RuntimeModeConfig runtimeModeConfig)
         {
             var steps = new List<CompositionPipelineStep>(16);
 
@@ -37,7 +36,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrap: null,
                 bootstrapDependencies: Array.Empty<string>()));
 
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFailFast(bootstrapConfig);
             CompositionProfileKind compositionProfile = runtimeModeConfig.compositionProfile;
 
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
@@ -45,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 DebugUtility.Log(typeof(GlobalCompositionRoot),
                     "[OBS][Composition][Profile] SessionOperational runtime ativo: composicao nao canonica fora do profile minimo.",
                     DebugUtility.Colors.Info);
-                steps.AddRange(GetSessionOperationalCompositionSteps(bootstrapConfig, runtimeModeConfig));
+                steps.AddRange(GetSessionOperationalCompositionSteps(runtimeModeConfig));
             }
             else
             {
@@ -68,7 +66,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         }
 
         private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(
-            BootstrapConfigAsset bootstrapConfig,
             RuntimeModeConfig runtimeModeConfig)
         {
             return new List<CompositionPipelineStep>(6)
@@ -78,9 +75,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 new CompositionPipelineStep(
                     id: "InputModes",
-                    installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
+                    installer: config => InputModesInstaller.Install(config),
                     installerDependencies: new[] { "RuntimePolicy" },
-                    bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
+                    bootstrap: config => InputModesRuntimeComposer.ComposeRuntime(config),
                     bootstrapDependencies: Array.Empty<string>()),
                 new CompositionPipelineStep(
                     id: "OperationalCameraRuntime",

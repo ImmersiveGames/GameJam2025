@@ -1,4 +1,6 @@
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -11,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         IRuntimePolicyConfigGroupReadOnly RuntimePolicy { get; }
         ISessionOperationalRuntimeConfigGroupReadOnly SessionOperationalRuntime { get; }
         IAudioRuntimeConfigGroupReadOnly AudioRuntime { get; }
+        IPreferencesRuntimeConfigGroupReadOnly PreferencesRuntime { get; }
         ISaveRuntimeConfigGroupReadOnly SaveRuntime { get; }
         IInputModesRuntimeConfigGroupReadOnly InputModesRuntime { get; }
         ICameraRuntimeConfigGroupReadOnly CameraRuntime { get; }
@@ -19,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     public interface IRuntimePolicyConfigGroupReadOnly
     {
         RuntimePersistentScenesPolicyAsset RuntimePersistentScenesPolicy { get; }
+        LoggingConfigAsset LoggingConfig { get; }
         DegradedDedupStrategy ReporterDedupStrategy { get; }
         float ReporterCooldownSeconds { get; }
         float ReporterEmitSummaryEverySeconds { get; }
@@ -39,6 +43,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     public interface IAudioRuntimeConfigGroupReadOnly
     {
         AudioDefaultsAsset AudioDefaults { get; }
+    }
+
+    public interface IPreferencesRuntimeConfigGroupReadOnly
+    {
+        AudioDefaultsAsset AudioDefaults { get; }
+        VideoDefaultsAsset VideoDefaults { get; }
     }
 
     public interface ISaveRuntimeConfigGroupReadOnly

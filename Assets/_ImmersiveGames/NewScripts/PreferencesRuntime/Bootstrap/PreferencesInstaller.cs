@@ -3,7 +3,7 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime;
@@ -13,16 +13,16 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
     {
         private static bool _installed;
 
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
+        public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
             if (_installed)
             {
                 return;
             }
 
-            if (bootstrapConfig == null)
+            if (runtimeModeConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config] BootstrapConfigAsset obrigatorio ausente para instalar Preferences.");
+                throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] RuntimeModeConfig obrigatorio ausente para instalar Preferences.");
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<IAudioSettingsService>(out var audioSettings) || audioSettings == null)
@@ -30,17 +30,35 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 throw new InvalidOperationException("[FATAL][Preferences] IAudioSettingsService obrigatorio ausente antes de instalar Preferences.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var audioDefaults) || audioDefaults == null)
+            AudioDefaultsAsset audioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
+            if (DependencyManager.Provider.TryGetGlobal<AudioDefaultsAsset>(out var registeredAudioDefaults)
+                && registeredAudioDefaults != null)
             {
-                throw new InvalidOperationException("[FATAL][Preferences] AudioDefaultsAsset obrigatorio ausente antes de instalar Preferences.");
+                if (!ReferenceEquals(registeredAudioDefaults, audioDefaults))
+                {
+                    throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] AudioDefaultsAsset conflitante ja registrada no DI.");
+                }
+            }
+            else
+            {
+                DependencyManager.Provider.RegisterGlobal(audioDefaults, allowOverride: false);
+
+                DebugUtility.LogVerbose(
+                    typeof(PreferencesInstaller),
+                    $"[Preferences][BOOT] AudioDefaultsAsset registered. asset='{audioDefaults.name}'.",
+                    DebugUtility.Colors.Info);
             }
 
-            VideoDefaultsAsset videoDefaults = bootstrapConfig.VideoDefaults
-                ?? throw new InvalidOperationException("[FATAL][Preferences] BootstrapConfigAsset obrigatorio: VideoDefaults ausente.");
+            VideoDefaultsAsset videoDefaults = PreferencesRuntimeConfigResolver.ResolveVideoDefaultsOrFail(runtimeModeConfig);
 
             if (DependencyManager.Provider.TryGetGlobal<VideoDefaultsAsset>(out var registeredVideoDefaults)
                 && registeredVideoDefaults != null)
             {
+                if (!ReferenceEquals(registeredVideoDefaults, videoDefaults))
+                {
+                    throw new InvalidOperationException("[FATAL][Config][PreferencesRuntime] VideoDefaultsAsset conflitante ja registrada no DI.");
+                }
+
                 videoDefaults = registeredVideoDefaults;
             }
             else

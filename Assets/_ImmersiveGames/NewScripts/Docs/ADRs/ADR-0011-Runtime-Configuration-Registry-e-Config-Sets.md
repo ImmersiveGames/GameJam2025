@@ -87,6 +87,7 @@ RuntimeConfigSetAsset
 - RuntimePolicyConfigGroup
 - SessionOperationalRuntimeConfigGroup
 - AudioRuntimeConfigGroup
+- PreferencesRuntimeConfigGroup
 - SaveRuntimeConfigGroup
 - InputModesRuntimeConfigGroup
 - CameraRuntimeConfigGroup
@@ -138,6 +139,7 @@ Exemplos:
 
 - strictness;
 - reporter/degradation settings;
+- logging policy (`LoggingConfigAsset`) para bootstrap/runtime;
 - políticas globais de validação;
 - flags de diagnóstico, quando forem mode-level.
 
@@ -174,6 +176,25 @@ Exemplos:
 - policies declarativas de save/checkpoint.
 
 A decisão de quando salvar continua pertencendo aos pipelines.
+
+### PreferencesRuntimeConfigGroup
+
+Agrupa configurações do runtime de preferences.
+
+Exemplos:
+
+- `AudioDefaultsAsset`;
+- `VideoDefaultsAsset`;
+- presets/defaults de vídeo obrigatórios para bootstrap de preferences.
+
+Regras:
+
+- `audioDefaults` é obrigatório;
+- `videoDefaults` é obrigatório;
+- ausência de `audioDefaults` ou `videoDefaults` é erro fail-fast;
+- source canônica de defaults de preferência (`AudioDefaults` e `VideoDefaults`) para `PreferencesRuntime` é `RuntimeConfigRegistry` snapshot read-only.
+
+`BootstrapConfigAsset` permanece apenas como legado de serialização e não como owner canônico ativo.
 
 ### InputModesRuntimeConfigGroup
 
@@ -288,12 +309,15 @@ Eles não devem reconsultar config continuamente para decidir lifecycle.
 
 ### 8. BootstrapConfigAsset não vira fonte canônica da Base 1.1
 
-`BootstrapConfigAsset` pode continuar existindo como infraestrutura/legado de boot quando necessário.
+`BootstrapConfigAsset` pode continuar existindo somente como legado de serialização/editor quando necessário.
 
-Mas a fonte canônica de modo na Base 1.1 permanece:
+Mas a fonte canônica ativa na Base 1.1 permanece:
 
 ```text
 RuntimeModeConfig
+-> RuntimeConfigSetAsset
+-> RuntimeConfigRegistry
+-> RuntimeConfigSnapshot read-only
 ```
 
 ---
@@ -439,6 +463,7 @@ Adicionar validações manuais/automáticas conforme necessário:
 - RuntimeConfigRegistry inicializa no boot canonico (step RuntimePolicy) e valida RuntimeConfigSetAsset.
 - RuntimePolicyConfigGroup aplicado via snapshot/read-only.
 - AudioRuntimeConfigGroup aplicado via snapshot/read-only.
+- PreferencesRuntimeConfigGroup aplicado via snapshot/read-only.
 - SessionOperationalRuntimeConfigGroup aplicado via snapshot/read-only.
 - SaveRuntimeConfigGroup aplicado via snapshot/read-only.
 - InputModesRuntimeConfigGroup aplicado com:
@@ -465,6 +490,7 @@ Adicionar validações manuais/automáticas conforme necessário:
 
 - Owner canonico das configs migradas: RuntimeConfigSetAsset (via RuntimeConfigRegistry snapshot).
 - RuntimeModeConfig permanece com responsabilidades de entrada de modo e bootstrap-level.
+- BootstrapConfigAsset.videoDefaults não participa do caminho canônico ativo de PreferencesRuntime.
 
 ### Estado atual - Save no SessionOperational
 

@@ -1,5 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -17,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [SerializeField] private RuntimePolicyConfigGroup runtimePolicy = new();
         [SerializeField] private SessionOperationalRuntimeConfigGroup sessionOperationalRuntime = new();
         [SerializeField] private AudioRuntimeConfigGroup audioRuntime = new();
+        [SerializeField] private PreferencesRuntimeConfigGroup preferencesRuntime = new();
         [SerializeField] private SaveRuntimeConfigGroup saveRuntime = new();
         [SerializeField] private InputModesRuntimeConfigGroup inputModesRuntime = new();
         [SerializeField] private CameraRuntimeConfigGroup cameraRuntime = new();
@@ -24,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public RuntimePolicyConfigGroup RuntimePolicy => runtimePolicy;
         public SessionOperationalRuntimeConfigGroup SessionOperationalRuntime => sessionOperationalRuntime;
         public AudioRuntimeConfigGroup AudioRuntime => audioRuntime;
+        public PreferencesRuntimeConfigGroup PreferencesRuntime => preferencesRuntime;
         public SaveRuntimeConfigGroup SaveRuntime => saveRuntime;
         public InputModesRuntimeConfigGroup InputModesRuntime => inputModesRuntime;
         public CameraRuntimeConfigGroup CameraRuntime => cameraRuntime;
@@ -61,6 +65,17 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 errorMessage = "saveRuntime is required.";
                 return false;
             }
+
+            if (preferencesRuntime == null)
+            {
+                errorMessage = "preferencesRuntime is required.";
+                return false;
+            }
+            if (!preferencesRuntime.TryValidate(out errorMessage))
+            {
+                return false;
+            }
+
             if (!saveRuntime.TryValidate(out errorMessage))
             {
                 return false;
@@ -95,10 +110,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     public sealed class RuntimePolicyConfigGroup
     {
         [SerializeField] private RuntimePersistentScenesPolicyAsset runtimePersistentScenesPolicy;
+        [SerializeField] private LoggingConfigAsset loggingConfig;
         [SerializeField] private RuntimeModeConfig.DegradedReporterSettings reporter = new();
         [SerializeField] private RuntimeModeConfig.StrictnessSettings strictness = new();
 
         public RuntimePersistentScenesPolicyAsset RuntimePersistentScenesPolicy => runtimePersistentScenesPolicy;
+        public LoggingConfigAsset LoggingConfig => loggingConfig;
         public RuntimeModeConfig.DegradedReporterSettings Reporter => reporter;
         public RuntimeModeConfig.StrictnessSettings Strictness => strictness;
 
@@ -113,6 +130,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             if (reporter == null)
             {
                 errorMessage = "reporter is required for RuntimePolicyConfigGroup.";
+                return false;
+            }
+
+            if (loggingConfig == null)
+            {
+                errorMessage = "loggingConfig is required for RuntimePolicyConfigGroup.";
                 return false;
             }
 
@@ -190,6 +213,34 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             if (audioDefaults == null)
             {
                 errorMessage = "audioDefaults is required for AudioRuntimeConfigGroup.";
+                return false;
+            }
+
+            errorMessage = string.Empty;
+            return true;
+        }
+    }
+
+    [Serializable]
+    public sealed class PreferencesRuntimeConfigGroup
+    {
+        [SerializeField] private AudioDefaultsAsset audioDefaults;
+        [SerializeField] private VideoDefaultsAsset videoDefaults;
+
+        public AudioDefaultsAsset AudioDefaults => audioDefaults;
+        public VideoDefaultsAsset VideoDefaults => videoDefaults;
+
+        public bool TryValidate(out string errorMessage)
+        {
+            if (audioDefaults == null)
+            {
+                errorMessage = "preferencesRuntime.audioDefaults is required.";
+                return false;
+            }
+
+            if (videoDefaults == null)
+            {
+                errorMessage = "preferencesRuntime.videoDefaults is required.";
                 return false;
             }
 

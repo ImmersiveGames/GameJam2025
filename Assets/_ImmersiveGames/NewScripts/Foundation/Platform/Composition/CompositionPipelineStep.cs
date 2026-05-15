@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     internal sealed class CompositionPipelineStep
     {
         public CompositionPipelineStep(
             string id,
-            Action<BootstrapConfigAsset> installer,
+            Action<RuntimeModeConfig> installer,
             IReadOnlyList<string> installerDependencies,
-            Action<BootstrapConfigAsset> bootstrap,
+            Action<RuntimeModeConfig> bootstrap,
             IReadOnlyList<string> bootstrapDependencies)
             : this(
                 id,
@@ -32,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             string runtimeComposerEntry,
             IReadOnlyList<string> installerDependencies,
             IReadOnlyList<string> bootstrapDependencies,
-            Action<BootstrapConfigAsset> installer,
-            Action<BootstrapConfigAsset> bootstrap,
+            Action<RuntimeModeConfig> installer,
+            Action<RuntimeModeConfig> bootstrap,
             bool optional,
             bool installerOnly,
             string description)
@@ -74,9 +74,9 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         public string Id { get; }
         public string InstallerEntry { get; }
         public string RuntimeComposerEntry { get; }
-        public Action<BootstrapConfigAsset> Installer { get; }
+        public Action<RuntimeModeConfig> Installer { get; }
         public IReadOnlyList<string> InstallerDependencies { get; }
-        public Action<BootstrapConfigAsset> Bootstrap { get; }
+        public Action<RuntimeModeConfig> Bootstrap { get; }
         public IReadOnlyList<string> BootstrapDependencies { get; }
         public bool Optional { get; }
         public bool InstallerOnly { get; }
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static bool _installerPhaseCompleted;
         private static bool _bootstrapPhaseOpen;
 
-        public static void ExecuteInstallers(IReadOnlyList<CompositionPipelineStep> steps, BootstrapConfigAsset bootstrapConfig)
+        public static void ExecuteInstallers(IReadOnlyList<CompositionPipelineStep> steps, RuntimeModeConfig runtimeModeConfig)
         {
             _installerPhaseCompleted = false;
             _bootstrapPhaseOpen = false;
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             var summary = ExecutePhase(
                 plan,
-                bootstrapConfig,
+                runtimeModeConfig,
                 phaseLabel: "Fase 1",
                 phaseKind: CompositionPhase.Installer,
                 getAction: step => step.Installer);
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 DebugUtility.Colors.Info);
         }
 
-        public static void ExecuteBootstraps(IReadOnlyList<CompositionPipelineStep> steps, BootstrapConfigAsset bootstrapConfig)
+        public static void ExecuteBootstraps(IReadOnlyList<CompositionPipelineStep> steps, RuntimeModeConfig runtimeModeConfig)
         {
             if (!_installerPhaseCompleted)
             {
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             {
                 summary = ExecutePhase(
                     plan,
-                    bootstrapConfig,
+                    runtimeModeConfig,
                     phaseLabel: "Fase 2",
                     phaseKind: CompositionPhase.Bootstrap,
                     getAction: step => step.Bootstrap);
@@ -186,10 +186,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         private static CompositionPipelinePhaseExecutionSummary ExecutePhase(
             CompositionPipelinePhasePlan plan,
-            BootstrapConfigAsset bootstrapConfig,
+            RuntimeModeConfig runtimeModeConfig,
             string phaseLabel,
             CompositionPhase phaseKind,
-            Func<CompositionPipelineStep, Action<BootstrapConfigAsset>> getAction)
+            Func<CompositionPipelineStep, Action<RuntimeModeConfig>> getAction)
         {
             if (plan == null)
             {
@@ -225,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     $"[BOOT][Composition] {phaseLabel} step='{step.Id}' starting.",
                     DebugUtility.Colors.Info);
 
-                action(bootstrapConfig);
+                action(runtimeModeConfig);
 
                 DebugUtility.Log(typeof(CompositionPipelineExecutor),
                     $"[BOOT][Composition] {phaseLabel} step='{step.Id}' completed.",

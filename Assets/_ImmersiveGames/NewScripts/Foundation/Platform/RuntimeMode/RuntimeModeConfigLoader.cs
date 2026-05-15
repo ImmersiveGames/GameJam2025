@@ -1,15 +1,19 @@
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     /// <summary>
-    /// Resolve RuntimeModeConfig apenas a partir do DI global.
+    /// Resolve RuntimeModeConfig pelo trilho canÃ´nico:
+    /// DI global -> Resources/RuntimeMode/RuntimeModeConfig.
     ///
-    /// Observação:
-    /// - A leitura transitória por Resources foi removida deste helper.
-    /// - Bootstrap/composition root deve fazer a resolução explícita quando o asset for obrigatório.
+    /// Observacao:
+    /// - Nao consulta BootstrapConfigAsset.
     /// </summary>
     public static class RuntimeModeConfigLoader
     {
+        private const string DefaultResourcesPath = "RuntimeMode/RuntimeModeConfig";
+
         public static RuntimeModeConfig LoadOrNull()
         {
             if (DependencyManager.HasInstance)
@@ -21,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 }
             }
 
-            return null;
+            return Resources.Load<RuntimeModeConfig>(DefaultResourcesPath);
         }
     }
 }

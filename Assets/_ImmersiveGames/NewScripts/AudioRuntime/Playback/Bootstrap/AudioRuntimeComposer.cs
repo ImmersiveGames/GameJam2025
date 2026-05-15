@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Host;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
@@ -24,7 +23,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
     {
         private static bool _runtimeComposed;
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(AudioRuntimeComposer));
 
@@ -33,9 +32,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 return;
             }
 
-            if (bootstrapConfig == null)
+            if (runtimeModeConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
+                throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para compor o runtime.");
             }
 
             ResolveRuntimeModeConfigOrFail();

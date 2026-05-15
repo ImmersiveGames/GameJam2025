@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   runtimePolicy:
     runtimePersistentScenesPolicy: {fileID: 11400000, guid: 5cb9202de0bb9304c867f0d410f61dab, type: 2}
+    loggingConfig: {fileID: 11400000, guid: 20b21d047cb64a7bbf6fd8db8e9aa773, type: 2}
     reporter:
       dedupStrategy: 1
       cooldownSeconds: 5
@@ -30,6 +31,9 @@ MonoBehaviour:
     defaultLoadingProfile: {fileID: 11400000, guid: 81481f2098e923745a6a3b40b0ca524c, type: 2}
   audioRuntime:
     audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
+  preferencesRuntime:
+    audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
+    videoDefaults: {fileID: 11400000, guid: 2abe1594c17cbf14ba99d5746f95f233, type: 2}
   saveRuntime:
     saveConfig: {fileID: 11400000, guid: efb57b75a3bd4c1f8acc546a7ebaee36, type: 2}
   inputModesRuntime:

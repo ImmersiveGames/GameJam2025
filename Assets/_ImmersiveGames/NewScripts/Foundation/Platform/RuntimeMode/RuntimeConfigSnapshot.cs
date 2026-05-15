@@ -1,5 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
+using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -15,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             RuntimePolicy = new RuntimePolicyConfigGroupSnapshot(sourceAsset.RuntimePolicy);
             SessionOperationalRuntime = new SessionOperationalRuntimeConfigGroupSnapshot(sourceAsset.SessionOperationalRuntime);
             AudioRuntime = new AudioRuntimeConfigGroupSnapshot(sourceAsset.AudioRuntime);
+            PreferencesRuntime = new PreferencesRuntimeConfigGroupSnapshot(sourceAsset.PreferencesRuntime);
             SaveRuntime = new SaveRuntimeConfigGroupSnapshot(sourceAsset.SaveRuntime);
             InputModesRuntime = new InputModesRuntimeConfigGroupSnapshot(sourceAsset.InputModesRuntime);
             CameraRuntime = new CameraRuntimeConfigGroupSnapshot(sourceAsset.CameraRuntime);
@@ -24,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public IRuntimePolicyConfigGroupReadOnly RuntimePolicy { get; }
         public ISessionOperationalRuntimeConfigGroupReadOnly SessionOperationalRuntime { get; }
         public IAudioRuntimeConfigGroupReadOnly AudioRuntime { get; }
+        public IPreferencesRuntimeConfigGroupReadOnly PreferencesRuntime { get; }
         public ISaveRuntimeConfigGroupReadOnly SaveRuntime { get; }
         public IInputModesRuntimeConfigGroupReadOnly InputModesRuntime { get; }
         public ICameraRuntimeConfigGroupReadOnly CameraRuntime { get; }
@@ -38,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 }
 
                 RuntimePersistentScenesPolicy = source.RuntimePersistentScenesPolicy;
+                LoggingConfig = source.LoggingConfig;
 
                 RuntimeModeConfig.DegradedReporterSettings reporter = source.Reporter ?? new RuntimeModeConfig.DegradedReporterSettings();
                 ReporterDedupStrategy = reporter.dedupStrategy;
@@ -53,6 +58,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             }
 
             public RuntimePersistentScenesPolicyAsset RuntimePersistentScenesPolicy { get; }
+            public LoggingConfigAsset LoggingConfig { get; }
             public DegradedDedupStrategy ReporterDedupStrategy { get; }
             public float ReporterCooldownSeconds { get; }
             public float ReporterEmitSummaryEverySeconds { get; }
@@ -95,6 +101,23 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             }
 
             public AudioDefaultsAsset AudioDefaults { get; }
+        }
+
+        private sealed class PreferencesRuntimeConfigGroupSnapshot : IPreferencesRuntimeConfigGroupReadOnly
+        {
+            public PreferencesRuntimeConfigGroupSnapshot(PreferencesRuntimeConfigGroup source)
+            {
+                if (source == null)
+                {
+                    throw new ArgumentNullException(nameof(source));
+                }
+
+                AudioDefaults = source.AudioDefaults;
+                VideoDefaults = source.VideoDefaults;
+            }
+
+            public AudioDefaultsAsset AudioDefaults { get; }
+            public VideoDefaultsAsset VideoDefaults { get; }
         }
 
         private sealed class SaveRuntimeConfigGroupSnapshot : ISaveRuntimeConfigGroupReadOnly

@@ -14,7 +14,6 @@
  */
 
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -74,40 +73,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             DebugUtility.Log(typeof(GlobalCompositionRoot),
                 "[BOOT][Logging] EarlyDefault policy applied.",
                 DebugUtility.Colors.Info);
-
-            if (TryGetBootstrapConfigForLogging(out var bootstrapConfig, out string bootstrapVia, out string bootstrapReason))
-            {
-                LoggingConfigAsset loggingConfig = bootstrapConfig.LoggingConfig;
-                if (loggingConfig != null)
-                {
-                    string source = $"BootstrapConfigAsset/{bootstrapVia}";
-                    DebugUtility.ApplyLoggingPolicyFromAsset(loggingConfig, source);
-                    DebugUtility.Log(typeof(GlobalCompositionRoot),
-                        $"[STARTUP][Logging] Final policy applied from LoggingConfigAsset. source='{source}' asset='{loggingConfig.name}'.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
-
-                ApplyHardcodedFallbackLoggingPolicy(
-                    $"bootstrap_without_logging_config via='{bootstrapVia}' bootstrap='{bootstrapConfig.name}'");
-                return;
-            }
-
-            ApplyHardcodedFallbackLoggingPolicy($"bootstrap_unresolved reason='{bootstrapReason}'");
-        }
-
-        private static void ApplyHardcodedFallbackLoggingPolicy(string reason)
-        {
-            DebugUtility.ApplyLoggingPolicyFromBootstrap(
-                defaultLevel: DebugLevel.Verbose,
-                verboseEnabled: Application.isEditor,
-                fallbacksEnabled: Application.isEditor,
-                globalDebugEnabled: true,
-                repeatedVerboseEnabled: true,
-                source: "FallbackHardcoded");
-
-            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                $"[STARTUP][Logging] Applied hardcoded fallback logging policy. reason='{reason}'.");
         }
 
         private static void EnsureDependencyProvider()
