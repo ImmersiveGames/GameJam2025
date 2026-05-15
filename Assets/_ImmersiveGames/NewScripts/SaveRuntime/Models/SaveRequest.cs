@@ -9,7 +9,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
             SaveAddress address,
             IReadOnlyDictionary<string, string> entries,
             long revision,
-            string savedAtUtc)
+            string savedAtUtc,
+            string profileId = null)
         {
             Address = address ?? throw new ArgumentNullException(nameof(address));
             Entries = entries ?? throw new ArgumentNullException(nameof(entries));
@@ -21,12 +22,14 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 
             Revision = revision;
             SavedAtUtc = NormalizeTimestamp(savedAtUtc);
+            ProfileId = NormalizeOptional(profileId);
         }
 
         public SaveAddress Address { get; }
         public IReadOnlyDictionary<string, string> Entries { get; }
         public long Revision { get; }
         public string SavedAtUtc { get; }
+        public string ProfileId { get; }
 
         private static string NormalizeTimestamp(string value)
         {
@@ -37,6 +40,10 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 
             return value.Trim();
         }
+
+        private static string NormalizeOptional(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
     }
 }
-

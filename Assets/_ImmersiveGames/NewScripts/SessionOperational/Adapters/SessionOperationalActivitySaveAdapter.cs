@@ -20,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public RouteActivitySaveLoadResult LoadActivitySaveOnEnter(
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteCommand command,
+            ProgressionSlotContext slotContext,
             string activityIdentity)
         {
             if (!command.IsValid)
@@ -27,13 +28,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException("[FATAL][Config][RouteActivitySave] SessionOperationalRouteCommand invalido para load-on-enter.");
             }
 
+            ValidateProgressionSlotContextOrFail(slotContext);
+
             string normalizedActivityIdentity = Normalize(activityIdentity);
             if (string.IsNullOrWhiteSpace(normalizedActivityIdentity))
             {
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
                     "no_activity_identity",
-                    null,
+                    false,
                     "activity identity obrigatoria ausente para load-on-enter.");
             }
 
@@ -43,42 +46,57 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
                     "no_save_key",
-                    null,
+                    false,
                     "activity save key obrigatoria ausente para load-on-enter.");
             }
 
             SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
-            SaveIdentity saveIdentity = saveConfig.BuildDefaultIdentityOrFail();
+            SaveAddress address = new SaveAddress(
+                SaveScope.Progression,
+                SaveGroup.RouteActivity,
+                ownerId: normalizedActivityIdentity,
+                recordId: slotContext.SnapshotId.Value,
+                slotId: slotContext.SlotId.Value,
+                schemaId: "progression.route_activity",
+                schemaVersion: saveConfig.SchemaVersion);
+            SaveRequest request = new SaveRequest(
+                address,
+                new Dictionary<string, string>(StringComparer.Ordinal),
+                revision: 0,
+                savedAtUtc: DateTime.UtcNow.ToString("O"));
 
-            bool loaded = _saveService.TryLoad(saveIdentity, out SaveRecord record, out string loadReason);
-            if (!loaded || record == null)
+            bool loaded = _saveService.TryLoad(address, out SaveResult loadResult, out string loadReason);
+            if (!loaded || loadResult == null || !loadResult.IsSuccess)
             {
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
                     "no_snapshot",
-                    null,
-                    $"saveIdentity='{saveIdentity}' activitySaveKey='{activitySaveKey}' loadReason='{Normalize(loadReason)}'");
+                    false,
+                    $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' loadReason='{Normalize(loadReason)}'");
             }
 
             return new RouteActivitySaveLoadResult(
                 RouteActivitySaveLoadOutcomeKind.Loaded,
                 string.Empty,
-                record,
-                $"saveIdentity='{saveIdentity}' activitySaveKey='{activitySaveKey}' schemaVersion='{record.SchemaVersion}' revision='{record.Revision}' entriesCount='{record.Entries?.Count ?? 0}'");
+                true,
+                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{loadResult.SchemaVersion}' revision='{loadResult.Revision}' entriesCount='{loadResult.Entries?.Count ?? 0}'");
         }
 
         public RouteActivitySaveSaveResult SaveActivityOnExit(
             RuntimeModeConfig runtimeModeConfig,
+            ProgressionSlotContext slotContext,
             string previousActivityIdentity,
             string activitySnapshotPayload)
         {
+            ValidateProgressionSlotContextOrFail(slotContext);
+
             string normalizedActivityIdentity = Normalize(previousActivityIdentity);
             if (string.IsNullOrWhiteSpace(normalizedActivityIdentity))
             {
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
                     "no_activity_identity",
-                    null,
+                    false,
                     "activity identity obrigatoria ausente para save-on-exit.");
             }
 
@@ -88,7 +106,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
                     "no_save_key",
-                    null,
+                    false,
                     "activity save key obrigatoria ausente para save-on-exit.");
             }
 
@@ -98,36 +116,49 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
                     "no_activity_snapshot",
-                    null,
+                    false,
                     "activity snapshot payload obrigatorio ausente para save-on-exit.");
             }
 
             SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
-            SaveIdentity saveIdentity = saveConfig.BuildDefaultIdentityOrFail();
             Dictionary<string, string> entries = new(StringComparer.Ordinal)
             {
                 [activitySaveKey] = normalizedPayload,
             };
-
-            SaveRecord record = new(
-                saveIdentity,
-                saveConfig.SchemaVersion,
-                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                DateTime.UtcNow.ToString("O"),
-                entries);
-
-            bool saved = _saveService.TrySave(record, out string saveReason);
-            if (!saved)
+            SaveAddress address = new SaveAddress(
+                SaveScope.Progression,
+                SaveGroup.RouteActivity,
+                ownerId: normalizedActivityIdentity,
+                recordId: slotContext.SnapshotId.Value,
+                slotId: slotContext.SlotId.Value,
+                schemaId: "progression.route_activity",
+                schemaVersion: saveConfig.SchemaVersion);
+            SaveRequest request = new SaveRequest(
+                address,
+                entries,
+                revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                savedAtUtc: DateTime.UtcNow.ToString("O"),
+                profileId: slotContext.ProfileId);
+            bool saved = _saveService.TrySave(request, out SaveResult saveResult, out string saveReason);
+            if (!saved || saveResult == null || !saveResult.IsSuccess)
             {
-                string detail = $"saveIdentity='{saveIdentity}' activitySaveKey='{activitySaveKey}' saveReason='{Normalize(saveReason)}'";
+                string detail = $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' saveReason='{Normalize(saveReason)}'";
                 throw new InvalidOperationException($"[FATAL][Config][RouteActivitySave] save-on-exit falhou. {detail}");
             }
 
             return new RouteActivitySaveSaveResult(
                 RouteActivitySaveSaveOutcomeKind.Saved,
                 string.Empty,
-                record,
-                $"saveIdentity='{saveIdentity}' activitySaveKey='{activitySaveKey}' schemaVersion='{record.SchemaVersion}' revision='{record.Revision}' entriesCount='{record.Entries?.Count ?? 0}'");
+                true,
+                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{saveResult.SchemaVersion}' revision='{saveResult.Revision}' entriesCount='{saveResult.Entries?.Count ?? 0}'");
+        }
+
+        private static void ValidateProgressionSlotContextOrFail(ProgressionSlotContext slotContext)
+        {
+            if (slotContext == null || !slotContext.IsValid)
+            {
+                throw new InvalidOperationException("[FATAL][Config][RouteActivitySave] ProgressionSlotContext obrigatorio ausente/invalido para load-on-enter/save-on-exit.");
+            }
         }
 
         private static string BuildActivitySaveKey(string activityIdentity)

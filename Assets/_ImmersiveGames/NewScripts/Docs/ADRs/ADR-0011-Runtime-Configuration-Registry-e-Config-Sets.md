@@ -180,12 +180,26 @@ A decisão de quando salvar continua pertencendo aos pipelines.
 Regras canonicas de ownership (Base 1.1):
 
 - `SaveRuntime` e executor comum/API estavel; nao e owner generico de decisao.
+- `ISaveService` expoe apenas a API publica por `SaveAddress`/`SaveRequest`/`SaveResult`.
+- `SaveIdentity` e `SaveRecord` sao detalhe tecnico interno do core/backend, nao contrato publico de pipelines/adapters.
 - `RouteActivitySave` permanece restrito ao scope de rota/activity no `SessionOperationalPipeline`.
 - `SessionOperationalPipeline` nao vira owner generico de persistencia.
 - `RunPipeline` sera owner de run save/continuity quando esse fluxo existir.
 - Commands de save devem carregar `Pipeline Identity`.
 - Eventos foreign/stale devem ser rejeitados ou gerar skip explicito.
 - Sem fallback silencioso e sem dual write path ativo para o mesmo scope.
+- `PlayerPrefsSaveBackend` e backend tecnico provisorio atras de `SaveRuntime`, nao caminho direto de Preferences.
+
+Checkpoint SaveRuntime API Base 1.1:
+
+```text
+TryLoad(SaveAddress, out SaveResult, out reason)
+TrySave(SaveRequest, out SaveResult, out reason)
+TryDelete(SaveAddress, out SaveResult, out reason)
+```
+
+- APIs publicas legadas por `SaveIdentity`/`SaveRecord`/`TrySaveCurrent` foram removidas da superficie de `ISaveService`.
+- Metadados de endereco sao unificados em `save.address.*`.
 
 ### PreferencesRuntimeConfigGroup
 
@@ -206,14 +220,55 @@ Regras:
 
 `BootstrapConfigAsset` permanece apenas como legado de serialização e não como owner canônico ativo.
 
-Ownership do ciclo runtime de Preferences (Fase 2A):
+Ownership do ciclo runtime de Preferences (PASS funcional com PlayerPrefsSaveBackend):
 
 - AudioPreferencesOptionsBinder e VideoPreferencesOptionsBinder publicam apenas intencao de UI;
-- PreferencesRuntimePipeline e owner canonico para decisao de preview, commit e restore defaults;
-- PreferencesService continua owner de estado/aplicacao runtime;
-- PlayerPrefsPreferencesBackend permanece executor tecnico de persistencia nesta fase;
-- SaveRuntime / RouteActivitySave nao participam de preferences nesta fase.
+- PreferencesRuntimePipeline e owner canonico para decisao de load bootstrap, preview, commit e restore defaults;
+- PreferencesSaveAdapter e o Pipeline Adapter de persistencia de Preferences;
+- PreferencesSaveAdapter usa `ISaveService` exclusivamente por `SaveAddress`/`SaveRequest`/`SaveResult`;
+- PreferencesService permanece owner de estado/aplicacao runtime/defaults/presets;
+- SaveRuntime (`ISaveService`) executa a persistencia de Preferences;
+- PlayerPrefsSaveBackend permanece backend tecnico provisorio atras de SaveRuntime;
+- IPreferencesBackend, IPreferencesSaveService e PlayerPrefsPreferencesBackend sairam do caminho ativo;
+- Nao existe backend proprio de Preferences ativo;
+- Nao existe dual write path ativo em Preferences;
+- SaveRuntime / RouteActivitySave nao participam de preferences no trilho de decisao.
 - Preferences e Progression sao scopes distintos; Preferences nao e parte de RouteActivitySave.
+- Smoke funcional validou defaults limpos, commit de audio/video e novo bootstrap carregando valores persistidos via PlayerPrefsSaveBackend.
+
+Progression Save (Fases 1/1.1/1.2 - PASS estrutural, sem progressao funcional completa):
+
+- Progression usa slots e snapshots; Preferences nao usa slots de progressao.
+- `SaveRuntime` e executor comum e nao decide slot/snapshot.
+- Pipeline owner do ciclo deve resolver/validar `ProgressionSlotContext` antes de emitir comando de persistencia.
+- `RouteActivitySave` consome `ProgressionSlotContext` resolvido, mas nao escolhe slot sozinho.
+- `IProgressionSlotContextResolver` e a fronteira explicita para resolver contexto no trilho `SessionOperational`.
+- `SaveConfigAsset.defaultSlotId` pode permanecer como detalhe tecnico/legado, sem virar policy canonica de Progression.
+- `RouteActivitySave` usa a API nativa de `ISaveService` por `SaveAddress`/`SaveRequest`.
+
+Conceitos existentes/previstos de contrato para Progression:
+
+- `SaveSlotId`, `SaveSlotKind`, `SaveSnapshotId`
+- `SaveSlotDescriptor`, `SaveSnapshotHeader`, `SaveSlotManifest`
+- `ProgressionSlotContext`, `ProgressionSnapshotEnvelope`
+- `IProgressionSnapshotProvider`, `IProgressionSnapshotReceiver`
+
+Protecoes obrigatorias no trilho de Progression Save:
+
+- todo comando deve carregar `Pipeline Identity`;
+- comando foreign/stale deve ser rejeitado ou gerar skip explicito;
+- incompatibilidade de `slotId`/`snapshotId` deve ser rejeitada ou gerar skip explicito por policy;
+- ausencia de `ProgressionSlotContext` em fluxo obrigatorio deve ser fail-fast;
+- rota/activity nao save-eligible deve gerar skip explicito.
+
+Ainda adiado:
+
+- `SaveSlotManifest`/`SaveSnapshotHeader` real como fonte de `snapshotId` canonico;
+- providers/receivers reais de gameplay persistence;
+- autosave/manual/checkpoint reais;
+- UI de slots;
+- Run save/continuity;
+- ProgressionManager e auto-scan global continuam proibidos neste shape.
 
 ### InputModesRuntimeConfigGroup
 
@@ -517,11 +572,16 @@ Adicionar validações manuais/automáticas conforme necessário:
 - Decisão de lifecycle permanece no pipeline:
   - `load-on-enter` e `save-on-exit` são decididos pelo `SessionOperationalPipeline`.
 - `SaveRuntime`/adapter executa side-effects comandados.
+- `SessionOperationalActivitySaveAdapter` usa `ISaveService` por `SaveAddress`/`SaveRequest`.
+- `RouteActivitySave` consome `ProgressionSlotContext` resolvido por `IProgressionSlotContextResolver`.
 - Ausência de snapshot de activity não gera fallback silencioso; checkpoint atual observa `no_snapshot_provider`.
 
-### Item adiado
+### Itens adiados
 
-- Nenhum item adiado neste checkpoint. InputModesRuntimeConfigGroup foi congelado com inicializacao operacional de input UI (ADR-0009).
+- InputModesRuntimeConfigGroup foi congelado com inicializacao operacional de input UI (ADR-0009).
+- Save/Preferences esta em PASS funcional com backend PlayerPrefs tecnico provisorio.
+- Progression Save esta em PASS estrutural de contratos/encaixe passivo, mas ainda sem persistencia funcional de gameplay.
+- Permanecem adiados: manifest/header real de snapshots, providers/receivers reais, autosave/manual/checkpoint, UI de slots e Run save.
 
 ---
 ## Não objetivos

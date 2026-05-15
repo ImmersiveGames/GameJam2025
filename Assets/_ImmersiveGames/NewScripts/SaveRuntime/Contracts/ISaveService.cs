@@ -4,15 +4,18 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Contracts
     public interface ISaveService
     {
         bool TryLoad(
-            SaveIdentity identity,
-            out SaveRecord record,
+            SaveAddress address,
+            out SaveResult result,
             out string reason);
 
         bool TrySave(
-            SaveRecord record,
+            SaveRequest request,
+            out SaveResult result,
             out string reason);
 
-        bool TrySaveCurrent(out string reason);
+        bool TryDelete(
+            SaveAddress address,
+            out SaveResult result,
+            out string reason);
     }
 }
-

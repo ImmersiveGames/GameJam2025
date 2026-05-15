@@ -1,4 +1,4 @@
-﻿# ADR-0008 - SaveSystem Canonical
+# ADR-0008 - SaveSystem Canonical
 
 ## Status
 - Estado: Accepted
@@ -27,7 +27,7 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - `SaveRuntime` fornece API estavel e executor comum para persistencia de progression comandada.
 - Backend/core de `SaveRuntime` e mutavel/substituivel.
 - Backend atual pode ser PlayerPrefs apenas como backend tecnico provisorio.
-- PlayerPrefs nao deve permanecer como write path direto de Preferences quando a migracao ocorrer.
+- PlayerPrefs nao deve permanecer como write path direto de Preferences; quando usado, deve ficar atras de `SaveRuntime` como backend tecnico.
 - `RouteActivitySave` permanece especifico de rota/activity no `SessionOperationalPipeline`.
 - `SessionOperationalPipeline` nao vira owner generico de persistencia.
 - `RunPipeline` sera owner de run save/continuity quando esse fluxo for materializado.
@@ -36,6 +36,122 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Sem fallback silencioso.
 - Config obrigatoria ausente e fail-fast.
 - Nao manter dois write paths ativos.
+
+## Checkpoint SaveRuntime API Base 1.1 - PASS estrutural
+
+Superficie publica canonica de `ISaveService`:
+
+```text
+TryLoad(SaveAddress, out SaveResult, out reason)
+TrySave(SaveRequest, out SaveResult, out reason)
+TryDelete(SaveAddress, out SaveResult, out reason)
+```
+
+- `SaveAddress`, `SaveRequest` e `SaveResult` sao o contrato publico unico de persistencia.
+- APIs publicas legadas baseadas em `SaveIdentity`, `SaveRecord` e `TrySaveCurrent` sairam da superficie ativa.
+- `SaveIdentity` e `SaveRecord` podem existir apenas como detalhe tecnico interno do `SaveCoreService` e dos backends.
+- `SaveCoreService` encapsula o mapeamento interno `SaveAddress -> SaveIdentity/SaveRecord` quando o backend tecnico ainda exigir esse formato.
+- Metadados de endereco devem usar apenas `save.address.*`.
+- Metadados divergentes como `preferences.address.*` nao fazem parte do contrato canonico.
+- Nenhum pipeline ou adapter deve chamar save por `SaveIdentity`/`SaveRecord`.
+
+## Checkpoint Save/Preferences Base 1.1 - PASS funcional com PlayerPrefsSaveBackend
+
+Shape canonico ativo:
+
+```text
+PreferencesRuntimePipeline
+-> PreferencesSaveAdapter
+-> ISaveService / SaveRuntime
+-> PlayerPrefsSaveBackend
+```
+
+- `PreferencesRuntimePipeline` e owner de decisao de Preferences:
+  - load bootstrap;
+  - preview;
+  - commit;
+  - restore defaults.
+- `PreferencesSaveAdapter` e o Pipeline Adapter de persistencia de Preferences.
+- `PreferencesSaveAdapter` usa a API canonica de `ISaveService` por `SaveAddress`/`SaveRequest`/`SaveResult`.
+- `SaveRuntime` permanece API/executor comum.
+- `PlayerPrefsSaveBackend` permanece backend tecnico provisorio, atras de `SaveRuntime`.
+- `PreferencesService` fica restrito a estado/aplicacao runtime/defaults/presets.
+- `IPreferencesBackend`, `IPreferencesSaveService` e `PlayerPrefsPreferencesBackend` sairam do caminho ativo.
+- Nao existe backend proprio de Preferences ativo.
+- Nao existe dual write path ativo em Preferences.
+- `RouteActivitySave` permanece separado no `SessionOperationalPipeline`.
+- `SessionOperationalPipeline` nao salva Preferences.
+- Preferences nao usa `RouteActivitySave` nem `ProgressionSlotContext`.
+- Sem fallback silencioso.
+- Config/backend obrigatorio ausente permanece fail-fast.
+- Smoke funcional validou o ciclo: defaults limpos -> commit de audio/video -> novo bootstrap carregando valores persistidos via `PlayerPrefsSaveBackend`.
+- Progression funcional ainda nao foi implementada neste checkpoint e segue como contrato separado.
+
+## Decisao Congelada Base 1.1 (Progression Save com slots e snapshots)
+
+- Preferences e Progression sao scopes diferentes.
+- Preferences nao usa slots de progressao.
+- Progression usa slots e snapshots.
+- `SaveSlot` e container logico de progressao.
+- `SaveSnapshot` e captura versionada de estado.
+- `CurrentSave` nao e slot fisico; e ponteiro para slot/snapshot ativo.
+- `AutoSave`, `ManualSave` e `Checkpoint` sao Pipeline Policies, nao comportamento de backend.
+- `SaveRuntime` nao decide slot.
+- `SaveRuntime` nao decide snapshot.
+- `SaveRuntime` apenas executa persistencia no endereco recebido.
+- Pipelines decidem ou validam slot/snapshot antes de emitir Pipeline Command.
+- `RouteActivitySave` usa `ProgressionSlotContext` resolvido, mas nao escolhe slot sozinho.
+- `SaveConfigAsset.defaultSlotId` pode existir como config tecnica/legada, mas nao e policy canonica de Progression.
+
+Conceitos previstos para Progression Save:
+
+- `SaveSlotId`
+- `SaveSlotKind`
+- `SaveSnapshotId`
+- `SaveSlotDescriptor`
+- `SaveSnapshotHeader`
+- `SaveSlotManifest`
+- `ProgressionSlotContext`
+- `ProgressionSnapshotEnvelope`
+- `IProgressionSnapshotProvider`
+- `IProgressionSnapshotReceiver`
+
+Regra central canonica:
+
+```text
+Objeto/dominio produz snapshot.
+Pipeline decide quando coletar, carregar ou persistir.
+Adapter executa.
+SaveRuntime persiste.
+Backend armazena.
+```
+
+Protecoes obrigatorias:
+
+- Todo `Pipeline Command` de Progression Save deve carregar `Pipeline Identity`.
+- Comando foreign/stale nao pode aplicar nem sobrescrever progression ativa.
+- `slotId`/`snapshotId` incompativel deve ser rejeitado ou gerar skip explicito, conforme policy.
+- Ausencia de `ProgressionSlotContext` em fluxo obrigatorio deve ser fail-fast.
+- Rota/activity nao save-eligible deve gerar skip explicito.
+
+Progression Save Fase 1 / 1.1 / 1.2 - PASS estrutural, sem progressao funcional completa:
+
+- Fase 1 criou contratos de slot/snapshot/contexto/envelope e encaixou `ProgressionSlotContext` de forma passiva no `RouteActivitySave`.
+- Fase 1.1 introduziu `IProgressionSlotContextResolver` como fronteira explicita para resolver `ProgressionSlotContext` fora do core de `SaveRuntime`.
+- `SessionOperationalPipeline` consome `ProgressionSlotContext` via resolver explicito, sem consultar diretamente `ISaveStateService.CurrentRecord`.
+- `SaveConfigAsset.defaultSlotId` permanece apenas como seed tecnico/legado quando necessario, com observabilidade propria, sem virar policy canonica de Progression.
+- Fase 1.2 fez `RouteActivitySave` usar a API nativa de `ISaveService` por `SaveAddress`/`SaveRequest`.
+- `SessionOperationalActivitySaveAdapter` usa `SaveScope.Progression` e `SaveGroup.RouteActivity` no contrato semantico.
+- Ainda nao ha `SaveSlotManifest`/`SaveSnapshotHeader` real como fonte de snapshotId canonico.
+- Ainda nao ha provider/receiver real de gameplay persistence.
+- Ainda nao salvar actors;
+- Ainda nao salvar world objects;
+- Ainda nao salvar inventory;
+- Ainda nao implementar run save;
+- Ainda nao criar UI de slots;
+- Ainda nao criar autosave real;
+- Ainda nao criar ProgressionManager;
+- Ainda nao criar auto-scan global.
 
 ### 1. Componentes Canônicos do SaveSystem
 
@@ -50,14 +166,19 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Implementa `ISaveBackend` interface.
 
 #### ISaveBackend Interface
-- Contrato padrão para save backends.
+- Contrato tecnico para save backends.
 - Métodos: `SaveAsync`, `LoadAsync`, `DeleteAsync`.
 - Usado por `SaveCoreService` para executar operações.
+- Pode continuar usando `SaveIdentity`/`SaveRecord` internamente enquanto esses modelos estiverem encapsulados pelo core.
+- Nao e superficie publica para pipelines/adapters.
 
 #### SaveCoreService
 - Core service que coordena save/load operations.
 - Interage com `SaveBackendAsset` via `ISaveBackend`.
-- Não decide quando salvar; executa o que foi comandado.
+- Nao decide quando salvar; executa o que foi comandado.
+- Nao decide slot/snapshot/current save.
+- Expoe persistencia via `SaveAddress`/`SaveRequest`/`SaveResult` por meio de `ISaveService`.
+- Encapsula qualquer conversao tecnica para `SaveIdentity`/`SaveRecord`.
 - Reporta completion/failure ao pipeline/adapter solicitante.
 
 ### 2. Save Pipeline Integration
@@ -106,8 +227,8 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 
 | Tipo de dado | Owner canonico | Pipeline/adapter responsavel | Executor/backend | Observacao/acao futura |
 |---|---|---|---|---|
-| Preferences (audio/video/input/layout/idioma/acessibilidade) | `PreferencesRuntimePipeline` | `PreferencesRuntimePipeline` (decide) + binders apenas como intencao UI | Backend tecnico atual de Preferences (PlayerPrefs provisorio) | Migrar write path de Preferences para trilho canonico de Save sem manter write path paralelo |
-| Route Activity Save | `SessionOperationalPipeline` (scope de rota/activity) | `RouteActivitySave` + `SessionOperationalActivitySaveAdapter` | `SaveRuntime` (`ISaveService` + backend configurado) | Continua especifico de rota/activity; nao vira owner generico |
+| Preferences (audio/video/input/layout/idioma/acessibilidade) | `PreferencesRuntimePipeline` | `PreferencesRuntimePipeline` (decide) + `PreferencesSaveAdapter` (executa persistencia por `SaveAddress`/`SaveRequest`) + binders apenas como intencao UI | `SaveRuntime` (`ISaveService`) + `PlayerPrefsSaveBackend` (provisorio) | PASS funcional: defaults -> commit -> reload persistido via PlayerPrefs |
+| Route Activity Save | `SessionOperationalPipeline` (scope de rota/activity) | `RouteActivitySave` + `SessionOperationalActivitySaveAdapter` usando `ProgressionSlotContext` resolvido | `SaveRuntime` (`ISaveService` por `SaveAddress`/`SaveRequest` + backend configurado) | PASS estrutural de encaixe passivo; sem provider real de activity ainda |
 | Run Save / Continuity | `RunPipeline` (quando materializado) | `RunPipeline` + adapter de save do dominio run | `SaveRuntime` (backend substituivel) | Owner ainda futuro, mas ja congelado no trilho canonico |
 | Progression de objetos/dominios | Pipeline dono do ciclo correspondente | Pipeline do ciclo + adapter de save do dominio | `SaveRuntime` (backend substituivel) | Dominios produzem snapshot/registro; dominio nao chama backend direto |
 
@@ -121,10 +242,11 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 
 ## Roadmap Futuro
 
-- Implementar canonical `SaveAdapter` que encapsula `SaveCoreService`.
-- Documentar quando Session Pipeline vs Run Pipeline vs Gate decide save.
-- Adicionar checkpoint/versioning se necessário.
-- Considerar save scope (global vs session vs run).
+- Implementar `SaveSlotManifest` e `SaveSnapshotHeader` reais para substituir `snapshotId` sintetico.
+- Implementar o primeiro `IProgressionSnapshotProvider`/`IProgressionSnapshotReceiver` real quando houver activity/objeto concreto para persistir.
+- Definir owner de `CurrentSave` completo fora do core de `SaveRuntime`.
+- Evoluir Run save/continuity pelo `RunPipeline` quando esse fluxo for materializado.
+- Considerar backend robusto futuro substituindo `PlayerPrefsSaveBackend`, sem alterar a API publica de `ISaveService`.
 
 ## Relação com Base 1.0 e Base 2.0
 

@@ -16,21 +16,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public RouteActivitySaveLoadResult(
             RouteActivitySaveLoadOutcomeKind outcomeKind,
             string skipReason,
-            SaveRecord record,
+            bool hasSnapshot,
             string detail)
         {
             OutcomeKind = outcomeKind;
             SkipReason = string.IsNullOrWhiteSpace(skipReason) ? string.Empty : skipReason.Trim();
-            Record = record;
+            HasSnapshot = hasSnapshot;
             Detail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
         }
 
         public RouteActivitySaveLoadOutcomeKind OutcomeKind { get; }
         public string SkipReason { get; }
-        public SaveRecord Record { get; }
+        public bool HasSnapshot { get; }
         public string Detail { get; }
 
-        public bool IsLoaded => OutcomeKind == RouteActivitySaveLoadOutcomeKind.Loaded && Record != null;
+        public bool IsLoaded => OutcomeKind == RouteActivitySaveLoadOutcomeKind.Loaded && HasSnapshot;
         public bool IsSkipped => OutcomeKind == RouteActivitySaveLoadOutcomeKind.Skipped;
     }
 
@@ -39,10 +39,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         RouteActivitySaveLoadResult LoadActivitySaveOnEnter(
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteCommand command,
+            ProgressionSlotContext slotContext,
             string activityIdentity);
 
         RouteActivitySaveSaveResult SaveActivityOnExit(
             RuntimeModeConfig runtimeModeConfig,
+            ProgressionSlotContext slotContext,
             string previousActivityIdentity,
             string activitySnapshotPayload);
     }
@@ -59,21 +61,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public RouteActivitySaveSaveResult(
             RouteActivitySaveSaveOutcomeKind outcomeKind,
             string skipReason,
-            SaveRecord record,
+            bool hasSnapshot,
             string detail)
         {
             OutcomeKind = outcomeKind;
             SkipReason = string.IsNullOrWhiteSpace(skipReason) ? string.Empty : skipReason.Trim();
-            Record = record;
+            HasSnapshot = hasSnapshot;
             Detail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
         }
 
         public RouteActivitySaveSaveOutcomeKind OutcomeKind { get; }
         public string SkipReason { get; }
-        public SaveRecord Record { get; }
+        public bool HasSnapshot { get; }
         public string Detail { get; }
 
-        public bool IsSaved => OutcomeKind == RouteActivitySaveSaveOutcomeKind.Saved && Record != null;
+        public bool IsSaved => OutcomeKind == RouteActivitySaveSaveOutcomeKind.Saved && HasSnapshot;
         public bool IsSkipped => OutcomeKind == RouteActivitySaveSaveOutcomeKind.Skipped;
     }
 }

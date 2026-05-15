@@ -8,13 +8,9 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
 {
     public sealed class PreferencesSaveAdapter : Contracts.IPreferencesSaveAdapter
     {
-        private const string ScopeEntryKey = "preferences.address.scope";
-        private const string GroupEntryKey = "preferences.address.group";
-        private const string OwnerEntryKey = "preferences.address.ownerId";
-        private const string RecordEntryKey = "preferences.address.recordId";
-        private const string SlotEntryKey = "preferences.address.slotId";
-        private const string SchemaIdEntryKey = "preferences.address.schemaId";
-        private const string SchemaVersionEntryKey = "preferences.address.schemaVersion";
+        private const string ScopeEntryKey = "save.address.scope";
+        private const string GroupEntryKey = "save.address.group";
+        private const string SchemaIdEntryKey = "save.address.schemaId";
         private const string PayloadAudioKey = "preferences.payload.audio";
         private const string PayloadVideoKey = "preferences.payload.video";
 
@@ -43,20 +39,28 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             out Contracts.AudioPreferencesSnapshot snapshot,
             out string reason)
         {
-            var identity = new SaveIdentity(profileId, slotId);
-            if (!_saveService.TryLoad(identity, out SaveRecord record, out reason) || record == null)
+            SaveAddress address = BuildAddress(
+                SaveGroup.PreferencesAudio,
+                profileId,
+                AudioRecordId,
+                slotId,
+                AudioSchemaId);
+
+            if (!_saveService.TryLoad(address, out SaveResult loadResult, out reason) ||
+                loadResult == null ||
+                !loadResult.HasEntries)
             {
                 snapshot = null;
                 return false;
             }
 
-            if (!TryValidateAddressEntries(record, SaveScope.Preferences, SaveGroup.PreferencesAudio, AudioSchemaId, out reason))
+            if (!TryValidateAddressEntries(loadResult, SaveScope.Preferences, SaveGroup.PreferencesAudio, AudioSchemaId, out reason))
             {
                 snapshot = null;
                 return false;
             }
 
-            if (!record.Entries.TryGetValue(PayloadAudioKey, out string payload) || string.IsNullOrWhiteSpace(payload))
+            if (!loadResult.Entries.TryGetValue(PayloadAudioKey, out string payload) || string.IsNullOrWhiteSpace(payload))
             {
                 snapshot = null;
                 reason = "payload_audio_missing";
@@ -89,20 +93,28 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             out Contracts.VideoPreferencesSnapshot snapshot,
             out string reason)
         {
-            var identity = new SaveIdentity(profileId, slotId);
-            if (!_saveService.TryLoad(identity, out SaveRecord record, out reason) || record == null)
+            SaveAddress address = BuildAddress(
+                SaveGroup.PreferencesVideo,
+                profileId,
+                VideoRecordId,
+                slotId,
+                VideoSchemaId);
+
+            if (!_saveService.TryLoad(address, out SaveResult loadResult, out reason) ||
+                loadResult == null ||
+                !loadResult.HasEntries)
             {
                 snapshot = null;
                 return false;
             }
 
-            if (!TryValidateAddressEntries(record, SaveScope.Preferences, SaveGroup.PreferencesVideo, VideoSchemaId, out reason))
+            if (!TryValidateAddressEntries(loadResult, SaveScope.Preferences, SaveGroup.PreferencesVideo, VideoSchemaId, out reason))
             {
                 snapshot = null;
                 return false;
             }
 
-            if (!record.Entries.TryGetValue(PayloadVideoKey, out string payload) || string.IsNullOrWhiteSpace(payload))
+            if (!loadResult.Entries.TryGetValue(PayloadVideoKey, out string payload) || string.IsNullOrWhiteSpace(payload))
             {
                 snapshot = null;
                 reason = "payload_video_missing";
@@ -144,22 +156,22 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 snapshot.SlotId,
                 AudioSchemaId);
 
-            Dictionary<string, string> entries = BuildBaseEntries(address);
-            entries[PayloadAudioKey] = JsonUtility.ToJson(new AudioPayloadDto
+            Dictionary<string, string> entries = new(StringComparer.Ordinal)
             {
-                masterVolume = snapshot.MasterVolume,
-                bgmVolume = snapshot.BgmVolume,
-                sfxVolume = snapshot.SfxVolume,
-            });
-
-            SaveRecord record = new(
-                identity: new SaveIdentity(snapshot.ProfileId, snapshot.SlotId),
-                schemaVersion: address.SchemaVersion,
+                [PayloadAudioKey] = JsonUtility.ToJson(new AudioPayloadDto
+                {
+                    masterVolume = snapshot.MasterVolume,
+                    bgmVolume = snapshot.BgmVolume,
+                    sfxVolume = snapshot.SfxVolume,
+                }),
+            };
+            SaveRequest request = new SaveRequest(
+                address,
+                entries,
                 revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                savedAtUtc: DateTime.UtcNow.ToString("O"),
-                entries: entries);
+                savedAtUtc: DateTime.UtcNow.ToString("O"));
 
-            return _saveService.TrySave(record, out reason);
+            return _saveService.TrySave(request, out SaveResult _, out reason);
         }
 
         public bool TrySaveVideo(Contracts.VideoPreferencesSnapshot snapshot, out string reason)
@@ -177,22 +189,22 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 snapshot.SlotId,
                 VideoSchemaId);
 
-            Dictionary<string, string> entries = BuildBaseEntries(address);
-            entries[PayloadVideoKey] = JsonUtility.ToJson(new VideoPayloadDto
+            Dictionary<string, string> entries = new(StringComparer.Ordinal)
             {
-                width = snapshot.ResolutionWidth,
-                height = snapshot.ResolutionHeight,
-                fullscreen = snapshot.Fullscreen,
-            });
-
-            SaveRecord record = new(
-                identity: new SaveIdentity(snapshot.ProfileId, snapshot.SlotId),
-                schemaVersion: address.SchemaVersion,
+                [PayloadVideoKey] = JsonUtility.ToJson(new VideoPayloadDto
+                {
+                    width = snapshot.ResolutionWidth,
+                    height = snapshot.ResolutionHeight,
+                    fullscreen = snapshot.Fullscreen,
+                }),
+            };
+            SaveRequest request = new SaveRequest(
+                address,
+                entries,
                 revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                savedAtUtc: DateTime.UtcNow.ToString("O"),
-                entries: entries);
+                savedAtUtc: DateTime.UtcNow.ToString("O"));
 
-            return _saveService.TrySave(record, out reason);
+            return _saveService.TrySave(request, out SaveResult _, out reason);
         }
 
         private SaveAddress BuildAddress(
@@ -212,48 +224,34 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 schemaVersion: _schemaVersion);
         }
 
-        private static Dictionary<string, string> BuildBaseEntries(SaveAddress address)
-        {
-            return new Dictionary<string, string>(StringComparer.Ordinal)
-            {
-                [ScopeEntryKey] = address.Scope.ToString(),
-                [GroupEntryKey] = address.Group.ToString(),
-                [OwnerEntryKey] = address.OwnerId,
-                [RecordEntryKey] = address.RecordId,
-                [SlotEntryKey] = address.SlotId,
-                [SchemaIdEntryKey] = address.SchemaId,
-                [SchemaVersionEntryKey] = address.SchemaVersion.ToString(),
-            };
-        }
-
         private static bool TryValidateAddressEntries(
-            SaveRecord record,
+            SaveResult result,
             SaveScope expectedScope,
             SaveGroup expectedGroup,
             string expectedSchemaId,
             out string reason)
         {
-            if (record?.Entries == null)
+            if (result?.Entries == null)
             {
                 reason = "entries_missing";
                 return false;
             }
 
-            if (!record.Entries.TryGetValue(ScopeEntryKey, out string scopeText) ||
+            if (!result.Entries.TryGetValue(ScopeEntryKey, out string scopeText) ||
                 !string.Equals(scopeText, expectedScope.ToString(), StringComparison.Ordinal))
             {
                 reason = "scope_mismatch";
                 return false;
             }
 
-            if (!record.Entries.TryGetValue(GroupEntryKey, out string groupText) ||
+            if (!result.Entries.TryGetValue(GroupEntryKey, out string groupText) ||
                 !string.Equals(groupText, expectedGroup.ToString(), StringComparison.Ordinal))
             {
                 reason = "group_mismatch";
                 return false;
             }
 
-            if (!record.Entries.TryGetValue(SchemaIdEntryKey, out string schemaId) ||
+            if (!result.Entries.TryGetValue(SchemaIdEntryKey, out string schemaId) ||
                 !string.Equals(schemaId, expectedSchemaId, StringComparison.Ordinal))
             {
                 reason = "schema_id_mismatch";
@@ -281,4 +279,3 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         }
     }
 }
-

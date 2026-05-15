@@ -27,14 +27,14 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
             }
 
             string key = BuildRecordKey(identity);
-            if (!PlayerPrefs.HasKey(key))
+            if (!global::UnityEngine.PlayerPrefs.HasKey(key))
             {
                 record = null;
                 reason = "no_saved_data";
                 return false;
             }
 
-            string payload = PlayerPrefs.GetString(key, string.Empty);
+            string payload = global::UnityEngine.PlayerPrefs.GetString(key, string.Empty);
             if (string.IsNullOrWhiteSpace(payload))
             {
                 record = null;
@@ -83,8 +83,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
             string key = BuildRecordKey(record.Identity);
             string payload = Serialize(record);
 
-            PlayerPrefs.SetString(key, payload);
-            PlayerPrefs.Save();
+            global::UnityEngine.PlayerPrefs.SetString(key, payload);
+            global::UnityEngine.PlayerPrefs.Save();
             reason = "saved";
             return true;
         }
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
                 return false;
             }
 
-            exists = PlayerPrefs.HasKey(BuildRecordKey(identity));
+            exists = global::UnityEngine.PlayerPrefs.HasKey(BuildRecordKey(identity));
             reason = "exists_checked";
             return true;
         }
@@ -115,14 +115,14 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
             }
 
             string key = BuildRecordKey(identity);
-            if (!PlayerPrefs.HasKey(key))
+            if (!global::UnityEngine.PlayerPrefs.HasKey(key))
             {
                 reason = "delete_no_op";
                 return false;
             }
 
-            PlayerPrefs.DeleteKey(key);
-            PlayerPrefs.Save();
+            global::UnityEngine.PlayerPrefs.DeleteKey(key);
+            global::UnityEngine.PlayerPrefs.Save();
             reason = "delete_executed";
             return true;
         }
@@ -291,4 +291,3 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Backends.PlayerPrefs
         }
     }
 }
-

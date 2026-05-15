@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
 {
     [CreateAssetMenu(
@@ -19,15 +20,28 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
         public int SchemaVersion => schemaVersion;
         public SaveBackendAsset Backend => backend;
 
-        public SaveIdentity BuildDefaultIdentityOrFail()
+        public SaveCurrentState BuildDefaultCurrentStateOrFail()
         {
             ValidateOrThrow();
-            return new SaveIdentity(DefaultProfileId, DefaultSlotId);
+            return new SaveCurrentState(
+                DefaultProfileId,
+                DefaultSlotId,
+                SchemaVersion,
+                revision: 0,
+                savedAtUtc: DateTime.UtcNow.ToString("O"));
         }
 
         public void ValidateOrThrow()
         {
-            _ = new SaveIdentity(DefaultProfileId, DefaultSlotId);
+            if (string.IsNullOrWhiteSpace(DefaultProfileId))
+            {
+                throw new InvalidOperationException($"SaveConfigAsset '{name}' requires defaultProfileId.");
+            }
+
+            if (string.IsNullOrWhiteSpace(DefaultSlotId))
+            {
+                throw new InvalidOperationException($"SaveConfigAsset '{name}' requires defaultSlotId.");
+            }
 
             if (schemaVersion <= 0)
             {
@@ -46,4 +60,3 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Authoring
         }
     }
 }
-

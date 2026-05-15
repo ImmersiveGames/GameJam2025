@@ -56,12 +56,37 @@ Notas:
   - rota QA `route-sandbox-menu` habilita smoke manual `Menu -> Sandbox -> Menu`.
 - **Save Base 1.1 (congelado)**:
   - Preferences e Progression sao scopes distintos.
-  - Owner de decisao de Preferences: `PreferencesRuntimePipeline` (fora de `RouteActivitySave`).
+  - **Checkpoint SaveRuntime API Base 1.1: PASS estrutural**.
+    - `ISaveService` expoe somente `TryLoad(SaveAddress)`, `TrySave(SaveRequest)` e `TryDelete(SaveAddress)`.
+    - `SaveAddress`, `SaveRequest` e `SaveResult` sao a superficie publica canonica.
+    - `SaveIdentity` e `SaveRecord` permanecem apenas como detalhe tecnico interno do `SaveCoreService`/backends.
+    - Metadados de endereco usam `save.address.*`; nao ha metadados paralelos `preferences.address.*`.
+  - **Checkpoint Save/Preferences Base 1.1: PASS funcional com PlayerPrefsSaveBackend**.
+  - Shape canonico ativo: `PreferencesRuntimePipeline -> PreferencesSaveAdapter -> ISaveService/SaveRuntime -> PlayerPrefsSaveBackend`.
+  - Owner de decisao de Preferences: `PreferencesRuntimePipeline` (load bootstrap, preview, commit, restore defaults; fora de `RouteActivitySave`).
+  - `PreferencesSaveAdapter` e adapter canonico de persistencia e usa `ISaveService` por `SaveAddress`/`SaveRequest`.
+  - `PreferencesService` restrito a estado/aplicacao runtime/defaults/presets.
+  - `IPreferencesBackend`, `IPreferencesSaveService` e `PlayerPrefsPreferencesBackend` sairam do caminho ativo.
+  - Nao existe backend proprio de Preferences nem dual write path ativo em Preferences.
+  - Smoke funcional validou: defaults limpos -> commit de audio/video -> novo bootstrap carregando valores persistidos via `PlayerPrefsSaveBackend`.
   - Progression e decidida pelo pipeline dono do ciclo (sem owner generico unico).
   - `SaveRuntime` e executor/API comum; backend e substituivel.
   - `RouteActivitySave` permanece especifico de rota/activity no `SessionOperationalPipeline`.
+  - `SessionOperationalPipeline` nao salva Preferences; Preferences nao usa `RouteActivitySave` nem `ProgressionSlotContext`.
   - Todo comando de save deve carregar identidade canonica e rejeitar/skipar foreign/stale.
   - Sem fallback silencioso e sem dual write path ativo para o mesmo scope.
+  - **Progression Save (decisao congelada + Fases 1/1.1/1.2 em PASS estrutural):**
+    - Progression usa slots e snapshots; Preferences nao usa slots de progressao.
+    - `SaveSlot` e container logico; `SaveSnapshot` e captura versionada; `CurrentSave` e ponteiro para slot/snapshot ativo.
+    - `AutoSave`, `ManualSave` e `Checkpoint` sao policies de pipeline, nao comportamento de backend.
+    - `SaveRuntime` nao decide slot/snapshot; apenas executa persistencia no endereco recebido.
+    - Pipeline owner resolve/valida `ProgressionSlotContext` antes do comando.
+    - `IProgressionSlotContextResolver` e a fronteira explicita para resolver contexto no trilho `SessionOperational`.
+    - `RouteActivitySave` usa contexto resolvido, sem escolher slot sozinho, e usa `ISaveService` por `SaveAddress`/`SaveRequest`.
+    - `SaveConfigAsset.defaultSlotId` pode existir como detalhe tecnico/legado, sem virar policy canonica.
+    - Contratos existentes/previstos: `SaveSlotId`, `SaveSlotKind`, `SaveSnapshotId`, `SaveSlotDescriptor`, `SaveSnapshotHeader`, `SaveSlotManifest`, `ProgressionSlotContext`, `ProgressionSnapshotEnvelope`, `IProgressionSnapshotProvider`, `IProgressionSnapshotReceiver`.
+    - Protecoes: comando com `Pipeline Identity`; foreign/stale rejeitado ou skip explicito; mismatch de `slotId`/`snapshotId` rejeitado/skip; ausencia de contexto obrigatorio fail-fast; rota/activity nao save-eligible com skip explicito.
+    - Ainda sem actors/world objects/inventory/run save/UI de slots/autosave real/ProgressionManager/auto-scan global.
 - Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
 
 ## Precedência Normativa
@@ -136,7 +161,7 @@ Se um ADR histórico conflitar com a Base 1.1:
 - **Fade Adapter**: Executa fade visual
 - **Loading Adapter**: Executa UI de loading
 - **Audio Adapter**: Executa playback de áudio
-- **SaveCoreService**: Executa save/load
+- **SaveCoreService**: Executa save/load por `SaveAddress`/`SaveRequest` via `ISaveService`
 
 ## Checkpoint Congelado
 

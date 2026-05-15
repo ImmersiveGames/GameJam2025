@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static LoadingAdapter _loadingAdapter;
         private static AudioAdapter _audioAdapter;
         private static SessionOperationalActivitySaveAdapter _activitySaveAdapter;
+        private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
         private static UnityPlayerMaterializationAdapter _playerMaterializationAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
@@ -47,6 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalAudioAdapter();
             EnsureSessionOperationalFadeAdapter();
             EnsureSessionOperationalLoadingAdapter();
+            EnsureProgressionSlotContextResolver();
             EnsureSessionOperationalActivitySaveAdapter();
             EnsurePlayerMaterializationAdapter();
             EnsureSessionOperationalSceneCompositionAdapter();
@@ -219,6 +221,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='SessionOperationalActivitySaveAdapter' registered for RouteActivitySave load-on-enter/save-on-exit.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureProgressionSlotContextResolver()
+        {
+            if (_progressionSlotContextResolver != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<DefaultProgressionSlotContextResolver>(out var existingResolver) && existingResolver != null)
+            {
+                _progressionSlotContextResolver = existingResolver;
+                DependencyManager.Provider.RegisterGlobal<IProgressionSlotContextResolver>(_progressionSlotContextResolver);
+                return;
+            }
+
+            _progressionSlotContextResolver = new DefaultProgressionSlotContextResolver();
+            DependencyManager.Provider.RegisterGlobal(_progressionSlotContextResolver);
+            DependencyManager.Provider.RegisterGlobal<IProgressionSlotContextResolver>(_progressionSlotContextResolver);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] resolver='DefaultProgressionSlotContextResolver' registered for RouteActivitySave ProgressionSlotContext.",
                 DebugUtility.Colors.Info);
         }
 

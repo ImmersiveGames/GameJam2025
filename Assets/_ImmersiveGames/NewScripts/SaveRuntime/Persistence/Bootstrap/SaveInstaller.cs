@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 registeredMessage: $"[Save][BOOT] ISaveBackend registered ({backend.BackendId}).");
 
             SaveCoreService coreService = ResolveOrCreateSaveCoreService(backend);
-            SeedDefaultCurrentRecordIfMissing(coreService, saveConfig);
+            SeedDefaultCurrentStateIfMissing(coreService, saveConfig);
 
             RegisterIfMissing<ISaveService>(
                 factory: () => coreService,
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
             return instance;
         }
 
-        private static void SeedDefaultCurrentRecordIfMissing(
+        private static void SeedDefaultCurrentStateIfMissing(
             SaveCoreService coreService,
             SaveConfigAsset saveConfig)
         {
@@ -98,17 +98,15 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 return;
             }
 
-            SaveIdentity identity = saveConfig.BuildDefaultIdentityOrFail();
-            SaveRecord record = new(
-                identity,
-                saveConfig.SchemaVersion,
-                revision: 0,
-                savedAtUtc: DateTime.UtcNow.ToString("O"),
-                entries: new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal));
+            DebugUtility.Log(typeof(SaveInstaller),
+                $"[OBS][Save][LegacySeed] Seeding CurrentState from SaveConfigAsset defaults as technical bootstrap fallback profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'. This is not canonical progression slot policy.",
+                DebugUtility.Colors.Warning);
 
-            if (!coreService.TrySetCurrent(record, "Save/BootstrapSeed", out string error))
+            SaveCurrentState currentState = saveConfig.BuildDefaultCurrentStateOrFail();
+
+            if (!coreService.TrySetCurrent(currentState, "Save/LegacyBootstrapSeed", out string error))
             {
-                throw new InvalidOperationException($"[FATAL][Save] Failed to seed current SaveRecord. reason='{error}'.");
+                throw new InvalidOperationException($"[FATAL][Save] Failed to seed current save state. reason='{error}'.");
             }
         }
 

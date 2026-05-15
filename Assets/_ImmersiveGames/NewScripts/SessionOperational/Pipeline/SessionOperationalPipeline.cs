@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
@@ -1539,13 +1540,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             ISessionOperationalActivitySaveAdapter adapter = ResolveSessionOperationalActivitySaveAdapterOrFail();
+            ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
+                routeIdentity: currentRouteIdentity,
+                routeOperationId: currentRouteOperationId,
+                transitionId: currentTransitionId,
+                routeSequence: currentRouteSequence,
+                source: source,
+                reason: reason);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveStarted previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousActivityIdentity)}' previousActivitySaveKey='{previousActivitySaveKey}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveStarted previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousActivityIdentity)}' previousActivitySaveKey='{previousActivitySaveKey}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             RouteActivitySaveSaveResult saveResult = adapter.SaveActivityOnExit(
                 runtimeModeConfig,
+                slotContext,
                 previousActivityIdentity,
                 activitySnapshotPayload);
 
@@ -1564,7 +1573,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return;
             }
 
-            if (!saveResult.IsSaved || saveResult.Record == null)
+            if (!saveResult.IsSaved)
             {
                 string message =
                     $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] save-on-exit retornou estado invalido previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' currentRouteIdentity='{currentRouteIdentity}' currentRouteOperationId='{currentRouteOperationId}' currentTransitionId='{currentTransitionId}'.";
@@ -1597,14 +1606,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             ISessionOperationalActivitySaveAdapter adapter = ResolveSessionOperationalActivitySaveAdapterOrFail();
+            ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
+                routeIdentity: routeIdentity,
+                routeOperationId: routeOperationId,
+                transitionId: transitionId,
+                routeSequence: routeSequence,
+                source: source,
+                reason: reason);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             RouteActivitySaveLoadResult result = adapter.LoadActivitySaveOnEnter(
                 runtimeModeConfig,
                 command,
+                slotContext,
                 activityIdentity);
 
             if (result.IsSkipped)
@@ -1615,7 +1632,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return;
             }
 
-            if (!result.IsLoaded || result.Record == null)
+            if (!result.IsLoaded)
             {
                 string message = $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] load-on-enter retornou estado invalido routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.";
                 DebugUtility.LogError<SessionOperationalPipeline>(message);
@@ -1656,6 +1673,39 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _ = previousCompletedRoute;
             activitySnapshotPayload = string.Empty;
             return false;
+        }
+
+        private static ProgressionSlotContext ResolveProgressionSlotContextOrFail(
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
+        {
+            if (!DependencyManager.Provider.TryGetGlobal<IProgressionSlotContextResolver>(out var resolver) ||
+                resolver == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] IProgressionSlotContextResolver obrigatorio ausente para resolver ProgressionSlotContext.");
+            }
+
+            bool resolved = resolver.TryResolveForRouteActivitySave(
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                source,
+                reason,
+                out ProgressionSlotContext slotContext,
+                out string failureReason);
+
+            if (!resolved || slotContext == null || !slotContext.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] ProgressionSlotContext obrigatorio ausente/invalido routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' failureReason='{Normalize(failureReason)}'.");
+            }
+
+            return slotContext;
         }
 
         private static SessionOperationalInputModeKind PrepareInputCapabilityOrFail(
