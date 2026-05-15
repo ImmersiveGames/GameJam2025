@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         IAudioRuntimeConfigGroupReadOnly AudioRuntime { get; }
         ISaveRuntimeConfigGroupReadOnly SaveRuntime { get; }
         IInputModesRuntimeConfigGroupReadOnly InputModesRuntime { get; }
+        ICameraRuntimeConfigGroupReadOnly CameraRuntime { get; }
     }
 
     public interface IRuntimePolicyConfigGroupReadOnly
@@ -47,6 +48,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
     public interface IInputModesRuntimeConfigGroupReadOnly
     {
+        OperationalInputRuntimeProfileAsset OperationalInputRuntimeProfile { get; }
+        string OperationalInputRuntimeProfileId { get; }
         int MaxPlayerSlots { get; }
         InputActionAsset UiActionsAsset { get; }
         InputActionReference UiPoint { get; }
@@ -59,5 +62,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         InputActionReference UiCancel { get; }
         InputActionReference UiTrackedDevicePosition { get; }
         InputActionReference UiTrackedDeviceOrientation { get; }
+    }
+
+    public interface ICameraRuntimeConfigGroupReadOnly
+    {
+        UnityEngine.GameObject OperationalCameraPrefab { get; }
     }
 }

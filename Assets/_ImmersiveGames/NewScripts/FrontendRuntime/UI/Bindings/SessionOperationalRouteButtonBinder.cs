@@ -31,25 +31,25 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
                 return false;
             }
 
-            string reason = Normalize(reasonOverride);
-            if (string.IsNullOrWhiteSpace(reason))
+            string normalize = Normalize(reasonOverride);
+            if (string.IsNullOrWhiteSpace(normalize))
             {
-                reason = Normalize(actionReason);
+                normalize = Normalize(actionReason);
             }
 
-            if (string.IsNullOrWhiteSpace(reason))
+            if (string.IsNullOrWhiteSpace(normalize))
             {
-                reason = resolvedRouteDefinition.RouteIdentity;
+                normalize = resolvedRouteDefinition.RouteIdentity;
             }
 
             DebugUtility.Log(typeof(SessionOperationalRouteButtonBinder),
-                $"[OBS][SessionOperationalPipeline][RouteButton] routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteButton] routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalize}'.",
                 DebugUtility.Colors.Info);
 
             Task routeTask = operationalPipeline.RequestOperationalRouteAsync(
                 resolvedRouteDefinition,
                 RouteButtonSource,
-                reason);
+                normalize);
             routeTask.ContinueWith(completed =>
             {
                 if (!completed.IsFaulted)

@@ -53,6 +53,21 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Decididas pelo pipeline, não pelo save module.
 - Exemplo: "salvar ao mudar rota", "salvar ao completar run", etc.
 
+### 2.1 Checkpoint SessionOperational (2026-05-14)
+
+- `RouteActivitySavePlanReady` é plano/observabilidade, não execução.
+- `loadActivitySaveOnEnter`:
+  - executa no `SessionOperationalPipeline` após `SceneCompositionCompleted`;
+  - ocorre antes de `InputCapability`, `PlayerPreparation` e handoff para `SessionActivityPipeline`;
+  - ausência de snapshot salvo gera `RouteActivitySaveLoadSkipped skipReason='no_snapshot'`.
+- `saveActivityOnExit` (Fase 2):
+  - executa somente em troca de rota operacional;
+  - decisão usa a rota anterior completa (não a rota atual);
+  - executa antes de descarregar cena da rota anterior;
+  - sem `Activity Snapshot Provider` canônico, gera `RouteActivitySaveSaveSkipped skipReason='no_snapshot_provider'`.
+- `SessionOperationalActivitySaveAdapter` executa side-effect via `ISaveService`; não decide lifecycle.
+- Ausência de adapter/config obrigatória permanece fail-fast.
+
 ### 3. Invariantes
 
 - `SaveCoreService` não decide quando salvar.
@@ -90,4 +105,3 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Escolhas runtime de jogador pertencem ao produtor correto (Activity, selecao, profile/loadout, objeto de dominio ou sistema especifico).
 - Inicializacao de sessao nao vira owner generico de persistencia dessas escolhas.
 - Save continua executor comandado pelos owners corretos via `Pipeline Command` e `Pipeline Policy`.
-

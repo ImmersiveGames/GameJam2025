@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine;
+using UnityEngine.Serialization;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public enum SessionOperationalRouteCompletionHandoffKind
@@ -94,8 +95,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         [SerializeField] private bool loadActivitySaveOnEnter;
         [SerializeField] private bool saveActivityOnExit;
 
-        [Header("Actor Preparation")]
-        [SerializeField] private ActorSetDefinitionAsset actorSetDefinition;
+        [Header("Player Preparation")]
+        [FormerlySerializedAs("actorSetDefinition")]
+        [SerializeField] private PlayerSetDefinitionAsset playerSetDefinition;
 
         [Header("Audio")]
         [SerializeField] private SessionOperationalRouteAudioMode routeAudioMode = SessionOperationalRouteAudioMode.None;
@@ -118,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool LoadActivitySaveOnEnter => loadActivitySaveOnEnter;
         public bool SaveActivityOnExit => saveActivityOnExit;
         public RouteActivitySavePolicy ActivitySavePolicy => new(loadActivitySaveOnEnter, saveActivityOnExit);
-        public ActorSetDefinitionAsset ActorSetDefinition => actorSetDefinition;
+        public PlayerSetDefinitionAsset PlayerSetDefinition => playerSetDefinition;
         public SessionOperationalRouteAudioMode RouteAudioMode => routeAudioMode;
         public AudioCueAsset RouteAudioCue => routeAudioCue;
         public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
@@ -297,9 +299,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            if (actorSetDefinition != null && !actorSetDefinition.TryValidate(out string actorSetValidationError))
+            if (playerSetDefinition != null && !playerSetDefinition.TryValidate(out string playerSetValidationError))
             {
-                errorMessage = $"actorSetDefinition is invalid routeIdentity='{RouteIdentity}' asset='{actorSetDefinition.name}' detail='{actorSetValidationError}'.";
+                errorMessage = $"playerSetDefinition is invalid routeIdentity='{RouteIdentity}' asset='{playerSetDefinition.name}' detail='{playerSetValidationError}'.";
                 return false;
             }
 

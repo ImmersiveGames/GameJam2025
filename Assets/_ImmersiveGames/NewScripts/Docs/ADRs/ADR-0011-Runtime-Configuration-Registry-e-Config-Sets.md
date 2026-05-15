@@ -89,6 +89,7 @@ RuntimeConfigSetAsset
 - AudioRuntimeConfigGroup
 - SaveRuntimeConfigGroup
 - InputModesRuntimeConfigGroup
+- CameraRuntimeConfigGroup
 ```
 
 ### 3. RuntimeConfigRegistry
@@ -176,19 +177,16 @@ A decisão de quando salvar continua pertencendo aos pipelines.
 
 ### InputModesRuntimeConfigGroup
 
-Agrupa configurações técnicas de input modes e inicialização operacional de input UI.
+`InputModesRuntimeConfigGroup` agora carrega apenas a referencia obrigatoria `operationalInputRuntimeProfile`.
 
-Exemplos de Input Modes:
+Agrupa configuracoes tecnicas de input modes e inicializacao operacional de input UI.
 
-- nomes de maps;
-- flags de habilitação;
-- bindings técnicos usados pelo executor.
+Exemplo de Inicializacao Operacional de Input UI (ADR-0009):
 
-Exemplo de Inicialização Operacional de Input UI (ADR-0009):
-
-- `maxPlayerSlots` (capacidade operacional de entrada);
-- `uiActionsAsset` (asset de UI actions canonico);
-- 10 `InputActionReferences` canonicas obrigatórias:
+- `operationalInputRuntimeProfile` (obrigatorio) com `profileId`;
+- `maxPlayerSlots` (capacidade operacional de entrada) dentro do profile;
+- `uiActionsAsset` (asset de UI actions canonico) dentro do profile;
+- 10 `InputActionReferences` canonicas obrigatorias dentro do profile:
   - `uiPoint`
   - `uiLeftClick`
   - `uiRightClick`
@@ -202,13 +200,33 @@ Exemplo de Inicialização Operacional de Input UI (ADR-0009):
 
 Regras sobre UI Actions Binding:
 
-- Config é read-only via snapshot;
+- Config e read-only via snapshot;
 - Todas as 10 referencias devem pertencer ao mesmo `uiActionsAsset`;
-- Ausência de qualquer referência é erro fail-fast no bootstrap;
-- Binding é executado por `UnityOperationalInputRuntimeAdapter` (ADR-0009);
-- Não há reconfiguração de binding em runtime.
+- Ausencia de qualquer referencia e erro fail-fast no bootstrap;
+- Binding e executado por `UnityOperationalInputRuntimeAdapter` (ADR-0009);
+- Nao ha reconfiguracao de binding em runtime.
 
-A decisão de quando trocar input mode continua pertencendo ao pipeline.
+A decisao de quando trocar input mode continua pertencendo ao pipeline.
+
+### CameraRuntimeConfigGroup
+
+Agrupa configurações técnicas de runtime da camera operacional.
+
+Exemplos:
+
+- `operationalCameraPrefab` (obrigatório);
+- `operationalCameraIdentity` (obrigatório, estável);
+- campos futuros: `operationalCameraClearFlags`, `operationalCameraCullingMask`, `operationalCameraDepth`, etc.
+
+Regras sobre Camera Operacional (ADR-0012):
+
+- Config é read-only via snapshot;
+- `operationalCameraPrefab` é obrigatório e deve conter exatamente uma `Camera`;
+- `operationalCameraIdentity` é obrigatório e estável;
+- Ausência de campos obrigatórios é erro fail-fast no bootstrap;
+- Inicialização de câmera operacional é executada por `UnityOperationalCameraRuntimeAdapter` (ADR-0012);
+- Camera operacional é garantida no composition/bootstrap, **antes** de `SessionOperationalPipeline` iniciar;
+- Não há fallback para `Camera.main`.
 
 ---
 
@@ -448,6 +466,14 @@ Adicionar validações manuais/automáticas conforme necessário:
 - Owner canonico das configs migradas: RuntimeConfigSetAsset (via RuntimeConfigRegistry snapshot).
 - RuntimeModeConfig permanece com responsabilidades de entrada de modo e bootstrap-level.
 
+### Estado atual - Save no SessionOperational
+
+- `SaveRuntimeConfigGroup` fornece config read-only para execução.
+- Decisão de lifecycle permanece no pipeline:
+  - `load-on-enter` e `save-on-exit` são decididos pelo `SessionOperationalPipeline`.
+- `SaveRuntime`/adapter executa side-effects comandados.
+- Ausência de snapshot de activity não gera fallback silencioso; checkpoint atual observa `no_snapshot_provider`.
+
 ### Item adiado
 
 - Nenhum item adiado neste checkpoint. InputModesRuntimeConfigGroup foi congelado com inicializacao operacional de input UI (ADR-0009).
@@ -489,8 +515,9 @@ Este ADR não introduz:
 - **ADR-0006**: rota, loading, fade, scene composition e audio continuam comandados por pipeline/adapters.
 - **ADR-0007**: InputModes continuam executores, não owners de lifecycle.
 - **ADR-0008**: Save usa config/backend, mas decisão de save continua nos pipelines.
-- **ADR-0009**: InputModesRuntimeConfigGroup fornece `maxPlayerSlots`, `uiActionsAsset` e 10 `InputActionReferences` canonicas para inicializacao operacional de input UI.
+- **ADR-0009**: InputModesRuntimeConfigGroup referencia `OperationalInputRuntimeProfileAsset`, que fornece `maxPlayerSlots`, `uiActionsAsset` e 10 `InputActionReferences` canonicas para inicializacao operacional de input UI.
 - **ADR-0010**: evolucoes de Actor Preparation devem entrar por grupos/catálogos explícitos, não por expansão indefinida do `RuntimeModeConfig`.
+- **ADR-0012**: CameraRuntimeConfigGroup fornece `operationalCameraPrefab` e `operationalCameraIdentity` para inicialização operacional de câmera.
 
 ---
 
@@ -505,7 +532,6 @@ Ao menos um domínio usar config via registry.
 Nenhuma config obrigatória ausente passar silenciosamente.
 Nenhum pipeline perder ownership de lifecycle/policy/handoff.
 ```
-
 
 
 

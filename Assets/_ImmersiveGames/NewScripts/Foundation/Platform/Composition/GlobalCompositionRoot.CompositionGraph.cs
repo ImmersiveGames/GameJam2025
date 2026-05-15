@@ -83,11 +83,17 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),
                     bootstrapDependencies: Array.Empty<string>()),
                 new CompositionPipelineStep(
+                    id: "OperationalCameraRuntime",
+                    installer: _ => OperationalCameraRuntimeComposition.Install(runtimeModeConfig),
+                    installerDependencies: new[] { "RuntimePolicy" },
+                    bootstrap: _ => OperationalCameraRuntimeComposition.ComposeRuntime(runtimeModeConfig),
+                    bootstrapDependencies: Array.Empty<string>()),
+                new CompositionPipelineStep(
                     id: "RuntimePersistentScenes",
                     installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy" },
+                    installerDependencies: new[] { "RuntimePolicy", "OperationalCameraRuntime" },
                     bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes" }),
+                    bootstrapDependencies: new[] { "InputModes", "OperationalCameraRuntime" }),
                 new CompositionPipelineStep(
                     id: "SessionOperationalRuntime",
                     installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),

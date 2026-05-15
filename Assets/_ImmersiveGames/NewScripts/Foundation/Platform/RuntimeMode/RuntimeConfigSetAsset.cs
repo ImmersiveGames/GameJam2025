@@ -19,12 +19,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [SerializeField] private AudioRuntimeConfigGroup audioRuntime = new();
         [SerializeField] private SaveRuntimeConfigGroup saveRuntime = new();
         [SerializeField] private InputModesRuntimeConfigGroup inputModesRuntime = new();
+        [SerializeField] private CameraRuntimeConfigGroup cameraRuntime = new();
 
         public RuntimePolicyConfigGroup RuntimePolicy => runtimePolicy;
         public SessionOperationalRuntimeConfigGroup SessionOperationalRuntime => sessionOperationalRuntime;
         public AudioRuntimeConfigGroup AudioRuntime => audioRuntime;
         public SaveRuntimeConfigGroup SaveRuntime => saveRuntime;
         public InputModesRuntimeConfigGroup InputModesRuntime => inputModesRuntime;
+        public CameraRuntimeConfigGroup CameraRuntime => cameraRuntime;
 
         public bool TryValidate(out string errorMessage)
         {
@@ -70,6 +72,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 return false;
             }
             if (!inputModesRuntime.TryValidate(out errorMessage))
+            {
+                return false;
+            }
+
+            if (cameraRuntime == null)
+            {
+                errorMessage = "cameraRuntime is required.";
+                return false;
+            }
+            if (!cameraRuntime.TryValidate(out errorMessage))
             {
                 return false;
             }
@@ -219,122 +231,54 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     [Serializable]
     public sealed class InputModesRuntimeConfigGroup
     {
-        [SerializeField] private int maxPlayerSlots = 1;
-        [SerializeField] private InputActionAsset uiActionsAsset;
-        [SerializeField] private InputActionReference uiPoint;
-        [SerializeField] private InputActionReference uiLeftClick;
-        [SerializeField] private InputActionReference uiRightClick;
-        [SerializeField] private InputActionReference uiMiddleClick;
-        [SerializeField] private InputActionReference uiScrollWheel;
-        [SerializeField] private InputActionReference uiMove;
-        [SerializeField] private InputActionReference uiSubmit;
-        [SerializeField] private InputActionReference uiCancel;
-        [SerializeField] private InputActionReference uiTrackedDevicePosition;
-        [SerializeField] private InputActionReference uiTrackedDeviceOrientation;
+        [SerializeField] private OperationalInputRuntimeProfileAsset operationalInputRuntimeProfile;
 
-        public int MaxPlayerSlots => maxPlayerSlots;
-        public InputActionAsset UiActionsAsset => uiActionsAsset;
-        public InputActionReference UiPoint => uiPoint;
-        public InputActionReference UiLeftClick => uiLeftClick;
-        public InputActionReference UiRightClick => uiRightClick;
-        public InputActionReference UiMiddleClick => uiMiddleClick;
-        public InputActionReference UiScrollWheel => uiScrollWheel;
-        public InputActionReference UiMove => uiMove;
-        public InputActionReference UiSubmit => uiSubmit;
-        public InputActionReference UiCancel => uiCancel;
-        public InputActionReference UiTrackedDevicePosition => uiTrackedDevicePosition;
-        public InputActionReference UiTrackedDeviceOrientation => uiTrackedDeviceOrientation;
+        public OperationalInputRuntimeProfileAsset OperationalInputRuntimeProfile => operationalInputRuntimeProfile;
+        public int MaxPlayerSlots => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.MaxPlayerSlots : 0;
+        public InputActionAsset UiActionsAsset => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiActionsAsset : null;
+        public InputActionReference UiPoint => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiPoint : null;
+        public InputActionReference UiLeftClick => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiLeftClick : null;
+        public InputActionReference UiRightClick => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiRightClick : null;
+        public InputActionReference UiMiddleClick => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiMiddleClick : null;
+        public InputActionReference UiScrollWheel => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiScrollWheel : null;
+        public InputActionReference UiMove => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiMove : null;
+        public InputActionReference UiSubmit => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiSubmit : null;
+        public InputActionReference UiCancel => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiCancel : null;
+        public InputActionReference UiTrackedDevicePosition => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiTrackedDevicePosition : null;
+        public InputActionReference UiTrackedDeviceOrientation => operationalInputRuntimeProfile != null ? operationalInputRuntimeProfile.UiTrackedDeviceOrientation : null;
 
         public bool TryValidate(out string errorMessage)
         {
-            if (maxPlayerSlots < 1)
+            if (operationalInputRuntimeProfile == null)
             {
-                errorMessage = "inputModesRuntime.maxPlayerSlots must be >= 1.";
+                errorMessage = "inputModesRuntime.operationalInputRuntimeProfile is required.";
                 return false;
             }
 
-            if (uiActionsAsset == null)
-            {
-                errorMessage = "inputModesRuntime.uiActionsAsset is required.";
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiPoint, "uiPoint", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiLeftClick, "uiLeftClick", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiRightClick, "uiRightClick", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiMiddleClick, "uiMiddleClick", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiScrollWheel, "uiScrollWheel", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiMove, "uiMove", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiSubmit, "uiSubmit", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiCancel, "uiCancel", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiTrackedDevicePosition, "uiTrackedDevicePosition", out errorMessage))
-            {
-                return false;
-            }
-
-            if (!TryValidateActionReference(uiActionsAsset, uiTrackedDeviceOrientation, "uiTrackedDeviceOrientation", out errorMessage))
-            {
-                return false;
-            }
-
-            errorMessage = string.Empty;
-            return true;
+            return operationalInputRuntimeProfile.TryValidate(out errorMessage);
         }
+    }
 
-        private static bool TryValidateActionReference(
-            InputActionAsset expectedAsset,
-            InputActionReference reference,
-            string fieldName,
-            out string errorMessage)
+    [Serializable]
+    public sealed class CameraRuntimeConfigGroup
+    {
+        [SerializeField] private GameObject operationalCameraPrefab;
+
+        public GameObject OperationalCameraPrefab => operationalCameraPrefab;
+
+        public bool TryValidate(out string errorMessage)
         {
-            if (reference == null)
+            if (operationalCameraPrefab == null)
             {
-                errorMessage = $"inputModesRuntime.{fieldName} is required.";
+                errorMessage = "cameraRuntime.operationalCameraPrefab is required.";
                 return false;
             }
 
-            if (reference.action == null)
+            Camera[] cameras = operationalCameraPrefab.GetComponentsInChildren<Camera>(true);
+            int cameraCount = cameras?.Length ?? 0;
+            if (cameraCount != 1)
             {
-                errorMessage = $"inputModesRuntime.{fieldName} has null action.";
-                return false;
-            }
-
-            InputActionAsset actionAsset = reference.action.actionMap?.asset;
-            if (!ReferenceEquals(actionAsset, expectedAsset))
-            {
-                errorMessage = $"inputModesRuntime.{fieldName} must belong to inputModesRuntime.uiActionsAsset.";
+                errorMessage = $"cameraRuntime.operationalCameraPrefab must contain exactly one Camera. observed='{cameraCount}'.";
                 return false;
             }
 

@@ -19,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         [Header("Layout")]
         [SerializeField] private bool showOnGUI = true;
+        [SerializeField] private bool showForeignStaleQa = false;
 
         private GUIStyle _windowStyle;
         private GUIStyle _titleStyle;
@@ -231,26 +232,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 DumpState();
             }
 
-            GUILayout.Space(SectionSpacing);
-            GUILayout.Label("Foreign/Stale QA", _labelStyle);
-
-            if (GUILayout.Button("SendStaleFirstActivityCommand", _buttonStyle))
+            if (showForeignStaleQa)
             {
-                SendStaleFirstActivityCommand();
-            }
+                GUILayout.Space(SectionSpacing);
+                GUILayout.Label("Foreign/Stale QA", _labelStyle);
 
-            GUILayout.Space(SectionSpacing);
+                if (GUILayout.Button("SendStaleFirstActivityCommand", _buttonStyle))
+                {
+                    SendStaleFirstActivityCommand();
+                }
 
-            if (GUILayout.Button("SendForeignSessionCommand", _buttonStyle))
-            {
-                SendForeignSessionCommand();
-            }
+                GUILayout.Space(SectionSpacing);
 
-            GUILayout.Space(SectionSpacing);
+                if (GUILayout.Button("SendForeignSessionCommand", _buttonStyle))
+                {
+                    SendForeignSessionCommand();
+                }
 
-            if (GUILayout.Button("SendForeignPipelineCommand", _buttonStyle))
-            {
-                SendForeignPipelineCommand();
+                GUILayout.Space(SectionSpacing);
+
+                if (GUILayout.Button("SendForeignPipelineCommand", _buttonStyle))
+                {
+                    SendForeignPipelineCommand();
+                }
             }
 
             GUILayout.Space(SectionSpacing);

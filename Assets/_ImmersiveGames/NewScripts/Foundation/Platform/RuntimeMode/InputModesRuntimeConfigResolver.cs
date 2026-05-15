@@ -63,6 +63,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             IInputModesRuntimeConfigGroupReadOnly inputModes = snapshot.InputModesRuntime
                 ?? throw new InvalidOperationException("[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: snapshot.InputModesRuntime obrigatorio ausente.");
 
+            if (inputModes.OperationalInputRuntimeProfile == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: operationalInputRuntimeProfile obrigatorio ausente.");
+            }
+
+            if (string.IsNullOrWhiteSpace(inputModes.OperationalInputRuntimeProfileId))
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: operationalInputRuntimeProfile.profileId obrigatorio ausente.");
+            }
+
             if (inputModes.MaxPlayerSlots < 1)
             {
                 throw new InvalidOperationException($"[FATAL][Config][InputModesRuntime] RuntimeConfigRegistry invariant breach: maxPlayerSlots invalido='{inputModes.MaxPlayerSlots}'.");

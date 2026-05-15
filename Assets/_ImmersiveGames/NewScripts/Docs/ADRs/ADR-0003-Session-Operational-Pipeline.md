@@ -1,109 +1,158 @@
-﻿# ADR-0003 - Session Operational Pipeline e Session Transition Envelope
+# ADR-0003 - Session Operational Pipeline e Session Transition Envelope
 
 ## Status
+
 - Estado: Accepted
 - Data: 2026-05-12
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canônica deste contrato: este ADR.
 
+---
+
 ## Contexto
 
-O conceito histórico de `local` misturou decisão semântica da sessão, ativação de conteúdo e comportamento scene-local. Além disso, o setup de sessão ficou espalhado como efeito implícito de gates e handoffs, sem um envelope temporal explícito.
+O conceito histórico de `local` misturou decisão semântica da sessão, ativação de conteúdo e comportamento scene-local.
 
-Base 1.1 exige:
-1. Um rail próprio e determinístico para a sessão: `Session Pipeline`.
+Na Base 1.0, parte do setup de sessão ficou espalhada como efeito implícito de gates, handoffs, rotas, serviços de cena e decisões locais sem identidade explícita.
+
+A Base 1.1 exige:
+
+1. Um rail próprio e determinístico para a sessão: `Session Operational Pipeline`.
 2. Um envelope temporal explícito para a transição de sessão: `Session Transition Envelope`.
+3. Separação clara entre:
+    - pipeline que decide ordem, lifecycle, policies e handoffs;
+    - adapters que executam side-effects;
+    - módulos/stages que produzem `Pipeline Facts`, `Pipeline Commands`, `Pipeline Snapshots` ou dados de handoff.
+4. Proteção por `Pipeline Identity`, para impedir que eventos `foreign/stale` alterem o pipeline ativo.
+
+---
 
 ## Decisão
 
-### 1. Session Operational Pipeline
+Adota-se o `SessionOperationalPipeline` como owner semântico do ciclo operacional de sessão/rota na Base 1.1.
 
-Adota-se o `Session Pipeline` como rail canônico de sessão.
+O `Session Transition Envelope` é o contrato temporal que define a janela segura da transição com cortina/loading fechado.
 
-#### Princípios
+O `SessionOperationalPipeline` decide:
 
-- `Session Pipeline` substitui o conceito histórico de `local`.
-- O pipeline concentra lifecycle de sessão, `Pipeline Handoffs` locais e regras de ativação da sessão.
-- `IntroStage` e `RunResult` não decidem a sessão; eles executam partes da `Pipeline Policy`.
-- O host local resolve a instância concreta apenas no momento canônico da pipeline.
+- ordem da rota operacional;
+- início e conclusão da transição;
+- lifecycle operacional da sessão;
+- policies de rota;
+- `Pipeline Handoffs`;
+- quando executar save/load operacional;
+- quando preparar input operacional;
+- quando executar `PlayerPreparation`;
+- quando emitir handoff para `SessionActivityPipeline`.
 
-#### Invariantes
+Adapters executam side-effects comandados pelo pipeline:
+
+- scene composition;
+- fade;
+- loading;
+- audio;
+- save runtime;
+- input runtime;
+- materialização mínima de players protótipo.
+
+---
+
+## 1. Session Operational Pipeline
+
+### 1.1 Princípios
+
+- `SessionOperationalPipeline` substitui o uso histórico de `local` como owner implícito de sessão.
+- O pipeline concentra lifecycle de sessão, políticas operacionais e handoffs locais.
+- `IntroStage`, `RunResult`, `GameLoop`, `InputMode`, gates e scene services não decidem lifecycle da sessão.
+- Scene/route/navigation executam side-effects físicos por adapters; não decidem o ciclo semântico.
+- O host local resolve a instância concreta somente no momento canônico do pipeline.
+- Toda rota operacional relevante possui identidade explícita:
+    - `routeIdentity`;
+    - `routeOperationId`;
+    - `transitionId`;
+    - `routeSequence`;
+    - `source`;
+    - `reason`.
+
+### 1.2 Invariantes
 
 - Toda sessão relevante possui identidade explícita.
-- Eventos de outra sessão não podem alterar o `Session Pipeline` ativo.
+- Eventos `foreign/stale` não podem alterar o `SessionOperationalPipeline` ativo.
 - A resolução local concreta só ocorre no momento canônico do pipeline.
-- Ausência válida de conteúdo gera `skip/no-content` explícito, não fallback silencioso.
+- Ausência válida de conteúdo gera `skip/no-content`, `observed_noop` ou skip explícito equivalente.
+- Não há fallback silencioso para configuração obrigatória.
+- Pipelines decidem.
+- Adapters executam side-effects.
+- Config fornece dados, mas não decide lifecycle.
 
-### 2. Session Transition Envelope
+---
+
+## 2. Session Transition Envelope
 
 Adota-se o conceito canônico de `SessionTransitionEnvelope`.
 
-O envelope passa a representar a fase temporal explícita que envolve a transição de sessão com a cortina fechada.
+O envelope representa a janela temporal da transição operacional, normalmente com cortina/loading fechados.
 
-#### Regras do Envelope
+### 2.1 Regras do Envelope
 
-1. O envelope roda com a cortina fechada.
-2. `SessionOperationalTeardown` acontece depois que a transição começa e antes de desmontar ou trocar a sessão exposta.
-3. `RoutePhysicalApply` continua sendo a execução física de `SceneFlow`.
-4. `SessionOperationalSetup` acontece depois de `ScenesReady` e antes de `BeforeFadeOut`.
-5. `SelectInitialActivity` e `SessionActivityEntryHandoff` devem ocorrer antes da cortina abrir.
-6. `Activity` não participa de setup/teardown de palco.
-7. `SceneFlow/Navigation` não decide lifecycle; apenas executa transição física.
-8. `InputMode`, `SimulationGate`, `GameLoop`, `actors`, `save`, `audio`, `loading` e `content` entram como adapters comandados pelo Session Pipeline.
-9. `SessionActivityPipeline` começa somente depois de `SessionActivityEntryHandoff` preparado.
+1. O envelope roda durante a transição operacional da rota.
+2. A cortina/loading deve proteger visualmente operações de setup e composição.
+3. `SessionOperationalTeardown` acontece depois que a nova rota começa e antes de desmontar recursos relevantes da rota anterior.
+4. `RoutePhysicalApply` é a aplicação física da rota via scene composition.
+5. `SessionOperationalSetup` acontece depois de cenas prontas e antes do reveal.
+6. `PlayerPreparation` acontece dentro da janela operacional, antes do handoff.
+7. `SessionActivityEntryHandoff` deve ocorrer apenas depois do setup operacional necessário.
+8. `SessionActivityPipeline` começa somente depois do handoff preparado.
+9. `SceneFlow`/`Navigation` não decidem lifecycle; permanecem como executores/adapters físicos.
+10. `InputMode`, `SimulationGate`, `GameLoop`, save, audio, loading, fade, scene composition e player materialization entram como adapters/stages comandados pelo pipeline.
+11. `PlayerPreparationStage` no `SessionOperational` é restrito a requisitos de players.
+12. Actors não-player — enemies, NPCs, props, objetos e actors de activity — ficam fora do ownership ativo de `SessionOperational` e pertencem ao futuro `ActivitySetup`/`SessionActivity`.
 
-#### Fases Canônicas do Envelope
+### 2.2 Fases Canônicas do Envelope
 
 1. `TransitionStarted`
 2. `CurtainClosed`
 3. `SessionOperationalTeardown`
 4. `RoutePhysicalApply`
 5. `SessionOperationalSetup`
-6. `SelectInitialActivity`
+6. `PlayerPreparation`
 7. `SessionActivityEntryHandoffPrepared`
 8. `BeforeFadeOut`
 9. `TransitionCompleted`
-10. `Activity Activation`
+10. `ActivityActivation`
 
-#### Invariantes do Envelope
+### 2.3 Invariantes do Envelope
 
 - Não transformar `SceneTransitionService` em owner semântico.
 - Não usar `SessionActivityMiniFlowHost` como composition root da transição.
 - Não usar `SessionActivityPipeline` como owner de lifecycle de cena.
 - Não introduzir fallback legado para suprir ausência de envelope.
 - Não permitir que SceneFlow/Navigation decida lifecycle.
+- Não permitir que events `foreign/stale` executem setup, materialização ou handoff no pipeline ativo.
 
-## Consequências
+---
 
-- `local` passa a ser vocabulário histórico.
-- Decisão de sessão deixa de ser espalhada em code paths scene-local sem identidade.
-- A ativação local fica vinculada a contrato e identidade da sessão atual.
-- O setup de sessão deixa de ficar espalhado como efeito implícito de gates e handoffs.
-- O corte técnico fica localizado em `AwaitBeforeFadeOutAsync`.
-- `SceneTransitionService` permanece apenas como adapter físico de loading/fade/cenas.
-- `SessionTransitionOrchestrator` passa a ser o owner semântico natural do setup.
-- A entrada da activity passa a depender de handoff de entrada preparado, não de timing local opportunístico.
+## 3. Ordem Canônica Atual do SessionOperational
 
-## Materializacao Base11Sandbox - Checkpoint Congelado
+A ordem atual validada para rota operacional com handoff para activity é:
 
-No checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`, a decisão deste ADR foi materializada assim:
-
-- `RuntimeModeConfig.startupRouteDefinition` aponta direto para a rota inicial.
-- O caminho `Boot -> Menu -> Sandbox` segue por `SessionOperationalPipeline`.
-- `SessionActivityPipeline` aceita o `Pipeline Handoff` e resolve a primeira activity pelo próprio catálogo.
-- `DebugDirectStart` continua como QA/tooling e rejeita após o start canônico.
-- `Pause` e `Resume` permanecem no ciclo de activity sem reintroduzir ownership legada.
-
-Consolidação do checkpoint:
-
-- O host local não decide a sessão antes do momento canônico.
-- A ausência de presenter ou activity válida continua sendo `skip/no-content` ou `observed_noop`, não fallback silencioso.
-- A sessão relevante continua protegida por identidade explícita.
-
-## Relação com Base 1.0 e Base 2.0
-
-- Base 1.0 deixou a topologia de `GameplaySessionFlow`, `Session Integration` e `Session Transition` como prova de materialização.
-- Base 1.1 recolhe essa topologia em `Session Pipeline` com envelope temporal explícito.
-- Base 2.0 futura só pode reorganizar o que o `Session Pipeline` provar.
-
-
+```text
+RouteRequested
+-> RoutePlanReady
+-> LoadingStarted
+-> FadeIn
+-> RouteActivitySave save-on-exit da rota anterior, se aplicável
+-> SceneComposition
+-> SceneCompositionCompleted
+-> RouteActivitySave load-on-enter da rota atual, se aplicável
+-> InputCapability
+-> PlayerPreparationStarted
+-> PlayerMaterialization, se aplicável
+-> PlayerPreparationCompleted
+-> MaterializationCompleted
+-> LoadingCompleted
+-> LoadingHidden
+-> RouteRevealAudio
+-> FadeOut
+-> OperationalRouteCompleted
+-> SessionActivityEntryHandoff

@@ -2,6 +2,7 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
@@ -15,6 +16,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static FadeAdapter _fadeAdapter;
         private static LoadingAdapter _loadingAdapter;
         private static AudioAdapter _audioAdapter;
+        private static SessionOperationalActivitySaveAdapter _activitySaveAdapter;
+        private static UnityPlayerMaterializationAdapter _playerMaterializationAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -44,6 +47,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalAudioAdapter();
             EnsureSessionOperationalFadeAdapter();
             EnsureSessionOperationalLoadingAdapter();
+            EnsureSessionOperationalActivitySaveAdapter();
+            EnsurePlayerMaterializationAdapter();
             EnsureSessionOperationalSceneCompositionAdapter();
 
             _runtimeComposed = true;
@@ -186,6 +191,57 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='LoadingAdapter' registered for canonical operational runtime.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalActivitySaveAdapter()
+        {
+            if (_activitySaveAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionOperationalActivitySaveAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _activitySaveAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<ISessionOperationalActivitySaveAdapter>(_activitySaveAdapter);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<ISaveService>(out var saveService) || saveService == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] ISaveService obrigatorio ausente para compor o adapter de load-on-enter/save-on-exit.");
+            }
+
+            _activitySaveAdapter = new SessionOperationalActivitySaveAdapter(saveService);
+            DependencyManager.Provider.RegisterGlobal(_activitySaveAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISessionOperationalActivitySaveAdapter>(_activitySaveAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionOperationalActivitySaveAdapter' registered for RouteActivitySave load-on-enter/save-on-exit.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsurePlayerMaterializationAdapter()
+        {
+            if (_playerMaterializationAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<UnityPlayerMaterializationAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _playerMaterializationAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IPlayerMaterializationAdapter>(_playerMaterializationAdapter);
+                return;
+            }
+
+            _playerMaterializationAdapter = new UnityPlayerMaterializationAdapter();
+            DependencyManager.Provider.RegisterGlobal(_playerMaterializationAdapter);
+            DependencyManager.Provider.RegisterGlobal<IPlayerMaterializationAdapter>(_playerMaterializationAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='UnityPlayerMaterializationAdapter' registered for prototype player materialization.",
                 DebugUtility.Colors.Info);
         }
     }

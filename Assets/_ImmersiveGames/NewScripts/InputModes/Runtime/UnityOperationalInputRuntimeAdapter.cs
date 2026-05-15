@@ -394,7 +394,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string detail)
         {
             string message = BuildLog(
-                "SessionPlayerSlotsValidationFailed",
+                "OperationalInputRuntimeValidationFailed",
                 routeIdentity,
                 routeOperationId,
                 transitionId,
@@ -403,8 +403,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 reason,
                 detail);
 
-            DebugUtility.LogError(typeof(UnityOperationalInputRuntimeAdapter), $"[FATAL][Config][SessionPlayerSlots] {message}");
-            return new InvalidOperationException($"[FATAL][Config][SessionPlayerSlots] {message}");
+            DebugUtility.LogError(typeof(UnityOperationalInputRuntimeAdapter), $"[FATAL][Config][OperationalInputRuntime] {message}");
+            return new InvalidOperationException($"[FATAL][Config][OperationalInputRuntime] {message}");
         }
 
         private static string BuildLog(
@@ -417,7 +417,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string reason,
             string extra)
         {
-            return $"[OBS][SessionPlayerSlots] event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
+            return $"[OBS][OperationalInputRuntime] event='{eventName}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}' {extra}.";
         }
     }
 }

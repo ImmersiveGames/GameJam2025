@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             AudioRuntime = new AudioRuntimeConfigGroupSnapshot(sourceAsset.AudioRuntime);
             SaveRuntime = new SaveRuntimeConfigGroupSnapshot(sourceAsset.SaveRuntime);
             InputModesRuntime = new InputModesRuntimeConfigGroupSnapshot(sourceAsset.InputModesRuntime);
+            CameraRuntime = new CameraRuntimeConfigGroupSnapshot(sourceAsset.CameraRuntime);
         }
 
         public RuntimeConfigSetAsset SourceAsset { get; }
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         public IAudioRuntimeConfigGroupReadOnly AudioRuntime { get; }
         public ISaveRuntimeConfigGroupReadOnly SaveRuntime { get; }
         public IInputModesRuntimeConfigGroupReadOnly InputModesRuntime { get; }
+        public ICameraRuntimeConfigGroupReadOnly CameraRuntime { get; }
 
         private sealed class RuntimePolicyConfigGroupSnapshot : IRuntimePolicyConfigGroupReadOnly
         {
@@ -119,6 +121,10 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                     throw new ArgumentNullException(nameof(source));
                 }
 
+                OperationalInputRuntimeProfile = source.OperationalInputRuntimeProfile;
+                OperationalInputRuntimeProfileId = source.OperationalInputRuntimeProfile != null
+                    ? source.OperationalInputRuntimeProfile.ProfileId
+                    : string.Empty;
                 MaxPlayerSlots = source.MaxPlayerSlots;
                 UiActionsAsset = source.UiActionsAsset;
                 UiPoint = source.UiPoint;
@@ -133,6 +139,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 UiTrackedDeviceOrientation = source.UiTrackedDeviceOrientation;
             }
 
+            public OperationalInputRuntimeProfileAsset OperationalInputRuntimeProfile { get; }
+            public string OperationalInputRuntimeProfileId { get; }
             public int MaxPlayerSlots { get; }
             public InputActionAsset UiActionsAsset { get; }
             public InputActionReference UiPoint { get; }
@@ -145,6 +153,21 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             public InputActionReference UiCancel { get; }
             public InputActionReference UiTrackedDevicePosition { get; }
             public InputActionReference UiTrackedDeviceOrientation { get; }
+        }
+
+        private sealed class CameraRuntimeConfigGroupSnapshot : ICameraRuntimeConfigGroupReadOnly
+        {
+            public CameraRuntimeConfigGroupSnapshot(CameraRuntimeConfigGroup source)
+            {
+                if (source == null)
+                {
+                    throw new ArgumentNullException(nameof(source));
+                }
+
+                OperationalCameraPrefab = source.OperationalCameraPrefab;
+            }
+
+            public UnityEngine.GameObject OperationalCameraPrefab { get; }
         }
     }
 }

@@ -24,7 +24,7 @@ namespace _ImmersiveGames.NewScripts.Presentation.Loading.Bindings
 
         [Header("Render Order")]
         [Tooltip("SortingOrder do Canvas do Loading. Deve ficar acima do FadeScene para o loading encerrar visualmente antes do fadeOut.")]
-        [SerializeField] private int sortingOrder = 12000;
+        [SerializeField] private int sortingOrder = 12050;
 
         private bool _isVisible;
         private string _currentMessage = DefaultLabel;

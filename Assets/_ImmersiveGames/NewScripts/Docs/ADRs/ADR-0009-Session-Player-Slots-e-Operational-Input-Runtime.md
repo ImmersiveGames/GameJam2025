@@ -29,7 +29,7 @@ A sessao operacional tambem prepara o runtime tecnico base de input: `EventSyste
 Regras centrais:
 
 - minimo operacional implicito: `1` slot;
-- `PlayerSlot` representa capacidade operacional, nao `PlayerActor`;
+- `PlayerSlot` representa capacidade operacional, nao `PlayerActor` materializado;
 - `PlayerInputManager` deve existir em runtime ja configurado;
 - `PlayerInputManager` deve ser unico no contexto operacional;
 - `PlayerInputManager.maxPlayerCount` deve ser igual a `maxPlayerSlots`;
@@ -118,9 +118,14 @@ Regras centrais:
 
 11. **Origem da Configuracao** (congelado):
     - `uiActionsAsset` e as 10 referencias vem de:
-      - `RuntimeConfigRegistry` via `InputModesRuntimeConfigGroup`.
+      - `RuntimeConfigRegistry` via `InputModesRuntimeConfigGroup` que referencia `OperationalInputRuntimeProfileAsset` obrigatorio.
     - Sao read-only via snapshot.
     - Ausencia de qualquer uma e erro no bootstrap.
+
+12. **Profile Dedicado de Input Operacional** (congelado):
+    - `InputModesRuntimeConfigGroup` referencia `operationalInputRuntimeProfile` obrigatorio.
+    - `OperationalInputRuntimeProfileAsset` concentra: `profileId`, `maxPlayerSlots`, `uiActionsAsset` e 10 `InputActionReferences`.
+    - `RuntimeConfigSetAsset` nao carrega mais esses detalhes diretamente no grupo.
 
 ---
 
@@ -129,7 +134,7 @@ Regras centrais:
 - `SessionOperationalPipeline` decide quando preparar o input runtime operacional.
 - `SessionPlayerSlotsValidator` valida apenas slots e `PlayerInputManager`.
 - `UnityOperationalInputRuntimeAdapter` executa side-effects Unity:
-  - `EventSystem` (crear/validar);
+  - `EventSystem` (criar/validar);
   - `InputSystemUIInputModule` (criar/adicionar/validar);
   - UI action binding (sequencia e integridade).
 - `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sao executores/adapters tecnicos, nao owners de lifecycle.
@@ -151,18 +156,18 @@ Regras centrais:
 ## 5. Relacao com ADR-0010
 
 - ADR-0009 define capacidade de slots + validacao de `PlayerInputManager` + inicializacao operacional de input.
-- ADR-0010 define como actors reais sao preparados quando houver contexto/handoff e `activity-provided requirements`.
+- ADR-0010 define `PlayerPreparation` do rail operacional (somente players) quando houver contexto/handoff.
 - Nao ha overlap: ADR-0009 e pré-requisito de ADR-0010.
 
 ---
 
 ## 6. Relacao com ADR-0011
 
-- `RuntimeConfigRegistry` fornece:
-  - `maxPlayerSlots` via `SessionOperationalRuntimeConfigGroup`.
-  - `uiActionsAsset` via `InputModesRuntimeConfigGroup`.
-  - As 10 `InputActionReferences` canonicas via `InputModesRuntimeConfigGroup`.
-- Config e read-only apos bootstrap.
+- `RuntimeConfigRegistry` fornece via snapshot read-only:
+  - `maxPlayerSlots` via `InputModesRuntimeConfigGroup` -> `OperationalInputRuntimeProfileAsset`.
+  - `uiActionsAsset` via `InputModesRuntimeConfigGroup` -> `OperationalInputRuntimeProfileAsset`.
+  - As 10 `InputActionReferences` canonicas via `InputModesRuntimeConfigGroup` -> `OperationalInputRuntimeProfileAsset`.
+- Config e imutável apos bootstrap.
 - Nenhuma reconfiguração em runtime.
 
 ---
@@ -177,6 +182,25 @@ Regras centrais:
 
 ---
 
+## 8. Checkpoint Congelado (2026-05-14)
+
+Estado validado na Base 1.1:
+
+- `SessionPlayerSlotsValidator` responde apenas por:
+  - `maxPlayerSlots >= 1`;
+  - `PlayerInputManager` obrigatório e único;
+  - `PlayerInputManager.maxPlayerCount == maxPlayerSlots`;
+  - sem alterar `maxPlayerCount` em runtime.
+- `UnityOperationalInputRuntimeAdapter` concentra:
+  - ensure/validação de `EventSystem` persistente;
+  - ensure/validação de `InputSystemUIInputModule`;
+  - binding canônico de `uiActionsAsset` + 10 actions;
+  - pós-validação do binding.
+- Contrato permanece operacional de frontend/menu.
+- Não implementa gameplay input.
+
+---
+
 ## Nao Objetivos
 
 Este ADR **nao** define:
@@ -187,3 +211,10 @@ Este ADR **nao** define:
 - UI camera ou UI hierarchy.
 - Input persistencia ou rebinding.
 - Input em modos de simulacao.
+
+
+## 9. Nota de Capacidade vs Materializacao (2026-05-14)
+
+- `maxPlayerSlots` continua sendo **capacidade operacional de entrada**.
+- `maxPlayerSlots` **nao equivale** a `PlayerActor`/`PrototypePlayer` materializado.
+- A materializacao minima de `PrototypePlayer` no rail `PlayerPreparation` e definida no ADR-0010 e ocorre por decisao do `SessionOperationalPipeline`.

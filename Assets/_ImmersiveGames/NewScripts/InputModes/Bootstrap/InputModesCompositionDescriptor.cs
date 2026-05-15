@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
         public static ICompositionModuleDescriptor Descriptor { get; } =
             new CompositionModuleDescriptor(
                 moduleId: "InputModes",
-                installerDependencies: new[] { "RuntimePolicy", "ActorsSystem" },
+                installerDependencies: new[] { "RuntimePolicy" },
                 bootstrapDependencies: Array.Empty<string>(),
                 installer: bootstrapConfig => InputModesInstaller.Install(bootstrapConfig),
                 bootstrap: bootstrapConfig => InputModesRuntimeComposer.ComposeRuntime(bootstrapConfig),

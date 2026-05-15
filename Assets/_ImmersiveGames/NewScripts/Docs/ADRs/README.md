@@ -15,27 +15,45 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 7. **ADR-0007** - Gates, InputModes e Simulation Executors
 8. **ADR-0008** - SaveSystem Canonical
 
-## ADRs Complementares (Propostos/Implementados)
+## ADRs Checkpoints Normativos Aceitos/Congelados (Base 1.1 Viva)
 
 9. **ADR-0009** - Session Player Slots e Operational Input Runtime (CONGELADO - 2026-05-14)
-10. **ADR-0010** - Actor Preparation Flow, Player Participation e Unity PlayerInput (CONGELADO - 2026-05-14)
+10. **ADR-0010** - Player Preparation Flow, Player Slots e Unity PlayerInput (CONGELADO - 2026-05-14)
 11. **ADR-0011** - Runtime Configuration Registry and Config Sets (IMPLEMENTADO)
+12. **ADR-0012** - Operational Camera Runtime e Future Activity Camera Binding (CONGELADO - 2026-05-14)
+
+**Estes ADRs (0009-0012) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
 
 Notas:
 - **ADR-0009** (congelado) congela o contrato operacional de:
   - slots e validacao de PlayerInputManager;
   - inicializacao de EventSystem persistente;
   - inicializacao de InputSystemUIInputModule persistente;
-  - binding canonico de 10 UI actions via InputModesRuntimeConfigGroup.
+  - binding canonico de 10 UI actions via `OperationalInputRuntimeProfileAsset` referenciado por `InputModesRuntimeConfigGroup`.
   - 11 decisoes congeladas sobre fail-fast, integridade, sequencia de binding.
-- **ADR-0010** (congelado) depende de ADR-0009 para validacao/init de slots e input operacional, permanecer focado em Actor Preparation **sem** materializacao de gameplay input ou player selection.
+- **ADR-0010** (congelado) depende de ADR-0009 para validacao/init de slots e input operacional, permanece focado em PlayerPreparation (somente players), com materializacao minima de `PrototypePlayer` quando aplicavel, **sem** materializacao de gameplay input ou player selection.
 - **ADR-0011** (implementado):
   - `RuntimeModeConfig` permanece entrada canônica
   - `RuntimeConfigSetAsset` agrupa configs por domínio
   - `RuntimeConfigRegistry` valida e expõe snapshots read-only
-  - 5 grupos obrigatórios: RuntimePolicy, SessionOperational, Audio, Save, InputModes
-  - InputModesRuntimeConfigGroup congelado com `maxPlayerSlots`, `uiActionsAsset` e 10 `InputActionReferences` canonicas (ADR-0009)
+  - 6 grupos obrigatórios: RuntimePolicy, SessionOperational, Audio, Save, InputModes, Camera
+  - InputModesRuntimeConfigGroup: referencia obrigatoria a `OperationalInputRuntimeProfileAsset` (profileId + `maxPlayerSlots`, `uiActionsAsset`, 10 `InputActionReferences` canonicas) (ADR-0009)
+  - CameraRuntimeConfigGroup: `operationalCameraPrefab`, `operationalCameraIdentity` (ADR-0012)
   - Checkpoint completo: nenhum item adiado.
+- **ADR-0012** (congelado) congela o contrato operacional de:
+  - camera operacional como infraestrutura de composition/bootstrap (não stage do SessionOperationalPipeline);
+  - ordem canônica: RuntimePolicy → OperationalCameraRuntime → RuntimePersistentScenes → SessionOperationalRuntime → SceneComposition;
+  - SessionOperationalPipeline assume que câmera operacional já existe;
+  - UnityOperationalCameraRuntimeAdapter como executor técnico;
+  - Sem fallback para Camera.main;
+  - Activity Camera Binding é futura, fora deste checkpoint.
+- **Checkpoint SessionOperational (2026-05-14)**:
+  - `RouteActivitySavePlanReady` permanece plano;
+  - `load-on-enter` executa após `SceneCompositionCompleted` e antes de `InputCapability`/`PlayerPreparation`;
+  - ausência de save gera skip explícito `no_snapshot`;
+  - `save-on-exit` por troca de rota usa a rota anterior completa e ocorre antes do unload da cena anterior;
+  - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`;
+  - rota QA `route-sandbox-menu` habilita smoke manual `Menu -> Sandbox -> Menu`.
 - Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
 
 ## Precedência Normativa
@@ -44,7 +62,9 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 
 ### Regra Obrigatória de Leitura
 
-- **ADRs de ADR-0001 a ADR-0008 são a fonte normativa exclusiva.**
+- **ADRs de ADR-0001 a ADR-0012 são a fonte normativa viva de Base 1.1.**
+  - ADR-0001 a ADR-0008: Estruturais (pipeline, adapters, policies canônicas).
+  - ADR-0009 a ADR-0012: Checkpoints normativos aceitos/congelados/implementados.
 - ADRs anteriores (históricos) devem ser lidos apenas como referência contextual.
 - Em caso de conflito entre um ADR histórico e um ADR Base 1.1, a **Base 1.1 prevalece**.
 - Ownership não é decidido por conveniência operacional, e sim pelo papel arquitetural definido na Base 1.1.
@@ -52,8 +72,9 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 
 ## Classificação Normativa
 
-### NORMATIVO_ATUAL (Base 1.1)
+### NORMATIVO_ATUAL (Base 1.1 - Estrutural + Checkpoints)
 
+**Estruturais (ADR-0001 a ADR-0008):**
 - ADR-0001
 - ADR-0002
 - ADR-0003
@@ -62,6 +83,12 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 - ADR-0006
 - ADR-0007
 - ADR-0008
+
+**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0012):**
+- ADR-0009 (congelado - 2026-05-14)
+- ADR-0010 (congelado - 2026-05-14)
+- ADR-0011 (implementado - 2026-05-13)
+- ADR-0012 (congelado - 2026-05-14)
 
 ### HISTÓRICO (Referência Apenas)
 
@@ -112,6 +139,13 @@ Base11Sandbox Minimal Route + Session Activity Cycle foi aprovado e congelado co
 - Foreign/stale events isolados pelo sistema
 - Side-effects rastreáveis e corretos
 
+Limites atuais congelados:
+- `PlayerPreparation` pode resultar em `materialized` (materializacao minima de `PrototypePlayer`) ou `planned_only`/`observed_noop` conforme o contexto da rota.
+- Não há `Activity Snapshot Provider` canônico.
+- Não há gameplay input canônico neste checkpoint.
+- Não há `PlayerActor` materializado neste checkpoint.
+- Não há camera binding de activity/player/Cinemachine.
+
 Referências de materialização:
 
 - `Docs/ADRs/Base-1.1-Consolidado-Atualizado-Base11Sandbox.md`
@@ -142,19 +176,8 @@ Se encontrar um conflito entre um ADR histórico e um ADR Base 1.1:
 2. Cite o ADR Base 1.1 como fonte normativa
 3. Não use compatibilidade narrativa; aplique o ADR
 
-## Histórico de Reorganização
+## Checkpoints
 
-- **2026-05-01**: ADRs 0060-0070 freeze de Base 1.1 implementados
-- **2026-05-12**: Reorganização para ADR-0001 a ADR-0008 com consolidação e renumeração
-  - ADR-0060 consolidado em ADR-0001
-  - ADR-0061 → ADR-0002
-  - ADR-0062 + ADR-0069 → ADR-0003
-  - ADR-0064 → ADR-0004
-  - ADR-0063 → ADR-0005
-  - ADR-0068 + ADR-0070 → ADR-0006
-  - ADR-0066 → ADR-0007
-  - ADR-0065 distribuído em ADR-0002 e ADR-0003
-  - ADR-0008 (novo) → SaveSystem Canonical
-
-
-
+  - checkpoint de `PlayerPreparation` atualizado: `PlayerPreparationStarted` -> materializacao minima de `PrototypePlayer` (required com prefab) / skip explicito (optional sem prefab) -> `PlayerPreparationCompleted(outcome=materialized quando aplicavel)` -> `MaterializationCompleted` -> handoff;
+  - limites mantidos: sem gameplay input, sem `PlayerInput` no player, sem camera de player, sem Cinemachine, sem movimento/controle, sem player final;
+  - actors nao-player continuam fora do checkpoint operacional de PlayerPreparation (futuro `ActivitySetup`/SessionActivity).
