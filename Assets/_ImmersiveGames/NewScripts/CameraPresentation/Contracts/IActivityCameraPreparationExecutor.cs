@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Contracts
 
         bool TryRelease(
             ActivityCameraReleaseCommand command,
+            out ActivityCameraReleaseResult result,
             out string reason);
     }
 }

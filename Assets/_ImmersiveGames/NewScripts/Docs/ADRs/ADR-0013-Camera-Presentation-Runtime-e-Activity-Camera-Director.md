@@ -2,12 +2,10 @@
 
 ## Status
 
-- Estado: Accepted / Direction + MVP isolado validado
+- Estado: Accepted / Direction + MVP isolado e composition passiva validada
 - Data: 2026-05-15
 - Tipo: Direction / Architecture intent / MVP boundary / Structural checkpoint
-- Fonte de verdade canônica: este ADR, junto do ADR-0012 para `Operational Camera Runtime`.
-- Checkpoint atual: `CameraPresentation MVP isolado — PASS estrutural/manual smoke`.
-- Integração com pipeline real: adiada.
+- Fonte de verdade canônica deste contrato: este ADR.
 
 ---
 
@@ -60,114 +58,7 @@ O `ActivityCameraDirector` traduz intenções vindas de pipelines/stages em oper
 
 Ele não decide lifecycle.
 
----
-
-## Checkpoint implementado — CameraPresentation MVP isolado
-
-Estado validado em 2026-05-15:
-
-```text
-CameraPresentation MVP isolado — PASS estrutural/manual smoke
-```
-
-O MVP isolado materializou o contrato mínimo sem integrar ainda ao `SessionOperationalPipeline`, ao `SessionActivityPipeline`, ao boot real de câmera de Activity ou ao lifecycle final da Activity.
-
-### Shape ativo validado
-
-```text
-ActivityCameraBindingCommand
--> ActivityCameraPreparationExecutor
--> IActivityCameraDirector
--> CinemachineActivityCameraDirector
--> ActivityCameraBindingResult / ActivityCameraBindingHandle
--> ActivityCameraReadyFact / ActivityCameraFailureFact
-
-ActivityCameraReleaseCommand
--> ActivityCameraPreparationExecutor
--> IActivityCameraDirector.TryReleaseActivityCamera
-```
-
-### Contratos materializados
-
-Foram materializados no módulo `CameraPresentation`:
-
-- `IActivityCameraDirector`;
-- `IActivityCameraPreparationExecutor`;
-- `ICameraPresentationRuntimeRegistry`;
-- `ActivityCameraRequirement`;
-- `ActivityCameraActivationTiming`;
-- `ActivityCameraBindingCommand`;
-- `ActivityCameraBindingResult`;
-- `ActivityCameraBindingHandle`;
-- `ActivityCameraReadyFact`;
-- `ActivityCameraFailureFact`;
-- `ActivityCameraPreparationResult`;
-- `ActivityCameraReleaseCommand`;
-- `CameraPresentationRuntimeCompositionResult`.
-
-### Runtime materializado
-
-Foram materializados:
-
-- `ActivityCameraBindingCommandValidator`;
-- `CinemachineActivityCameraDirector`;
-- `ActivityCameraPreparationExecutor`;
-- `CameraPresentationRuntimeFactory`;
-- `CameraPresentationRuntimeComposer`.
-
-### Debug/probes materializados
-
-Foram materializados para validação manual isolada:
-
-- `ActivityCameraDirectorManualProbe`;
-- `CameraPresentationManualRegistry`;
-- `CameraPresentationComposerManualProbe`.
-
-Esses probes não são parte do lifecycle final de gameplay. Eles existem apenas para validar o shape isolado do módulo antes da integração.
-
-### Smokes manuais validados
-
-Foram validados manualmente:
-
-- preparação bem-sucedida com rig explícito contendo 1 Unity `Camera`, 1 `CinemachineBrain` e 1 `CinemachineCamera`;
-- emissão de `ActivityCameraReadyFact`;
-- release explícito bem-sucedido;
-- falha explícita com `tracking_target_missing`;
-- emissão de `ActivityCameraFailureFact`;
-- `ActivityCameraPreparationExecutor` como origem dos facts;
-- rejeição de release foreign/stale com `foreign_or_stale_camera_release_command`;
-- composição isolada registrando `IActivityCameraDirector` e `IActivityCameraPreparationExecutor` via `ICameraPresentationRuntimeRegistry`.
-
-### Invariantes já protegidas no MVP isolado
-
-O MVP isolado validado mantém:
-
-- sem uso de `Camera.main` como fonte canônica;
-- sem auto-scan global;
-- sem retry em `Update`;
-- sem fallback silencioso para target/camera ausente;
-- rig explícito obrigatório;
-- tracking target obrigatório;
-- lookAt target opcional;
-- release protegido por identidade;
-- comando foreign/stale não altera a câmera ativa do binding corrente.
-
-### Fora do checkpoint atual
-
-Ainda não foi feito:
-
-- registro no DI/composition real da aplicação;
-- conexão automática no boot;
-- conexão com `SessionOperationalPipeline`;
-- conexão com `SessionActivityPipeline`;
-- preparação automática antes do `FadeOut`;
-- handoff real de `ActivityCameraReadyFact` para lifecycle de Activity;
-- assets autorais definitivos de camera rig;
-- split-screen;
-- `PlayerInputManager` / `PlayerInput` operacional no CameraPresentation;
-- channels reais por player;
-- camera input axes;
-- release automático no encerramento real da Activity.
+Checkpoint aplicado em 2026-05-15: o módulo `CameraPresentation` foi materializado como runtime passivo, registrado no boot/composition real da Base 1.1 e validado por smoke canônico via `DependencyManager`. Esse checkpoint não integra ainda a preparação automática de câmera ao `SessionOperationalPipeline`.
 
 ---
 
@@ -424,43 +315,20 @@ Preparar uma câmera de Activity com Cinemachine antes do reveal.
 
 ---
 
-## 8. Contratos do MVP e extensões futuras
+## 8. Contratos conceituais previstos
 
-### 8.1 Materializados no MVP isolado
+Nomes previstos, ainda sujeitos a ajuste no momento da implementação:
 
-O MVP isolado já materializou os contratos mínimos de preparação e release:
+- `ActivityCameraRequirement`
+- `ActivityCameraRigRef`
+- `ActivityCameraTargetRequirement`
+- `ActivityCameraBindingCommand`
+- `ActivityCameraReadyFact`
+- `ActivityCameraFailureFact`
+- `CameraDirectorCommand`
+- `CameraBindingResult`
 
-- `ActivityCameraRequirement`;
-- `ActivityCameraActivationTiming`;
-- `ActivityCameraBindingCommand`;
-- `ActivityCameraBindingResult`;
-- `ActivityCameraBindingHandle`;
-- `ActivityCameraReadyFact`;
-- `ActivityCameraFailureFact`;
-- `ActivityCameraPreparationResult`;
-- `ActivityCameraReleaseCommand`;
-- `IActivityCameraDirector`;
-- `IActivityCameraPreparationExecutor`;
-- `ICameraPresentationRuntimeRegistry`;
-- `CameraPresentationRuntimeCompositionResult`.
-
-### 8.2 Previsto para evolução futura
-
-Ainda permanecem conceituais ou futuros:
-
-- `ActivityCameraRigRef`;
-- `ActivityCameraTargetRequirement`;
-- `CameraDirectorCommand`;
-- `ActivityCameraReleasedFact`;
-- `ActivityCameraReleaseFailureFact`;
-- policies de blend;
-- policies de channel;
-- policies de player binding;
-- policies de camera input;
-- policies de target group;
-- policies de occlusion/confiner.
-
-Campos conceituais futuros de `ActivityCameraRequirement` ou de contratos derivados:
+Campos conceituais de `ActivityCameraRequirement`:
 
 ```text
 cameraMode
@@ -474,14 +342,14 @@ channelPolicy
 cameraInputPolicy
 ```
 
-No MVP isolado, o corte materializado é intencionalmente menor:
+No MVP inicial, apenas estes campos devem ser materializados se necessário:
 
 ```text
-requirementId
-cameraRigPrefab
-trackingTarget
-lookAtTarget opcional
-activationTiming = BeforeReveal
+cameraMode
+rigRef
+trackingTargetPolicy
+lookAtTargetPolicy
+activationTiming
 ```
 
 ---
@@ -575,23 +443,244 @@ Operational Camera Runtime permanece separado de Activity Camera Binding. Este A
 
 ---
 
-## 13. Critério de aceite do MVP integrado
+## 13. Critério de aceite do MVP isolado
 
-O MVP integrado será considerado aplicado quando:
+O MVP isolado é considerado aplicado quando:
+
+```text
+CameraPresentation estiver registrado passivamente no boot/composition real;
+IActivityCameraPreparationExecutor for resolvido via DependencyManager;
+o executor preparar uma câmera explícita com Cinemachine sem Camera.main;
+ActivityCameraReadyFact for emitido no smoke canônico;
+foreign/stale release for rejeitado;
+ActivityCameraReleasedFact for emitido no smoke canônico;
+nenhum rig for instanciado automaticamente pela composition;
+nenhum fallback silencioso ou retry em Update for usado como contrato.
+```
+
+O MVP integrado com pipeline tem critério próprio na seção 16.
+
+---
+
+## 14. Checkpoint aplicado - CameraPresentation MVP isolado e composition passiva (2026-05-15)
+
+### 14.1 Escopo concluído
+
+Foi materializado o módulo `CameraPresentation` como capacidade passiva da Base 1.1.
+
+Shape ativo:
+
+```text
+GlobalCompositionRoot.CompositionGraph
+-> CameraPresentationCompositionDescriptor
+-> CameraPresentationBootstrapComposer
+-> CameraPresentationRuntimeComposer
+-> DependencyManagerCameraPresentationRuntimeRegistry
+-> DependencyManager
+-> IActivityCameraDirector
+-> IActivityCameraPreparationExecutor
+```
+
+Runtime ativo:
+
+```text
+IActivityCameraPreparationExecutor
+-> ActivityCameraPreparationExecutor
+-> IActivityCameraDirector
+-> CinemachineActivityCameraDirector
+```
+
+Ciclo isolado validado:
+
+```text
+ActivityCameraBindingCommand
+-> ActivityCameraPreparationExecutor
+-> CinemachineActivityCameraDirector
+-> ActivityCameraBindingResult / ActivityCameraBindingHandle
+-> ActivityCameraReadyFact / ActivityCameraFailureFact
+-> ActivityCameraReleaseCommand
+-> ActivityCameraReleasedFact / ActivityCameraReleaseFailureFact
+```
+
+### 14.2 Contratos materializados
+
+Contratos:
+
+- `IActivityCameraDirector`
+- `IActivityCameraPreparationExecutor`
+- `ICameraPresentationRuntimeRegistry`
+
+Modelos/facts/results:
+
+- `ActivityCameraActivationTiming`
+- `ActivityCameraRequirement`
+- `ActivityCameraBindingCommand`
+- `ActivityCameraBindingResult`
+- `ActivityCameraBindingHandle`
+- `ActivityCameraReadyFact`
+- `ActivityCameraFailureFact`
+- `ActivityCameraPreparationResult`
+- `ActivityCameraReleaseCommand`
+- `ActivityCameraReleasedFact`
+- `ActivityCameraReleaseFailureFact`
+- `ActivityCameraReleaseResult`
+- `CameraPresentationRuntimeCompositionResult`
+
+Runtime/composition:
+
+- `ActivityCameraBindingCommandValidator`
+- `CinemachineActivityCameraDirector`
+- `ActivityCameraPreparationExecutor`
+- `CameraPresentationRuntimeFactory`
+- `CameraPresentationRuntimeComposer`
+- `DependencyManagerCameraPresentationRuntimeRegistry`
+- `CameraPresentationCompositionDescriptor`
+- `CameraPresentationBootstrapComposer`
+
+Debug canônico mantido:
+
+- `CameraPresentationSmokeProbe`
+
+Probes transitórios removidos:
+
+- `ActivityCameraDirectorManualProbe`
+- `ActivityCameraDependencyManagerManualProbe`
+- `CameraPresentationComposerManualProbe`
+- `CameraPresentationDependencyManagerComposerProbe`
+- `CameraPresentationManualRegistry`
+
+### 14.3 Composition passiva
+
+`CameraPresentation` entra no boot/composition real como step passivo.
+
+O step registra:
+
+- `IActivityCameraDirector` como `CinemachineActivityCameraDirector`;
+- `IActivityCameraPreparationExecutor` como `ActivityCameraPreparationExecutor`.
+
+O step não executa:
+
+- preparação de câmera;
+- instanciação de rig;
+- alteração de rota;
+- alteração de `FadeOut`/reveal;
+- alteração de `SceneComposition`;
+- alteração de `SessionOperationalPipeline`.
+
+A composition apenas disponibiliza capacidade runtime para consumo futuro por um `Pipeline Stage` explícito.
+
+### 14.4 Smoke canônico
+
+O smoke canônico atual é:
+
+```text
+CameraPresentationSmokeProbe
+-> DependencyManager
+-> IActivityCameraPreparationExecutor
+-> ActivityCameraReadyFact
+-> foreign/stale release rejected
+-> ActivityCameraReleasedFact
+```
+
+Logs aceitos para checkpoint:
+
+```text
+[OBS][CameraPresentation][SmokeProbe] RuntimeVerified executorType='ActivityCameraPreparationExecutor' runtimeSource='dependency_manager'.
+[OBS][CameraPresentation][SmokeProbe] ActivityCameraReadyFact ... runtimeSource='dependency_manager'.
+[OBS][CameraPresentation][SmokeProbe] ForeignReleaseRejected reason='foreign_or_stale_camera_release_command' ... runtimeSource='dependency_manager'.
+[OBS][CameraPresentation][SmokeProbe] ActivityCameraReleasedFact ... runtimeSource='dependency_manager'.
+[OBS][CameraPresentation][SmokeProbe] SmokeSucceeded runtimeSource='dependency_manager'.
+```
+
+Esse smoke valida que a preparação/liberação manual passa pelo executor global registrado no boot, e não por factory local ou registry fake.
+
+### 14.5 Invariantes validadas no checkpoint
+
+- `CameraPresentation` está no composition graph real.
+- `IActivityCameraDirector` é resolvido via `DependencyManager`.
+- `IActivityCameraPreparationExecutor` é resolvido via `DependencyManager`.
+- `ActivityCameraReadyFact` é produzido no caminho real pós-boot.
+- `ActivityCameraReleasedFact` é produzido no caminho real pós-boot.
+- Release com identidade foreign/stale é rejeitado por `foreign_or_stale_camera_release_command`.
+- Nenhuma preparação automática de câmera ocorre durante o boot.
+- Nenhum rig é instanciado automaticamente pela composition.
+- Nenhum uso de `Camera.main` foi introduzido como fonte canônica.
+- Nenhum auto-scan global foi introduzido.
+- Nenhum retry em `Update` foi introduzido como contrato de readiness.
+- `SessionOperationalPipeline` ainda não foi alterado por este checkpoint.
+
+### 14.6 Limite do checkpoint
+
+Este checkpoint fecha o módulo isolado e sua composition passiva.
+
+Ainda não está implementado:
+
+- emissão automática de `ActivityCameraBindingCommand` por pipeline;
+- `ActivityCameraPreparation` como `Pipeline Stage` pré-reveal;
+- integração com `SessionOperationalPipeline`;
+- descoberta canônica de `ActivityCameraRequirement` a partir de route/activity/setup config;
+- vínculo com `PlayerPreparation`/target real de actor;
+- split-screen;
+- integração com `PlayerInputManager` / `PlayerInput`;
+- camera input axes;
+- teardown automático ao sair de activity/rota.
+
+---
+
+## 15. Próxima decisão arquitetural
+
+O próximo ponto não é técnico de Cinemachine. O próximo ponto é ownership.
+
+Pergunta canônica:
+
+```text
+qual Pipeline Stage emite ActivityCameraBindingCommand antes do reveal?
+```
+
+Direção recomendada:
+
+```text
+SessionOperationalPipeline
+-> Pipeline Stage pré-reveal de setup/presentation
+-> ActivityCameraBindingCommand
+-> IActivityCameraPreparationExecutor
+-> ActivityCameraReadyFact / ActivityCameraFailureFact
+```
+
+A Activity continua não sendo setup. A Activity começa visualmente depois do reveal/handoff.
+
+O target da câmera deve existir antes da preparação de câmera. Portanto, `ActivityCameraPreparation` deve ocorrer depois da preparação/materialização do target obrigatório, como `PlayerPreparation`, `ActorPreparation` ou `ActivitySetup` mínimo, conforme o rail ativo.
+
+Fontes possíveis para `ActivityCameraRequirement` permanecem abertas:
+
+- definição/config explícita de activity;
+- setup config de activity;
+- route asset apenas em MVP/sandbox, com cuidado para não transformar rota em owner de detalhes da activity;
+- provider explícito de target/camera requirement.
+
+Não é permitido resolver o requirement por auto-scan implícito de cena.
+
+---
+
+## 16. Critério de aceite do MVP integrado futuro
+
+O MVP integrado só será considerado aplicado quando:
 
 ```text
 uma rota/activity visual puder declarar requisito mínimo de câmera;
-o pipeline/stage preparar a câmera antes do reveal;
-o CameraDirector aplicar rig/target em Cinemachine sem Camera.main;
-ActivityCameraReady for emitido antes do FadeOut;
+o pipeline/stage correto emitir ActivityCameraBindingCommand com Pipeline Identity;
+o IActivityCameraPreparationExecutor preparar a câmera antes do reveal;
+ActivityCameraReadyFact for produzido antes do FadeOut;
 a Activity iniciar visualmente já com câmera correta;
 a ausência de camera/rig/target obrigatório falhar explicitamente;
+foreign/stale camera commands não alterarem a câmera ativa;
+release/teardown ocorrer por comando com identidade válida;
 nenhum fallback silencioso ou retry em Update for usado como contrato.
 ```
 
 ---
 
-## 14. Referências externas oficiais
+## 17. Referências externas oficiais
 
 - Unity Cinemachine Camera component: https://docs.unity.cn/Packages/com.unity.cinemachine%403.1/manual/CinemachineCamera.html
 - Unity Cinemachine Brain component: https://docs.unity.cn/Packages/com.unity.cinemachine%403.1/manual/CinemachineBrain.html
@@ -603,9 +692,14 @@ nenhum fallback silencioso ou retry em Update for usado como contrato.
 
 ## Não objetivos deste ADR
 
-Este ADR não entrega ainda:
+Este ADR não implementa ainda a integração final com pipeline/activity.
 
-- assets de camera rig definitivos;
+Já existem CameraDirector mínimo e contratos C# do MVP isolado, conforme checkpoint aplicado.
+
+Este ADR ainda não implementa:
+
+- emissão automática de command pelo pipeline;
+- assets finais de camera rig;
 - split-screen;
 - UI por player;
 - camera preferences;
@@ -617,4 +711,4 @@ Este ADR não entrega ainda:
 - runtime camera switching avançado;
 - integração final com ActivitySetup.
 
-Este ADR registra a direção, o corte mínimo e o checkpoint do MVP isolado já validado. A implementação integrada ao pipeline permanece uma etapa posterior.
+Este ADR registra a direção, o corte mínimo já materializado e o próximo limite de integração.

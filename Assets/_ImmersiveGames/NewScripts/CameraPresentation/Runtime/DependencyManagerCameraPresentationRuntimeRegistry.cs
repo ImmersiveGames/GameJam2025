@@ -1,0 +1,47 @@
+﻿using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+
+namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
+{
+    public sealed class DependencyManagerCameraPresentationRuntimeRegistry : ICameraPresentationRuntimeRegistry
+    {
+        private readonly DependencyManager dependencyManager;
+
+        public DependencyManagerCameraPresentationRuntimeRegistry(
+            DependencyManager dependencyManager)
+        {
+            this.dependencyManager = dependencyManager;
+        }
+
+        public bool TryRegister<TContract>(
+            TContract instance,
+            out string reason)
+            where TContract : class
+        {
+            if (dependencyManager == null)
+            {
+                reason = "dependency_manager_missing";
+                return false;
+            }
+
+            if (instance == null)
+            {
+                reason = $"instance_null:{typeof(TContract).Name}";
+                return false;
+            }
+
+            if (dependencyManager.TryGetGlobal<TContract>(out _))
+            {
+                reason = $"contract_already_registered:{typeof(TContract).Name}";
+                return false;
+            }
+
+            dependencyManager.RegisterGlobal<TContract>(
+                instance,
+                allowOverride: false);
+
+            reason = $"registered_global:{typeof(TContract).Name}";
+            return true;
+        }
+    }
+}

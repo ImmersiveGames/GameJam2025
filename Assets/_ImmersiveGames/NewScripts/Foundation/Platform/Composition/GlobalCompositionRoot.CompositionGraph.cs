@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
+using _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Bootstrap;
@@ -68,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(
             RuntimeModeConfig runtimeModeConfig)
         {
-            return new List<CompositionPipelineStep>(6)
+            return new List<CompositionPipelineStep>(7)
             {
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
@@ -85,18 +86,19 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                     installerDependencies: new[] { "RuntimePolicy" },
                     bootstrap: _ => OperationalCameraRuntimeComposition.ComposeRuntime(runtimeModeConfig),
                     bootstrapDependencies: Array.Empty<string>()),
+                CompositionPipelineStep.FromDescriptor(CameraPresentationCompositionDescriptor.Descriptor),
                 new CompositionPipelineStep(
                     id: "RuntimePersistentScenes",
                     installer: _ => RuntimePersistentScenesComposition.Install(runtimeModeConfig),
                     installerDependencies: new[] { "RuntimePolicy", "OperationalCameraRuntime" },
                     bootstrap: _ => RuntimePersistentScenesComposition.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes", "OperationalCameraRuntime" }),
+                    bootstrapDependencies: new[] { "InputModes", "OperationalCameraRuntime", "CameraPresentation" }),
                 new CompositionPipelineStep(
                     id: "SessionOperationalRuntime",
                     installer: _ => SessionOperationalRuntimeComposer.Install(runtimeModeConfig),
-                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes", "Save" },
+                    installerDependencies: new[] { "RuntimePolicy", "RuntimePersistentScenes", "Save", "CameraPresentation" },
                     bootstrap: _ => SessionOperationalRuntimeComposer.ComposeRuntime(runtimeModeConfig),
-                    bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes" }),
+                    bootstrapDependencies: new[] { "InputModes", "RuntimePersistentScenes", "CameraPresentation" }),
             };
         }
 

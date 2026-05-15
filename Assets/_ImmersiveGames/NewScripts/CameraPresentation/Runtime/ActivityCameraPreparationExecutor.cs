@@ -70,44 +70,73 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 
         public bool TryRelease(
             ActivityCameraReleaseCommand command,
+            out ActivityCameraReleaseResult result,
             out string reason)
         {
             if (director == null)
             {
                 reason = "activity_camera_director_missing";
+                result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
             if (!TryValidateReleaseCommand(command, out reason))
             {
+                result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
             if (activeBinding == null)
             {
                 reason = "active_camera_binding_missing";
+                result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
             if (activeBinding.Handle == null)
             {
                 reason = "active_camera_binding_handle_missing";
+                result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
             if (!MatchesActiveBinding(command, activeBinding.Handle))
             {
                 reason = "foreign_or_stale_camera_release_command";
+                result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
             if (!director.TryReleaseActivityCamera(activeBinding, out reason))
             {
+                result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
             activeBinding = null;
+
+            ActivityCameraReleasedFact releasedFact = ActivityCameraReleasedFact.FromCommand(
+                command,
+                nameof(ActivityCameraPreparationExecutor),
+                "activity_camera_release_completed");
+
+            result = ActivityCameraReleaseResult.Released(releasedFact, reason);
             return true;
+        }
+
+        private static ActivityCameraReleaseResult BuildReleaseFailure(
+            ActivityCameraReleaseCommand command,
+            string failureReason)
+        {
+            ActivityCameraReleaseFailureFact failureFact = ActivityCameraReleaseFailureFact.FromCommand(
+                command,
+                failureReason,
+                nameof(ActivityCameraPreparationExecutor),
+                "activity_camera_release_failed");
+
+            return ActivityCameraReleaseResult.Failed(
+                failureFact,
+                failureReason);
         }
 
         private static bool TryValidateReleaseCommand(
