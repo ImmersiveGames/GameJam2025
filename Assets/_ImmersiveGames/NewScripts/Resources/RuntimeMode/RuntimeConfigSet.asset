@@ -26,10 +26,9 @@ MonoBehaviour:
       degradedAsError: 1
       degradedAsException: 0
   sessionOperationalRuntime:
-    startupRouteDefinition: {fileID: 11400000, guid: 0a2fe18554df4b241b27733ced8e5b8a, type: 2}
+    startupRouteDefinition: {fileID: 11400000, guid: a77146e5eb3ce7844adf0abd892ad29d, type: 2}
     defaultLoadingMode: 2
     defaultLoadingProfile: {fileID: 11400000, guid: 81481f2098e923745a6a3b40b0ca524c, type: 2}
-  audioRuntime: {}
   preferencesRuntime:
     audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
     videoDefaults: {fileID: 11400000, guid: 2abe1594c17cbf14ba99d5746f95f233, type: 2}
@@ -39,4 +38,3 @@ MonoBehaviour:
     operationalInputRuntimeProfile: {fileID: 11400000, guid: 9b16d95f7d1d4d2bbcaf47ca89ec8eaa, type: 2}
   cameraRuntime:
     operationalCameraPrefab: {fileID: 8138986187103937281, guid: 75fbfa25ee6c2d64f9834cfb9407859a, type: 3}
-
