@@ -204,18 +204,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     [Serializable]
     public sealed class AudioRuntimeConfigGroup
     {
-        [SerializeField] private AudioDefaultsAsset audioDefaults;
-
-        public AudioDefaultsAsset AudioDefaults => audioDefaults;
-
         public bool TryValidate(out string errorMessage)
         {
-            if (audioDefaults == null)
-            {
-                errorMessage = "audioDefaults is required for AudioRuntimeConfigGroup.";
-                return false;
-            }
-
             errorMessage = string.Empty;
             return true;
         }

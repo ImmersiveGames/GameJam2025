@@ -54,6 +54,14 @@ Notas:
   - `save-on-exit` por troca de rota usa a rota anterior completa e ocorre antes do unload da cena anterior;
   - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`;
   - rota QA `route-sandbox-menu` habilita smoke manual `Menu -> Sandbox -> Menu`.
+- **Save Base 1.1 (congelado)**:
+  - Preferences e Progression sao scopes distintos.
+  - Owner de decisao de Preferences: `PreferencesRuntimePipeline` (fora de `RouteActivitySave`).
+  - Progression e decidida pelo pipeline dono do ciclo (sem owner generico unico).
+  - `SaveRuntime` e executor/API comum; backend e substituivel.
+  - `RouteActivitySave` permanece especifico de rota/activity no `SessionOperationalPipeline`.
+  - Todo comando de save deve carregar identidade canonica e rejeitar/skipar foreign/stale.
+  - Sem fallback silencioso e sem dual write path ativo para o mesmo scope.
 - Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
 
 ## Precedência Normativa

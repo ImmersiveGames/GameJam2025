@@ -1,24 +1,21 @@
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
 {
-    public interface IPreferencesBackend
+    public interface IPreferencesSaveAdapter
     {
-        string BackendId { get; }
-        bool IsAvailable { get; }
-
-        bool TryLoad(
+        bool TryLoadAudio(
             string profileId,
             string slotId,
             out AudioPreferencesSnapshot snapshot,
-            out string reason);
-
-        bool TrySave(
-            AudioPreferencesSnapshot snapshot,
             out string reason);
 
         bool TryLoadVideo(
             string profileId,
             string slotId,
             out VideoPreferencesSnapshot snapshot,
+            out string reason);
+
+        bool TrySaveAudio(
+            AudioPreferencesSnapshot snapshot,
             out string reason);
 
         bool TrySaveVideo(

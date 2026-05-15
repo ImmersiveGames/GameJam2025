@@ -184,15 +184,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                AudioDefaultsAsset registryAudioDefaults = snapshot.AudioRuntime.AudioDefaults;
+                AudioDefaultsAsset registryAudioDefaults = snapshot.PreferencesRuntime.AudioDefaults;
                 if (registryAudioDefaults == null)
                 {
-                    throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] RuntimeConfigRegistry contract broken: snapshot.AudioRuntime.AudioDefaults obrigatorio ausente.");
+                    throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] RuntimeConfigRegistry contract broken: snapshot.PreferencesRuntime.AudioDefaults obrigatorio ausente.");
                 }
 
                 _configSourceLogged = true;
                 DebugUtility.Log(typeof(AudioAdapter),
-                    $"[OBS][Audio][ConfigMigration] SessionOperational AudioAdapter using RuntimeConfigRegistry audio defaults. asset='{registryAudioDefaults.name}'.",
+                    $"[OBS][Audio][ConfigMigration] SessionOperational AudioAdapter using PreferencesRuntimeConfigGroup audio defaults. asset='{registryAudioDefaults.name}'.",
                     DebugUtility.Colors.Info);
                 return;
             }

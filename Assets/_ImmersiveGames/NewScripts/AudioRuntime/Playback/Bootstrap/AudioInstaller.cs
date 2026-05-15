@@ -48,21 +48,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para resolver AudioDefaultsAsset.");
             }
 
-            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
-            {
-                AudioDefaultsAsset registryAudioDefaults = snapshot.AudioRuntime.AudioDefaults;
-                if (registryAudioDefaults == null)
-                {
-                    throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeConfigRegistry contract broken: snapshot.AudioRuntime.AudioDefaults obrigatorio ausente.");
-                }
+            AudioDefaultsAsset registryAudioDefaults = PreferencesRuntimeConfigResolver.ResolveAudioDefaultsOrFail(runtimeModeConfig);
 
-                DebugUtility.Log(typeof(AudioInstaller),
-                    $"[OBS][Audio][ConfigMigration] AudioDefaults resolved via RuntimeConfigRegistry. asset='{registryAudioDefaults.name}'.",
-                    DebugUtility.Colors.Info);
-                return registryAudioDefaults;
-            }
-
-            throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeConfigRegistry snapshot obrigatorio ausente para AudioDefaults migrado.");
+            DebugUtility.Log(typeof(AudioInstaller),
+                $"[OBS][Audio][ConfigMigration] AudioDefaults seed resolved via PreferencesRuntimeConfigGroup. asset='{registryAudioDefaults.name}'.",
+                DebugUtility.Colors.Info);
+            return registryAudioDefaults;
         }
 
         private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()

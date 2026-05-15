@@ -71,8 +71,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return new List<CompositionPipelineStep>(6)
             {
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
-                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
+                CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 new CompositionPipelineStep(
                     id: "InputModes",
                     installer: config => InputModesInstaller.Install(config),

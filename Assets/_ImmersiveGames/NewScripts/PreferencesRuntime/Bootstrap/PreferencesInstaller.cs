@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime;
+using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 {
     public static class PreferencesInstaller
@@ -71,8 +72,9 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                     DebugUtility.Colors.Info);
             }
 
-            RegisterBackend();
             RegisterPreferencesService(audioSettings, audioDefaults, videoDefaults);
+            RegisterPreferencesSaveAdapter(runtimeModeConfig);
+            RegisterPreferencesRuntimePipeline();
 
             _installed = true;
 
@@ -81,20 +83,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static void RegisterBackend()
-        {
-            RegisterIfMissing<IPreferencesBackend>(
-                factory: () => new PlayerPrefsPreferencesBackend(),
-                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesBackend already registered.",
-                registeredMessage: "[Preferences][BOOT] IPreferencesBackend registered (PlayerPrefs backend).");
-        }
-
         private static void RegisterPreferencesService(
             IAudioSettingsService audioSettings,
             AudioDefaultsAsset audioDefaults,
             VideoDefaultsAsset videoDefaults)
         {
-            var service = new PreferencesService(ResolveBackend(), audioSettings, audioDefaults, videoDefaults);
+            var service = new PreferencesService(audioSettings, audioDefaults, videoDefaults);
             service.SetCurrent(
                 AudioPreferencesSnapshot.CaptureFrom(
                     AudioPreferencesSnapshot.BootstrapProfileId,
@@ -112,21 +106,49 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 factory: () => service,
                 alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesStateService already registered.",
                 registeredMessage: "[Preferences][BOOT] IPreferencesStateService registered.");
-
-            RegisterIfMissing<IPreferencesSaveService>(
-                factory: () => service,
-                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesSaveService already registered.",
-                registeredMessage: "[Preferences][BOOT] IPreferencesSaveService registered.");
         }
 
-        private static IPreferencesBackend ResolveBackend()
+        private static void RegisterPreferencesSaveAdapter(RuntimeModeConfig runtimeModeConfig)
         {
-            if (DependencyManager.Provider.TryGetGlobal<IPreferencesBackend>(out var backend) && backend != null)
+            if (runtimeModeConfig == null)
             {
-                return backend;
+                throw new InvalidOperationException("[FATAL][Preferences] RuntimeModeConfig obrigatorio ausente para registrar PreferencesSaveAdapter.");
             }
 
-            throw new InvalidOperationException("[FATAL][Preferences] IPreferencesBackend obrigatorio ausente na instalacao.");
+            RegisterIfMissing<IPreferencesSaveAdapter>(
+                factory: () =>
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<ISaveService>(out var saveService) || saveService == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Preferences] ISaveService obrigatorio ausente antes de registrar PreferencesSaveAdapter.");
+                    }
+
+                    var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
+                    return new PreferencesSaveAdapter(saveService, saveConfig.SchemaVersion);
+                },
+                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesSaveAdapter already registered.",
+                registeredMessage: "[Preferences][BOOT] IPreferencesSaveAdapter registered.");
+        }
+
+        private static void RegisterPreferencesRuntimePipeline()
+        {
+            RegisterIfMissing<IPreferencesRuntimePipeline>(
+                factory: () =>
+                {
+                    if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out var stateService) || stateService == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Preferences] IPreferencesStateService obrigatorio ausente antes de registrar IPreferencesRuntimePipeline.");
+                    }
+
+                    if (!DependencyManager.Provider.TryGetGlobal<IPreferencesSaveAdapter>(out var saveAdapter) || saveAdapter == null)
+                    {
+                        throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveAdapter obrigatorio ausente antes de registrar IPreferencesRuntimePipeline.");
+                    }
+
+                    return new PreferencesRuntimePipeline(stateService, saveAdapter);
+                },
+                alreadyRegisteredMessage: "[Preferences][BOOT] IPreferencesRuntimePipeline already registered.",
+                registeredMessage: "[Preferences][BOOT] IPreferencesRuntimePipeline registered.");
         }
 
         private static void RegisterIfMissing<T>(

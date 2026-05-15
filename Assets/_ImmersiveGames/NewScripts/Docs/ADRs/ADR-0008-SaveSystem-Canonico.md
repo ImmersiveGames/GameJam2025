@@ -14,6 +14,29 @@ A Base 1.0 estabeleceu save como um dos módulos da composição, mas não forma
 
 Adota-se o `SaveSystem` como módulo produtor de facts e executor de save commands via adapters.
 
+## Decisao Congelada Base 1.1 (Save)
+
+- Preferences e Progression sao scopes diferentes.
+- Preferences persistem escolhas do jogador/sistema (audio, video, input bindings, layout, idioma/acessibilidade quando existirem).
+- Owner de decisao de Preferences: `PreferencesRuntimePipeline`.
+- Progression persiste evolucao de jogo (activities, objetos, run, posicoes/status/checkpoints/inventario e equivalentes).
+- Progression nao tem owner unico generico.
+- O pipeline dono do ciclo decide quando coletar, carregar ou persistir progression.
+- Objetos/dominios produzem conteudo por contrato de snapshot/registro.
+- Objetos/dominios nao chamam backend diretamente.
+- `SaveRuntime` fornece API estavel e executor comum para persistencia de progression comandada.
+- Backend/core de `SaveRuntime` e mutavel/substituivel.
+- Backend atual pode ser PlayerPrefs apenas como backend tecnico provisorio.
+- PlayerPrefs nao deve permanecer como write path direto de Preferences quando a migracao ocorrer.
+- `RouteActivitySave` permanece especifico de rota/activity no `SessionOperationalPipeline`.
+- `SessionOperationalPipeline` nao vira owner generico de persistencia.
+- `RunPipeline` sera owner de run save/continuity quando esse fluxo for materializado.
+- Todo `Pipeline Command` de save deve carregar `Pipeline Identity`.
+- Foreign/stale events devem ser rejeitados ou gerar skip explicito.
+- Sem fallback silencioso.
+- Config obrigatoria ausente e fail-fast.
+- Nao manter dois write paths ativos.
+
 ### 1. Componentes Canônicos do SaveSystem
 
 #### SaveConfigAsset
@@ -76,6 +99,17 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Save failure deve ser reportado, não silenciado.
 - Foreign/stale save commands são ignorados.
 - Ausência de backend configurado é erro fail-fast.
+- Sem fallback silencioso.
+- Nao manter dois write paths ativos para o mesmo scope de dado.
+
+### 3.1 Mapa Canonico Base 1.1
+
+| Tipo de dado | Owner canonico | Pipeline/adapter responsavel | Executor/backend | Observacao/acao futura |
+|---|---|---|---|---|
+| Preferences (audio/video/input/layout/idioma/acessibilidade) | `PreferencesRuntimePipeline` | `PreferencesRuntimePipeline` (decide) + binders apenas como intencao UI | Backend tecnico atual de Preferences (PlayerPrefs provisorio) | Migrar write path de Preferences para trilho canonico de Save sem manter write path paralelo |
+| Route Activity Save | `SessionOperationalPipeline` (scope de rota/activity) | `RouteActivitySave` + `SessionOperationalActivitySaveAdapter` | `SaveRuntime` (`ISaveService` + backend configurado) | Continua especifico de rota/activity; nao vira owner generico |
+| Run Save / Continuity | `RunPipeline` (quando materializado) | `RunPipeline` + adapter de save do dominio run | `SaveRuntime` (backend substituivel) | Owner ainda futuro, mas ja congelado no trilho canonico |
+| Progression de objetos/dominios | Pipeline dono do ciclo correspondente | Pipeline do ciclo + adapter de save do dominio | `SaveRuntime` (backend substituivel) | Dominios produzem snapshot/registro; dominio nao chama backend direto |
 
 ## Consequências
 
@@ -105,3 +139,4 @@ Adota-se o `SaveSystem` como módulo produtor de facts e executor de save comman
 - Escolhas runtime de jogador pertencem ao produtor correto (Activity, selecao, profile/loadout, objeto de dominio ou sistema especifico).
 - Inicializacao de sessao nao vira owner generico de persistencia dessas escolhas.
 - Save continua executor comandado pelos owners corretos via `Pipeline Command` e `Pipeline Policy`.
+- Preferences permanece fora de `RouteActivitySave`.

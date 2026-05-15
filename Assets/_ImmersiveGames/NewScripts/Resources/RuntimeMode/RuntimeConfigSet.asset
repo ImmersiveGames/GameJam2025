@@ -29,8 +29,7 @@ MonoBehaviour:
     startupRouteDefinition: {fileID: 11400000, guid: 0a2fe18554df4b241b27733ced8e5b8a, type: 2}
     defaultLoadingMode: 2
     defaultLoadingProfile: {fileID: 11400000, guid: 81481f2098e923745a6a3b40b0ca524c, type: 2}
-  audioRuntime:
-    audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
+  audioRuntime: {}
   preferencesRuntime:
     audioDefaults: {fileID: 11400000, guid: bf1538c13363331439feacfefa59f364, type: 2}
     videoDefaults: {fileID: 11400000, guid: 2abe1594c17cbf14ba99d5746f95f233, type: 2}

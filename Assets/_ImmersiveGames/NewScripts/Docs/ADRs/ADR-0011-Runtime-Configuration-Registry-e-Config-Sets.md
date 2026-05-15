@@ -177,6 +177,16 @@ Exemplos:
 
 A decisão de quando salvar continua pertencendo aos pipelines.
 
+Regras canonicas de ownership (Base 1.1):
+
+- `SaveRuntime` e executor comum/API estavel; nao e owner generico de decisao.
+- `RouteActivitySave` permanece restrito ao scope de rota/activity no `SessionOperationalPipeline`.
+- `SessionOperationalPipeline` nao vira owner generico de persistencia.
+- `RunPipeline` sera owner de run save/continuity quando esse fluxo existir.
+- Commands de save devem carregar `Pipeline Identity`.
+- Eventos foreign/stale devem ser rejeitados ou gerar skip explicito.
+- Sem fallback silencioso e sem dual write path ativo para o mesmo scope.
+
 ### PreferencesRuntimeConfigGroup
 
 Agrupa configurações do runtime de preferences.
@@ -195,6 +205,15 @@ Regras:
 - source canônica de defaults de preferência (`AudioDefaults` e `VideoDefaults`) para `PreferencesRuntime` é `RuntimeConfigRegistry` snapshot read-only.
 
 `BootstrapConfigAsset` permanece apenas como legado de serialização e não como owner canônico ativo.
+
+Ownership do ciclo runtime de Preferences (Fase 2A):
+
+- AudioPreferencesOptionsBinder e VideoPreferencesOptionsBinder publicam apenas intencao de UI;
+- PreferencesRuntimePipeline e owner canonico para decisao de preview, commit e restore defaults;
+- PreferencesService continua owner de estado/aplicacao runtime;
+- PlayerPrefsPreferencesBackend permanece executor tecnico de persistencia nesta fase;
+- SaveRuntime / RouteActivitySave nao participam de preferences nesta fase.
+- Preferences e Progression sao scopes distintos; Preferences nao e parte de RouteActivitySave.
 
 ### InputModesRuntimeConfigGroup
 

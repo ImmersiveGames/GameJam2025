@@ -42,7 +42,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
     public interface IAudioRuntimeConfigGroupReadOnly
     {
-        AudioDefaultsAsset AudioDefaults { get; }
     }
 
     public interface IPreferencesRuntimeConfigGroupReadOnly

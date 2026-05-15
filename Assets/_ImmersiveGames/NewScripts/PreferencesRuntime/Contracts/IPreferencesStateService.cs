@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
         bool HasVideoSnapshot { get; }
         VideoPreferencesSnapshot CurrentVideoSnapshot { get; }
         IReadOnlyList<Vector2Int> GetVideoResolutionPresets();
+        AudioDefaultsAsset AudioDefaults { get; }
         VideoDefaultsAsset VideoDefaults { get; }
 
         void SetCurrent(
@@ -27,6 +28,20 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
 
         void ApplyCurrentVideoToRuntime(
             string reason);
+
+        bool TryPreviewAudioVolumes(
+            float masterVolume,
+            float bgmVolume,
+            float sfxVolume,
+            string reason,
+            out bool changed);
+
+        bool TryPreviewVideoResolution(
+            int width,
+            int height,
+            bool fullscreen,
+            string reason,
+            out bool changed);
     }
 }
 

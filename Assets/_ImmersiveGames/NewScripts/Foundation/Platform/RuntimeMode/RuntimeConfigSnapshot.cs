@@ -96,11 +96,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                 {
                     throw new ArgumentNullException(nameof(source));
                 }
-
-                AudioDefaults = source.AudioDefaults;
             }
-
-            public AudioDefaultsAsset AudioDefaults { get; }
         }
 
         private sealed class PreferencesRuntimeConfigGroupSnapshot : IPreferencesRuntimeConfigGroupReadOnly
