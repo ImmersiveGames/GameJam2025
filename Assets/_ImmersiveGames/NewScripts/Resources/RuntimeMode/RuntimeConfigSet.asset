@@ -37,4 +37,4 @@ MonoBehaviour:
   inputModesRuntime:
     operationalInputRuntimeProfile: {fileID: 11400000, guid: 9b16d95f7d1d4d2bbcaf47ca89ec8eaa, type: 2}
   cameraRuntime:
-    operationalCameraPrefab: {fileID: 8138986187103937281, guid: 75fbfa25ee6c2d64f9834cfb9407859a, type: 3}
+    operationalCameraPrefab: {fileID: 1771118535221421101, guid: 7534b0c938bbdfe4fbdd07ebf6ffa4a0, type: 3}
