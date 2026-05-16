@@ -32,3 +32,4 @@ MonoBehaviour:
   routeAudioCue: {fileID: 11400000, guid: 25cf9ecd2e0df8c40bb384c00bcc510a, type: 2}
   routeAudioTiming: 0
   stopPreviousRouteAudio: 1
+  surfacePresentationProfile: {fileID: 11400000, guid: 3ef802f24ca021e4c94e1fe95abcafdc, type: 2}

@@ -2,7 +2,7 @@
 
 ## Status
 
-- Estado: Accepted / Direction + MVP isolado, composition passiva e Operational Output Camera estabilizada
+- Estado: Accepted / Direction + MVP isolado e composition passiva validada
 - Data: 2026-05-15
 - Tipo: Direction / Architecture intent / MVP boundary / Structural checkpoint
 - Fonte de verdade canônica deste contrato: este ADR.
@@ -60,8 +60,6 @@ Ele não decide lifecycle.
 
 Checkpoint aplicado em 2026-05-15: o módulo `CameraPresentation` foi materializado como runtime passivo, registrado no boot/composition real da Base 1.1 e validado por smoke canônico via `DependencyManager`. Esse checkpoint não integra ainda a preparação automática de câmera ao `SessionOperationalPipeline`.
 
-Checkpoint adicional aplicado em 2026-05-15: a câmera operacional foi estabilizada como `Operational Output Camera` persistente no eixo real `Boot -> Menu`. Ela é a Unity output camera canônica do runtime, contém `Camera` e `CinemachineBrain`, é garantida pelo `OperationalCameraRuntime` e é exposta por `IOperationalCameraProvider`. Ela não representa, por si só, a câmera visual final de cada rota. Menu, Activity, gameplay e cutscenes devem usar futuras câmeras de apresentação por Cinemachine/rig/profile, preparadas por stage explícito antes do reveal.
-
 ---
 
 ## 1. Activity não é setup
@@ -96,7 +94,7 @@ CurtainClosed
 
 ---
 
-## 2. Camadas de câmera e output canônico
+## 2. Três camadas de câmera
 
 ### 2.1 Operational Camera Runtime
 
@@ -108,69 +106,13 @@ Responsabilidade:
 bootstrap/menu/loading/fade/overlays/transições operacionais
 ```
 
-Na Base 1.1, o `OperationalCameraRuntime` é também o owner da `Operational Output Camera`: a Unity `Camera` canônica, persistente e consultável, usada como output/render base do runtime.
+Não é câmera de gameplay.
 
-Ele garante:
-
-```text
-OperationalMainCamera
--> Camera operacional única
--> CinemachineBrain na output camera
--> PersistentRuntimeObject no root
--> OperationalCameraRuntimeMarker no root
--> IOperationalCameraProvider registrado no DependencyManager
-```
-
-Ele não decide câmera final de Menu, Activity, gameplay ou cutscene.
-
-Ele não decide lifecycle de rota ou Activity.
+Não decide câmera de Activity.
 
 ---
 
-### 2.2 Operational Output Camera != Route/Surface Presentation Camera
-
-A `Operational Output Camera` é a câmera física/output persistente do runtime.
-
-Ela existe para garantir que o sistema sempre tenha uma Unity `Camera` válida para:
-
-- loading;
-- fade;
-- UI global;
-- overlays operacionais;
-- menu básico;
-- mensagens operacionais ao usuário;
-- transições em cenas que ainda não prepararam câmera visual própria.
-
-Essa câmera não deve ser confundida com a câmera visual final de uma rota/superfície.
-
-Rotas e superfícies podem exigir apresentação visual própria, por exemplo:
-
-```text
-MenuScene
--> stage visual de menu
--> enquadramento específico
--> distância/FOV específico
--> animação de cenário de menu
-```
-
-Esse caso deve ser resolvido por `CameraPresentation`, preferencialmente via `CinemachineCamera`/presentation rig/profile, usando a `Operational Output Camera` apenas como output/brain canônico.
-
-Shape conceitual:
-
-```text
-OperationalCameraRuntime
--> garante Unity output camera persistente com CinemachineBrain
-
-CameraPresentation
--> prepara/ativa CinemachineCamera ou rig de apresentação da rota/surface
-
-SessionOperationalPipeline
--> decide quando preparar essa apresentação antes do reveal
-```
-
----
-
-### 2.3 Activity Camera Preparation
+### 2.2 Activity Camera Preparation
 
 Nova camada conceitual.
 
@@ -182,9 +124,9 @@ preparar a câmera visual da Activity antes da cortina abrir
 
 Inclui, conforme requisito:
 
-- `Operational Output Camera` explícita e consultável;
-- `CinemachineBrain` na output camera operacional;
-- `CinemachineCamera` / rig de apresentação explícito;
+- Unity `Camera` explícita;
+- `CinemachineBrain`;
+- `CinemachineCamera` / rig;
 - tracking target;
 - lookAt target opcional;
 - activation/cut antes do reveal;
@@ -192,7 +134,7 @@ Inclui, conforme requisito:
 
 ---
 
-### 2.4 Activity Camera Runtime
+### 2.3 Activity Camera Runtime
 
 Camada futura.
 
@@ -341,9 +283,9 @@ Preparar uma câmera de Activity com Cinemachine antes do reveal.
 
 ### Inclui
 
-- 1 `Operational Output Camera` explícita, garantida pelo `OperationalCameraRuntime`;
-- 1 `CinemachineBrain` na output camera operacional;
-- 1 `CinemachineCamera` / rig de apresentação explícito;
+- 1 Unity `Camera` explícita para activity/output camera;
+- 1 `CinemachineBrain`;
+- 1 `CinemachineCamera` / rig explícito;
 - tracking target obrigatório;
 - lookAt target opcional;
 - activation/cut antes do `FadeOut`;
@@ -417,8 +359,6 @@ activationTiming
 - Activity é visual/jogável, não setup.
 - Activity Camera Preparation roda antes do reveal.
 - Operational Camera Runtime permanece separado.
-- `Operational Output Camera` é output canônico persistente, não câmera visual final de toda rota.
-- Menu/Activity/gameplay/cutscene podem exigir `Route/Surface Presentation Camera` própria via Cinemachine/profile.
 - Cinemachine é executor técnico, não owner de lifecycle.
 - `PlayerInputManager` / `PlayerInput` entram no desenho futuro de split-screen, mas não comandam lifecycle.
 - `InputMode` é política de superfície/input ativo, não owner de câmera.
@@ -486,29 +426,20 @@ Operational Camera Runtime permanece separado de Activity Camera Binding. Este A
 
 ---
 
-## 12. Perguntas abertas e decisões fechadas
+## 12. Perguntas abertas
 
-### 12.1 Decisões fechadas neste checkpoint
-
-1. A Unity `Camera` canônica do runtime pertence ao `OperationalCameraRuntime` como `Operational Output Camera`.
-2. O `CinemachineBrain` canônico do fluxo single-output deve ficar na output camera operacional.
-3. `CameraPresentation` deve consumir a output camera operacional por contrato (`IOperationalCameraProvider`) e não por `Camera.main` ou acesso estático direto.
-4. Menu, Activity, gameplay e cutscene não devem alterar diretamente a ownership da output camera operacional; eles devem preparar câmera de apresentação por profile/rig/Cinemachine.
-5. A câmera do Menu pode ter enquadramento/configuração própria, mas isso deve ser tratado como `Route/Surface Camera Presentation`, não como nova câmera operacional.
-
-### 12.2 Perguntas ainda abertas
-
-1. Activity visual sempre declara `ActivityCameraRequirement`, mesmo que use output camera operacional?
-2. Target inicial vem de `PlayerPreparation`, `ActivitySetup`, `ActivityAnchor`, `RouteSurfaceAnchor` ou provider explícito?
-3. Pré-reveal deve sempre usar cut, nunca blend?
-4. Camera input entra no MVP ou apenas fica preparado no contrato?
-5. Split-screen inicial será Unity-managed via `PlayerInputManager` ou Base-managed no futuro?
-6. `PlayerSlot` mapeará para `CinemachineChannel` de forma fixa?
-7. Como pausar/suprimir input de câmera durante pause/cutscene?
-8. UI por player será problema do Camera Director, do Input runtime ou de UI Presentation?
-9. URP Camera Stack será usada para UI/overlay ou ficará fora do contrato inicial?
-10. Debug/freecam deve ser profile/tooling separado?
-11. Como declarar `Route/Surface Camera Presentation` para Menu: route asset, surface profile, menu presentation profile ou activity/setup profile?
+1. A Unity `Camera` de activity vem de prefab explícito, cena ou config?
+2. O `CinemachineBrain` fica na operational camera, em uma activity camera separada, ou ambos podem existir?
+3. Activity visual sempre declara `ActivityCameraRequirement`, mesmo que use operational camera?
+4. Target inicial vem de `PlayerPreparation`, `ActivitySetup`, `ActivityAnchor` ou provider explícito?
+5. Pré-reveal deve sempre usar cut, nunca blend?
+6. Camera input entra no MVP ou apenas fica preparado no contrato?
+7. Split-screen inicial será Unity-managed via `PlayerInputManager` ou Base-managed no futuro?
+8. `PlayerSlot` mapeará para `CinemachineChannel` de forma fixa?
+9. Como pausar/suprimir input de câmera durante pause/cutscene?
+10. UI por player será problema do Camera Director, do Input runtime ou de UI Presentation?
+11. URP Camera Stack será usada para UI/overlay ou ficará fora do contrato inicial?
+12. Debug/freecam deve ser profile/tooling separado?
 
 ---
 
@@ -527,7 +458,7 @@ nenhum rig for instanciado automaticamente pela composition;
 nenhum fallback silencioso ou retry em Update for usado como contrato.
 ```
 
-O MVP integrado com pipeline tem critério próprio na seção 17.
+O MVP integrado com pipeline tem critério próprio na seção 16.
 
 ---
 
@@ -696,135 +627,14 @@ Ainda não está implementado:
 
 ---
 
-## 15. Checkpoint aplicado - Operational Output Camera no eixo Boot -> Menu (2026-05-15)
+## 15. Próxima decisão arquitetural
 
-### 15.1 Escopo concluído
-
-Foi estabilizada a câmera operacional como `Operational Output Camera` persistente no eixo real:
-
-```text
-Boot
--> OperationalCameraRuntime
--> OperationalMainCamera
--> IOperationalCameraProvider
--> CameraPresentation composition passiva
--> MenuScene
-```
-
-O startup route validado voltou para:
-
-```text
-route-boot-menu
-```
-
-com active scene:
-
-```text
-MenuScene
-```
-
-### 15.2 Shape ativo
-
-Prefab/config operacional aceito:
-
-```text
-OperationalMainCamera
--> PersistentRuntimeObject no root
--> OperationalCameraRuntimeMarker no root
--> 1 Unity Camera em root ou filho
--> CinemachineBrain na output camera
-```
-
-Instância observada no runtime:
-
-```text
-OperationalMainCamera
--> ActivityOutputCamera
-```
-
-`ActivityOutputCamera` é a Unity output camera real observada pelo runtime.
-
-### 15.3 Provider operacional
-
-Foi materializado e registrado o contrato:
-
-```text
-IOperationalCameraProvider
--> UnityOperationalCameraProvider
--> OperationalCameraHandle
-```
-
-Responsabilidade do provider:
-
-```text
-expor a output camera operacional atual
-expor presença/ausência de CinemachineBrain de forma observável
-não usar Camera.main
-não procurar por nome/tag/convenção
-não decidir lifecycle
-```
-
-### 15.4 Logs aceitos para checkpoint
-
-Logs aceitos do eixo `Boot -> Menu`:
-
-```text
-startupRouteDefinition resolved via RuntimeConfigRegistry. routeIdentity='route-boot-menu'
-OperationalCameraPrefabObserved ... prefab='OperationalMainCamera' cameraCount='1' markerOnRoot='True' persistentRoot='True'
-OperationalCameraPersistenceValidated ... markerOnRoot='true' persistentRoot='true'
-OperationalCameraCreated ... camera='ActivityOutputCamera' marker='OperationalMainCamera'
-OperationalCameraReady ... camera='ActivityOutputCamera'
-provider='UnityOperationalCameraProvider' registered contract='IOperationalCameraProvider'
-CameraPresentation ... runtime composed reason='camera_presentation_runtime_composed'
-OperationalRouteCommand ... activeScene='MenuScene' activeSceneKey='MenuScene'
-InputCapabilityPrepared ... operationalSurfaceKind='FrontendMenu' initialInputMode='FrontendMenu'
-OperationalRouteCompleted ... routeIdentity='route-boot-menu'
-```
-
-### 15.5 Decisão adicional congelada
-
-A `Operational Output Camera` não é a câmera visual final de cada rota.
-
-Ela é a base de output/render do runtime.
-
-Rotas/superfícies que exigem enquadramento próprio devem usar `Route/Surface Camera Presentation` via `CameraPresentation`.
-
-Exemplo canônico futuro para Menu:
-
-```text
-route-boot-menu
--> MenuScene
--> MenuStage / Menu anchors
--> MenuCameraPresentationProfile
--> CinemachineCamera de menu
--> CinemachineBrain da Operational Output Camera
--> FadeOut / reveal
-```
-
-Essa decisão permite que o Menu tenha câmera com distância, FOV, target, lookAt e enquadramento próprios sem substituir a ownership da output camera operacional.
-
-### 15.6 Limite do checkpoint
-
-Este checkpoint não implementa ainda:
-
-- `CinemachineActivityCameraDirector` consumindo `IOperationalCameraProvider`;
-- validação obrigatória de `CinemachineBrain` pelo provider/director;
-- `Route/Surface Camera Presentation` para Menu;
-- `MenuCameraPresentationProfile`;
-- `ActivityCameraProfileAsset`;
-- `ActivityCameraPreparationStage` no `SessionOperationalPipeline`;
-- preparação automática de câmera antes do reveal.
-
----
-
-## 16. Próxima decisão arquitetural
-
-O próximo ponto não é técnico de Cinemachine. O próximo ponto é ownership e profile de apresentação por rota/surface.
+O próximo ponto não é técnico de Cinemachine. O próximo ponto é ownership.
 
 Pergunta canônica:
 
 ```text
-qual Pipeline Stage emite ActivityCameraBindingCommand ou Route/Surface Camera Presentation Command antes do reveal?
+qual Pipeline Stage emite ActivityCameraBindingCommand antes do reveal?
 ```
 
 Direção recomendada:
@@ -832,7 +642,7 @@ Direção recomendada:
 ```text
 SessionOperationalPipeline
 -> Pipeline Stage pré-reveal de setup/presentation
--> ActivityCameraBindingCommand / SurfaceCameraPresentationCommand
+-> ActivityCameraBindingCommand
 -> IActivityCameraPreparationExecutor
 -> ActivityCameraReadyFact / ActivityCameraFailureFact
 ```
@@ -852,7 +662,7 @@ Não é permitido resolver o requirement por auto-scan implícito de cena.
 
 ---
 
-## 17. Critério de aceite do MVP integrado futuro
+## 16. Critério de aceite do MVP integrado futuro
 
 O MVP integrado só será considerado aplicado quando:
 
@@ -870,7 +680,300 @@ nenhum fallback silencioso ou retry em Update for usado como contrato.
 
 ---
 
-## 18. Referências externas oficiais
+## 17. Route/Surface Camera Presentation
+
+Durante a evolução do `CameraPresentation`, foi identificado um caso operacional diferente de `ActivityCameraPreparation`:
+
+```text
+Route/Surface Camera Presentation
+```
+
+Esse caso cobre superfícies operacionais como `FrontendMenu`, nas quais a rota precisa declarar uma apresentação visual própria antes do reveal, sem transformar o Menu em Activity.
+
+### 17.1 Separação canônica
+
+A Base 1.1 passa a separar explicitamente:
+
+```text
+Operational Output Camera
+Route/Surface Presentation Camera
+Activity Camera
+```
+
+Regras:
+
+- `Operational Output Camera` é a câmera Unity persistente garantida pelo `OperationalCameraRuntime`.
+- `Route/Surface Presentation Camera` é uma apresentação visual de rota/superfície operacional.
+- `Activity Camera` é uma apresentação visual de Activity.
+- Menu não é Activity.
+- `Route/Surface Camera Presentation` não usa `ActivityCameraBindingCommand`.
+- Quando houver handoff para Activity e a policy indicar conflito, `ActivityCamera` tem prioridade semântica sobre `RouteCamera`.
+
+### 17.2 Runtime passivo materializado
+
+Foram materializados contratos e runtime passivo para route/surface camera:
+
+```text
+IRouteCameraDirector
+-> CinemachineRouteCameraDirector
+
+IRouteCameraPreparationExecutor
+-> RouteCameraPreparationExecutor
+```
+
+Modelos e facts principais:
+
+- `RouteCameraPresentationCommand`
+- `RouteCameraPresentationRequirement`
+- `RouteCameraBindingHandle`
+- `RouteCameraBindingResult`
+- `RouteCameraReadyFact`
+- `RouteCameraFailureFact`
+- `RouteCameraReleaseCommand`
+- `RouteCameraReleasedFact`
+- `RouteCameraReleaseFailureFact`
+- `RouteCameraPresentationMode`
+
+`CinemachineRouteCameraDirector` usa `IOperationalCameraProvider` e prepara apenas o presentation rig.
+
+O rig de apresentação de rota/surface:
+
+- deve conter exatamente uma `CinemachineCamera`;
+- não deve conter `UnityEngine.Camera`;
+- não deve conter `CinemachineBrain`;
+- não deve destruir nem substituir `OperationalMainCamera`;
+- não deve destruir nem substituir `ActivityOutputCamera`;
+- é liberado por release command com identidade válida.
+
+### 17.3 Authoring de surface presentation
+
+A apresentação de superfície é declarada por:
+
+```text
+SurfacePresentationProfileAsset
+```
+
+Campos canônicos:
+
+- `profileId`
+- `routeCameraPresentationMode`
+- `activationTiming`
+- `presentationRigPrefab`
+- `trackingAnchorId`
+- `lookAtAnchorId`
+- `priority`
+- `required`
+
+A rota operacional referencia opcionalmente esse profile por:
+
+```text
+OperationalRouteAsset.SurfacePresentationProfile
+```
+
+A referência é declarativa. Ela não executa câmera e não decide lifecycle.
+
+Os anchors concretos da cena são declarados por:
+
+```text
+SurfaceCameraAnchorHost
+```
+
+O profile guarda IDs de anchors, não `Transform` de cena.
+
+A resolução do requirement é feita por:
+
+```text
+SurfaceCameraPresentationRequirementResolver
+```
+
+Fluxo autoral validado:
+
+```text
+SurfacePresentationProfile_Menu
++ SurfaceCameraAnchorHost
+-> SurfaceCameraPresentationRequirementResolver
+-> RouteCameraPresentationRequirement
+```
+
+### 17.4 Adapter operacional
+
+A integração operacional ocorre por:
+
+```text
+ISessionOperationalRouteCameraAdapter
+SessionOperationalRouteCameraAdapter
+```
+
+Responsabilidades do adapter:
+
+- aplicar `RouteCameraPresentationMode`;
+- resolver `SurfaceCameraAnchorHost` de forma scene-local/determinística;
+- gerar `RouteCameraPresentationRequirement`;
+- gerar `RouteCameraPresentationCommand` com `Pipeline Identity`;
+- chamar `IRouteCameraPreparationExecutor`;
+- devolver `Prepared`, `Skipped` ou `Failed` ao pipeline;
+- executar release via `RouteCameraReleaseCommand`;
+- preservar guard contra comandos `foreign/stale`.
+
+Policies congeladas:
+
+```text
+None
+-> skip: surface_camera_presentation_mode_none
+
+SurfaceOnly
+-> preparar RouteCamera
+
+SkipWhenActivityHandoff + SessionActivityEntry
+-> skip: activity_camera_has_priority
+```
+
+Ausência de profile na rota é skip explícito:
+
+```text
+surface_presentation_profile_missing
+```
+
+### 17.5 Pipeline Stage integrado
+
+`Route/Surface Camera Presentation` foi integrado ao `SessionOperationalPipeline` como stage real:
+
+```text
+RouteCameraPresentationStage
+```
+
+Ordem canônica validada:
+
+```text
+FadeIn
+-> RouteActivitySave save-on-exit
+-> SceneComposition / ApplyOperationalRouteAsync
+-> RouteCameraPresentationStage
+-> RouteActivitySave load-on-enter
+-> PrepareInputCapabilityOrFail
+-> PlayerPreparation, se houver SessionActivityEntry
+-> Loading finalize/hide
+-> RouteRevealAudio
+-> FadeOut / reveal
+-> OperationalRouteCompleted
+-> Handoff, se houver
+```
+
+O stage ocorre depois de `SceneComposition`, porque os anchors scene-local precisam existir, e antes de `InputCapability`, `RouteRevealAudio` e `FadeOut`, porque a apresentação visual precisa estar pronta antes do reveal.
+
+`Skipped` é resultado válido para o stage.
+
+`Failed` é falha operacional quando o adapter reporta falha real de preparação/release.
+
+Release anterior ocorre dentro da transição, com cortina fechada, antes do novo prepare.
+
+A route camera preparada não é liberada imediatamente após o prepare; ela permanece ativa após o reveal da rota.
+
+---
+
+## 18. Checkpoint aplicado - Route/Surface Camera Presentation Stage integrado ao SessionOperationalPipeline (2026-05-15)
+
+### 18.1 Escopo concluído
+
+Foi validado o fluxo:
+
+```text
+SurfacePresentationProfile_Menu
+-> OperationalRouteAsset
+-> SessionOperationalPipeline
+-> RouteCameraPresentationStage
+-> SessionOperationalRouteCameraAdapter
+-> IRouteCameraPreparationExecutor
+-> CinemachineRouteCameraDirector
+-> ActivityOutputCamera
+```
+
+O stage é executado automaticamente no fluxo real `Boot -> Menu` quando a rota possui `SurfacePresentationProfileAsset` válido.
+
+### 18.2 Evidência de runtime aceita
+
+Evidência validada no fluxo `Boot -> Menu`:
+
+```text
+SceneComposition
+-> RouteCameraPresentationStageStarted
+-> RouteCameraPresentationReleasePreviousSkipped
+-> RouteCameraPresentationPrepareStarted
+-> RouteCameraPrepared
+-> RouteCameraPresentationPrepared
+-> RouteCameraPresentationStagePrepared
+-> RouteActivitySave load-on-enter
+-> InputCapabilityPrepared
+-> RouteRevealAudio
+-> FadeOut
+-> OperationalRouteCompleted
+```
+
+Logs-chave aceitos:
+
+```text
+RouteCameraPresentationStageStarted routeIdentity='route-boot-menu' activeScene='MenuScene' operationalSurfaceKind='FrontendMenu' completionHandoff='NoHandoff'
+RouteCameraPresentationReleasePreviousSkipped skipReason='no_active_route_camera_binding'
+RouteCameraPresentationPrepareStarted profileId='surface.presentation.menu' requirementId='surface.presentation.menu.route.camera'
+RouteCameraPrepared outputCamera='ActivityOutputCamera' hasOperationalBrain='True' presentationRig='RouteCameraRig::FrontendMenu::route-boot-menu|MenuScene|1'
+RouteCameraPresentationPrepared outputCamera='ActivityOutputCamera' presentationRig='RouteCameraRig::FrontendMenu::route-boot-menu|MenuScene|1'
+RouteCameraPresentationStagePrepared outputCamera='ActivityOutputCamera' presentationRig='RouteCameraRig::FrontendMenu::route-boot-menu|MenuScene|1'
+InputCapabilityPrepared routeIdentity='route-boot-menu' operationalSurfaceKind='FrontendMenu'
+OperationalRouteCompleted routeIdentity='route-boot-menu'
+```
+
+### 18.3 Invariantes validadas
+
+- `SessionOperationalPipeline` decide a ordem do stage.
+- `SessionOperationalRouteCameraAdapter` executa side-effect comandado pelo pipeline.
+- `CameraPresentation` não decide lifecycle.
+- `CinemachineRouteCameraDirector` usa `ActivityOutputCamera` via `IOperationalCameraProvider`.
+- `OperationalMainCamera` permanece viva.
+- `ActivityOutputCamera` permanece viva.
+- O presentation rig é preparado antes do reveal.
+- O stage acontece antes de `InputCapabilityPrepared`.
+- O stage acontece antes de `RouteRevealAudio`.
+- O stage acontece antes de `FadeOut`.
+- Ausência de route camera anterior gera skip explícito, não erro fatal.
+- Nenhum uso de `Camera.main` foi introduzido.
+- Nenhum fallback silencioso foi introduzido.
+- Nenhum auto-scan global amplo foi introduzido.
+
+### 18.4 Observabilidade pendente de limpeza
+
+Na primeira rota, o adapter ainda pode logar internamente:
+
+```text
+RouteCameraPresentationReleaseFailed failureReason='no_active_route_camera_binding'
+```
+
+e o pipeline converte corretamente para:
+
+```text
+RouteCameraPresentationReleasePreviousSkipped skipReason='no_active_route_camera_binding'
+```
+
+Funcionalmente o comportamento está correto, mas a observabilidade deve ser limpa para que `no_active_route_camera_binding` seja reportado como skip esperado no adapter, não como failure visual.
+
+Essa limpeza não bloqueia o checkpoint.
+
+### 18.5 Limite do checkpoint
+
+Este checkpoint fecha `Route/Surface Camera Presentation` para rota/surface operacional.
+
+Ainda não está implementado:
+
+- `ActivityCameraPreparationStage` integrado ao `SessionOperationalPipeline`;
+- emissão automática de `ActivityCameraBindingCommand`;
+- binding de câmera a targets reais de Activity/Actor;
+- split-screen;
+- camera input axes;
+- camera switching durante Activity;
+- teardown final de ActivityCamera por lifecycle de Activity.
+
+---
+
+## 19. Referências externas oficiais
 
 - Unity Cinemachine Camera component: https://docs.unity.cn/Packages/com.unity.cinemachine%403.1/manual/CinemachineCamera.html
 - Unity Cinemachine Brain component: https://docs.unity.cn/Packages/com.unity.cinemachine%403.1/manual/CinemachineBrain.html
@@ -882,16 +985,18 @@ nenhum fallback silencioso ou retry em Update for usado como contrato.
 
 ## Não objetivos deste ADR
 
-Este ADR não implementa ainda a integração final com pipeline/activity.
+Este ADR não implementa ainda a integração final de `ActivityCamera` com pipeline/activity.
 
-Já existem CameraDirector mínimo e contratos C# do MVP isolado, conforme checkpoint aplicado.
+Já existem:
+
+- CameraDirector mínimo e contratos C# do MVP isolado;
+- `Route/Surface Camera Presentation` integrado ao `SessionOperationalPipeline`;
+- `SurfacePresentationProfileAsset` para rota/surface operacional.
 
 Este ADR ainda não implementa:
 
-- emissão automática de command pelo pipeline;
-- assets finais de camera rig;
-- implementação de `Route/Surface Camera Presentation` para Menu;
-- `MenuCameraPresentationProfile`;
+- emissão automática de `ActivityCameraBindingCommand` pelo pipeline;
+- assets finais de camera rig de Activity;
 - split-screen;
 - UI por player;
 - camera preferences;
@@ -903,4 +1008,4 @@ Este ADR ainda não implementa:
 - runtime camera switching avançado;
 - integração final com ActivitySetup.
 
-Este ADR registra a direção, o corte mínimo já materializado e o próximo limite de integração.
+Este ADR registra a direção, os cortes já materializados e o próximo limite de integração: `ActivityCameraPreparationStage`.

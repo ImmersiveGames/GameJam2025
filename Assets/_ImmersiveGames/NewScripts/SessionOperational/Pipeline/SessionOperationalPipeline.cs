@@ -293,6 +293,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     throw new InvalidOperationException("Operational route executor returned an invalid completion fact.");
                 }
 
+                ExecuteRouteCameraPresentationStageOrFail(
+                    route,
+                    previousCompletedRoute,
+                    activeSceneName,
+                    routeIdentity,
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    sourceText,
+                    reasonText);
+
                 if (loadingCommand.IsEnabled)
                 {
                     await loadingAdapter.UpdateLoadingAsync(
@@ -1283,6 +1294,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             throw new InvalidOperationException(message);
         }
 
+        private static ISessionOperationalRouteCameraAdapter ResolveSessionOperationalRouteCameraAdapterOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalRouteCameraAdapter>(out var routeCameraAdapter) && routeCameraAdapter != null)
+            {
+                return routeCameraAdapter;
+            }
+
+            string message = "[FATAL][Config][SessionOperationalPipeline][RouteCamera] ISessionOperationalRouteCameraAdapter obrigatorio ausente para route/surface camera presentation stage.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
         private static ISessionActivityEntryHandoffReceiver ResolveActivityReceiverOrFail()
         {
             if (DependencyManager.Provider.TryGetGlobal<ISessionActivityEntryHandoffReceiver>(out var receiver) && receiver != null)
@@ -1435,6 +1458,100 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string message = "[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] ISessionOperationalActivitySaveAdapter obrigatorio ausente para RouteActivitySave.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
+        }
+
+        private static void ExecuteRouteCameraPresentationStageOrFail(
+            OperationalRouteAsset route,
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            string activeSceneName,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
+        {
+            ISessionOperationalRouteCameraAdapter routeCameraAdapter = ResolveSessionOperationalRouteCameraAdapterOrFail();
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationStageStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activeScene='{Normalize(activeSceneName)}' operationalSurfaceKind='{route.OperationalSurfaceKind}' completionHandoff='{route.CompletionHandoff}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            SessionOperationalRouteCameraReleaseCommand releaseCommand = new(
+                routeIdentity,
+                previousCompletedRoute.RouteIdentity,
+                source,
+                reason);
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousStarted currentRouteIdentity='{routeIdentity}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            if (!routeCameraAdapter.TryReleaseRouteCamera(releaseCommand, out SessionOperationalRouteCameraReleaseResult releaseResult, out string releaseReason))
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] release_previous_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' reason='{releaseReason}'.");
+            }
+
+            if (releaseResult.IsSkipped)
+            {
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousSkipped currentRouteIdentity='{routeIdentity}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' skipReason='{releaseResult.SkipReason}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+            }
+            else if (releaseResult.IsReleased)
+            {
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleasePreviousCompleted currentRouteIdentity='{routeIdentity}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' releaseRouteIdentity='{releaseResult.ReleasedFact.RouteIdentity}' releaseRequirementId='{releaseResult.ReleasedFact.RequirementId}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Success);
+            }
+            else
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] release_previous_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' reason='{releaseReason}'.");
+            }
+
+            SessionOperationalRouteCameraPrepareCommand prepareCommand = new(
+                route,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                route.OperationalSurfaceKind.ToString(),
+                route.CompletionHandoff,
+                activeSceneName,
+                source,
+                reason);
+
+            if (!routeCameraAdapter.TryPrepareRouteCamera(prepareCommand, out SessionOperationalRouteCameraPrepareResult prepareResult, out string prepareReason))
+            {
+                bool required = route.SurfacePresentationProfile != null && route.SurfacePresentationProfile.Required;
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' required='{required}' reason='{prepareReason}'.");
+            }
+
+            if (prepareResult.IsSkipped)
+            {
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' completionHandoff='{route.CompletionHandoff}' reason='{prepareResult.SkipReason}' source='{source}' reasonDetail='{reason}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
+            if (prepareResult.IsPrepared)
+            {
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationStagePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' requirementId='{prepareResult.ReadyFact.RequirementId}' outputCamera='{prepareResult.ReadyFact.OutputCameraName}' presentationRig='{prepareResult.ReadyFact.PresentationRigName}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Success);
+                return;
+            }
+
+            string failureReason = prepareResult.FailureFact != null
+                ? prepareResult.FailureFact.FailureReason
+                : prepareReason;
+            bool profileRequired = route.SurfacePresentationProfile != null && route.SurfacePresentationProfile.Required;
+
+            DebugUtility.LogError(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationFailed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' profileRequired='{profileRequired}' reason='{failureReason}' source='{source}' reasonDetail='{reason}'.");
+
+            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' required='{profileRequired}' reason='{failureReason}'.");
         }
 
         private static void ExecuteRouteActivitySaveSaveOnExitOrFail(
@@ -2384,7 +2501,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 }
-
 
 
 

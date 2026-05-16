@@ -1,4 +1,7 @@
-﻿using System;
+using System;
+using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
@@ -19,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static SessionOperationalActivitySaveAdapter _activitySaveAdapter;
         private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
         private static UnityPlayerMaterializationAdapter _playerMaterializationAdapter;
+        private static SessionOperationalRouteCameraAdapter _routeCameraAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -52,6 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalActivitySaveAdapter();
             EnsurePlayerMaterializationAdapter();
             EnsureSessionOperationalSceneCompositionAdapter();
+            EnsureSessionOperationalRouteCameraAdapter();
 
             _runtimeComposed = true;
 
@@ -267,6 +272,35 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='UnityPlayerMaterializationAdapter' registered for prototype player materialization.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalRouteCameraAdapter()
+        {
+            if (_routeCameraAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionOperationalRouteCameraAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeCameraAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<ISessionOperationalRouteCameraAdapter>(_routeCameraAdapter);
+                return;
+            }
+
+            if (!DependencyManager.Provider.TryGetGlobal<IRouteCameraPreparationExecutor>(out var routeCameraExecutor) || routeCameraExecutor == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][RouteCamera] IRouteCameraPreparationExecutor obrigatorio ausente para compor route/surface camera adapter.");
+            }
+
+            var requirementResolver = new SurfaceCameraPresentationRequirementResolver();
+            _routeCameraAdapter = new SessionOperationalRouteCameraAdapter(routeCameraExecutor, requirementResolver, DependencyManager.Provider);
+            DependencyManager.Provider.RegisterGlobal(_routeCameraAdapter);
+            DependencyManager.Provider.RegisterGlobal<ISessionOperationalRouteCameraAdapter>(_routeCameraAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionOperationalRouteCameraAdapter' registered for Route/Surface camera presentation.",
                 DebugUtility.Colors.Info);
         }
     }

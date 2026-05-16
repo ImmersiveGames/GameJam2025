@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
+using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
@@ -105,6 +106,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         [SerializeField] private SessionOperationalRouteAudioTiming routeAudioTiming = SessionOperationalRouteAudioTiming.BeforeFadeOut;
         [SerializeField] private bool stopPreviousRouteAudio;
 
+        [Header("Surface Presentation")]
+        // Perfil declarativo de apresentação de surface; não executa câmera por si só.
+        [SerializeField] private SurfacePresentationProfileAsset surfacePresentationProfile;
+
         public string RouteIdentity => Normalize(routeIdentity);
         public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile TransitionProfile => transitionProfile;
@@ -125,6 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public AudioCueAsset RouteAudioCue => routeAudioCue;
         public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
         public bool StopPreviousRouteAudio => stopPreviousRouteAudio;
+        public SurfacePresentationProfileAsset SurfacePresentationProfile => surfacePresentationProfile;
         public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
         public bool UsesLoading => LoadingMode != SessionOperationalRouteLoadingMode.None;
         public string LoadingProfileLabel => loadingProfile != null && !string.IsNullOrWhiteSpace(loadingProfile.ProfileId) ? loadingProfile.ProfileId.Trim() : string.Empty;
@@ -333,6 +339,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (routeAudioTiming != SessionOperationalRouteAudioTiming.BeforeFadeOut)
             {
                 errorMessage = $"routeAudioTiming is invalid routeIdentity='{RouteIdentity}' routeAudioTiming='{routeAudioTiming}'.";
+                return false;
+            }
+
+            if (surfacePresentationProfile != null &&
+                !surfacePresentationProfile.TryValidate(out string surfacePresentationProfileValidationReason))
+            {
+                errorMessage = $"route_surface_presentation_profile_invalid:{surfacePresentationProfileValidationReason} routeIdentity='{RouteIdentity}' profile='{surfacePresentationProfile.name}'.";
                 return false;
             }
 

@@ -55,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
                     out string reason))
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][CameraPresentation][Composer] compose failed reason='{reason}' resultReason='{result?.Reason}' directorRegistered='{result?.DirectorRegistered}' preparationExecutorRegistered='{result?.PreparationExecutorRegistered}'.");
+                    $"[FATAL][CameraPresentation][Composer] compose failed reason='{reason}' resultReason='{result?.Reason}' directorRegistered='{result?.DirectorRegistered}' preparationExecutorRegistered='{result?.PreparationExecutorRegistered}' routeDirectorRegistered='{result?.RouteDirectorRegistered}' routePreparationExecutorRegistered='{result?.RoutePreparationExecutorRegistered}'.");
             }
 
             _runtimeComposed = true;
@@ -65,6 +65,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
                 $"[OBS][CameraPresentation][Composer] preparation executor registered type='{typeof(ActivityCameraPreparationExecutor).Name}'.",
+                DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
+                $"[OBS][CameraPresentation][Composer] route director registered type='{typeof(CinemachineRouteCameraDirector).Name}'.",
+                DebugUtility.Colors.Info);
+            DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
+                $"[OBS][CameraPresentation][Composer] route preparation executor registered type='{typeof(RouteCameraPreparationExecutor).Name}'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(CameraPresentationBootstrapComposer),
                 $"[OBS][CameraPresentation][Composer] runtime composed reason='{result.Reason}'.",

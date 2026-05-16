@@ -18,6 +18,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 result = CameraPresentationRuntimeCompositionResult.Failed(
                     false,
                     false,
+                    false,
+                    false,
                     reason);
 
                 return false;
@@ -28,6 +30,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             {
                 reason = "dependency_manager_instance_missing";
                 result = CameraPresentationRuntimeCompositionResult.Failed(
+                    false,
+                    false,
                     false,
                     false,
                     reason);
@@ -41,6 +45,8 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 result = CameraPresentationRuntimeCompositionResult.Failed(
                     false,
                     false,
+                    false,
+                    false,
                     reason);
 
                 return false;
@@ -52,16 +58,20 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 result = CameraPresentationRuntimeCompositionResult.Failed(
                     false,
                     false,
+                    false,
+                    false,
                     reason);
 
                 return false;
             }
 
-            IActivityCameraDirector director = new CinemachineActivityCameraDirector(operationalCameraProvider);
+            IActivityCameraDirector director = CameraPresentationRuntimeFactory.CreateActivityDirector(operationalCameraProvider);
 
             if (!registry.TryRegister<IActivityCameraDirector>(director, out reason))
             {
                 result = CameraPresentationRuntimeCompositionResult.Failed(
+                    false,
+                    false,
                     false,
                     false,
                     reason);
@@ -75,6 +85,36 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             if (!registry.TryRegister<IActivityCameraPreparationExecutor>(preparationExecutor, out reason))
             {
                 result = CameraPresentationRuntimeCompositionResult.Failed(
+                    true,
+                    false,
+                    false,
+                    false,
+                    reason);
+
+                return false;
+            }
+
+            IRouteCameraDirector routeDirector = CameraPresentationRuntimeFactory.CreateRouteDirector(operationalCameraProvider);
+
+            if (!registry.TryRegister<IRouteCameraDirector>(routeDirector, out reason))
+            {
+                result = CameraPresentationRuntimeCompositionResult.Failed(
+                    true,
+                    true,
+                    false,
+                    false,
+                    reason);
+
+                return false;
+            }
+
+            IRouteCameraPreparationExecutor routePreparationExecutor = CameraPresentationRuntimeFactory.CreateRoutePreparationExecutor(routeDirector);
+
+            if (!registry.TryRegister<IRouteCameraPreparationExecutor>(routePreparationExecutor, out reason))
+            {
+                result = CameraPresentationRuntimeCompositionResult.Failed(
+                    true,
+                    true,
                     true,
                     false,
                     reason);
