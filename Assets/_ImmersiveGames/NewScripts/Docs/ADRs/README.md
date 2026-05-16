@@ -21,8 +21,9 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 10. **ADR-0010** - Player Preparation Flow, Player Slots e Unity PlayerInput (CONGELADO - 2026-05-14)
 11. **ADR-0011** - Runtime Configuration Registry and Config Sets (IMPLEMENTADO)
 12. **ADR-0012** - Operational Camera Runtime e Future Activity Camera Binding (CONGELADO - 2026-05-14)
+13. **ADR-0013** - Camera Presentation Runtime e Activity Camera Director (ACEITO / IMPLEMENTADO NO MVP SINGLE-PLAYER)
 
-**Estes ADRs (0009-0012) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
+**Estes ADRs (0009-0013) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
 
 Notas:
 - **ADR-0009** (congelado) congela o contrato operacional de:
@@ -95,9 +96,9 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 
 ### Regra Obrigatória de Leitura
 
-- **ADRs de ADR-0001 a ADR-0012 são a fonte normativa viva de Base 1.1.**
+- **ADRs de ADR-0001 a ADR-0013 são a fonte normativa viva de Base 1.1.**
   - ADR-0001 a ADR-0008: Estruturais (pipeline, adapters, policies canônicas).
-  - ADR-0009 a ADR-0012: Checkpoints normativos aceitos/congelados/implementados.
+  - ADR-0009 a ADR-0013: Checkpoints normativos aceitos/congelados/implementados.
 - ADRs anteriores (históricos) devem ser lidos apenas como referência contextual.
 - Em caso de conflito entre um ADR histórico e um ADR Base 1.1, a **Base 1.1 prevalece**.
 - Ownership não é decidido por conveniência operacional, e sim pelo papel arquitetural definido na Base 1.1.
@@ -117,11 +118,12 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 - ADR-0007
 - ADR-0008
 
-**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0012):**
+**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0013):**
 - ADR-0009 (congelado - 2026-05-14)
 - ADR-0010 (congelado - 2026-05-14)
 - ADR-0011 (implementado - 2026-05-13)
 - ADR-0012 (congelado - 2026-05-14)
+- ADR-0013 (aceito/implementado no MVP single-player - 2026-05-15)
 
 ### HISTÓRICO (Referência Apenas)
 
@@ -177,7 +179,9 @@ Limites atuais congelados:
 - Não há `Activity Snapshot Provider` canônico.
 - Não há gameplay input canônico neste checkpoint.
 - Não há `PlayerActor` materializado neste checkpoint.
-- Não há camera binding de activity/player/Cinemachine.
+- Camera pré-reveal está fechada no MVP single-player (Route/Surface + Activity + release determinístico entre rotas).
+- Status formal Base 1.1: **CameraPresentation pré-reveal single-player — CLOSED**.
+- Activity Camera Runtime durante a Activity permanece fora do MVP atual.
 
 Referências de materialização:
 

@@ -167,8 +167,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 reason = "no_active_route_camera_binding";
                 result = SessionOperationalRouteCameraReleaseResult.Skipped(reason);
                 DebugUtility.Log(typeof(SessionOperationalRouteCameraAdapter),
-                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleaseFailed currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' source='{command.Source}' reason='{command.Reason}' failureReason='{reason}'.",
-                    DebugUtility.Colors.Warning);
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleaseSkipped currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' source='{command.Source}' reason='{command.Reason}' skipReason='{reason}'.",
+                    DebugUtility.Colors.Info);
                 return true;
             }
 

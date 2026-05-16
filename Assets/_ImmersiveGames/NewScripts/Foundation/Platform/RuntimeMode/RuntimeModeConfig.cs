@@ -9,7 +9,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         order = 20)]
     public sealed class RuntimeModeConfig : ScriptableObject
     {
-        public const string DefaultResourcesPath = "RuntimeModeConfig";
 
         [Header("Modo")]
         [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: força o modo, útil para testes.")]

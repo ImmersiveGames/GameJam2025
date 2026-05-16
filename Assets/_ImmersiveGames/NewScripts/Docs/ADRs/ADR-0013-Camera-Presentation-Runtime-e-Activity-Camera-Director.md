@@ -2,10 +2,11 @@
 
 ## Status
 
-- Estado: Accepted / Direction + MVP isolado e composition passiva validada
+- Estado: Accepted / Direction + MVP isolado + Route/Surface Stage + ActivityCameraPreparationStage validados
 - Data: 2026-05-15
 - Tipo: Direction / Architecture intent / MVP boundary / Structural checkpoint
 - Fonte de verdade canônica deste contrato: este ADR.
+- Fechamento formal Base 1.1: **CameraPresentation pré-reveal single-player — CLOSED**.
 
 ---
 
@@ -58,7 +59,9 @@ O `ActivityCameraDirector` traduz intenções vindas de pipelines/stages em oper
 
 Ele não decide lifecycle.
 
-Checkpoint aplicado em 2026-05-15: o módulo `CameraPresentation` foi materializado como runtime passivo, registrado no boot/composition real da Base 1.1 e validado por smoke canônico via `DependencyManager`. Esse checkpoint não integra ainda a preparação automática de câmera ao `SessionOperationalPipeline`.
+Checkpoint aplicado em 2026-05-15: o módulo `CameraPresentation` foi materializado como runtime passivo, registrado no boot/composition real da Base 1.1 e validado por smoke canônico via `DependencyManager`. Naquele corte inicial, a preparação automática de câmera ainda não estava integrada ao `SessionOperationalPipeline`.
+
+Checkpoint posterior aplicado em 2026-05-15: `Route/Surface Camera Presentation` e `ActivityCameraPreparationStage` foram integrados ao `SessionOperationalPipeline` como `Pipeline Stage`s reais, com validação por fluxo real `Boot -> Menu -> SessionActivitySandboxScene`.
 
 ---
 
@@ -607,13 +610,14 @@ Esse smoke valida que a preparação/liberação manual passa pelo executor glob
 - Nenhum uso de `Camera.main` foi introduzido como fonte canônica.
 - Nenhum auto-scan global foi introduzido.
 - Nenhum retry em `Update` foi introduzido como contrato de readiness.
-- `SessionOperationalPipeline` ainda não foi alterado por este checkpoint.
+- `SessionOperationalPipeline` ainda não foi alterado por este checkpoint isolado (observação histórica, superada pelos checkpoints integrados 18/19 e atualização C1).
 
-### 14.6 Limite do checkpoint
+### 14.6 Limite do checkpoint (histórico)
 
 Este checkpoint fecha o módulo isolado e sua composition passiva.
+Este limite foi superado no MVP integrado de Base 1.1.
 
-Ainda não está implementado:
+Naquele corte isolado ainda não estava implementado:
 
 - emissão automática de `ActivityCameraBindingCommand` por pipeline;
 - `ActivityCameraPreparation` como `Pipeline Stage` pré-reveal;
@@ -627,44 +631,46 @@ Ainda não está implementado:
 
 ---
 
-## 15. Próxima decisão arquitetural
+## 15. Decisão resolvida - ownership do ActivityCameraPreparationStage
 
-O próximo ponto não é técnico de Cinemachine. O próximo ponto é ownership.
-
-Pergunta canônica:
-
-```text
-qual Pipeline Stage emite ActivityCameraBindingCommand antes do reveal?
-```
-
-Direção recomendada:
+A decisão de ownership foi resolvida no MVP integrado:
 
 ```text
 SessionOperationalPipeline
--> Pipeline Stage pré-reveal de setup/presentation
--> ActivityCameraBindingCommand
+-> ActivityCameraPreparationStage
+-> SessionOperationalActivityCameraAdapter
 -> IActivityCameraPreparationExecutor
 -> ActivityCameraReadyFact / ActivityCameraFailureFact
 ```
 
+O `SessionOperationalPipeline` é o owner da ordem, lifecycle, policy e handoff operacional.
+
+O `SessionOperationalActivityCameraAdapter` executa o side-effect comandado pelo pipeline.
+
+O `CameraPresentation` continua runtime passivo/técnico e não decide lifecycle.
+
 A Activity continua não sendo setup. A Activity começa visualmente depois do reveal/handoff.
 
-O target da câmera deve existir antes da preparação de câmera. Portanto, `ActivityCameraPreparation` deve ocorrer depois da preparação/materialização do target obrigatório, como `PlayerPreparation`, `ActorPreparation` ou `ActivitySetup` mínimo, conforme o rail ativo.
+O target da câmera deve existir antes da preparação de câmera. Portanto, `ActivityCameraPreparationStage` ocorre depois de `PlayerPreparationCompleted` e antes de loading finalize/hide, `RouteRevealAudio`, `FadeOut`, `OperationalRouteCompleted` e `SessionActivityEntryHandoff`.
 
-Fontes possíveis para `ActivityCameraRequirement` permanecem abertas:
+Para o MVP/sandbox, a fonte do requirement é:
 
-- definição/config explícita de activity;
-- setup config de activity;
-- route asset apenas em MVP/sandbox, com cuidado para não transformar rota em owner de detalhes da activity;
-- provider explícito de target/camera requirement.
+```text
+OperationalRouteAsset.ActivityPresentationProfile
+-> ActivityPresentationProfileAsset
+-> ActivityCameraAnchorHost scene-local
+-> ActivityCameraPresentationRequirementResolver
+```
+
+Essa decisão não transforma a rota em owner final de detalhes de Activity. A rota declara o requisito mínimo de apresentação para o ciclo operacional atual. Uma futura generalização pode mover a declaração para definição/config explícita de Activity sem alterar o ownership do stage.
 
 Não é permitido resolver o requirement por auto-scan implícito de cena.
 
 ---
 
-## 16. Critério de aceite do MVP integrado futuro
+## 16. Critério de aceite do MVP integrado
 
-O MVP integrado só será considerado aplicado quando:
+O MVP integrado é considerado aplicado quando:
 
 ```text
 uma rota/activity visual puder declarar requisito mínimo de câmera;
@@ -939,33 +945,31 @@ OperationalRouteCompleted routeIdentity='route-boot-menu'
 - Nenhum fallback silencioso foi introduzido.
 - Nenhum auto-scan global amplo foi introduzido.
 
-### 18.4 Observabilidade pendente de limpeza
+### 18.4 Observabilidade alinhada
 
-Na primeira rota, o adapter ainda pode logar internamente:
+Atualização aplicada (C2): quando não há binding ativo de RouteCamera, o adapter agora registra skip explícito:
 
 ```text
-RouteCameraPresentationReleaseFailed failureReason='no_active_route_camera_binding'
+RouteCameraPresentationReleaseSkipped skipReason='no_active_route_camera_binding'
 ```
 
-e o pipeline converte corretamente para:
+e o pipeline mantém o resultado esperado:
 
 ```text
 RouteCameraPresentationReleasePreviousSkipped skipReason='no_active_route_camera_binding'
 ```
 
-Funcionalmente o comportamento está correto, mas a observabilidade deve ser limpa para que `no_active_route_camera_binding` seja reportado como skip esperado no adapter, não como failure visual.
-
-Essa limpeza não bloqueia o checkpoint.
+Com isso, o caso `no_active_route_camera_binding` permanece sem impacto funcional e sem ruído de failure visual.
 
 ### 18.5 Limite do checkpoint
 
 Este checkpoint fecha `Route/Surface Camera Presentation` para rota/surface operacional.
 
-Ainda não está implementado:
+A integração de `ActivityCameraPreparationStage` é tratada no checkpoint posterior deste ADR.
 
-- `ActivityCameraPreparationStage` integrado ao `SessionOperationalPipeline`;
-- emissão automática de `ActivityCameraBindingCommand`;
-- binding de câmera a targets reais de Activity/Actor;
+Ainda não está implementado neste checkpoint de Route/Surface:
+
+- binding de câmera a targets reais de Activity/Actor fora do sandbox;
 - split-screen;
 - camera input axes;
 - camera switching durante Activity;
@@ -973,7 +977,222 @@ Ainda não está implementado:
 
 ---
 
-## 19. Referências externas oficiais
+
+## 19. Checkpoint aplicado - ActivityCameraPreparationStage integrado ao SessionOperationalPipeline (2026-05-15)
+
+### 19.1 Escopo concluído
+
+Foi validado o fluxo:
+
+```text
+ActivityPresentationProfileAsset
+-> OperationalRouteAsset.ActivityPresentationProfile
+-> SessionOperationalPipeline
+-> ActivityCameraPreparationStage
+-> SessionOperationalActivityCameraAdapter
+-> ActivityCameraPresentationRequirementResolver
+-> ActivityCameraAnchorHost
+-> IActivityCameraPreparationExecutor
+-> CinemachineActivityCameraDirector
+-> ActivityOutputCamera
+```
+
+O stage é executado automaticamente no fluxo real `Menu -> SessionActivitySandboxScene` quando a rota possui `CompletionHandoff = SessionActivityEntry` e `ActivityPresentationProfileAsset` válido.
+
+### 19.2 Authoring e resolução de ActivityCamera
+
+Foram materializados os elementos autorais/runtime mínimos:
+
+- `ActivityPresentationProfileAsset`
+- `OperationalRouteAsset.ActivityPresentationProfile`
+- `ActivityCameraAnchorHost`
+- `ActivityCameraPresentationRequirementResolver`
+- `ISessionOperationalActivityCameraAdapter`
+- `SessionOperationalActivityCameraAdapter`
+
+O profile declara:
+
+- `profileId`
+- `cameraRigPrefab`
+- `trackingAnchorId`
+- `lookAtAnchorId`
+- `activationTiming`
+- `priority`
+- `required`
+
+O profile não guarda `Transform` de cena. Os anchors reais são declarados pelo `ActivityCameraAnchorHost` scene-local.
+
+A resolução do requirement segue:
+
+```text
+ActivityPresentationProfileAsset
++ ActivityCameraAnchorHost
+-> ActivityCameraPresentationRequirementResolver
+-> ActivityCameraRequirement
+```
+
+### 19.3 Adapter operacional
+
+A integração operacional ocorre por:
+
+```text
+ISessionOperationalActivityCameraAdapter
+SessionOperationalActivityCameraAdapter
+```
+
+Responsabilidades do adapter:
+
+- aceitar comandos vindos do `SessionOperationalPipeline`;
+- resolver `ActivityCameraAnchorHost` de forma scene-local/determinística;
+- gerar `ActivityCameraRequirement`;
+- gerar `ActivityCameraBindingCommand` com `Pipeline Identity`;
+- chamar `IActivityCameraPreparationExecutor`;
+- devolver `Prepared`, `Skipped` ou `Failed` ao pipeline;
+- executar release via `ActivityCameraReleaseCommand`;
+- preservar guard contra comandos `foreign/stale` no executor.
+
+Policies congeladas:
+
+```text
+CompletionHandoff != SessionActivityEntry
+-> skip: not_session_activity_entry_handoff
+
+ActivityPresentationProfile ausente
+-> skip: activity_presentation_profile_missing
+
+ActivityPresentationProfile opcional sem rig
+-> skip: activity_presentation_camera_disabled
+
+Profile/anchor/requirement obrigatório inválido
+-> failure operacional
+```
+
+### 19.4 Pipeline Stage integrado
+
+`ActivityCameraPreparationStage` foi integrado ao `SessionOperationalPipeline` como stage real.
+
+Ordem canônica validada em rota com `SessionActivityEntry`:
+
+```text
+FadeIn
+-> RouteActivitySave save-on-exit
+-> SceneComposition / ApplyOperationalRouteAsync
+-> RouteCameraPresentationStage
+-> RouteActivitySave load-on-enter
+-> InputCapabilityPrepared
+-> PlayerPreparationStarted
+-> PlayerPreparationCompleted
+-> ActivityCameraPreparationStage
+-> Loading finalize/hide
+-> RouteRevealAudio
+-> FadeOut / reveal
+-> OperationalRouteCompleted
+-> SessionActivityEntryHandoff
+```
+
+O stage ocorre depois de `PlayerPreparationCompleted`, porque o target obrigatório precisa existir, e antes de `LoadingHidden`, `RouteRevealAudio`, `FadeOut`, `OperationalRouteCompleted` e handoff, porque a apresentação visual da Activity precisa estar pronta antes do reveal.
+
+`Skipped` é resultado válido para o stage.
+
+`Failed` é falha operacional.
+
+Release anterior ocorre dentro da transição, com cortina fechada, antes do novo prepare.
+
+A activity camera preparada não é liberada imediatamente após o prepare; ela permanece ativa após reveal e handoff.
+
+### 19.5 Evidência de runtime aceita
+
+Evidência validada no fluxo `Boot -> Menu -> SessionActivitySandboxScene`:
+
+```text
+PlayerPreparationCompleted
+-> ActivityCameraPreparationStageStarted
+-> ActivityCameraPresentationReleasePreviousStarted
+-> ActivityCameraPresentationReleasePreviousSkipped
+-> ActivityCameraPresentationPrepareStarted
+-> ActivityCameraPrepared
+-> ActivityCameraPresentationPrepared
+-> ActivityCameraPreparationStagePrepared
+-> LoadingCompleted
+-> LoadingHidden
+-> RouteRevealAudioStarted
+-> fadeOutStarted
+-> OperationalRouteCompleted
+-> SessionActivityEntryHandoffEmitted
+```
+
+Logs-chave aceitos:
+
+```text
+ActivityCameraPreparationStageStarted routeIdentity='route-menu-gameplay' activeScene='SessionActivitySandboxScene' completionHandoff='SessionActivityEntry' activityIdentity='SessionActivitySandboxSession'
+ActivityCameraPresentationReleasePreviousSkipped skipReason='no_active_activity_camera_binding'
+ActivityCameraPresentationPrepareStarted profileId='activity.presentation.sandbox' requirementId='activity.presentation.sandbox.camera'
+ActivityCameraPrepared outputCamera='ActivityOutputCamera' hasOperationalBrain='True' presentationRig='ActivityCameraRig::SessionActivitySandboxSession::route-menu-gameplay|SessionActivitySandboxScene|2'
+ActivityCameraPresentationPrepared outputCamera='ActivityOutputCamera' presentationRig='ActivityCameraRig::SessionActivitySandboxSession::route-menu-gameplay|SessionActivitySandboxScene|2'
+ActivityCameraPreparationStagePrepared outputCamera='ActivityOutputCamera' presentationRig='ActivityCameraRig::SessionActivitySandboxSession::route-menu-gameplay|SessionActivitySandboxScene|2'
+LoadingHidden routeIdentity='route-menu-gameplay'
+RouteRevealAudioStarted routeIdentity='route-menu-gameplay'
+OperationalRouteCompleted routeIdentity='route-menu-gameplay'
+SessionActivityEntryHandoffEmitted routeIdentity='route-menu-gameplay'
+```
+
+### 19.6 Invariantes validadas
+
+- `SessionOperationalPipeline` decide a ordem do stage.
+- `SessionOperationalActivityCameraAdapter` executa side-effect comandado pelo pipeline.
+- `CameraPresentation` não decide lifecycle.
+- `CinemachineActivityCameraDirector` usa `ActivityOutputCamera` via `IOperationalCameraProvider`.
+- `OperationalMainCamera` permanece viva.
+- `ActivityOutputCamera` permanece viva.
+- O presentation rig é preparado antes do reveal.
+- O stage acontece depois de `PlayerPreparationCompleted`.
+- O stage acontece antes de `LoadingHidden`.
+- O stage acontece antes de `RouteRevealAudio`.
+- O stage acontece antes de `FadeOut`.
+- O stage acontece antes de `OperationalRouteCompleted`.
+- O stage acontece antes de `SessionActivityEntryHandoff`.
+- Ausência de activity camera anterior gera skip explícito, não erro fatal.
+- Nenhum uso de `Camera.main` foi introduzido.
+- Nenhum fallback silencioso foi introduzido.
+- Nenhum auto-scan global amplo foi introduzido.
+- Nenhum owner paralelo de câmera foi criado em `SessionActivityPipeline`.
+
+### 19.7 Limite do checkpoint
+
+Este checkpoint fecha `ActivityCameraPreparationStage` como stage pré-reveal do `SessionOperationalPipeline` para o sandbox/Base 1.1 atual.
+
+Atualização de fechamento (C1): `ReleasePreviousActivityCameraStage` foi integrado ao `SessionOperationalPipeline` como stage global de transição. O release da ActivityCamera anterior agora ocorre de forma determinística em toda troca de rota, antes de `RouteCameraPresentationStage`, mantendo o prepare de ActivityCamera como stage pré-reveal apenas para rotas com `SessionActivityEntry`.
+
+Ainda não está implementado:
+
+- binding de câmera a targets reais de Activity/Actor fora do sandbox;
+- extração do requirement para definição/config final de Activity;
+- split-screen;
+- `PlayerInput.Camera` por player;
+- `CinemachineChannel` por player;
+- camera input axes;
+- camera switching durante Activity;
+- camera shake;
+- cutscene/sequencer;
+- target groups;
+- occlusion/confiner;
+- teardown final de ActivityCamera por lifecycle de Activity.
+
+### 19.8 Debug transitório
+
+O `SessionOperationalActivityCameraAdapterSmokeProbe` cumpriu sua função de smoke isolado do adapter.
+
+Após o checkpoint real do pipeline, ele pode ser removido, mantendo como validação canônica o fluxo real:
+
+```text
+Boot -> Menu -> SessionActivitySandboxScene
+-> ActivityCameraPreparationStagePrepared
+-> OperationalRouteCompleted
+-> SessionActivityEntryHandoffEmitted
+```
+
+---
+## 20. Referências externas oficiais
 
 - Unity Cinemachine Camera component: https://docs.unity.cn/Packages/com.unity.cinemachine%403.1/manual/CinemachineCamera.html
 - Unity Cinemachine Brain component: https://docs.unity.cn/Packages/com.unity.cinemachine%403.1/manual/CinemachineBrain.html
@@ -985,19 +1204,24 @@ Ainda não está implementado:
 
 ## Não objetivos deste ADR
 
-Este ADR não implementa ainda a integração final de `ActivityCamera` com pipeline/activity.
+Este ADR não implementa `Activity Camera Runtime` completo durante a Activity.
 
 Já existem:
 
 - CameraDirector mínimo e contratos C# do MVP isolado;
 - `Route/Surface Camera Presentation` integrado ao `SessionOperationalPipeline`;
-- `SurfacePresentationProfileAsset` para rota/surface operacional.
+- `SurfacePresentationProfileAsset` para rota/surface operacional;
+- `ActivityPresentationProfileAsset` para ActivityCamera MVP/sandbox;
+- `ActivityCameraPreparationStage` integrado ao `SessionOperationalPipeline`;
+- `ReleasePreviousActivityCameraStage` integrado ao `SessionOperationalPipeline`.
 
 Este ADR ainda não implementa:
 
-- emissão automática de `ActivityCameraBindingCommand` pelo pipeline;
-- assets finais de camera rig de Activity;
+- binding de câmera a targets reais de Activity/Actor fora do sandbox;
+- extração final do requirement para definição/config de Activity;
 - split-screen;
+- `PlayerInput.Camera` por player;
+- `CinemachineChannel` por player;
 - UI por player;
 - camera preferences;
 - debug/freecam;
@@ -1008,4 +1232,4 @@ Este ADR ainda não implementa:
 - runtime camera switching avançado;
 - integração final com ActivitySetup.
 
-Este ADR registra a direção, os cortes já materializados e o próximo limite de integração: `ActivityCameraPreparationStage`.
+Este ADR registra a direção, os cortes já materializados e o próximo limite de integração: `Activity Camera Runtime` durante a Activity.

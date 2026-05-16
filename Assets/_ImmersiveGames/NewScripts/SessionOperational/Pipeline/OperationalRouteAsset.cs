@@ -110,6 +110,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         // Perfil declarativo de apresentação de surface; não executa câmera por si só.
         [SerializeField] private SurfacePresentationProfileAsset surfacePresentationProfile;
 
+        [Header("Activity Presentation")]
+        // Perfil declarativo de apresentação de activity; não executa câmera por si só.
+        [SerializeField] private ActivityPresentationProfileAsset activityPresentationProfile;
+
         public string RouteIdentity => Normalize(routeIdentity);
         public SessionOperationalRouteTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile TransitionProfile => transitionProfile;
@@ -131,6 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
         public bool StopPreviousRouteAudio => stopPreviousRouteAudio;
         public SurfacePresentationProfileAsset SurfacePresentationProfile => surfacePresentationProfile;
+        public ActivityPresentationProfileAsset ActivityPresentationProfile => activityPresentationProfile;
         public bool UsesTransition => TransitionMode == SessionOperationalRouteTransitionMode.Profile;
         public bool UsesLoading => LoadingMode != SessionOperationalRouteLoadingMode.None;
         public string LoadingProfileLabel => loadingProfile != null && !string.IsNullOrWhiteSpace(loadingProfile.ProfileId) ? loadingProfile.ProfileId.Trim() : string.Empty;
@@ -346,6 +351,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 !surfacePresentationProfile.TryValidate(out string surfacePresentationProfileValidationReason))
             {
                 errorMessage = $"route_surface_presentation_profile_invalid:{surfacePresentationProfileValidationReason} routeIdentity='{RouteIdentity}' profile='{surfacePresentationProfile.name}'.";
+                return false;
+            }
+
+            if (activityPresentationProfile != null &&
+                !activityPresentationProfile.TryValidate(out string activityPresentationProfileValidationReason))
+            {
+                errorMessage = $"route_activity_presentation_profile_invalid:{activityPresentationProfileValidationReason} routeIdentity='{RouteIdentity}' profile='{activityPresentationProfile.name}'.";
                 return false;
             }
 
