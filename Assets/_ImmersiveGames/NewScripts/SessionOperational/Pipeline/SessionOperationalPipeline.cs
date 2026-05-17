@@ -628,6 +628,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         0,
                         route.HandoffSessionStateId,
                         playerPreparationHandoff,
+                        new SessionActivityRouteTransitionContext(
+                            route.UsesTransition && route.TransitionProfile != null,
+                            route.TransitionProfile,
+                            loadingCommand.LoadingMode == SessionOperationalRouteLoadingMode.Profile && loadingCommand.LoadingProfile != null,
+                            loadingCommand.LoadingProfile),
                         sourceText,
                         reasonText);
 

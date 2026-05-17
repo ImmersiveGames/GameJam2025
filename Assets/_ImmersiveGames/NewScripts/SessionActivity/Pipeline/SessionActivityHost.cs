@@ -38,7 +38,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _catalog,
                 sessionStateId,
                 new PauseOverlayAdapter(),
-                new InputModeAdapter());
+                new InputModeAdapter(),
+                new SessionActivityTransitionAdapter());
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);

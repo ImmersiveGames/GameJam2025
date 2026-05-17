@@ -1,268 +1,753 @@
-﻿# ADR-0004 - Session Activity Pipeline
+# ADR-0004 - Session Activity Pipeline
 
 ## Status
-- Estado: Accepted
-- Data: 2026-05-12
-- Tipo: Direction / Canonical architecture
+- Estado: Accepted / Living Canonical Checkpoint
+- Data inicial: 2026-05-12
+- Última atualização: 2026-05-17
+- Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR.
 
 ## Contexto
 
-A Base 1.0 tratou o engagement com activities como localmente operacional, com phases, stages e engagement owned por módulos dispersos. Na Base 1.1, o ciclo de activity ganha sua própria pipeline com identidade explícita e policy clara de ativação via `IntroStage`.
+A Base 1.0 tratou o engagement com activities como um fluxo localmente operacional, com phases, stages, `IntroStage`, result presentation, shortcuts de QA e closure distribuídos entre módulos diferentes.
+
+Na Base 1.1, dentro da estratégia de **Pipeline Convergence / Convergência para Pipelines Determinísticos**, o ciclo interno de uma activity passa a pertencer ao `SessionActivityPipeline`.
+
+Este ADR consolida o contrato atual e o shape alvo para:
+
+- lifecycle local da `SessionActivity`;
+- `ActivationWindow` e `DeactivationWindow`;
+- troca Activity -> Activity;
+- route-exit teardown;
+- ActivitySetup / ObjectEntry;
+- ActivitySceneContract;
+- retention/release;
+- fronteiras com `SessionOperationalPipeline`, `SceneComposition`, `SaveRuntime`, QA e runtime spawn futuro.
 
 ## Decisão
 
 ### 1. Session Activity Pipeline
 
-Adota-se o `SessionActivityPipeline` como owner do lifecycle de ativação, engagement e ciclo interno de activity.
+Adota-se o `SessionActivityPipeline` como owner do lifecycle local de activity.
 
-#### Princípios
+#### Responsabilidades do `SessionActivityPipeline`
 
-- `SessionActivityPipeline` coordena a entrada, ativação e fecho de activities.
-- O pipeline decide ordem, phases, policies de ativação e transitions internas.
-- `ActivityAsset` e `ActivityCatalogAsset` definem dados autorais mas não decidem lifecycle.
-- A ordem do `ActivityCatalog` define navegação.
-- `ActivityCatalogLooped` e `CatalogLoopCount` registram loops e repetição.
-- O pipeline decide quando a activity entra, ativa, pausa, retoma e sai.
-- `SessionActivityHost` e bridge/composition surface; nao e owner de lifecycle.
-- Em runtime normal, a entrada canonica de Activity ocorre apenas por `SessionActivityEntryHandoff`.
-- `autoStart` e `DebugStartActivity` sao tooling/QA e nao contrato canonico de entrada.
+- Receber entrada canônica via `SessionActivityEntryHandoff`.
+- Resolver a activity inicial a partir do catálogo.
+- Controlar `ActivitySetup`, `ActivationWindow`, `ActivityRunning`, `DeactivationWindow`, `ActivityTransition`, `ActivityRetention` e `ActivityRelease`.
+- Produzir `Pipeline Fact`, `Pipeline Snapshot`, `Pipeline Command` e `Pipeline Handoff` com `Pipeline Identity` explícita.
+- Rejeitar comandos/eventos `foreign/stale`.
+- Preparar ou rejeitar handoff para próxima activity.
+- Fechar activity ativa por route-exit sem preparar próxima activity.
 
-#### IntroStage: Activation Stage e Pipeline Policy
+#### Não responsabilidades
 
-`IntroStage` passa a ser lido como `Activation Stage`, uma `Pipeline Policy` de ativação executada pelo pipeline, não um ownership de ativação local.
+O `SessionActivityPipeline` não é owner de:
 
-##### Princípios de IntroStage
+- rota operacional;
+- scene composition física de rota;
+- loading/fade de rota;
+- save progression direto;
+- Run-level deactivation/continuity;
+- gameplay interno da activity;
+- decisão concreta de objetivos/recompensas/branch narrativa;
+- side-effects Unity diretos.
 
-- `IntroStage` não é owner de ativação.
-- A decisão de abrir, pular ou encerrar a ativação pertence ao pipeline.
-- Quando existir presenter válido para a identidade atual, a stage executa.
-- Quando não existir presenter válido, o ciclo registra `skip/no-content` explícito.
-- Resolução concreta da instância ocorre somente no momento canônico da pipeline.
+Esses pontos pertencem respectivamente a `SessionOperationalPipeline`, adapters, `RunPipeline`, domínios de gameplay ou `SaveRuntime`.
 
-#### Invariantes da Activity Pipeline
+### 2. Fronteira com SessionOperationalPipeline
 
-- O pipeline decide ativação, engagement e closure.
-- Toda activity relevante possui identidade canônica e entry handoff.
-- O catalogo preserva precedência de navegação.
-- Loops e repetições são rastreáveis por metadata canônica.
-- Foreign/stale events não podem trocar a activity ativa.
-- A ausência de presenter válido não causa fallback; gera skip/no-content.
-- A resolução local da instância concreta não decide lifecycle.
-- Comando/evento sem identity valida nao inicia nem altera Activity ativa.
-- Host local nao pode iniciar Activity automaticamente por `autoStart`.
+O `SessionOperationalPipeline` é owner da ordem de rota, transição operacional, scene composition operacional, loading/fade de rota e handoff inicial para a `SessionActivity`.
+
+O `SessionActivityPipeline` é owner do lifecycle local da activity após o handoff.
+
+A entrada normal em runtime ocorre apenas por:
+
+```text
+SessionOperationalPipeline
+-> SessionActivityEntryHandoff
+-> SessionActivityPipeline.StartFromPreparedHandoff
+```
+
+`SessionActivityHost`, debug panels e binders locais não são owners de lifecycle.
+
+### 3. Fronteira com SceneComposition
+
+`SceneComposition` executa load/unload/set-active de cenas comandados por pipelines. Ele não decide lifecycle de activity.
+
+Antes de descarregar uma rota/cena que contém `SessionActivity` ativa, o `SessionOperationalPipeline` deve consultar/acionar o boundary explícito de route-exit teardown da `SessionActivity`.
+
+A ordem obrigatória para route-exit é:
+
+```text
+RouteExitRequested
+-> SessionActivityRouteExitTeardownStarted
+-> CloseForRouteExit
+-> ActivityRouteExitCompleted / ClosedForRouteExit
+-> SessionActivityRouteExitTeardownCompleted
+-> ApplyOperationalRouteAsync
+-> SceneComposition unload
+```
+
+Nunca é válido iniciar `UnloadSceneStarted` de cena com activity ativa sem fechamento canônico prévio.
+
+### 4. Lifecycle local canônico
+
+O ciclo local mínimo da activity é:
+
+```text
+SessionActivityEntryHandoffAccepted
+-> ActivitySetup
+-> ActivityActivationStarted
+-> ActivationWindow
+-> ActivityRunning
+-> ActivityCompletionRequested / ActivityNavigationExitRequested / ActivityRouteExitRequested
+-> ActivityCompleting
+-> DeactivationWindow
+-> ActivityDeactivated
+-> ActivityTransition / ClosedForRouteExit / Completed
+```
+
+#### Entrada nominal atual
+
+```text
+SessionActivityEntryHandoffAccepted
+-> ActivitySetupStarted
+-> ActivitySetupSkippedNoContent
+-> ActivitySetupCompleted
+-> ActivityActivationStarted
+-> ActivationWindowStarted
+-> ActivationWindowSkippedNoContent ou ActivationWindowReady/Completed
+-> ActivityRunning
+```
+
+#### Saída nominal atual
+
+```text
+ActivityRunning
+-> ActivityCompletionRequested ou ActivityNavigationExitRequested ou ActivityRouteExitRequested
+-> ActivityCompleting
+-> DeactivationWindowStarted
+-> DeactivationWindowSkippedNoContent ou DeactivationWindowReady/Completed
+-> ActivityDeactivated
+```
+
+### 5. ActivationWindow
+
+`ActivationWindow` substitui o papel antigo de `IntroStage` como janela autoral de entrada.
+
+Ela serve para conteúdo visível/autorável antes de liberar a activity, como:
+
+- disclaimer;
+- splash;
+- cutscene;
+- prompt “aperte para começar”;
+- introdução local da activity.
+
+`ActivationWindow` não é setup técnico.
+
+#### Modos
+
+```text
+ActivityWindowMode.None
+ActivityWindowMode.AdditiveScene
+```
+
+#### None
+
+```text
+ActivationWindowStarted
+-> ActivationWindowSkippedNoContent
+-> ActivityRunning
+```
+
+#### AdditiveScene
+
+```text
+ActivationWindowStarted
+-> ActivationWindowAdditiveSceneLoadStarted
+-> ActivationWindowAdditiveSceneLoaded
+-> ActivationWindowReady
+-> CompleteActivationWindow
+-> ActivationWindowCompleted
+-> ActivationWindowAdditiveSceneUnloadStarted
+-> ActivationWindowAdditiveSceneUnloaded
+-> ActivityRunning
+```
+
+Regras:
+
+- Cena da window deve ser referenciada por `SceneKeyAsset`, não string livre.
+- `CompleteActivationWindow` é comando explícito.
+- `ActivityRunning` só pode ocorrer depois de `ActivationWindowCompleted` e unload da cena quando `AdditiveScene`.
+- `AdditiveScene` sem `SceneKeyAsset` válido é fail-fast.
+- Não há fallback silencioso para skip/no-content.
+
+### 6. DeactivationWindow
+
+`DeactivationWindow` substitui o papel antigo de result/presentation/post-run local da activity.
+
+Ela serve para conteúdo visível/autorável antes de sair da activity, como:
+
+- resultado local;
+- tela de conclusão;
+- cutscene de saída;
+- post-run local;
+- confirmação antes de avançar.
+
+`DeactivationWindow` não é release técnico.
+
+#### None
+
+```text
+DeactivationWindowStarted
+-> DeactivationWindowSkippedNoContent
+-> ActivityDeactivated
+```
+
+#### AdditiveScene
+
+```text
+DeactivationWindowStarted
+-> DeactivationWindowAdditiveSceneLoadStarted
+-> DeactivationWindowAdditiveSceneLoaded
+-> DeactivationWindowReady
+-> CompleteDeactivationWindow
+-> DeactivationWindowCompleted
+-> DeactivationWindowAdditiveSceneUnloadStarted
+-> DeactivationWindowAdditiveSceneUnloaded
+-> ActivityDeactivated
+```
+
+Regras:
+
+- Cena da window deve ser referenciada por `SceneKeyAsset`.
+- `CompleteDeactivationWindow` é comando explícito.
+- `ActivityDeactivated` só pode ocorrer depois de `DeactivationWindowCompleted` e unload da cena quando `AdditiveScene`.
+- `AdditiveScene` sem `SceneKeyAsset` válido é fail-fast.
+- Não há fallback silencioso para skip/no-content.
+
+### 7. Removal de trilhos antigos
+
+O contrato ativo remove ou proíbe retorno de:
+
+- `HasActivation`;
+- `HasActivityResult`;
+- `ActivationEntered`;
+- `ActivationSkippedNoContent` antigo;
+- `ActivationExecuting` antigo;
+- `ActivityResultPresentation*`;
+- `IntroStage` como owner de lifecycle;
+- `DebugStartActivity` como entrada de produção;
+- `autoStart` como entrada de produção.
+
+`IntroStage`, se citado historicamente, deve ser lido apenas como antecedente conceitual de `ActivationWindow`/`Pipeline Policy`, nunca como owner ativo.
+
+### 8. CompleteCurrentActivity vs CloseForRouteExit
+
+Há dois caminhos semanticamente distintos.
+
+#### CompleteCurrentActivity
+
+Fecha a activity dentro do catálogo local e pode preparar próxima activity.
+
+```text
+ActivityCompletionRequested
+-> ActivityCompleting
+-> DeactivationWindow
+-> ActivityDeactivated
+-> ActivityTransitionPolicy/Profile resolved
+-> ActivityHandoffPrepared, se houver next activity
+```
+
+#### CloseForRouteExit
+
+Fecha a activity porque a rota está saindo. Não prepara próxima activity.
+
+```text
+ActivityRouteExitRequested
+-> ActivityCompleting
+-> DeactivationWindow
+-> ActivityDeactivated
+-> ActivityRouteExitCompleted
+-> ClosedForRouteExit
+```
+
+Regras:
+
+- `CloseForRouteExit` não emite `ActivityTransitionPolicySelected`.
+- `CloseForRouteExit` não emite `ActivityHandoffPrepared`.
+- `CloseForRouteExit` não chama `ContinueToNextActivity`.
+- `CloseForRouteExit` deve terminar sem `CurrentHandoff` pendente.
+- `SessionOperationalPipeline` bloqueia route-exit se houver handoff pendente antes do unload.
+
+### 9. QA canônico
+
+O QA principal deve validar o lifecycle, não criar atalhos.
+
+Botões/caminhos válidos:
+
+- `DumpState` / `Trace`;
+- `CompleteActivationWindow`;
+- `CompleteCurrentActivity`;
+- `CompleteDeactivationWindow`;
+- `ContinueToNextActivity`, apenas quando houver handoff preparado após `ActivityDeactivated`;
+- `RequestPause` / `RequestResume`, se não criarem bypass.
+
+Devem permanecer removidos/bloqueados:
+
+- `DebugStartActivity` em produção;
+- `GoToNextActivity` direto;
+- `GoToPreviousActivity` direto;
+- `GoToActivity` direto;
+- `RestartCurrentActivity` direto;
+- qualquer atalho que faça `ActivityRunning -> ActivityDeactivated -> NextActivity` sem `DeactivationWindow`.
+
+### 10. ActivityTransition
+
+`ActivityTransition` é o bloco de troca Activity -> Activity dentro da mesma `SessionActivity`.
+
+Ele pertence ao `SessionActivityPipeline`, não ao `SessionOperationalPipeline`.
+
+#### Separação
+
+```text
+Route Transition
+owner: SessionOperationalPipeline
+uso: troca de rota/cena operacional
+```
+
+```text
+Activity Transition
+owner: SessionActivityPipeline
+uso: troca Activity -> Activity dentro da SessionActivity
+```
+
+A `ActivityTransition` pode reutilizar perfis técnicos de rota, como fade/loading profiles, mas a decisão de uso pertence à `SessionActivity`.
+
+#### Regras de profile
+
+- Override específico da Activity vence herança da rota.
+- Herança de profile da rota deve ser explícita e observável.
+- Ausência de profile obrigatório para `CutWithCurtain` é fail-fast.
+- `Seamless` permanece futuro/unsupported até contrato próprio.
+- `None` representa troca seca intencional, não ausência de configuração.
+
+#### Sequência conceitual para CutWithCurtain
+
+```text
+ActivityDeactivated
+-> ActivityTransitionProfileSelected
+-> ActivityTransitionProfileResolved
+-> ActivityTransitionStarted
+-> ActivityTransitionFadeInStarted
+-> ActivityTransitionFadeInCompleted
+-> NextActivitySetupStarted
+-> NextActivitySetupSkippedNoContent ou NextActivitySetupCompleted
+-> ActivityHandoffPrepared
+-> ContinueToNextActivity
+-> next ActivitySetup
+-> next ActivationWindow
+-> reveal-safe point
+-> ActivityTransitionFadeOutStarted
+-> ActivityTransitionFadeOutCompleted
+-> ActivityTransitionCompleted
+```
+
+Reveal-safe point:
+
+- se `ActivationWindowMode=None`: `ActivityRunning`;
+- se `ActivationWindowMode=AdditiveScene`: `ActivationWindowReady`, antes de `CompleteActivationWindow`.
+
+### 11. ActivitySetup
+
+`ActivitySetup` é o estágio que prepara a activity antes de ela ser revelada ou antes de rodar.
+
+Ele não é `ActivationWindow`.
+
+#### Responsabilidades
+
+- Coletar contributors declarados pela Activity.
+- Coletar contributors descobertos em cenas carregadas.
+- Montar `ActivitySetupPlan`.
+- Emitir `Pipeline Commands`.
+- Aguardar `Pipeline Facts`.
+- Validar readiness.
+- Bloquear reveal/running quando houver requirements obrigatórios.
+
+#### MVP Base 1.1
+
+O MVP cria o slot determinístico, mas pode ser nominal:
+
+```text
+ActivitySetupStarted
+-> ActivitySetupSkippedNoContent
+-> ActivitySetupCompleted
+```
+
+A ausência de conteúdo real deve gerar fact explícito de `skip/no-content`, nunca omissão silenciosa.
+
+### 12. ActivitySceneContract
+
+Cenas de activity podem conter objetos/contributors que só são conhecidos depois do load.
+
+Para manter determinismo, cenas devem poder declarar um contrato explícito:
+
+```text
+ActivitySceneContract
+- sceneKey
+- contractId
+- discoveryMode
+- safeForSeamlessReveal
+- expectedRequiredContributors
+- allowOptionalExtras
+- requiredBeforeRevealTags
+- requiredBeforeRunningTags
+```
+
+#### Discovery modes
+
+```text
+Strict
+AllowOptionalExtras
+Open
+```
+
+Regras:
+
+- A cena pode esconder complexidade autoral, mas não pode esconder contrato.
+- Só participa do pipeline quem tiver marker/contributor explícito.
+- O pipeline compara inventário declarado vs contributors descobertos.
+- Missing required contributor é fail-fast.
+- Extras só são aceitos conforme `discoveryMode`.
+
+### 13. ActivitySetupContributor
+
+Objetos, assets e domínios podem contribuir requirements para setup.
+
+Fontes possíveis:
+
+- `ActivityAsset` / `ActivityCatalogAsset`;
+- `ActivitySceneContract`;
+- objetos presentes na cena;
+- definitions de actors/NPCs/props;
+- spawners;
+- HUD local;
+- runtime objects;
+- save/progression futuramente.
+
+O contributor não executa lifecycle. Ele declara requirements.
+
+### 14. ActivitySetupRequirement
+
+Um requirement descreve uma necessidade de preparação.
+
+Campos conceituais:
+
+```text
+requirementId
+ownerObjectId
+kind
+requiredness
+deadline
+dependencies
+command
+```
+
+Deadlines iniciais:
+
+```text
+RequiredBeforeReveal
+RequiredBeforeRunning
+RequiredBeforeActivation
+WarmupOnly
+Optional
+Lazy
+```
+
+Kinds conceituais:
+
+```text
+ResourceWarmup
+PoolWarmup
+Materialization
+StateReset
+Placement
+HudBinding
+InteractionBinding
+CameraBinding
+Activation
+Release
+```
+
+### 15. ObjectEntry
+
+Todo objeto que entra no jogo deve passar por um trilho homogêneo.
+
+Isso vale para:
+
+- objeto inicial da activity;
+- objeto presente em cena carregada;
+- objeto vindo de spawn durante gameplay;
+- objeto restaurado de save futuramente.
+
+Sequência conceitual:
+
+```text
+ObjectEntryRequested
+-> ObjectMaterializationStarted
+-> ObjectMaterialized
+-> ObjectSetupStarted
+-> ObjectSetupCompleted
+-> ObjectReady
+-> ObjectActivated
+```
+
+A diferença entre ActivitySetup e runtime spawn não é o contrato do objeto, mas o que fica bloqueado:
+
+```text
+ActivitySetup bloqueia reveal/running da Activity.
+RuntimeSpawn bloqueia ativação do objeto.
+```
+
+### 16. Preload / Warmup / Setup / Activation
+
+Preload não significa instanciar tudo.
+
+Separação canônica:
+
+```text
+Preload/Warmup
+-> prepara capacidade: assets, pools, HUD local, cenas auxiliares
+```
+
+```text
+Setup
+-> prepara instância: materializar, resetar, posicionar, bindar
+```
+
+```text
+Activation
+-> coloca no gameplay: habilita visual/interação/IA/input
+```
+
+Regra curta:
+
+```text
+Preload prepara capacidade.
+Setup prepara instância.
+Activation coloca no gameplay.
+```
+
+### 17. ActivityRetentionPolicy
+
+`Deactivation` não implica `Release`.
+
+Uma activity pode deixar de ser a activity atual e ainda permanecer retida/suspensa por policy.
+
+Estados conceituais:
+
+```text
+Active
+Deactivated
+Retained
+Suspended
+ReleasePending
+Released
+```
+
+Policies conceituais:
+
+```text
+ReleaseImmediately
+RetainPreviousCount
+ReleaseAfterDistance
+RetainUntilRouteExit
+ManualRelease
+Budgeted
+```
+
+MVP Base 1.1 pode implementar apenas comportamento nominal ou `ReleaseImmediately`, mas o contrato precisa reconhecer que deactivation e release são conceitos diferentes.
+
+### 18. ActivityRelease / ObjectRelease
+
+Tudo que entra precisa de saída.
+
+Activity release conceitual:
+
+```text
+ActivityReleaseStarted
+-> ActivityReleasePlanResolved
+-> ObjectReleaseStarted
+-> ObjectReleased
+-> ActivityReleased
+```
+
+Object release conceitual:
+
+```text
+ObjectDeactivation
+-> UnbindHud
+-> UnregisterInteraction
+-> StopAI
+-> ClearRuntimeSubscriptions
+-> ReturnToPool ou Destroy
+-> ObjectReleased
+```
+
+Regras:
+
+- `ActivityRelease` limpa recursos/objetos/binds/cenas da activity.
+- `ActivityDeactivated` apenas tira a activity do foco atual.
+- Activities retidas devem estar suspensas ou protegidas por identity.
+- Route-exit força release/teardown de tudo que não for explicitamente session-owned, route-owned ou persistente por outro contrato.
+
+### 19. Ownership de objetos
+
+Todo objeto preparado precisa ter ownership explícito.
+
+Scopes conceituais:
+
+```text
+ActivityOwned
+SessionOwned
+RouteOwned
+SharedPoolOwned
+RuntimeSpawnOwned
+```
+
+Cada `ObjectEntryPlan` deve carregar:
+
+```text
+ownerScope
+ownerId
+releasePolicy
+objectEntryId
+objectDefinitionId
+activityId
+sourceKind
+sourceId
+```
+
+Isso evita liberar HUD/pool/recurso compartilhado que ainda pertence à sessão ou a outra activity.
+
+### 20. RuntimeSpawn futuro
+
+Runtime spawn deve usar o mesmo `ObjectEntryPlan` de ActivitySetup.
+
+Não deve existir um caminho paralelo para criar objetos durante gameplay.
+
+Diferença de policy:
+
+```text
+ActivitySetupPolicy
+-> bloqueia reveal/running da Activity
+```
+
+```text
+RuntimeSpawnPolicy
+-> bloqueia ativação do objeto spawnado
+```
+
+### 21. Conteúdo random/procedural
+
+Conteúdo random/procedural é permitido, mas deve ser determinístico quando necessário.
+
+Regras:
+
+- Contributor procedural recebe seed/contexto.
+- Contributor procedural emite plano resolvido.
+- O plano resolvido é observável.
+- Instanciação direta fora do pipeline é proibida para conteúdo relevante.
+
+### 22. Seamless futuro
+
+`Seamless` não é uma troca frouxa. É mais rígida.
+
+Para uma Activity/cena ser usada sem transição visual, ela precisa provar:
+
+```text
+safeForSeamlessReveal = true
+RequiredBeforeReveal resolvido
+nenhum objeto visualmente incompleto será exposto
+objetos incompletos nascem hidden/inactive até ObjectReady
+```
+
+Se isso não for provado, `Seamless` deve falhar explicitamente como unsupported/fail-fast.
+
+### 23. Save / Progression boundary
+
+`SessionActivityPipeline` não salva progression diretamente.
+
+Snapshot de activity para `RouteActivitySave` deve vir de provider explícito futuro, como `IProgressionSnapshotProvider` ou contrato equivalente.
+
+`SessionOperationalPipeline` continua owner do timing operacional de load/save de rota/activity.
+
+`SaveRuntime` executa persistência comandada por pipelines/adapters; não decide activity lifecycle.
+
+### 24. MVP Base 1.1
+
+O MVP Base 1.1 deste ADR é deliberadamente menor que a arquitetura-alvo.
+
+#### Inclui
+
+- Lifecycle local fechado com `ActivationWindow` e `DeactivationWindow`.
+- `None` e `AdditiveScene` para windows.
+- Comandos explícitos `CompleteActivationWindow` e `CompleteDeactivationWindow`.
+- `CloseForRouteExit` sem handoff para próxima activity.
+- QA canônico sem atalhos de lifecycle.
+- Route-exit teardown antes de unload operacional.
+- `ActivityTransitionPolicy/Profile` como contrato de Activity -> Activity, com `CutWithCurtain` nominal/visual conforme implementação validada e `Seamless` unsupported explícito.
+- `ActivitySetup` nominal com `skip/no-content`.
+- `NextActivitySetup` nominal durante ActivityTransition.
+- `ActivitySceneContract` como contrato/shape.
+- `ObjectEntry` como contrato/shape.
+- `ActivityRetentionPolicy` como contrato/shape.
+- `ActivityRelease/ObjectRelease` como contrato/shape.
+
+#### Fora do MVP
+
+- Budgeted preload.
+- Seamless real.
+- Random/procedural setup completo.
+- RuntimeSpawn real usando ObjectEntry.
+- Save restore de objetos.
+- ObjectRelease real completo.
+- Retenção real de múltiplas activities.
+- Dependências complexas entre requirements.
+- HUD binding real.
+- NPC materialization real.
+- Pool warmup real.
+- ActivitySetup com contributors reais.
+
+### 25. Invariantes obrigatórios
+
+- `SessionActivityPipeline` decide lifecycle local.
+- `SessionOperationalPipeline` decide ordem de rota/unload/handoff operacional.
+- `SceneComposition` executa scene changes, não lifecycle.
+- `ActivityAsset`/`ActivityCatalogAsset` definem dados autorais, não lifecycle.
+- Objetos/domínios contribuem requirements, não avançam pipeline.
+- Policies decidem estratégia/bloqueio, não conteúdo concreto de gameplay.
+- Adapters executam side-effects comandados.
+- Facts confirmam readiness.
+- Toda etapa relevante carrega `Pipeline Identity`.
+- `foreign/stale events` não podem alterar activity ativa.
+- Nenhuma ausência obrigatória vira fallback silencioso.
+- Deactivation não implica Release.
+- Conteúdo declarado e conteúdo descoberto convergem para o mesmo ActivitySetup/ObjectEntry pipeline.
 
 ## Consequências
 
-- Ativação deixa de ser decidida por conveniência local.
-- A ausência válida de conteúdo não gera fallback silencioso.
-- A ativação fica semanticamente vinculada ao ciclo correto.
-- Foreign/stale events não podem reabrir ou trocar a stage ativa.
-- O host local resolve a instância concreta, não a regra de ativação.
-- `Skip/no-content` é sinal válido quando o conteúdo estiver ausente.
-
-## Materializacao Base11Sandbox - Checkpoint Congelado
-
-No checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`:
-
-- `SessionActivityPipeline` é owner do ciclo de activity.
-- `SessionActivityMiniFlowHost` e `SessionActivityPipeline` não decidem rota ou transição de sessão.
-- `ActivityAsset` fornece dados autorais; o pipeline decide entrada e ativação.
-- `ActivityCatalog` define precedência; a ordem é aceita pelo pipeline como parte de policy.
-- `entrySequence` pertence ao `SessionActivityPipeline`, separado de `routeSequence` operacional.
-
-## Checkpoint de Fronteira - SessionActivityHost (2026-05-16)
-
-- `SessionActivityHost` nao inicia Activity automaticamente por `autoStart`.
-- `autoStart=true` fora de QA/editor e bloqueado por fail-fast (`SessionActivityHostAutoStartBlocked`).
-- Em QA/editor, `autoStart=true` gera apenas observabilidade (`SessionActivityHostAutoStartIgnored`) e nao inicia lifecycle.
-- `DebugStartActivity` permanece tooling explicito de QA/debug com source/reason `SessionActivityHost/QA/*`.
-- Em runtime normal, `DebugStartActivity` e bloqueado (`SessionActivityHostDebugStartBlocked`).
-- Caminho canonico de entrada mantido: `SessionOperationalPipeline -> SessionActivityEntryHandoff -> SessionActivityPipeline.StartFromPreparedHandoff`.
-- Fechamento de observabilidade da fronteira: `StartFromPreparedHandoff` registra log operacional explicito `SessionActivityEntryHandoffAccepted` em `[OBS][SessionActivityPipeline][Handoff]`.
-- O trace interno (`_state.AppendTrace`) de aceite/rejeicao continua preservado.
+- `SessionActivity` deixa de ser apenas uma troca local de catálogo e passa a ser o owner determinístico do ciclo interno de activities.
+- Janelas autorais visíveis são separadas de setup técnico.
+- Route-exit deixa de matar activity por unload de cena e passa por fechamento canônico.
+- O futuro sistema de objects/spawn/save pode convergir em `ObjectEntryPlan` sem criar trilhos paralelos.
+- Retention/release ficam previstos sem obrigar implementação pesada no MVP.
+- `Seamless` futuro exige authoring e contrato mais rigorosos, não menos.
 
 ## Relação com Base 1.0 e Base 2.0
 
-- Base 1.0 é histórico de leitura phase-owned de `IntroStage` e engagement disperso.
-- Base 1.1 converte `IntroStage` em `Pipeline Policy` e centraliza lifecycle em `SessionActivityPipeline`.
-- Base 2.0 futura pode extrair padrões de ativação se a Base 1.1 os provar.
-
-Nota curta (fronteira de persistência de activity):
-- `SessionActivityPipeline` não salva progression diretamente; snapshot de activity para `RouteActivitySave` deve vir de provider explícito futuro (`IProgressionSnapshotProvider`), mantendo `SessionOperationalPipeline` como owner do timing operacional.
-
-## Checkpoint de Estado Real - Sandbox Funcional Minimo (2026-05-17)
-
-- `SessionActivity` permanece congelada como sandbox funcional minimo Base 1.1.
-- Entrada canonica ativa: `SessionOperationalPipeline -> SessionActivityEntryHandoff -> SessionActivityPipeline.StartFromPreparedHandoff`.
-- `DebugStartActivity` e tooling/QA; nao e contrato de entrada de producao.
-- `autoStart` nao e contrato de producao e nao inicia lifecycle em runtime normal.
-- `SessionActivityPipeline` decide ciclo local de activation/running/pause/resume/completion local.
-- Deactivation local por activity existe parcialmente no sandbox atual.
-- Run-level deactivation/continuity nao pertence a `SessionActivity`; pertence ao `RunPipeline` futuro (ADR-0002).
-- `ActivitySetup` real, gameplay input final e `PlayerActor` final ainda nao fazem parte deste checkpoint.
-- `Activity Snapshot Provider` real ainda nao existe; `no_snapshot_provider` em `RouteActivitySave` permanece estado esperado.
-- Gates/InputModes/adapters executam efeitos e observabilidade; nao decidem lifecycle semantico.
-- Protecao contra `foreign/stale` permanece obrigatoria para impedir troca da activity ativa.
-
-## Checkpoint de Lifecycle Local Explicito - Completion/Deactivation (2026-05-17)
-
-Sequencia canonica local consolidada no sandbox Base 1.1:
-
-`ActivityRunning`
--> `ActivityCompletionRequested`
--> `ActivityCompleting`
--> `DeactivationWindowStarted`
--> `DeactivationWindowSkippedNoContent`
--> `ActivityDeactivated`
--> `Completed` ou `NextActivity`.
-
-Regras aplicadas:
-- `CompleteCurrentActivity` nao pula direto para deactivation.
-- `ContinueToNextActivity` so e aceito apos `ActivityDeactivated`.
-- Nesta etapa, `DeactivationWindowSkippedNoContent` so e emitido quando `DeactivationWindowMode=None`.
-- Se `DeactivationWindowMode=AdditiveScene`, o pipeline entra no trilho de janela explicita (`DeactivationWindowReady` -> `CompleteDeactivationWindow`) antes de `ActivityDeactivated`.
-- Campo autoral legado `HasActivityResult` foi removido do contrato ativo de lifecycle local.
-- Nao ha trilho paralelo de `ActivityResultPresentation*` no lifecycle local ativo.
-
-## Checkpoint de ActivationWindow Nominal - Sem Conteudo Visual (2026-05-17)
-
-Sequencia canonica de entrada local nesta etapa:
-
-`SessionActivityEntryHandoffAccepted`
--> `ActivityActivationStarted`
--> `ActivationWindowStarted`
--> `ActivationWindowSkippedNoContent`
--> `ActivityRunning`.
-
-Regras aplicadas:
-- Nesta etapa nao existe presenter visual real de `ActivationWindow`; o suporte atual cobre apenas carga aditiva nominal e gate de conclusao explicita.
-- `ActivationWindowSkippedNoContent` so e emitido quando `ActivationWindowMode=None`.
-- Se `ActivationWindowMode=AdditiveScene`, o pipeline abre a janela por cena aditiva e para em `ActivationWindowReady` aguardando conclusao explicita.
-- Campo autoral legado `HasActivation` foi removido do contrato ativo de lifecycle local.
-- Nao ha trilho paralelo `IntroStage`/ativacao antiga no fluxo ativo.
-
-## Checkpoint de Contrato Autoral das Activity Windows (2026-05-17)
-
-Contrato autoral explicito adicionado para as janelas locais da Activity:
-
-- `ActivationWindowMode` (por activity): `None`, `AdditiveScene`.
-- `DeactivationWindowMode` (por activity): `None`, `AdditiveScene`.
-- Campos legacy `HasActivation` e `HasActivityResult` permanecem removidos.
-
-Regras de execucao nesta etapa (Base 1.1 sandbox):
-
-- `ActivationWindowMode=None`: `ActivationWindowSkippedNoContent` e emitido antes de `ActivityRunning`.
-- `ActivationWindowMode=AdditiveScene`: o pipeline executa load aditivo da cena autoral, entra em `ActivationWindowReady` e aguarda conclusao explicita da window antes de `ActivityRunning`.
-- `DeactivationWindowMode=None`: `DeactivationWindowSkippedNoContent` e emitido antes de `ActivityDeactivated`.
-- `DeactivationWindowMode=AdditiveScene`: o pipeline executa load aditivo, entra em `DeactivationWindowReady` e aguarda conclusao explicita antes de `ActivityDeactivated`.
-
-## Checkpoint de ActivationWindow AdditiveScene - Primeiro Suporte Real (2026-05-17)
-
-Sequencia nominal quando `ActivationWindowMode=AdditiveScene`:
-
-`SessionActivityEntryHandoffAccepted`
--> `ActivityActivationStarted`
--> `ActivationWindowStarted`
--> `ActivationWindowAdditiveSceneLoadStarted`
--> `ActivationWindowAdditiveSceneLoaded`
--> `ActivationWindowReady`
--> `CompleteActivationWindow` (comando explicito)
--> `ActivationWindowCompleted`
--> `ActivationWindowAdditiveSceneUnloadStarted`
--> `ActivationWindowAdditiveSceneUnloaded`
--> `ActivityRunning`.
-
-Regras aplicadas:
-- Campo autoral novo por activity: `activationWindowAdditiveSceneKey` (`SceneKeyAsset`).
-- Se `activationWindowAdditiveSceneKey` estiver ausente com `ActivationWindowMode=AdditiveScene`, o pipeline falha explicitamente.
-- Se `activationWindowAdditiveSceneKey.SceneName` estiver vazio, o pipeline falha explicitamente.
-- Se a cena configurada nao puder ser carregada (`CanStreamedLevelBeLoaded=false`), o pipeline falha explicitamente.
-- A cena de activation carregada de forma aditiva e descarregada explicitamente apos `ActivationWindowCompleted` e antes de `ActivityRunning`.
-- Se a cena esperada nao estiver carregada no momento do unload, o pipeline falha explicitamente (sem skip silencioso).
-- `ActivationWindowCompleted` so ocorre via comando explicito `CompleteActivationWindow` com identity ativa valida e stage `ActivationWindowReady`.
-- `ActivityRunning` so ocorre apos `ActivationWindowAdditiveSceneUnloaded` (modo `AdditiveScene`) ou apos `ActivationWindowSkippedNoContent` (modo `None`).
-
-## Checkpoint de DeactivationWindow AdditiveScene - Primeiro Suporte Real (2026-05-17)
-
-Sequencia nominal quando `DeactivationWindowMode=AdditiveScene`:
-
-`ActivityRunning`
--> `ActivityCompletionRequested`
--> `ActivityCompleting`
--> `DeactivationWindowStarted`
--> `DeactivationWindowAdditiveSceneLoadStarted`
--> `DeactivationWindowAdditiveSceneLoaded`
--> `DeactivationWindowReady`
--> `CompleteDeactivationWindow` (comando explicito)
--> `DeactivationWindowCompleted`
--> `DeactivationWindowAdditiveSceneUnloadStarted`
--> `DeactivationWindowAdditiveSceneUnloaded`
--> `ActivityDeactivated`
--> `Completed` ou `NextActivity`.
-
-Regras aplicadas:
-- Campo autoral novo por activity: `deactivationWindowAdditiveSceneKey` (`SceneKeyAsset`).
-- Se `deactivationWindowAdditiveSceneKey` estiver ausente com `DeactivationWindowMode=AdditiveScene`, o pipeline falha explicitamente.
-- Se `deactivationWindowAdditiveSceneKey.SceneName` estiver vazio, o pipeline falha explicitamente.
-- Se a cena configurada nao puder ser carregada (`CanStreamedLevelBeLoaded=false`), o pipeline falha explicitamente.
-- `DeactivationWindowCompleted` so ocorre via comando explicito `CompleteDeactivationWindow` com identity ativa valida e stage `DeactivationWindowReady`.
-- A cena de deactivation carregada de forma aditiva e descarregada explicitamente apos `DeactivationWindowCompleted` e antes de `ActivityDeactivated`.
-- Se a cena esperada nao estiver carregada no momento do unload, o pipeline falha explicitamente (sem skip silencioso).
-- `ContinueToNextActivity` permanece aceito somente apos `ActivityDeactivated`.
-
-## Checkpoint de ActivityTransitionPolicy - Contrato Inicial (2026-05-17)
-
-Contrato autoral por activity:
-
-- `ActivityTransitionPolicy.CutWithCurtain`
-- `ActivityTransitionPolicy.Seamless`
-
-Regras desta etapa:
-
-- Policy funcional atual: `CutWithCurtain`.
-- `Seamless` existe apenas como contrato futuro e falha explicitamente como `unsupported`.
-- Antes de preparar handoff para proxima activity, o pipeline registra observabilidade explicita da policy selecionada (`ActivityTransitionPolicySelected` + snapshot `activity_transition_policy_selected`).
-- Nao existe fallback silencioso de `Seamless` para `CutWithCurtain`.
-- A garantia de ordem permanece: `Current Activity -> DeactivationWindow -> ActivityDeactivated -> Next Activity`.
-
-## Checkpoint de Navegacao sem Bypass de Deactivation (2026-05-17)
-
-Regras aplicadas no lifecycle local:
-
-- `GoToNextActivity`, `GoToPreviousActivity`, `GoToActivity` e `RestartCurrentActivity` nao podem mais desativar diretamente.
-- Toda navegacao `Activity -> Activity` passa pelo mesmo trilho canonico de fechamento local:
-  - `ActivityRunning`
-  - `ActivityNavigationExitRequested` (ou `ActivityCompletionRequested` no fechamento regular)
-  - `ActivityCompleting`
-  - `DeactivationWindowStarted`
-  - `DeactivationWindowSkippedNoContent` ou `DeactivationWindowReady -> CompleteDeactivationWindow -> DeactivationWindowCompleted`
-  - `ActivityDeactivated`
-  - `ActivityTransitionPolicySelected`
-  - `ActivityHandoffPrepared`
-  - entrada da proxima activity.
-- `NextActivity` continua condicionado a ocorrer somente apos `ActivityDeactivated`.
-
-Checkpoint de rota/scene unload (BackToMenu):
-
-- Nesta etapa, saida de rota/scene com activity ativa sem fechamento canonico explicito e tratada como erro fatal em `SessionActivityHost` (`SessionActivityRouteExitWithoutCanonicalDeactivation`).
-- Este fail-fast evita `PASS` falso com unload silencioso.
-- O teardown canonico de saida de rota (sem handoff para outra activity) permanece como pendencia de integracao entre `SessionOperational` e `SessionActivity`.
-
-Nota curta de governanca QA:
-
-- O QA da `SessionActivity` deve validar o lifecycle canonico (activation/completion/deactivation/continue) e nao pode oferecer atalhos de navegacao que burlem `DeactivationWindow`.
-
-## Checkpoint de Route Exit Teardown Integrado ao SessionOperational (2026-05-17)
-
-- O fechamento de SessionActivity para saida de rota deixou de depender do OnDisable como mecanismo principal.
-- Boundary ativo: SessionOperationalPipeline solicita teardown canonico a SessionActivity antes de SceneComposition quando houver unload da cena de Activity.
-- SessionActivity executa somente seu lifecycle local (CompleteCurrentActivity/CompleteDeactivationWindow) e deve atingir ActivityDeactivated antes do unload.
-- Se o teardown nao puder completar, o SessionOperationalPipeline bloqueia a rota com SessionActivityRouteExitBlocked e falha antes do unload.
-- O fatal no SessionActivityHost permanece apenas como ultima protecao defensiva.
-
-## Checkpoint - Distincao de Fechamento Local vs Route-Exit Close (2026-05-17)
-
-- CompleteCurrentActivity continua sendo fechamento local de activity no catalogo e pode preparar ActivityHandoffPrepared para proxima activity.
-- CloseForRouteExit e caminho canonico de fechamento para saida de rota/unload e **nao** prepara proxima activity no catalogo.
-- Em CloseForRouteExit, o trilho encerra em ActivityDeactivated -> ClosedForRouteExit, sem ActivityTransitionPolicySelected, sem ActivityHandoffPrepared e sem ContinueToNextActivity.
+- Base 1.0 é histórico de leitura phase-owned de `IntroStage`, engagement disperso, result presentation local e ownership fragmentado.
+- Base 1.1 converte essas peças em lifecycle explícito do `SessionActivityPipeline`.
+- Base 1.1 não cria um core genérico universal agora; ela dá shape final aos fluxos concretos atuais.
+- Base 2.0 futura pode extrair `ObjectEntry`, `ActivitySetup`, retention e release como abstrações mais gerais se a Base 1.1 provar o fluxo.

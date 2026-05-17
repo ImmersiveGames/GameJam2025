@@ -1,6 +1,57 @@
-﻿using System;
+using System;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
+    public readonly struct SessionActivityRouteTransitionContext : IEquatable<SessionActivityRouteTransitionContext>
+    {
+        public SessionActivityRouteTransitionContext(
+            bool hasRouteFadeProfile,
+            SceneTransitionProfile routeFadeProfile,
+            bool hasRouteLoadingProfile,
+            RuntimeLoadingProfileAsset routeLoadingProfile)
+        {
+            HasRouteFadeProfile = hasRouteFadeProfile;
+            RouteFadeProfile = routeFadeProfile;
+            HasRouteLoadingProfile = hasRouteLoadingProfile;
+            RouteLoadingProfile = routeLoadingProfile;
+        }
+
+        public bool HasRouteFadeProfile { get; }
+        public SceneTransitionProfile RouteFadeProfile { get; }
+        public bool HasRouteLoadingProfile { get; }
+        public RuntimeLoadingProfileAsset RouteLoadingProfile { get; }
+
+        public bool Equals(SessionActivityRouteTransitionContext other)
+        {
+            return HasRouteFadeProfile == other.HasRouteFadeProfile &&
+                   Equals(RouteFadeProfile, other.RouteFadeProfile) &&
+                   HasRouteLoadingProfile == other.HasRouteLoadingProfile &&
+                   Equals(RouteLoadingProfile, other.RouteLoadingProfile);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityRouteTransitionContext other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = HasRouteFadeProfile ? 1 : 0;
+                hashCode = (hashCode * 397) ^ (RouteFadeProfile != null ? RouteFadeProfile.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (HasRouteLoadingProfile ? 1 : 0);
+                hashCode = (hashCode * 397) ^ (RouteLoadingProfile != null ? RouteLoadingProfile.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"hasRouteFadeProfile='{HasRouteFadeProfile}' routeFadeProfile='{(RouteFadeProfile != null ? RouteFadeProfile.name : "<none>")}' hasRouteLoadingProfile='{HasRouteLoadingProfile}' routeLoadingProfile='{(RouteLoadingProfile != null ? RouteLoadingProfile.name : "<none>")}'";
+        }
+    }
     public readonly struct SessionActivityPlayerPreparationHandoff : IEquatable<SessionActivityPlayerPreparationHandoff>
     {
         public SessionActivityPlayerPreparationHandoff(
@@ -124,6 +175,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int entrySequence,
             string sessionStateId,
             SessionActivityPlayerPreparationHandoff playerPreparation,
+            SessionActivityRouteTransitionContext routeTransitionContext,
             string source,
             string reason)
         {
@@ -132,6 +184,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             SessionStateId = Normalize(sessionStateId);
             PlayerPreparation = playerPreparation;
+            RouteTransitionContext = routeTransitionContext;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -141,6 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int EntrySequence { get; }
         public string SessionStateId { get; }
         public SessionActivityPlayerPreparationHandoff PlayerPreparation { get; }
+        public SessionActivityRouteTransitionContext RouteTransitionContext { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -166,6 +220,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                    EntrySequence == other.EntrySequence &&
                    string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
                    PlayerPreparation.Equals(other.PlayerPreparation) &&
+                   RouteTransitionContext.Equals(other.RouteTransitionContext) &&
                    string.Equals(Source, other.Source, StringComparison.Ordinal) &&
                    string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
@@ -184,6 +239,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 hashCode = (hashCode * 397) ^ EntrySequence;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ PlayerPreparation.GetHashCode();
+                hashCode = (hashCode * 397) ^ RouteTransitionContext.GetHashCode();
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hashCode;
@@ -210,4 +266,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 }
+
+
+
 

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
@@ -15,8 +17,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly SessionActivitySimulationGate _sessionActivitySimulationGate;
         private readonly ISessionActivityPauseOverlayAdapter _pauseOverlayAdapter;
         private readonly ISessionActivityInputModeAdapter _inputModeAdapter;
+        private readonly ISessionActivityTransitionAdapter _transitionAdapter;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
+        private SessionActivityRouteTransitionContext _routeTransitionContext;
+        private SessionActivityTransitionResolution _pendingTransitionResolution;
+        private bool _pendingTransitionCurtainReveal;
 
         private readonly struct PendingNavigationTransition
         {
@@ -37,13 +43,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityCatalog catalog,
             string sessionStateId,
             ISessionActivityPauseOverlayAdapter pauseOverlayAdapter,
-            ISessionActivityInputModeAdapter inputModeAdapter)
+            ISessionActivityInputModeAdapter inputModeAdapter,
+            ISessionActivityTransitionAdapter transitionAdapter)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
             _sessionActivitySimulationGate = new SessionActivitySimulationGate();
             _pauseOverlayAdapter = pauseOverlayAdapter ?? throw new ArgumentNullException(nameof(pauseOverlayAdapter));
             _inputModeAdapter = inputModeAdapter ?? throw new ArgumentNullException(nameof(inputModeAdapter));
+            _transitionAdapter = transitionAdapter ?? throw new ArgumentNullException(nameof(transitionAdapter));
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -206,9 +214,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _state.Reset(PipelineId, _sessionId);
+            _routeTransitionContext = default;
+            _pendingTransitionResolution = default;
+            _pendingTransitionCurtainReveal = false;
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
+            _routeTransitionContext = handoff.RouteTransitionContext;
             if (!handoff.HasResolvedActivity)
             {
                 _state.AppendTrace($"[OBS][SessionActivityPipeline] FirstCatalogActivityResolved activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' handoff='{handoff}' source='{source}' reason='{reason}'");
@@ -489,6 +501,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _state.Reset(PipelineId, _sessionId);
+            _routeTransitionContext = default;
+            _pendingTransitionResolution = default;
+            _pendingTransitionCurtainReveal = false;
             _state.SetCurrentDefinition(firstDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -687,6 +702,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityDefinition next = ResolveActivityByIdOrFail(current.NextActivityId);
             EnsureSupportedTransitionPolicyOrFail(current);
+            SessionActivityTransitionResolution transitionResolution = ResolveNextActivityTransitionResolutionOrFail(current, next);
             int nextEntrySequence = ResolveNextEntrySequence();
             SessionActivityIdentity nextActivationIdentity = BuildIdentity(next, SessionActivityStage.ActivityActivationStarted, nextEntrySequence);
             EmitFact(
@@ -702,6 +718,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"Transition policy selected '{current.TransitionPolicy}' from '{current.ActivityId}' to '{next.ActivityId}'.");
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityTransitionProfileSelected,
+                _state.CurrentIdentity,
+                command.Source,
+                command.Reason,
+                $"Transition profile selected mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{next.ActivityId}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_transition_profile_selected",
+                command.Source,
+                command.Reason,
+                $"Transition profile selected mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{next.ActivityId}'.");
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityTransitionProfileResolved,
+                _state.CurrentIdentity,
+                command.Source,
+                command.Reason,
+                $"Transition profile resolved mode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_transition_profile_resolved",
+                command.Source,
+                command.Reason,
+                $"Transition profile resolved mode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
+            _pendingTransitionResolution = transitionResolution;
+            _pendingTransitionCurtainReveal = transitionResolution.Mode == ActivityTransitionMode.CutWithCurtain;
             SessionActivityHandoff handoff = new(
                 BuildIdentity(current, _state.CurrentStage, currentEntrySequence),
                 nextActivationIdentity,
@@ -729,6 +773,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ReleaseActivityGateIfBlocked(command);
             _state.SetExecutionState(ActivityExecutionState.Stopped);
             _state.ClearHandoff();
+            _pendingTransitionCurtainReveal = false;
+            _pendingTransitionResolution = default;
 
             SessionActivityIdentity deactivationIdentity = BuildIdentity(current, SessionActivityStage.Deactivation, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationIdentity, SessionActivityStage.Deactivation);
@@ -754,6 +800,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityDefinition target = pending.Target;
             EnsureSupportedTransitionPolicyOrFail(current);
+            SessionActivityTransitionResolution transitionResolution = ResolveNextActivityTransitionResolutionOrFail(current, target);
             SessionActivityIdentity targetActivationIdentity = BuildIdentity(target, SessionActivityStage.ActivityActivationStarted, pending.TargetEntrySequence);
             EmitFact(
                 facts,
@@ -768,6 +815,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"Transition policy selected '{current.TransitionPolicy}' from '{current.ActivityId}' to '{target.ActivityId}'.");
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityTransitionProfileSelected,
+                deactivationIdentity,
+                command.Source,
+                command.Reason,
+                $"Transition profile selected mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{target.ActivityId}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_transition_profile_selected",
+                command.Source,
+                command.Reason,
+                $"Transition profile selected mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{target.ActivityId}'.");
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityTransitionProfileResolved,
+                deactivationIdentity,
+                command.Source,
+                command.Reason,
+                $"Transition profile resolved mode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_transition_profile_resolved",
+                command.Source,
+                command.Reason,
+                $"Transition profile resolved mode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
+            _pendingTransitionResolution = transitionResolution;
+            _pendingTransitionCurtainReveal = transitionResolution.Mode == ActivityTransitionMode.CutWithCurtain;
 
             SessionActivityHandoff handoff = new(
                 deactivationIdentity,
@@ -805,7 +880,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             _state.ClearHandoff();
             _state.SetCurrentDefinition(target);
+            ApplyPendingTransitionBeforeNextEntryIfNeeded(deactivationIdentity, command.Source, command.Reason);
             EnterActivity(target, command, facts, snapshots, pending.TargetEntrySequence);
+            ApplyPendingTransitionRevealIfNeeded(target, command.Source, command.Reason);
         }
 
         private void EmitContinue(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -828,8 +905,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int nextEntrySequence = handoff.ToIdentity.EntrySequence;
             _state.ClearHandoff();
             _state.SetCurrentDefinition(next);
-
+            ApplyPendingTransitionBeforeNextEntryIfNeeded(_state.CurrentIdentity, command.Source, command.Reason);
             EnterActivity(next, command, facts, snapshots, nextEntrySequence);
+            ApplyPendingTransitionRevealIfNeeded(next, command.Source, command.Reason);
         }
 
         private void EmitNavigation(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -2010,6 +2088,88 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             throw new NotSupportedException($"Activity '{definition.ActivityId}' transitionPolicy '{definition.TransitionPolicy}' is unsupported in Base 1.1 sandbox. Supported policy: '{ActivityTransitionPolicy.CutWithCurtain}'.");
+        }
+
+        private SessionActivityTransitionResolution ResolveNextActivityTransitionResolutionOrFail(
+            SessionActivityDefinition current,
+            SessionActivityDefinition next)
+        {
+            ActivityTransitionMode mode = current.NextActivityTransitionMode;
+            if (mode == ActivityTransitionMode.Seamless)
+            {
+                throw new NotSupportedException($"Activity '{current.ActivityId}' transition mode '{ActivityTransitionMode.Seamless}' is unsupported in Base 1.1 sandbox.");
+            }
+
+            SceneTransitionProfile resolvedFadeProfile = null;
+            string resolvedFadeSource = "None";
+            if (current.HasNextActivityTransitionFadeProfileOverride)
+            {
+                resolvedFadeProfile = current.NextActivityTransitionFadeProfileOverride;
+                resolvedFadeSource = "ActivityOverride";
+            }
+            else if (current.NextActivityTransitionInheritRouteFadeProfileIfMissing && _routeTransitionContext.HasRouteFadeProfile)
+            {
+                resolvedFadeProfile = _routeTransitionContext.RouteFadeProfile;
+                resolvedFadeSource = "RouteInherited";
+            }
+
+            RuntimeLoadingProfileAsset resolvedLoadingProfile = null;
+            string resolvedLoadingSource = "None";
+            if (current.HasNextActivityTransitionLoadingProfileOverride)
+            {
+                resolvedLoadingProfile = current.NextActivityTransitionLoadingProfileOverride;
+                resolvedLoadingSource = "ActivityOverride";
+            }
+            else if (current.NextActivityTransitionInheritRouteLoadingProfileIfMissing && _routeTransitionContext.HasRouteLoadingProfile)
+            {
+                resolvedLoadingProfile = _routeTransitionContext.RouteLoadingProfile;
+                resolvedLoadingSource = "RouteInherited";
+            }
+
+            if (mode == ActivityTransitionMode.CutWithCurtain && resolvedFadeProfile == null)
+            {
+                throw new InvalidOperationException(
+                    $"Activity '{current.ActivityId}' transition mode '{ActivityTransitionMode.CutWithCurtain}' requires fade profile. nextActivityId='{next.ActivityId}' inheritRouteFadeProfileIfMissing='{current.NextActivityTransitionInheritRouteFadeProfileIfMissing}' routeHasFadeProfile='{_routeTransitionContext.HasRouteFadeProfile}'.");
+            }
+
+            return new SessionActivityTransitionResolution(
+                mode,
+                resolvedFadeProfile,
+                resolvedLoadingProfile,
+                resolvedFadeSource,
+                resolvedLoadingSource);
+        }
+
+        private void ApplyPendingTransitionBeforeNextEntryIfNeeded(SessionActivityIdentity identity, string source, string reason)
+        {
+            if (_pendingTransitionResolution.Mode != ActivityTransitionMode.CutWithCurtain)
+            {
+                return;
+            }
+
+            _transitionAdapter.CloseCurtain(identity, _pendingTransitionResolution, source, reason);
+        }
+
+        private void ApplyPendingTransitionRevealIfNeeded(SessionActivityDefinition next, string source, string reason)
+        {
+            if (!_pendingTransitionCurtainReveal || _pendingTransitionResolution.Mode != ActivityTransitionMode.CutWithCurtain)
+            {
+                return;
+            }
+
+            bool safePointReached =
+                (next.ActivationWindowMode == ActivityWindowMode.None && _state.CurrentStage == SessionActivityStage.ActivityRunning) ||
+                (next.ActivationWindowMode == ActivityWindowMode.AdditiveScene && _state.CurrentStage == SessionActivityStage.ActivationWindowReady);
+
+            if (!safePointReached)
+            {
+                throw new InvalidOperationException(
+                    $"Transition reveal-safe point not reached for activity '{next.ActivityId}'. activationWindowMode='{next.ActivationWindowMode}' currentStage='{_state.CurrentStage}'.");
+            }
+
+            _transitionAdapter.OpenCurtain(_state.CurrentIdentity, _pendingTransitionResolution, source, reason);
+            _pendingTransitionCurtainReveal = false;
+            _pendingTransitionResolution = default;
         }
 
         private void ExecuteActivationWindowAdditiveScene(

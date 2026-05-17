@@ -15,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
         [SerializeField] private SceneKeyAsset deactivationWindowAdditiveSceneKey;
         [SerializeField] private ActivityTransitionPolicy transitionPolicy = ActivityTransitionPolicy.CutWithCurtain;
+        [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfile;
 
         public string ActivityId => Normalize(activityId);
         public string DisplayName => Normalize(displayName);
@@ -24,6 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey => deactivationWindowAdditiveSceneKey;
         public ActivityTransitionPolicy TransitionPolicy => transitionPolicy;
+        public ActivityTransitionProfileAsset NextActivityTransitionProfile => nextActivityTransitionProfile;
 
         public void ValidateOrThrow()
         {
@@ -69,6 +71,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 string.IsNullOrWhiteSpace(deactivationWindowAdditiveSceneKey.SceneName))
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' requires deactivationWindowAdditiveSceneKey.SceneName when deactivationWindowMode=AdditiveScene.");
+            }
+
+            if (nextActivityTransitionProfile != null)
+            {
+                nextActivityTransitionProfile.ValidateOrThrow($"ActivityAsset:{name}");
             }
         }
 

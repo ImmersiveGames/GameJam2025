@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityCatalogAdvanceAtEndMode
@@ -19,6 +21,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         CutWithCurtain = 0,
         Seamless = 1,
+    }
+
+    public enum ActivityTransitionMode
+    {
+        None = 0,
+        CutWithCurtain = 1,
+        Seamless = 2,
     }
 
     public enum SessionActivityStage
@@ -146,6 +155,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityWindowMode deactivationWindowMode,
             SceneKeyAsset deactivationWindowAdditiveSceneKey,
             ActivityTransitionPolicy transitionPolicy,
+            ActivityTransitionMode nextActivityTransitionMode,
+            SceneTransitionProfile nextActivityTransitionFadeProfileOverride,
+            RuntimeLoadingProfileAsset nextActivityTransitionLoadingProfileOverride,
+            bool nextActivityTransitionInheritRouteFadeProfileIfMissing,
+            bool nextActivityTransitionInheritRouteLoadingProfileIfMissing,
             string nextActivityId,
             string source)
         {
@@ -158,6 +172,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             DeactivationWindowMode = deactivationWindowMode;
             DeactivationWindowAdditiveSceneKey = deactivationWindowAdditiveSceneKey;
             TransitionPolicy = transitionPolicy;
+            NextActivityTransitionMode = nextActivityTransitionMode;
+            NextActivityTransitionFadeProfileOverride = nextActivityTransitionFadeProfileOverride;
+            NextActivityTransitionLoadingProfileOverride = nextActivityTransitionLoadingProfileOverride;
+            NextActivityTransitionInheritRouteFadeProfileIfMissing = nextActivityTransitionInheritRouteFadeProfileIfMissing;
+            NextActivityTransitionInheritRouteLoadingProfileIfMissing = nextActivityTransitionInheritRouteLoadingProfileIfMissing;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
         }
@@ -171,6 +190,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityWindowMode DeactivationWindowMode { get; }
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey { get; }
         public ActivityTransitionPolicy TransitionPolicy { get; }
+        public ActivityTransitionMode NextActivityTransitionMode { get; }
+        public SceneTransitionProfile NextActivityTransitionFadeProfileOverride { get; }
+        public RuntimeLoadingProfileAsset NextActivityTransitionLoadingProfileOverride { get; }
+        public bool NextActivityTransitionInheritRouteFadeProfileIfMissing { get; }
+        public bool NextActivityTransitionInheritRouteLoadingProfileIfMissing { get; }
         public string NextActivityId { get; }
         public string Source { get; }
 
@@ -183,10 +207,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasNextActivity => !string.IsNullOrWhiteSpace(NextActivityId);
         public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
         public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
+        public bool HasNextActivityTransitionFadeProfileOverride => NextActivityTransitionFadeProfileOverride != null;
+        public bool HasNextActivityTransitionLoadingProfileOverride => NextActivityTransitionLoadingProfileOverride != null;
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', transitionPolicy='{TransitionPolicy}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', transitionPolicy='{TransitionPolicy}', nextActivityTransitionMode='{NextActivityTransitionMode}', nextActivityTransitionFadeProfileOverride='{(HasNextActivityTransitionFadeProfileOverride ? NextActivityTransitionFadeProfileOverride.name : "<none>")}', nextActivityTransitionLoadingProfileOverride='{(HasNextActivityTransitionLoadingProfileOverride ? NextActivityTransitionLoadingProfileOverride.name : "<none>")}', nextActivityTransitionInheritRouteFadeProfileIfMissing='{NextActivityTransitionInheritRouteFadeProfileIfMissing}', nextActivityTransitionInheritRouteLoadingProfileIfMissing='{NextActivityTransitionInheritRouteLoadingProfileIfMissing}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -294,6 +320,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityNavigationExitRequested = 36,
         ActivityRouteExitRequested = 37,
         ActivityRouteExitCompleted = 38,
+        ActivityTransitionProfileSelected = 39,
+        ActivityTransitionProfileResolved = 40,
     }
 
     public readonly struct SessionActivityFact
@@ -537,6 +565,52 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface ISessionActivityInputModeAdapter
     {
         SessionActivityInputModeObservation Apply(SessionActivityInputModeCommand command);
+    }
+
+    public readonly struct SessionActivityTransitionResolution
+    {
+        public SessionActivityTransitionResolution(
+            ActivityTransitionMode mode,
+            SceneTransitionProfile fadeProfile,
+            RuntimeLoadingProfileAsset loadingProfile,
+            string resolvedFadeProfileSource,
+            string resolvedLoadingProfileSource)
+        {
+            Mode = mode;
+            FadeProfile = fadeProfile;
+            LoadingProfile = loadingProfile;
+            ResolvedFadeProfileSource = Normalize(resolvedFadeProfileSource);
+            ResolvedLoadingProfileSource = Normalize(resolvedLoadingProfileSource);
+        }
+
+        public ActivityTransitionMode Mode { get; }
+        public SceneTransitionProfile FadeProfile { get; }
+        public RuntimeLoadingProfileAsset LoadingProfile { get; }
+        public string ResolvedFadeProfileSource { get; }
+        public string ResolvedLoadingProfileSource { get; }
+
+        public bool HasFadeProfile => FadeProfile != null;
+        public bool HasLoadingProfile => LoadingProfile != null;
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public interface ISessionActivityTransitionAdapter
+    {
+        void CloseCurtain(
+            SessionActivityIdentity identity,
+            SessionActivityTransitionResolution resolution,
+            string source,
+            string reason);
+
+        void OpenCurtain(
+            SessionActivityIdentity identity,
+            SessionActivityTransitionResolution resolution,
+            string source,
+            string reason);
     }
 }
 
