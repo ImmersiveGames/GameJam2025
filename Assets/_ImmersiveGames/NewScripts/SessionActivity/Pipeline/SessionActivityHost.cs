@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Host")]
-    public sealed class SessionActivityHost : MonoBehaviour
+    public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary
     {
         [Header("Config")]
         // Campo de tooling/QA. Nao e owner de lifecycle e nao pode iniciar Activity automaticamente.
@@ -42,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
+            RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
             Debug.Log(BuildHostBanner());
         }
 
@@ -59,17 +60,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
-        public void DebugStartActivity()
+        private void OnDisable()
         {
-            if (!IsQaDebugAllowed())
+            if (_pipeline == null || !_pipeline.State.HasStarted || _pipeline.State.HasCompleted)
             {
-                throw new InvalidOperationException($"[FATAL][Config][SessionActivityPipeline][Host] SessionActivityHostDebugStartBlocked sessionStateId='{sessionStateId}' reason='debug_start_requires_editor_or_debug_build'.");
+                return;
             }
 
-            Debug.Log($"[OBS][SessionActivityPipeline][Host] SessionActivityHostDebugStartRequested sessionStateId='{sessionStateId}' source='{QaSource("DebugStartActivity")}' reason='{QaReason("DebugStartActivity")}'.");
-            EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.DebugStartActivity(QaSource("DebugStartActivity"), QaReason("DebugStartActivity"));
-            LogResult("DebugStartActivity", result);
+            SessionActivityStage stage = _pipeline.State.CurrentStage;
+            if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"[FATAL][Lifecycle][SessionActivityPipeline][Host] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{sessionStateId}' stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' reason='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
+        }
+
+        public void DebugStartActivity()
+        {
+            throw new InvalidOperationException(
+                $"[FATAL][Contract][SessionActivityPipeline][Host] SessionActivityHostDebugStartRemoved sessionStateId='{sessionStateId}' reason='debug_start_is_not_allowed_in_canonical_qa_lifecycle'.");
         }
 
         public void CompleteCurrentActivity()
@@ -77,6 +88,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EnsurePipeline();
             SessionActivityCommandResult result = _pipeline.CompleteCurrentActivity(QaSource("CompleteCurrentActivity"), QaReason("CompleteCurrentActivity"));
             LogResult("CompleteCurrentActivity", result);
+        }
+
+        public void CompleteActivationWindow()
+        {
+            EnsurePipeline();
+            SessionActivityCommandResult result = _pipeline.CompleteActivationWindow(QaSource("CompleteActivationWindow"), QaReason("CompleteActivationWindow"));
+            LogResult("CompleteActivationWindow", result);
+        }
+
+        public void CompleteDeactivationWindow()
+        {
+            EnsurePipeline();
+            SessionActivityCommandResult result = _pipeline.CompleteDeactivationWindow(QaSource("CompleteDeactivationWindow"), QaReason("CompleteDeactivationWindow"));
+            LogResult("CompleteDeactivationWindow", result);
         }
 
         public void ContinueToNextActivity()
@@ -88,30 +113,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public void GoToNextActivity()
         {
-            EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToNextActivity(QaSource("GoToNextActivity"), QaReason("GoToNextActivity"));
-            LogResult("GoToNextActivity", result);
+            throw new InvalidOperationException(
+                $"[FATAL][Contract][SessionActivityPipeline][Host] SessionActivityHostNavigationBypassBlocked sessionStateId='{sessionStateId}' command='GoToNextActivity' reason='qa_navigation_shortcuts_are_removed_from_canonical_lifecycle'.");
         }
 
         public void GoToPreviousActivity()
         {
-            EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToPreviousActivity(QaSource("GoToPreviousActivity"), QaReason("GoToPreviousActivity"));
-            LogResult("GoToPreviousActivity", result);
+            throw new InvalidOperationException(
+                $"[FATAL][Contract][SessionActivityPipeline][Host] SessionActivityHostNavigationBypassBlocked sessionStateId='{sessionStateId}' command='GoToPreviousActivity' reason='qa_navigation_shortcuts_are_removed_from_canonical_lifecycle'.");
         }
 
         public void RestartCurrentActivity()
         {
-            EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
-            LogResult("RestartCurrentActivity", result);
+            throw new InvalidOperationException(
+                $"[FATAL][Contract][SessionActivityPipeline][Host] SessionActivityHostNavigationBypassBlocked sessionStateId='{sessionStateId}' command='RestartCurrentActivity' reason='qa_navigation_shortcuts_are_removed_from_canonical_lifecycle'.");
         }
 
         public void GoToActivity(string activityId)
         {
-            EnsurePipeline();
-            SessionActivityCommandResult result = _pipeline.GoToActivity(activityId, QaSource("GoToActivity"), QaReason("GoToActivity"));
-            LogResult($"GoToActivity('{activityId}')", result);
+            throw new InvalidOperationException(
+                $"[FATAL][Contract][SessionActivityPipeline][Host] SessionActivityHostNavigationBypassBlocked sessionStateId='{sessionStateId}' command='GoToActivity' targetActivityId='{activityId}' reason='qa_navigation_shortcuts_are_removed_from_canonical_lifecycle'.");
         }
 
         public void RequestPause()
@@ -126,6 +147,79 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EnsurePipeline();
             SessionActivityCommandResult result = _pipeline.ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
             LogResult("RequestResume", result);
+        }
+
+        public SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(string requestedSessionStateId, string source, string reason)
+        {
+            EnsurePipeline();
+            string normalizedSessionStateId = Normalize(requestedSessionStateId);
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+
+            if (string.IsNullOrWhiteSpace(normalizedSessionStateId))
+            {
+                throw new InvalidOperationException("RequestRouteExitTeardown requires sessionStateId.");
+            }
+
+            if (!string.Equals(normalizedSessionStateId, sessionStateId, StringComparison.Ordinal))
+            {
+                return BuildRouteExitTeardownBlocked(
+                    "stale_or_foreign_session_activity_teardown_request",
+                    $"teardown request sessionStateId='{normalizedSessionStateId}' does not match host sessionStateId='{sessionStateId}'.");
+            }
+
+            if (!_pipeline.State.HasStarted || _pipeline.State.HasCompleted)
+            {
+                return new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.NoActiveSessionActivity,
+                    sessionStateId,
+                    _pipeline.State.CurrentStage,
+                    _pipeline.State.CurrentDefinition.ActivityId,
+                    _pipeline.State.CurrentHandoff.IsValid,
+                    "no_active_session_activity",
+                    "Pipeline is not started or already completed.");
+            }
+
+            SessionActivityStage stage = _pipeline.State.CurrentStage;
+            if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed)
+            {
+                return new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.TeardownCompleted,
+                    sessionStateId,
+                    stage,
+                    _pipeline.State.CurrentDefinition.ActivityId,
+                    _pipeline.State.CurrentHandoff.IsValid,
+                    "already_deactivated",
+                    "Activity is already deactivated.");
+            }
+
+            SessionActivityCommandResult closeForRouteExitResult = _pipeline.CloseForRouteExit(
+                normalizedSource,
+                $"{normalizedReason}/route_exit_teardown_close_for_route_exit");
+            if (!closeForRouteExitResult.IsValid || closeForRouteExitResult.IsRejected)
+            {
+                return BuildRouteExitTeardownBlocked(
+                    "close_for_route_exit_rejected",
+                    $"CloseForRouteExit rejected during route exit teardown. resultKind='{closeForRouteExitResult.Kind}' reason='{closeForRouteExitResult.Reason}'.");
+            }
+
+            stage = _pipeline.State.CurrentStage;
+            bool hasPendingHandoff = _pipeline.State.CurrentHandoff.IsValid;
+            if ((stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit) && !hasPendingHandoff)
+            {
+                return new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.TeardownCompleted,
+                    sessionStateId,
+                    stage,
+                    _pipeline.State.CurrentDefinition.ActivityId,
+                    false,
+                    "teardown_completed",
+                    "SessionActivity deactivated before route unload.");
+            }
+
+            return BuildRouteExitTeardownBlocked(
+                "teardown_not_completed_before_unload",
+                $"SessionActivity stage '{stage}' cannot proceed to route unload without explicit canonical close.");
         }
 
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)
@@ -237,6 +331,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private static bool IsQaDebugAllowed()
         {
             return Application.isEditor || Debug.isDebugBuild;
+        }
+
+        private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownBlocked(string reason, string detail)
+        {
+            return new SessionActivityRouteExitTeardownResult(
+                SessionActivityRouteExitTeardownKind.Blocked,
+                sessionStateId,
+                _pipeline.State.CurrentStage,
+                _pipeline.State.CurrentDefinition.ActivityId,
+                _pipeline.State.CurrentHandoff.IsValid,
+                reason,
+                detail);
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private static void RegisterGlobal<T>(T instance) where T : class

@@ -27,14 +27,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private GUIStyle _buttonStyle;
         private GUIStyle _dumpStyle;
 
-        [ContextMenu("DebugStartActivity")]
-        public void DebugStartActivity()
-        {
-            EnsureHost();
-            host.DebugStartActivity();
-            DumpState();
-        }
-
         [ContextMenu("CompleteCurrentActivity")]
         public void CompleteCurrentActivity()
         {
@@ -43,42 +35,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             DumpState();
         }
 
+        [ContextMenu("CompleteActivationWindow")]
+        public void CompleteActivationWindow()
+        {
+            EnsureHost();
+            host.CompleteActivationWindow();
+            DumpState();
+        }
+
+        [ContextMenu("CompleteDeactivationWindow")]
+        public void CompleteDeactivationWindow()
+        {
+            EnsureHost();
+            host.CompleteDeactivationWindow();
+            DumpState();
+        }
+
         [ContextMenu("ContinueToNextActivity")]
         public void ContinueToNextActivity()
         {
             EnsureHost();
             host.ContinueToNextActivity();
-            DumpState();
-        }
-
-        [ContextMenu("GoToNextActivity")]
-        public void GoToNextActivity()
-        {
-            EnsureHost();
-            host.GoToNextActivity();
-            DumpState();
-        }
-
-        [ContextMenu("GoToPreviousActivity")]
-        public void GoToPreviousActivity()
-        {
-            EnsureHost();
-            host.GoToPreviousActivity();
-            DumpState();
-        }
-
-        [ContextMenu("RestartCurrentActivity")]
-        public void RestartCurrentActivity()
-        {
-            EnsureHost();
-            host.RestartCurrentActivity();
-            DumpState();
-        }
-
-        public void GoToActivity(string activityId)
-        {
-            EnsureHost();
-            host.GoToActivity(activityId);
             DumpState();
         }
 
@@ -154,12 +131,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
             GUILayout.Label("Session Activity", _titleStyle);
             GUILayout.Space(SectionSpacing);
-            GUILayout.Label("Use the controls below to drive the minimum Session Activity cycle.", _labelStyle);
+            GUILayout.Label("QA canonicamente restrito: use apenas o lifecycle local sem atalhos de navegacao.", _labelStyle);
             GUILayout.Space(SectionSpacing);
 
-            if (GUILayout.Button("DebugStartActivity", _buttonStyle))
+            GUILayout.Space(SectionSpacing);
+
+            if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
             {
-                DebugStartActivity();
+                CompleteActivationWindow();
+            }
+
+            GUILayout.Space(SectionSpacing);
+
+            if (GUILayout.Button("CompleteDeactivationWindow", _buttonStyle))
+            {
+                CompleteDeactivationWindow();
+            }
+
+            GUILayout.Space(SectionSpacing);
+
+            if (GUILayout.Button("ContinueToNextActivity (requires handoff after deactivation)", _buttonStyle))
+            {
+                ContinueToNextActivity();
             }
 
             GUILayout.Space(SectionSpacing);
@@ -167,50 +160,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (GUILayout.Button("CompleteCurrentActivity", _buttonStyle))
             {
                 CompleteCurrentActivity();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("ContinueToNextActivity", _buttonStyle))
-            {
-                ContinueToNextActivity();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            GUILayout.Label("Navigation", _labelStyle);
-
-            if (GUILayout.Button("GoToNextActivity", _buttonStyle))
-            {
-                GoToNextActivity();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("GoToPreviousActivity", _buttonStyle))
-            {
-                GoToPreviousActivity();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("RestartCurrentActivity", _buttonStyle))
-            {
-                RestartCurrentActivity();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            for (int index = 0; index < host.Catalog.Definitions.Count; index++)
-            {
-                SessionActivityDefinition definition = host.Catalog.Definitions[index];
-                string label = $"GoToActivity '{definition.ActivityId}'";
-                if (GUILayout.Button(label, _buttonStyle))
-                {
-                    GoToActivity(definition.ActivityId);
-                }
-
-                GUILayout.Space(SectionSpacing);
             }
 
             if (GUILayout.Button("RequestPause", _buttonStyle))
@@ -293,6 +242,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"definition='{host.State.CurrentDefinition}'");
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
+            builder.AppendLine("qaLifecycleRail='CompleteActivationWindow -> CompleteCurrentActivity -> CompleteDeactivationWindow (quando aplicavel) -> ContinueToNextActivity'");
             builder.AppendLine("facts:");
 
             for (int index = 0; index < host.State.Facts.Count; index++)

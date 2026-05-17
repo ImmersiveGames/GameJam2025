@@ -104,3 +104,165 @@ Nota curta (fronteira de persistência de activity):
 - `Activity Snapshot Provider` real ainda nao existe; `no_snapshot_provider` em `RouteActivitySave` permanece estado esperado.
 - Gates/InputModes/adapters executam efeitos e observabilidade; nao decidem lifecycle semantico.
 - Protecao contra `foreign/stale` permanece obrigatoria para impedir troca da activity ativa.
+
+## Checkpoint de Lifecycle Local Explicito - Completion/Deactivation (2026-05-17)
+
+Sequencia canonica local consolidada no sandbox Base 1.1:
+
+`ActivityRunning`
+-> `ActivityCompletionRequested`
+-> `ActivityCompleting`
+-> `DeactivationWindowStarted`
+-> `DeactivationWindowSkippedNoContent`
+-> `ActivityDeactivated`
+-> `Completed` ou `NextActivity`.
+
+Regras aplicadas:
+- `CompleteCurrentActivity` nao pula direto para deactivation.
+- `ContinueToNextActivity` so e aceito apos `ActivityDeactivated`.
+- Nesta etapa, `DeactivationWindowSkippedNoContent` so e emitido quando `DeactivationWindowMode=None`.
+- Se `DeactivationWindowMode=AdditiveScene`, o pipeline entra no trilho de janela explicita (`DeactivationWindowReady` -> `CompleteDeactivationWindow`) antes de `ActivityDeactivated`.
+- Campo autoral legado `HasActivityResult` foi removido do contrato ativo de lifecycle local.
+- Nao ha trilho paralelo de `ActivityResultPresentation*` no lifecycle local ativo.
+
+## Checkpoint de ActivationWindow Nominal - Sem Conteudo Visual (2026-05-17)
+
+Sequencia canonica de entrada local nesta etapa:
+
+`SessionActivityEntryHandoffAccepted`
+-> `ActivityActivationStarted`
+-> `ActivationWindowStarted`
+-> `ActivationWindowSkippedNoContent`
+-> `ActivityRunning`.
+
+Regras aplicadas:
+- Nesta etapa nao existe presenter visual real de `ActivationWindow`; o suporte atual cobre apenas carga aditiva nominal e gate de conclusao explicita.
+- `ActivationWindowSkippedNoContent` so e emitido quando `ActivationWindowMode=None`.
+- Se `ActivationWindowMode=AdditiveScene`, o pipeline abre a janela por cena aditiva e para em `ActivationWindowReady` aguardando conclusao explicita.
+- Campo autoral legado `HasActivation` foi removido do contrato ativo de lifecycle local.
+- Nao ha trilho paralelo `IntroStage`/ativacao antiga no fluxo ativo.
+
+## Checkpoint de Contrato Autoral das Activity Windows (2026-05-17)
+
+Contrato autoral explicito adicionado para as janelas locais da Activity:
+
+- `ActivationWindowMode` (por activity): `None`, `AdditiveScene`.
+- `DeactivationWindowMode` (por activity): `None`, `AdditiveScene`.
+- Campos legacy `HasActivation` e `HasActivityResult` permanecem removidos.
+
+Regras de execucao nesta etapa (Base 1.1 sandbox):
+
+- `ActivationWindowMode=None`: `ActivationWindowSkippedNoContent` e emitido antes de `ActivityRunning`.
+- `ActivationWindowMode=AdditiveScene`: o pipeline executa load aditivo da cena autoral, entra em `ActivationWindowReady` e aguarda conclusao explicita da window antes de `ActivityRunning`.
+- `DeactivationWindowMode=None`: `DeactivationWindowSkippedNoContent` e emitido antes de `ActivityDeactivated`.
+- `DeactivationWindowMode=AdditiveScene`: o pipeline executa load aditivo, entra em `DeactivationWindowReady` e aguarda conclusao explicita antes de `ActivityDeactivated`.
+
+## Checkpoint de ActivationWindow AdditiveScene - Primeiro Suporte Real (2026-05-17)
+
+Sequencia nominal quando `ActivationWindowMode=AdditiveScene`:
+
+`SessionActivityEntryHandoffAccepted`
+-> `ActivityActivationStarted`
+-> `ActivationWindowStarted`
+-> `ActivationWindowAdditiveSceneLoadStarted`
+-> `ActivationWindowAdditiveSceneLoaded`
+-> `ActivationWindowReady`
+-> `CompleteActivationWindow` (comando explicito)
+-> `ActivationWindowCompleted`
+-> `ActivationWindowAdditiveSceneUnloadStarted`
+-> `ActivationWindowAdditiveSceneUnloaded`
+-> `ActivityRunning`.
+
+Regras aplicadas:
+- Campo autoral novo por activity: `activationWindowAdditiveSceneKey` (`SceneKeyAsset`).
+- Se `activationWindowAdditiveSceneKey` estiver ausente com `ActivationWindowMode=AdditiveScene`, o pipeline falha explicitamente.
+- Se `activationWindowAdditiveSceneKey.SceneName` estiver vazio, o pipeline falha explicitamente.
+- Se a cena configurada nao puder ser carregada (`CanStreamedLevelBeLoaded=false`), o pipeline falha explicitamente.
+- A cena de activation carregada de forma aditiva e descarregada explicitamente apos `ActivationWindowCompleted` e antes de `ActivityRunning`.
+- Se a cena esperada nao estiver carregada no momento do unload, o pipeline falha explicitamente (sem skip silencioso).
+- `ActivationWindowCompleted` so ocorre via comando explicito `CompleteActivationWindow` com identity ativa valida e stage `ActivationWindowReady`.
+- `ActivityRunning` so ocorre apos `ActivationWindowAdditiveSceneUnloaded` (modo `AdditiveScene`) ou apos `ActivationWindowSkippedNoContent` (modo `None`).
+
+## Checkpoint de DeactivationWindow AdditiveScene - Primeiro Suporte Real (2026-05-17)
+
+Sequencia nominal quando `DeactivationWindowMode=AdditiveScene`:
+
+`ActivityRunning`
+-> `ActivityCompletionRequested`
+-> `ActivityCompleting`
+-> `DeactivationWindowStarted`
+-> `DeactivationWindowAdditiveSceneLoadStarted`
+-> `DeactivationWindowAdditiveSceneLoaded`
+-> `DeactivationWindowReady`
+-> `CompleteDeactivationWindow` (comando explicito)
+-> `DeactivationWindowCompleted`
+-> `DeactivationWindowAdditiveSceneUnloadStarted`
+-> `DeactivationWindowAdditiveSceneUnloaded`
+-> `ActivityDeactivated`
+-> `Completed` ou `NextActivity`.
+
+Regras aplicadas:
+- Campo autoral novo por activity: `deactivationWindowAdditiveSceneKey` (`SceneKeyAsset`).
+- Se `deactivationWindowAdditiveSceneKey` estiver ausente com `DeactivationWindowMode=AdditiveScene`, o pipeline falha explicitamente.
+- Se `deactivationWindowAdditiveSceneKey.SceneName` estiver vazio, o pipeline falha explicitamente.
+- Se a cena configurada nao puder ser carregada (`CanStreamedLevelBeLoaded=false`), o pipeline falha explicitamente.
+- `DeactivationWindowCompleted` so ocorre via comando explicito `CompleteDeactivationWindow` com identity ativa valida e stage `DeactivationWindowReady`.
+- A cena de deactivation carregada de forma aditiva e descarregada explicitamente apos `DeactivationWindowCompleted` e antes de `ActivityDeactivated`.
+- Se a cena esperada nao estiver carregada no momento do unload, o pipeline falha explicitamente (sem skip silencioso).
+- `ContinueToNextActivity` permanece aceito somente apos `ActivityDeactivated`.
+
+## Checkpoint de ActivityTransitionPolicy - Contrato Inicial (2026-05-17)
+
+Contrato autoral por activity:
+
+- `ActivityTransitionPolicy.CutWithCurtain`
+- `ActivityTransitionPolicy.Seamless`
+
+Regras desta etapa:
+
+- Policy funcional atual: `CutWithCurtain`.
+- `Seamless` existe apenas como contrato futuro e falha explicitamente como `unsupported`.
+- Antes de preparar handoff para proxima activity, o pipeline registra observabilidade explicita da policy selecionada (`ActivityTransitionPolicySelected` + snapshot `activity_transition_policy_selected`).
+- Nao existe fallback silencioso de `Seamless` para `CutWithCurtain`.
+- A garantia de ordem permanece: `Current Activity -> DeactivationWindow -> ActivityDeactivated -> Next Activity`.
+
+## Checkpoint de Navegacao sem Bypass de Deactivation (2026-05-17)
+
+Regras aplicadas no lifecycle local:
+
+- `GoToNextActivity`, `GoToPreviousActivity`, `GoToActivity` e `RestartCurrentActivity` nao podem mais desativar diretamente.
+- Toda navegacao `Activity -> Activity` passa pelo mesmo trilho canonico de fechamento local:
+  - `ActivityRunning`
+  - `ActivityNavigationExitRequested` (ou `ActivityCompletionRequested` no fechamento regular)
+  - `ActivityCompleting`
+  - `DeactivationWindowStarted`
+  - `DeactivationWindowSkippedNoContent` ou `DeactivationWindowReady -> CompleteDeactivationWindow -> DeactivationWindowCompleted`
+  - `ActivityDeactivated`
+  - `ActivityTransitionPolicySelected`
+  - `ActivityHandoffPrepared`
+  - entrada da proxima activity.
+- `NextActivity` continua condicionado a ocorrer somente apos `ActivityDeactivated`.
+
+Checkpoint de rota/scene unload (BackToMenu):
+
+- Nesta etapa, saida de rota/scene com activity ativa sem fechamento canonico explicito e tratada como erro fatal em `SessionActivityHost` (`SessionActivityRouteExitWithoutCanonicalDeactivation`).
+- Este fail-fast evita `PASS` falso com unload silencioso.
+- O teardown canonico de saida de rota (sem handoff para outra activity) permanece como pendencia de integracao entre `SessionOperational` e `SessionActivity`.
+
+Nota curta de governanca QA:
+
+- O QA da `SessionActivity` deve validar o lifecycle canonico (activation/completion/deactivation/continue) e nao pode oferecer atalhos de navegacao que burlem `DeactivationWindow`.
+
+## Checkpoint de Route Exit Teardown Integrado ao SessionOperational (2026-05-17)
+
+- O fechamento de SessionActivity para saida de rota deixou de depender do OnDisable como mecanismo principal.
+- Boundary ativo: SessionOperationalPipeline solicita teardown canonico a SessionActivity antes de SceneComposition quando houver unload da cena de Activity.
+- SessionActivity executa somente seu lifecycle local (CompleteCurrentActivity/CompleteDeactivationWindow) e deve atingir ActivityDeactivated antes do unload.
+- Se o teardown nao puder completar, o SessionOperationalPipeline bloqueia a rota com SessionActivityRouteExitBlocked e falha antes do unload.
+- O fatal no SessionActivityHost permanece apenas como ultima protecao defensiva.
+
+## Checkpoint - Distincao de Fechamento Local vs Route-Exit Close (2026-05-17)
+
+- CompleteCurrentActivity continua sendo fechamento local de activity no catalogo e pode preparar ActivityHandoffPrepared para proxima activity.
+- CloseForRouteExit e caminho canonico de fechamento para saida de rota/unload e **nao** prepara proxima activity no catalogo.
+- Em CloseForRouteExit, o trilho encerra em ActivityDeactivated -> ClosedForRouteExit, sem ActivityTransitionPolicySelected, sem ActivityHandoffPrepared e sem ContinueToNextActivity.

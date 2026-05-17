@@ -1,4 +1,6 @@
 using System;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
@@ -7,15 +9,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     {
         [SerializeField] private string activityId;
         [SerializeField] private string displayName;
-        [SerializeField] private bool hasActivation;
         [SerializeField] private bool hasGameplayContent;
-        [SerializeField] private bool hasActivityResult;
+        [SerializeField] private ActivityWindowMode activationWindowMode = ActivityWindowMode.None;
+        [SerializeField] private SceneKeyAsset activationWindowAdditiveSceneKey;
+        [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
+        [SerializeField] private SceneKeyAsset deactivationWindowAdditiveSceneKey;
+        [SerializeField] private ActivityTransitionPolicy transitionPolicy = ActivityTransitionPolicy.CutWithCurtain;
 
         public string ActivityId => Normalize(activityId);
         public string DisplayName => Normalize(displayName);
-        public bool HasActivation => hasActivation;
         public bool HasGameplayContent => hasGameplayContent;
-        public bool HasActivityResult => hasActivityResult;
+        public ActivityWindowMode ActivationWindowMode => activationWindowMode;
+        public SceneKeyAsset ActivationWindowAdditiveSceneKey => activationWindowAdditiveSceneKey;
+        public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
+        public SceneKeyAsset DeactivationWindowAdditiveSceneKey => deactivationWindowAdditiveSceneKey;
+        public ActivityTransitionPolicy TransitionPolicy => transitionPolicy;
 
         public void ValidateOrThrow()
         {
@@ -37,6 +45,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             if (ActivityId.Contains(" ", StringComparison.Ordinal))
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' activityId cannot contain spaces.");
+            }
+
+            if (activationWindowMode == ActivityWindowMode.AdditiveScene &&
+                activationWindowAdditiveSceneKey == null)
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires activationWindowAdditiveSceneKey when activationWindowMode=AdditiveScene.");
+            }
+
+            if (activationWindowMode == ActivityWindowMode.AdditiveScene &&
+                string.IsNullOrWhiteSpace(activationWindowAdditiveSceneKey.SceneName))
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires activationWindowAdditiveSceneKey.SceneName when activationWindowMode=AdditiveScene.");
+            }
+
+            if (deactivationWindowMode == ActivityWindowMode.AdditiveScene &&
+                deactivationWindowAdditiveSceneKey == null)
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires deactivationWindowAdditiveSceneKey when deactivationWindowMode=AdditiveScene.");
+            }
+
+            if (deactivationWindowMode == ActivityWindowMode.AdditiveScene &&
+                string.IsNullOrWhiteSpace(deactivationWindowAdditiveSceneKey.SceneName))
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires deactivationWindowAdditiveSceneKey.SceneName when deactivationWindowMode=AdditiveScene.");
             }
         }
 

@@ -303,6 +303,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     sourceText,
                     reasonText);
 
+                EnsureSessionActivityRouteExitTeardownOrFail(
+                    previousCompletedRoute,
+                    unloadPlan,
+                    routeIdentity,
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    sourceText,
+                    reasonText);
+
                 SessionOperationalRouteCompletedFact adapterFact = await routeExecutor.ApplyOperationalRouteAsync(command);
                 if (!adapterFact.IsValid)
                 {
@@ -1411,6 +1421,134 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string message = "[FATAL][Config][SessionOperationalPipeline] ISessionActivityEntryHandoffReceiver obrigatorio ausente para o trilho operacional.";
             DebugUtility.LogError<SessionOperationalPipeline>(message);
             throw new InvalidOperationException(message);
+        }
+
+        private static ISessionActivityRouteExitTeardownBoundary ResolveActivityRouteExitTeardownBoundaryOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<ISessionActivityRouteExitTeardownBoundary>(out var boundary) && boundary != null)
+            {
+                return boundary;
+            }
+
+            string message = "[FATAL][Config][SessionOperationalPipeline] ISessionActivityRouteExitTeardownBoundary obrigatorio ausente para teardown canonico pre-unload.";
+            DebugUtility.LogError<SessionOperationalPipeline>(message);
+            throw new InvalidOperationException(message);
+        }
+
+        private void EnsureSessionActivityRouteExitTeardownOrFail(
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            SessionOperationalRouteUnloadPlan unloadPlan,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
+        {
+            if (!ShouldRequireSessionActivityRouteExitTeardown(previousCompletedRoute, unloadPlan))
+            {
+                return;
+            }
+
+            ISessionActivityRouteExitTeardownBoundary teardownBoundary = ResolveActivityRouteExitTeardownBoundaryOrFail();
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Route] SessionActivityRouteExitTeardownStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            SessionActivityRouteExitTeardownResult teardownResult = teardownBoundary.RequestRouteExitTeardown(
+                previousCompletedRoute.ActivityIdentity,
+                source,
+                reason);
+
+            bool stageIsClosed =
+                teardownResult.Stage == SessionActivityStage.Deactivation ||
+                teardownResult.Stage == SessionActivityStage.Completed ||
+                teardownResult.Stage == SessionActivityStage.ClosedForRouteExit;
+
+            if (!teardownResult.IsValid || teardownResult.IsBlocked || teardownResult.HasPendingHandoff || !stageIsClosed)
+            {
+                string blockedReason = !teardownResult.IsValid
+                    ? "invalid_teardown_result"
+                    : teardownResult.IsBlocked
+                        ? teardownResult.Reason
+                        : teardownResult.HasPendingHandoff
+                            ? "pending_activity_handoff_after_route_exit_close"
+                            : "teardown_stage_not_closed";
+                string blockedDetail = !teardownResult.IsValid
+                    ? "Teardown boundary returned invalid result."
+                    : teardownResult.IsBlocked
+                        ? teardownResult.Detail
+                        : teardownResult.HasPendingHandoff
+                            ? $"Teardown completed with pending handoff for activityId='{teardownResult.ActivityId}'."
+                            : $"Teardown ended in stage='{teardownResult.Stage}', expected deactivated/closed stage.";
+                DebugUtility.LogError<SessionOperationalPipeline>(
+                    $"[OBS][SessionOperationalPipeline][Route] SessionActivityRouteExitBlocked routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}' teardownResult='{teardownResult}' source='{source}' reason='{reason}'.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Lifecycle][SessionOperationalPipeline] SessionActivity route exit blocked before SceneComposition unload. routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}'.");
+            }
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Route] SessionActivityRouteExitTeardownCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' teardownResult='{teardownResult}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private static bool ShouldRequireSessionActivityRouteExitTeardown(
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            SessionOperationalRouteUnloadPlan unloadPlan)
+        {
+            if (!previousCompletedRoute.IsValid)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(previousCompletedRoute.ActivityIdentity))
+            {
+                return false;
+            }
+
+            if (unloadPlan.FinalScenesToUnload == null || unloadPlan.FinalScenesToUnload.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < unloadPlan.FinalScenesToUnload.Count; i++)
+            {
+                SceneKeyAsset candidate = unloadPlan.FinalScenesToUnload[i];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                if (previousCompletedRoute.ActiveSceneKey != null && ReferenceEquals(candidate, previousCompletedRoute.ActiveSceneKey))
+                {
+                    return true;
+                }
+
+                if (ContainsSceneKey(previousCompletedRoute.RouteOwnedLoadedSceneKeys, candidate))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ContainsSceneKey(IReadOnlyList<SceneKeyAsset> collection, SceneKeyAsset candidate)
+        {
+            if (collection == null || collection.Count == 0 || candidate == null)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < collection.Count; i++)
+            {
+                if (ReferenceEquals(collection[i], candidate))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static SessionOperationalLoadingCommand ResolveLoadingCommandOrFail(

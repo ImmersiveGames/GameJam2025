@@ -172,3 +172,24 @@ Regra de fronteira aplicada:
 
 Nota curta (RouteActivitySave boundary):
 - `SessionOperationalPipeline` permanece owner canônico de timing/policy de `RouteActivitySave` (`save-on-exit`/`load-on-enter`); adapter e `SaveRuntime` executam, sem decidir lifecycle.
+
+---
+
+## Checkpoint - SessionActivity Route Exit Teardown Pre-Unload (2026-05-17)
+
+- SessionOperationalPipeline valida teardown canonico de SessionActivity **antes** de executar SceneComposition quando a rota anterior possui SessionActivity ativa e a cena sera descarregada.
+- Observabilidade operacional obrigatoria:
+  - SessionActivityRouteExitTeardownStarted
+  - SessionActivityRouteExitTeardownCompleted
+  - SessionActivityRouteExitBlocked
+- Se o fechamento local nao atingir ActivityDeactivated antes do unload, a rota e bloqueada no SessionOperationalPipeline com erro fatal; SceneComposition nao deve iniciar unload.
+- Boundary de ownership:
+  - SessionOperational: owner da ordem da rota/unload.
+  - SessionActivity: owner do lifecycle local de fechamento.
+  - SceneComposition: executor fisico de unload/load, sem decisao de lifecycle.
+
+## Checkpoint - Route-Exit Close sem Handoff de Catalogo (2026-05-17)
+
+- SessionOperationalPipeline usa o boundary de RouteExitTeardown para exigir fechamento de SessionActivity sem continucao de catalogo.
+- O caminho usado no teardown de saida de rota e CloseForRouteExit (nao CompleteCurrentActivity).
+- Se o resultado voltar com handoff pendente, a rota e bloqueada antes de SceneComposition (SessionActivityRouteExitBlocked).

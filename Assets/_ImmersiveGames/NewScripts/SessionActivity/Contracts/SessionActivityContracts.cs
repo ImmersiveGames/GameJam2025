@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityCatalogAdvanceAtEndMode
@@ -8,16 +9,44 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         LoopToFirst = 1,
     }
 
+    public enum ActivityWindowMode
+    {
+        None = 0,
+        AdditiveScene = 1,
+    }
+
+    public enum ActivityTransitionPolicy
+    {
+        CutWithCurtain = 0,
+        Seamless = 1,
+    }
+
     public enum SessionActivityStage
     {
         Unknown = 0,
-        ActivationExecuting = 1,
-        ActivationSkippedNoContent = 2,
-        ActivityRunning = 3,
-        Deactivation = 4,
-        ActivityResultPresentationExecuting = 5,
-        ActivityResultPresentationSkippedNoContent = 6,
-        Completed = 7,
+        ActivityActivationStarted = 1,
+        ActivationWindowStarted = 2,
+        ActivationWindowAdditiveSceneLoadStarted = 3,
+        ActivationWindowAdditiveSceneLoaded = 4,
+        ActivationWindowReady = 5,
+        ActivationWindowCompleted = 6,
+        ActivationWindowAdditiveSceneUnloadStarted = 7,
+        ActivationWindowAdditiveSceneUnloaded = 8,
+        ActivationWindowSkippedNoContent = 9,
+        ActivityRunning = 10,
+        ActivityCompletionRequested = 11,
+        ActivityCompleting = 12,
+        DeactivationWindowStarted = 13,
+        DeactivationWindowAdditiveSceneLoadStarted = 14,
+        DeactivationWindowAdditiveSceneLoaded = 15,
+        DeactivationWindowReady = 16,
+        DeactivationWindowCompleted = 17,
+        DeactivationWindowAdditiveSceneUnloadStarted = 18,
+        DeactivationWindowAdditiveSceneUnloaded = 19,
+        DeactivationWindowSkippedNoContent = 20,
+        Deactivation = 21,
+        Completed = 22,
+        ClosedForRouteExit = 23,
     }
 
     public enum ActivityExecutionState
@@ -111,18 +140,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string activityId,
             string displayName,
             int activityOrdinal,
-            bool hasActivation,
             bool hasGameplayContent,
-            bool hasActivityResult,
+            ActivityWindowMode activationWindowMode,
+            SceneKeyAsset activationWindowAdditiveSceneKey,
+            ActivityWindowMode deactivationWindowMode,
+            SceneKeyAsset deactivationWindowAdditiveSceneKey,
+            ActivityTransitionPolicy transitionPolicy,
             string nextActivityId,
             string source)
         {
             ActivityId = Normalize(activityId);
             DisplayName = Normalize(displayName);
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
-            HasActivation = hasActivation;
             HasGameplayContent = hasGameplayContent;
-            HasActivityResult = hasActivityResult;
+            ActivationWindowMode = activationWindowMode;
+            ActivationWindowAdditiveSceneKey = activationWindowAdditiveSceneKey;
+            DeactivationWindowMode = deactivationWindowMode;
+            DeactivationWindowAdditiveSceneKey = deactivationWindowAdditiveSceneKey;
+            TransitionPolicy = transitionPolicy;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
         }
@@ -130,9 +165,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string ActivityId { get; }
         public string DisplayName { get; }
         public int ActivityOrdinal { get; }
-        public bool HasActivation { get; }
         public bool HasGameplayContent { get; }
-        public bool HasActivityResult { get; }
+        public ActivityWindowMode ActivationWindowMode { get; }
+        public SceneKeyAsset ActivationWindowAdditiveSceneKey { get; }
+        public ActivityWindowMode DeactivationWindowMode { get; }
+        public SceneKeyAsset DeactivationWindowAdditiveSceneKey { get; }
+        public ActivityTransitionPolicy TransitionPolicy { get; }
         public string NextActivityId { get; }
         public string Source { get; }
 
@@ -143,10 +181,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(Source);
 
         public bool HasNextActivity => !string.IsNullOrWhiteSpace(NextActivityId);
+        public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
+        public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activation='{HasActivation}', gameplay='{HasGameplayContent}', hasActivityResult='{HasActivityResult}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', transitionPolicy='{TransitionPolicy}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -159,16 +199,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         Unknown = 0,
         StartActivity = 1,
-        CompleteCurrentActivity = 2,
-        ContinueToNextActivity = 3,
-        GoToNextActivity = 4,
-        GoToPreviousActivity = 5,
-        RestartCurrentActivity = 6,
-        GoToActivity = 7,
-        PauseRequested = 8,
-        ResumeRequested = 9,
-        PauseSimulation = 10,
-        ResumeSimulation = 11,
+        CompleteActivationWindow = 2,
+        CompleteDeactivationWindow = 3,
+        CompleteCurrentActivity = 4,
+        ContinueToNextActivity = 5,
+        GoToNextActivity = 6,
+        GoToPreviousActivity = 7,
+        RestartCurrentActivity = 8,
+        GoToActivity = 9,
+        PauseRequested = 10,
+        ResumeRequested = 11,
+        PauseSimulation = 12,
+        ResumeSimulation = 13,
+        CloseForRouteExit = 14,
     }
 
     public readonly struct SessionActivityCommand
@@ -214,24 +257,43 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         Unknown = 0,
         PipelineStarted = 1,
-        ActivationEntered = 2,
-        ActivationSkippedNoContent = 3,
-        ActivityRunningEntered = 4,
-        GameplayContentSkippedNoContent = 5,
-        ActivityDeactivated = 6,
-        ActivityResultPresentationEntered = 7,
-        ActivityResultPresentationSkippedNoContent = 8,
-        ContinueAccepted = 9,
-        ActivityHandoffPrepared = 10,
-        PipelineCompleted = 11,
-        CommandRejected = 12,
-        SimulationPaused = 13,
-        SimulationResumed = 14,
-        PauseResolved = 15,
-        ResumeResolved = 16,
-        PauseRejected = 17,
-        ResumeRejected = 18,
-        ActivityCatalogLooped = 19,
+        ActivityActivationStarted = 2,
+        ActivationWindowStarted = 3,
+        ActivationWindowAdditiveSceneLoadStarted = 4,
+        ActivationWindowAdditiveSceneLoaded = 5,
+        ActivationWindowReady = 6,
+        ActivationWindowCompleted = 7,
+        ActivationWindowAdditiveSceneUnloadStarted = 8,
+        ActivationWindowAdditiveSceneUnloaded = 9,
+        ActivationWindowSkippedNoContent = 10,
+        ActivityRunningEntered = 11,
+        GameplayContentSkippedNoContent = 12,
+        ActivityCompletionRequested = 13,
+        ActivityCompleting = 14,
+        DeactivationWindowStarted = 15,
+        DeactivationWindowAdditiveSceneLoadStarted = 16,
+        DeactivationWindowAdditiveSceneLoaded = 17,
+        DeactivationWindowReady = 18,
+        DeactivationWindowCompleted = 19,
+        DeactivationWindowAdditiveSceneUnloadStarted = 20,
+        DeactivationWindowAdditiveSceneUnloaded = 21,
+        DeactivationWindowSkippedNoContent = 22,
+        ActivityDeactivated = 23,
+        ContinueAccepted = 24,
+        ActivityHandoffPrepared = 25,
+        ActivityTransitionPolicySelected = 26,
+        PipelineCompleted = 27,
+        CommandRejected = 28,
+        SimulationPaused = 29,
+        SimulationResumed = 30,
+        PauseResolved = 31,
+        ResumeResolved = 32,
+        PauseRejected = 33,
+        ResumeRejected = 34,
+        ActivityCatalogLooped = 35,
+        ActivityNavigationExitRequested = 36,
+        ActivityRouteExitRequested = 37,
+        ActivityRouteExitCompleted = 38,
     }
 
     public readonly struct SessionActivityFact
@@ -477,4 +539,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         SessionActivityInputModeObservation Apply(SessionActivityInputModeCommand command);
     }
 }
+
 

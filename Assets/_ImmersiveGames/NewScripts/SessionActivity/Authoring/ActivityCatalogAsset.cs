@@ -32,9 +32,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     activityId: current.ActivityId,
                     displayName: current.DisplayName,
                     activityOrdinal: index + 1,
-                    hasActivation: current.HasActivation,
                     hasGameplayContent: current.HasGameplayContent,
-                    hasActivityResult: current.HasActivityResult,
+                    activationWindowMode: current.ActivationWindowMode,
+                    activationWindowAdditiveSceneKey: current.ActivationWindowAdditiveSceneKey,
+                    deactivationWindowMode: current.DeactivationWindowMode,
+                    deactivationWindowAdditiveSceneKey: current.DeactivationWindowAdditiveSceneKey,
+                    transitionPolicy: current.TransitionPolicy,
                     nextActivityId: nextActivityId,
                     source: source));
             }
