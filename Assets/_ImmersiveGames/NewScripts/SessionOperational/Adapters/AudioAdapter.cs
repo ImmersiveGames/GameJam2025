@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 DebugUtility.Log(typeof(AudioAdapter),
                     BuildAudioLog(
-                        "[OBS][SessionOperationalAudio][Adapter] playSkipped",
+                        "[OBS][SessionOperationalAudio][AudioAdapter] playSkipped",
                         command,
                         extra: "skipReason='route_audio_disabled'"),
                     DebugUtility.Colors.Info);
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             DebugUtility.Log(typeof(AudioAdapter),
                 BuildAudioLog(
-                    "[OBS][SessionOperationalAudio][Adapter] playStarted",
+                    "[OBS][SessionOperationalAudio][AudioAdapter] playStarted",
                     command,
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Info);
@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             DebugUtility.Log(typeof(AudioAdapter),
                 BuildAudioLog(
-                    "[OBS][SessionOperationalAudio][Adapter] playSubmitted",
+                    "[OBS][SessionOperationalAudio][AudioAdapter] playSubmitted",
                     command,
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Success);

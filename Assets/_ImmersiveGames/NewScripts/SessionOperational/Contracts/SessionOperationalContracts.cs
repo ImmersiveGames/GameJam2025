@@ -155,6 +155,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Unknown = 0,
         FrontendMenu = 1,
         ActivityDefault = 2,
+        PauseOverlay = 3,
+        InputLocked = 4,
+    }
+
+    public enum SessionOperationalInputPolicy
+    {
+        Unknown = 0,
+        MenuNavigation = 1,
+        ActivityGameplay = 2,
+        OverlayNavigation = 3,
+        InputLocked = 4,
     }
 
     public readonly struct SessionOperationalInputModeCommand : IEvent

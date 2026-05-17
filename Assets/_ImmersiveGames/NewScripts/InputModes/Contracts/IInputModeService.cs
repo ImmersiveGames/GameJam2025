@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Contracts
         void SetFrontendMenu(string reason);
         void SetGameplay(string reason);
         void SetPauseOverlay(string reason);
+        void SetInputLocked(string reason);
     }
 }
 

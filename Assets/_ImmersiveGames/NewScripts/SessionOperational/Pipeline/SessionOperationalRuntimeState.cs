@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string RouteId { get; internal set; }
         public string RouteProfileId { get; internal set; }
         public string RouteClass { get; internal set; }
+        public SessionOperationalInputPolicy CurrentInputPolicy { get; internal set; }
         public SessionOperationalInputModeKind CurrentInitialInputMode { get; internal set; }
         public bool HasStarted { get; internal set; }
         public bool HasCompleted { get; internal set; }
@@ -38,6 +39,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteId = routeId;
             RouteProfileId = routeProfileId;
             RouteClass = string.Empty;
+            CurrentInputPolicy = SessionOperationalInputPolicy.Unknown;
             CurrentInitialInputMode = SessionOperationalInputModeKind.Unknown;
             HasStarted = false;
             HasCompleted = false;
@@ -68,9 +70,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             TransitionId = identity.TransitionId;
         }
 
-        public void SetInputModeContext(string routeClass, SessionOperationalInputModeKind initialInputMode)
+        public void SetInputModeContext(
+            string routeClass,
+            SessionOperationalInputPolicy inputPolicy,
+            SessionOperationalInputModeKind initialInputMode)
         {
             RouteClass = routeClass;
+            CurrentInputPolicy = inputPolicy;
             CurrentInitialInputMode = initialInputMode;
         }
 

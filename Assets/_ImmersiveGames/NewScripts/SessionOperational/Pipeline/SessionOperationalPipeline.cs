@@ -350,9 +350,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     sourceText,
                     reasonText);
 
+                SessionOperationalInputPolicy inputPolicy = route.InputPolicy;
                 SessionOperationalInputModeKind initialInputMode = PrepareInputCapabilityOrFail(
                     runtimeModeConfig,
                     route,
+                    inputPolicy,
                     routeIdentity,
                     routeOperationId,
                     transitionId,
@@ -368,12 +370,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeIdentity,
                         routeIdentity,
                         routeClass,
+                        inputPolicy,
                         initialInputMode,
                         sourceText,
                         reasonText))
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' initialInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
+                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
                 }
 
                 if (!TryObserveInitialInputModePrepared(
@@ -383,12 +386,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeIdentity,
                         routeIdentity,
                         routeClass,
+                        inputPolicy,
                         initialInputMode,
                         sourceText,
                         reasonText))
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' initialInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
+                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
                 }
 
                 if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
@@ -919,11 +923,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string routeId,
             string routeProfileId,
             string routeClass,
+            SessionOperationalInputPolicy inputPolicy,
             SessionOperationalInputModeKind initialInputMode,
             string source,
             string reason)
         {
-            _state.SetInputModeContext(Normalize(routeClass), initialInputMode);
+            _state.SetInputModeContext(Normalize(routeClass), inputPolicy, initialInputMode);
             return TryRecordStage(
                 SessionOperationalStage.InputCapabilityPrepared,
                 routeOperationId,
@@ -943,11 +948,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string routeId,
             string routeProfileId,
             string routeClass,
+            SessionOperationalInputPolicy inputPolicy,
             SessionOperationalInputModeKind initialInputMode,
             string source,
             string reason)
         {
-            _state.SetInputModeContext(Normalize(routeClass), initialInputMode);
+            _state.SetInputModeContext(Normalize(routeClass), inputPolicy, initialInputMode);
             return TryRecordStage(
                 SessionOperationalStage.InitialInputModePrepared,
                 routeOperationId,
@@ -1052,7 +1058,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public string DumpState()
         {
-            return $"[OBS][SessionOperationalPipeline] pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
+            return $"[OBS][SessionOperationalPipeline] pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
         }
 
         private bool TryRecordStage(
@@ -1142,7 +1148,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 stage == SessionOperationalStage.InitialInputModePrepared)
             {
                 _state.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline][InputMode] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' routeClass='{Normalize(_state.RouteClass)}' routeKind='{Normalize(_state.RouteClass)}' initialInputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
+                    $"[OBS][SessionOperationalPipeline][InputMode] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
             }
 
             if (stage == SessionOperationalStage.InitialInputModePrepared)
@@ -1158,7 +1164,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 _state.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' contextSignature='{inputModeCommand.ContextSignature}' initialInputMode='{inputModeCommand.InitialInputMode}' routeClass='{inputModeCommand.RouteClass}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
+                    $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' contextSignature='{inputModeCommand.ContextSignature}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{inputModeCommand.InitialInputMode}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
 
                 EventBus<SessionOperationalInputModeCommand>.Raise(inputModeCommand);
             }
@@ -2003,6 +2009,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private static SessionOperationalInputModeKind PrepareInputCapabilityOrFail(
             RuntimeModeConfig runtimeModeConfig,
             OperationalRouteAsset route,
+            SessionOperationalInputPolicy inputPolicy,
             string routeIdentity,
             string routeOperationId,
             string transitionId,
@@ -2015,15 +2022,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new ArgumentNullException(nameof(route));
             }
 
-            SessionOperationalInputModeKind initialInputMode = ResolveInitialInputMode(route.OperationalSurfaceKind);
-            if (route.OperationalSurfaceKind == OperationalSurfaceKind.FrontendMenu &&
-                initialInputMode != SessionOperationalInputModeKind.FrontendMenu)
-            {
-                string modeMessage =
-                    $"[FATAL][Config][SessionOperationalInputCapability] FrontendMenu requires initialInputMode=FrontendMenu routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' source='{source}' reason='{reason}'.";
-                DebugUtility.LogError<SessionOperationalPipeline>(modeMessage);
-                throw new InvalidOperationException(modeMessage);
-            }
+            SessionOperationalInputModeKind initialInputMode = ResolveInitialInputModeFromPolicyOrFail(
+                inputPolicy,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                source,
+                reason);
 
             UnityOperationalInputRuntimeAdapter.PrepareOrFail(
                 runtimeModeConfig,
@@ -2035,17 +2041,30 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' initialInputMode='{initialInputMode}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' inputMode='{initialInputMode}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return initialInputMode;
         }
 
-        private static SessionOperationalInputModeKind ResolveInitialInputMode(OperationalSurfaceKind operationalSurfaceKind)
+        private static SessionOperationalInputModeKind ResolveInitialInputModeFromPolicyOrFail(
+            SessionOperationalInputPolicy inputPolicy,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string source,
+            string reason)
         {
-            return operationalSurfaceKind == OperationalSurfaceKind.FrontendMenu
-                ? SessionOperationalInputModeKind.FrontendMenu
-                : SessionOperationalInputModeKind.ActivityDefault;
+            return inputPolicy switch
+            {
+                SessionOperationalInputPolicy.MenuNavigation => SessionOperationalInputModeKind.FrontendMenu,
+                SessionOperationalInputPolicy.ActivityGameplay => SessionOperationalInputModeKind.ActivityDefault,
+                SessionOperationalInputPolicy.OverlayNavigation => SessionOperationalInputModeKind.PauseOverlay,
+                SessionOperationalInputPolicy.InputLocked => SessionOperationalInputModeKind.InputLocked,
+                _ => throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalInputCapability] inputPolicy invalida routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' inputPolicy='{inputPolicy}' source='{source}' reason='{reason}'."),
+            };
         }
 
         private static IReadOnlyList<PlayerSetEntry> ResolvePlayerSetFromRoute(OperationalRouteAsset route)

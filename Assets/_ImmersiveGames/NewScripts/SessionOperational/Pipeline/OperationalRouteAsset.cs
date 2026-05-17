@@ -92,6 +92,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         [SerializeField] private string handoffSessionStateId;
         [SerializeField] private OperationalSurfaceKind operationalSurfaceKind = OperationalSurfaceKind.None;
 
+        [Header("Input")]
+        [SerializeField] private SessionOperationalInputPolicy inputPolicy = SessionOperationalInputPolicy.Unknown;
+
         [Header("Route Activity Save")]
         [SerializeField] private bool loadActivitySaveOnEnter;
         [SerializeField] private bool saveActivityOnExit;
@@ -126,6 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff => completionHandoff;
         public string HandoffSessionStateId => Normalize(handoffSessionStateId);
         public OperationalSurfaceKind OperationalSurfaceKind => operationalSurfaceKind;
+        public SessionOperationalInputPolicy InputPolicy => inputPolicy;
         public bool LoadActivitySaveOnEnter => loadActivitySaveOnEnter;
         public bool SaveActivityOnExit => saveActivityOnExit;
         public RouteActivitySavePolicy ActivitySavePolicy => new(loadActivitySaveOnEnter, saveActivityOnExit);
@@ -298,6 +302,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
+            bool validInputPolicy =
+                inputPolicy == SessionOperationalInputPolicy.MenuNavigation ||
+                inputPolicy == SessionOperationalInputPolicy.ActivityGameplay ||
+                inputPolicy == SessionOperationalInputPolicy.OverlayNavigation ||
+                inputPolicy == SessionOperationalInputPolicy.InputLocked;
+
+            if (!validInputPolicy)
+            {
+                errorMessage = $"inputPolicy is invalid routeIdentity='{RouteIdentity}' inputPolicy='{inputPolicy}'.";
+                return false;
+            }
+
             if (loadActivitySaveOnEnter && completionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
             {
                 errorMessage = $"loadActivitySaveOnEnter requires completionHandoff=SessionActivityEntry routeIdentity='{RouteIdentity}' completionHandoff='{completionHandoff}'.";
@@ -339,6 +355,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     errorMessage = $"routeAudioCue is invalid routeIdentity='{RouteIdentity}' cue='{routeAudioCue.name}' detail='{routeAudioCueValidationError}'.";
                     return false;
                 }
+            }
+            else if (routeAudioCue != null)
+            {
+                errorMessage = $"routeAudioCue must be null when routeAudioMode=None routeIdentity='{RouteIdentity}' cue='{routeAudioCue.name}'.";
+                return false;
             }
 
             if (routeAudioTiming != SessionOperationalRouteAudioTiming.BeforeFadeOut)

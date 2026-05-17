@@ -111,6 +111,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 SessionOperationalInputModeKind.FrontendMenu => InputModeRequestKind.FrontendMenu,
                 SessionOperationalInputModeKind.ActivityDefault => InputModeRequestKind.Gameplay,
+                SessionOperationalInputModeKind.PauseOverlay => InputModeRequestKind.PauseOverlay,
+                SessionOperationalInputModeKind.InputLocked => InputModeRequestKind.InputLocked,
                 _ => throw new InvalidOperationException(
                     $"[FATAL][H1][InputModes] Unsupported SessionOperationalInputModeKind '{command.InitialInputMode}' contextSignature='{command.ContextSignature}'."),
             };

@@ -34,6 +34,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public void SetFrontendMenu(string reason) => HandleRequest(InputModeRequestKind.FrontendMenu, reason);
         public void SetGameplay(string reason) => HandleRequest(InputModeRequestKind.Gameplay, reason);
         public void SetPauseOverlay(string reason) => HandleRequest(InputModeRequestKind.PauseOverlay, reason);
+        public void SetInputLocked(string reason) => HandleRequest(InputModeRequestKind.InputLocked, reason);
 
         public InputModeRequestKind CurrentMode => _currentMode;
 
@@ -55,6 +56,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     _currentMode = mode;
                     DebugUtility.Log(typeof(InputModeService),
                         $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='pause overlay does not switch action maps in Base 1.1 operational scope'.",
+                        DebugUtility.Colors.Info);
+                    return;
+
+                case InputModeRequestKind.InputLocked:
+                    _currentMode = mode;
+                    DebugUtility.Log(typeof(InputModeService),
+                        $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='input locked policy does not switch action maps'.",
                         DebugUtility.Colors.Info);
                     return;
 

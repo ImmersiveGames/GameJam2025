@@ -31,6 +31,8 @@ Notas:
   - inicializacao de EventSystem persistente;
   - inicializacao de InputSystemUIInputModule persistente;
   - binding canonico de 10 UI actions via `OperationalInputRuntimeProfileAsset` referenciado por `InputModesRuntimeConfigGroup`.
+  - `SessionOperationalInputPolicy` explicita por rota operacional; `OperationalSurfaceKind` permanece semantico e nao decide input mode.
+  - pipeline resolve policy -> mode e emite `SessionOperationalInputModeCommand`; `InputModes` aplica modo/action map.
   - 11 decisoes congeladas sobre fail-fast, integridade, sequencia de binding.
 - **ADR-0010** (congelado) depende de ADR-0009 para validacao/init de slots e input operacional, permanece focado em PlayerPreparation (somente players), com materializacao minima de `PrototypePlayer` quando aplicavel, **sem** materializacao de gameplay input ou player selection.
 - **ADR-0011** (implementado):
@@ -184,6 +186,9 @@ Limites atuais congelados:
 - Camera pré-reveal está fechada no MVP single-player (Route/Surface + Activity + release determinístico entre rotas).
 - Status formal Base 1.1: **CameraPresentation pré-reveal single-player — CLOSED**.
 - Activity Camera Runtime durante a Activity permanece fora do MVP atual.
+- Checkpoint ADR-0006 Audio operacional de rota: **CLOSED (trilho Cue validado)**.
+  - Rail: `OperationalRouteAsset -> routeAudio* -> SessionOperationalPipeline -> RouteAudioPlanReady -> RouteRevealAudioStarted -> AudioAdapter playStarted/playSubmitted -> RouteRevealAudioSubmitted`.
+  - Contratos congelados: `AudioAdapter` executa side-effect sem decidir lifecycle; `AudioRuntime` técnico não decide rota/scene/handoff/timing/lifecycle; `routeAudioMode=None` exige cue nulo; `routeAudioMode=Cue` exige cue válido; timing MVP validado `BeforeFadeOut`.
 
 Referências de materialização:
 

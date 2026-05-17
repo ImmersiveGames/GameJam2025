@@ -66,6 +66,12 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                         $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
                         DebugUtility.Colors.Info);
                     return;
+                case InputModeRequestKind.InputLocked:
+                    service.SetInputLocked(evt.Reason);
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.Unspecified:
                 default:
                     HardFailFastH1.Trigger(typeof(InputModeCoordinator),

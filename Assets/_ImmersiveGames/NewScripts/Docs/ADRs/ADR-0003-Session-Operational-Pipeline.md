@@ -42,6 +42,7 @@ O `SessionOperationalPipeline` decide:
 - `Pipeline Handoffs`;
 - quando executar save/load operacional;
 - quando preparar input operacional;
+- qual `SessionOperationalInputPolicy` da rota deve ser aplicada e quando emitir `SessionOperationalInputModeCommand`;
 - quando executar `PlayerPreparation`;
 - quando emitir handoff para `SessionActivityPipeline`.
 
@@ -158,6 +159,9 @@ RouteRequested
 -> FadeOut
 -> OperationalRouteCompleted
 -> SessionActivityEntryHandoff
+
+Nota normativa curta (checkpoint de áudio operacional de rota):
+- Durante setup/reveal operacional, `SessionOperationalPipeline` emite e executa o comando de `RouteAudio` (`RouteAudioPlanReady` -> `RouteRevealAudioStarted` -> `RouteRevealAudioSubmitted`) com `AudioAdapter` como executor de side-effect.
 
 Regra de fronteira aplicada:
 - Apos `SessionActivityEntryHandoff`, a entrada na Activity ocorre por `SessionActivityPipeline.StartFromPreparedHandoff`.

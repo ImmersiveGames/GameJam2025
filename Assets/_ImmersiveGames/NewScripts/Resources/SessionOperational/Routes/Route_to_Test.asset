@@ -25,6 +25,7 @@ MonoBehaviour:
   completionHandoff: 0
   handoffSessionStateId: 
   operationalSurfaceKind: 0
+  inputPolicy: 4
   loadActivitySaveOnEnter: 0
   saveActivityOnExit: 0
   playerSetDefinition: {fileID: 11400000, guid: 599fec6669bb27444952e15513357943, type: 2}

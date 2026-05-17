@@ -132,6 +132,8 @@ Regras centrais:
 ## 3. Ownership e Fronteiras
 
 - `SessionOperationalPipeline` decide quando preparar o input runtime operacional.
+- `SessionOperationalPipeline` lê `SessionOperationalInputPolicy` da rota operacional, resolve o input mode e emite o command canônico.
+- `OperationalSurfaceKind` permanece semântico (surface/rota) e não seleciona input mode.
 - `SessionPlayerSlotsValidator` valida apenas slots e `PlayerInputManager`.
 - `UnityOperationalInputRuntimeAdapter` executa side-effects Unity:
   - `EventSystem` (criar/validar);
@@ -200,6 +202,29 @@ Estado validado na Base 1.1:
   - pós-validação do binding.
 - Contrato permanece operacional de frontend/menu.
 - Não implementa gameplay input.
+
+---
+
+## 9. Checkpoint Congelado - SessionOperationalInputPolicy (2026-05-17)
+
+Estado validado na Base 1.1:
+
+- `OperationalSurfaceKind` define semântica da superfície/rota e **não** escolhe input mode.
+- `SessionOperationalInputPolicy` define policy inicial de input da rota operacional.
+- Toda rota operacional relevante declara `inputPolicy` explícito.
+- `SessionOperationalPipeline` lê `route.InputPolicy`, resolve o modo operacional e emite `SessionOperationalInputModeCommand`.
+- `InputModes` permanece executor técnico: recebe request canônico, delega para `IInputModeService` e aplica mode/action map.
+- Sem inferência `OperationalSurfaceKind -> input mode`.
+- Sem fallback silencioso para policy ausente/inválida (`Unknown` = fail-fast).
+- Gameplay input final permanece fora do escopo deste checkpoint.
+
+Mapeamento congelado:
+
+- `MenuNavigation -> FrontendMenu -> actionMap UI`
+- `ActivityGameplay -> ActivityDefault interno -> Gameplay -> actionMap Player`
+- `OverlayNavigation -> PauseOverlay -> state_only`
+- `InputLocked -> InputLocked -> state_only`
+- `Unknown -> fail-fast`
 
 ---
 

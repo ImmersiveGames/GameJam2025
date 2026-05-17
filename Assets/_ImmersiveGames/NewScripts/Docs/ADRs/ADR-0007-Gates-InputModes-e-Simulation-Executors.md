@@ -30,7 +30,10 @@ Exemplos canônicos:
 - `InputModes` executa request e application de modos de input.
 - Pode ser `FrontendMenu`, `Gameplay`, `PauseOverlay`, etc.
 - Não decide que modo está ativo baseado em inferência.
-- O pipeline ou um coordenador explícito decide que modo aplicar; o executor aplica.
+- O pipeline decide a policy declarativa de rota (`SessionOperationalInputPolicy`) e resolve o modo; o executor aplica.
+- `OperationalSurfaceKind` não escolhe input mode.
+- `InputModes` não escolhe `SessionOperationalInputPolicy` de rota.
+- `InputModes` não decide lifecycle; apenas executa aplicação técnica de modo/estado.
 
 #### Canonical Input Mode Requests
 - `FrontendMenu` (modo de entrada para UI de menu)
@@ -66,5 +69,3 @@ Exemplos canônicos:
 - Base 1.0 tratou esses blocos como executores técnicos e rails de apoio.
 - Base 1.1 fecha o contrato: executam estado/efeitos, não lifecycle.
 - Base 2.0 futura pode abstrair o conjunto se o comportamento provar ser reutilizável.
-
-

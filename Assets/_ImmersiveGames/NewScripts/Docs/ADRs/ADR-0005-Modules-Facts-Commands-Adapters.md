@@ -52,6 +52,9 @@ Adapters são a camada de execução;
 - `LoadingAdapter` executa UI de loading comandada pelo pipeline.
 - `AudioAdapter` executa playing/stopping de áudio comandado pelo pipeline.
 
+Nota normativa curta (checkpoint de áudio operacional de rota):
+- `AudioAdapter` é `Pipeline Adapter` de execução e observabilidade; não é owner de policy, timing ou lifecycle de rota.
+
 ## Invariantes
 
 - `Pipeline Command` não é efeito; é decisão registrada.
@@ -92,5 +95,4 @@ Leitura congelada:
 - Base 1.0 estabeleceu os blocos e rails que permitiram enxergar a separação.
 - Base 1.1 transforma essa separação em contrato normativo central.
 - Base 2.0 futura só deve reutilizar a regra se ela continuar provada por evidências de runtime.
-
 

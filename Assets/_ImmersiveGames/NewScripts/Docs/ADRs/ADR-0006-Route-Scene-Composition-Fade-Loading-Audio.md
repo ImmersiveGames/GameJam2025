@@ -114,6 +114,41 @@ Regras:
 - Não é owner de mix/ducking; apenas executa o comandado.
 - Reporta completion quando necessário.
 
+### 5.1 Checkpoint Congelado - Audio Operacional de Rota (Base 1.1)
+
+Checkpoint congelado do trilho canônico de áudio operacional de rota:
+
+```text
+OperationalRouteAsset
+-> routeAudioMode/routeAudioCue/routeAudioTiming/stopPreviousRouteAudio
+-> SessionOperationalPipeline
+-> RouteAudioPlanReady
+-> RouteRevealAudioStarted
+-> AudioAdapter playStarted/playSubmitted
+-> RouteRevealAudioSubmitted
+```
+
+Decisões normativas congeladas:
+
+1. A rota declara `routeAudioMode`, `routeAudioCue`, `routeAudioTiming` e `stopPreviousRouteAudio`.
+2. `SessionOperationalPipeline` decide ordem e timing de execução do `RouteAudio`.
+3. `RouteAudioPlanReady` é plano/observabilidade; não executa side-effect.
+4. `RouteRevealAudioStarted` é o ponto de execução comandado.
+5. `AudioAdapter` executa side-effect e não decide policy/lifecycle.
+6. `RouteRevealAudioSubmitted` confirma submissão do comando de áudio.
+7. `AudioRuntime` técnico não decide rota, scene, handoff, timing ou lifecycle.
+8. Não existe fallback silencioso no trilho canônico.
+9. `routeAudioMode=None` exige `routeAudioCue` nulo (asset inválido se houver cue preenchido).
+10. `routeAudioMode=Cue` exige `routeAudioCue` válido.
+11. Timing validado no MVP: `BeforeFadeOut`.
+
+Evidência funcional validada no smoke:
+
+- Boot -> Menu: `AudioBgmCue_Startup`.
+- Menu -> SessionActivitySandboxScene: `AudioBgmCue_Alternate`.
+- SessionActivitySandboxScene -> Menu: retorno para `AudioBgmCue_Startup`.
+- Rota `None` com skip explícito permanece pendente de validação de smoke dedicada e não bloqueia o fechamento do trilho `Cue`.
+
 ### 6. Rail Canônico do Base11Sandbox
 
 O rail canônico é:
@@ -185,5 +220,4 @@ O checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS` conge
 - Base 1.0 permitiu que a decisão de rota carregasse política demais.
 - Base 1.1 formaliza a separação entre topologia, profile, intenção e lifecycle.
 - Base 2.0 futura só deve nascer se essa separação continuar válida na prática.
-
 
