@@ -169,3 +169,6 @@ Nota normativa curta (checkpoint RuntimeConfig / wiring obrigatório):
 Regra de fronteira aplicada:
 - Apos `SessionActivityEntryHandoff`, a entrada na Activity ocorre por `SessionActivityPipeline.StartFromPreparedHandoff`.
 - `SessionActivityHost` nao inicia Activity automaticamente e nao substitui o handoff em runtime normal.
+
+Nota curta (RouteActivitySave boundary):
+- `SessionOperationalPipeline` permanece owner canônico de timing/policy de `RouteActivitySave` (`save-on-exit`/`load-on-enter`); adapter e `SaveRuntime` executam, sem decidir lifecycle.

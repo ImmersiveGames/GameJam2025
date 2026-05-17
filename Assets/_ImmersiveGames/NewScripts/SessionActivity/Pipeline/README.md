@@ -1,59 +1,49 @@
-# SessionActivityPipeline Sandbox v0
+# SessionActivityPipeline - Estado Real Congelado (Base 1.1 Sandbox)
 
-## Objetivo
-Validar um ciclo minimo de Session Activity isolado do gameplay legado, em Base 1.1, sem acionar owners do gameplay legado/Base 1.0.
+## Status
+- Este modulo esta congelado como **sandbox funcional minimo Base 1.1**.
+- O objetivo atual e validar trilho canonico de entrada e ciclo local minimo de activity.
+- Este documento descreve o que **existe hoje** e o que **ainda nao e contrato final**.
 
-## Estado congelado do pause/resume
-O sandbox validado hoje ficou assim:
+## Entrada canonica
+1. `SessionOperationalPipeline` prepara o handoff.
+2. `SessionOperationalPipeline` emite `SessionActivityEntryHandoff`.
+3. `SessionActivityPipeline` entra por `StartFromPreparedHandoff`.
 
-1. `SessionOperationalPipeline` apenas marca `PauseCapabilityPrepared` antes de `ReadyToOpenCurtain`.
-2. `SessionActivityPipeline` decide `PauseRequested` e `ResumeRequested`.
-3. `SimulationGate` executa `BlockActivitySimulation` e `ReleaseActivitySimulation`.
-4. `SessionActivityPauseOverlayAdapter` e um adapter minimo, observavel e sem ownership de lifecycle.
-5. A UI real de pause, o controller visual, `InputMode` real e o input global ficam para etapa futura.
-6. `GameLoop` nao e owner do novo fluxo de pause/resume.
+Regras de fronteira:
+- `DebugStartActivity` e apenas QA/tooling.
+- `autoStart` nao e contrato de producao.
+- `SessionActivityHost` nao e owner de lifecycle.
+- `foreign/stale events` nao podem alterar a activity ativa.
 
-## Regras validadas de Pause/Resume
-1. `PauseRequested` so e aceito em `GameplayRunning` com `simulationState=Running`.
-2. `ResumeRequested` so e aceito em `GameplayRunning` com `simulationState=Paused`.
-3. `PauseRequested` emite `PauseResolved` e snapshot `pause_resolved`.
-4. `ResumeRequested` emite `ResumeResolved` e snapshot `resume_resolved`.
-5. Rejeicoes usam `PauseRejected`/`pause_rejected` ou `ResumeRejected`/`resume_rejected` conforme o comando.
-6. `PauseRequested` bloqueia o `SimulationGate` e chama `PauseOverlayAdapter.Show`.
-7. `ResumeRequested` libera o `SimulationGate` e chama `PauseOverlayAdapter.Hide`.
-8. Nenhuma parte do fluxo novo usa `GameLoopCommands` ou `GameLoopService` como owner de pause.
+## Ownership atual (implementado)
+1. `SessionActivityPipeline` decide ciclo local de:
+   - activation;
+   - running;
+   - pause/resume;
+   - completion local (incluindo continue/handoff interno entre activities do catalogo).
+2. `SimulationGate` executa block/release de simulacao.
+3. `InputModeAdapter` e `PauseOverlayAdapter` executam efeitos observaveis.
+4. Adapters/gates nao decidem lifecycle semantico; pipeline decide.
 
-## Fluxo validado no sandbox
-1. `StartDemo`
-2. `Activity 01 Activation`
-3. `Activity 01 GameplayRunning`
-4. `RequestPause`
-5. `PauseResolved`
-6. `RequestResume`
-7. `ResumeResolved`
-8. `CompleteCurrentActivity`
-9. `PhaseResultPresentation`
-10. `ContinueToNextActivity`
-11. `PipelineCompleted`
+## Estado implementado hoje
+1. Activation local existe (com possibilidade de skip/no-content).
+2. Running local existe.
+3. Pause/resume local existe com gate de simulacao.
+4. Completion local existe (inclusive `PipelineCompleted` no fim do catalogo).
+5. Deactivation local por activity existe **parcialmente**.
 
-## Limites do sandbox
-1. Nao testa gameplay real.
-2. Nao testa actors reais.
-3. Nao testa `GameLoop` real.
-4. Nao testa `InputModes` reais.
-5. Nao testa `Gates` reais.
-6. Nao substitui `SessionTransition`.
-7. Ainda nao testa `IntroStage` real.
-8. Ainda nao testa `PostRun` real.
-9. Ainda nao testa `Save` real.
-10. Ainda nao testa `Loading` real.
+## Fora do contrato final (ainda nao implementado aqui)
+1. `ActivitySetup` real.
+2. Gameplay input final.
+3. `PlayerActor` final.
+4. `Activity Snapshot Provider` real.
+5. `Run Pipeline` deactivation/continuity real.
 
-## Regra de ownership
-1. `SessionActivityPipeline` decide pause/resume.
-2. `SimulationGate` executa block/release.
-3. `SessionActivityPauseOverlayAdapter` e apenas adapter minimo.
-4. `GameLoop` nao e owner do novo fluxo de pause/resume.
+## Fronteiras normativas
+- Run-level deactivation/continuity **nao pertence** a `SessionActivity`; pertence ao `RunPipeline` futuro.
+- `SessionActivity` nao salva progression diretamente.
+- Enquanto nao existir provider real, `no_snapshot_provider` em `RouteActivitySave` e estado esperado.
 
-## Resumo final
-O sandbox v0 prova lifecycle de activity, pause/resume canonicos e `SimulationGate` canonico Base 1.1.
-O fluxo atual esta congelado para uso futuro como referencia de Base 1.1.
+## Resumo
+`SessionActivity` permanece congelada como sandbox funcional minimo Base 1.1: entrada canonica por handoff, ciclo local controlado pelo pipeline e fronteiras explicitas para itens futuros que ainda nao sao contrato final.

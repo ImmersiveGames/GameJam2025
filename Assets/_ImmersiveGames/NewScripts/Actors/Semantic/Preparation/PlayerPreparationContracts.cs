@@ -281,12 +281,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             string pipelineId,
             string sessionId,
             string routeIdentity,
+            string routeOperationId,
             int routeSequence,
             string transitionId)
         {
             PipelineId = Normalize(pipelineId);
             SessionId = Normalize(sessionId);
             RouteIdentity = Normalize(routeIdentity);
+            RouteOperationId = Normalize(routeOperationId);
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             TransitionId = Normalize(transitionId);
         }
@@ -294,6 +296,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         public string PipelineId { get; }
         public string SessionId { get; }
         public string RouteIdentity { get; }
+        public string RouteOperationId { get; }
         public int RouteSequence { get; }
         public string TransitionId { get; }
 
@@ -301,6 +304,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             !string.IsNullOrWhiteSpace(PipelineId) &&
             !string.IsNullOrWhiteSpace(SessionId) &&
             !string.IsNullOrWhiteSpace(RouteIdentity) &&
+            !string.IsNullOrWhiteSpace(RouteOperationId) &&
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(TransitionId);
 

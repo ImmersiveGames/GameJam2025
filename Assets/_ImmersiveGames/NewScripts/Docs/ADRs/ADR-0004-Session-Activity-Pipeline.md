@@ -87,3 +87,20 @@ No checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`:
 - Base 1.0 é histórico de leitura phase-owned de `IntroStage` e engagement disperso.
 - Base 1.1 converte `IntroStage` em `Pipeline Policy` e centraliza lifecycle em `SessionActivityPipeline`.
 - Base 2.0 futura pode extrair padrões de ativação se a Base 1.1 os provar.
+
+Nota curta (fronteira de persistência de activity):
+- `SessionActivityPipeline` não salva progression diretamente; snapshot de activity para `RouteActivitySave` deve vir de provider explícito futuro (`IProgressionSnapshotProvider`), mantendo `SessionOperationalPipeline` como owner do timing operacional.
+
+## Checkpoint de Estado Real - Sandbox Funcional Minimo (2026-05-17)
+
+- `SessionActivity` permanece congelada como sandbox funcional minimo Base 1.1.
+- Entrada canonica ativa: `SessionOperationalPipeline -> SessionActivityEntryHandoff -> SessionActivityPipeline.StartFromPreparedHandoff`.
+- `DebugStartActivity` e tooling/QA; nao e contrato de entrada de producao.
+- `autoStart` nao e contrato de producao e nao inicia lifecycle em runtime normal.
+- `SessionActivityPipeline` decide ciclo local de activation/running/pause/resume/completion local.
+- Deactivation local por activity existe parcialmente no sandbox atual.
+- Run-level deactivation/continuity nao pertence a `SessionActivity`; pertence ao `RunPipeline` futuro (ADR-0002).
+- `ActivitySetup` real, gameplay input final e `PlayerActor` final ainda nao fazem parte deste checkpoint.
+- `Activity Snapshot Provider` real ainda nao existe; `no_snapshot_provider` em `RouteActivitySave` permanece estado esperado.
+- Gates/InputModes/adapters executam efeitos e observabilidade; nao decidem lifecycle semantico.
+- Protecao contra `foreign/stale` permanece obrigatoria para impedir troca da activity ativa.

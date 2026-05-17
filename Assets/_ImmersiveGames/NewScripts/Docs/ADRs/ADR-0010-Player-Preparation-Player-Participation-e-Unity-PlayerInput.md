@@ -1,7 +1,7 @@
 # ADR-0010 - Player Preparation Flow, Player Slots e Unity PlayerInput
 
 ## Status
-- Estado: Accepted
+- Estado: CLOSED (checkpoint validado por smoke)
 - Data: 2026-05-13
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canonica deste contrato: este ADR.
@@ -22,7 +22,7 @@ Tambem precisa evitar que qualquer componente vire catalogo total do jogo.
 
 ADR-0009 congela o contrato de slots e input operacional.
 
-ADR-0010 define o checkpoint de Player Preparation como resposta a esse contrato operacional, **sem** materializacao de player participacao/gameplay input neste ponto.
+ADR-0010 define o checkpoint de Player Preparation como resposta a esse contrato operacional, **sem** materializacao de player final, participacao/gameplay input final ou ActivitySetup completo neste ponto.
 
 ---
 
@@ -34,7 +34,7 @@ ADR-0010 define o checkpoint de Player Preparation como resposta a esse contrato
 
 **`PlayerSlot` pode existir antes de `PlayerActor`.**
 
-**`PlayerPreparation` nao materializa player/input neste checkpoint.**
+**`PlayerPreparation` operacional minimo pode materializar `PrototypePlayer` explicitamente quando comandado pelo `SessionOperationalPipeline`.**
 
 ---
 
@@ -69,6 +69,7 @@ SessionOperationalPipeline
 
 - resolve/prepara apenas players exigidos para o handoff atual;
 - produz facts/snapshot/handoff data para a Activity;
+- pode materializar `PrototypePlayer` minimo no trilho operacional, quando houver requisito valido;
 - **nao tenta materializar gameplay input neste checkpoint**;
 - **nao tenta materializar participacao/selecao neste checkpoint**;
 - nao tenta conhecer todos os actors possiveis do jogo;
@@ -101,6 +102,7 @@ SessionOperationalPipeline
 - Pipelines decidem; adapters executam.
 - Nao criar fallback silencioso para requisito obrigatorio ausente.
 - `Pipeline Identity` protege contra `foreign/stale events`.
+- Handoff para Activity carrega payload minimo de snapshot/fact de `PlayerPreparation`.
 - **PlayerPreparation nao materializa gameplay input.**
 - **PlayerPreparation nao materializa selecao de players.**
 - **PlayerPreparation nao configura binding de controles para players.**
@@ -155,6 +157,8 @@ Escopo funcional explicitamente limitado:
 Ownership mantido:
 
 - `PlayerPreparation` (SessionOperational) materializa somente players do handoff atual.
+- `SessionActivityEntryHandoff` carrega payload minimo de `PlayerPreparation` (identidade, outcome e contagens) como fato/snapshot, sem referencias Unity runtime.
+- `UnityPlayerMaterializationAdapter` executa a materializacao prototipo comandada pelo pipeline e nao decide lifecycle.
 - materializacao de actors nao-player (NPC/enemies/props/objetos) pertence ao futuro `ActivitySetup`/`SessionActivity`.
 
 Hierarquia runtime documentada:
@@ -164,3 +168,30 @@ SessionActivitySandboxScene
 +-- __PrototypePlayersRuntimeRoot::<routeOperationId>
     +-- PrototypePlayer::<playerId>
 ```
+
+## 10. Checkpoint CLOSED - PlayerPreparation Operacional Minimo (2026-05-17)
+
+Checkpoint marcado como **CLOSED** com evidencia de smoke manual:
+
+- Boot -> Menu: passou.
+- Menu -> SessionActivitySandboxScene: passou.
+- SessionActivitySandboxScene -> Menu: passou.
+
+Evidencias normativas validadas:
+
+- `PlayerPreparationStage` inclui `routeOperationId` na identidade observavel.
+- `SessionActivityEntryHandoffEmitted` inclui payload minimo de `PlayerPreparation` com:
+  - `playerPreparationOutcome`
+  - `plannedPlayers`
+  - `materializedPlayers`
+  - `pendingRequiredPlayers`
+- `SessionActivityEntryHandoffAccepted` confirma o mesmo payload minimo.
+- Materializacao minima de `PrototypePlayer` continua comandada por `SessionOperationalPipeline`; adapter apenas executa.
+
+Limites mantidos neste fechamento:
+
+- nao e `PlayerActor` final;
+- nao e gameplay input final;
+- nao e binding `input`-`player`;
+- nao e `ActivitySetup` completo;
+- nao abre lifecycle/deactivation completo de Activity.

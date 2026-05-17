@@ -18,7 +18,7 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 ## ADRs Checkpoints Normativos Aceitos/Congelados (Base 1.1 Viva)
 
 9. **ADR-0009** - Session Player Slots e Operational Input Runtime (CONGELADO - 2026-05-14)
-10. **ADR-0010** - Player Preparation Flow, Player Slots e Unity PlayerInput (CONGELADO - 2026-05-14)
+10. **ADR-0010** - Player Preparation Flow, Player Slots e Unity PlayerInput (CLOSED - 2026-05-17)
 11. **ADR-0011** - Runtime Configuration Registry and Config Sets (CLOSED - 2026-05-17)
 12. **ADR-0012** - Operational Camera Runtime e Future Activity Camera Binding (CONGELADO - 2026-05-14)
 13. **ADR-0013** - Camera Presentation Runtime e Activity Camera Director (ACEITO / IMPLEMENTADO NO MVP SINGLE-PLAYER)
@@ -34,7 +34,7 @@ Notas:
   - `SessionOperationalInputPolicy` explicita por rota operacional; `OperationalSurfaceKind` permanece semantico e nao decide input mode.
   - pipeline resolve policy -> mode e emite `SessionOperationalInputModeCommand`; `InputModes` aplica modo/action map.
   - 11 decisoes congeladas sobre fail-fast, integridade, sequencia de binding.
-- **ADR-0010** (congelado) depende de ADR-0009 para validacao/init de slots e input operacional, permanece focado em PlayerPreparation (somente players), com materializacao minima de `PrototypePlayer` quando aplicavel, **sem** materializacao de gameplay input ou player selection.
+- **ADR-0010** (CLOSED - 2026-05-17) depende de ADR-0009 para validacao/init de slots e input operacional, permanece focado em PlayerPreparation (somente players), com materializacao minima de `PrototypePlayer` quando aplicavel, handoff com payload minimo de PlayerPreparation (emitted/accepted), e **sem** materializacao de gameplay input final ou player selection final.
 - **ADR-0011** (CLOSED - 2026-05-17):
   - `RuntimeModeConfig` permanece entrada canônica
   - `RuntimeConfigSetAsset` agrupa configs por domínio
@@ -57,6 +57,14 @@ Notas:
   - `save-on-exit` por troca de rota usa a rota anterior completa e ocorre antes do unload da cena anterior;
   - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`;
   - rota QA `route-sandbox-menu` habilita smoke manual `Menu -> Sandbox -> Menu`.
+- **Checkpoint RouteActivitySave boundary (CLOSED - 2026-05-17)**:
+  - `OperationalRouteAsset` declara policy (`loadActivitySaveOnEnter`/`saveActivityOnExit`);
+  - `SessionOperationalPipeline` decide timing/policy (`save-on-exit` antes do unload, `load-on-enter` após `SceneCompositionCompleted`);
+  - `IProgressionSlotContextResolver` resolve contexto operacional;
+  - `SessionOperationalActivitySaveAdapter` executa side-effect e `ISaveService`/`SaveRuntime` persiste por `SaveAddress`/`SaveRequest`;
+  - `SaveRuntime` não decide lifecycle;
+  - `SessionActivity` não salva diretamente no trilho canônico;
+  - `no_snapshot` e `no_snapshot_provider` permanecem skips explícitos (não fallback silencioso).
 - **Save Base 1.1 (congelado)**:
   - Preferences e Progression sao scopes distintos.
   - **Checkpoint SaveRuntime API Base 1.1: PASS estrutural**.
@@ -235,6 +243,7 @@ Se encontrar um conflito entre um ADR histórico e um ADR Base 1.1:
 
 ## Checkpoints
 
-  - checkpoint de `PlayerPreparation` atualizado: `PlayerPreparationStarted` -> materializacao minima de `PrototypePlayer` (required com prefab) / skip explicito (optional sem prefab) -> `PlayerPreparationCompleted(outcome=materialized quando aplicavel)` -> `MaterializationCompleted` -> handoff;
+  - checkpoint de `PlayerPreparation` atualizado: `PlayerPreparationStarted` -> materializacao minima de `PrototypePlayer` (required com prefab) / skip explicito (optional sem prefab) -> `PlayerPreparationCompleted(outcome=materialized quando aplicavel)` -> `MaterializationCompleted` -> handoff com payload minimo de `PlayerPreparation` (identidade + outcome + contagens);
+  - checkpoint de `RouteActivitySave boundary` fechado: policy declarada na rota, timing/policy decidido por `SessionOperationalPipeline`, execução por adapter + persistência por `ISaveService`/`SaveRuntime`, com `no_snapshot` e `no_snapshot_provider` como skips explícitos;
   - limites mantidos: sem gameplay input, sem `PlayerInput` no player, sem camera de player, sem Cinemachine, sem movimento/controle, sem player final;
   - actors nao-player continuam fora do checkpoint operacional de PlayerPreparation (futuro `ActivitySetup`/SessionActivity).

@@ -192,6 +192,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             bool loadingStarted = false;
             bool loadingCompleted = false;
             bool loadingHidden = false;
+            PlayerPreparationResult playerPreparationResult = default;
+            bool hasPlayerPreparationResult = false;
 
             try
             {
@@ -406,6 +408,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         _sessionOperationalPipelineId,
                         route.HandoffSessionStateId,
                         routeIdentity,
+                        routeOperationId,
                         routeSequence,
                         transitionId);
                     PlayerPreparationPlan playerPreparationPlan = new(
@@ -426,11 +429,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         sourceText,
                         reasonText);
 
-                    PlayerPreparationResult playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan, materializationRecords);
+                    playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan, materializationRecords);
                     if (!playerPreparationResult.IsValid)
                     {
                         throw new InvalidOperationException("PlayerPreparationStage returned an invalid result.");
                     }
+                    hasPlayerPreparationResult = true;
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
                         $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationCompleted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' outcome='{(playerPreparationResult.IsObservedNoOp ? "observed_noop" : (playerPreparationResult.IsPlannedOnly ? "planned_only" : "materialized"))}'.",
@@ -582,15 +586,38 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         throw new InvalidOperationException($"handoffSessionStateId '{route.HandoffSessionStateId}' does not match the active SessionActivityPipeline session '{activityReceiver.SessionId}'.");
                     }
 
+                    if (!hasPlayerPreparationResult || !playerPreparationResult.IsValid)
+                    {
+                        throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerPreparation] Missing valid PlayerPreparationResult for SessionActivity handoff routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+                    }
+
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmitted' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry'.",
+                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmitted' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry' playerPreparationOutcome='{FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome)}' plannedPlayers='{playerPreparationResult.Snapshot.PlannedPlayersCount}' materializedPlayers='{playerPreparationResult.Snapshot.MaterializedPlayersCount}' pendingRequiredPlayers='{playerPreparationResult.Snapshot.PendingRequiredPlayersCount}'.",
                         DebugUtility.Colors.Info);
+
+                    SessionActivityPlayerPreparationHandoff playerPreparationHandoff = new(
+                        playerPreparationResult.Snapshot.Identity.PipelineId,
+                        playerPreparationResult.Snapshot.Identity.SessionId,
+                        playerPreparationResult.Snapshot.Identity.RouteIdentity,
+                        playerPreparationResult.Snapshot.Identity.RouteOperationId,
+                        playerPreparationResult.Snapshot.Identity.TransitionId,
+                        playerPreparationResult.Snapshot.Identity.RouteSequence,
+                        FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome),
+                        playerPreparationResult.Snapshot.ParticipationKind.ToString(),
+                        playerPreparationResult.Snapshot.PlannedPlayersCount,
+                        playerPreparationResult.Snapshot.RequiredPlayersCount,
+                        playerPreparationResult.Snapshot.OptionalPlayersCount,
+                        playerPreparationResult.Snapshot.MaterializedPlayersCount,
+                        playerPreparationResult.Snapshot.SkippedPlayersCount,
+                        playerPreparationResult.Snapshot.PendingRequiredPlayersCount,
+                        FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries));
 
                     SessionActivityEntryHandoff handoff = new(
                         string.Empty,
                         0,
                         0,
                         route.HandoffSessionStateId,
+                        playerPreparationHandoff,
                         sourceText,
                         reasonText);
 
@@ -2075,6 +2102,36 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             return route.PlayerSetDefinition.ResolveEntriesOrFail(nameof(SessionOperationalPipeline));
+        }
+
+        private static string FormatPlayerPreparationOutcome(PlayerPreparationOutcome outcome)
+        {
+            return outcome switch
+            {
+                PlayerPreparationOutcome.ObservedNoOp => "observed_noop",
+                PlayerPreparationOutcome.PlannedOnly => "planned_only",
+                PlayerPreparationOutcome.Materialized => "materialized",
+                _ => "unknown",
+            };
+        }
+
+        private static string FormatPlayerIdsForHandoff(IReadOnlyList<PlayerPlannedEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return "<none>";
+            }
+
+            List<string> playerIds = new(entries.Count);
+            for (int i = 0; i < entries.Count; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(entries[i].PlayerId))
+                {
+                    playerIds.Add(entries[i].PlayerId);
+                }
+            }
+
+            return playerIds.Count == 0 ? "<none>" : string.Join(", ", playerIds);
         }
 
         private static IReadOnlyList<PlayerMaterializationRecord> ExecutePlayerMaterializationOrFail(

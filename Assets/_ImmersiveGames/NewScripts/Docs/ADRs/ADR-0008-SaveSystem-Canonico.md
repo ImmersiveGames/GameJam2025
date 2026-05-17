@@ -212,6 +212,34 @@ Progression Save Fase 1 / 1.1 / 1.2 - PASS estrutural, sem progressao funcional 
 - `SessionOperationalActivitySaveAdapter` executa side-effect via `ISaveService`; não decide lifecycle.
 - Ausência de adapter/config obrigatória permanece fail-fast.
 
+### 2.2 Checkpoint CLOSED - RouteActivitySave Boundary (2026-05-17)
+
+Boundary de `RouteActivitySave` no nível Session Operational marcado como **CLOSED**.
+
+Contrato congelado neste checkpoint:
+
+- `OperationalRouteAsset` declara policy explícita:
+  - `loadActivitySaveOnEnter`
+  - `saveActivityOnExit`
+- `SessionOperationalPipeline` é owner de timing/policy:
+  - `save-on-exit` da rota anterior antes do unload;
+  - `load-on-enter` da rota atual após `SceneCompositionCompleted`.
+- `IProgressionSlotContextResolver` resolve contexto operacional (`slotId`/`snapshotId`) para o trilho de rota/activity.
+- `SessionOperationalActivitySaveAdapter` executa side-effect; não decide policy/lifecycle.
+- `ISaveService`/`SaveRuntime` persiste por `SaveAddress`/`SaveRequest`; não decide lifecycle.
+- `SessionActivity` não salva diretamente no trilho canônico.
+
+Skips canônicos congelados:
+
+- `no_snapshot`: skip explícito aceitável quando não há dado salvo para load-on-enter.
+- `no_snapshot_provider`: skip explícito aceitável enquanto `Activity Snapshot Provider` canônico não existe.
+- Esses skips são observabilidade explícita e **não** fallback silencioso.
+
+Fora do escopo deste checkpoint:
+
+- `Activity Snapshot Provider` real (`IProgressionSnapshotProvider`/`IProgressionSnapshotReceiver`);
+- Save/Progression real completo (manifest/header reais, policies completas de auto/manual/checkpoint, UI de slots).
+
 ### 3. Invariantes
 
 - `SaveCoreService` não decide quando salvar.
