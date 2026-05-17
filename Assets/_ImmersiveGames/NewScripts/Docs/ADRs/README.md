@@ -19,7 +19,7 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 
 9. **ADR-0009** - Session Player Slots e Operational Input Runtime (CONGELADO - 2026-05-14)
 10. **ADR-0010** - Player Preparation Flow, Player Slots e Unity PlayerInput (CONGELADO - 2026-05-14)
-11. **ADR-0011** - Runtime Configuration Registry and Config Sets (IMPLEMENTADO)
+11. **ADR-0011** - Runtime Configuration Registry and Config Sets (CLOSED - 2026-05-17)
 12. **ADR-0012** - Operational Camera Runtime e Future Activity Camera Binding (CONGELADO - 2026-05-14)
 13. **ADR-0013** - Camera Presentation Runtime e Activity Camera Director (ACEITO / IMPLEMENTADO NO MVP SINGLE-PLAYER)
 
@@ -35,7 +35,7 @@ Notas:
   - pipeline resolve policy -> mode e emite `SessionOperationalInputModeCommand`; `InputModes` aplica modo/action map.
   - 11 decisoes congeladas sobre fail-fast, integridade, sequencia de binding.
 - **ADR-0010** (congelado) depende de ADR-0009 para validacao/init de slots e input operacional, permanece focado em PlayerPreparation (somente players), com materializacao minima de `PrototypePlayer` quando aplicavel, **sem** materializacao de gameplay input ou player selection.
-- **ADR-0011** (implementado):
+- **ADR-0011** (CLOSED - 2026-05-17):
   - `RuntimeModeConfig` permanece entrada canônica
   - `RuntimeConfigSetAsset` agrupa configs por domínio
   - `RuntimeConfigRegistry` valida e expõe snapshots read-only
@@ -123,7 +123,7 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 **Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0013):**
 - ADR-0009 (congelado - 2026-05-14)
 - ADR-0010 (congelado - 2026-05-14)
-- ADR-0011 (implementado - 2026-05-13)
+- ADR-0011 (CLOSED - 2026-05-17)
 - ADR-0012 (congelado - 2026-05-14)
 - ADR-0013 (aceito/implementado no MVP single-player - 2026-05-15)
 
@@ -189,6 +189,19 @@ Limites atuais congelados:
 - Checkpoint ADR-0006 Audio operacional de rota: **CLOSED (trilho Cue validado)**.
   - Rail: `OperationalRouteAsset -> routeAudio* -> SessionOperationalPipeline -> RouteAudioPlanReady -> RouteRevealAudioStarted -> AudioAdapter playStarted/playSubmitted -> RouteRevealAudioSubmitted`.
   - Contratos congelados: `AudioAdapter` executa side-effect sem decidir lifecycle; `AudioRuntime` técnico não decide rota/scene/handoff/timing/lifecycle; `routeAudioMode=None` exige cue nulo; `routeAudioMode=Cue` exige cue válido; timing MVP validado `BeforeFadeOut`.
+- Checkpoint RuntimeConfig/Wiring SessionOperational:
+  - `RuntimeConfigRegistry` permanece a fonte canônica de resolução de config por domínio.
+  - `InputModes` é resolvido exclusivamente por `RuntimeConfigRegistry`/`InputModesRuntimeConfigGroup`.
+  - `RuntimeModeConfig.inputModes`, `RuntimeModeConfigLoader` e `BootstrapConfigAsset` foram removidos do caminho ativo.
+  - `CompositionProfileKind.Base11Sandbox` ativo; profiles não suportados falham explicitamente.
+  - `SessionOperationalRuntimeComposer` registra apenas adapters canônicos.
+- Fora do escopo deste checkpoint:
+  - Save/Progression real;
+  - Activity Snapshot Provider;
+  - Activity lifecycle/deactivation;
+  - PlayerActor final;
+  - gameplay input final;
+  - Run Pipeline.
 
 Referências de materialização:
 

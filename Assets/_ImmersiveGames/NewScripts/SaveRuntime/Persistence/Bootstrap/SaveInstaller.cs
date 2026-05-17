@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
                 registeredMessage: $"[Save][BOOT] ISaveBackend registered ({backend.BackendId}).");
 
             SaveCoreService coreService = ResolveOrCreateSaveCoreService(backend);
-            SeedDefaultCurrentStateIfMissing(coreService, saveConfig);
+            EnsureCurrentStateInitializedOrFail(coreService, saveConfig);
 
             RegisterIfMissing<ISaveService>(
                 factory: () => coreService,
@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
             return instance;
         }
 
-        private static void SeedDefaultCurrentStateIfMissing(
+        private static void EnsureCurrentStateInitializedOrFail(
             SaveCoreService coreService,
             SaveConfigAsset saveConfig)
         {
@@ -99,12 +99,12 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
             }
 
             DebugUtility.Log(typeof(SaveInstaller),
-                $"[OBS][Save][LegacySeed] Seeding CurrentState from SaveConfigAsset defaults as technical bootstrap fallback profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'. This is not canonical progression slot policy.",
-                DebugUtility.Colors.Warning);
+                $"[OBS][Save][BootstrapStateInit] Initializing CurrentState from SaveConfigAsset defaults profile='{saveConfig.DefaultProfileId}' slot='{saveConfig.DefaultSlotId}'.",
+                DebugUtility.Colors.Info);
 
             SaveCurrentState currentState = saveConfig.BuildDefaultCurrentStateOrFail();
 
-            if (!coreService.TrySetCurrent(currentState, "Save/LegacyBootstrapSeed", out string error))
+            if (!coreService.TrySetCurrent(currentState, "Save/BootstrapStateInit", out string error))
             {
                 throw new InvalidOperationException($"[FATAL][Save] Failed to seed current save state. reason='{error}'.");
             }
@@ -133,4 +133,3 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Persistence.Bootstrap
 
     }
 }
-

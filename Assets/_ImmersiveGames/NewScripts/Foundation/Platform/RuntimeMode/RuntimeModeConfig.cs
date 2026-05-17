@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
@@ -11,18 +10,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     {
 
         [Header("Modo")]
-        [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: forÃ§a o modo, Ãºtil para testes.")]
+        [Tooltip("Auto: decide sozinho. ForceStrict/ForceRelease: força o modo, útil para testes.")]
         public RuntimeModeOverride modeOverride = RuntimeModeOverride.Auto;
 
-        [Header("Input Modes")]
-        public InputModesSettings inputModes = new();
-
         [Header("Composition Profile")]
-        [Tooltip("Seleciona o profile de composiÃ§Ã£o global. O profile canÃ´nico remove rails legados do caminho.")]
+        [Tooltip("Seleciona o profile de composição global. O profile canônico remove rails não canônicos do caminho.")]
         public CompositionProfileKind compositionProfile = CompositionProfileKind.Base11Sandbox;
 
         [Header("Runtime Config Set")]
-        [Tooltip("ReferÃªncia explÃ­cita para o RuntimeConfigSetAsset canÃ´nico do modo atual.")]
+        [Tooltip("Referência explícita para o RuntimeConfigSetAsset canônico do modo atual.")]
         [SerializeField] private RuntimeConfigSetAsset runtimeConfigSet;
 
 
@@ -31,22 +27,22 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Serializable]
         public sealed class DegradedReporterSettings
         {
-            [Tooltip("Como evitar repetiÃ§Ã£o de logs de degradaÃ§Ã£o.")]
+            [Tooltip("Como evitar repetição de logs de degradação.")]
             public DegradedDedupStrategy dedupStrategy = DegradedDedupStrategy.CooldownSeconds;
 
-            [Tooltip("Se DedupStrategy=CooldownSeconds, define o intervalo mÃ­nimo entre logs iguais (segundos).")]
+            [Tooltip("Se DedupStrategy=CooldownSeconds, define o intervalo mínimo entre logs iguais (segundos).")]
             [Range(0f, 60f)]
             public float cooldownSeconds = 5f;
 
-            [Tooltip("Emite um resumo periÃ³dico com contagens (0 desliga).")]
+            [Tooltip("Emite um resumo periódico com contagens (0 desliga).")]
             [Range(0f, 300f)]
             public float emitSummaryEverySeconds = 30f;
 
-            [Tooltip("Limite de chaves Ãºnicas rastreadas por sessÃ£o (proteÃ§Ã£o contra explosÃ£o de keys).")]
+            [Tooltip("Limite de chaves únicas rastreadas por sessão (proteção contra explosão de keys).")]
             [Range(16, 4096)]
             public int maxUniqueKeys = 256;
 
-            [Tooltip("Imprime a primeira ocorrÃªncia imediatamente, mesmo com dedupe ligado.")]
+            [Tooltip("Imprime a primeira ocorrência imediatamente, mesmo com dedupe ligado.")]
             public bool logFirstOccurrence = true;
 
             [Tooltip("Inclui a contagem acumulada no log (ex.: count=7).")]
@@ -56,27 +52,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
         [Serializable]
         public sealed class StrictnessSettings
         {
-            [Tooltip("Em Strict, logs de degradaÃ§Ã£o sobem para erro (sem exceÃ§Ã£o).")]
+            [Tooltip("Em Strict, logs de degradação sobem para erro (sem exceção).")]
             public bool degradedAsError = true;
 
-            [Tooltip("Em Strict, permite falhar hard (exceÃ§Ã£o) em casos de degradaÃ§Ã£o. Recomendado manter falso nesta fase.")]
+            [Tooltip("Em Strict, permite falhar hard (exceção) em casos de degradação. Recomendado manter falso nesta fase.")]
             public bool degradedAsException;
-        }
-
-        [Serializable]
-        public sealed class InputModesSettings
-        {
-            [Tooltip("Deve permanecer habilitado. Quando falso, o boot falha por quebrar o trilho canonico de InputModes.")]
-            public bool enableInputModes = true;
-
-            [Tooltip("Nome do action map de gameplay (Player).")]
-            public string playerActionMapName = InputModesDefaults.PlayerActionMapName;
-
-            [Tooltip("Nome do action map de menu/UI.")]
-            public string menuActionMapName = InputModesDefaults.MenuActionMapName;
-
-            [Tooltip("Emite logs verbosos de configuraÃ§Ã£o/registro.")]
-            public bool logVerbose = true;
         }
     }
 
@@ -95,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
     public enum CompositionProfileKind
     {
-        LegacyCompatible = 0,
+        NonCanonical = 0,
         Base11Sandbox = 1
     }
 }

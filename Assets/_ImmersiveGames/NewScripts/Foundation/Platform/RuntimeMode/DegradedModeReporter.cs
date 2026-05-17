@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             _droppedKeysWarned = true;
 
             string msg =
-                $"DEGRADED_MODE feature='{DegradedKeys.Feature.Infrastructure}' reason='{DegradedKeys.Reason.Fallback}' " +
+                $"DEGRADED_MODE feature='{DegradedKeys.Feature.Infrastructure}' reason='{DegradedKeys.Reason.CapacityLimit}' " +
                 $"detail='MaxUniqueKeys atingido ({settings.ReporterMaxUniqueKeys}). Novas chaves nao serao rastreadas.'";
 
             DebugUtility.LogWarning<DegradedModeReporter>(msg);
@@ -252,7 +252,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             if (string.Equals(source, "registry", StringComparison.Ordinal))
             {
                 DebugUtility.Log(typeof(DegradedModeReporter),
-                    "[OBS][RuntimePolicy][ConfigMigration] DegradedModeReporter using RuntimeConfigRegistry snapshot for reporter/strictness.",
+                    "[OBS][RuntimePolicy][Config] DegradedModeReporter using RuntimeConfigRegistry snapshot for reporter/strictness.",
                     DebugUtility.Colors.Info);
             }
         }

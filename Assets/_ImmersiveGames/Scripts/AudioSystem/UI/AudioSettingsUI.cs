@@ -25,8 +25,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.UI
         private void Awake()
         {
             // Garante que o sistema de áudio foi inicializado antes de resolver dependências.
-            AudioSystemBootstrap.EnsureAudioSystemInitialized();
-
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.InjectDependencies(this);
@@ -171,4 +169,5 @@ namespace _ImmersiveGames.Scripts.AudioSystem.UI
         }
     }
 }
+
 

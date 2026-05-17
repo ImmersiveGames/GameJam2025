@@ -154,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(SceneCompositionAdapter),
-                $"[OBS][RuntimePolicy][ConfigMigration] SceneCompositionAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"[OBS][RuntimePolicy][Config] SceneCompositionAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
     }

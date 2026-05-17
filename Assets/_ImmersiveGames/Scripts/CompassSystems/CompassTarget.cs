@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.UISystems.Compass;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.CompassSystems
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         [Tooltip("Tipo de alvo exibido na bússola.")]
         public CompassTargetType targetType = CompassTargetType.PointOfInterest;
 
-        private ICompassRuntimeService _runtimeService;
+        private IICompassRuntimeService _runtimeService;
 
         private void Awake()
         {
@@ -37,13 +38,13 @@ namespace _ImmersiveGames.Scripts.CompassSystems
                 return;
             }
 
-            if (CompassRuntimeService.TryGet(out var runtimeService))
+            if (TryResolveRuntimeService(out var runtimeService))
             {
                 _runtimeService = runtimeService;
             }
             else
             {
-                DebugUtility.LogError<CompassTarget>("CompassRuntimeService não encontrado para registrar target.");
+                DebugUtility.LogError<CompassTarget>("ICompassRuntimeService não encontrado para registrar target.");
             }
         }
 
@@ -52,6 +53,19 @@ namespace _ImmersiveGames.Scripts.CompassSystems
         CompassTargetType ICompassTrackable.TargetType => targetType;
 
         bool ICompassTrackable.IsActive => true;
+
+        private static bool TryResolveRuntimeService(out IICompassRuntimeService runtimeService)
+        {
+            runtimeService = null;
+            if (DependencyManager.Provider == null)
+            {
+                return false;
+            }
+
+            return DependencyManager.Provider.TryGetGlobal(out runtimeService);
+        }
     }
 }
+
+
 

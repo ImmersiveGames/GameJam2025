@@ -42,9 +42,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             {
                 if (poolDefinitionDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
                 {
-                    path = "fallback_direct";
+                    path = "direct";
                     DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='missing_pool_definition' source='{profileSource}'.",
+                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' reason='missing_pool_definition' source='{profileSource}'.",
                         DebugUtility.Colors.Info);
                     return false;
                 }
@@ -61,9 +61,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             {
                 if (poolServiceDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
                 {
-                    path = "fallback_direct";
+                    path = "direct";
                     DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='pool_service_unavailable'.",
+                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' reason='pool_service_unavailable'.",
                         DebugUtility.Colors.Info);
                     return false;
                 }
@@ -81,9 +81,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             {
                 if (budgetDecision.Type == AudioSfxPooledDecisionType.FallbackToDirect)
                 {
-                    path = "fallback_direct";
+                    path = "direct";
                     DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' policy='block_budget' active={activeForProfile} budget={budget}.",
+                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' policy='block_budget' active={activeForProfile} budget={budget}.",
                         DebugUtility.Colors.Info);
                     return false;
                 }
@@ -106,9 +106,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             {
                 if (profile.AllowDirectFallback)
                 {
-                    path = "fallback_direct";
+                    path = "direct";
                     DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='pool_registration_failed' message='{ex.Message}'.");
+                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' reason='pool_registration_failed' message='{ex.Message}'.");
                     return false;
                 }
 
@@ -126,9 +126,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             {
                 if (profile.AllowDirectFallback)
                 {
-                    path = "fallback_direct";
+                    path = "direct";
                     DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' policy='block_budget' rentFailed='{ex.Message}'.");
+                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' policy='block_budget' rentFailed='{ex.Message}'.");
                     return false;
                 }
 
@@ -142,9 +142,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             {
                 if (profile.AllowDirectFallback)
                 {
-                    path = "fallback_direct";
+                    path = "direct";
                     DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled fallback path='fallback_direct' cue='{cue.name}' profile='{profile.name}' reason='rent_returned_null'.");
+                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' reason='rent_returned_null'.");
                     return false;
                 }
 
@@ -448,4 +448,5 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         }
     }
 }
+
 

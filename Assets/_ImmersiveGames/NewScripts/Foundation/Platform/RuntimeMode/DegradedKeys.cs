@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             public const string MissingAsset = "MissingAsset";
             public const string Timeout = "Timeout";
             public const string Disabled = "Disabled";
-            public const string Fallback = "Fallback";
+            public const string CapacityLimit = "CapacityLimit";
             public const string InvalidConfig = "InvalidConfig";
             public const string Unsupported = "Unsupported";
             public const string Unknown = "Unknown";

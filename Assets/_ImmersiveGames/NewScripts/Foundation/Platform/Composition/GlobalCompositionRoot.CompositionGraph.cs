@@ -42,13 +42,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             if (compositionProfile == CompositionProfileKind.Base11Sandbox)
             {
                 DebugUtility.Log(typeof(GlobalCompositionRoot),
-                    "[OBS][Composition][Profile] SessionOperational runtime ativo: composicao nao canonica fora do profile minimo.",
+                    "[OBS][Composition][Profile] Base11Sandbox SessionOperational profile active.",
                     DebugUtility.Colors.Info);
                 steps.AddRange(GetSessionOperationalCompositionSteps(runtimeModeConfig));
             }
             else
             {
-                steps.AddRange(GetNonCanonicalCompositionSteps());
+                throw new InvalidOperationException(
+                    $"[FATAL][Composition][Profile] Unsupported composition profile '{compositionProfile}'. Base11Sandbox is required.");
             }
 
             steps.Add(new CompositionPipelineStep(
@@ -59,11 +60,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 bootstrapDependencies: Array.Empty<string>()));
 
             return steps;
-        }
-
-        private static IReadOnlyList<CompositionPipelineStep> GetNonCanonicalCompositionSteps()
-        {
-            return new List<CompositionPipelineStep>(0);
         }
 
         private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(

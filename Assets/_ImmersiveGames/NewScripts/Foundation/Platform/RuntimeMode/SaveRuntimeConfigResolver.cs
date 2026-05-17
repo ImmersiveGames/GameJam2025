@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             }
 
             DebugUtility.Log(typeof(SaveRuntimeConfigResolver),
-                $"[OBS][SaveRuntime][ConfigMigration] SaveConfig resolved via RuntimeConfigRegistry. asset='{saveConfig.name}'.",
+                $"[OBS][SaveRuntime][Config] SaveConfig resolved via RuntimeConfigRegistry. asset='{saveConfig.name}'.",
                 DebugUtility.Colors.Info);
 
             return saveConfig;

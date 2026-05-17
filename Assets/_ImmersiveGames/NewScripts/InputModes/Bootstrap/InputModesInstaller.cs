@@ -19,16 +19,9 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
             _ = runtimeModeConfig;
 
-            RuntimeModeConfig runtimeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimeModeConfig.InputModesSettings settings = runtimeConfig.inputModes;
-
-            if (settings != null && !settings.enableInputModes)
-            {
-                throw new InvalidOperationException(
-                    "[FATAL][Config][InputModes] InputModes disabled by RuntimeModeConfig. Canonical InputModes rail is mandatory in Base 1.1.");
-            }
-
-            (string playerMapName, string menuMapName) = InputModesDefaults.ResolveRequiredFrom(runtimeConfig);
+            _ = ResolveRuntimeModeConfigOrFail();
+            string playerMapName = InputModesDefaults.PlayerActionMapName;
+            string menuMapName = InputModesDefaults.MenuActionMapName;
             ValidateRequiredActionMapNamesOrFail(playerMapName, menuMapName);
 
             EnsureCanonicalInputModeService(playerMapName, menuMapName);
@@ -91,12 +84,12 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
         {
             if (string.IsNullOrWhiteSpace(playerMapName))
             {
-                throw new InvalidOperationException("[FATAL][Config][InputModes] playerActionMapName obrigatorio ausente no RuntimeModeConfig.");
+                throw new InvalidOperationException("[FATAL][Config][InputModes] canonical player action map name obrigatorio ausente.");
             }
 
             if (string.IsNullOrWhiteSpace(menuMapName))
             {
-                throw new InvalidOperationException("[FATAL][Config][InputModes] menuActionMapName obrigatorio ausente no RuntimeModeConfig.");
+                throw new InvalidOperationException("[FATAL][Config][InputModes] canonical menu action map name obrigatorio ausente.");
             }
         }
     }

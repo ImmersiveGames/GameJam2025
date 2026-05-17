@@ -171,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(RuntimePersistentScenesComposition),
-                $"[OBS][RuntimePolicy][ConfigMigration] RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"[OBS][RuntimePolicy][Config] RuntimePersistentScenesComposition using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
     }

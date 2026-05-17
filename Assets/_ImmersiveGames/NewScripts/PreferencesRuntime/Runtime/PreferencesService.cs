@@ -175,12 +175,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
                 return new VideoPreferencesSnapshot(profileId, slotId, width, height, fullscreen);
             }
 
-            Vector2Int fallback = ResolveFallbackVideoResolution();
+            Vector2Int resolved = ResolveFallbackVideoResolution();
             DebugUtility.Log<PreferencesService>(
-                $"[Preferences] video resolution normalized. reason='{NormalizeReason(reason)}' requested={width}x{height} fallback={fallback.x}x{fallback.y}.",
+                $"[Preferences] video resolution normalized. reason='{NormalizeReason(reason)}' requested={width}x{height} selected={resolved.x}x{resolved.y}.",
                 DebugUtility.Colors.Info);
 
-            return new VideoPreferencesSnapshot(profileId, slotId, fallback.x, fallback.y, fullscreen);
+            return new VideoPreferencesSnapshot(profileId, slotId, resolved.x, resolved.y, fullscreen);
         }
 
         private IReadOnlyList<Vector2Int> BuildSupportedVideoResolutionPresets()
@@ -310,4 +310,5 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
         }
     }
 }
+
 

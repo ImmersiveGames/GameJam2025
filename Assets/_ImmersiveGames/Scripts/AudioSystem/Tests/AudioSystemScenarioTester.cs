@@ -67,8 +67,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         private void Awake()
         {
             // Garante que o sistema de �udio est� inicializado e registrado no DI
-            AudioSystemBootstrap.EnsureAudioSystemInitialized();
-
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
@@ -77,7 +75,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
             if (_sfxService == null)
             {
-                Debug.LogWarning("[AudioTest] IAudioSfxService n�o encontrado. Verifique AudioSystemBootstrap / registro de servi�os.");
+                Debug.LogWarning("[AudioTest] IAudioSfxService n�o encontrado. Verifique o registro de servi�os de �udio.");
             }
 
             if (_bgmAudioService == null)
@@ -354,4 +352,8 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         #endregion
     }
 }
+
+
+
+
 

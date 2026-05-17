@@ -19,8 +19,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
             base.Awake();
 
             // Garantir que o sistema global de áudio esteja pronto antes da injeção.
-            AudioSystemBootstrap.EnsureAudioSystemInitialized();
-
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.InjectDependencies(this);
@@ -98,3 +96,4 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
 #endif
     }
 }
+

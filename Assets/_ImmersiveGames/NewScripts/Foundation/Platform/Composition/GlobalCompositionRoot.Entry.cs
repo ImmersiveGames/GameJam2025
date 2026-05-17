@@ -36,8 +36,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static void Initialize()
         {
 #if !NEWSCRIPTS_MODE
-            DebugUtility.Log(typeof(GlobalCompositionRoot),
-                "NEWSCRIPTS_MODE desativado: GlobalCompositionRoot ignorado.");
             return;
 #else
             if (_initialized)

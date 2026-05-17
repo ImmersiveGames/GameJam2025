@@ -33,7 +33,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
 
         /// <summary>
         /// Cria um SoundBuilder para o SoundData informado, resolvendo o serviço global
-        /// de SFX (IAudioSfxService) via AudioSystemBootstrap/DependencyManager.
+        /// de SFX (IAudioSfxService) via DependencyManager.
         /// </summary>
         public static SoundBuilder For(SoundData sound)
         {
@@ -176,8 +176,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
 
         private static IAudioSfxService ResolveSfxService()
         {
-            AudioSystemBootstrap.EnsureAudioSystemInitialized();
-
             if (DependencyManager.Provider != null &&
                 DependencyManager.Provider.TryGetGlobal(out IAudioSfxService service))
             {
@@ -213,4 +211,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
         #endregion
     }
 }
+
+
 

@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
                 _configSourceLogged = true;
                 DebugUtility.Log(typeof(AudioAdapter),
-                    $"[OBS][Audio][ConfigMigration] SessionOperational AudioAdapter using PreferencesRuntimeConfigGroup audio defaults. asset='{registryAudioDefaults.name}'.",
+                    $"[OBS][Audio][Config] SessionOperational AudioAdapter using RuntimeConfigRegistry/PreferencesRuntimeConfigGroup audio defaults. asset='{registryAudioDefaults.name}'.",
                     DebugUtility.Colors.Info);
                 return;
             }

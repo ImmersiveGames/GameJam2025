@@ -2,7 +2,7 @@
 
 ## Status
 
-- Estado: Applied (parcial)
+- Estado: CLOSED
 - Data: 2026-05-13
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canônica deste contrato: este ADR, após aceite.
@@ -218,7 +218,7 @@ Regras:
 - ausência de `audioDefaults` ou `videoDefaults` é erro fail-fast;
 - source canônica de defaults de preferência (`AudioDefaults` e `VideoDefaults`) para `PreferencesRuntime` é `RuntimeConfigRegistry` snapshot read-only.
 
-`BootstrapConfigAsset` permanece apenas como legado de serialização e não como owner canônico ativo.
+`BootstrapConfigAsset` foi removido do caminho ativo; o trilho canônico não depende desse asset.
 
 Ownership do ciclo runtime de Preferences (PASS funcional com PlayerPrefsSaveBackend):
 
@@ -381,9 +381,9 @@ Evitar árvores profundas de configs que escondem ownership.
 Adapters podem ler config para executar um comando.
 Eles não devem reconsultar config continuamente para decidir lifecycle.
 
-### 8. BootstrapConfigAsset não vira fonte canônica da Base 1.1
+### 8. BootstrapConfigAsset fora do trilho canônico da Base 1.1
 
-`BootstrapConfigAsset` pode continuar existindo somente como legado de serialização/editor quando necessário.
+`BootstrapConfigAsset` não participa do runtime canônico.
 
 Mas a fonte canônica ativa na Base 1.1 permanece:
 
@@ -530,6 +530,21 @@ Adicionar validações manuais/automáticas conforme necessário:
 ---
 
 
+## Checkpoint RuntimeConfig / wiring obrigatório - CLOSED (2026-05-17)
+
+- `RuntimeConfigRegistry` + `RuntimeConfigSetAsset` é o trilho canônico de configuração.
+- `RuntimeModeConfig` permanece entry-point de modo e referencia explicitamente `RuntimeConfigSetAsset`.
+- `RuntimeModeConfig` não carrega policy de domínio duplicada.
+- `RuntimeModeConfig.inputModes` foi removido.
+- `RuntimeModeConfigLoader` foi removido.
+- `BootstrapConfigAsset` foi removido do caminho ativo da Base 1.1.
+- `CompositionProfileKind.Base11Sandbox` é o profile canônico ativo.
+- Profiles não suportados falham explicitamente (fail-fast).
+- Config fornece dados; não decide lifecycle.
+- Pipelines decidem lifecycle/ordem/policy/handoff.
+- Adapters executam side-effects comandados.
+- Sem fallback silencioso e sem compat paralelo no trilho canônico.
+
 ## Checkpoint aplicado (2026-05-13)
 
 ### Escopo concluido
@@ -564,7 +579,8 @@ Adicionar validações manuais/automáticas conforme necessário:
 
 - Owner canonico das configs migradas: RuntimeConfigSetAsset (via RuntimeConfigRegistry snapshot).
 - RuntimeModeConfig permanece com responsabilidades de entrada de modo e bootstrap-level.
-- BootstrapConfigAsset.videoDefaults não participa do caminho canônico ativo de PreferencesRuntime.
+- `InputModes` é resolvido exclusivamente por `InputModesRuntimeConfigGroup` via `RuntimeConfigRegistry`.
+- `PreferencesRuntime` não usa `BootstrapConfigAsset.videoDefaults`; resolução canônica vem do `RuntimeConfigRegistry`.
 
 ### Estado atual - Save no SessionOperational
 
@@ -582,6 +598,13 @@ Adicionar validações manuais/automáticas conforme necessário:
 - Save/Preferences esta em PASS funcional com backend PlayerPrefs tecnico provisorio.
 - Progression Save esta em PASS estrutural de contratos/encaixe passivo, mas ainda sem persistencia funcional de gameplay.
 - Permanecem adiados: manifest/header real de snapshots, providers/receivers reais, autosave/manual/checkpoint, UI de slots e Run save.
+- Fora do escopo deste checkpoint:
+  - Save/Progression real;
+  - Activity Snapshot Provider;
+  - Activity lifecycle/deactivation;
+  - PlayerActor final;
+  - gameplay input final;
+  - Run Pipeline.
 
 ---
 ## Não objetivos
@@ -637,6 +660,3 @@ Ao menos um domínio usar config via registry.
 Nenhuma config obrigatória ausente passar silenciosamente.
 Nenhum pipeline perder ownership de lifecycle/policy/handoff.
 ```
-
-
-

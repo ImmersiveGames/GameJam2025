@@ -163,6 +163,9 @@ RouteRequested
 Nota normativa curta (checkpoint de áudio operacional de rota):
 - Durante setup/reveal operacional, `SessionOperationalPipeline` emite e executa o comando de `RouteAudio` (`RouteAudioPlanReady` -> `RouteRevealAudioStarted` -> `RouteRevealAudioSubmitted`) com `AudioAdapter` como executor de side-effect.
 
+Nota normativa curta (checkpoint RuntimeConfig / wiring obrigatório):
+- `SessionOperationalRuntime` é composto via `RuntimeConfigRegistry`/`RuntimeConfigSetAsset` (profile `Base11Sandbox`) e registra apenas adapters canônicos.
+
 Regra de fronteira aplicada:
 - Apos `SessionActivityEntryHandoff`, a entrada na Activity ocorre por `SessionActivityPipeline.StartFromPreparedHandoff`.
 - `SessionActivityHost` nao inicia Activity automaticamente e nao substitui o handoff em runtime normal.

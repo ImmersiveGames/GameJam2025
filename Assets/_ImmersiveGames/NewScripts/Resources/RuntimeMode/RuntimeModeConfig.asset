@@ -13,10 +13,6 @@ MonoBehaviour:
   m_Name: RuntimeModeConfig
   m_EditorClassIdentifier: 
   modeOverride: 0
-  inputModes:
-    enableInputModes: 1
-    playerActionMapName: Player
-    menuActionMapName: UI
-    logVerbose: 1
   compositionProfile: 1
   runtimeConfigSet: {fileID: 11400000, guid: 78245c63cc52ca64b8acb1b1a98057b8, type: 2}
+

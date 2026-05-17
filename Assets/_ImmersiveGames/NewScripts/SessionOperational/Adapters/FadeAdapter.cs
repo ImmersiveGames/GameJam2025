@@ -227,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             _policySourceLogged = true;
 
             DebugUtility.Log(typeof(FadeAdapter),
-                $"[OBS][RuntimePolicy][ConfigMigration] FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
+                $"[OBS][RuntimePolicy][Config] FadeAdapter using RuntimeConfigRegistry persistentScenesPolicy. policyId='{policy.PolicyId}'.",
                 DebugUtility.Colors.Info);
         }
 
