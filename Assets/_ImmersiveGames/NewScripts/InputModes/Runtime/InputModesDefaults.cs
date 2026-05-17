@@ -6,17 +6,17 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public const string PlayerActionMapName = "Player";
         public const string MenuActionMapName = "UI";
 
-        public static (string player, string menu) ResolveFrom(RuntimeModeConfig config)
+        public static (string player, string menu) ResolveRequiredFrom(RuntimeModeConfig config)
         {
             RuntimeModeConfig.InputModesSettings settings = config?.inputModes;
-            string player = NormalizeOrDefault(settings?.playerActionMapName, PlayerActionMapName);
-            string menu = NormalizeOrDefault(settings?.menuActionMapName, MenuActionMapName);
+            string player = Normalize(settings?.playerActionMapName);
+            string menu = Normalize(settings?.menuActionMapName);
             return (player, menu);
         }
 
-        public static string NormalizeOrDefault(string value, string fallback)
+        public static string Normalize(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

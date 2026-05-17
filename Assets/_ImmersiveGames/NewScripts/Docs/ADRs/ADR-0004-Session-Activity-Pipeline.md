@@ -24,6 +24,9 @@ Adota-se o `SessionActivityPipeline` como owner do lifecycle de ativação, enga
 - A ordem do `ActivityCatalog` define navegação.
 - `ActivityCatalogLooped` e `CatalogLoopCount` registram loops e repetição.
 - O pipeline decide quando a activity entra, ativa, pausa, retoma e sai.
+- `SessionActivityHost` e bridge/composition surface; nao e owner de lifecycle.
+- Em runtime normal, a entrada canonica de Activity ocorre apenas por `SessionActivityEntryHandoff`.
+- `autoStart` e `DebugStartActivity` sao tooling/QA e nao contrato canonico de entrada.
 
 #### IntroStage: Activation Stage e Pipeline Policy
 
@@ -46,6 +49,8 @@ Adota-se o `SessionActivityPipeline` como owner do lifecycle de ativação, enga
 - Foreign/stale events não podem trocar a activity ativa.
 - A ausência de presenter válido não causa fallback; gera skip/no-content.
 - A resolução local da instância concreta não decide lifecycle.
+- Comando/evento sem identity valida nao inicia nem altera Activity ativa.
+- Host local nao pode iniciar Activity automaticamente por `autoStart`.
 
 ## Consequências
 
@@ -66,10 +71,19 @@ No checkpoint `Base11Sandbox Minimal Route + Session Activity Cycle - PASS`:
 - `ActivityCatalog` define precedência; a ordem é aceita pelo pipeline como parte de policy.
 - `entrySequence` pertence ao `SessionActivityPipeline`, separado de `routeSequence` operacional.
 
+## Checkpoint de Fronteira - SessionActivityHost (2026-05-16)
+
+- `SessionActivityHost` nao inicia Activity automaticamente por `autoStart`.
+- `autoStart=true` fora de QA/editor e bloqueado por fail-fast (`SessionActivityHostAutoStartBlocked`).
+- Em QA/editor, `autoStart=true` gera apenas observabilidade (`SessionActivityHostAutoStartIgnored`) e nao inicia lifecycle.
+- `DebugStartActivity` permanece tooling explicito de QA/debug com source/reason `SessionActivityHost/QA/*`.
+- Em runtime normal, `DebugStartActivity` e bloqueado (`SessionActivityHostDebugStartBlocked`).
+- Caminho canonico de entrada mantido: `SessionOperationalPipeline -> SessionActivityEntryHandoff -> SessionActivityPipeline.StartFromPreparedHandoff`.
+- Fechamento de observabilidade da fronteira: `StartFromPreparedHandoff` registra log operacional explicito `SessionActivityEntryHandoffAccepted` em `[OBS][SessionActivityPipeline][Handoff]`.
+- O trace interno (`_state.AppendTrace`) de aceite/rejeicao continua preservado.
+
 ## Relação com Base 1.0 e Base 2.0
 
 - Base 1.0 é histórico de leitura phase-owned de `IntroStage` e engagement disperso.
 - Base 1.1 converte `IntroStage` em `Pipeline Policy` e centraliza lifecycle em `SessionActivityPipeline`.
 - Base 2.0 futura pode extrair padrões de ativação se a Base 1.1 os provar.
-
-

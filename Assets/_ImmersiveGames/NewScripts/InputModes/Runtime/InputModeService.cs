@@ -1,10 +1,12 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
+using UnityEngine;
+using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
     /// Trilha canonica de InputMode nesta etapa.
-    /// Nao aplica ActionMap real; apenas registra requests e outcomes observados/deferred.
+    /// Aplica ActionMap nos PlayerInput ativos sem assumir ownership de lifecycle.
     /// </summary>
     public sealed class InputModeService : IInputModeService, IInputModeStateService
     {
@@ -15,8 +17,18 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
         public InputModeService(string playerMapName, string menuMapName)
         {
-            _playerMapName = InputModesDefaults.NormalizeOrDefault(playerMapName, InputModesDefaults.PlayerActionMapName);
-            _menuMapName = InputModesDefaults.NormalizeOrDefault(menuMapName, InputModesDefaults.MenuActionMapName);
+            _playerMapName = InputModesDefaults.Normalize(playerMapName);
+            _menuMapName = InputModesDefaults.Normalize(menuMapName);
+
+            if (string.IsNullOrWhiteSpace(_playerMapName))
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService), "[FATAL][Config][InputModes] playerActionMapName obrigatorio ausente.");
+            }
+
+            if (string.IsNullOrWhiteSpace(_menuMapName))
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService), "[FATAL][Config][InputModes] menuActionMapName obrigatorio ausente.");
+            }
         }
 
         public void SetFrontendMenu(string reason) => HandleRequest(InputModeRequestKind.FrontendMenu, reason);
@@ -32,20 +44,17 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             switch (mode)
             {
                 case InputModeRequestKind.FrontendMenu:
-                    DebugUtility.LogVerbose<InputModeService>(
-                        $"[OBS][InputModes] outcomeKind='deferred_no_runtime_target' mode='FrontendMenu' reason='{resolvedReason}' target='<none>' actionMap='{_menuMapName}'.",
-                        DebugUtility.Colors.Info);
+                    ApplyModeToActivePlayerInputs(mode, _menuMapName, resolvedReason);
                     return;
 
                 case InputModeRequestKind.Gameplay:
-                    DebugUtility.LogVerbose<InputModeService>(
-                        $"[OBS][InputModes] outcomeKind='observed_noop' mode='Gameplay' reason='{resolvedReason}' target='<none>' actionMap='{_playerMapName}'.",
-                        DebugUtility.Colors.Info);
+                    ApplyModeToActivePlayerInputs(mode, _playerMapName, resolvedReason);
                     return;
 
                 case InputModeRequestKind.PauseOverlay:
-                    DebugUtility.LogVerbose<InputModeService>(
-                        $"[OBS][InputModes] outcomeKind='observed_noop' mode='PauseOverlay' reason='{resolvedReason}' target='<none>' actionMap='<none>' detail='pause overlay remains observed_noop in this stage.'.",
+                    _currentMode = mode;
+                    DebugUtility.Log(typeof(InputModeService),
+                        $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='pause overlay does not switch action maps in Base 1.1 operational scope'.",
                         DebugUtility.Colors.Info);
                     return;
 
@@ -65,6 +74,47 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
 
             return reason.Trim();
+        }
+
+        private void ApplyModeToActivePlayerInputs(InputModeRequestKind mode, string actionMapName, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(actionMapName))
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService),
+                    $"[FATAL][Config][InputModes] Action map obrigatorio ausente inputMode='{mode}' reason='{reason}'.");
+                return;
+            }
+
+            PlayerInput[] playerInputs = Object.FindObjectsByType<PlayerInput>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            int switchedCount = 0;
+            int observedCount = playerInputs?.Length ?? 0;
+
+            if (playerInputs != null)
+            {
+                for (int i = 0; i < playerInputs.Length; i++)
+                {
+                    PlayerInput playerInput = playerInputs[i];
+                    if (playerInput == null || playerInput.actions == null)
+                    {
+                        continue;
+                    }
+
+                    if (playerInput.actions.FindActionMap(actionMapName, throwIfNotFound: false) == null)
+                    {
+                        HardFailFastH1.Trigger(typeof(InputModeService),
+                            $"[FATAL][Config][InputModes] ActionMap ausente no PlayerInput. playerInput='{playerInput.name}' inputMode='{mode}' actionMap='{actionMapName}' reason='{reason}'.");
+                        return;
+                    }
+
+                    playerInput.SwitchCurrentActionMap(actionMapName);
+                    switchedCount += 1;
+                }
+            }
+
+            _currentMode = mode;
+            DebugUtility.Log(typeof(InputModeService),
+                $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' observedPlayerInputs='{observedCount}' switchedPlayerInputs='{switchedCount}'.",
+                DebugUtility.Colors.Success);
         }
     }
 }

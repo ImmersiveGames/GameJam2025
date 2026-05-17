@@ -103,10 +103,12 @@ O envelope representa a janela temporal da transição operacional, normalmente 
 6. `PlayerPreparation` acontece dentro da janela operacional, antes do handoff.
 7. `SessionActivityEntryHandoff` deve ocorrer apenas depois do setup operacional necessário.
 8. `SessionActivityPipeline` começa somente depois do handoff preparado.
-9. `SceneFlow`/`Navigation` não decidem lifecycle; permanecem como executores/adapters físicos.
-10. `InputMode`, `SimulationGate`, `GameLoop`, save, audio, loading, fade, scene composition e player materialization entram como adapters/stages comandados pelo pipeline.
-11. `PlayerPreparationStage` no `SessionOperational` é restrito a requisitos de players.
-12. Actors não-player — enemies, NPCs, props, objetos e actors de activity — ficam fora do ownership ativo de `SessionOperational` e pertencem ao futuro `ActivitySetup`/`SessionActivity`.
+9. `SessionActivityHost` atua como bridge/composition surface e nao decide entrada de Activity.
+10. `autoStart` e comandos de debug locais nao substituem o handoff canonico de producao.
+11. `SceneFlow`/`Navigation` não decidem lifecycle; permanecem como executores/adapters físicos.
+12. `InputMode`, `SimulationGate`, `GameLoop`, save, audio, loading, fade, scene composition e player materialization entram como adapters/stages comandados pelo pipeline.
+13. `PlayerPreparationStage` no `SessionOperational` é restrito a requisitos de players.
+14. Actors não-player — enemies, NPCs, props, objetos e actors de activity — ficam fora do ownership ativo de `SessionOperational` e pertencem ao futuro `ActivitySetup`/`SessionActivity`.
 
 ### 2.2 Fases Canônicas do Envelope
 
@@ -156,3 +158,7 @@ RouteRequested
 -> FadeOut
 -> OperationalRouteCompleted
 -> SessionActivityEntryHandoff
+
+Regra de fronteira aplicada:
+- Apos `SessionActivityEntryHandoff`, a entrada na Activity ocorre por `SessionActivityPipeline.StartFromPreparedHandoff`.
+- `SessionActivityHost` nao inicia Activity automaticamente e nao substitui o handoff em runtime normal.

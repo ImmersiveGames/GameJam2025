@@ -142,6 +142,8 @@ Se um ADR histórico conflitar com a Base 1.1:
 - **Run Pipeline**: Orquestra run, deactivation e continuity
 - **Session Operational Pipeline**: Orquestra transição, setup e handoff inicial de sessão
 - **Session Activity Pipeline**: Orquestra ativação, engagement e ciclo interno de activity
+  - entrada normal de runtime ocorre por `SessionActivityEntryHandoff` vindo do `SessionOperationalPipeline`
+  - `SessionActivityHost` nao e owner de lifecycle e `autoStart/debug start` nao sao contrato canonico
 
 ### Separation of Concerns
 

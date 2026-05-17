@@ -93,10 +93,15 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     kind,
                     command.Reason,
                     "SessionOperationalPipeline",
-                    command.ContextSignature));
+                    command.ContextSignature,
+                    command.Identity.RouteId,
+                    command.Identity.RouteOperationId,
+                    command.Identity.TransitionId,
+                    command.Identity.TransitionSequence,
+                    command.InitialInputMode.ToString()));
 
             DebugUtility.Log(typeof(SessionOperationalInputModeAdapter),
-                $"[OBS][InputModes][Adapter] requested mode='{kind}' source='SessionOperationalPipeline' contextSignature='{command.ContextSignature}' routeClass='{command.RouteClass}' reason='{command.Reason}'.",
+                $"[OBS][InputModes][Adapter] InputModeRequestSubmitted routeIdentity='{command.Identity.RouteId}' routeOperationId='{command.Identity.RouteOperationId}' transitionId='{command.Identity.TransitionId}' routeSequence='{command.Identity.TransitionSequence}' initialInputMode='{command.InitialInputMode}' inputMode='{kind}' source='SessionOperationalPipeline' contextSignature='{command.ContextSignature}' routeClass='{command.RouteClass}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 

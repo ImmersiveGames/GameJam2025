@@ -9,7 +9,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
     public static class InputModesInstaller
     {
         private static bool _installed;
-        private static bool _defaultsAppliedLogged;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -26,23 +25,11 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             if (settings != null && !settings.enableInputModes)
             {
                 throw new InvalidOperationException(
-                    "[FATAL][Config][InputModes] InputModes disabled by RuntimeModeConfig. Canonical InputModes rail is mandatory in Base 1.0.");
+                    "[FATAL][Config][InputModes] InputModes disabled by RuntimeModeConfig. Canonical InputModes rail is mandatory in Base 1.1.");
             }
 
-            bool logVerbose = settings?.logVerbose ?? true;
-            (string playerMapName, string menuMapName) = InputModesDefaults.ResolveFrom(runtimeConfig);
-
-            if (logVerbose
-                && !_defaultsAppliedLogged
-                && (settings == null
-                    || string.IsNullOrWhiteSpace(settings.playerActionMapName)
-                    || string.IsNullOrWhiteSpace(settings.menuActionMapName)))
-            {
-                _defaultsAppliedLogged = true;
-                DebugUtility.LogVerbose(typeof(InputModesInstaller),
-                    $"[OBS][InputModes][Installer] ActionMapDefaultsApplied reason='blank_config' player='{playerMapName}' menu='{menuMapName}'.",
-                    DebugUtility.Colors.Info);
-            }
+            (string playerMapName, string menuMapName) = InputModesDefaults.ResolveRequiredFrom(runtimeConfig);
+            ValidateRequiredActionMapNamesOrFail(playerMapName, menuMapName);
 
             EnsureCanonicalInputModeService(playerMapName, menuMapName);
 
@@ -98,6 +85,19 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
             DebugUtility.LogVerbose(typeof(InputModesInstaller),
                 $"[OBS][InputModes][Installer] Canonical IInputModeService registered playerMap='{playerMapName}' menuMap='{menuMapName}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void ValidateRequiredActionMapNamesOrFail(string playerMapName, string menuMapName)
+        {
+            if (string.IsNullOrWhiteSpace(playerMapName))
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModes] playerActionMapName obrigatorio ausente no RuntimeModeConfig.");
+            }
+
+            if (string.IsNullOrWhiteSpace(menuMapName))
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModes] menuActionMapName obrigatorio ausente no RuntimeModeConfig.");
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
     public sealed class SessionActivityHost : MonoBehaviour
     {
         [Header("Config")]
+        // Campo de tooling/QA. Nao e owner de lifecycle e nao pode iniciar Activity automaticamente.
         [SerializeField] private bool autoStart;
         [SerializeField] private string sessionStateId = "SessionActivitySandboxSession";
         [SerializeField] private ActivityCatalogAsset activityCatalog;
@@ -48,12 +49,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             if (autoStart)
             {
-                DebugStartActivity();
+                if (IsQaDebugAllowed())
+                {
+                    Debug.Log($"[OBS][SessionActivityPipeline][Host] SessionActivityHostAutoStartIgnored sessionStateId='{sessionStateId}' autoStart='true' reason='auto_start_is_not_canonical_in_base11' source='SessionActivityHost/Start'.");
+                    return;
+                }
+
+                throw new InvalidOperationException($"[FATAL][Config][SessionActivityPipeline][Host] SessionActivityHostAutoStartBlocked sessionStateId='{sessionStateId}' autoStart='true' reason='auto_start_is_not_allowed_in_runtime_normal'.");
             }
         }
 
         public void DebugStartActivity()
         {
+            if (!IsQaDebugAllowed())
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionActivityPipeline][Host] SessionActivityHostDebugStartBlocked sessionStateId='{sessionStateId}' reason='debug_start_requires_editor_or_debug_build'.");
+            }
+
+            Debug.Log($"[OBS][SessionActivityPipeline][Host] SessionActivityHostDebugStartRequested sessionStateId='{sessionStateId}' source='{QaSource("DebugStartActivity")}' reason='{QaReason("DebugStartActivity")}'.");
             EnsurePipeline();
             SessionActivityCommandResult result = _pipeline.DebugStartActivity(QaSource("DebugStartActivity"), QaReason("DebugStartActivity"));
             LogResult("DebugStartActivity", result);
@@ -219,6 +232,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private static string QaReason(string action)
         {
             return $"SessionActivityHost/QA/{action}";
+        }
+
+        private static bool IsQaDebugAllowed()
+        {
+            return Application.isEditor || Debug.isDebugBuild;
         }
 
         private static void RegisterGlobal<T>(T instance) where T : class

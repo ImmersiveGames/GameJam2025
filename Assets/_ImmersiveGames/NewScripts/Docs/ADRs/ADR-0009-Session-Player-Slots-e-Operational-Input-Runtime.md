@@ -137,6 +137,7 @@ Regras centrais:
   - `EventSystem` (criar/validar);
   - `InputSystemUIInputModule` (criar/adicionar/validar);
   - UI action binding (sequencia e integridade).
+- `InputModes` aplica o `inputMode` operacional requisitado (`FrontendMenu`/`Gameplay`/`PauseOverlay`) no rail canonico e, quando aplicavel, realiza switch de ActionMap nos `PlayerInput` ativos sem decidir lifecycle.
 - `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sao executores/adapters tecnicos, nao owners de lifecycle.
 - `PlayerActor`, selecao, gameplay input, split-screen e join policy continuam fora deste ADR.
 
@@ -178,6 +179,7 @@ Regras centrais:
 - Preserva um contrato operacional minimo e verificavel.
 - Evita centralizacao indevida de ownership em config ou adapters Unity.
 - Input UI fica inicializado no bootstrap operacional, permitindo UX de menu/overlay.
+- Input operacional aplica mode/action map no trilho canÃ´nico; isso nÃ£o define gameplay input final.
 - Gameplay input continua fora deste checkpoint.
 
 ---
