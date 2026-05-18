@@ -59,34 +59,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             DumpState();
         }
 
-        [ContextMenu("RequestPause")]
-        public void RequestPause()
-        {
-            EnsureHost();
-            host.RequestPause();
-            DumpState();
-        }
-
-        [ContextMenu("RequestResume")]
-        public void RequestResume()
-        {
-            EnsureHost();
-            host.RequestResume();
-            DumpState();
-        }
-
-        [ContextMenu("PauseSimulation")]
-        public void PauseSimulation()
-        {
-            RequestPause();
-        }
-
-        [ContextMenu("ResumeSimulation")]
-        public void ResumeSimulation()
-        {
-            RequestResume();
-        }
-
         [ContextMenu("SendStaleFirstActivityCommand")]
         public void SendStaleFirstActivityCommand()
         {
@@ -118,6 +90,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             Debug.Log(BuildDumpText());
         }
 
+        [ContextMenu("Trace")]
+        public void Trace()
+        {
+            EnsureHost();
+            host.DumpTrace();
+        }
+
         private void OnGUI()
         {
             if (!showOnGUI)
@@ -136,49 +115,57 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             GUILayout.Space(SectionSpacing);
 
+            bool canCompleteActivationWindow = CanCompleteActivationWindow();
+            bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
+            bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
+            bool canContinueToNextActivity = CanContinueToNextActivity();
+
+            GUI.enabled = canCompleteActivationWindow;
             if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
             {
                 CompleteActivationWindow();
             }
+            GUI.enabled = true;
 
             GUILayout.Space(SectionSpacing);
 
-            if (GUILayout.Button("CompleteDeactivationWindow", _buttonStyle))
-            {
-                CompleteDeactivationWindow();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("ContinueToNextActivity (requires handoff after deactivation)", _buttonStyle))
-            {
-                ContinueToNextActivity();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
+            GUI.enabled = canCompleteCurrentActivity;
             if (GUILayout.Button("CompleteCurrentActivity", _buttonStyle))
             {
                 CompleteCurrentActivity();
             }
-
-            if (GUILayout.Button("RequestPause", _buttonStyle))
-            {
-                RequestPause();
-            }
+            GUI.enabled = true;
 
             GUILayout.Space(SectionSpacing);
 
-            if (GUILayout.Button("RequestResume", _buttonStyle))
+            GUI.enabled = canCompleteDeactivationWindow;
+            if (GUILayout.Button("CompleteDeactivationWindow", _buttonStyle))
             {
-                RequestResume();
+                CompleteDeactivationWindow();
             }
+            GUI.enabled = true;
+
+            GUILayout.Space(SectionSpacing);
+
+            GUI.enabled = canContinueToNextActivity;
+            if (GUILayout.Button("ContinueToNextActivity (requires handoff after next-setup)", _buttonStyle))
+            {
+                ContinueToNextActivity();
+            }
+            GUI.enabled = true;
 
             GUILayout.Space(SectionSpacing);
 
             if (GUILayout.Button("DumpState", _buttonStyle))
             {
                 DumpState();
+            }
+
+            GUILayout.Space(SectionSpacing);
+
+            if (GUILayout.Button("Trace", _buttonStyle))
+            {
+                Trace();
             }
 
             if (showForeignStaleQa)
@@ -242,7 +229,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"definition='{host.State.CurrentDefinition}'");
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
-            builder.AppendLine("qaLifecycleRail='CompleteActivationWindow -> CompleteCurrentActivity -> CompleteDeactivationWindow (quando aplicavel) -> ContinueToNextActivity'");
+            builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
+            builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
+            builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
+            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity -> ContinueToNextActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready'");
             builder.AppendLine("facts:");
 
             for (int index = 0; index < host.State.Facts.Count; index++)
@@ -275,8 +265,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"gateState='{host.GateState}'");
             builder.AppendLine($"started='{host.State.HasStarted}' completed='{host.State.HasCompleted}' stage='{host.State.CurrentStage}'");
             builder.AppendLine($"currentActivity='{host.State.CurrentDefinition.ActivityId}'");
+            builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
+            builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
+            builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
             if (host.GateState != null)
             {
                 builder.AppendLine($"gateSessionBlocked='{host.GateState.SessionBlocked}' gateActivityBlocked='{host.GateState.ActivityBlocked}'");
@@ -284,6 +277,71 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 builder.AppendLine($"gateLastSnapshot='{host.GateState.LastSnapshot}'");
             }
             return builder.ToString().TrimEnd();
+        }
+
+        private bool CanCompleteActivationWindow()
+        {
+            return !host.State.CurrentPendingOperation.IsValid &&
+                   host.State.CurrentStage == SessionActivityStage.ActivationWindowReady;
+        }
+
+        private bool CanCompleteCurrentActivity()
+        {
+            return !host.State.CurrentPendingOperation.IsValid &&
+                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+        }
+
+        private bool CanCompleteDeactivationWindow()
+        {
+            return !host.State.CurrentPendingOperation.IsValid &&
+                   host.State.CurrentStage == SessionActivityStage.DeactivationWindowReady;
+        }
+
+        private bool CanContinueToNextActivity()
+        {
+            return !host.State.CurrentPendingOperation.IsValid &&
+                   host.State.CurrentHandoff.IsValid &&
+                   host.State.CurrentStage == SessionActivityStage.NextActivitySetupCompleted;
+        }
+
+        private string GetPendingHandoffTarget()
+        {
+            return host.State.CurrentHandoff.IsValid
+                ? host.State.CurrentHandoff.NextActivityId
+                : "<none>";
+        }
+
+        private string GetNextExpectedQaAction()
+        {
+            SessionActivityStage stage = host.State.CurrentStage;
+            bool hasPendingHandoff = host.State.CurrentHandoff.IsValid;
+
+            if (stage == SessionActivityStage.ActivationWindowReady)
+            {
+                return "CompleteActivationWindow";
+            }
+
+            if (stage == SessionActivityStage.ActivityRunning)
+            {
+                return "CompleteCurrentActivity";
+            }
+
+            if (stage == SessionActivityStage.DeactivationWindowReady)
+            {
+                return "CompleteDeactivationWindow";
+            }
+
+            if (stage == SessionActivityStage.NextActivitySetupCompleted && hasPendingHandoff)
+            {
+                return "ContinueToNextActivity";
+            }
+
+            if (stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
+            {
+                return "No local QA action";
+            }
+
+            return "No local QA action";
         }
 
         private SessionActivityCommand BuildStaleFirstActivityCommand()

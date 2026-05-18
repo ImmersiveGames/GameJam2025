@@ -20,6 +20,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public int CurrentEntrySequence { get; internal set; }
         public int CatalogLoopCount { get; internal set; }
         public ActivityExecutionState CurrentExecutionState { get; internal set; }
+        public SessionActivityPendingOperation CurrentPendingOperation { get; internal set; }
 
         public IReadOnlyList<SessionActivityFact> Facts => _facts;
         public IReadOnlyList<SessionActivitySnapshot> Snapshots => _snapshots;
@@ -39,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             CurrentEntrySequence = 0;
             CatalogLoopCount = 0;
             CurrentExecutionState = ActivityExecutionState.Stopped;
+            CurrentPendingOperation = default;
             _facts.Clear();
             _snapshots.Clear();
             _trace.Clear();
@@ -75,6 +77,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void SetExecutionState(ActivityExecutionState executionState)
         {
             CurrentExecutionState = executionState;
+        }
+
+        public void SetPendingOperation(SessionActivityPendingOperation operation)
+        {
+            CurrentPendingOperation = operation;
+        }
+
+        public void ClearPendingOperation()
+        {
+            CurrentPendingOperation = default;
         }
 
         public void IncrementCatalogLoopCount()

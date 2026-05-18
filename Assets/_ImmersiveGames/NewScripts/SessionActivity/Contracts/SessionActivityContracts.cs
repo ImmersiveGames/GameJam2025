@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityCatalogAdvanceAtEndMode
@@ -17,12 +19,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         AdditiveScene = 1,
     }
 
-    public enum ActivityTransitionPolicy
-    {
-        CutWithCurtain = 0,
-        Seamless = 1,
-    }
-
     public enum ActivityTransitionMode
     {
         None = 0,
@@ -30,15 +26,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Seamless = 2,
     }
 
+    public enum ActivityTransitionProfileSource
+    {
+        None = 0,
+        OverrideProfile = 1,
+        InheritRouteProfile = 2,
+    }
+
+    public enum ActivitySceneDiscoveryMode
+    {
+        None = 0,
+        StrictDeclaredOnly = 1,
+        AllowOptionalDiscovered = 2,
+        Open = 3,
+    }
+
+    public enum ActivitySceneRevealSafety
+    {
+        Unknown = 0,
+        SafeForCutWithCurtain = 1,
+        SafeForSeamlessCandidate = 2,
+    }
+
     public enum SessionActivityStage
     {
         Unknown = 0,
         ActivityActivationStarted = 1,
         ActivationWindowStarted = 2,
+        ActivationWindowSceneLoading = 30,
         ActivationWindowAdditiveSceneLoadStarted = 3,
         ActivationWindowAdditiveSceneLoaded = 4,
         ActivationWindowReady = 5,
         ActivationWindowCompleted = 6,
+        ActivationWindowSceneUnloading = 31,
         ActivationWindowAdditiveSceneUnloadStarted = 7,
         ActivationWindowAdditiveSceneUnloaded = 8,
         ActivationWindowSkippedNoContent = 9,
@@ -46,16 +66,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityCompletionRequested = 11,
         ActivityCompleting = 12,
         DeactivationWindowStarted = 13,
+        DeactivationWindowSceneLoading = 32,
         DeactivationWindowAdditiveSceneLoadStarted = 14,
         DeactivationWindowAdditiveSceneLoaded = 15,
         DeactivationWindowReady = 16,
         DeactivationWindowCompleted = 17,
+        DeactivationWindowSceneUnloading = 33,
         DeactivationWindowAdditiveSceneUnloadStarted = 18,
         DeactivationWindowAdditiveSceneUnloaded = 19,
         DeactivationWindowSkippedNoContent = 20,
         Deactivation = 21,
         Completed = 22,
         ClosedForRouteExit = 23,
+        ActivitySetupStarted = 24,
+        ActivitySetupSkippedNoContent = 25,
+        ActivitySetupCompleted = 26,
+        NextActivitySetupStarted = 27,
+        NextActivitySetupSkippedNoContent = 28,
+        NextActivitySetupCompleted = 29,
     }
 
     public enum ActivityExecutionState
@@ -154,12 +182,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SceneKeyAsset activationWindowAdditiveSceneKey,
             ActivityWindowMode deactivationWindowMode,
             SceneKeyAsset deactivationWindowAdditiveSceneKey,
-            ActivityTransitionPolicy transitionPolicy,
-            ActivityTransitionMode nextActivityTransitionMode,
-            SceneTransitionProfile nextActivityTransitionFadeProfileOverride,
-            RuntimeLoadingProfileAsset nextActivityTransitionLoadingProfileOverride,
-            bool nextActivityTransitionInheritRouteFadeProfileIfMissing,
-            bool nextActivityTransitionInheritRouteLoadingProfileIfMissing,
+            ActivityTransitionProfileSource nextActivityTransitionProfileSource,
+            ActivityTransitionProfileAsset nextActivityTransitionProfileOverride,
             string nextActivityId,
             string source)
         {
@@ -171,12 +195,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivationWindowAdditiveSceneKey = activationWindowAdditiveSceneKey;
             DeactivationWindowMode = deactivationWindowMode;
             DeactivationWindowAdditiveSceneKey = deactivationWindowAdditiveSceneKey;
-            TransitionPolicy = transitionPolicy;
-            NextActivityTransitionMode = nextActivityTransitionMode;
-            NextActivityTransitionFadeProfileOverride = nextActivityTransitionFadeProfileOverride;
-            NextActivityTransitionLoadingProfileOverride = nextActivityTransitionLoadingProfileOverride;
-            NextActivityTransitionInheritRouteFadeProfileIfMissing = nextActivityTransitionInheritRouteFadeProfileIfMissing;
-            NextActivityTransitionInheritRouteLoadingProfileIfMissing = nextActivityTransitionInheritRouteLoadingProfileIfMissing;
+            NextActivityTransitionProfileSource = nextActivityTransitionProfileSource;
+            NextActivityTransitionProfileOverride = nextActivityTransitionProfileOverride;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
         }
@@ -189,12 +209,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SceneKeyAsset ActivationWindowAdditiveSceneKey { get; }
         public ActivityWindowMode DeactivationWindowMode { get; }
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey { get; }
-        public ActivityTransitionPolicy TransitionPolicy { get; }
-        public ActivityTransitionMode NextActivityTransitionMode { get; }
-        public SceneTransitionProfile NextActivityTransitionFadeProfileOverride { get; }
-        public RuntimeLoadingProfileAsset NextActivityTransitionLoadingProfileOverride { get; }
-        public bool NextActivityTransitionInheritRouteFadeProfileIfMissing { get; }
-        public bool NextActivityTransitionInheritRouteLoadingProfileIfMissing { get; }
+        public ActivityTransitionProfileSource NextActivityTransitionProfileSource { get; }
+        public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride { get; }
         public string NextActivityId { get; }
         public string Source { get; }
 
@@ -207,12 +223,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasNextActivity => !string.IsNullOrWhiteSpace(NextActivityId);
         public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
         public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
-        public bool HasNextActivityTransitionFadeProfileOverride => NextActivityTransitionFadeProfileOverride != null;
-        public bool HasNextActivityTransitionLoadingProfileOverride => NextActivityTransitionLoadingProfileOverride != null;
+        public bool HasNextActivityTransitionProfileOverride => NextActivityTransitionProfileOverride != null;
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', transitionPolicy='{TransitionPolicy}', nextActivityTransitionMode='{NextActivityTransitionMode}', nextActivityTransitionFadeProfileOverride='{(HasNextActivityTransitionFadeProfileOverride ? NextActivityTransitionFadeProfileOverride.name : "<none>")}', nextActivityTransitionLoadingProfileOverride='{(HasNextActivityTransitionLoadingProfileOverride ? NextActivityTransitionLoadingProfileOverride.name : "<none>")}', nextActivityTransitionInheritRouteFadeProfileIfMissing='{NextActivityTransitionInheritRouteFadeProfileIfMissing}', nextActivityTransitionInheritRouteLoadingProfileIfMissing='{NextActivityTransitionInheritRouteLoadingProfileIfMissing}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -238,6 +253,85 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PauseSimulation = 12,
         ResumeSimulation = 13,
         CloseForRouteExit = 14,
+    }
+
+    public enum SessionActivityPendingOperationKind
+    {
+        Unknown = 0,
+        CompleteActivationWindow = 1,
+        CompleteCurrentActivity = 2,
+        CompleteDeactivationWindow = 3,
+        ContinueToNextActivity = 4,
+    }
+
+    public enum SessionActivityPendingWindowKind
+    {
+        None = 0,
+        ActivationWindow = 1,
+        DeactivationWindow = 2,
+    }
+
+    public readonly struct SessionActivityPendingOperation
+    {
+        public SessionActivityPendingOperation(
+            string operationId,
+            string pipelineId,
+            string sessionStateId,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence,
+            SessionActivityPendingWindowKind windowKind,
+            SessionActivityPendingOperationKind operationKind,
+            string sceneKey,
+            string sceneName,
+            string source,
+            string reason)
+        {
+            OperationId = Normalize(operationId);
+            PipelineId = Normalize(pipelineId);
+            SessionStateId = Normalize(sessionStateId);
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal;
+            EntrySequence = entrySequence;
+            WindowKind = windowKind;
+            OperationKind = operationKind;
+            SceneKey = Normalize(sceneKey);
+            SceneName = Normalize(sceneName);
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public string OperationId { get; }
+        public string PipelineId { get; }
+        public string SessionStateId { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public int EntrySequence { get; }
+        public SessionActivityPendingWindowKind WindowKind { get; }
+        public SessionActivityPendingOperationKind OperationKind { get; }
+        public string SceneKey { get; }
+        public string SceneName { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(OperationId) &&
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            EntrySequence > 0 &&
+            OperationKind != SessionActivityPendingOperationKind.Unknown;
+
+        public override string ToString()
+        {
+            return $"operationId='{OperationId}', pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', windowKind='{WindowKind}', operationKind='{OperationKind}', sceneKey='{(string.IsNullOrWhiteSpace(SceneKey) ? "<none>" : SceneKey)}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', source='{Source}', reason='{Reason}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
     }
 
     public readonly struct SessionActivityCommand
@@ -307,7 +401,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityDeactivated = 23,
         ContinueAccepted = 24,
         ActivityHandoffPrepared = 25,
-        ActivityTransitionPolicySelected = 26,
         PipelineCompleted = 27,
         CommandRejected = 28,
         SimulationPaused = 29,
@@ -322,6 +415,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityRouteExitCompleted = 38,
         ActivityTransitionProfileSelected = 39,
         ActivityTransitionProfileResolved = 40,
+        ActivitySetupStarted = 41,
+        ActivitySetupSkippedNoContent = 42,
+        ActivitySetupCompleted = 43,
+        NextActivitySetupStarted = 44,
+        NextActivitySetupSkippedNoContent = 45,
+        NextActivitySetupCompleted = 46,
+        ActivityTransitionFadeInStarted = 47,
+        ActivityTransitionFadeInCompleted = 48,
+        ActivityTransitionFadeOutStarted = 49,
+        ActivityTransitionFadeOutCompleted = 50,
+        ActivityTransitionLoadingStarted = 51,
+        ActivityTransitionLoadingProgress = 52,
+        ActivityTransitionLoadingCompleted = 53,
+        ActivityTransitionLoadingHidden = 54,
+        ActivityTransitionLoadingSkippedNoContent = 55,
+        ActivitySceneContractObserved = 56,
+        ActivitySceneContractValidated = 57,
+        ActivitySceneContractSkippedNoContent = 58,
     }
 
     public readonly struct SessionActivityFact
@@ -598,17 +709,110 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
+    public readonly struct ActivitySceneContractContributorEntry
+    {
+        public ActivitySceneContractContributorEntry(string contributorId)
+        {
+            ContributorId = Normalize(contributorId);
+        }
+
+        public string ContributorId { get; }
+        public bool IsValid => !string.IsNullOrWhiteSpace(ContributorId);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivitySceneContractSnapshot
+    {
+        public ActivitySceneContractSnapshot(
+            string activitySceneId,
+            ActivitySceneDiscoveryMode discoveryMode,
+            ActivitySceneRevealSafety revealSafety,
+            bool allowUndeclaredContributors,
+            IReadOnlyList<ActivitySceneContractContributorEntry> declaredContributors)
+        {
+            ActivitySceneId = Normalize(activitySceneId);
+            DiscoveryMode = discoveryMode;
+            RevealSafety = revealSafety;
+            AllowUndeclaredContributors = allowUndeclaredContributors;
+            DeclaredContributors = declaredContributors ?? Array.Empty<ActivitySceneContractContributorEntry>();
+        }
+
+        public string ActivitySceneId { get; }
+        public ActivitySceneDiscoveryMode DiscoveryMode { get; }
+        public ActivitySceneRevealSafety RevealSafety { get; }
+        public bool AllowUndeclaredContributors { get; }
+        public IReadOnlyList<ActivitySceneContractContributorEntry> DeclaredContributors { get; }
+
+        public bool IsValid => !string.IsNullOrWhiteSpace(ActivitySceneId);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public interface ISessionActivityTransitionAdapter
     {
-        void CloseCurtain(
+        Task CloseCurtainAsync(
             SessionActivityIdentity identity,
             SessionActivityTransitionResolution resolution,
             string source,
             string reason);
 
-        void OpenCurtain(
+        Task OpenCurtainAsync(
             SessionActivityIdentity identity,
             SessionActivityTransitionResolution resolution,
+            string source,
+            string reason);
+    }
+
+    public interface ISessionActivityTransitionLoadingAdapter
+    {
+        Task StartAsync(
+            SessionActivityIdentity identity,
+            SessionActivityTransitionResolution resolution,
+            string source,
+            string reason);
+
+        Task ReportProgressAsync(
+            SessionActivityIdentity identity,
+            SessionActivityTransitionResolution resolution,
+            float normalizedProgress,
+            string stepLabel,
+            string message,
+            string source,
+            string reason);
+
+        Task CompleteAsync(
+            SessionActivityIdentity identity,
+            SessionActivityTransitionResolution resolution,
+            string source,
+            string reason);
+
+        Task HideAsync(
+            SessionActivityIdentity identity,
+            SessionActivityTransitionResolution resolution,
+            string source,
+            string reason);
+    }
+
+    public interface ISessionActivityWindowSceneAdapter
+    {
+        Task LoadAdditiveAsync(
+            SceneKeyAsset sceneKey,
+            string activityId,
+            string windowKind,
+            string source,
+            string reason);
+
+        Task UnloadAsync(
+            SceneKeyAsset sceneKey,
+            string activityId,
+            string windowKind,
             string source,
             string reason);
     }

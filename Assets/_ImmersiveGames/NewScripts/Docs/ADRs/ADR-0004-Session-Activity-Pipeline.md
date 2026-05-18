@@ -256,7 +256,7 @@ ActivityCompletionRequested
 -> ActivityCompleting
 -> DeactivationWindow
 -> ActivityDeactivated
--> ActivityTransitionPolicy/Profile resolved
+-> ActivityTransitionProfile selected/resolved
 -> ActivityHandoffPrepared, se houver next activity
 ```
 
@@ -275,7 +275,7 @@ ActivityRouteExitRequested
 
 Regras:
 
-- `CloseForRouteExit` nÃ£o emite `ActivityTransitionPolicySelected`.
+- `CloseForRouteExit` nÃ£o emite `ActivityTransitionProfileSelected`.
 - `CloseForRouteExit` nÃ£o emite `ActivityHandoffPrepared`.
 - `CloseForRouteExit` nÃ£o chama `ContinueToNextActivity`.
 - `CloseForRouteExit` deve terminar sem `CurrentHandoff` pendente.
@@ -697,7 +697,7 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
 - `CloseForRouteExit` sem handoff para prÃ³xima activity.
 - QA canÃ´nico sem atalhos de lifecycle.
 - Route-exit teardown antes de unload operacional.
-- `ActivityTransitionPolicy/Profile` como contrato de Activity -> Activity, com `CutWithCurtain` nominal/visual conforme implementaÃ§Ã£o validada e `Seamless` unsupported explÃ­cito.
+- `ActivityTransitionProfile` como contrato de Activity -> Activity: Activity escolhe apenas a fonte do profile (`None`, `OverrideProfile`, `InheritRouteProfile`) e o profile define o `transitionMode` real (`None`, `CutWithCurtain`, `Seamless`). `Seamless` permanece unsupported explÃ­cito.
 - `ActivitySetup` nominal com `skip/no-content`.
 - `NextActivitySetup` nominal durante ActivityTransition.
 - `ActivitySceneContract` como contrato/shape.
@@ -751,3 +751,48 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
 - Base 1.1 converte essas peÃ§as em lifecycle explÃ­cito do `SessionActivityPipeline`.
 - Base 1.1 nÃ£o cria um core genÃ©rico universal agora; ela dÃ¡ shape final aos fluxos concretos atuais.
 - Base 2.0 futura pode extrair `ObjectEntry`, `ActivitySetup`, retention e release como abstraÃ§Ãµes mais gerais se a Base 1.1 provar o fluxo.
+
+### 2026-05-17 - ActivityTransition animada (CutWithCurtain)
+
+- CutWithCurtain no trilho ativo da SessionActivity usa fade animado (FadeInAsync/FadeOutAsync), nunca FadeImmediate.
+- Source=None permanece sem fade e sem loading de ActivityTransition.
+- Loading de ActivityTransition e decidido pelo profile resolvido da SessionActivity e executado por adapter dedicado.
+- Observabilidade canônica inclui: ActivityTransitionLoadingStarted, ActivityTransitionLoadingProgress, ActivityTransitionLoadingCompleted, ActivityTransitionLoadingHidden ou ActivityTransitionLoadingSkippedNoContent.
+- E proibido bloquear a main thread em transicoes assíncronas (GetAwaiter().GetResult(), .Result, Task.Wait()).
+
+### 2026-05-17 - ActivityTransitionLoading ownership and milestones
+
+- ActivityTransitionLoading pertence ao lifecycle da SessionActivity (Activity -> Activity), nao ao lifecycle de rota.
+- O SessionActivityPipeline decide milestones de progresso e os pontos de complete/hide.
+- O adapter de loading executa apenas side-effects visuais (StartAsync, ReportProgressAsync, CompleteAsync, HideAsync).
+- O fluxo nao depende de OperationalRouteCompleted, SceneCompositionCompleted ou marcos de materializacao da rota.
+- Em CutWithCurtain, LoadingCompleted/Hidden ocorre no reveal-safe point e antes de ActivityTransitionFadeOutStarted.
+
+### 2026-05-17 - ActivitySceneContract nominal no ActivitySetup
+
+- ActivitySetup passou a observar nominalmente ActivitySceneContract na cena ativa da Activity.
+- Sem contrato: emite ActivitySceneContractSkippedNoContent (skip explicito).
+- Com exatamente um contrato valido: emite ActivitySceneContractObserved e ActivitySceneContractValidated.
+- Mais de um contrato ou contrato invalido: fail-fast explicito.
+- Nesta etapa, o contrato nao executa setup real nem ObjectEntry; apenas observabilidade e validacao nominal.
+
+### 2026-05-17 - Activation/Deactivation Window AdditiveScene via async adapter
+
+- ActivationWindow e DeactivationWindow em modo AdditiveScene usam adapter assíncrono dedicado (ISessionActivityWindowSceneAdapter).
+- O SessionActivityPipeline decide lifecycle/facts/stages; o adapter executa apenas load/unload de cena.
+- O carregamento usa LoadSceneAsync(..., Additive) com espera assíncrona até completion e validação de isLoaded após o término.
+- O descarregamento usa UnloadSceneAsync(...) com espera assíncrona e validação de cena descarregada.
+- Nao existe fallback silencioso para None quando o contrato AdditiveScene falha.
+
+### 2026-05-17 - Contencao de async no trilho QA/local
+
+- Host e DebugPanel nao dependem de await para dirigir o lifecycle canonico; apenas disparam comandos.
+- Stages internos de observabilidade para side-effect de window foram formalizados: ActivationWindowSceneLoading, ActivationWindowSceneUnloading, DeactivationWindowSceneLoading, DeactivationWindowSceneUnloading.
+- Divida tecnica registrada: o pipeline ainda possui metodos async no caminho de transicao Activity->Activity (fade/loading), mas a ownership de lifecycle permanece no pipeline e os adapters continuam side-effect only.
+
+### 2026-05-17 - Pending operation model para trilho local
+
+- SessionActivityPipeline expoe comandos canônicos sincronos para lifecycle local: CompleteCurrentActivity, CompleteActivationWindow, CompleteDeactivationWindow e ContinueToNextActivity.
+- Operacoes async de side-effect sao rastreadas como pending operation (operationId + pipelineId + sessionStateId + activity identity + windowKind + operationKind + sceneKey + sceneName + source + reason).
+- QA/Host nao aguardam await para dirigir lifecycle; eles apenas disparam comando e refletem stage/pending state.
+- Events/completions stale ou foreign devem permanecer sem alterar lifecycle ativo.

@@ -11,14 +11,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivityTransitionMode transitionMode = ActivityTransitionMode.None;
         [SerializeField] private SceneTransitionProfile fadeProfileOverride;
         [SerializeField] private RuntimeLoadingProfileAsset loadingProfileOverride;
-        [SerializeField] private bool inheritRouteFadeProfileIfMissing = true;
-        [SerializeField] private bool inheritRouteLoadingProfileIfMissing = true;
 
         public ActivityTransitionMode TransitionMode => transitionMode;
         public SceneTransitionProfile FadeProfileOverride => fadeProfileOverride;
         public RuntimeLoadingProfileAsset LoadingProfileOverride => loadingProfileOverride;
-        public bool InheritRouteFadeProfileIfMissing => inheritRouteFadeProfileIfMissing;
-        public bool InheritRouteLoadingProfileIfMissing => inheritRouteLoadingProfileIfMissing;
 
         public void ValidateOrThrow(string owner)
         {

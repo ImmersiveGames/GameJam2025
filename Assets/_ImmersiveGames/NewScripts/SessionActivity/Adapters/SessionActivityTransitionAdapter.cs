@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Bindings;
@@ -14,17 +15,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
         private FadeController _cachedController;
         private string _cachedFadeSceneName = string.Empty;
 
-        public void CloseCurtain(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
+        public Task CloseCurtainAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
         {
-            Execute(identity, resolution, source, reason, close: true);
+            return ExecuteAsync(identity, resolution, source, reason, close: true);
         }
 
-        public void OpenCurtain(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
+        public Task OpenCurtainAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason)
         {
-            Execute(identity, resolution, source, reason, close: false);
+            return ExecuteAsync(identity, resolution, source, reason, close: false);
         }
 
-        private void Execute(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason, bool close)
+        private async Task ExecuteAsync(SessionActivityIdentity identity, SessionActivityTransitionResolution resolution, string source, string reason, bool close)
         {
             if (!identity.IsValid)
             {
@@ -54,11 +55,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 
             if (close)
             {
-                controller.FadeInAsync(signature).GetAwaiter().GetResult();
+                await controller.FadeInAsync(signature);
                 return;
             }
 
-            controller.FadeOutAsync(signature).GetAwaiter().GetResult();
+            await controller.FadeOutAsync(signature);
         }
 
         private FadeController ResolveFadeControllerOrFail()

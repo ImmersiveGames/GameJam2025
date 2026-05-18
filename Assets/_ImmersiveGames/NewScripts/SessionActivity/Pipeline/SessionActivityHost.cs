@@ -39,7 +39,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 sessionStateId,
                 new PauseOverlayAdapter(),
                 new InputModeAdapter(),
-                new SessionActivityTransitionAdapter());
+                new SessionActivityTransitionAdapter(),
+                new SessionActivityTransitionLoadingAdapter(),
+                new UnitySessionActivityWindowSceneAdapter());
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
@@ -243,9 +245,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"gateState='{GateState}'");
             builder.AppendLine($"catalog='{_catalog.Summary}'");
             builder.AppendLine($"started='{State.HasStarted}' completed='{State.HasCompleted}' stage='{State.CurrentStage}'");
+            builder.AppendLine($"currentActivity='{State.CurrentDefinition.ActivityId}'");
             builder.AppendLine($"definition='{State.CurrentDefinition}'");
             builder.AppendLine($"identity='{State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{State.CurrentHandoff}'");
+            builder.AppendLine($"pendingOperation='{State.CurrentPendingOperation}'");
+            builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
+            builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
+            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity -> ContinueToNextActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready'");
             builder.AppendLine("facts:");
             for (int index = 0; index < State.Facts.Count; index++)
             {
@@ -267,6 +274,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string dump = builder.ToString().TrimEnd();
             Debug.Log(dump);
             return dump;
+        }
+
+        public string DumpTrace()
+        {
+            EnsurePipeline();
+            string trace = BuildTraceDump();
+            Debug.Log(trace);
+            return trace;
         }
 
         private void EnsurePipeline()
@@ -312,6 +327,46 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private string GetPendingHandoffTarget()
+        {
+            return State.CurrentHandoff.IsValid
+                ? State.CurrentHandoff.NextActivityId
+                : "<none>";
+        }
+
+        private string GetNextExpectedQaAction()
+        {
+            SessionActivityStage stage = State.CurrentStage;
+            bool hasPendingHandoff = State.CurrentHandoff.IsValid;
+
+            if (stage == SessionActivityStage.ActivationWindowReady)
+            {
+                return "CompleteActivationWindow";
+            }
+
+            if (stage == SessionActivityStage.ActivityRunning)
+            {
+                return "CompleteCurrentActivity";
+            }
+
+            if (stage == SessionActivityStage.DeactivationWindowReady)
+            {
+                return "CompleteDeactivationWindow";
+            }
+
+            if (stage == SessionActivityStage.NextActivitySetupCompleted && hasPendingHandoff)
+            {
+                return "ContinueToNextActivity";
+            }
+
+            if (stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
+            {
+                return "No local QA action";
+            }
+
+            return "No local QA action";
         }
 
         private string BuildHostBanner()

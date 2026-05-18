@@ -37,12 +37,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     activationWindowAdditiveSceneKey: current.ActivationWindowAdditiveSceneKey,
                     deactivationWindowMode: current.DeactivationWindowMode,
                     deactivationWindowAdditiveSceneKey: current.DeactivationWindowAdditiveSceneKey,
-                    transitionPolicy: current.TransitionPolicy,
-                    nextActivityTransitionMode: current.NextActivityTransitionProfile != null ? current.NextActivityTransitionProfile.TransitionMode : ActivityTransitionMode.None,
-                    nextActivityTransitionFadeProfileOverride: current.NextActivityTransitionProfile != null ? current.NextActivityTransitionProfile.FadeProfileOverride : null,
-                    nextActivityTransitionLoadingProfileOverride: current.NextActivityTransitionProfile != null ? current.NextActivityTransitionProfile.LoadingProfileOverride : null,
-                    nextActivityTransitionInheritRouteFadeProfileIfMissing: current.NextActivityTransitionProfile != null && current.NextActivityTransitionProfile.InheritRouteFadeProfileIfMissing,
-                    nextActivityTransitionInheritRouteLoadingProfileIfMissing: current.NextActivityTransitionProfile != null && current.NextActivityTransitionProfile.InheritRouteLoadingProfileIfMissing,
+                    nextActivityTransitionProfileSource: current.NextActivityTransitionProfileSource,
+                    nextActivityTransitionProfileOverride: current.NextActivityTransitionProfileOverride,
                     nextActivityId: nextActivityId,
                     source: source));
             }

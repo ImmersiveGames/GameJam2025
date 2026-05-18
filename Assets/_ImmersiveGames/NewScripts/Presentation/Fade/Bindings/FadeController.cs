@@ -131,6 +131,8 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
         // Novas assinaturas com contextSignature (propagação)
         public Task FadeInAsync(string? contextSignature) => FadeToAsync(1f, contextSignature);
         public Task FadeOutAsync(string? contextSignature) => FadeToAsync(0f, contextSignature);
+        public void FadeInImmediate(string? contextSignature) => FadeImmediate(1f, contextSignature);
+        public void FadeOutImmediate(string? contextSignature) => FadeImmediate(0f, contextSignature);
 
         private async Task FadeToAsync(float targetAlpha, string? contextSignature)
         {
@@ -203,6 +205,36 @@ namespace _ImmersiveGames.NewScripts.Presentation.Fade.Bindings
             {
                 _activeContextSignature = null;
             }
+        }
+
+        private void FadeImmediate(float targetAlpha, string? contextSignature)
+        {
+            if (canvasGroup == null)
+            {
+                return;
+            }
+
+            _activeContextSignature = ResolveContextSignature(contextSignature);
+            string usedSignature = _activeContextSignature;
+
+            bool isFadeIn = targetAlpha >= 1f;
+            if (isFadeIn)
+            {
+                canvasGroup.blocksRaycasts = true;
+                canvasGroup.interactable = false;
+            }
+
+            canvasGroup.alpha = targetAlpha;
+
+            if (targetAlpha <= 0f)
+            {
+                canvasGroup.blocksRaycasts = false;
+                canvasGroup.interactable = false;
+            }
+
+            DebugUtility.LogVerbose<FadeController>($"[OBS][Fade] FadeImmediateComplete signature='{usedSignature}' targetAlpha={targetAlpha}");
+            SafeNotifyFadeComplete(usedSignature);
+            _activeContextSignature = null;
         }
 
         private void SafeNotifyFadeComplete(string signature)

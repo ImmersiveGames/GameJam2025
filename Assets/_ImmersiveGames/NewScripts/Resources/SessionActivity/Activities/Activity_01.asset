@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   activityId: activity_01
   displayName: Activity 01
-  hasActivation: 1
   hasGameplayContent: 1
-  hasActivityResult: 1
-
+  activationWindowMode: 0
+  activationWindowAdditiveSceneKey: {fileID: 11400000, guid: 768100d2c3662204c8dc1eacb7c7908e, type: 2}
+  deactivationWindowMode: 0
+  deactivationWindowAdditiveSceneKey: {fileID: 0}
+  nextActivityTransitionProfileSource: 1
+  nextActivityTransitionProfileOverride: {fileID: 11400000, guid: b41597450c1f98947b4f546e46f7cafd, type: 2}

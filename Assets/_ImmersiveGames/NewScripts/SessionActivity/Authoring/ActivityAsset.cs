@@ -14,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private SceneKeyAsset activationWindowAdditiveSceneKey;
         [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
         [SerializeField] private SceneKeyAsset deactivationWindowAdditiveSceneKey;
-        [SerializeField] private ActivityTransitionPolicy transitionPolicy = ActivityTransitionPolicy.CutWithCurtain;
-        [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfile;
+        [SerializeField] private ActivityTransitionProfileSource nextActivityTransitionProfileSource = ActivityTransitionProfileSource.None;
+        [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfileOverride;
 
         public string ActivityId => Normalize(activityId);
         public string DisplayName => Normalize(displayName);
@@ -24,8 +24,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public SceneKeyAsset ActivationWindowAdditiveSceneKey => activationWindowAdditiveSceneKey;
         public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey => deactivationWindowAdditiveSceneKey;
-        public ActivityTransitionPolicy TransitionPolicy => transitionPolicy;
-        public ActivityTransitionProfileAsset NextActivityTransitionProfile => nextActivityTransitionProfile;
+        public ActivityTransitionProfileSource NextActivityTransitionProfileSource => nextActivityTransitionProfileSource;
+        public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride => nextActivityTransitionProfileOverride;
 
         public void ValidateOrThrow()
         {
@@ -73,9 +73,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException($"ActivityAsset '{name}' requires deactivationWindowAdditiveSceneKey.SceneName when deactivationWindowMode=AdditiveScene.");
             }
 
-            if (nextActivityTransitionProfile != null)
+            if (nextActivityTransitionProfileSource == ActivityTransitionProfileSource.OverrideProfile &&
+                nextActivityTransitionProfileOverride == null)
             {
-                nextActivityTransitionProfile.ValidateOrThrow($"ActivityAsset:{name}");
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires nextActivityTransitionProfileOverride when source=OverrideProfile.");
+            }
+
+            if (nextActivityTransitionProfileOverride != null)
+            {
+                nextActivityTransitionProfileOverride.ValidateOrThrow($"ActivityAsset:{name}");
             }
         }
 
