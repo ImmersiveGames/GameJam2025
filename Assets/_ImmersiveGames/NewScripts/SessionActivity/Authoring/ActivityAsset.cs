@@ -15,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
         [SerializeField] private SceneKeyAsset deactivationWindowAdditiveSceneKey;
         [SerializeField] private ActivityTransitionProfileSource nextActivityTransitionProfileSource = ActivityTransitionProfileSource.None;
+        [SerializeField] private ActivityTransitionContinuePolicy nextActivityTransitionContinuePolicy = ActivityTransitionContinuePolicy.Unknown;
         [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfileOverride;
 
         public string ActivityId => Normalize(activityId);
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey => deactivationWindowAdditiveSceneKey;
         public ActivityTransitionProfileSource NextActivityTransitionProfileSource => nextActivityTransitionProfileSource;
+        public ActivityTransitionContinuePolicy NextActivityTransitionContinuePolicy => nextActivityTransitionContinuePolicy;
         public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride => nextActivityTransitionProfileOverride;
 
         public void ValidateOrThrow()
@@ -77,6 +79,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 nextActivityTransitionProfileOverride == null)
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' requires nextActivityTransitionProfileOverride when source=OverrideProfile.");
+            }
+
+            if (nextActivityTransitionContinuePolicy == ActivityTransitionContinuePolicy.Unknown)
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires explicit nextActivityTransitionContinuePolicy.");
             }
 
             if (nextActivityTransitionProfileOverride != null)

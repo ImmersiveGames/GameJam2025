@@ -34,6 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _catalog = activityCatalog.BuildRuntimeCatalog();
+            UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             _pipeline = new SessionActivityPipeline(
                 _catalog,
                 sessionStateId,
@@ -41,7 +42,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new InputModeAdapter(),
                 new SessionActivityTransitionAdapter(),
                 new SessionActivityTransitionLoadingAdapter(),
-                new UnitySessionActivityWindowSceneAdapter());
+                windowSceneAdapter,
+                new UnitySessionActivityPendingOperationRunner(windowSceneAdapter));
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
@@ -184,6 +186,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityStage stage = _pipeline.State.CurrentStage;
+            if (_pipeline.State.CurrentPendingOperation.IsValid)
+            {
+                return BuildRouteExitTeardownBlocked(
+                    "pending_operation_active",
+                    $"SessionActivity route-exit teardown blocked while pending operation is active. pendingOperation='{_pipeline.State.CurrentPendingOperation}'.");
+            }
+
             if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed)
             {
                 return new SessionActivityRouteExitTeardownResult(
@@ -252,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pendingOperation='{State.CurrentPendingOperation}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
-            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity -> ContinueToNextActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready'");
+            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
             builder.AppendLine("facts:");
             for (int index = 0; index < State.Facts.Count; index++)
             {
@@ -309,6 +318,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 Debug.Log(result.Facts[index].ToString());
             }
 
+            // Facts assíncronos podem ser emitidos após o retorno do command result.
+            // Logamos o estado acumulado para garantir observabilidade canônica por kind.
+            for (int index = 0; index < State.Facts.Count; index++)
+            {
+                Debug.Log($"[OBS][SessionActivityPipeline][Host][StateFact] {State.Facts[index]}");
+            }
+
             for (int index = 0; index < State.Snapshots.Count; index++)
             {
                 Debug.Log(State.Snapshots[index].ToString());
@@ -356,7 +372,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "CompleteDeactivationWindow";
             }
 
-            if (stage == SessionActivityStage.NextActivitySetupCompleted && hasPendingHandoff)
+            if (stage == SessionActivityStage.NextActivitySetupCompleted &&
+                hasPendingHandoff &&
+                ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue)
             {
                 return "ContinueToNextActivity";
             }
@@ -404,6 +422,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
+        {
+            SessionActivityDefinition current = State.CurrentDefinition;
+            return current.IsValid
+                ? current.NextActivityTransitionContinuePolicy
+                : ActivityTransitionContinuePolicy.Unknown;
         }
 
         private static void RegisterGlobal<T>(T instance) where T : class

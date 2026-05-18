@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             GUILayout.Space(SectionSpacing);
 
             GUI.enabled = canContinueToNextActivity;
-            if (GUILayout.Button("ContinueToNextActivity (requires handoff after next-setup)", _buttonStyle))
+            if (GUILayout.Button("ContinueToNextActivity (apenas quando policy=ManualContinue)", _buttonStyle))
             {
                 ContinueToNextActivity();
             }
@@ -232,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
-            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity -> ContinueToNextActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready'");
+            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
             builder.AppendLine("facts:");
 
             for (int index = 0; index < host.State.Facts.Count; index++)
@@ -301,6 +301,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentHandoff.IsValid &&
+                   ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue &&
                    host.State.CurrentStage == SessionActivityStage.NextActivitySetupCompleted;
         }
 
@@ -331,7 +332,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "CompleteDeactivationWindow";
             }
 
-            if (stage == SessionActivityStage.NextActivitySetupCompleted && hasPendingHandoff)
+            if (stage == SessionActivityStage.NextActivitySetupCompleted &&
+                hasPendingHandoff &&
+                ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue)
             {
                 return "ContinueToNextActivity";
             }
@@ -463,6 +466,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _labelStyle = baseLabel;
             _buttonStyle = baseButton;
             _dumpStyle = baseTextArea;
+        }
+
+        private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
+        {
+            SessionActivityDefinition current = host.State.CurrentDefinition;
+            return current.IsValid
+                ? current.NextActivityTransitionContinuePolicy
+                : ActivityTransitionContinuePolicy.Unknown;
         }
     }
 }

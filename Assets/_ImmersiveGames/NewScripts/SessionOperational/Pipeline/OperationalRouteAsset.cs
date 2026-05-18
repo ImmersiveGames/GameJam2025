@@ -375,6 +375,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
+            if (completionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry &&
+                surfacePresentationProfile != null &&
+                surfacePresentationProfile.RouteCameraPresentationMode == CameraPresentation.Models.RouteCameraPresentationMode.SurfaceOnly)
+            {
+                errorMessage =
+                    $"completionHandoff=SessionActivityEntry does not allow surfacePresentationProfile routeCameraPresentationMode=SurfaceOnly routeIdentity='{RouteIdentity}' profile='{surfacePresentationProfile.name}' mode='{surfacePresentationProfile.RouteCameraPresentationMode}'.";
+                return false;
+            }
+
             if (activityPresentationProfile != null &&
                 !activityPresentationProfile.TryValidate(out string activityPresentationProfileValidationReason))
             {

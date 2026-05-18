@@ -17,3 +17,4 @@ MonoBehaviour:
   hasActivation: 0
   hasGameplayContent: 1
   hasActivityResult: 0
+  nextActivityTransitionContinuePolicy: 1

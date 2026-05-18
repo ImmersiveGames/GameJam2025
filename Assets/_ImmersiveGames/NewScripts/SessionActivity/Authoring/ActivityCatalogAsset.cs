@@ -38,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     deactivationWindowMode: current.DeactivationWindowMode,
                     deactivationWindowAdditiveSceneKey: current.DeactivationWindowAdditiveSceneKey,
                     nextActivityTransitionProfileSource: current.NextActivityTransitionProfileSource,
+                    nextActivityTransitionContinuePolicy: current.NextActivityTransitionContinuePolicy,
                     nextActivityTransitionProfileOverride: current.NextActivityTransitionProfileOverride,
                     nextActivityId: nextActivityId,
                     source: source));

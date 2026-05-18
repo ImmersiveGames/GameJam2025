@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
-    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver
+    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback
     {
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private readonly SessionActivityCatalog _catalog;
@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ISessionActivityTransitionAdapter _transitionAdapter;
         private readonly ISessionActivityTransitionLoadingAdapter _transitionLoadingAdapter;
         private readonly ISessionActivityWindowSceneAdapter _windowSceneAdapter;
+        private readonly ISessionActivityPendingOperationRunner _pendingOperationRunner;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
         private SessionActivityRouteTransitionContext _routeTransitionContext;
@@ -29,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private bool _pendingTransitionCurtainReveal;
         private bool _pendingTransitionCurtainClosed;
         private bool _pendingTransitionLoadingVisible;
+        private PendingInternalActivityTransition _pendingInternalActivityTransition;
 
         private readonly struct PendingNavigationTransition
         {
@@ -45,6 +47,38 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public bool IsValid => Target.IsValid && TargetEntrySequence > 0;
         }
 
+        private readonly struct PendingInternalActivityTransition
+        {
+            public PendingInternalActivityTransition(
+                string fromActivityId,
+                int fromEntrySequence,
+                string toActivityId,
+                int toEntrySequence,
+                bool handoffPrepared,
+                bool continueAccepted)
+            {
+                FromActivityId = Normalize(fromActivityId);
+                FromEntrySequence = fromEntrySequence;
+                ToActivityId = Normalize(toActivityId);
+                ToEntrySequence = toEntrySequence;
+                HandoffPrepared = handoffPrepared;
+                ContinueAccepted = continueAccepted;
+            }
+
+            public string FromActivityId { get; }
+            public int FromEntrySequence { get; }
+            public string ToActivityId { get; }
+            public int ToEntrySequence { get; }
+            public bool HandoffPrepared { get; }
+            public bool ContinueAccepted { get; }
+            public bool IsValid =>
+                !string.IsNullOrWhiteSpace(FromActivityId) &&
+                !string.IsNullOrWhiteSpace(ToActivityId) &&
+                FromEntrySequence > 0 &&
+                ToEntrySequence > 0 &&
+                HandoffPrepared;
+        }
+
         public SessionActivityPipeline(
             SessionActivityCatalog catalog,
             string sessionStateId,
@@ -52,7 +86,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ISessionActivityInputModeAdapter inputModeAdapter,
             ISessionActivityTransitionAdapter transitionAdapter,
             ISessionActivityTransitionLoadingAdapter transitionLoadingAdapter,
-            ISessionActivityWindowSceneAdapter windowSceneAdapter)
+            ISessionActivityWindowSceneAdapter windowSceneAdapter,
+            ISessionActivityPendingOperationRunner pendingOperationRunner)
         {
             _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             _state = new SessionActivityRuntimeState();
@@ -62,6 +97,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _transitionAdapter = transitionAdapter ?? throw new ArgumentNullException(nameof(transitionAdapter));
             _transitionLoadingAdapter = transitionLoadingAdapter ?? throw new ArgumentNullException(nameof(transitionLoadingAdapter));
             _windowSceneAdapter = windowSceneAdapter ?? throw new ArgumentNullException(nameof(windowSceneAdapter));
+            _pendingOperationRunner = pendingOperationRunner ?? throw new ArgumentNullException(nameof(pendingOperationRunner));
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -228,6 +264,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingTransitionResolution = default;
             _pendingTransitionCurtainReveal = false;
             _pendingTransitionCurtainClosed = false;
+            _pendingTransitionLoadingVisible = false;
+            _pendingInternalActivityTransition = default;
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -360,6 +398,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     source,
                     reason,
                     "pipeline_not_started");
+            }
+
+            if (_state.CurrentPendingOperation.IsValid)
+            {
+                SessionActivityCommand command = new(
+                    SessionActivityCommandKind.CloseForRouteExit,
+                    _state.CurrentIdentity,
+                    source,
+                    reason);
+                List<SessionActivityFact> rejectedFacts = new();
+                EmitRejected(
+                    command,
+                    rejectedFacts,
+                    "pending_operation_active",
+                    $"CloseForRouteExit blocked because pending operation is active. pendingOperation='{_state.CurrentPendingOperation}'.",
+                    _state.CurrentIdentity,
+                    true);
+                return new SessionActivityCommandResult(
+                    SessionActivityCommandResultKind.Rejected,
+                    command,
+                    rejectedFacts,
+                    "pending_operation_active");
             }
 
             return Execute(BuildCloseForRouteExitCommand(source, reason));
@@ -533,70 +593,168 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
             catch (Exception exception)
             {
-                _state.AppendTrace($"[FATAL][SessionActivityPipeline] lifecycle_async_failed command='{command.Kind}' identity='{command.Identity}' source='{command.Source}' reason='{command.Reason}' error='{exception.Message}'.");
+                _pendingInternalActivityTransition = default;
+                _state.AppendTrace(
+                    $"[FATAL][SessionActivityPipeline] lifecycle_async_failed command='{command.Kind}' commandIdentity='{command.Identity}' pipelineIdentity='{_state.CurrentIdentity}' pipelineId='{_state.PipelineId}' sessionStateId='{_state.SessionId}' stage='{_state.CurrentStage}' executionState='{_state.CurrentExecutionState}' pendingTransitionMode='{_pendingTransitionResolution.Mode}' pendingTransitionCurtainReveal='{_pendingTransitionCurtainReveal}' pendingTransitionCurtainClosed='{_pendingTransitionCurtainClosed}' pendingTransitionLoadingVisible='{_pendingTransitionLoadingVisible}' exceptionType='{exception.GetType().FullName}' exceptionMessage='{exception.Message}' source='{command.Source}' reason='{command.Reason}'.");
                 throw;
-            }
-            finally
-            {
-                _state.ClearPendingOperation();
             }
         }
 
         private void EnqueueLifecycleAsyncCommand(SessionActivityCommand command)
         {
-            _state.SetPendingOperation(BuildPendingOperation(command));
             _ = ExecuteLifecycleAsync(command);
         }
 
-        private SessionActivityPendingOperation BuildPendingOperation(SessionActivityCommand command)
+        private SessionActivityPendingOperation BuildWindowPendingOperation(
+            SessionActivityPendingOperationKind operationKind,
+            SessionActivityPendingWindowKind windowKind,
+            SessionActivityDefinition definition,
+            int entrySequence,
+            Foundation.Platform.SceneReferences.SceneKeyAsset sceneKey,
+            string source,
+            string reason)
         {
-            SessionActivityPendingWindowKind windowKind = SessionActivityPendingWindowKind.None;
-            SessionActivityPendingOperationKind operationKind = command.Kind switch
-            {
-                SessionActivityCommandKind.CompleteActivationWindow => SessionActivityPendingOperationKind.CompleteActivationWindow,
-                SessionActivityCommandKind.CompleteCurrentActivity => SessionActivityPendingOperationKind.CompleteCurrentActivity,
-                SessionActivityCommandKind.CompleteDeactivationWindow => SessionActivityPendingOperationKind.CompleteDeactivationWindow,
-                SessionActivityCommandKind.ContinueToNextActivity => SessionActivityPendingOperationKind.ContinueToNextActivity,
-                _ => SessionActivityPendingOperationKind.Unknown,
-            };
-
-            if (command.Kind == SessionActivityCommandKind.CompleteActivationWindow)
-            {
-                windowKind = SessionActivityPendingWindowKind.ActivationWindow;
-            }
-            else if (command.Kind == SessionActivityCommandKind.CompleteDeactivationWindow)
-            {
-                windowKind = SessionActivityPendingWindowKind.DeactivationWindow;
-            }
-
-            SessionActivityDefinition definition = _state.CurrentDefinition;
-            string sceneKey = string.Empty;
-            string sceneName = string.Empty;
-
-            if (windowKind == SessionActivityPendingWindowKind.ActivationWindow && definition.ActivationWindowAdditiveSceneKey != null)
-            {
-                sceneKey = definition.ActivationWindowAdditiveSceneKey.name;
-                sceneName = Normalize(definition.ActivationWindowAdditiveSceneKey.SceneName);
-            }
-            else if (windowKind == SessionActivityPendingWindowKind.DeactivationWindow && definition.DeactivationWindowAdditiveSceneKey != null)
-            {
-                sceneKey = definition.DeactivationWindowAdditiveSceneKey.name;
-                sceneName = Normalize(definition.DeactivationWindowAdditiveSceneKey.SceneName);
-            }
-
+            string sceneKeyName = sceneKey != null ? sceneKey.name : string.Empty;
+            string sceneName = sceneKey != null ? Normalize(sceneKey.SceneName) : string.Empty;
             return new SessionActivityPendingOperation(
                 Guid.NewGuid().ToString("N"),
                 _state.PipelineId,
                 _state.SessionId,
-                _state.CurrentIdentity.ActivityId,
-                _state.CurrentIdentity.ActivityOrdinal,
-                _state.CurrentIdentity.EntrySequence,
+                definition.ActivityId,
+                definition.ActivityOrdinal,
+                entrySequence,
                 windowKind,
                 operationKind,
-                sceneKey,
+                sceneKeyName,
                 sceneName,
-                command.Source,
-                command.Reason);
+                source,
+                reason);
+        }
+
+        public void CompletePendingOperation(SessionActivityPendingOperation operation, string source, string reason)
+        {
+            if (!TryValidatePendingOperationCompletion(operation, source, reason))
+            {
+                return;
+            }
+
+            SessionActivityDefinition definition = _state.CurrentDefinition;
+            int entrySequence = _state.CurrentEntrySequence;
+            List<SessionActivityFact> facts = new();
+            List<SessionActivitySnapshot> snapshots = new();
+            SessionActivityCommand syntheticCommand = new(
+                SessionActivityCommandKind.CompleteCurrentActivity,
+                _state.CurrentIdentity,
+                source,
+                reason);
+
+            switch (operation.OperationKind)
+            {
+                case SessionActivityPendingOperationKind.ActivationWindowSceneLoad:
+                {
+                    SessionActivityIdentity loadedIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowAdditiveSceneLoaded, entrySequence);
+                    _state.SetCurrentIdentity(loadedIdentity, SessionActivityStage.ActivationWindowAdditiveSceneLoaded);
+                    EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneLoaded, loadedIdentity, source, reason, $"'{definition.ActivityId}' activation additive scene loaded. scene='{operation.SceneName}'.");
+                    EmitSnapshot(snapshots, "activation_window_additive_scene_loaded", source, reason, $"'{definition.ActivityId}' activation additive scene loaded. scene='{operation.SceneName}'.");
+
+                    SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowReady, entrySequence);
+                    _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActivationWindowReady);
+                    EmitFact(facts, SessionActivityFactKind.ActivationWindowReady, readyIdentity, source, reason, $"'{definition.ActivityId}' activation window ready.");
+                    EmitSnapshot(snapshots, "activation_window_ready", source, reason, $"'{definition.ActivityId}' activation window ready.");
+                    break;
+                }
+                case SessionActivityPendingOperationKind.ActivationWindowSceneUnload:
+                {
+                    SessionActivityIdentity unloadedIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowAdditiveSceneUnloaded, entrySequence);
+                    _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.ActivationWindowAdditiveSceneUnloaded);
+                    EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneUnloaded, unloadedIdentity, source, reason, $"'{definition.ActivityId}' activation additive scene unloaded. scene='{operation.SceneName}'.");
+                    EmitSnapshot(snapshots, "activation_window_additive_scene_unloaded", source, reason, $"'{definition.ActivityId}' activation additive scene unloaded. scene='{operation.SceneName}'.");
+                    EnterRunning(definition, syntheticCommand, facts, snapshots, entrySequence);
+                    break;
+                }
+                case SessionActivityPendingOperationKind.DeactivationWindowSceneLoad:
+                {
+                    SessionActivityIdentity loadedIdentity = BuildIdentity(definition, SessionActivityStage.DeactivationWindowAdditiveSceneLoaded, entrySequence);
+                    _state.SetCurrentIdentity(loadedIdentity, SessionActivityStage.DeactivationWindowAdditiveSceneLoaded);
+                    EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneLoaded, loadedIdentity, source, reason, $"'{definition.ActivityId}' deactivation additive scene loaded. scene='{operation.SceneName}'.");
+                    EmitSnapshot(snapshots, "deactivation_window_additive_scene_loaded", source, reason, $"'{definition.ActivityId}' deactivation additive scene loaded. scene='{operation.SceneName}'.");
+
+                    SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.DeactivationWindowReady, entrySequence);
+                    _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.DeactivationWindowReady);
+                    EmitFact(facts, SessionActivityFactKind.DeactivationWindowReady, readyIdentity, source, reason, $"'{definition.ActivityId}' deactivation window ready.");
+                    EmitSnapshot(snapshots, "deactivation_window_ready", source, reason, $"'{definition.ActivityId}' deactivation window ready.");
+                    break;
+                }
+                case SessionActivityPendingOperationKind.DeactivationWindowSceneUnload:
+                {
+                    SessionActivityIdentity unloadedIdentity = BuildIdentity(definition, SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded, entrySequence);
+                    _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded);
+                    EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneUnloaded, unloadedIdentity, source, reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{operation.SceneName}'.");
+                    EmitSnapshot(snapshots, "deactivation_window_additive_scene_unloaded", source, reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{operation.SceneName}'.");
+
+                    if (operation.Reason.IndexOf("route_exit", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        FinalizeDeactivationForRouteExit(definition, syntheticCommand, facts, snapshots, entrySequence);
+                    }
+                    else
+                    {
+                        _ = FinalizeDeactivationAndContinuation(definition, syntheticCommand, facts, snapshots, entrySequence);
+                    }
+
+                    break;
+                }
+                default:
+                    throw new InvalidOperationException($"Unsupported pending operation completion kind '{operation.OperationKind}'.");
+            }
+
+            _state.ClearPendingOperation();
+        }
+
+        public void FailPendingOperation(SessionActivityPendingOperation operation, string source, string reason, string error)
+        {
+            if (!TryValidatePendingOperationCompletion(operation, source, reason))
+            {
+                return;
+            }
+
+            SessionActivityPendingOperation active = _state.CurrentPendingOperation;
+            throw new InvalidOperationException(
+                $"[FATAL][SessionActivityPipeline] Pending operation failed operationId='{active.OperationId}' operationKind='{active.OperationKind}' activityId='{active.ActivityId}' currentStage='{_state.CurrentStage}' sceneName='{active.SceneName}' reason='{error}'.");
+        }
+
+        private bool TryValidatePendingOperationCompletion(SessionActivityPendingOperation operation, string source, string reason)
+        {
+            SessionActivityPendingOperation active = _state.CurrentPendingOperation;
+            if (!active.IsValid)
+            {
+                _state.AppendTrace($"[OBS][SessionActivityPipeline] pending_operation_completion_rejected reason='no_pending_operation' incoming='{operation}' source='{source}' reason='{reason}'.");
+                return false;
+            }
+
+            bool matches =
+                string.Equals(active.OperationId, operation.OperationId, StringComparison.Ordinal) &&
+                string.Equals(active.PipelineId, operation.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(active.SessionStateId, operation.SessionStateId, StringComparison.Ordinal) &&
+                string.Equals(active.ActivityId, operation.ActivityId, StringComparison.Ordinal) &&
+                active.ActivityOrdinal == operation.ActivityOrdinal &&
+                active.EntrySequence == operation.EntrySequence &&
+                active.OperationKind == operation.OperationKind &&
+                active.WindowKind == operation.WindowKind;
+
+            if (matches)
+            {
+                return true;
+            }
+
+            List<SessionActivityFact> facts = new();
+            EmitFact(
+                facts,
+                SessionActivityFactKind.CommandRejected,
+                _state.CurrentIdentity,
+                source,
+                reason,
+                $"Pending operation completion rejected as stale/foreign. active='{active}' incoming='{operation}'.");
+            return false;
         }
 
         private static SessionActivityCommandResult BuildCommandResult(SessionActivityCommand command, List<SessionActivityFact> emittedFacts)
@@ -658,6 +816,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingTransitionResolution = default;
             _pendingTransitionCurtainReveal = false;
             _pendingTransitionCurtainClosed = false;
+            _pendingTransitionLoadingVisible = false;
+            _pendingInternalActivityTransition = default;
             _state.SetCurrentDefinition(firstDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -668,16 +828,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EnterActivity(firstDefinition, command, facts, snapshots, entrySequence);
         }
 
-        private async Task EmitCompleteActivationWindowAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
+        private Task EmitCompleteActivationWindowAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
             if (!EnsureExpectedStage(command, facts, SessionActivityStage.ActivationWindowReady, "complete_activation_window"))
             {
-                return;
+                return Task.CompletedTask;
             }
 
             if (!EnsureIdentityMatches(command, facts, _state.CurrentIdentity, "complete_activation_window"))
             {
-                return;
+                return Task.CompletedTask;
             }
 
             SessionActivityDefinition current = _state.CurrentDefinition;
@@ -689,10 +849,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (current.ActivationWindowMode == ActivityWindowMode.AdditiveScene)
             {
-                await ExecuteActivationWindowAdditiveSceneUnloadAsync(current, command, facts, snapshots, currentEntrySequence);
+                ExecuteActivationWindowAdditiveSceneUnload(current, command, facts, snapshots, currentEntrySequence);
+                return Task.CompletedTask;
             }
 
             EnterRunning(current, command, facts, snapshots, currentEntrySequence);
+            return Task.CompletedTask;
         }
 
         private async Task EmitCompleteAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -738,7 +900,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            _ = ExecuteDeactivationWindowAdditiveSceneLoadAsync(current, command, facts, snapshots, currentEntrySequence);
+            ExecuteDeactivationWindowAdditiveSceneLoad(current, command, facts, snapshots, currentEntrySequence);
         }
 
         private void EmitCloseForRouteExit(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -777,7 +939,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     return;
                 }
 
-                _ = ExecuteDeactivationWindowAdditiveSceneLoadAsync(current, command, facts, snapshots, currentEntrySequence);
+                ExecuteDeactivationWindowAdditiveSceneLoad(current, command, facts, snapshots, currentEntrySequence);
                 return;
             }
 
@@ -788,8 +950,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 EmitFact(facts, SessionActivityFactKind.DeactivationWindowCompleted, completedIdentity, command.Source, command.Reason, $"'{current.ActivityId}' deactivation window completed.");
                 EmitSnapshot(snapshots, "deactivation_window_completed", command.Source, command.Reason, $"'{current.ActivityId}' deactivation window completed.");
 
-                _ = ExecuteDeactivationWindowAdditiveSceneUnloadAsync(current, command, facts, snapshots, currentEntrySequence);
-                FinalizeDeactivationForRouteExit(current, command, facts, snapshots, currentEntrySequence);
+                ExecuteDeactivationWindowAdditiveSceneUnload(current, command, facts, snapshots, currentEntrySequence);
                 return;
             }
 
@@ -802,16 +963,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 true);
         }
 
-        private async Task EmitCompleteDeactivationWindowAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
+        private Task EmitCompleteDeactivationWindowAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
             if (!EnsureExpectedStage(command, facts, SessionActivityStage.DeactivationWindowReady, "complete_deactivation_window"))
             {
-                return;
+                return Task.CompletedTask;
             }
 
             if (!EnsureIdentityMatches(command, facts, _state.CurrentIdentity, "complete_deactivation_window"))
             {
-                return;
+                return Task.CompletedTask;
             }
 
             SessionActivityDefinition current = _state.CurrentDefinition;
@@ -821,8 +982,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.DeactivationWindowCompleted, completedIdentity, command.Source, command.Reason, $"'{current.ActivityId}' deactivation window completed.");
             EmitSnapshot(snapshots, "deactivation_window_completed", command.Source, command.Reason, $"'{current.ActivityId}' deactivation window completed.");
 
-            await ExecuteDeactivationWindowAdditiveSceneUnloadAsync(current, command, facts, snapshots, currentEntrySequence);
-            await FinalizeDeactivationAndContinuation(current, command, facts, snapshots, currentEntrySequence);
+            ExecuteDeactivationWindowAdditiveSceneUnload(current, command, facts, snapshots, currentEntrySequence);
+            return Task.CompletedTask;
         }
 
         private async Task FinalizeDeactivationAndContinuation(
@@ -849,6 +1010,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 _state.SetCurrentIdentity(BuildIdentity(current, SessionActivityStage.Completed, currentEntrySequence), SessionActivityStage.Completed);
                 _state.MarkCompleted();
+                _pendingInternalActivityTransition = default;
                 EmitFact(facts, SessionActivityFactKind.PipelineCompleted, _state.CurrentIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completed and no next activity is configured.");
                 EmitSnapshot(snapshots, "pipeline_completed", command.Source, command.Reason, $"'{current.ActivityId}' completed and no next activity is configured.");
                 return;
@@ -909,6 +1071,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _state.SetHandoff(handoff);
+            _pendingInternalActivityTransition = new PendingInternalActivityTransition(
+                current.ActivityId,
+                currentEntrySequence,
+                next.ActivityId,
+                nextEntrySequence,
+                handoffPrepared: true,
+                continueAccepted: false);
             EmitFact(facts, SessionActivityFactKind.ActivityHandoffPrepared, nextActivationIdentity, command.Source, command.Reason, $"Handoff prepared for '{next.ActivityId}'.", handoff);
             EmitSnapshot(snapshots, "handoff_created", command.Source, command.Reason, $"Handoff prepared for '{next.ActivityId}'.");
             await ReportPendingTransitionLoadingProgressIfVisibleAsync(
@@ -918,6 +1087,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 snapshots,
                 0.6f,
                 "ActivityHandoffPrepared");
+            await ApplyContinuePolicyAfterHandoffPreparedAsync(current, command, facts, snapshots);
         }
 
         private void FinalizeDeactivationForRouteExit(
@@ -932,7 +1102,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.ClearHandoff();
             _pendingTransitionCurtainReveal = false;
             _pendingTransitionCurtainClosed = false;
+            _pendingTransitionLoadingVisible = false;
             _pendingTransitionResolution = default;
+            _pendingInternalActivityTransition = default;
 
             SessionActivityIdentity deactivationIdentity = BuildIdentity(current, SessionActivityStage.Deactivation, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationIdentity, SessionActivityStage.Deactivation);
@@ -1011,6 +1183,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _state.SetHandoff(handoff);
+            _pendingInternalActivityTransition = new PendingInternalActivityTransition(
+                current.ActivityId,
+                deactivationIdentity.EntrySequence,
+                target.ActivityId,
+                pending.TargetEntrySequence,
+                handoffPrepared: true,
+                continueAccepted: false);
             EmitFact(facts, SessionActivityFactKind.ActivityHandoffPrepared, targetActivationIdentity, command.Source, command.Reason, $"Handoff prepared for '{target.ActivityId}'.", handoff);
             EmitSnapshot(snapshots, "handoff_created", command.Source, command.Reason, $"Handoff prepared for '{target.ActivityId}'.");
             await ReportPendingTransitionLoadingProgressIfVisibleAsync(
@@ -1039,11 +1218,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"Activity catalog looped from '{current.ActivityId}' to '{target.ActivityId}'. catalogLoopCount='{_state.CatalogLoopCount}'.");
             }
 
-            _state.ClearHandoff();
-            _state.SetCurrentDefinition(target);
-            await ApplyPendingTransitionBeforeNextEntryIfNeededAsync(deactivationIdentity, command.Source, command.Reason);
-            EnterActivity(target, command, facts, snapshots, pending.TargetEntrySequence);
-            await ApplyPendingTransitionRevealIfNeededAsync(target, command, facts, snapshots);
+            await ApplyContinuePolicyAfterHandoffPreparedAsync(current, command, facts, snapshots);
         }
 
         private async Task EmitContinueAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -1071,11 +1246,48 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityDefinition next = ResolveActivityByIdOrFail(handoff.NextActivityId);
             int nextEntrySequence = handoff.ToIdentity.EntrySequence;
+            MarkPendingInternalTransitionContinueAccepted(handoff);
             _state.ClearHandoff();
             _state.SetCurrentDefinition(next);
             await ApplyPendingTransitionBeforeNextEntryIfNeededAsync(_state.CurrentIdentity, command.Source, command.Reason);
             EnterActivity(next, command, facts, snapshots, nextEntrySequence);
             await ApplyPendingTransitionRevealIfNeededAsync(next, command, facts, snapshots);
+        }
+
+        private async Task ApplyContinuePolicyAfterHandoffPreparedAsync(
+            SessionActivityDefinition current,
+            SessionActivityCommand triggerCommand,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!current.HasNextActivity || !_state.CurrentHandoff.IsValid)
+            {
+                return;
+            }
+
+            ActivityTransitionContinuePolicy continuePolicy = current.NextActivityTransitionContinuePolicy;
+            if (continuePolicy == ActivityTransitionContinuePolicy.Unknown)
+            {
+                throw new InvalidOperationException($"Activity '{current.ActivityId}' requires explicit nextActivityTransitionContinuePolicy when a next activity exists.");
+            }
+
+            if (continuePolicy == ActivityTransitionContinuePolicy.ManualContinue)
+            {
+                EmitSnapshot(
+                    snapshots,
+                    "activity_transition_manual_continue_pending",
+                    triggerCommand.Source,
+                    triggerCommand.Reason,
+                    $"Manual continue is pending for '{_state.CurrentHandoff.NextActivityId}'.");
+                return;
+            }
+
+            SessionActivityCommand autoContinueCommand = new(
+                SessionActivityCommandKind.ContinueToNextActivity,
+                _state.CurrentHandoff.ToIdentity,
+                "SessionActivityPipeline/Policy/AutoContinue",
+                "activity_transition_policy_auto_continue");
+            await EmitContinueAsync(autoContinueCommand, facts, snapshots);
         }
 
         private void EmitNavigation(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -1171,7 +1383,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            _ = ExecuteDeactivationWindowAdditiveSceneLoadAsync(current, command, facts, snapshots, currentEntrySequence);
+            ExecuteDeactivationWindowAdditiveSceneLoad(current, command, facts, snapshots, currentEntrySequence);
         }
 
         private void EnterActivity(SessionActivityDefinition definition, SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots, int entrySequence)
@@ -1205,7 +1417,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
             else
             {
-                _ = ExecuteActivationWindowAdditiveSceneAsync(definition, command, facts, snapshots, entrySequence);
+                ExecuteActivationWindowAdditiveScene(definition, command, facts, snapshots, entrySequence);
             }
         }
 
@@ -2610,6 +2822,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
+            if (_pendingTransitionResolution.Mode == ActivityTransitionMode.None)
+            {
+                TryEmitDryTransitionCompletedAtRevealSafePoint(next, command, facts, snapshots);
+                return;
+            }
+
             if (!_pendingTransitionCurtainReveal || _pendingTransitionResolution.Mode != ActivityTransitionMode.CutWithCurtain)
             {
                 return;
@@ -2716,10 +2934,98 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"Transition fade-out completed for next activity '{next.ActivityId}'.");
+            TryEmitActivityTransitionCompleted(next, command, facts, snapshots);
             _pendingTransitionCurtainReveal = false;
             _pendingTransitionCurtainClosed = false;
             _pendingTransitionLoadingVisible = false;
             _pendingTransitionResolution = default;
+        }
+
+        private void TryEmitDryTransitionCompletedAtRevealSafePoint(
+            SessionActivityDefinition next,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (_pendingTransitionResolution.Mode != ActivityTransitionMode.None)
+            {
+                return;
+            }
+
+            bool safePointReached =
+                (next.ActivationWindowMode == ActivityWindowMode.None && _state.CurrentStage == SessionActivityStage.ActivityRunning) ||
+                (next.ActivationWindowMode == ActivityWindowMode.AdditiveScene && _state.CurrentStage == SessionActivityStage.ActivationWindowReady);
+            if (!safePointReached)
+            {
+                return;
+            }
+
+            TryEmitActivityTransitionCompleted(next, command, facts, snapshots);
+            _pendingTransitionCurtainReveal = false;
+            _pendingTransitionCurtainClosed = false;
+            _pendingTransitionLoadingVisible = false;
+            _pendingTransitionResolution = default;
+        }
+
+        private void MarkPendingInternalTransitionContinueAccepted(SessionActivityHandoff handoff)
+        {
+            PendingInternalActivityTransition pending = _pendingInternalActivityTransition;
+            if (!pending.IsValid)
+            {
+                return;
+            }
+
+            bool matches =
+                string.Equals(pending.FromActivityId, handoff.FromIdentity.ActivityId, StringComparison.Ordinal) &&
+                pending.FromEntrySequence == handoff.FromIdentity.EntrySequence &&
+                string.Equals(pending.ToActivityId, handoff.ToIdentity.ActivityId, StringComparison.Ordinal) &&
+                pending.ToEntrySequence == handoff.ToIdentity.EntrySequence;
+            if (!matches)
+            {
+                return;
+            }
+
+            _pendingInternalActivityTransition = new PendingInternalActivityTransition(
+                pending.FromActivityId,
+                pending.FromEntrySequence,
+                pending.ToActivityId,
+                pending.ToEntrySequence,
+                handoffPrepared: true,
+                continueAccepted: true);
+        }
+
+        private void TryEmitActivityTransitionCompleted(
+            SessionActivityDefinition next,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            PendingInternalActivityTransition pending = _pendingInternalActivityTransition;
+            if (!pending.IsValid || !pending.ContinueAccepted)
+            {
+                return;
+            }
+
+            if (!string.Equals(pending.ToActivityId, next.ActivityId, StringComparison.Ordinal) ||
+                pending.ToEntrySequence != _state.CurrentEntrySequence)
+            {
+                return;
+            }
+
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityTransitionCompleted,
+                _state.CurrentIdentity,
+                command.Source,
+                command.Reason,
+                $"Transition completed from '{pending.FromActivityId}' to '{pending.ToActivityId}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_transition_completed",
+                command.Source,
+                command.Reason,
+                $"Transition completed from '{pending.FromActivityId}' to '{pending.ToActivityId}'.");
+            _pendingInternalActivityTransition = default;
         }
 
         private async Task ApplyPendingTransitionFadeInBeforeNextSetupIfNeededAsync(
@@ -2818,7 +3124,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 "FadeInCompleted");
         }
 
-        private async Task ExecuteActivationWindowAdditiveSceneAsync(
+        private void ExecuteActivationWindowAdditiveScene(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
@@ -2843,25 +3149,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneLoadStarted, loadStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene load started. scene='{sceneName}'.");
             EmitSnapshot(snapshots, "activation_window_additive_scene_load_started", command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene load started. scene='{sceneName}'.");
 
-            await _windowSceneAdapter.LoadAdditiveAsync(
+            SessionActivityPendingOperation operation = BuildWindowPendingOperation(
+                SessionActivityPendingOperationKind.ActivationWindowSceneLoad,
+                SessionActivityPendingWindowKind.ActivationWindow,
+                definition,
+                entrySequence,
                 definition.ActivationWindowAdditiveSceneKey,
-                definition.ActivityId,
-                "activation_window",
                 command.Source,
                 command.Reason);
-
-            SessionActivityIdentity loadedIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowAdditiveSceneLoaded, entrySequence);
-            _state.SetCurrentIdentity(loadedIdentity, SessionActivityStage.ActivationWindowAdditiveSceneLoaded);
-            EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneLoaded, loadedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene loaded. scene='{sceneName}'.");
-            EmitSnapshot(snapshots, "activation_window_additive_scene_loaded", command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene loaded. scene='{sceneName}'.");
-
-            SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowReady, entrySequence);
-            _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActivationWindowReady);
-            EmitFact(facts, SessionActivityFactKind.ActivationWindowReady, readyIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activation window ready.");
-            EmitSnapshot(snapshots, "activation_window_ready", command.Source, command.Reason, $"'{definition.ActivityId}' activation window ready.");
+            _state.SetPendingOperation(operation);
+            _pendingOperationRunner.RunWindowOperation(operation, definition.ActivationWindowAdditiveSceneKey, this);
         }
 
-        private async Task ExecuteActivationWindowAdditiveSceneUnloadAsync(
+        private void ExecuteActivationWindowAdditiveSceneUnload(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
@@ -2886,20 +3186,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneUnloadStarted, unloadStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene unload started. scene='{sceneName}'.");
             EmitSnapshot(snapshots, "activation_window_additive_scene_unload_started", command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene unload started. scene='{sceneName}'.");
 
-            await _windowSceneAdapter.UnloadAsync(
+            SessionActivityPendingOperation operation = BuildWindowPendingOperation(
+                SessionActivityPendingOperationKind.ActivationWindowSceneUnload,
+                SessionActivityPendingWindowKind.ActivationWindow,
+                definition,
+                entrySequence,
                 definition.ActivationWindowAdditiveSceneKey,
-                definition.ActivityId,
-                "activation_window",
                 command.Source,
                 command.Reason);
-
-            SessionActivityIdentity unloadedIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowAdditiveSceneUnloaded, entrySequence);
-            _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.ActivationWindowAdditiveSceneUnloaded);
-            EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneUnloaded, unloadedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene unloaded. scene='{sceneName}'.");
-            EmitSnapshot(snapshots, "activation_window_additive_scene_unloaded", command.Source, command.Reason, $"'{definition.ActivityId}' activation additive scene unloaded. scene='{sceneName}'.");
+            _state.SetPendingOperation(operation);
+            _pendingOperationRunner.RunWindowOperation(operation, definition.ActivationWindowAdditiveSceneKey, this);
         }
 
-        private async Task ExecuteDeactivationWindowAdditiveSceneLoadAsync(
+        private void ExecuteDeactivationWindowAdditiveSceneLoad(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
@@ -2924,25 +3223,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneLoadStarted, loadStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene load started. scene='{sceneName}'.");
             EmitSnapshot(snapshots, "deactivation_window_additive_scene_load_started", command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene load started. scene='{sceneName}'.");
 
-            await _windowSceneAdapter.LoadAdditiveAsync(
+            SessionActivityPendingOperation operation = BuildWindowPendingOperation(
+                SessionActivityPendingOperationKind.DeactivationWindowSceneLoad,
+                SessionActivityPendingWindowKind.DeactivationWindow,
+                definition,
+                entrySequence,
                 definition.DeactivationWindowAdditiveSceneKey,
-                definition.ActivityId,
-                "deactivation_window",
                 command.Source,
                 command.Reason);
-
-            SessionActivityIdentity loadedIdentity = BuildIdentity(definition, SessionActivityStage.DeactivationWindowAdditiveSceneLoaded, entrySequence);
-            _state.SetCurrentIdentity(loadedIdentity, SessionActivityStage.DeactivationWindowAdditiveSceneLoaded);
-            EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneLoaded, loadedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene loaded. scene='{sceneName}'.");
-            EmitSnapshot(snapshots, "deactivation_window_additive_scene_loaded", command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene loaded. scene='{sceneName}'.");
-
-            SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.DeactivationWindowReady, entrySequence);
-            _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.DeactivationWindowReady);
-            EmitFact(facts, SessionActivityFactKind.DeactivationWindowReady, readyIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' deactivation window ready.");
-            EmitSnapshot(snapshots, "deactivation_window_ready", command.Source, command.Reason, $"'{definition.ActivityId}' deactivation window ready.");
+            _state.SetPendingOperation(operation);
+            _pendingOperationRunner.RunWindowOperation(operation, definition.DeactivationWindowAdditiveSceneKey, this);
         }
 
-        private async Task ExecuteDeactivationWindowAdditiveSceneUnloadAsync(
+        private void ExecuteDeactivationWindowAdditiveSceneUnload(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
@@ -2967,17 +3260,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneUnloadStarted, unloadStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene unload started. scene='{sceneName}'.");
             EmitSnapshot(snapshots, "deactivation_window_additive_scene_unload_started", command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene unload started. scene='{sceneName}'.");
 
-            await _windowSceneAdapter.UnloadAsync(
+            SessionActivityPendingOperation operation = BuildWindowPendingOperation(
+                SessionActivityPendingOperationKind.DeactivationWindowSceneUnload,
+                SessionActivityPendingWindowKind.DeactivationWindow,
+                definition,
+                entrySequence,
                 definition.DeactivationWindowAdditiveSceneKey,
-                definition.ActivityId,
-                "deactivation_window",
                 command.Source,
                 command.Reason);
-
-            SessionActivityIdentity unloadedIdentity = BuildIdentity(definition, SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded, entrySequence);
-            _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded);
-            EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneUnloaded, unloadedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{sceneName}'.");
-            EmitSnapshot(snapshots, "deactivation_window_additive_scene_unloaded", command.Source, command.Reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{sceneName}'.");
+            _state.SetPendingOperation(operation);
+            _pendingOperationRunner.RunWindowOperation(operation, definition.DeactivationWindowAdditiveSceneKey, this);
         }
 
         private int ResolveNextEntrySequence()

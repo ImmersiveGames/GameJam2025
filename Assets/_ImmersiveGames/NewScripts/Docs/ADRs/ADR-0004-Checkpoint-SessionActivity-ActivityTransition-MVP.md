@@ -1,7 +1,7 @@
 # ADR-0004 — Checkpoint congelado: SessionActivity ActivityTransition MVP
 
 Status: **PASS estrutural / MVP fechado**  
-Data do checkpoint: **2026-05-17**  
+Data do checkpoint: **2026-05-18**  
 Escopo: **Base 1.1 — Session Activity Pipeline**  
 Tema: **Activity -> Activity transition, ActivitySetup nominal, NextActivitySetup nominal, fade/loading de ActivityTransition**
 
@@ -462,3 +462,49 @@ Run Pipeline completo
 ```
 
 Esses itens devem ser tratados em fases posteriores, sem reabrir o ownership já congelado neste checkpoint.
+
+---
+
+## 11. Checkpoint congelado - Smoke canonico SessionActivityEntry + ActivityTransition (2026-05-18)
+
+Status: **PASS estrutural**
+
+Escopo validado por smoke:
+
+```text
+Boot -> Menu -> route-menu-gameplay
+```
+
+Resultado congelado:
+
+```text
+RouteCamera (SessionActivityEntry) -> skip explicito reason='activity_camera_has_priority'
+SessionOperationalPipeline -> OperationalRouteCompleted -> SessionActivityEntryHandoff
+SessionActivityPipeline -> entrada inicial aceita sem ActivityTransitionCompleted indevido
+activity_01 com ActivationWindow/DeactivationWindow AdditiveScene
+activity_02 com ActivationWindow=None e DeactivationWindow=None
+activity_01 -> activity_02 com OverrideProfile/CutWithCurtain
+facts finais canonicos observaveis no Host StateFacts:
+  ActivityTransitionLoadingCompleted
+  ActivityTransitionLoadingHidden
+  ActivityTransitionFadeOutStarted
+  ActivityTransitionFadeOutCompleted
+  ActivityTransitionCompleted
+activity_02 completa sem proxima activity -> PipelineCompleted
+```
+
+Invariante reforcada:
+
+```text
+ActivityTransitionCompleted existe apenas para transicao interna Activity -> Activity.
+Nao existe na entrada inicial via SessionActivityEntryHandoff.
+```
+
+---
+
+## 12. Pendencias abertas (fora do freeze deste checkpoint)
+
+1. Remover inferencia por `reason.Contains("route_exit")` e substituir por contrato explicito de route-exit.
+2. Limpar/restringir APIs legadas (`GoTo*`, `Restart*`, `DebugStartActivity`) para evitar trilhos paralelos.
+3. Tratar o trilho `fire-and-forget async` como divida separada, com contrato de observabilidade e erro explicito.
+4. Tratar idempotencia de `scene already loaded` com fact explicito dedicado em fase futura.

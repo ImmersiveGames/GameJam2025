@@ -46,9 +46,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             OperationalRouteAsset route = command.Route;
             SurfacePresentationProfileAsset profile = route.SurfacePresentationProfile;
+            ActivityPresentationProfileAsset activityProfile = route.ActivityPresentationProfile;
 
             if (profile == null)
             {
+                if (command.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry &&
+                    activityProfile != null &&
+                    activityProfile.TryValidate(out _))
+                {
+                    reason = "activity_camera_has_priority";
+                    result = SessionOperationalRouteCameraPrepareResult.Skipped(reason);
+                    LogSkipped(command, reason);
+                    return true;
+                }
+
                 reason = "surface_presentation_profile_missing";
                 result = SessionOperationalRouteCameraPrepareResult.Skipped(reason);
                 LogSkipped(command, reason);

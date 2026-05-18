@@ -796,3 +796,39 @@ O MVP Base 1.1 deste ADR é deliberadamente menor que a arquitetura-alvo.
 - Operacoes async de side-effect sao rastreadas como pending operation (operationId + pipelineId + sessionStateId + activity identity + windowKind + operationKind + sceneKey + sceneName + source + reason).
 - QA/Host nao aguardam await para dirigir lifecycle; eles apenas disparam comando e refletem stage/pending state.
 - Events/completions stale ou foreign devem permanecer sem alterar lifecycle ativo.
+
+### 2026-05-17 - Window AdditiveScene via pending operation runner
+
+- ActivationWindow/DeactivationWindow AdditiveScene passou a usar pending operation runner (ISessionActivityPendingOperationRunner).
+- SessionActivityPipeline decide stage/facts e cria pendingOperation; o runner executa LoadSceneAsync/UnloadSceneAsync fora do pipeline.
+- Completion/failure retorna por callback explicito e validado por operationId + pipeline identity.
+- Completion foreign/stale e rejeitada sem alterar stage ativo nem limpar pendingOperation valido.
+- Divida separada: ActivityTransition fade/loading ainda usa async interno no pipeline e sera extraida em patch dedicado.
+
+### 2026-05-18 - Pending operation lifetime e route-exit guard
+
+- Em Window AdditiveScene, CurrentPendingOperation permanece ativo do dispatch ate completion/failure validada.
+- Pipeline nao limpa pending operation no fim do comando que disparou load/unload; limpa apenas apos completion valida com avancos de stage/facts aplicados.
+- Completion foreign/stale nao altera stage e nao limpa pending operation ativo.
+- Route-exit teardown bloqueia explicitamente com reason='pending_operation_active' enquanto houver window pending operation ativa.
+
+### 2026-05-18 - Checkpoint MVP ActivityTransition fechado por smoke canonico
+
+- Entrada inicial via SessionActivityEntryHandoff nao emite ActivityTransitionCompleted.
+- ActivityTransitionCompleted representa apenas troca interna Activity -> Activity, nunca entrada inicial de rota.
+- Em transicao CutWithCurtain, fechamento final canonico inclui ActivityTransitionLoadingCompleted -> ActivityTransitionLoadingHidden -> ActivityTransitionFadeOutStarted -> ActivityTransitionFadeOutCompleted -> ActivityTransitionCompleted.
+- Em Source=None, ActivityTransitionCompleted ocorre no reveal-safe point sem ActivityTransitionFade* e sem ActivityTransitionLoading*.
+- Observabilidade final deve aparecer como SessionActivityFactKind canonico (inclusive no Host StateFacts), nao apenas como snapshot/mensagem.
+### 2026-05-18 - Evolucao futura: ActivityWindowProfileAsset (decisao futura)
+
+- ActivationWindow e DeactivationWindow devem evoluir de contrato mode+sceneKey para ActivityWindowProfileAsset.
+- O mesmo tipo de profile pode ser usado por activation e deactivation; a semantica vem do windowKind no lifecycle.
+- O profile de window agrupa intencao autoral: scene, presentation/camera policy, completion policy e campos futuros.
+- SessionActivityPipeline permanece owner de lifecycle, ordem, facts e commands.
+- Window scene load/unload continua em adapter proprio (execucao de side-effect).
+- Window presentation/camera deve ser executada por adapter de presentation proprio ou extensao do CameraPresentationRuntime.
+- CameraPresentation/WindowPresentation nao decide lifecycle.
+- Nao misturar ActivityPresentationProfile principal da Activity com ActivityWindowPresentationProfile semantico da Window.
+- Sequencia futura canonica de abertura: scene loaded -> window presentation prepared -> window ready.
+- Sequencia futura canonica de fechamento: window presentation released -> scene unloaded.
+- Esta secao registra direcao arquitetural futura; sem implementacao neste checkpoint.

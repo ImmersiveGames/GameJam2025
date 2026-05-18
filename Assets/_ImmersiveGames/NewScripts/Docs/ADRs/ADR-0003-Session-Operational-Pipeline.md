@@ -193,3 +193,10 @@ Nota curta (RouteActivitySave boundary):
 - SessionOperationalPipeline usa o boundary de RouteExitTeardown para exigir fechamento de SessionActivity sem continucao de catalogo.
 - O caminho usado no teardown de saida de rota e CloseForRouteExit (nao CompleteCurrentActivity).
 - Se o resultado voltar com handoff pendente, a rota e bloqueada antes de SceneComposition (SessionActivityRouteExitBlocked).
+
+## Checkpoint - SessionActivityEntry RouteCamera skip por prioridade da ActivityCamera (2026-05-18)
+
+- Para rotas com completionHandoff=SessionActivityEntry, RouteCameraPresentationStage aplica skip explicito quando a policy indicar prioridade da ActivityCamera.
+- Skip canonico: reason='activity_camera_has_priority'.
+- RouteCamera stage nao resolve SurfaceCameraAnchorHost nem executa side-effect de camera nesse caso.
+- A rota segue para PlayerPreparation/ActivityCameraPreparationStage e conclui SessionActivityEntryHandoff sem transferir ownership de camera para RouteCamera.

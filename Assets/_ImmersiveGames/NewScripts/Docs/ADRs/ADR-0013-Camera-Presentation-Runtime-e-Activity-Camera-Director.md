@@ -1233,3 +1233,18 @@ Este ADR ainda não implementa:
 - integração final com ActivitySetup.
 
 Este ADR registra a direção, os cortes já materializados e o próximo limite de integração: `Activity Camera Runtime` durante a Activity.
+
+## 21. Checkpoint aplicado - SessionActivityEntry com prioridade da ActivityCamera (2026-05-18)
+
+- Em rota com completionHandoff=SessionActivityEntry, RouteCameraPresentationStage nao e owner da camera visual da Activity.
+- A policy canonica e SkipWhenActivityHandoff com skip explicito reason='activity_camera_has_priority'.
+- Ausencia de surfacePresentationProfile nesse caso nao e erro quando existe ActivityPresentationProfile valido para o stage de ActivityCamera.
+- ActivityCameraPreparationStage permanece como unico stage pre-reveal responsavel pela camera da Activity.
+## 22. Nota futura - ActivityWindowPresentation e ActivityWindowProfile (2026-05-18)
+
+- Futura apresentacao de ActivationWindow/DeactivationWindow deve usar contrato proprio de window (ActivityWindowProfileAsset / ActivityWindowPresentationProfile), separado de ActivityPresentationProfile principal da Activity.
+- Ownership permanece: SessionActivityPipeline decide lifecycle e milestones; CameraPresentationRuntime (ou extensao de window presentation) executa side-effects.
+- Sequencia alvo de window:
+  - abertura: scene loaded -> window presentation prepared -> window ready;
+  - fechamento: window presentation released -> scene unloaded.
+- Esta nota nao altera o checkpoint atual nem introduz implementacao imediata.
