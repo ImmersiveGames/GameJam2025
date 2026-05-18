@@ -103,3 +103,9 @@ Leitura congelada:
 - ActivityWindowProfileAsset sera contrato autoral de window (dados/policy), nao owner de fluxo.
 - Adapters de window scene e window presentation executam side-effects comandados pelo pipeline.
 - CameraPresentation/WindowPresentation nao decide ordem, ready ou fechamento da window.
+## Checkpoint complementar - SessionActivity RestartCurrentActivity local (CLOSED/PASS estrutural, 2026-05-18)
+
+- RestartCurrentActivity e Pipeline Command proprio do SessionActivityPipeline.
+- Pipeline decide teardown/reentry/entrySequence/facts de restart.
+- WindowScene adapter executa side-effects de load/unload; nao decide restart lifecycle.
+- Host/DebugPanel apenas tooling/observabilidade; nao decide restart nem avanco de stage.

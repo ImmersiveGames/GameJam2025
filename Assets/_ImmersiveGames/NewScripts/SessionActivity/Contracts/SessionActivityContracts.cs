@@ -449,6 +449,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivitySceneContractValidated = 57,
         ActivitySceneContractSkippedNoContent = 58,
         ActivityTransitionCompleted = 59,
+        ActivityRestartRequested = 60,
+        ActivityRestartAccepted = 61,
+        ActivityRestartTeardownStarted = 62,
+        ActivityRestartSetupStarted = 63,
+        ActivityRestartCompleted = 64,
+        ActivityRestartRejected = 65,
     }
 
     public readonly struct SessionActivityFact

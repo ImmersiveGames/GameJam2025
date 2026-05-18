@@ -508,3 +508,124 @@ Nao existe na entrada inicial via SessionActivityEntryHandoff.
 2. Limpar/restringir APIs legadas (`GoTo*`, `Restart*`, `DebugStartActivity`) para evitar trilhos paralelos.
 3. Tratar o trilho `fire-and-forget async` como divida separada, com contrato de observabilidade e erro explicito.
 4. Tratar idempotencia de `scene already loaded` com fact explicito dedicado em fase futura.
+
+---
+
+## 13. Checkpoint congelado - SessionActivity MVP + RestartCurrentActivity local (2026-05-18)
+
+Status: **CLOSED / PASS estrutural**
+
+Leitura canônica consolidada:
+
+`	ext
+SessionOperationalPipeline emite SessionActivityEntryHandoff.
+SessionActivityPipeline e owner do lifecycle local apos o handoff.
+Entrada inicial via SessionActivityEntryHandoff nao e ActivityTransition.
+ActivityTransition e somente troca Activity -> Activity dentro da mesma SessionActivity.
+`
+
+Contrato de ActivityTransition validado:
+
+`	ext
+ActivityTransitionCompleted so existe em transicao real Activity -> Activity.
+Source=None: no reveal-safe point da proxima activity.
+CutWithCurtain: somente depois de ActivityTransitionFadeOutCompleted.
+`
+
+Windows validadas no smoke:
+
+`	ext
+ActivationWindow: None e AdditiveScene.
+DeactivationWindow: None e AdditiveScene.
+activity_01: ActivationWindow AdditiveScene + DeactivationWindow AdditiveScene.
+activity_02: ActivationWindow None + DeactivationWindow None.
+`
+
+ActivityTransition validada em activity_01 -> activity_02:
+
+`	ext
+source=OverrideProfile
+mode=CutWithCurtain
+loading/fade em ordem canonica
+ActivityTransitionCompleted canonico observavel em StateFacts
+`
+
+Policy de continuidade de transicao:
+
+`	ext
+ActivityTransitionContinuePolicy: AutoContinue | ManualContinue.
+Unknown: fail-fast quando aplicavel.
+Sandbox atual: AutoContinue.
+Nao ha pausa QA entre ActivityHandoffPrepared e inicio da proxima activity.
+ContinueToNextActivity manual so quando policy=ManualContinue.
+`
+
+Observabilidade/ownership de tooling:
+
+`	ext
+Host/QA pode observar estado assincrono para tooling, sem decidir lifecycle.
+Dump do Host deve exibir facts canonicos acumulados em State.Facts.
+`
+
+RestartCurrentActivity local (canônico):
+
+`	ext
+rail proprio de SessionActivityPipeline
+reinicia a mesma activity atual
+aceito somente em ActivityRunning
+gera nova entrySequence
+respeita DeactivationWindow da execucao antiga
+respeita ActivationWindow da nova execucao
+nao usa GoTo*, navigation, DebugStartActivity ou ActivityTransition
+`
+
+Facts canonicos minimos de restart:
+
+`	ext
+ActivityRestartRequested
+ActivityRestartAccepted
+ActivityRestartTeardownStarted
+ActivityRestartSetupStarted
+ActivityRestartCompleted
+ActivityRestartRejected
+`
+
+Regra de fechamento de restart:
+
+`	ext
+ActivityRestartCompleted so pode ser emitido apos a nova execucao voltar para ActivityRunning.
+`
+
+Invariante de pending operation em callback async:
+
+`	ext
+Pending operation validada deve ser consumida sem apagar pending operation nova criada no mesmo callback.
+`
+
+Foreign/stale guard:
+
+`	ext
+Callbacks/completions foreign ou stale nao podem alterar a nova execucao apos restart.
+`
+
+Cenarios de restart validados:
+
+`	ext
+activity com ActivationWindow/DeactivationWindow AdditiveScene
+activity sem ActivationWindow/DeactivationWindow
+`
+
+---
+
+## 14. Pendencias fora deste checkpoint
+
+1. RestartActivitySession.
+2. RestartRoute.
+3. RestartRun.
+4. ObjectRelease/ObjectReset real.
+5. Reset de objetos/actors/props/HUD/bindings/pools/subscriptions.
+6. Restore de checkpoint/save.
+7. ActivityWindowProfileAsset (scene + presentation/camera policy + completion policy).
+8. Remover inferencia por reason.Contains("route_exit").
+9. Limpar/restringir APIs legadas GoTo*/DebugStartActivity se ainda expostas.
+10. Tratar fire-and-forget async como divida separada, se ainda existir.

@@ -34,3 +34,4 @@ MonoBehaviour:
   routeAudioTiming: 0
   stopPreviousRouteAudio: 1
   surfacePresentationProfile: {fileID: 11400000, guid: 3ef802f24ca021e4c94e1fe95abcafdc, type: 2}
+  activityPresentationProfile: {fileID: 0}

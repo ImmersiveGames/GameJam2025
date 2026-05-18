@@ -241,6 +241,9 @@ Se encontrar um conflito entre um ADR histórico e um ADR Base 1.1:
 2. Cite o ADR Base 1.1 como fonte normativa
 3. Não use compatibilidade narrativa; aplique o ADR
 
+
+- Checkpoint SessionActivity Base 1.1 (2026-05-18): **CLOSED / PASS estrutural** para MVP local + RestartCurrentActivity local (entrada por SessionActivityEntryHandoff, windows None/AdditiveScene, ActivityTransition can�nica Activity->Activity, AutoContinue, PipelineCompleted e restart local dedicado sem GoTo*/navigation).
+
 ## Checkpoints
 
   - checkpoint de `PlayerPreparation` atualizado: `PlayerPreparationStarted` -> materializacao minima de `PrototypePlayer` (required com prefab) / skip explicito (optional sem prefab) -> `PlayerPreparationCompleted(outcome=materialized quando aplicavel)` -> `MaterializationCompleted` -> handoff com payload minimo de `PlayerPreparation` (identidade + outcome + contagens);

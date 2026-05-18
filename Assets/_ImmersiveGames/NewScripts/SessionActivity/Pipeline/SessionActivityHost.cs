@@ -17,9 +17,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         [SerializeField] private bool autoStart;
         [SerializeField] private string sessionStateId = "SessionActivitySandboxSession";
         [SerializeField] private ActivityCatalogAsset activityCatalog;
+        [Header("QA Tooling")]
+        [SerializeField] private bool qaObserveAsyncStateChanges = true;
+        [SerializeField] private float qaObserveIntervalSeconds = 0.1f;
 
         private SessionActivityCatalog _catalog;
         private SessionActivityPipeline _pipeline;
+        private string _lastObservedStateToken = string.Empty;
+        private float _nextObserveAt;
+
+        public event Action StateObservedChanged;
 
         public SessionActivityRuntimeState State => _pipeline?.State;
         public SessionActivityCatalog Catalog => _catalog;
@@ -82,6 +89,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 $"[FATAL][Lifecycle][SessionActivityPipeline][Host] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{sessionStateId}' stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' reason='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
         }
 
+        private void Update()
+        {
+            if (!qaObserveAsyncStateChanges || _pipeline == null)
+            {
+                return;
+            }
+
+            float now = Time.unscaledTime;
+            if (now < _nextObserveAt)
+            {
+                return;
+            }
+
+            float interval = qaObserveIntervalSeconds <= 0f ? 0.1f : qaObserveIntervalSeconds;
+            _nextObserveAt = now + interval;
+
+            string currentToken = BuildStateObservationToken();
+            if (string.Equals(currentToken, _lastObservedStateToken, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _lastObservedStateToken = currentToken;
+            StateObservedChanged?.Invoke();
+            Debug.Log($"[OBS][SessionActivityPipeline][Host][StateObservedChanged] {currentToken}");
+        }
+
         public void DebugStartActivity()
         {
             throw new InvalidOperationException(
@@ -130,8 +164,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public void RestartCurrentActivity()
         {
-            throw new InvalidOperationException(
-                $"[FATAL][Contract][SessionActivityPipeline][Host] SessionActivityHostNavigationBypassBlocked sessionStateId='{sessionStateId}' command='RestartCurrentActivity' reason='qa_navigation_shortcuts_are_removed_from_canonical_lifecycle'.");
+            EnsurePipeline();
+            SessionActivityCommandResult result = _pipeline.RestartCurrentActivity(QaSource("RestartCurrentActivity"), QaReason("RestartCurrentActivity"));
+            LogResult("RestartCurrentActivity", result);
         }
 
         public void GoToActivity(string activityId)
@@ -261,7 +296,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pendingOperation='{State.CurrentPendingOperation}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
-            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
+            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
             builder.AppendLine("facts:");
             for (int index = 0; index < State.Facts.Count; index++)
             {
@@ -390,6 +425,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string BuildHostBanner()
         {
             return $"[OBS][SessionActivityPipeline][Host] initialized sessionStateId='{sessionStateId}' autoStart='{autoStart}' entrySequence='{State.CurrentEntrySequence}' executionState='{State.CurrentExecutionState}' gateState='{GateState}' catalog='{_catalog.Summary}'";
+        }
+
+        private string BuildStateObservationToken()
+        {
+            SessionActivityPendingOperation pending = State.CurrentPendingOperation;
+            string pendingToken = pending.IsValid
+                ? $"{pending.OperationKind}/{pending.OperationId}/{pending.WindowKind}"
+                : "<none>";
+            string handoffToken = State.CurrentHandoff.IsValid
+                ? $"{State.CurrentHandoff.NextActivityId}/{State.CurrentHandoff.ToIdentity.EntrySequence}"
+                : "<none>";
+            return $"stage='{State.CurrentStage}' entrySequence='{State.CurrentEntrySequence}' activity='{State.CurrentDefinition.ActivityId}' pendingOperation='{pendingToken}' handoff='{handoffToken}'";
         }
 
         private static string QaSource(string action)

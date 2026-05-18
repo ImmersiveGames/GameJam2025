@@ -832,3 +832,23 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
 - Sequencia futura canonica de abertura: scene loaded -> window presentation prepared -> window ready.
 - Sequencia futura canonica de fechamento: window presentation released -> scene unloaded.
 - Esta secao registra direcao arquitetural futura; sem implementacao neste checkpoint.
+### 2026-05-18 - Checkpoint fechado - SessionActivity MVP + RestartCurrentActivity local
+
+- Status consolidado: CLOSED / PASS estrutural para SessionActivity MVP local com restart local.
+- SessionOperationalPipeline emite SessionActivityEntryHandoff; SessionActivityPipeline decide lifecycle interno da activity.
+- Entrada inicial por SessionActivityEntryHandoff nao e ActivityTransition.
+- ActivityTransition permanece restrita a troca Activity -> Activity dentro da mesma SessionActivity.
+- ActivityTransitionCompleted e emitido apenas em transicao real Activity -> Activity:
+  - Source=None no reveal-safe point da proxima activity.
+  - CutWithCurtain somente apos ActivityTransitionFadeOutCompleted.
+- ActivityTransitionContinuePolicy ativo: AutoContinue | ManualContinue; Unknown e fail-fast quando aplicavel.
+- Sandbox atual usa AutoContinue; ContinueToNextActivity manual so em ManualContinue.
+- RestartCurrentActivity agora e rail local dedicado do SessionActivityPipeline:
+  - aceito apenas em ActivityRunning;
+  - reinicia mesma activity com nova entrySequence;
+  - respeita DeactivationWindow da execucao antiga e ActivationWindow da nova execucao;
+  - nao usa GoTo*, navigation, DebugStartActivity ou ActivityTransition.
+- Facts canônicos minimos de restart: ActivityRestartRequested, ActivityRestartAccepted, ActivityRestartTeardownStarted, ActivityRestartSetupStarted, ActivityRestartCompleted, ActivityRestartRejected.
+- ActivityRestartCompleted so apos retorno da nova execucao para ActivityRunning.
+- Em callback async de pending operation, a operacao validada deve ser consumida sem apagar pending operation nova criada no mesmo callback.
+- Host/QA pode observar estado assincrono para tooling, sem ownership de lifecycle; dump do Host deve expor State.Facts canônicos acumulados.

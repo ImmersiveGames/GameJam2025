@@ -20,18 +20,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         [Header("Layout")]
         [SerializeField] private bool showOnGUI = true;
         [SerializeField] private bool showForeignStaleQa = false;
+        [SerializeField] private bool qaAutoDumpOnObservedStateChange = false;
 
         private GUIStyle _windowStyle;
         private GUIStyle _titleStyle;
         private GUIStyle _labelStyle;
         private GUIStyle _buttonStyle;
         private GUIStyle _dumpStyle;
+        private int _observedStateRevision;
+
+        private void OnEnable()
+        {
+            TryBindHostStateObservation();
+        }
+
+        private void OnDisable()
+        {
+            if (host != null)
+            {
+                host.StateObservedChanged -= OnHostStateObservedChanged;
+            }
+        }
 
         [ContextMenu("CompleteCurrentActivity")]
         public void CompleteCurrentActivity()
         {
             EnsureHost();
             host.CompleteCurrentActivity();
+            DumpState();
+        }
+
+        [ContextMenu("RestartCurrentActivity")]
+        public void RestartCurrentActivity()
+        {
+            EnsureHost();
+            host.RestartCurrentActivity();
             DumpState();
         }
 
@@ -111,12 +134,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             GUILayout.Label("Session Activity", _titleStyle);
             GUILayout.Space(SectionSpacing);
             GUILayout.Label("QA canonicamente restrito: use apenas o lifecycle local sem atalhos de navegacao.", _labelStyle);
+            GUILayout.Label("Restart canônico: use RestartCurrentActivity em ActivityRunning; nao usar GoTo*/DebugStartActivity como rail de restart.", _labelStyle);
             GUILayout.Space(SectionSpacing);
 
             GUILayout.Space(SectionSpacing);
 
             bool canCompleteActivationWindow = CanCompleteActivationWindow();
             bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
+            bool canRestartCurrentActivity = CanRestartCurrentActivity();
             bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
             bool canContinueToNextActivity = CanContinueToNextActivity();
 
@@ -133,6 +158,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (GUILayout.Button("CompleteCurrentActivity", _buttonStyle))
             {
                 CompleteCurrentActivity();
+            }
+            GUI.enabled = true;
+
+            GUILayout.Space(SectionSpacing);
+
+            GUI.enabled = canRestartCurrentActivity;
+            if (GUILayout.Button("RestartCurrentActivity (rail canonico de restart local)", _buttonStyle))
+            {
+                RestartCurrentActivity();
             }
             GUI.enabled = true;
 
@@ -195,6 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             GUILayout.Space(SectionSpacing);
             GUILayout.Label("Current State", _labelStyle);
+            GUILayout.Label($"Observed State Revision: {_observedStateRevision}", _labelStyle);
 
             string stateSummary = BuildStateSummary();
             GUILayout.TextArea(stateSummary, _dumpStyle, GUILayout.Height(TextAreaHeight));
@@ -214,6 +249,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 throw new InvalidOperationException("SessionActivityDebugPanel requires SessionActivityHost in the same scene.");
             }
+
+            TryBindHostStateObservation();
         }
 
         private string BuildDumpText()
@@ -232,7 +269,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
-            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
+            builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
             builder.AppendLine("facts:");
 
             for (int index = 0; index < host.State.Facts.Count; index++)
@@ -286,6 +323,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
         private bool CanCompleteCurrentActivity()
+        {
+            return !host.State.CurrentPendingOperation.IsValid &&
+                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
+        }
+
+        private bool CanRestartCurrentActivity()
         {
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentStage == SessionActivityStage.ActivityRunning;
@@ -466,6 +509,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _labelStyle = baseLabel;
             _buttonStyle = baseButton;
             _dumpStyle = baseTextArea;
+        }
+
+        private void TryBindHostStateObservation()
+        {
+            if (host == null)
+            {
+                return;
+            }
+
+            host.StateObservedChanged -= OnHostStateObservedChanged;
+            host.StateObservedChanged += OnHostStateObservedChanged;
+        }
+
+        private void OnHostStateObservedChanged()
+        {
+            _observedStateRevision++;
+            if (qaAutoDumpOnObservedStateChange)
+            {
+                Debug.Log(BuildDumpText());
+            }
         }
 
         private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
