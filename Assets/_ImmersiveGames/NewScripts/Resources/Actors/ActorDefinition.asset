@@ -15,4 +15,4 @@ MonoBehaviour:
   actorId: player1
   displayName: Player 01
   actorKind: 1
-  prefabReference: {fileID: 3679259564174009207, guid: 428f2638b7252c5448012f21cd2aa239, type: 3}
+  prefabReference: {fileID: 100000, guid: b7a6d0f2b8c94f4eb25d01d4e0f9c201, type: 3}

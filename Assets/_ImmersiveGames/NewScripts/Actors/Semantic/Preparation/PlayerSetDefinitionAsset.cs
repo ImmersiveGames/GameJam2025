@@ -11,6 +11,28 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         order = 60)]
     public sealed class PlayerSetDefinitionAsset : ScriptableObject
     {
+        public readonly struct PlayerActorResolvedEntry
+        {
+            public PlayerActorResolvedEntry(
+                string playerId,
+                bool required,
+                ActorDefinitionAsset actorDefinition)
+            {
+                PlayerId = playerId;
+                Required = required;
+                ActorDefinition = actorDefinition;
+            }
+
+            public string PlayerId { get; }
+            public bool Required { get; }
+            public ActorDefinitionAsset ActorDefinition { get; }
+            public GameObject Prefab => ActorDefinition != null ? ActorDefinition.PrefabReference : null;
+            public ActorPlacementMode PlacementMode => ActorDefinition != null ? ActorDefinition.PlacementMode : ActorPlacementMode.None;
+            public Vector3 LocalPosition => ActorDefinition != null ? ActorDefinition.LocalPosition : Vector3.zero;
+            public Vector3 LocalRotation => ActorDefinition != null ? ActorDefinition.LocalRotation : Vector3.zero;
+            public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId) && ActorDefinition != null;
+        }
+
         [Serializable]
         public struct Entry
         {
@@ -100,6 +122,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                     entries[i].HasPrefabReference,
                     entries[i].PlacementMode,
                     entries[i].HasPlacementPlan));
+            }
+
+            return resolvedEntries;
+        }
+
+        public IReadOnlyList<PlayerActorResolvedEntry> ResolvePlayerActorEntriesOrFail(string owner)
+        {
+            if (!TryValidate(out string errorMessage))
+            {
+                string message = $"[FATAL][Config][PlayerSetDefinition] owner='{Normalize(owner)}' asset='{name}' detail='{errorMessage}'.";
+                DebugUtility.LogError<PlayerSetDefinitionAsset>(message);
+                throw new InvalidOperationException(message);
+            }
+
+            if (entries == null || entries.Count == 0)
+            {
+                return Array.Empty<PlayerActorResolvedEntry>();
+            }
+
+            List<PlayerActorResolvedEntry> resolvedEntries = new(entries.Count);
+            for (int i = 0; i < entries.Count; i++)
+            {
+                resolvedEntries.Add(new PlayerActorResolvedEntry(
+                    entries[i].PlayerId,
+                    entries[i].Required,
+                    entries[i].ActorDefinition));
             }
 
             return resolvedEntries;

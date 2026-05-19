@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using _ImmersiveGames.NewScripts.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
@@ -23,6 +24,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ISessionActivityTransitionLoadingAdapter _transitionLoadingAdapter;
         private readonly ISessionActivityWindowSceneAdapter _windowSceneAdapter;
         private readonly ISessionActivityPendingOperationRunner _pendingOperationRunner;
+        private readonly IPlayerActorMaterializationAdapter _playerActorMaterializationAdapter;
+        private readonly IPlayerActorParticipationAdapter _playerActorParticipationAdapter;
+        private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
         private SessionActivityRouteTransitionContext _routeTransitionContext;
@@ -34,6 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private PendingRestartTransition _pendingRestartTransition;
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
+        private PlayerSelectionSnapshot _lastPlayerSelectionSnapshot;
 
         private readonly struct PendingNavigationTransition
         {
@@ -125,6 +130,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _transitionLoadingAdapter = transitionLoadingAdapter ?? throw new ArgumentNullException(nameof(transitionLoadingAdapter));
             _windowSceneAdapter = windowSceneAdapter ?? throw new ArgumentNullException(nameof(windowSceneAdapter));
             _pendingOperationRunner = pendingOperationRunner ?? throw new ArgumentNullException(nameof(pendingOperationRunner));
+            _playerActorMaterializationAdapter = new PlayerActorMaterializationAdapter();
+            _playerActorParticipationAdapter = new PlayerActorParticipationAdapter();
+            _activityPlayerActorRegistry = new ActivityPlayerActorRegistry();
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -295,6 +303,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingInternalActivityTransition = default;
             _pendingRestartCompletionActivityId = string.Empty;
             _pendingRestartCompletionEntrySequence = 0;
+            _lastPlayerSelectionSnapshot = BuildMvpPlayerSelectionSnapshotFromPlayerPreparation(handoff, activationIdentity, source, reason);
+            _activityPlayerActorRegistry.ClearAllRouteRetained();
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -912,6 +922,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingInternalActivityTransition = default;
             _pendingRestartCompletionActivityId = string.Empty;
             _pendingRestartCompletionEntrySequence = 0;
+            _lastPlayerSelectionSnapshot = new PlayerSelectionSnapshot(
+                activationIdentity,
+                Array.Empty<PlayerSelectionEntry>(),
+                PlayerSelectionSnapshotSource.ExplicitPayload,
+                0,
+                command.Source,
+                command.Reason);
+            _activityPlayerActorRegistry.ClearAllRouteRetained();
             _state.SetCurrentDefinition(firstDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -976,6 +994,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(completingIdentity, SessionActivityStage.ActivityCompleting);
             EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing.");
             EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing.");
+            EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
             SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationWindowIdentity, SessionActivityStage.DeactivationWindowStarted);
@@ -1043,6 +1062,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(teardownIdentity, SessionActivityStage.ActivityCompleting);
             EmitFact(facts, SessionActivityFactKind.ActivityRestartTeardownStarted, teardownIdentity, command.Source, command.Reason, $"Restart teardown started for '{current.ActivityId}'.");
             EmitSnapshot(snapshots, "activity_restart_teardown_started", command.Source, command.Reason, $"Restart teardown started for '{current.ActivityId}'.");
+            EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
             SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationWindowIdentity, SessionActivityStage.DeactivationWindowStarted);
@@ -1082,6 +1102,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _state.SetCurrentIdentity(completingIdentity, SessionActivityStage.ActivityCompleting);
                 EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing for route-exit.");
                 EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing for route-exit.");
+                EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
                 SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
                 _state.SetCurrentIdentity(deactivationWindowIdentity, SessionActivityStage.DeactivationWindowStarted);
@@ -1166,7 +1187,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            if (!current.HasNextActivity)
+            if (!TryResolveNextActivityForContinuation(current, out SessionActivityDefinition next, out bool wrapped))
             {
                 _state.SetCurrentIdentity(BuildIdentity(current, SessionActivityStage.Completed, currentEntrySequence), SessionActivityStage.Completed);
                 _state.MarkCompleted();
@@ -1176,7 +1197,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            SessionActivityDefinition next = ResolveActivityByIdOrFail(current.NextActivityId);
             SessionActivityTransitionResolution transitionResolution = ResolveNextActivityTransitionResolutionOrFail(current, next);
             int nextEntrySequence = ResolveNextEntrySequence();
             SessionActivityIdentity nextActivationIdentity = BuildIdentity(next, SessionActivityStage.ActivityActivationStarted, nextEntrySequence);
@@ -1247,6 +1267,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 snapshots,
                 0.6f,
                 "ActivityHandoffPrepared");
+            if (wrapped)
+            {
+                _state.IncrementCatalogLoopCount();
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityCatalogLooped,
+                    nextActivationIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"Activity catalog looped from '{current.ActivityId}' to '{next.ActivityId}'. catalogLoopCount='{_state.CatalogLoopCount}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "catalog_looped",
+                    command.Source,
+                    command.Reason,
+                    $"Activity catalog looped from '{current.ActivityId}' to '{next.ActivityId}'. catalogLoopCount='{_state.CatalogLoopCount}'.");
+            }
             await ApplyContinuePolicyAfterHandoffPreparedAsync(current, command, facts, snapshots);
         }
 
@@ -1462,7 +1499,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
-            if (!current.HasNextActivity || !_state.CurrentHandoff.IsValid)
+            if (!_state.CurrentHandoff.IsValid)
             {
                 return;
             }
@@ -1567,6 +1604,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(completingIdentity, SessionActivityStage.ActivityCompleting);
             EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing.");
             EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing.");
+            EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
             SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationWindowIdentity, SessionActivityStage.DeactivationWindowStarted);
@@ -1588,12 +1626,121 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ExecuteDeactivationWindowAdditiveSceneLoad(current, command, facts, snapshots, currentEntrySequence);
         }
 
+        private void EmitPlayerActorParticipationExitIfNeeded(
+            SessionActivityDefinition current,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int currentEntrySequence)
+        {
+            if (!current.RequiresPlayerActor)
+            {
+                return;
+            }
+
+            SessionActivityIdentity stageStartedIdentity = BuildIdentity(current, SessionActivityStage.PlayerActorParticipationExitStageStarted, currentEntrySequence);
+            _state.SetCurrentIdentity(stageStartedIdentity, SessionActivityStage.PlayerActorParticipationExitStageStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerActorParticipationExitStageStarted,
+                stageStartedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{current.ActivityId}' player actor participation exit stage started.");
+            EmitSnapshot(
+                snapshots,
+                "player_actor_participation_exit_stage_started",
+                command.Source,
+                command.Reason,
+                $"'{current.ActivityId}' player actor participation exit stage started.");
+
+            IReadOnlyList<PlayerActorIdentityRecord> actors = _activityPlayerActorRegistry.GetActiveActorIdentitiesOrFail(stageStartedIdentity);
+            if (actors.Count > 0)
+            {
+                PlayerActorParticipationExitCommand exitCommand = new(stageStartedIdentity, actors, command.Source, command.Reason);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorParticipationExitCommandIssued,
+                    stageStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' player actor participation exit command issued. actors='{actors.Count}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_participation_exit_command_issued",
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' player actor participation exit command issued. actors='{actors.Count}'.");
+
+                IReadOnlyList<PlayerActorParticipationExitRecord> exitRecords = _playerActorParticipationAdapter.Execute(
+                    exitCommand,
+                    stageStartedIdentity,
+                    _activityPlayerActorRegistry);
+
+                for (int index = 0; index < exitRecords.Count; index++)
+                {
+                    PlayerActorParticipationExitRecord record = exitRecords[index];
+                    if (!record.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"PlayerActorParticipationExitRecord at index '{index}' is invalid for activity '{current.ActivityId}'.");
+                    }
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorParticipationExited,
+                    stageStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' player actor participation exited. actors='{exitRecords.Count}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_participation_exited",
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' player actor participation exited. actors='{exitRecords.Count}'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorRetainedForRoute,
+                    stageStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' player actors retained for route. actors='{exitRecords.Count}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_retained_for_route",
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' player actors retained for route. actors='{exitRecords.Count}'.");
+            }
+
+            SessionActivityIdentity stageCompletedIdentity = BuildIdentity(current, SessionActivityStage.PlayerActorParticipationExitStageCompleted, currentEntrySequence);
+            _state.SetCurrentIdentity(stageCompletedIdentity, SessionActivityStage.PlayerActorParticipationExitStageCompleted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerActorParticipationExitStageCompleted,
+                stageCompletedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{current.ActivityId}' player actor participation exit stage completed.");
+            EmitSnapshot(
+                snapshots,
+                "player_actor_participation_exit_stage_completed",
+                command.Source,
+                command.Reason,
+                $"'{current.ActivityId}' player actor participation exit stage completed.");
+        }
+
         private void EnterActivity(SessionActivityDefinition definition, SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots, int entrySequence)
         {
             if (!definition.IsValid)
             {
                 throw new InvalidOperationException("SessionActivityDefinition is invalid.");
             }
+
+            SessionActivityIdentity scopedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            _lastPlayerSelectionSnapshot = RebindPlayerSelectionSnapshotIdentity(_lastPlayerSelectionSnapshot, scopedIdentity, command.Source, command.Reason);
 
             EmitNominalActivitySetup(definition, command, facts, snapshots, entrySequence);
 
@@ -1636,10 +1783,182 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitSnapshot(snapshots, "activity_setup_started", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             ObserveActivitySceneContractOrSkip(definition, command, facts, snapshots, entrySequence);
 
-            SessionActivityIdentity setupSkippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupSkippedNoContent, entrySequence);
-            _state.SetCurrentIdentity(setupSkippedIdentity, SessionActivityStage.ActivitySetupSkippedNoContent);
-            EmitFact(facts, SessionActivityFactKind.ActivitySetupSkippedNoContent, setupSkippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup skipped as no-content.");
-            EmitSnapshot(snapshots, "activity_setup_skipped_no_content", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup skipped as no-content.");
+            if (definition.RequiresPlayerActor)
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorSetupStarted,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor setup started.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_setup_started",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor setup started.");
+
+                if (!_lastPlayerSelectionSnapshot.IsValid || !_lastPlayerSelectionSnapshot.Identity.Equals(setupStartedIdentity))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionActivityPipeline][PlayerActorSetup] Missing valid PlayerSelectionSnapshot for activity setup activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                }
+
+                if (_lastPlayerSelectionSnapshot.SelectionSource == PlayerSelectionSnapshotSource.MvpDefaultFromPlayerPreparation &&
+                    _lastPlayerSelectionSnapshot.Entries.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionActivityPipeline][PlayerActorSetup] MVP player selection bridge produced empty snapshot for player-required activity activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorSelectionSnapshotValidated,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player selection snapshot validated selectedPlayers='{_lastPlayerSelectionSnapshot.Entries.Count}' ignoredOptionalPlayers='{_lastPlayerSelectionSnapshot.IgnoredOptionalPlayersCount}' playerSelectionSource='{FormatPlayerSelectionSource(_lastPlayerSelectionSnapshot.SelectionSource)}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_selection_snapshot_validated",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player selection snapshot validated selectedPlayers='{_lastPlayerSelectionSnapshot.Entries.Count}' ignoredOptionalPlayers='{_lastPlayerSelectionSnapshot.IgnoredOptionalPlayersCount}' playerSelectionSource='{FormatPlayerSelectionSource(_lastPlayerSelectionSnapshot.SelectionSource)}'.");
+
+                PlayerActorSetupResult setupResult = PlayerActorSetupStage.Execute(
+                    setupStartedIdentity,
+                    _lastPlayerSelectionSnapshot,
+                    definition.PlayerSetDefinition,
+                    _playerActorMaterializationAdapter,
+                    _playerActorParticipationAdapter,
+                    _activityPlayerActorRegistry,
+                    command.Source,
+                    command.Reason);
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorEntryPlanResolved,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor entry plan resolved entries='{setupResult.EntryPlans.Count}'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorResetPlanResolved,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor reset plan resolved entries='{setupResult.ResetPlans.Count}'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReleasePlanResolved,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor release plan resolved entries='{setupResult.ReleasePlans.Count}'.");
+                if (setupResult.HasRetainedReentry)
+                {
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorRetainedForRouteFound,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' retained player actors found entries='{setupResult.RetainedActors.Count}'.");
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorParticipationEnterCommandIssued,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actor participation enter command issued entries='{setupResult.RetainedActors.Count}'.");
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorParticipationEntered,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actor participation entered entries='{setupResult.RetainedActors.Count}'.");
+                }
+
+                if (setupResult.HasMaterialization)
+                {
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorMaterializationCommandIssued,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actor materialization command issued entries='{setupResult.Records.Count}'.");
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorMaterialized,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actor materialization executed entries='{setupResult.Records.Count}'.");
+                }
+
+                if (setupResult.IsRetainedForActivityReady)
+                {
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorReadyRetainedForActivity,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actors ready stage='RetainedForActivity' entries='{setupResult.RetainedActors.Count}'.");
+                }
+                else if (setupResult.IsMaterializedOnlyReady)
+                {
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerActorReadyMaterializedOnly,
+                        setupStartedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actors ready stage='MaterializedOnly' entries='{setupResult.Records.Count}'.");
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionActivityPipeline][PlayerActorSetup] PlayerActorReadyFact missing valid readiness activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorSetupStageCompleted,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor setup stage completed readyStage='{setupResult.ReadyStage}'.");
+                if (setupResult.IsRetainedForActivityReady)
+                {
+                    EmitSnapshot(
+                        snapshots,
+                        "player_actor_ready_retained_for_activity",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actors ready stage='RetainedForActivity' entries='{setupResult.RetainedActors.Count}'.");
+                }
+                else
+                {
+                    EmitSnapshot(
+                        snapshots,
+                        "player_actor_ready_materialized_only",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player actors ready stage='MaterializedOnly' entries='{setupResult.Records.Count}'.");
+                }
+            }
+            else
+            {
+                SessionActivityIdentity setupSkippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupSkippedNoContent, entrySequence);
+                _state.SetCurrentIdentity(setupSkippedIdentity, SessionActivityStage.ActivitySetupSkippedNoContent);
+                EmitFact(facts, SessionActivityFactKind.ActivitySetupSkippedNoContent, setupSkippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup skipped as no-content.");
+                EmitSnapshot(snapshots, "activity_setup_skipped_no_content", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup skipped as no-content.");
+            }
 
             SessionActivityIdentity setupCompletedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
             _state.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
@@ -2759,6 +3078,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         return true;
                     }
 
+                    EnsureCatalogAdvancePolicyOrFail();
                     if (_catalog.AdvanceAtEndMode == ActivityCatalogAdvanceAtEndMode.StopAtEnd)
                     {
                         rejectionReason = "no_next_activity";
@@ -3033,6 +3353,45 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             await _transitionAdapter.CloseCurtainAsync(identity, _pendingTransitionResolution, source, reason);
             _pendingTransitionCurtainClosed = true;
+        }
+
+        private bool TryResolveNextActivityForContinuation(
+            SessionActivityDefinition current,
+            out SessionActivityDefinition next,
+            out bool wrapped)
+        {
+            next = default;
+            wrapped = false;
+
+            if (current.HasNextActivity)
+            {
+                next = ResolveActivityByIdOrFail(current.NextActivityId);
+                return true;
+            }
+
+            EnsureCatalogAdvancePolicyOrFail();
+            if (_catalog.AdvanceAtEndMode == ActivityCatalogAdvanceAtEndMode.StopAtEnd)
+            {
+                return false;
+            }
+
+            if (_catalog.TryGetNext(current, out next, out wrapped) && next.IsValid)
+            {
+                return true;
+            }
+
+            throw new InvalidOperationException(
+                $"Activity '{current.ActivityId}' expected looping continuation, but catalog next activity resolution failed.");
+        }
+
+        private void EnsureCatalogAdvancePolicyOrFail()
+        {
+            if (_catalog.AdvanceAtEndMode != ActivityCatalogAdvanceAtEndMode.StopAtEnd &&
+                _catalog.AdvanceAtEndMode != ActivityCatalogAdvanceAtEndMode.LoopToFirst)
+            {
+                throw new InvalidOperationException(
+                    $"SessionActivityCatalog advanceAtEndMode '{_catalog.AdvanceAtEndMode}' is unsupported.");
+            }
         }
 
         private async Task ReportPendingTransitionLoadingProgressIfVisibleAsync(
@@ -3579,6 +3938,103 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.AppendSnapshot(snapshot);
             _state.AppendTrace($"[OBS][SessionActivityPipeline] snapshot='{snapshotKind}' identity='{snapshot.Identity}' entrySequence='{snapshot.Identity.EntrySequence}' executionState='{_state.CurrentExecutionState}' activity='{snapshot.Definition.ActivityId}' source='{snapshot.Source}' reason='{snapshot.Reason}' message='{snapshot.Message}'");
             return snapshot;
+        }
+
+        // Ponte MVP/default bridge: converte temporariamente PlayerPreparation payload em PlayerSelectionSnapshot.
+        // Contrato alvo futuro: snapshot explícito vindo de Menu/CharacterSelection/route request.
+        private static PlayerSelectionSnapshot BuildMvpPlayerSelectionSnapshotFromPlayerPreparation(
+            SessionActivityEntryHandoff handoff,
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            if (!handoff.IsValid)
+            {
+                throw new InvalidOperationException("Cannot build PlayerSelectionSnapshot from invalid handoff.");
+            }
+
+            List<PlayerSelectionEntry> entries = new();
+            HashSet<string> dedupe = new(StringComparer.Ordinal);
+            string rawIds = Normalize(handoff.PlayerPreparation.PlayerIds);
+            int requiredPlayersToSelect = handoff.PlayerPreparation.RequiredPlayers;
+            int selectedRequiredPlayers = 0;
+
+            if (!string.IsNullOrWhiteSpace(rawIds))
+            {
+                string[] split = rawIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                for (int index = 0; index < split.Length; index++)
+                {
+                    string playerId = Normalize(split[index]);
+                    if (string.IsNullOrWhiteSpace(playerId))
+                    {
+                        continue;
+                    }
+
+                    if (!dedupe.Add(playerId))
+                    {
+                        throw new InvalidOperationException($"Duplicate playerId detected in handoff player selection payload. playerId='{playerId}'.");
+                    }
+
+                    if (selectedRequiredPlayers < requiredPlayersToSelect)
+                    {
+                        entries.Add(new PlayerSelectionEntry(playerId, required: true));
+                        selectedRequiredPlayers += 1;
+                    }
+                }
+            }
+
+            if (requiredPlayersToSelect > 0 && selectedRequiredPlayers == 0)
+            {
+                throw new InvalidOperationException("MVP player selection bridge could not select any required player from PlayerPreparation payload.");
+            }
+
+            if (selectedRequiredPlayers < requiredPlayersToSelect)
+            {
+                throw new InvalidOperationException(
+                    $"MVP player selection bridge selected fewer required players than expected. selected='{selectedRequiredPlayers}' expected='{requiredPlayersToSelect}'.");
+            }
+
+            int ignoredOptionalPlayersCount = handoff.PlayerPreparation.OptionalPlayers;
+            return new PlayerSelectionSnapshot(
+                identity,
+                entries,
+                PlayerSelectionSnapshotSource.MvpDefaultFromPlayerPreparation,
+                ignoredOptionalPlayersCount,
+                source,
+                reason);
+        }
+
+        private static PlayerSelectionSnapshot RebindPlayerSelectionSnapshotIdentity(
+            PlayerSelectionSnapshot snapshot,
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("Cannot rebind PlayerSelectionSnapshot with invalid activity identity.");
+            }
+
+            IReadOnlyList<PlayerSelectionEntry> entries = snapshot.IsValid
+                ? snapshot.Entries
+                : Array.Empty<PlayerSelectionEntry>();
+
+            PlayerSelectionSnapshotSource selectionSource = snapshot.IsValid
+                ? snapshot.SelectionSource
+                : PlayerSelectionSnapshotSource.ExplicitPayload;
+            int ignoredOptionalPlayersCount = snapshot.IsValid ? snapshot.IgnoredOptionalPlayersCount : 0;
+
+            return new PlayerSelectionSnapshot(identity, entries, selectionSource, ignoredOptionalPlayersCount, source, reason);
+        }
+
+        private static string FormatPlayerSelectionSource(PlayerSelectionSnapshotSource source)
+        {
+            return source switch
+            {
+                PlayerSelectionSnapshotSource.ExplicitPayload => "explicit_payload",
+                PlayerSelectionSnapshotSource.MvpDefaultFromPlayerPreparation => "mvp_from_player_preparation",
+                _ => "unknown",
+            };
         }
 
         private void EnsureStartedOrFail(string operation)

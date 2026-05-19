@@ -431,20 +431,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationStarted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.",
                         DebugUtility.Colors.Info);
 
-                    IReadOnlyList<PlayerMaterializationRecord> materializationRecords = ExecutePlayerMaterializationOrFail(
-                        route,
-                        command,
-                        playerPreparationPlan,
-                        routeOperationId,
-                        sourceText,
-                        reasonText);
-
-                    playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan, materializationRecords);
+                    playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan);
                     if (!playerPreparationResult.IsValid)
                     {
                         throw new InvalidOperationException("PlayerPreparationStage returned an invalid result.");
                     }
                     hasPlayerPreparationResult = true;
+
+                    DebugUtility.Log(typeof(SessionOperationalPipeline),
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationIntentPrepared' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' playerIds='{FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries)}'.",
+                        DebugUtility.Colors.Info);
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
                         $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationCompleted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' outcome='{(playerPreparationResult.IsObservedNoOp ? "observed_noop" : (playerPreparationResult.IsPlannedOnly ? "planned_only" : "materialized"))}'.",
@@ -1380,18 +1376,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             throw new InvalidOperationException(message);
         }
 
-        private static IPlayerMaterializationAdapter ResolvePlayerMaterializationAdapterOrFail()
-        {
-            if (DependencyManager.Provider.TryGetGlobal<IPlayerMaterializationAdapter>(out var materializationAdapter) && materializationAdapter != null)
-            {
-                return materializationAdapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline] IPlayerMaterializationAdapter obrigatorio ausente para materializacao minima de player.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
-        }
-
         private static ISessionOperationalRouteCameraAdapter ResolveSessionOperationalRouteCameraAdapterOrFail()
         {
             if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalRouteCameraAdapter>(out var routeCameraAdapter) && routeCameraAdapter != null)
@@ -2275,45 +2259,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             return playerIds.Count == 0 ? "<none>" : string.Join(", ", playerIds);
-        }
-
-        private static IReadOnlyList<PlayerMaterializationRecord> ExecutePlayerMaterializationOrFail(
-            OperationalRouteAsset route,
-            SessionOperationalRouteCommand routeCommand,
-            PlayerPreparationPlan plan,
-            string routeOperationId,
-            string source,
-            string reason)
-        {
-            if (route?.PlayerSetDefinition == null)
-            {
-                return Array.Empty<PlayerMaterializationRecord>();
-            }
-
-            IReadOnlyList<PlayerSetDefinitionAsset.Entry> sourceEntries = route.PlayerSetDefinition.Entries;
-            if (sourceEntries == null || sourceEntries.Count == 0)
-            {
-                return Array.Empty<PlayerMaterializationRecord>();
-            }
-
-            List<PlayerMaterializationRequest> requests = new(sourceEntries.Count);
-            for (int i = 0; i < sourceEntries.Count; i++)
-            {
-                PlayerSetDefinitionAsset.Entry entry = sourceEntries[i];
-                requests.Add(new PlayerMaterializationRequest(
-                    entry.PlayerId,
-                    entry.Required,
-                    entry.ActorDefinition != null ? entry.ActorDefinition.PrefabReference : null));
-            }
-
-            IPlayerMaterializationAdapter adapter = ResolvePlayerMaterializationAdapterOrFail();
-            PlayerMaterializationCommand command = new(
-                plan.Identity,
-                routeOperationId,
-                source,
-                reason,
-                requests);
-            return adapter.MaterializePrototypePlayers(command, routeCommand);
         }
 
         private static SessionOperationalRouteAudioCommand BuildRouteAudioCommandOrFail(

@@ -757,8 +757,8 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
 - CutWithCurtain no trilho ativo da SessionActivity usa fade animado (FadeInAsync/FadeOutAsync), nunca FadeImmediate.
 - Source=None permanece sem fade e sem loading de ActivityTransition.
 - Loading de ActivityTransition e decidido pelo profile resolvido da SessionActivity e executado por adapter dedicado.
-- Observabilidade canônica inclui: ActivityTransitionLoadingStarted, ActivityTransitionLoadingProgress, ActivityTransitionLoadingCompleted, ActivityTransitionLoadingHidden ou ActivityTransitionLoadingSkippedNoContent.
-- E proibido bloquear a main thread em transicoes assíncronas (GetAwaiter().GetResult(), .Result, Task.Wait()).
+- Observabilidade canï¿½nica inclui: ActivityTransitionLoadingStarted, ActivityTransitionLoadingProgress, ActivityTransitionLoadingCompleted, ActivityTransitionLoadingHidden ou ActivityTransitionLoadingSkippedNoContent.
+- E proibido bloquear a main thread em transicoes assï¿½ncronas (GetAwaiter().GetResult(), .Result, Task.Wait()).
 
 ### 2026-05-17 - ActivityTransitionLoading ownership and milestones
 
@@ -778,10 +778,10 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
 
 ### 2026-05-17 - Activation/Deactivation Window AdditiveScene via async adapter
 
-- ActivationWindow e DeactivationWindow em modo AdditiveScene usam adapter assíncrono dedicado (ISessionActivityWindowSceneAdapter).
+- ActivationWindow e DeactivationWindow em modo AdditiveScene usam adapter assï¿½ncrono dedicado (ISessionActivityWindowSceneAdapter).
 - O SessionActivityPipeline decide lifecycle/facts/stages; o adapter executa apenas load/unload de cena.
-- O carregamento usa LoadSceneAsync(..., Additive) com espera assíncrona até completion e validação de isLoaded após o término.
-- O descarregamento usa UnloadSceneAsync(...) com espera assíncrona e validação de cena descarregada.
+- O carregamento usa LoadSceneAsync(..., Additive) com espera assï¿½ncrona atï¿½ completion e validaï¿½ï¿½o de isLoaded apï¿½s o tï¿½rmino.
+- O descarregamento usa UnloadSceneAsync(...) com espera assï¿½ncrona e validaï¿½ï¿½o de cena descarregada.
 - Nao existe fallback silencioso para None quando o contrato AdditiveScene falha.
 
 ### 2026-05-17 - Contencao de async no trilho QA/local
@@ -792,7 +792,7 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
 
 ### 2026-05-17 - Pending operation model para trilho local
 
-- SessionActivityPipeline expoe comandos canônicos sincronos para lifecycle local: CompleteCurrentActivity, CompleteActivationWindow, CompleteDeactivationWindow e ContinueToNextActivity.
+- SessionActivityPipeline expoe comandos canï¿½nicos sincronos para lifecycle local: CompleteCurrentActivity, CompleteActivationWindow, CompleteDeactivationWindow e ContinueToNextActivity.
 - Operacoes async de side-effect sao rastreadas como pending operation (operationId + pipelineId + sessionStateId + activity identity + windowKind + operationKind + sceneKey + sceneName + source + reason).
 - QA/Host nao aguardam await para dirigir lifecycle; eles apenas disparam comando e refletem stage/pending state.
 - Events/completions stale ou foreign devem permanecer sem alterar lifecycle ativo.
@@ -848,7 +848,655 @@ O MVP Base 1.1 deste ADR Ã© deliberadamente menor que a arquitetura-alvo.
   - reinicia mesma activity com nova entrySequence;
   - respeita DeactivationWindow da execucao antiga e ActivationWindow da nova execucao;
   - nao usa GoTo*, navigation, DebugStartActivity ou ActivityTransition.
-- Facts canônicos minimos de restart: ActivityRestartRequested, ActivityRestartAccepted, ActivityRestartTeardownStarted, ActivityRestartSetupStarted, ActivityRestartCompleted, ActivityRestartRejected.
+- Facts canï¿½nicos minimos de restart: ActivityRestartRequested, ActivityRestartAccepted, ActivityRestartTeardownStarted, ActivityRestartSetupStarted, ActivityRestartCompleted, ActivityRestartRejected.
 - ActivityRestartCompleted so apos retorno da nova execucao para ActivityRunning.
 - Em callback async de pending operation, a operacao validada deve ser consumida sem apagar pending operation nova criada no mesmo callback.
-- Host/QA pode observar estado assincrono para tooling, sem ownership de lifecycle; dump do Host deve expor State.Facts canônicos acumulados.
+- Host/QA pode observar estado assincrono para tooling, sem ownership de lifecycle; dump do Host deve expor State.Facts canï¿½nicos acumulados.
+
+
+### 2026-05-18 - PlayerActor v0 no ActivitySetup e PlayerSelectionSnapshot
+
+Decisao congelada para o nascimento do player real na Base 1.1:
+
+```text
+PlayerSelectionSnapshot
+-> ActivitySetup
+-> PlayerActorSetupStage
+-> PlayerActorEntryPlan
+-> PlayerActorResetPlan
+-> PlayerActor v0
+```
+
+`PlayerActor v0` nasce no `ActivitySetup` da Activity de gameplay, nao no `SessionOperationalPipeline` e nao no `PlayerPreparationStage`.
+
+O `ActivitySetup` permanece o container canÃ´nico de preparacao da Activity antes do reveal. Dentro dele, `PlayerActorSetupStage` e o stage especifico e auditavel para materializar players reais da Activity.
+
+#### Origem da intencao
+
+A intencao de player vem de `PlayerSelectionSnapshot` ou contrato equivalente.
+
+Modelo ideal futuro:
+
+```text
+CharacterSelection Activity
+-> ocupa slots
+-> escolhe player/skin/nome
+-> produz PlayerSelectionSnapshot
+```
+
+MVP aceito:
+
+```text
+Menu
+-> botao "1 Player" ou "2 Players"
+-> produz PlayerSelectionSnapshot default
+```
+
+O snapshot e dado de intencao/configuracao. Ele nao contem `GameObject`, `Transform`, `PlayerInput`, camera, Cinemachine, movimento ou runtime instance.
+
+#### PlayerActorEntryPlan minimo
+
+Todo `PlayerActor` materializado deve nascer a partir de `PlayerActorEntryPlan` minimo:
+
+```text
+playerActorId
+playerSlotId
+playerDefinitionId
+activityId
+spawnPointId
+ownerScope
+releasePolicy
+resetPolicy
+```
+
+#### PlayerActorResetPlan minimo
+
+Todo `PlayerActor` materializado deve carregar `PlayerActorResetPlan` minimo:
+
+```text
+resetReason
+initialSpawnPointId
+initialTransformPolicy
+runtimeStatePolicy
+selectionRebindPolicy
+```
+
+Mesmo antes de input, movimento, camera ou save, o player deve ter identidade, ownership, spawn, release e reset definidos.
+
+#### Fora deste corte
+
+Este congelamento nao implementa:
+
+- gameplay input final;
+- movimento;
+- camera por player;
+- `PlayerInput` ligado ao `PlayerActor`;
+- split-screen;
+- save/progression de player.
+
+Essas etapas devem evoluir depois, preservando o ownership:
+
+```text
+SessionActivityPipeline decide.
+ActivitySetup/PlayerActorSetupStage produz commands/facts.
+Adapters executam side-effects.
+```
+
+### 2026-05-18 - Transporte do PlayerSelectionSnapshot ate ActivitySetup
+
+`PlayerSelectionSnapshot` deve chegar ao `ActivitySetup` como payload explicito de intencao, transportado pela rota/handoff.
+
+Fluxo canonico:
+
+```text
+Menu / CharacterSelection
+-> PlayerSelectionSnapshot
+-> Route Request
+-> SessionOperationalPipeline
+-> SessionActivityEntryHandoff
+-> SessionActivityPipeline
+-> ActivitySetup
+-> PlayerActorSetupStage
+```
+
+Responsabilidades:
+
+- Menu ou futura `CharacterSelection Activity` produz intencao.
+- `SessionOperationalPipeline` valida capacidade/consistencia e prepara handoff.
+- `SessionOperationalPipeline` nao materializa `PlayerActor`.
+- `SessionActivityPipeline / ActivitySetup` consome o snapshot e resolve `PlayerActorEntryPlan`.
+- `PlayerActorSetupStage` materializa `PlayerActor v0` por command/fact/adapters.
+
+O snapshot nao pode conter referencias Unity runtime como:
+
+```text
+GameObject
+Transform
+PlayerInput
+Camera
+Cinemachine
+Movement component
+Runtime player instance
+```
+
+Caminhos proibidos como contrato canonico:
+
+```text
+CurrentPlayerSelectionService global mutavel
+static PlayerSelection
+DontDestroyOnLoad PlayerSelectionObject
+Player prefab instanciado no menu
+PlayerInputManager criando o player jogavel diretamente
+```
+
+Regra congelada:
+
+```text
+PlayerSelectionSnapshot e dado de intencao.
+PlayerActorEntryPlan nasce no ActivitySetup.
+PlayerActor v0 nasce somente apos o handoff ser aceito pela SessionActivity.
+```
+
+### 2026-05-18 - Validacao do PlayerSelectionSnapshot antes do PlayerActorEntryPlan
+
+`PlayerSelectionSnapshot` deve ser validado antes de gerar `PlayerActorEntryPlan`.
+
+A validacao e dividida em duas fronteiras:
+
+```text
+SessionOperationalPipeline
+-> valida capacidade e consistencia de transporte
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> valida requisitos reais de materializacao
+```
+
+Validacao operacional minima:
+
+```text
+snapshot obrigatorio existe quando a rota/activity exige player
+playerCount >= 1 quando houver player obrigatorio
+playerCount <= maxPlayerSlots
+slots nao duplicados
+payload carrega Pipeline Identity compativel
+```
+
+Validacao de materializacao minima:
+
+```text
+PlayerDefinitionId valido
+SpawnPointId valido
+PlayerActorEntryPlan valido
+PlayerActorResetPlan valido
+ownerScope/releasePolicy/resetPolicy validos
+```
+
+Regra congelada:
+
+```text
+Ausencia obrigatoria e fail-fast.
+Ausencia aceitavel gera skip explicito.
+Nao ha fallback silencioso.
+```
+
+O `ActivitySetup` so pode materializar `PlayerActor v0` depois que o snapshot e o plano tiverem sido validados.
+
+### 2026-05-18 - PlayerActorSetupStage como sub-stage do ActivitySetup
+
+`PlayerActorSetupStage` passa a ser o sub-stage canonico do `ActivitySetup` para materializacao inicial de `PlayerActor v0`.
+
+Fluxo canonico minimo:
+
+```text
+ActivitySetupStarted
+-> PlayerActorSetupStageStarted
+-> PlayerSelectionSnapshotValidated
+-> PlayerActorEntryPlanResolved
+-> PlayerActorResetPlanResolved
+-> PlayerActorMaterializationCommand
+-> PlayerActorMaterialized
+-> PlayerActorReadyFact
+-> PlayerActorSetupStageCompleted
+-> ActivitySetupCompleted
+```
+
+Ownership:
+
+- `SessionActivityPipeline / ActivitySetup` decide inicio, continuidade, falha e conclusao do stage.
+- `PlayerActorSetupStage` resolve plano e emite command/facts.
+- `PlayerActorMaterializationAdapter` executa side-effects Unity comandados.
+- `ActivitySetupCompleted` nao pode ser emitido, em Activity que exige player, antes de `PlayerActorReadyFact` obrigatorio.
+
+Este stage nao configura ainda:
+
+```text
+PlayerInput
+movimento
+camera
+Cinemachine
+save/progression
+status/inventario
+split-screen
+```
+
+Regra congelada:
+
+```text
+PlayerActor materializado na Activity nao e prefab solto.
+Ele nasce por PlayerActorSetupStage com EntryPlan, ResetPlan, command e ready fact.
+```
+
+### 2026-05-18 - PlayerDefinition e ActivityPlayerSpawnPoint no PlayerActorSetupStage
+
+`PlayerActor v0` deve nascer a partir de fontes autorais explicitas, nao de prefab solto ou busca implicita.
+
+Fontes canonicas do stage:
+
+```text
+PlayerSelectionSnapshot
+-> PlayerDefinition
+-> ActivityPlayerSpawnPoint
+-> PlayerActorEntryPlan
+-> PlayerActorResetPlan
+-> PlayerActorMaterializationCommand
+-> PlayerActorReadyFact
+```
+
+`PlayerDefinition` define qual player sera materializado:
+
+```text
+PlayerDefinitionId
+PlayerActorPrefab
+DefaultSkinId
+```
+
+`ActivityPlayerSpawnPoint` define onde o player nasce dentro da Activity:
+
+```text
+SpawnPointId
+PlayerSlotId opcional
+Transform
+```
+
+Regras congeladas:
+
+```text
+PlayerDefinitionId invalido = fail-fast.
+PlayerActorPrefab obrigatorio ausente = fail-fast.
+Activity que exige player sem spawn point valido = fail-fast.
+Nao ha fallback para primeiro prefab, primeiro spawn point, primeiro player encontrado ou nome de GameObject.
+Nao ha prefab hardcoded no adapter.
+```
+
+Ownership:
+
+- `SessionActivityPipeline / ActivitySetup` decide lifecycle e readiness.
+- `PlayerActorSetupStage` resolve `PlayerDefinition`, `ActivityPlayerSpawnPoint`, `EntryPlan` e `ResetPlan`.
+- `PlayerActorMaterializationAdapter` executa side-effects Unity comandados.
+- O adapter nao escolhe prefab, nao escolhe spawn point, nao decide lifecycle e nao materializa por busca implicita.
+
+### 2026-05-18 - PlayerActorIdentity e ActivityPlayerActorRegistry no ActivitySetup
+
+`PlayerActor v0` materializado pelo `PlayerActorSetupStage` deve nascer com identidade explicita e registro scoped a Activity.
+
+Fluxo minimo:
+
+```text
+PlayerActorMaterializationCommand
+-> PlayerActorMaterializationAdapter
+-> PlayerActorIdentity aplicada
+-> ActivityPlayerActorRegistry.Register
+-> PlayerActorReadyFact
+```
+
+Campos conceituais minimos de `PlayerActorIdentity`:
+
+```text
+PlayerActorId
+PlayerSlotId
+PlayerDefinitionId
+ActivityId
+EntrySequence
+```
+
+Papel do registry:
+
+```text
+ActivityPlayerActorRegistry registra e expoe PlayerActors vivos da Activity atual por identidade.
+```
+
+Regras congeladas:
+
+```text
+ActivityPlayerActorRegistry nao decide lifecycle.
+ActivityPlayerActorRegistry nao cria PlayerActor.
+ActivityPlayerActorRegistry nao escolhe prefab, spawn point ou slot.
+ActivityPlayerActorRegistry nao faz fallback para primeiro player encontrado, tag, nome de GameObject ou singleton global.
+```
+
+O registry e infraestrutura scoped da Activity para permitir que stages/adapters futuros encontrem o `PlayerActor` correto por `PlayerActorIdentity`, sem busca implicita.
+
+Usos futuros previstos, fora deste checkpoint:
+
+```text
+PlayerInput binding
+camera target binding
+reset/restart/release
+snapshot/progression
+split-screen
+```
+
+### 2026-05-18 - PlayerActorReleasePlan e release minimo do PlayerActor
+
+`PlayerActor v0` materializado no `ActivitySetup` tambem deve possuir release explicito.
+
+O ciclo minimo do player dentro da Activity passa a ser:
+
+```text
+PlayerActorEntryPlan
+-> PlayerActorMaterializationCommand
+-> PlayerActorReadyFact
+-> PlayerActorResetPlan
+-> PlayerActorReleasePlan
+-> PlayerActorReleaseCommand
+-> PlayerActorReleasedFact
+```
+
+Fluxo de release MVP:
+
+```text
+ActivityExit / Restart / ActivityTransition
+-> PlayerActorReleasePlan
+-> PlayerActorReleaseCommand
+-> PlayerActorReleaseAdapter
+-> PlayerActorReleasedFact
+-> ActivityPlayerActorRegistry.Unregister
+```
+
+Policy MVP:
+
+```text
+ReleasePolicy = ReleasePlayersOnRouteExit (default) ou PersistPlayersAcrossRoutes
+```
+
+Ownership:
+
+- `SessionActivityPipeline / ActivitySetup / ActivityRelease` decide quando liberar.
+- `PlayerActorReleaseAdapter` executa side-effects Unity comandados.
+- `ActivityPlayerActorRegistry` apenas remove o registro apos release valido.
+- Registry nao decide release.
+
+Regras congeladas:
+
+```text
+Todo PlayerActor RouteOwned/RouteScoped deve ser liberado ou explicitamente retido por policy antes de concluir Activity exit/restart/transition relevante.
+No MVP, PlayerActor RouteOwned/RouteScoped usa ReleasePlayersOnRouteExit (default) ou PersistPlayersAcrossRoutes.
+PlayerActorReleasedFact confirma o release.
+Sem PlayerActorReleasedFact obrigatorio, o ciclo que exige release nao pode concluir.
+Nao ha destroy/desativacao implicita fora de command/fact.
+```
+
+Futuros modos como `ReturnToPool`, `RetainForRestart`, `RetainUntilRouteExit` ou `Suspend` permanecem fora deste checkpoint e exigem policy explicita antes de uso.
+
+
+### 2026-05-18 - PlayerActorResetPlan e reset minimo do PlayerActor
+
+`PlayerActor v0` materializado no `ActivitySetup` tambem deve possuir reset explicito.
+
+O ciclo minimo do player dentro da Activity passa a incluir reset comandado:
+
+```text
+PlayerActorEntryPlan
+-> PlayerActorMaterializationCommand
+-> PlayerActorReadyFact
+-> PlayerActorResetPlan
+-> PlayerActorResetCommand
+-> PlayerActorResetCompletedFact
+-> PlayerActorReleasePlan
+-> PlayerActorReleaseCommand
+-> PlayerActorReleasedFact
+```
+
+Fluxo de reset MVP:
+
+```text
+ActivityRestart / ActivityReset
+-> PlayerActorResetPlan
+-> PlayerActorResetCommand
+-> PlayerActorResetAdapter
+-> PlayerActorResetCompletedFact
+```
+
+Policy MVP:
+
+```text
+ResetPolicy = ResetToInitialActivitySpawn
+```
+
+Ownership:
+
+- `SessionActivityPipeline / ActivitySetup` decide quando resetar.
+- `PlayerActorResetAdapter` executa side-effects Unity comandados.
+- `ActivityPlayerActorRegistry` pode localizar o player por identidade valida, mas nao decide reset.
+- Registry nao decide lifecycle.
+
+Regras congeladas:
+
+```text
+Todo PlayerActor RouteOwned/RouteScoped deve possuir PlayerActorResetPlan minimo.
+No MVP, resetar significa retornar ao ActivityPlayerSpawnPoint inicial, restaurar transform inicial e limpar estado runtime transitorio.
+SelectionRebindPolicy pode reaplicar dados vindos do PlayerSelectionSnapshot quando necessario.
+Sem PlayerActorResetCompletedFact obrigatorio, o ciclo que exige reset nao pode concluir.
+ActivityRestartCompleted nao pode ocorrer antes dos PlayerActors obrigatorios estarem prontos novamente.
+Nao ha reset implicito por PlayerInputManager, InputModes, WorldReset, manager global, Start/Awake/OnEnable ou fallback scene-local.
+```
+
+Fora deste checkpoint:
+
+```text
+input rebinding completo
+camera rebinding
+restore de checkpoint/save
+respawn gameplay complexo
+vida/inventario/status complexo
+```
+
+### 2026-05-18 - Componentes minimos do PlayerActor v0
+
+`PlayerActor v0` materializado no `ActivitySetup` deve nascer como objeto real da Activity, mas com componentes minimos apenas para identidade, ownership, registro, reset e release.
+
+Componentes conceituais minimos:
+
+```text
+PlayerActorRoot
+PlayerActorIdentityComponent
+PlayerActorLifecycleMarker
+PlayerActorResetAnchor ou referencia equivalente de spawn inicial
+```
+
+Regras congeladas:
+
+```text
+PlayerActorIdentityComponent carrega PlayerActorIdentity aplicada pelo pipeline/adapter.
+PlayerActorLifecycleMarker marca OwnerScope=RouteOwned, ReleasePolicy=ReleasePlayersOnRouteExit (default) ou PersistPlayersAcrossRoutes e ResetPolicy=ResetToInitialActivitySpawn no MVP.
+PlayerActorResetAnchor ou equivalente preserva spawn/transform inicial suficiente para reset minimo.
+PlayerActor v0 nao contem PlayerInput, movimento, camera final, Cinemachine binding, save/progression, health/inventory/status final ou split-screen data.
+```
+
+O `PlayerActor v0` continua sendo player real da Activity, mas em corte minimo. Input, movimento, camera, save/progression e gameplay state entram depois por stages/adapters proprios, sempre comandados pelo pipeline dono do ciclo.
+
+### 2026-05-18 - PlayerActorReadyFact v0
+
+`PlayerActorReadyFact` passa a ser o fact minimo de readiness do `PlayerActor v0` dentro do `ActivitySetup`.
+
+No MVP, ele confirma somente:
+
+```text
+PlayerActor materializado
+identidade aplicada
+spawn aplicado
+entry/reset/release plans validos
+registro no ActivityPlayerActorRegistry concluido
+Pipeline Identity valida
+```
+
+Ele nao confirma:
+
+```text
+input conectado
+movimento funcionando
+camera vinculada
+save/progression ativo
+gameplay state final
+```
+
+Regra congelada:
+
+```text
+Em Activity que exige player, ActivitySetupCompleted nao pode ocorrer sem PlayerActorReadyFact obrigatorio.
+PlayerActorReadyFact.ReadyStage = MaterializedOnly no MVP.
+Camadas futuras de input, movimento, camera e save/progression devem emitir facts proprios.
+```
+
+
+
+### 2026-05-19 - PlayerActor lifetime padrao RouteOwned/RouteScoped
+
+Direcao congelada para Base 1.1:
+
+```text
+PlayerActor v0 nasce no ActivitySetup, mas seu lifetime padrao pertence a rota.
+Activity exit encerra participacao local do PlayerActor.
+Activity exit nao destroi PlayerActor por padrao.
+Deactivation nao implica Release.
+```
+
+Boundary de ownership:
+
+```text
+ActivityOwned fica reservado para NPCs, enemies, props e objetos exclusivos da Activity.
+SceneOwned/SceneContributed fica reservado para objetos descobertos nas cenas da Activity.
+PlayerActor v0 permanece RouteOwned/RouteScoped por padrao.
+```
+
+Route exit deve usar policy explicita:
+
+```text
+ReleasePlayersOnRouteExit
+PersistPlayersAcrossRoutes
+```
+
+Evolucao seguinte:
+
+```text
+PlayerActorParticipationExit v0
+```
+
+
+### 2026-05-19 - PlayerActorParticipationExit v0 antes da DeactivationWindow
+
+Contrato congelado para o lifecycle local:
+
+```text
+SessionActivityPipeline decide quando o PlayerActor saiu da participacao local da Activity.
+PlayerActorParticipationExit v0 acontece antes da DeactivationWindow.
+DeactivationWindow representa resultado/historia/encerramento/transicao narrativa; nao e gameplay ativo do player.
+```
+
+Fronteira com executores tecnicos:
+
+```text
+Gate nao e owner de participation lifecycle.
+Gate nao decide se player esta ativo/inativo como participante.
+Gate apenas executa bloqueio/liberacao de simulacao/gameplay quando recebe Pipeline Command.
+
+InputMode nao e owner de participation lifecycle.
+InputMode apenas executa troca/bloqueio de input quando recebe Pipeline Command.
+```
+
+Regras de estado para v0:
+
+```text
+PlayerActorParticipationExit nao destroi PlayerActor.
+PlayerActorParticipationExit nao remove PlayerActor do lifetime RouteOwned/RouteScoped.
+No v0, evitar SetActive(false) no PlayerActor como mecanismo de participation exit.
+participationState = ExitedActivity
+retention = RetainedForRoute
+```
+
+Route exit permanece separado:
+
+```text
+Route exit decide policy explicita:
+ReleasePlayersOnRouteExit
+PersistPlayersAcrossRoutes
+```
+
+### 2026-05-19 - Checkpoint CLOSED - PlayerActor v0 RouteOwned lifecycle + Participation Enter/Reenter
+
+Status formal:
+
+```text
+PlayerActor v0 - RouteOwned lifecycle + Participation Enter/Reenter - CLOSED
+```
+
+Fluxo fechado no ciclo local da Activity:
+
+```text
+ActivityRunning
+-> ActivityCompletionRequested
+-> ActivityCompleting
+-> PlayerActorParticipationExitStageStarted
+-> PlayerActorParticipationExitCommandIssued
+-> PlayerActorParticipationExited
+-> PlayerActorRetainedForRoute
+-> PlayerActorParticipationExitStageCompleted
+-> DeactivationWindowStarted
+```
+
+Decisoes congeladas:
+
+```text
+1) PlayerActor nasce em SessionActivityPipeline/ActivitySetup.
+2) PlayerActor nao nasce no SessionOperationalPipeline.
+3) SessionOperational PlayerPreparation permanece planned_only/intencao/payload.
+4) PlayerActor e RouteOwned/RouteScoped por padrao.
+5) Activity exit nao destroi PlayerActor.
+6) Activity exit marca participationState=ExitedActivity + retention=RetainedForRoute.
+7) ParticipationExit ocorre antes da DeactivationWindow.
+8) DeactivationWindow nao e gameplay ativo do player.
+9) Gate/InputMode nao decidem participation lifecycle; apenas executam efeitos tecnicos por Pipeline Command.
+10) ActivitySetup materializa quando nao houver retido compativel e reutiliza quando houver.
+11) Reenter marca participationState=ActiveInActivity mantendo retention=RetainedForRoute.
+12) Reenter nao usa SetActive(true/false) como semantica.
+13) Reenter nao destroi nem recria PlayerActor.
+14) Catalog LoopToFirst e policy da SessionActivityPipeline para continuidade Activity -> Activity.
+15) QA/Host nao decide looping; apenas aciona comandos.
+16) Smoke fechado: activity_01 materializa; activity_01 retem; activity_02 completa; catalogo loopa para activity_01; activity_01 reentra sem nova materializacao.
+```
+
+Fluxo fechado para Activity seguinte com player retido:
+
+```text
+ActivitySetupStarted
+-> PlayerActorSetupStarted
+-> PlayerActorSelectionSnapshotValidated
+-> PlayerActorEntryPlanResolved
+-> PlayerActorRetainedForRouteFound
+-> PlayerActorParticipationEnterCommandIssued
+-> PlayerActorParticipationEntered
+-> PlayerActorReadyRetainedForActivity
+-> PlayerActorSetupStageCompleted
+-> ActivitySetupCompleted
+```
+
+Divida documentada (sem mudanca agora):
+
+```text
+Renomear futuramente PlayerActorReleasePlanResolved (nome inadequado para RouteOwned):
+- PlayerActorRetentionPlanResolved
+- PlayerActorActivityParticipationPlanResolved
+- PlayerActorRouteExitReleasePlanResolved
+```

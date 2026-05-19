@@ -54,7 +54,7 @@ Adapters executam side-effects comandados pelo pipeline:
 - audio;
 - save runtime;
 - input runtime;
-- materialização mínima de players protótipo.
+- preparacao de intencao/payload de player para handoff (sem materializacao Unity de PlayerActor).
 
 ---
 
@@ -107,7 +107,7 @@ O envelope representa a janela temporal da transição operacional, normalmente 
 9. `SessionActivityHost` atua como bridge/composition surface e nao decide entrada de Activity.
 10. `autoStart` e comandos de debug locais nao substituem o handoff canonico de producao.
 11. `SceneFlow`/`Navigation` não decidem lifecycle; permanecem como executores/adapters físicos.
-12. `InputMode`, `SimulationGate`, `GameLoop`, save, audio, loading, fade, scene composition e player materialization entram como adapters/stages comandados pelo pipeline.
+12. `InputMode`, `SimulationGate`, `GameLoop`, save, audio, loading, fade e scene composition entram como adapters/stages comandados pelo pipeline; PlayerPreparation permanece planned_only/intencao/handoff payload.
 13. `PlayerPreparationStage` no `SessionOperational` é restrito a requisitos de players.
 14. Actors não-player — enemies, NPCs, props, objetos e actors de activity — ficam fora do ownership ativo de `SessionOperational` e pertencem ao futuro `ActivitySetup`/`SessionActivity`.
 
@@ -150,9 +150,8 @@ RouteRequested
 -> RouteActivitySave load-on-enter da rota atual, se aplicável
 -> InputCapability
 -> PlayerPreparationStarted
--> PlayerMaterialization, se aplicável
 -> PlayerPreparationCompleted
--> MaterializationCompleted
+-> PlayerPreparationIntentPrepared
 -> LoadingCompleted
 -> LoadingHidden
 -> RouteRevealAudio
@@ -200,3 +199,432 @@ Nota curta (RouteActivitySave boundary):
 - Skip canonico: reason='activity_camera_has_priority'.
 - RouteCamera stage nao resolve SurfaceCameraAnchorHost nem executa side-effect de camera nesse caso.
 - A rota segue para PlayerPreparation/ActivityCameraPreparationStage e conclui SessionActivityEntryHandoff sem transferir ownership de camera para RouteCamera.
+
+
+## Checkpoint - Fronteira PlayerSelection / PlayerActor (2026-05-18)
+
+Decisao congelada para a fronteira entre `SessionOperationalPipeline` e `SessionActivityPipeline`:
+
+```text
+SessionOperationalPipeline
+-> valida PlayerSlot / PlayerInputManager / input operacional
+-> transporta PlayerSelectionSnapshot ou payload equivalente no handoff
+-> nao materializa PlayerActor jogavel final
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> consome PlayerSelectionSnapshot
+-> resolve PlayerActorEntryPlan
+-> materializa PlayerActor v0
+```
+
+Slots podem ser ocupados antes da rota de gameplay.
+
+A origem da intencao pode ser:
+
+```text
+CharacterSelection Activity futura
+```
+
+ou, no MVP:
+
+```text
+Menu -> botao "1 Player" / "2 Players" -> PlayerSelectionSnapshot default
+```
+
+O `SessionOperationalPipeline` nao deve transformar essa intencao em runtime jogavel. Ele apenas valida capacidade, conserva identidade e prepara o handoff.
+
+Regra de ownership:
+
+```text
+PlayerPreparation nao e PlayerActorSetup.
+PlayerActorSetup pertence ao ActivitySetup da SessionActivity.
+```
+
+`PlayerSelectionSnapshot` nao deve carregar referencias Unity runtime como `GameObject`, `Transform`, `PlayerInput`, `Camera` ou componentes de movimento.
+
+### Checkpoint - Transporte de PlayerSelectionSnapshot no Handoff (2026-05-18)
+
+Para rotas com `completionHandoff=SessionActivityEntry` que exigem player, o `SessionOperationalPipeline` pode transportar `PlayerSelectionSnapshot` ou payload equivalente no `SessionActivityEntryHandoff`.
+
+Responsabilidades do `SessionOperationalPipeline` neste ponto:
+
+```text
+validar playerCount contra maxPlayerSlots
+validar slots ocupados quando aplicavel
+validar presenca do snapshot quando obrigatorio
+preservar Pipeline Identity no payload/handoff
+nao materializar PlayerActor jogavel final
+```
+
+O payload deve ser explicito, imutavel para o ciclo e sem referencias Unity runtime.
+
+O consumo materializante pertence ao `SessionActivityPipeline / ActivitySetup`:
+
+```text
+SessionActivityEntryHandoff
+-> ActivitySetup
+-> PlayerActorSetupStage
+-> PlayerActorEntryPlan
+-> PlayerActor v0
+```
+
+Ficam fora do contrato canonico:
+
+```text
+static/global mutable player selection
+DontDestroyOnLoad selection object como fonte de verdade
+instancia de player criada no menu
+PlayerInputManager criando PlayerActor final antes da Activity
+```
+
+### Checkpoint - Validacao de PlayerSelectionSnapshot antes do Handoff materializante (2026-05-18)
+
+Para rotas com `completionHandoff=SessionActivityEntry`, o `SessionOperationalPipeline` valida a consistencia minima do `PlayerSelectionSnapshot` antes de transporta-lo no handoff.
+
+Responsabilidades operacionais:
+
+```text
+validar snapshot obrigatorio quando a rota/activity exige player
+validar playerCount contra maxPlayerSlots
+validar slots duplicados
+validar payload sem referencias Unity runtime
+preservar Pipeline Identity
+nao materializar PlayerActor jogavel final
+```
+
+O `SessionOperationalPipeline` nao valida detalhes de materializacao concreta, como prefab final, spawn point ou reset tecnico da instancia. Esses requisitos pertencem ao `SessionActivityPipeline / ActivitySetup`.
+
+Responsabilidades de `ActivitySetup`:
+
+```text
+validar PlayerDefinitionId
+validar SpawnPointId
+validar PlayerActorEntryPlan
+validar PlayerActorResetPlan
+materializar PlayerActor v0 somente depois da validacao
+```
+
+Regra congelada:
+
+```text
+Ausencia obrigatoria e fail-fast.
+Ausencia aceitavel e skip explicito.
+Fallback silencioso para primeiro prefab/slot/spawn/player encontrado e proibido.
+```
+
+### Checkpoint - Fronteira com PlayerActorSetupStage (2026-05-18)
+
+Para rotas com `completionHandoff=SessionActivityEntry`, o `SessionOperationalPipeline` transporta e valida a intencao de player, mas nao executa `PlayerActorSetupStage`.
+
+Fronteira canonica:
+
+```text
+SessionOperationalPipeline
+-> valida capacidade/consistencia do PlayerSelectionSnapshot
+-> emite SessionActivityEntryHandoff com payload valido
+-> nao materializa PlayerActor jogavel final
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> PlayerActorSetupStage
+-> PlayerActorEntryPlan
+-> PlayerActorResetPlan
+-> PlayerActorMaterializationCommand
+-> PlayerActorReadyFact
+```
+
+O `PlayerActorSetupStage` pertence ao `ActivitySetup`, nao ao `SessionOperationalPipeline`.
+
+Regra congelada:
+
+```text
+SessionOperationalPipeline valida e transporta intencao.
+SessionActivityPipeline materializa PlayerActor v0 dentro do ActivitySetup.
+```
+
+### Checkpoint - Fronteira com PlayerDefinition e ActivityPlayerSpawnPoint (2026-05-18)
+
+`SessionOperationalPipeline` nao resolve prefab final nem spawn point de `PlayerActor`.
+
+Para rotas com `completionHandoff=SessionActivityEntry`, o pipeline operacional pode transportar `PlayerSelectionSnapshot` validado, mas a resolucao concreta de materializacao pertence ao `SessionActivityPipeline / ActivitySetup`.
+
+Fronteira canonica:
+
+```text
+SessionOperationalPipeline
+-> valida capacidade/consistencia do PlayerSelectionSnapshot
+-> emite SessionActivityEntryHandoff com payload valido
+-> nao resolve PlayerDefinition
+-> nao resolve ActivityPlayerSpawnPoint
+-> nao materializa PlayerActor jogavel final
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> PlayerActorSetupStage
+-> resolve PlayerDefinition
+-> resolve ActivityPlayerSpawnPoint
+-> PlayerActorEntryPlan
+-> PlayerActorResetPlan
+-> PlayerActorMaterializationCommand
+-> PlayerActorReadyFact
+```
+
+Regras congeladas:
+
+```text
+Prefab final de player nao e policy do SessionOperationalPipeline.
+Spawn point de player nao e policy do SessionOperationalPipeline.
+Nao ha fallback operacional para primeiro prefab/spawn/player encontrado.
+```
+
+### Checkpoint - Fronteira com PlayerActorIdentity e ActivityPlayerActorRegistry (2026-05-18)
+
+`SessionOperationalPipeline` nao registra `PlayerActor` e nao resolve instancia runtime de player.
+
+Para rotas com `completionHandoff=SessionActivityEntry`, a fronteira permanece:
+
+```text
+SessionOperationalPipeline
+-> valida capacidade/consistencia do PlayerSelectionSnapshot
+-> transporta payload valido no SessionActivityEntryHandoff
+-> nao materializa PlayerActor
+-> nao aplica PlayerActorIdentity
+-> nao registra PlayerActor em registry runtime
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> PlayerActorSetupStage
+-> PlayerActorMaterializationCommand
+-> PlayerActorIdentity
+-> ActivityPlayerActorRegistry
+-> PlayerActorReadyFact
+```
+
+Regra congelada:
+
+```text
+PlayerActorIdentity e ActivityPlayerActorRegistry pertencem ao nascimento do PlayerActor no ActivitySetup.
+SessionOperationalPipeline nao usa registry de PlayerActor como fonte de lifecycle, readiness ou materializacao.
+```
+
+O registry da Activity e recurso de localizacao por identidade para stages/adapters futuros, nao owner de pipeline.
+
+### Checkpoint - Fronteira com PlayerActorRelease (2026-05-18)
+
+`SessionOperationalPipeline` nao libera `PlayerActor` diretamente.
+
+Para rotas com `completionHandoff=SessionActivityEntry` ou saida de rota com Activity ativa, a fronteira permanece:
+
+```text
+SessionOperationalPipeline
+-> decide ordem da rota/unload
+-> solicita/aguarda fechamento canonico da SessionActivity quando necessario
+-> nao executa PlayerActorReleaseCommand diretamente
+```
+
+```text
+SessionActivityPipeline / ActivityRelease
+-> resolve PlayerActorReleasePlan
+-> emite PlayerActorReleaseCommand
+-> aguarda PlayerActorReleasedFact
+-> remove registro do ActivityPlayerActorRegistry
+-> informa fechamento canonico ao SessionOperationalPipeline
+```
+
+Regra congelada:
+
+```text
+PlayerActorRelease pertence ao lifecycle local da SessionActivity.
+SessionOperationalPipeline pode bloquear unload/route-exit ate a SessionActivity concluir release obrigatorio.
+SessionOperationalPipeline nao destroi PlayerActor, nao limpa registry e nao executa fallback de release.
+```
+
+Isso preserva a fronteira: `SessionOperationalPipeline` decide ordem de rota; `SessionActivityPipeline` decide lifecycle/release local do PlayerActor ActivityOwned.
+
+
+### Checkpoint - Fronteira com PlayerActorReset (2026-05-18)
+
+`SessionOperationalPipeline` nao reseta `PlayerActor` diretamente.
+
+Para restart/reset local de Activity ou saida de rota com Activity ativa, a fronteira permanece:
+
+```text
+SessionOperationalPipeline
+-> decide ordem da rota/unload quando aplicavel
+-> solicita/aguarda fechamento canonico da SessionActivity quando necessario
+-> nao executa PlayerActorResetCommand diretamente
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> resolve PlayerActorResetPlan
+-> emite PlayerActorResetCommand
+-> aguarda PlayerActorResetCompletedFact
+-> garante PlayerActorReadyFact obrigatorio antes de concluir restart/setup
+```
+
+Regra congelada:
+
+```text
+PlayerActorReset pertence ao lifecycle local da SessionActivity.
+SessionOperationalPipeline pode bloquear unload/route-exit ate a SessionActivity concluir reset/release obrigatorio quando aplicavel.
+SessionOperationalPipeline nao reposiciona PlayerActor, nao limpa estado runtime de player e nao executa fallback de reset.
+```
+
+Isso preserva a fronteira: `SessionOperationalPipeline` decide ordem de rota; `SessionActivityPipeline` decide lifecycle/reset local do `PlayerActor ActivityOwned`.
+
+### Checkpoint - Fronteira com componentes minimos do PlayerActor v0 (2026-05-18)
+
+`SessionOperationalPipeline` nao define nem injeta componentes internos do `PlayerActor v0`.
+
+Para rotas com `completionHandoff=SessionActivityEntry`, a fronteira permanece:
+
+```text
+SessionOperationalPipeline
+-> valida capacidade/consistencia do PlayerSelectionSnapshot
+-> transporta payload valido no SessionActivityEntryHandoff
+-> nao adiciona PlayerInput
+-> nao adiciona movimento
+-> nao adiciona camera/Cinemachine
+-> nao adiciona save/progression
+-> nao configura componentes internos do PlayerActor
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> PlayerActorSetupStage
+-> PlayerDefinition resolve prefab/config autoral
+-> PlayerActorMaterializationAdapter instancia prefab
+-> aplica PlayerActorIdentityComponent / LifecycleMarker minimo
+-> registra PlayerActor v0
+-> emite PlayerActorReadyFact
+```
+
+Regra congelada:
+
+```text
+Os componentes minimos do PlayerActor v0 pertencem ao nascimento do PlayerActor no ActivitySetup.
+SessionOperationalPipeline nao transforma PlayerActor v0 em player jogavel final por side-effect operacional.
+```
+
+### Checkpoint - Fronteira com PlayerActorReadyFact v0 (2026-05-18)
+
+`SessionOperationalPipeline` nao define readiness jogavel do `PlayerActor`.
+
+Para rotas com `completionHandoff=SessionActivityEntry`, a fronteira permanece:
+
+```text
+SessionOperationalPipeline
+-> valida/transporta PlayerSelectionSnapshot
+-> emite SessionActivityEntryHandoff
+-> nao emite PlayerActorReadyFact
+-> nao decide se input/movimento/camera/save do PlayerActor estao prontos
+```
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> PlayerActorSetupStage
+-> PlayerActorMaterializationCommand
+-> PlayerActorMaterializedFact
+-> PlayerActorReadyFact
+```
+
+Regra congelada:
+
+```text
+PlayerActorReadyFact pertence ao ActivitySetup.
+No MVP, PlayerActorReadyFact significa MaterializedOnly.
+SessionOperationalPipeline pode bloquear/aguardar fechamento canonico da SessionActivity em route-exit, mas nao transforma PlayerActorReadyFact em readiness operacional de rota.
+```
+
+
+### Checkpoint - PlayerActor v0 RouteOwned/RouteScoped (2026-05-19)
+
+Contrato congelado de lifetime:
+
+```text
+PlayerActor v0 nasce no ActivitySetup.
+Lifetime padrao do PlayerActor v0 pertence a rota (RouteOwned/RouteScoped), nao a Activity.
+Activity exit encerra participacao local do PlayerActor na Activity, sem destruir por padrao.
+Deactivation nao implica Release.
+```
+
+Policy explicita de route-exit:
+
+```text
+ReleasePlayersOnRouteExit
+PersistPlayersAcrossRoutes
+```
+
+Fronteira com SessionOperational:
+
+```text
+SessionOperationalPipeline decide ordem de rota e aplica policy de route-exit.
+SessionOperationalPipeline nao destroi PlayerActor diretamente.
+SessionOperationalPipeline transporta intencao/handoff e rejeita foreign/stale.
+```
+
+Proximo corte tecnico:
+
+```text
+PlayerActorParticipationExit v0
+```
+
+### Checkpoint - Fronteira SessionOperational x PlayerActorParticipationExit (2026-05-19)
+
+Contrato congelado:
+
+```text
+SessionOperationalPipeline nao decide participation exit local de PlayerActor na Activity.
+SessionOperationalPipeline permanece owner de ordem/policy de rota, handoff e route-exit.
+SessionActivityPipeline decide PlayerActorParticipationExit v0 no lifecycle local da Activity.
+```
+
+Boundary de policy:
+
+```text
+Participation exit local da Activity != route exit policy.
+Route exit policy explicita permanece:
+ReleasePlayersOnRouteExit
+PersistPlayersAcrossRoutes
+```
+
+Reforco de ownership:
+
+```text
+SessionOperational nao destroi PlayerActor diretamente.
+SessionOperational nao transforma Gate/InputMode em owner de participation lifecycle.
+```
+
+### Checkpoint - Fronteira SessionOperational x Participation Enter/Reenter + Catalog Loop (2026-05-19)
+
+Contrato fechado:
+
+```text
+SessionOperationalPipeline permanece owner de ordem/policy de rota e handoff.
+SessionOperationalPipeline nao materializa PlayerActor.
+SessionOperationalPipeline nao decide ParticipationEnter/Reenter.
+SessionOperationalPipeline transporta apenas intencao/payload de player (planned_only) para SessionActivity.
+```
+
+Boundary com SessionActivity:
+
+```text
+SessionActivityPipeline decide:
+- ParticipationExit antes da DeactivationWindow
+- ParticipationEnter/Reenter durante ActivitySetup
+- continuidade Activity -> Activity por nextActivityId explicito ou policy de catalogo LoopToFirst
+```
+
+Regra de ownership preservada:
+
+```text
+Looping de catalogo e decisao da SessionActivityPipeline.
+QA/Host nao decide looping.
+SessionOperational apenas consome o fechamento canonico da SessionActivity quando necessario para route-exit/unload.
+```

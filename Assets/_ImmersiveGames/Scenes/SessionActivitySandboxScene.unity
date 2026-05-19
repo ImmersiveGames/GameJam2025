@@ -199,6 +199,8 @@ MonoBehaviour:
   autoStart: 0
   sessionStateId: SessionActivitySandboxSession
   activityCatalog: {fileID: 11400000, guid: 1db19b58d43a4f6fa70ce41f06cb53d3, type: 2}
+  qaObserveAsyncStateChanges: 1
+  qaObserveIntervalSeconds: 0.1
 --- !u!114 &300001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -214,6 +216,7 @@ MonoBehaviour:
   host: {fileID: 300000}
   showOnGUI: 1
   showForeignStaleQa: 0
+  qaAutoDumpOnObservedStateChange: 0
 --- !u!1 &286063454
 GameObject:
   m_ObjectHideFlags: 0

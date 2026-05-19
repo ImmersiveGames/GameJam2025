@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
@@ -72,6 +73,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityRunning = 10,
         ActivityCompletionRequested = 11,
         ActivityCompleting = 12,
+        PlayerActorParticipationExitStageStarted = 34,
+        PlayerActorParticipationExitStageCompleted = 35,
         DeactivationWindowStarted = 13,
         DeactivationWindowSceneLoading = 32,
         DeactivationWindowAdditiveSceneLoadStarted = 14,
@@ -192,6 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityTransitionProfileSource nextActivityTransitionProfileSource,
             ActivityTransitionContinuePolicy nextActivityTransitionContinuePolicy,
             ActivityTransitionProfileAsset nextActivityTransitionProfileOverride,
+            PlayerSetDefinitionAsset playerSetDefinition,
             string nextActivityId,
             string source)
         {
@@ -206,6 +210,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             NextActivityTransitionProfileSource = nextActivityTransitionProfileSource;
             NextActivityTransitionContinuePolicy = nextActivityTransitionContinuePolicy;
             NextActivityTransitionProfileOverride = nextActivityTransitionProfileOverride;
+            PlayerSetDefinition = playerSetDefinition;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
         }
@@ -221,6 +226,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityTransitionProfileSource NextActivityTransitionProfileSource { get; }
         public ActivityTransitionContinuePolicy NextActivityTransitionContinuePolicy { get; }
         public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride { get; }
+        public PlayerSetDefinitionAsset PlayerSetDefinition { get; }
         public string NextActivityId { get; }
         public string Source { get; }
 
@@ -234,11 +240,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
         public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
         public bool HasNextActivityTransitionProfileOverride => NextActivityTransitionProfileOverride != null;
+        public bool RequiresPlayerActor => PlayerSetDefinition != null;
         public bool HasValidNextActivityTransitionContinuePolicy => NextActivityTransitionContinuePolicy != ActivityTransitionContinuePolicy.Unknown;
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', requiresPlayerActor='{RequiresPlayerActor}', playerSetDefinition='{(RequiresPlayerActor ? PlayerSetDefinition.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -455,6 +462,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityRestartSetupStarted = 63,
         ActivityRestartCompleted = 64,
         ActivityRestartRejected = 65,
+        PlayerActorSetupStarted = 66,
+        PlayerActorSelectionSnapshotValidated = 67,
+        PlayerActorEntryPlanResolved = 68,
+        PlayerActorResetPlanResolved = 69,
+        PlayerActorReleasePlanResolved = 70,
+        PlayerActorMaterializationCommandIssued = 71,
+        PlayerActorMaterialized = 72,
+        PlayerActorReadyMaterializedOnly = 73,
+        PlayerActorSetupStageCompleted = 74,
+        PlayerActorParticipationExitStageStarted = 75,
+        PlayerActorParticipationExitCommandIssued = 76,
+        PlayerActorParticipationExited = 77,
+        PlayerActorRetainedForRoute = 78,
+        PlayerActorParticipationExitStageCompleted = 79,
+        PlayerActorRetainedForRouteFound = 80,
+        PlayerActorParticipationEnterCommandIssued = 81,
+        PlayerActorParticipationEntered = 82,
+        PlayerActorReadyRetainedForActivity = 83,
     }
 
     public readonly struct SessionActivityFact

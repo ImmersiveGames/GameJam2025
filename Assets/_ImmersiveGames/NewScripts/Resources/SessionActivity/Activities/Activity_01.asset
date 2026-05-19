@@ -22,3 +22,4 @@ MonoBehaviour:
   nextActivityTransitionProfileSource: 1
   nextActivityTransitionContinuePolicy: 1
   nextActivityTransitionProfileOverride: {fileID: 11400000, guid: b41597450c1f98947b4f546e46f7cafd, type: 2}
+  playerSetDefinition: {fileID: 11400000, guid: 599fec6669bb27444952e15513357943, type: 2}

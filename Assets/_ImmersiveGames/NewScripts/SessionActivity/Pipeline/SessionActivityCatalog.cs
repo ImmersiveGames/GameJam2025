@@ -40,6 +40,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _definitions = materialized;
+            if (advanceAtEndMode != ActivityCatalogAdvanceAtEndMode.StopAtEnd &&
+                advanceAtEndMode != ActivityCatalogAdvanceAtEndMode.LoopToFirst)
+            {
+                throw new InvalidOperationException($"SessionActivityCatalog advanceAtEndMode '{advanceAtEndMode}' is unsupported.");
+            }
+
             _advanceAtEndMode = advanceAtEndMode;
         }
 

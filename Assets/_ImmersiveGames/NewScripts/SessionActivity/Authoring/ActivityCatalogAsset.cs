@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     nextActivityTransitionProfileSource: current.NextActivityTransitionProfileSource,
                     nextActivityTransitionContinuePolicy: current.NextActivityTransitionContinuePolicy,
                     nextActivityTransitionProfileOverride: current.NextActivityTransitionProfileOverride,
+                    playerSetDefinition: current.PlayerSetDefinition,
                     nextActivityId: nextActivityId,
                     source: source));
             }

@@ -69,3 +69,48 @@ Exemplos canônicos:
 - Base 1.0 tratou esses blocos como executores técnicos e rails de apoio.
 - Base 1.1 fecha o contrato: executam estado/efeitos, não lifecycle.
 - Base 2.0 futura pode abstrair o conjunto se o comportamento provar ser reutilizável.
+
+## Checkpoint - Fronteira com PlayerActorParticipationExit v0 (2026-05-19)
+
+Boundary congelada:
+
+```text
+Gate e InputMode sao executores tecnicos comandados por pipeline.
+Gate/InputMode nao possuem ownership de lifecycle de participacao de PlayerActor.
+A decisao de participation exit pertence ao SessionActivityPipeline.
+```
+
+Regras explicitas:
+
+```text
+Gate nao decide se PlayerActor esta participante/nao participante.
+Gate apenas aplica bloqueio/liberacao de simulacao/gameplay por Pipeline Command.
+
+InputMode nao decide participation lifecycle.
+InputMode apenas aplica troca/bloqueio de input por Pipeline Command.
+```
+
+Consequencia:
+
+```text
+PlayerActorParticipationExit v0 e state transition de lifecycle/participation.
+Gate/InputMode aplicam efeitos tecnicos decorrentes, sem ownership semantico.
+```
+
+## Checkpoint - Fronteira com Participation Enter/Reenter e Catalog LoopToFirst (2026-05-19)
+
+Boundary fechada:
+
+```text
+Gate/InputMode continuam executores tecnicos.
+Gate/InputMode nao decidem ParticipationEnter/Reenter.
+Gate/InputMode nao decidem looping de catalogo Activity -> Activity.
+```
+
+Ownership explicito:
+
+```text
+SessionActivityPipeline decide participation lifecycle (exit + enter/reenter).
+SessionActivityPipeline decide continuidade por nextActivityId explicito ou LoopToFirst.
+QA/Host apenas aciona comandos de pipeline.
+```

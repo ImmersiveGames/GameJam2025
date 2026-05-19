@@ -21,7 +21,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static AudioAdapter _audioAdapter;
         private static SessionOperationalActivitySaveAdapter _activitySaveAdapter;
         private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
-        private static UnityPlayerMaterializationAdapter _playerMaterializationAdapter;
         private static SessionOperationalRouteCameraAdapter _routeCameraAdapter;
         private static SessionOperationalActivityCameraAdapter _activityCameraAdapter;
 
@@ -55,7 +54,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalLoadingAdapter();
             EnsureProgressionSlotContextResolver();
             EnsureSessionOperationalActivitySaveAdapter();
-            EnsurePlayerMaterializationAdapter();
             EnsureSessionOperationalSceneCompositionAdapter();
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
@@ -251,29 +249,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] resolver='DefaultProgressionSlotContextResolver' registered for RouteActivitySave ProgressionSlotContext.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void EnsurePlayerMaterializationAdapter()
-        {
-            if (_playerMaterializationAdapter != null)
-            {
-                return;
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<UnityPlayerMaterializationAdapter>(out var existingAdapter) && existingAdapter != null)
-            {
-                _playerMaterializationAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<IPlayerMaterializationAdapter>(_playerMaterializationAdapter);
-                return;
-            }
-
-            _playerMaterializationAdapter = new UnityPlayerMaterializationAdapter();
-            DependencyManager.Provider.RegisterGlobal(_playerMaterializationAdapter);
-            DependencyManager.Provider.RegisterGlobal<IPlayerMaterializationAdapter>(_playerMaterializationAdapter);
-
-            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='UnityPlayerMaterializationAdapter' registered for prototype player materialization.",
                 DebugUtility.Colors.Info);
         }
 

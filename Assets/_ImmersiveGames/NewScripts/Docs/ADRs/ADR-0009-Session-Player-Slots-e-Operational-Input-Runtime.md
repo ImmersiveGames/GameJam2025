@@ -244,4 +244,4 @@ Este ADR **nao** define:
 
 - `maxPlayerSlots` continua sendo **capacidade operacional de entrada**.
 - `maxPlayerSlots` **nao equivale** a `PlayerActor`/`PrototypePlayer` materializado.
-- A materializacao minima de `PrototypePlayer` no rail `PlayerPreparation` e definida no ADR-0010 e ocorre por decisao do `SessionOperationalPipeline`.
+- A materializacao de `PlayerActor` no trilho ativo pertence ao `SessionActivityPipeline/ActivitySetup` (ADR-0010 atualizado); `SessionOperational` nao instancia player runtime.
