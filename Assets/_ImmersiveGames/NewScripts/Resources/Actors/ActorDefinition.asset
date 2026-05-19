@@ -16,3 +16,7 @@ MonoBehaviour:
   displayName: Player 01
   actorKind: 1
   prefabReference: {fileID: 100000, guid: b7a6d0f2b8c94f4eb25d01d4e0f9c201, type: 3}
+  placementMode: 1
+  placementKey: player_start_01
+  localPosition: {x: 0, y: 0, z: 0}
+  localRotation: {x: 0, y: 0, z: 0}

@@ -215,15 +215,19 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 Vector3 localEuler = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform
                     ? definitionEntry.LocalRotation
                     : Vector3.zero;
+                string placementId = Normalize(definitionEntry.PlacementId);
 
                 entryPlans.Add(new PlayerActorEntryPlan(actorIdentity, definitionEntry.Prefab, localPosition, localEuler));
                 bool placementDeclared = definitionEntry.PlacementMode != ActorPlacementMode.None;
                 bool hasPlacement = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform;
-                bool placementRequired = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform;
+                bool placementRequired =
+                    definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform ||
+                    definitionEntry.PlacementMode == ActorPlacementMode.SceneMarker;
                 bool placementOptional = placementDeclared && !placementRequired;
                 resetPlans.Add(new PlayerActorResetPlan(
                     actorIdentity,
                     BuildDefaultResetGroups(),
+                    placementId,
                     placementDeclared,
                     placementRequired,
                     placementOptional,
@@ -348,6 +352,11 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             }
 
             return $"{identity.SessionId}|{normalized}";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private static void EnsureRetainedCompatibilityOrFail(

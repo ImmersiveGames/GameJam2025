@@ -28,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             public ActorDefinitionAsset ActorDefinition { get; }
             public GameObject Prefab => ActorDefinition != null ? ActorDefinition.PrefabReference : null;
             public ActorPlacementMode PlacementMode => ActorDefinition != null ? ActorDefinition.PlacementMode : ActorPlacementMode.None;
+            public string PlacementId => ActorDefinition != null ? ActorDefinition.PlacementKey : string.Empty;
             public Vector3 LocalPosition => ActorDefinition != null ? ActorDefinition.LocalPosition : Vector3.zero;
             public Vector3 LocalRotation => ActorDefinition != null ? ActorDefinition.LocalRotation : Vector3.zero;
             public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId) && ActorDefinition != null;

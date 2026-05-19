@@ -32,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.Players.Runtime
                     return;
                 }
 
-                transform.localPosition = context.PlacementLocalPosition;
-                transform.localRotation = Quaternion.Euler(context.PlacementLocalEulerAngles);
+                transform.localPosition = context.PlacementPosition;
+                transform.localRotation = Quaternion.Euler(context.PlacementEulerAngles);
                 return;
             }
 

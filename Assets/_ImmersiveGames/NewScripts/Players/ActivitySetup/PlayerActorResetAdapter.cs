@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 {
@@ -86,18 +87,19 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                         activeIdentity,
                         plan.ActorIdentity,
                         group,
+                        plan.PlacementId,
                         plan.HasPlacement,
                         plan.PlacementRequired,
                         plan.PlacementOptional,
                         plan.PlacementDeclared,
-                        plan.PlacementLocalPosition,
-                        plan.PlacementLocalEulerAngles,
+                        plan.PlacementPosition,
+                        plan.PlacementEulerAngles,
                         command.Source,
                         command.Reason);
 
                     if (group == PlayerActorResetGroup.Placement)
                     {
-                        if (plan.PlacementRequired && !plan.HasPlacement)
+                        if (plan.PlacementRequired && !plan.HasPlacement && string.IsNullOrWhiteSpace(plan.PlacementId))
                         {
                             throw new InvalidOperationException($"invalid_required_placement: playerActorId='{plan.ActorIdentity.PlayerActorId}'.");
                         }
@@ -116,11 +118,48 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                             continue;
                         }
 
-                        if (!plan.PlacementRequired)
+                        if (plan.HasPlacement && !plan.PlacementRequired)
                         {
                             skippedGroups.Add(group);
                             skippedReasons.Add(new PlayerActorResetSkippedGroupReason(group, "placement_not_required"));
                             continue;
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(plan.PlacementId))
+                        {
+                            PlacementResolution resolution = ResolvePlacementFromMarker(instance.scene, plan.PlacementId);
+                            if (resolution.Status == PlacementResolutionStatus.Duplicate)
+                            {
+                                throw new InvalidOperationException(
+                                    $"duplicate_placement_marker: playerActorId='{plan.ActorIdentity.PlayerActorId}' placementId='{plan.PlacementId}'.");
+                            }
+
+                            if (resolution.Status == PlacementResolutionStatus.NotFound)
+                            {
+                                if (plan.PlacementRequired)
+                                {
+                                    throw new InvalidOperationException(
+                                        $"invalid_required_placement: playerActorId='{plan.ActorIdentity.PlayerActorId}' placementId='{plan.PlacementId}' reason='no_placement_marker_found'.");
+                                }
+
+                                skippedGroups.Add(group);
+                                skippedReasons.Add(new PlayerActorResetSkippedGroupReason(group, "no_placement_marker_found"));
+                                continue;
+                            }
+
+                            context = new PlayerActorResetContext(
+                                activeIdentity,
+                                plan.ActorIdentity,
+                                group,
+                                plan.PlacementId,
+                                hasPlacement: true,
+                                plan.PlacementRequired,
+                                plan.PlacementOptional,
+                                plan.PlacementDeclared,
+                                ToLocalPosition(instance.transform.parent, resolution.Position),
+                                ToLocalEulerAngles(instance.transform.parent, resolution.Rotation),
+                                command.Source,
+                                command.Reason);
                         }
                     }
 
@@ -152,6 +191,109 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             }
 
             return records;
+        }
+
+        private static PlacementResolution ResolvePlacementFromMarker(Scene scopeScene, string placementId)
+        {
+            if (!scopeScene.IsValid() || !scopeScene.isLoaded)
+            {
+                throw new InvalidOperationException("invalid_required_placement: activity scene is invalid or not loaded.");
+            }
+
+            string normalizedId = Normalize(placementId);
+            if (string.IsNullOrWhiteSpace(normalizedId))
+            {
+                return PlacementResolution.NotFound();
+            }
+
+            int matchCount = 0;
+            Vector3 matchedPosition = Vector3.zero;
+            Quaternion matchedRotation = Quaternion.identity;
+            GameObject[] roots = scopeScene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                GameObject root = roots[rootIndex];
+                if (root == null)
+                {
+                    continue;
+                }
+
+                PlayerActorPlacementMarker[] markers = root.GetComponentsInChildren<PlayerActorPlacementMarker>(true);
+                for (int markerIndex = 0; markerIndex < markers.Length; markerIndex++)
+                {
+                    PlayerActorPlacementMarker marker = markers[markerIndex];
+                    if (marker == null || !marker.IsValid)
+                    {
+                        continue;
+                    }
+
+                    if (!string.Equals(marker.PlacementId, normalizedId, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    matchCount += 1;
+                    matchedPosition = marker.Position;
+                    matchedRotation = marker.Rotation;
+                    if (matchCount > 1)
+                    {
+                        return PlacementResolution.Duplicate();
+                    }
+                }
+            }
+
+            return matchCount == 1
+                ? PlacementResolution.Found(matchedPosition, matchedRotation)
+                : PlacementResolution.NotFound();
+        }
+
+        private static Vector3 ToLocalPosition(Transform parent, Vector3 worldPosition)
+        {
+            return parent == null ? worldPosition : parent.InverseTransformPoint(worldPosition);
+        }
+
+        private static Vector3 ToLocalEulerAngles(Transform parent, Quaternion worldRotation)
+        {
+            Quaternion localRotation = parent == null
+                ? worldRotation
+                : Quaternion.Inverse(parent.rotation) * worldRotation;
+            return localRotation.eulerAngles;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private enum PlacementResolutionStatus
+        {
+            Unknown = 0,
+            Found = 1,
+            NotFound = 2,
+            Duplicate = 3,
+        }
+
+        private readonly struct PlacementResolution
+        {
+            public PlacementResolution(PlacementResolutionStatus status, Vector3 position, Quaternion rotation)
+            {
+                Status = status;
+                Position = position;
+                Rotation = rotation;
+            }
+
+            public PlacementResolutionStatus Status { get; }
+            public Vector3 Position { get; }
+            public Quaternion Rotation { get; }
+
+            public static PlacementResolution Found(Vector3 position, Quaternion rotation) =>
+                new(PlacementResolutionStatus.Found, position, rotation);
+
+            public static PlacementResolution NotFound() =>
+                new(PlacementResolutionStatus.NotFound, Vector3.zero, Quaternion.identity);
+
+            public static PlacementResolution Duplicate() =>
+                new(PlacementResolutionStatus.Duplicate, Vector3.zero, Quaternion.identity);
         }
 
         private static void EnsureDefaultResetEndpoint(GameObject instance)

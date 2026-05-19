@@ -113,32 +113,37 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         public PlayerActorResetPlan(
             PlayerActorIdentityRecord actorIdentity,
             IReadOnlyList<PlayerActorResetGroup> groups,
+            string placementId,
             bool placementDeclared,
             bool placementRequired,
             bool placementOptional,
             bool hasPlacement,
-            Vector3 placementLocalPosition,
-            Vector3 placementLocalEulerAngles)
+            Vector3 placementPosition,
+            Vector3 placementEulerAngles)
         {
             ActorIdentity = actorIdentity;
             Groups = groups ?? Array.Empty<PlayerActorResetGroup>();
+            PlacementId = Normalize(placementId);
             PlacementDeclared = placementDeclared;
             PlacementRequired = placementRequired;
             PlacementOptional = placementOptional;
             HasPlacement = hasPlacement;
-            PlacementLocalPosition = placementLocalPosition;
-            PlacementLocalEulerAngles = placementLocalEulerAngles;
+            PlacementPosition = placementPosition;
+            PlacementEulerAngles = placementEulerAngles;
         }
 
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public IReadOnlyList<PlayerActorResetGroup> Groups { get; }
+        public string PlacementId { get; }
         public bool PlacementDeclared { get; }
         public bool PlacementRequired { get; }
         public bool PlacementOptional { get; }
         public bool HasPlacement { get; }
-        public Vector3 PlacementLocalPosition { get; }
-        public Vector3 PlacementLocalEulerAngles { get; }
+        public Vector3 PlacementPosition { get; }
+        public Vector3 PlacementEulerAngles { get; }
         public bool IsValid => ActorIdentity.IsValid && Groups != null && Groups.Count > 0;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     public enum PlayerActorResetGroup
@@ -155,24 +160,26 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             SessionActivityIdentity pipelineIdentity,
             PlayerActorIdentityRecord actorIdentity,
             PlayerActorResetGroup group,
+            string placementId,
             bool hasPlacement,
             bool placementRequired,
             bool placementOptional,
             bool placementDeclared,
-            Vector3 placementLocalPosition,
-            Vector3 placementLocalEulerAngles,
+            Vector3 placementPosition,
+            Vector3 placementEulerAngles,
             string source,
             string reason)
         {
             PipelineIdentity = pipelineIdentity;
             ActorIdentity = actorIdentity;
             Group = group;
+            PlacementId = Normalize(placementId);
             HasPlacement = hasPlacement;
             PlacementRequired = placementRequired;
             PlacementOptional = placementOptional;
             PlacementDeclared = placementDeclared;
-            PlacementLocalPosition = placementLocalPosition;
-            PlacementLocalEulerAngles = placementLocalEulerAngles;
+            PlacementPosition = placementPosition;
+            PlacementEulerAngles = placementEulerAngles;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -180,12 +187,13 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         public SessionActivityIdentity PipelineIdentity { get; }
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public PlayerActorResetGroup Group { get; }
+        public string PlacementId { get; }
         public bool HasPlacement { get; }
         public bool PlacementRequired { get; }
         public bool PlacementOptional { get; }
         public bool PlacementDeclared { get; }
-        public Vector3 PlacementLocalPosition { get; }
-        public Vector3 PlacementLocalEulerAngles { get; }
+        public Vector3 PlacementPosition { get; }
+        public Vector3 PlacementEulerAngles { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid => PipelineIdentity.IsValid && ActorIdentity.IsValid && Group != PlayerActorResetGroup.Unknown;
