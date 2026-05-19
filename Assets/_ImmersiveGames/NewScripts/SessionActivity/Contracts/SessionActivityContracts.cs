@@ -466,7 +466,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PlayerActorSelectionSnapshotValidated = 67,
         PlayerActorEntryPlanResolved = 68,
         PlayerActorResetPlanResolved = 69,
-        PlayerActorReleasePlanResolved = 70,
+        PlayerActorActivityParticipationPlanResolved = 70,
         PlayerActorMaterializationCommandIssued = 71,
         PlayerActorMaterialized = 72,
         PlayerActorReadyMaterializedOnly = 73,
@@ -480,6 +480,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PlayerActorParticipationEnterCommandIssued = 81,
         PlayerActorParticipationEntered = 82,
         PlayerActorReadyRetainedForActivity = 83,
+        PlayerActorResetCommandIssued = 84,
+        PlayerActorResetApplied = 85,
     }
 
     public readonly struct SessionActivityFact

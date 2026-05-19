@@ -26,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ISessionActivityPendingOperationRunner _pendingOperationRunner;
         private readonly IPlayerActorMaterializationAdapter _playerActorMaterializationAdapter;
         private readonly IPlayerActorParticipationAdapter _playerActorParticipationAdapter;
+        private readonly IPlayerActorResetAdapter _playerActorResetAdapter;
         private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
@@ -132,6 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingOperationRunner = pendingOperationRunner ?? throw new ArgumentNullException(nameof(pendingOperationRunner));
             _playerActorMaterializationAdapter = new PlayerActorMaterializationAdapter();
             _playerActorParticipationAdapter = new PlayerActorParticipationAdapter();
+            _playerActorResetAdapter = new PlayerActorResetAdapter();
             _activityPlayerActorRegistry = new ActivityPlayerActorRegistry();
             _sessionId = Normalize(sessionStateId);
 
@@ -1832,6 +1834,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     definition.PlayerSetDefinition,
                     _playerActorMaterializationAdapter,
                     _playerActorParticipationAdapter,
+                    _playerActorResetAdapter,
                     _activityPlayerActorRegistry,
                     command.Source,
                     command.Reason);
@@ -1849,14 +1852,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     setupStartedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player actor reset plan resolved entries='{setupResult.ResetPlans.Count}'.");
+                    $"'{definition.ActivityId}' player actor reset plan resolved entries='{setupResult.ResetPlans.Count}' groups='Placement,ActivityParticipation,MovementTransient'.");
                 EmitFact(
                     facts,
-                    SessionActivityFactKind.PlayerActorReleasePlanResolved,
+                    SessionActivityFactKind.PlayerActorActivityParticipationPlanResolved,
                     setupStartedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player actor release plan resolved entries='{setupResult.ReleasePlans.Count}'.");
+                    $"'{definition.ActivityId}' player actor activity participation plan resolved entries='{setupResult.ActivityParticipationPlans.Count}'.");
                 if (setupResult.HasRetainedReentry)
                 {
                     EmitFact(
@@ -1899,6 +1902,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         command.Reason,
                         $"'{definition.ActivityId}' player actor materialization executed entries='{setupResult.Records.Count}'.");
                 }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorResetCommandIssued,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor reset command issued entries='{setupResult.ResetPlans.Count}' groups='Placement,ActivityParticipation,MovementTransient'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorResetApplied,
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor reset applied entries='{setupResult.ResetAppliedRecords.Count}' appliedGroups='{setupResult.TotalResetAppliedGroups}' appliedGroupNames='{setupResult.ResetAppliedGroupsToken}' skippedGroups='{setupResult.TotalResetSkippedGroups}' skippedGroupNames='{setupResult.ResetSkippedGroupsToken}' skippedGroupReasons='{setupResult.ResetSkippedGroupReasonsToken}'.");
 
                 if (setupResult.IsRetainedForActivityReady)
                 {
@@ -2476,7 +2494,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _state.AppendTrace(
-                $"[OBS][SessionActivityPipeline][InputMode] command='ApplyActivityInputMode' mode='{mode}' reason='{reasonFactKind}' snapshot='{snapshotKind}' message='{message}' outcomeKind='{observation.Outcome}' identity='{_state.CurrentIdentity}' source='{command.Source}' reasonText='{command.Reason}'");
+                $"[OBS][SessionActivityPipeline][InputMode] mode='{mode}' reasonFact='{reasonFactKind}' outcomeKind='{observation.Outcome}' stage='{_state.CurrentStage}' entrySequence='{_state.CurrentEntrySequence}' activity='{_state.CurrentDefinition.ActivityId}'");
         }
 
         private ActivityExecutionBlockingResult ApplyActivityGateCommand(
@@ -2564,9 +2582,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SimulationGateFact fact = gateResult.Facts[gateResult.Facts.Count - 1];
             SimulationGateSnapshot snapshot = gateResult.Snapshot;
-            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] commandKind='{gateResult.Command.Kind}' factKind='{fact.Kind}' pipelineId='{snapshot.CommandIdentity.PipelineId}' sessionStateId='{snapshot.CommandIdentity.SessionStateId}' activityId='{snapshot.CommandIdentity.ActivityId}' activityOrdinal='{snapshot.CommandIdentity.ActivityOrdinal}' entrySequence='{snapshot.CommandIdentity.EntrySequence}' stage='{snapshot.CommandIdentity.Stage}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}' source='{snapshot.Source}' reason='{snapshot.Reason}' decisionSource='pipeline.command'.");
-            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] fact='{fact}'");
-            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] snapshot='{snapshot}'");
+            _state.AppendTrace($"[OBS][SimulationGate][Pipeline] commandKind='{gateResult.Command.Kind}' factKind='{fact.Kind}' stage='{snapshot.CommandIdentity.Stage}' entrySequence='{snapshot.CommandIdentity.EntrySequence}' activity='{snapshot.CommandIdentity.ActivityId}' sessionBlocked='{snapshot.SessionBlocked}' activityBlocked='{snapshot.ActivityBlocked}'");
         }
 
         private bool EnsureExpectedStage(
@@ -3910,7 +3926,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             emittedFacts.Add(fact);
             _state.AppendFact(fact);
-            _state.AppendTrace($"[OBS][SessionActivityPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' entrySequence='{fact.Identity.EntrySequence}' executionState='{_state.CurrentExecutionState}' activity='{fact.Identity.ActivityId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
+            _state.AppendTrace($"[OBS][SessionActivityPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' entrySequence='{fact.Identity.EntrySequence}' activity='{fact.Identity.ActivityId}' executionState='{_state.CurrentExecutionState}'");
             return fact;
         }
 
@@ -3936,7 +3952,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             emittedSnapshots.Add(snapshot);
             _state.AppendSnapshot(snapshot);
-            _state.AppendTrace($"[OBS][SessionActivityPipeline] snapshot='{snapshotKind}' identity='{snapshot.Identity}' entrySequence='{snapshot.Identity.EntrySequence}' executionState='{_state.CurrentExecutionState}' activity='{snapshot.Definition.ActivityId}' source='{snapshot.Source}' reason='{snapshot.Reason}' message='{snapshot.Message}'");
+            _state.AppendTrace($"[OBS][SessionActivityPipeline] snapshot='{snapshotKind}' stage='{snapshot.Identity.Stage}' entrySequence='{snapshot.Identity.EntrySequence}' activity='{snapshot.Definition.ActivityId}'");
             return snapshot;
         }
 

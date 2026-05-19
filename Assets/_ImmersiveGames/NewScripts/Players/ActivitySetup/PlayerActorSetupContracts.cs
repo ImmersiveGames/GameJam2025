@@ -110,18 +110,157 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 
     public readonly struct PlayerActorResetPlan
     {
-        public PlayerActorResetPlan(PlayerActorIdentityRecord actorIdentity)
+        public PlayerActorResetPlan(
+            PlayerActorIdentityRecord actorIdentity,
+            IReadOnlyList<PlayerActorResetGroup> groups,
+            bool placementDeclared,
+            bool placementRequired,
+            bool placementOptional,
+            bool hasPlacement,
+            Vector3 placementLocalPosition,
+            Vector3 placementLocalEulerAngles)
         {
             ActorIdentity = actorIdentity;
+            Groups = groups ?? Array.Empty<PlayerActorResetGroup>();
+            PlacementDeclared = placementDeclared;
+            PlacementRequired = placementRequired;
+            PlacementOptional = placementOptional;
+            HasPlacement = hasPlacement;
+            PlacementLocalPosition = placementLocalPosition;
+            PlacementLocalEulerAngles = placementLocalEulerAngles;
         }
 
         public PlayerActorIdentityRecord ActorIdentity { get; }
-        public bool IsValid => ActorIdentity.IsValid;
+        public IReadOnlyList<PlayerActorResetGroup> Groups { get; }
+        public bool PlacementDeclared { get; }
+        public bool PlacementRequired { get; }
+        public bool PlacementOptional { get; }
+        public bool HasPlacement { get; }
+        public Vector3 PlacementLocalPosition { get; }
+        public Vector3 PlacementLocalEulerAngles { get; }
+        public bool IsValid => ActorIdentity.IsValid && Groups != null && Groups.Count > 0;
     }
 
-    public readonly struct PlayerActorReleasePlan
+    public enum PlayerActorResetGroup
     {
-        public PlayerActorReleasePlan(PlayerActorIdentityRecord actorIdentity)
+        Unknown = 0,
+        Placement = 1,
+        ActivityParticipation = 2,
+        MovementTransient = 3,
+    }
+
+    public readonly struct PlayerActorResetContext
+    {
+        public PlayerActorResetContext(
+            SessionActivityIdentity pipelineIdentity,
+            PlayerActorIdentityRecord actorIdentity,
+            PlayerActorResetGroup group,
+            bool hasPlacement,
+            bool placementRequired,
+            bool placementOptional,
+            bool placementDeclared,
+            Vector3 placementLocalPosition,
+            Vector3 placementLocalEulerAngles,
+            string source,
+            string reason)
+        {
+            PipelineIdentity = pipelineIdentity;
+            ActorIdentity = actorIdentity;
+            Group = group;
+            HasPlacement = hasPlacement;
+            PlacementRequired = placementRequired;
+            PlacementOptional = placementOptional;
+            PlacementDeclared = placementDeclared;
+            PlacementLocalPosition = placementLocalPosition;
+            PlacementLocalEulerAngles = placementLocalEulerAngles;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity PipelineIdentity { get; }
+        public PlayerActorIdentityRecord ActorIdentity { get; }
+        public PlayerActorResetGroup Group { get; }
+        public bool HasPlacement { get; }
+        public bool PlacementRequired { get; }
+        public bool PlacementOptional { get; }
+        public bool PlacementDeclared { get; }
+        public Vector3 PlacementLocalPosition { get; }
+        public Vector3 PlacementLocalEulerAngles { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public bool IsValid => PipelineIdentity.IsValid && ActorIdentity.IsValid && Group != PlayerActorResetGroup.Unknown;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public interface IPlayerActorResetEndpoint
+    {
+        bool Supports(PlayerActorResetGroup group);
+        void ApplyReset(PlayerActorResetContext context);
+    }
+
+    public readonly struct PlayerActorResetCommand
+    {
+        public PlayerActorResetCommand(
+            SessionActivityIdentity pipelineIdentity,
+            IReadOnlyList<PlayerActorResetPlan> plans,
+            string source,
+            string reason)
+        {
+            PipelineIdentity = pipelineIdentity;
+            Plans = plans ?? Array.Empty<PlayerActorResetPlan>();
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity PipelineIdentity { get; }
+        public IReadOnlyList<PlayerActorResetPlan> Plans { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public bool IsValid => PipelineIdentity.IsValid && Plans != null;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public readonly struct PlayerActorResetAppliedRecord
+    {
+        public PlayerActorResetAppliedRecord(
+            PlayerActorIdentityRecord actorIdentity,
+            IReadOnlyList<PlayerActorResetGroup> appliedGroups,
+            IReadOnlyList<PlayerActorResetGroup> skippedGroups,
+            IReadOnlyList<PlayerActorResetSkippedGroupReason> skippedGroupReasons)
+        {
+            ActorIdentity = actorIdentity;
+            AppliedGroups = appliedGroups ?? Array.Empty<PlayerActorResetGroup>();
+            SkippedGroups = skippedGroups ?? Array.Empty<PlayerActorResetGroup>();
+            SkippedGroupReasons = skippedGroupReasons ?? Array.Empty<PlayerActorResetSkippedGroupReason>();
+        }
+
+        public PlayerActorIdentityRecord ActorIdentity { get; }
+        public IReadOnlyList<PlayerActorResetGroup> AppliedGroups { get; }
+        public IReadOnlyList<PlayerActorResetGroup> SkippedGroups { get; }
+        public IReadOnlyList<PlayerActorResetSkippedGroupReason> SkippedGroupReasons { get; }
+        public bool IsValid => ActorIdentity.IsValid && AppliedGroups != null && SkippedGroups != null && SkippedGroupReasons != null;
+    }
+
+    public readonly struct PlayerActorResetSkippedGroupReason
+    {
+        public PlayerActorResetSkippedGroupReason(PlayerActorResetGroup group, string reasonCode)
+        {
+            Group = group;
+            ReasonCode = Normalize(reasonCode);
+        }
+
+        public PlayerActorResetGroup Group { get; }
+        public string ReasonCode { get; }
+        public bool IsValid => Group != PlayerActorResetGroup.Unknown && !string.IsNullOrWhiteSpace(ReasonCode);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public readonly struct PlayerActorActivityParticipationPlan
+    {
+        public PlayerActorActivityParticipationPlan(PlayerActorIdentityRecord actorIdentity)
         {
             ActorIdentity = actorIdentity;
         }
@@ -172,6 +311,14 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
     public interface IPlayerActorMaterializationAdapter
     {
         IReadOnlyList<PlayerActorMaterializationRecord> Execute(PlayerActorMaterializationCommand command, SessionActivityIdentity activeIdentity);
+    }
+
+    public interface IPlayerActorResetAdapter
+    {
+        IReadOnlyList<PlayerActorResetAppliedRecord> Execute(
+            PlayerActorResetCommand command,
+            SessionActivityIdentity activeIdentity,
+            ActivityPlayerActorRegistry registry);
     }
 
     public readonly struct PlayerActorParticipationExitCommand

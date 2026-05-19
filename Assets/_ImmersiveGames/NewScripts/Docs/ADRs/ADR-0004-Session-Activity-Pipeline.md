@@ -1492,11 +1492,72 @@ ActivitySetupStarted
 -> ActivitySetupCompleted
 ```
 
-Divida documentada (sem mudanca agora):
+Divida documentada (sem mudanca funcional agora):
 
 ```text
-Renomear futuramente PlayerActorReleasePlanResolved (nome inadequado para RouteOwned):
-- PlayerActorRetentionPlanResolved
+No caminho ativo de ActivitySetup, o fact foi alinhado para:
 - PlayerActorActivityParticipationPlanResolved
+
+Futuro reservado para route-exit release (ainda nao implementado no caminho ativo):
 - PlayerActorRouteExitReleasePlanResolved
+```
+
+### 2026-05-19 - Checkpoint CLOSED - PlayerActorReset v0
+
+Status formal:
+
+```text
+PlayerActorReset v0 - CLOSED
+```
+
+Contrato fechado do caminho ativo:
+
+```text
+PlayerActorReset v0 ocorre no ActivitySetup.
+PlayerActorResetPlanResolved define reset groups explicitos.
+SessionActivityPipeline decide quais groups aplicar.
+PlayerActorResetAdapter executa reset por command.
+Componentes do PlayerActor expõem reset endpoints e aplicam seus proprios campos.
+Nao existe ResetAll cego.
+PlayerActorReadyMaterializedOnly / PlayerActorReadyRetainedForActivity so ocorre depois de PlayerActorResetApplied.
+```
+
+Reset groups v0:
+
+```text
+Placement
+ActivityParticipation
+MovementTransient
+```
+
+Observabilidade obrigatoria de skip:
+
+```text
+PlayerActorResetApplied inclui:
+- appliedGroupNames
+- skippedGroupNames
+- skippedGroupReasons
+```
+
+Reason codes v0:
+
+```text
+Placement:
+- placement_not_required
+- optional_placement_missing
+- no_placement_declared
+- no_endpoint_supports_group
+- invalid_required_placement (fail-fast)
+
+MovementTransient sem endpoint:
+- no_endpoint_supports_group (skip explicito)
+```
+
+Smoke fechado de referencia:
+
+```text
+primeira entrada materializa e reseta antes de Ready
+reenter usa PlayerActor retido e reseta antes de Ready
+PlayerActorReleasePlanResolved nao voltou no caminho ativo
+ResetAll / Destroy / SetActive do PlayerActor nao aparecem no fluxo
 ```

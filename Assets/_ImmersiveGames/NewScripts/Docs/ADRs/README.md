@@ -675,12 +675,41 @@ catalogo loopa para activity_01
 activity_01 reentra com PlayerActor retido sem nova PlayerActorMaterializationCommandIssued
 ```
 
-Divida documentada (sem renomear agora):
+Divida documentada (sem mudanca funcional agora):
 
 ```text
-PlayerActorReleasePlanResolved deve ser renomeado futuramente para refletir RouteOwned.
-Sugestoes:
-- PlayerActorRetentionPlanResolved
+No caminho ativo de ActivitySetup, o fact alinhado e:
 - PlayerActorActivityParticipationPlanResolved
+
+Futuro reservado (fora do corte ativo):
 - PlayerActorRouteExitReleasePlanResolved
+```
+
+### Checkpoint curto - PlayerActorReset v0 (2026-05-19)
+
+Status:
+
+```text
+PlayerActorReset v0 - CLOSED
+```
+
+Resumo normativo:
+
+```text
+Reset ocorre no ActivitySetup, antes de PlayerActorReady*.
+SessionActivityPipeline decide groups; PlayerActorResetAdapter executa.
+PlayerActor aplica reset via endpoints por grupo; sem ResetAll cego.
+Groups v0: Placement, ActivityParticipation, MovementTransient.
+Skips sao auditaveis por skippedGroupReasons.
+MovementTransient sem endpoint: no_endpoint_supports_group.
+Placement auditavel: no_placement_declared | optional_placement_missing | placement_not_required.
+Placement obrigatorio invalido: fail-fast.
+```
+
+Smoke fechado:
+
+```text
+materializacao/reenter sempre passam por reset antes de Ready
+PlayerActorReleasePlanResolved nao reaparece
+ResetAll, Destroy e SetActive do PlayerActor nao aparecem
 ```

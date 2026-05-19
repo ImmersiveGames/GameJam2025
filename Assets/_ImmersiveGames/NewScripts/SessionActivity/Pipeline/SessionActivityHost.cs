@@ -12,6 +12,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
     [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Host")]
     public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary
     {
+        private const int DumpRecentFactsCount = 24;
+        private const int DumpRecentSnapshotsCount = 12;
+        private const int DumpRecentTraceCount = 20;
+
         [Header("Config")]
         // Campo de tooling/QA. Nao e owner de lifecycle e nao pode iniciar Activity automaticamente.
         [SerializeField] private bool autoStart;
@@ -297,20 +301,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
-            builder.AppendLine("facts:");
-            for (int index = 0; index < State.Facts.Count; index++)
+            builder.AppendLine($"factsCount='{State.Facts.Count}' snapshotsCount='{State.Snapshots.Count}' traceCount='{State.Trace.Count}'");
+            builder.AppendLine($"recentFacts(last={DumpRecentFactsCount}):");
+            for (int index = Math.Max(0, State.Facts.Count - DumpRecentFactsCount); index < State.Facts.Count; index++)
             {
                 builder.AppendLine($"- {State.Facts[index]}");
             }
 
-            builder.AppendLine("snapshots:");
-            for (int index = 0; index < State.Snapshots.Count; index++)
+            builder.AppendLine($"recentSnapshots(last={DumpRecentSnapshotsCount}):");
+            for (int index = Math.Max(0, State.Snapshots.Count - DumpRecentSnapshotsCount); index < State.Snapshots.Count; index++)
             {
                 builder.AppendLine($"- {State.Snapshots[index]}");
             }
 
-            builder.AppendLine("trace:");
-            for (int index = 0; index < State.Trace.Count; index++)
+            builder.AppendLine($"recentTrace(last={DumpRecentTraceCount}):");
+            for (int index = Math.Max(0, State.Trace.Count - DumpRecentTraceCount); index < State.Trace.Count; index++)
             {
                 builder.AppendLine($"- {State.Trace[index]}");
             }
@@ -350,22 +355,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             for (int index = 0; index < result.Facts.Count; index++)
             {
-                Debug.Log(result.Facts[index].ToString());
+                Debug.Log($"[OBS][SessionActivityPipeline][Host][ResultFact] {result.Facts[index]}");
             }
 
-            // Facts assíncronos podem ser emitidos após o retorno do command result.
-            // Logamos o estado acumulado para garantir observabilidade canônica por kind.
-            for (int index = 0; index < State.Facts.Count; index++)
-            {
-                Debug.Log($"[OBS][SessionActivityPipeline][Host][StateFact] {State.Facts[index]}");
-            }
-
-            for (int index = 0; index < State.Snapshots.Count; index++)
-            {
-                Debug.Log(State.Snapshots[index].ToString());
-            }
-
-            Debug.Log(BuildTraceDump());
+            Debug.Log($"[OBS][SessionActivityPipeline][Host] factsCount='{State.Facts.Count}' snapshotsCount='{State.Snapshots.Count}' traceCount='{State.Trace.Count}'");
         }
 
         private string BuildTraceDump()
@@ -500,6 +493,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
+
 
 
 

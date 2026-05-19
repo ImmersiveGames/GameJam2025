@@ -1027,12 +1027,71 @@ catalogo loopa para activity_01
 activity_01 reentra usando PlayerActor retido sem nova materializacao
 ```
 
-Divida documentada (sem renomear agora):
+Divida documentada (sem mudanca funcional agora):
 
 ```text
-PlayerActorReleasePlanResolved tem nome inadequado para RouteOwned.
-Sugestoes futuras:
-- PlayerActorRetentionPlanResolved
+No caminho ativo de ActivitySetup, o contrato/fact foi alinhado para:
 - PlayerActorActivityParticipationPlanResolved
+
+Futuro reservado para route-exit release (fora do corte atual):
 - PlayerActorRouteExitReleasePlanResolved
+```
+
+## 22. Checkpoint CLOSED - PlayerActorReset v0 (2026-05-19)
+
+Status:
+
+```text
+PlayerActorReset v0 - CLOSED
+```
+
+Consolidacao normativa:
+
+```text
+Reset ocorre no ActivitySetup.
+Pipeline decide groups.
+Adapter executa.
+Endpoints do PlayerActor aplicam campos internos por grupo.
+Nao ha ResetAll cego.
+Ready so e emitido apos PlayerActorResetApplied.
+```
+
+Groups v0:
+
+```text
+Placement
+ActivityParticipation
+MovementTransient
+```
+
+Auditabilidade de skip:
+
+```text
+PlayerActorResetApplied expõe:
+- appliedGroupNames
+- skippedGroupNames
+- skippedGroupReasons
+```
+
+Reason codes fechados no v0:
+
+```text
+Placement:
+- placement_not_required
+- optional_placement_missing
+- no_placement_declared
+- no_endpoint_supports_group
+- invalid_required_placement (fail-fast)
+
+MovementTransient sem endpoint:
+- no_endpoint_supports_group
+```
+
+Smoke validado:
+
+```text
+primeira entrada materializa + reset antes de Ready
+reenter retido + reset antes de Ready
+PlayerActorReleasePlanResolved nao reaparece
+ResetAll/Destroy/SetActive do PlayerActor nao aparecem
 ```

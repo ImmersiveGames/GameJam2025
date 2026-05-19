@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -13,29 +14,96 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             PlayerActorReadyStage readyStage,
             IReadOnlyList<PlayerActorEntryPlan> entryPlans,
             IReadOnlyList<PlayerActorResetPlan> resetPlans,
-            IReadOnlyList<PlayerActorReleasePlan> releasePlans,
+            IReadOnlyList<PlayerActorActivityParticipationPlan> activityParticipationPlans,
             IReadOnlyList<PlayerActorMaterializationRecord> records,
-            IReadOnlyList<PlayerActorIdentityRecord> retainedActors)
+            IReadOnlyList<PlayerActorIdentityRecord> retainedActors,
+            IReadOnlyList<PlayerActorResetAppliedRecord> resetAppliedRecords)
         {
             ReadyStage = readyStage;
             EntryPlans = entryPlans ?? Array.Empty<PlayerActorEntryPlan>();
             ResetPlans = resetPlans ?? Array.Empty<PlayerActorResetPlan>();
-            ReleasePlans = releasePlans ?? Array.Empty<PlayerActorReleasePlan>();
+            ActivityParticipationPlans = activityParticipationPlans ?? Array.Empty<PlayerActorActivityParticipationPlan>();
             Records = records ?? Array.Empty<PlayerActorMaterializationRecord>();
             RetainedActors = retainedActors ?? Array.Empty<PlayerActorIdentityRecord>();
+            ResetAppliedRecords = resetAppliedRecords ?? Array.Empty<PlayerActorResetAppliedRecord>();
         }
 
         public PlayerActorReadyStage ReadyStage { get; }
         public IReadOnlyList<PlayerActorEntryPlan> EntryPlans { get; }
         public IReadOnlyList<PlayerActorResetPlan> ResetPlans { get; }
-        public IReadOnlyList<PlayerActorReleasePlan> ReleasePlans { get; }
+        public IReadOnlyList<PlayerActorActivityParticipationPlan> ActivityParticipationPlans { get; }
         public IReadOnlyList<PlayerActorMaterializationRecord> Records { get; }
         public IReadOnlyList<PlayerActorIdentityRecord> RetainedActors { get; }
+        public IReadOnlyList<PlayerActorResetAppliedRecord> ResetAppliedRecords { get; }
 
         public bool IsMaterializedOnlyReady => ReadyStage == PlayerActorReadyStage.MaterializedOnly;
         public bool IsRetainedForActivityReady => ReadyStage == PlayerActorReadyStage.RetainedForActivity;
         public bool HasMaterialization => Records.Count > 0;
         public bool HasRetainedReentry => RetainedActors.Count > 0;
+        public int TotalResetAppliedGroups => CountGroups(ResetAppliedRecords, skipped: false);
+        public int TotalResetSkippedGroups => CountGroups(ResetAppliedRecords, skipped: true);
+        public string ResetAppliedGroupsToken => BuildGroupsToken(ResetAppliedRecords, skipped: false);
+        public string ResetSkippedGroupsToken => BuildGroupsToken(ResetAppliedRecords, skipped: true);
+        public string ResetSkippedGroupReasonsToken => BuildSkippedReasonsToken(ResetAppliedRecords);
+
+        private static int CountGroups(IReadOnlyList<PlayerActorResetAppliedRecord> records, bool skipped)
+        {
+            int total = 0;
+            for (int index = 0; index < records.Count; index++)
+            {
+                total += skipped ? records[index].SkippedGroups.Count : records[index].AppliedGroups.Count;
+            }
+
+            return total;
+        }
+
+        private static string BuildGroupsToken(IReadOnlyList<PlayerActorResetAppliedRecord> records, bool skipped)
+        {
+            HashSet<string> names = new(StringComparer.Ordinal);
+            for (int recordIndex = 0; recordIndex < records.Count; recordIndex++)
+            {
+                IReadOnlyList<PlayerActorResetGroup> groups = skipped
+                    ? records[recordIndex].SkippedGroups
+                    : records[recordIndex].AppliedGroups;
+                for (int groupIndex = 0; groupIndex < groups.Count; groupIndex++)
+                {
+                    names.Add(groups[groupIndex].ToString());
+                }
+            }
+
+            if (names.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(",", names.OrderBy(static value => value, StringComparer.Ordinal));
+        }
+
+        private static string BuildSkippedReasonsToken(IReadOnlyList<PlayerActorResetAppliedRecord> records)
+        {
+            List<string> tokens = new();
+            for (int recordIndex = 0; recordIndex < records.Count; recordIndex++)
+            {
+                IReadOnlyList<PlayerActorResetSkippedGroupReason> reasons = records[recordIndex].SkippedGroupReasons;
+                for (int reasonIndex = 0; reasonIndex < reasons.Count; reasonIndex++)
+                {
+                    PlayerActorResetSkippedGroupReason reason = reasons[reasonIndex];
+                    if (!reason.IsValid)
+                    {
+                        continue;
+                    }
+
+                    tokens.Add($"{reason.Group}:{reason.ReasonCode}");
+                }
+            }
+
+            if (tokens.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(";", tokens.OrderBy(static value => value, StringComparer.Ordinal));
+        }
     }
 
     public static class PlayerActorSetupStage
@@ -46,6 +114,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             PlayerSetDefinitionAsset playerSetDefinition,
             IPlayerActorMaterializationAdapter materializationAdapter,
             IPlayerActorParticipationAdapter participationAdapter,
+            IPlayerActorResetAdapter resetAdapter,
             ActivityPlayerActorRegistry registry,
             string source,
             string reason)
@@ -85,6 +154,11 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 throw new InvalidOperationException("PlayerActorSetupStage requires activity player registry.");
             }
 
+            if (resetAdapter == null)
+            {
+                throw new InvalidOperationException("PlayerActorSetupStage requires reset adapter.");
+            }
+
             registry.BeginActivityScope(identity);
 
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> definitionEntries =
@@ -107,7 +181,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 
             List<PlayerActorEntryPlan> entryPlans = new();
             List<PlayerActorResetPlan> resetPlans = new();
-            List<PlayerActorReleasePlan> releasePlans = new();
+            List<PlayerActorActivityParticipationPlan> activityParticipationPlans = new();
             HashSet<string> selected = new(StringComparer.Ordinal);
 
             for (int index = 0; index < selectionSnapshot.Entries.Count; index++)
@@ -143,8 +217,20 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     : Vector3.zero;
 
                 entryPlans.Add(new PlayerActorEntryPlan(actorIdentity, definitionEntry.Prefab, localPosition, localEuler));
-                resetPlans.Add(new PlayerActorResetPlan(actorIdentity));
-                releasePlans.Add(new PlayerActorReleasePlan(actorIdentity));
+                bool placementDeclared = definitionEntry.PlacementMode != ActorPlacementMode.None;
+                bool hasPlacement = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform;
+                bool placementRequired = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform;
+                bool placementOptional = placementDeclared && !placementRequired;
+                resetPlans.Add(new PlayerActorResetPlan(
+                    actorIdentity,
+                    BuildDefaultResetGroups(),
+                    placementDeclared,
+                    placementRequired,
+                    placementOptional,
+                    hasPlacement,
+                    localPosition,
+                    localEuler));
+                activityParticipationPlans.Add(new PlayerActorActivityParticipationPlan(actorIdentity));
             }
 
             for (int index = 0; index < definitionEntries.Count; index++)
@@ -218,13 +304,34 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 }
             }
 
+            PlayerActorResetCommand resetCommand = new(identity, resetPlans, source, reason);
+            IReadOnlyList<PlayerActorResetAppliedRecord> resetAppliedRecords = resetAdapter.Execute(resetCommand, identity, registry);
+            for (int index = 0; index < resetAppliedRecords.Count; index++)
+            {
+                if (!resetAppliedRecords[index].IsValid)
+                {
+                    throw new InvalidOperationException($"PlayerActor reset applied record at index '{index}' is invalid.");
+                }
+            }
+
             return new PlayerActorSetupResult(
                 toMaterialize.Count > 0 ? PlayerActorReadyStage.MaterializedOnly : PlayerActorReadyStage.RetainedForActivity,
                 entryPlans,
                 resetPlans,
-                releasePlans,
+                activityParticipationPlans,
                 records,
-                toReenter);
+                toReenter,
+                resetAppliedRecords);
+        }
+
+        private static IReadOnlyList<PlayerActorResetGroup> BuildDefaultResetGroups()
+        {
+            return new[]
+            {
+                PlayerActorResetGroup.Placement,
+                PlayerActorResetGroup.ActivityParticipation,
+                PlayerActorResetGroup.MovementTransient,
+            };
         }
 
         private static string BuildRouteScopedPlayerActorId(SessionActivityIdentity identity, string playerId)
