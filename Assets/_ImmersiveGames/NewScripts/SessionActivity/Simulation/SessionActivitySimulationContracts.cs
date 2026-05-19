@@ -301,7 +301,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Simulation
         public bool IsValid => Facts.Count > 0;
 
         public bool IsRejected => Facts.Count > 0 && Facts[Facts.Count - 1].Kind == ActivityExecutionBlockingFactKind.ActivityExecutionBlockingCommandRejected;
-        public bool IsAccepted => !IsRejected;
+        public bool IsCompleted => !IsRejected;
 
         public override string ToString()
         {

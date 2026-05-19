@@ -40,6 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
         private PlayerSelectionSnapshot _lastPlayerSelectionSnapshot;
+        private SessionActivityRailKind _activeRailKind;
 
         private readonly struct PendingNavigationTransition
         {
@@ -306,6 +307,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingRestartCompletionActivityId = string.Empty;
             _pendingRestartCompletionEntrySequence = 0;
             _lastPlayerSelectionSnapshot = BuildMvpPlayerSelectionSnapshotFromPlayerPreparation(handoff, activationIdentity, source, reason);
+            _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
@@ -327,7 +329,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EnterActivity(initialDefinition, command, emittedFacts, emittedSnapshots, entrySequence);
 
             SessionActivityCommandResult result = new(
-                SessionActivityCommandResultKind.Accepted,
+                SessionActivityCommandResultKind.Started,
                 command,
                 emittedFacts,
                 emittedFacts.Count > 0 ? emittedFacts[emittedFacts.Count - 1].Reason : string.Empty);
@@ -609,19 +611,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityCommandResultKind resultKind = emittedFacts.Count == 0
-                ? SessionActivityCommandResultKind.Accepted
+                ? SessionActivityCommandResultKind.Started
                 : emittedFacts[emittedFacts.Count - 1].Kind switch
                 {
                     SessionActivityFactKind.CommandRejected => SessionActivityCommandResultKind.Rejected,
                     SessionActivityFactKind.PipelineCompleted => SessionActivityCommandResultKind.Completed,
-                    SessionActivityFactKind.ActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.ActivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.GameplayContentSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.DeactivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.NextActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.SimulationPaused => SessionActivityCommandResultKind.Accepted,
-                    SessionActivityFactKind.SimulationResumed => SessionActivityCommandResultKind.Accepted,
-                    _ => SessionActivityCommandResultKind.Accepted,
+                    SessionActivityFactKind.ActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.ActivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.GameplayContentSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.DeactivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.NextActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.SimulationPaused => SessionActivityCommandResultKind.Completed,
+                    SessionActivityFactKind.SimulationResumed => SessionActivityCommandResultKind.Completed,
+                    _ => SessionActivityCommandResultKind.Started,
                 };
 
             return new SessionActivityCommandResult(resultKind, command, emittedFacts, emittedFacts.Count > 0 ? emittedFacts[emittedFacts.Count - 1].Reason : string.Empty);
@@ -789,7 +791,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneUnloaded, unloadedIdentity, source, reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{operation.SceneName}'.");
                     EmitSnapshot(snapshots, "deactivation_window_additive_scene_unloaded", source, reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{operation.SceneName}'.");
 
-                    if (_pendingRestartTransition.IsValid)
+                    if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail)
+                    {
+                        FinalizeDeactivationForRouteExit(definition, syntheticCommand, facts, snapshots, entrySequence);
+                    }
+                    else if (_pendingRestartTransition.IsValid)
                     {
                         _ = FinalizePendingRestartTransition(
                             definition,
@@ -797,10 +803,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                             facts,
                             snapshots,
                             entrySequence);
-                    }
-                    else if (operation.Reason.IndexOf("route_exit", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        FinalizeDeactivationForRouteExit(definition, syntheticCommand, facts, snapshots, entrySequence);
                     }
                     else
                     {
@@ -864,19 +866,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private static SessionActivityCommandResult BuildCommandResult(SessionActivityCommand command, List<SessionActivityFact> emittedFacts)
         {
             SessionActivityCommandResultKind resultKind = emittedFacts.Count == 0
-                ? SessionActivityCommandResultKind.Accepted
+                ? SessionActivityCommandResultKind.Started
                 : emittedFacts[emittedFacts.Count - 1].Kind switch
                 {
                     SessionActivityFactKind.CommandRejected => SessionActivityCommandResultKind.Rejected,
                     SessionActivityFactKind.PipelineCompleted => SessionActivityCommandResultKind.Completed,
-                    SessionActivityFactKind.ActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.ActivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.GameplayContentSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.DeactivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.NextActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkipNoContent,
-                    SessionActivityFactKind.SimulationPaused => SessionActivityCommandResultKind.Accepted,
-                    SessionActivityFactKind.SimulationResumed => SessionActivityCommandResultKind.Accepted,
-                    _ => SessionActivityCommandResultKind.Accepted,
+                    SessionActivityFactKind.ActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.ActivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.GameplayContentSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.DeactivationWindowSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.NextActivitySetupSkippedNoContent => SessionActivityCommandResultKind.SkippedNoContent,
+                    SessionActivityFactKind.SimulationPaused => SessionActivityCommandResultKind.Completed,
+                    SessionActivityFactKind.SimulationResumed => SessionActivityCommandResultKind.Completed,
+                    _ => SessionActivityCommandResultKind.Started,
                 };
 
             return new SessionActivityCommandResult(
@@ -973,6 +975,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private async Task EmitCompleteAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
+            _activeRailKind = SessionActivityRailKind.ActivityCompletionRail;
             ClearPendingNavigationTransition();
 
             if (!EnsureExpectedStage(command, facts, SessionActivityStage.ActivityRunning, "complete_current_activity"))
@@ -1020,6 +1023,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private async Task EmitRestartCurrentActivityAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
+            _activeRailKind = SessionActivityRailKind.ActivityRestartRail;
             ClearPendingNavigationTransition();
 
             if (!EnsureExpectedStage(command, facts, SessionActivityStage.ActivityRunning, "restart_current_activity"))
@@ -1087,8 +1091,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void EmitCloseForRouteExit(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
+            _activeRailKind = SessionActivityRailKind.ActivityRouteExitRail;
             ClearPendingNavigationTransition();
             _state.ClearHandoff();
+            _pendingInternalActivityTransition = default;
+            _pendingTransitionResolution = default;
+            _pendingTransitionCurtainReveal = false;
+            _pendingTransitionCurtainClosed = false;
+            _pendingTransitionLoadingVisible = false;
 
             SessionActivityDefinition current = _state.CurrentDefinition;
             int currentEntrySequence = _state.CurrentEntrySequence;
@@ -1193,6 +1203,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 _state.SetCurrentIdentity(BuildIdentity(current, SessionActivityStage.Completed, currentEntrySequence), SessionActivityStage.Completed);
                 _state.MarkCompleted();
+                _activeRailKind = SessionActivityRailKind.None;
                 _pendingInternalActivityTransition = default;
                 EmitFact(facts, SessionActivityFactKind.PipelineCompleted, _state.CurrentIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completed and no next activity is configured.");
                 EmitSnapshot(snapshots, "pipeline_completed", command.Source, command.Reason, $"'{current.ActivityId}' completed and no next activity is configured.");
@@ -1296,6 +1307,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int currentEntrySequence)
         {
+            _activeRailKind = SessionActivityRailKind.ActivityRouteExitRail;
             ReleaseActivityGateIfBlocked(command);
             _state.SetExecutionState(ActivityExecutionState.Stopped);
             _state.ClearHandoff();
@@ -1317,6 +1329,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.MarkCompleted();
             EmitFact(facts, SessionActivityFactKind.ActivityRouteExitCompleted, routeExitClosedIdentity, command.Source, command.Reason, $"'{current.ActivityId}' route-exit closed.");
             EmitSnapshot(snapshots, "activity_route_exit_completed", command.Source, command.Reason, $"'{current.ActivityId}' route-exit closed.");
+            _activeRailKind = SessionActivityRailKind.None;
         }
 
         private async Task FinalizePendingNavigationTransition(
@@ -1464,6 +1477,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private async Task EmitContinueAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
+            if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail)
+            {
+                EmitRejected(
+                    command,
+                    facts,
+                    "route_exit_rail_disallows_continue",
+                    "ContinueToNextActivity is not allowed while ActivityRouteExitRail is active.",
+                    _state.CurrentIdentity,
+                    true);
+                return;
+            }
+
             if (!EnsureExpectedStageForContinue(command, facts))
             {
                 return;
@@ -1533,6 +1558,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private void EmitNavigation(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
         {
+            _activeRailKind = SessionActivityRailKind.ActivityNavigationRail;
             if (!EnsureExpectedStage(command, facts, SessionActivityStage.ActivityRunning, "navigation"))
             {
                 return;
@@ -2370,7 +2396,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command);
 
             return new SessionActivityCommandResult(
-                SessionActivityCommandResultKind.Accepted,
+                SessionActivityCommandResultKind.Completed,
                 command,
                 emittedFacts,
                 emittedFacts.Count > 0 ? emittedFacts[emittedFacts.Count - 1].Reason : string.Empty);

@@ -293,6 +293,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         DeactivationWindow = 2,
     }
 
+    public enum SessionActivityRailKind
+    {
+        None = 0,
+        ActivityEntryRail = 1,
+        ActivityCompletionRail = 2,
+        ActivityRestartRail = 3,
+        ActivityNavigationRail = 4,
+        ActivityRouteExitRail = 5,
+    }
+
+    public enum SessionActivityRailStatus
+    {
+        None = 0,
+        Requested = 1,
+        Started = 2,
+        InProgress = 3,
+        BlockedOnPendingOperation = 4,
+        Completed = 5,
+        Failed = 6,
+    }
+
     public readonly struct SessionActivityPendingOperation
     {
         public SessionActivityPendingOperation(
@@ -569,10 +590,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public enum SessionActivityCommandResultKind
     {
         Unknown = 0,
-        Accepted = 1,
-        Rejected = 2,
-        Completed = 3,
-        SkipNoContent = 4,
+        Rejected = 1,
+        Started = 2,
+        InProgress = 3,
+        Completed = 4,
+        Failed = 5,
+        SkippedNoContent = 6,
     }
 
     public readonly struct SessionActivityCommandResult
@@ -599,8 +622,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Command.IsValid;
 
         public bool IsRejected => Kind == SessionActivityCommandResultKind.Rejected;
+        public bool IsStarted => Kind == SessionActivityCommandResultKind.Started;
+        public bool IsInProgress => Kind == SessionActivityCommandResultKind.InProgress;
         public bool IsCompleted => Kind == SessionActivityCommandResultKind.Completed;
-        public bool IsSkipNoContent => Kind == SessionActivityCommandResultKind.SkipNoContent;
+        public bool IsFailed => Kind == SessionActivityCommandResultKind.Failed;
+        public bool IsSkippedNoContent => Kind == SessionActivityCommandResultKind.SkippedNoContent;
 
         private static string Normalize(string value)
         {

@@ -713,3 +713,72 @@ materializacao/reenter sempre passam por reset antes de Ready
 PlayerActorReleasePlanResolved nao reaparece
 ResetAll, Destroy e SetActive do PlayerActor nao aparecem
 ```
+
+### Checkpoint curto - SessionActivity lifecycle deterministico + route-exit handshake observavel (2026-05-19)
+
+Status:
+
+```text
+FROZEN
+```
+
+Contrato congelado Base 1.1:
+
+```text
+1) SessionActivityPipeline deve ser deterministico.
+2) Comandos sincronos nao podem fingir conclusao quando houver pending async.
+3) Scene load/unload e o unico side-effect async permitido no lifecycle da Activity.
+4) Adapters executam side-effects; pipeline decide continuidade.
+5) Todo rail segue request -> started/in-progress -> completed/failed.
+6) PendingOperation e Pipeline Command em execucao.
+7) ClearPendingOperation so no consumo validado da completion.
+8) Route-exit e handshake observavel SessionOperational <-> SessionActivity.
+9) SessionOperational nao descarrega route scene com rail/pending ativo na SessionActivity.
+10) Trilhos antigos/paralelos devem ser removidos no caminho de implementacao.
+```
+
+Rails canonicos:
+
+```text
+ActivityEntryRail
+ActivityCompletionRail
+ActivityRestartRail
+ActivityNavigationRail
+ActivityRouteExitRail
+```
+
+### Checkpoint curto - ActivityRouteExitRail / BackToMenu ordering (2026-05-19)
+
+Status:
+
+```text
+CLOSED
+```
+
+Resumo normativo congelado:
+
+```text
+BackToMenu com SessionActivity ativa deve deferir a troca de rota antes de qualquer side-effect operacional.
+SessionOperational solicita ActivityRouteExitRail antes de ActivityCamera release, RouteActivitySave, TransitionPlanReady, fade, ApplyOperationalRoute e SceneComposition.
+DeactivationWindow nao auto-completa.
+DeactivationWindowReady aguarda comando explicito.
+No sandbox, QA CompleteDeactivationWindow simula o botao real futuro.
+CompleteDeactivationWindow durante ActivityRouteExitRail finaliza ActivityRouteExitCompleted/ClosedForRouteExit.
+So apos SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false
+os side-effects operacionais da rota podem continuar.
+Planejamento puro antes do defer e aceitavel; adapter/side-effect antes de ClosedForRouteExit nao e aceitavel.
+```
+
+Smoke congelado:
+
+```text
+OperationalRouteRequestDeferredForSessionActivityTeardown ocorre antes de side-effects operacionais.
+SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false ocorre antes de:
+- ActivityCameraReleasePreviousStageStarted
+- RouteActivitySaveSaveSkipped/Started
+- TransitionPlanReady
+- fadeInStarted
+- ApplyOperationalRoute
+BackToMenu nao abre activity_02.
+ActivationWindow e DeactivationWindow continuam dependentes de comando explicito.
+```

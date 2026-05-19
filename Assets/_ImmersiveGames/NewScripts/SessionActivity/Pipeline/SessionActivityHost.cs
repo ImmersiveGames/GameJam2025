@@ -207,70 +207,122 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!string.Equals(normalizedSessionStateId, sessionStateId, StringComparison.Ordinal))
             {
-                return BuildRouteExitTeardownBlocked(
-                    "stale_or_foreign_session_activity_teardown_request",
+                return BuildRouteExitTeardownFailed(
+                    "route_exit_failed_stale_or_foreign_session_activity_teardown_request",
                     $"teardown request sessionStateId='{normalizedSessionStateId}' does not match host sessionStateId='{sessionStateId}'.");
             }
 
-            if (!_pipeline.State.HasStarted || _pipeline.State.HasCompleted)
-            {
-                return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.NoActiveSessionActivity,
-                    sessionStateId,
-                    _pipeline.State.CurrentStage,
-                    _pipeline.State.CurrentDefinition.ActivityId,
-                    _pipeline.State.CurrentHandoff.IsValid,
-                    "no_active_session_activity",
-                    "Pipeline is not started or already completed.");
-            }
-
             SessionActivityStage stage = _pipeline.State.CurrentStage;
-            if (_pipeline.State.CurrentPendingOperation.IsValid)
-            {
-                return BuildRouteExitTeardownBlocked(
-                    "pending_operation_active",
-                    $"SessionActivity route-exit teardown blocked while pending operation is active. pendingOperation='{_pipeline.State.CurrentPendingOperation}'.");
-            }
+            bool hasPendingHandoff = _pipeline.State.CurrentHandoff.IsValid;
 
-            if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed)
+            if (!_pipeline.State.HasStarted)
             {
                 return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.TeardownCompleted,
+                    SessionActivityRouteExitTeardownKind.NotRequired,
                     sessionStateId,
                     stage,
                     _pipeline.State.CurrentDefinition.ActivityId,
-                    _pipeline.State.CurrentHandoff.IsValid,
-                    "already_deactivated",
+                    hasPendingHandoff,
+                    "route_exit_not_required_no_active_session_activity",
+                    "Pipeline is not started.");
+            }
+
+            if (_pipeline.State.HasCompleted)
+            {
+                if ((stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit) && !hasPendingHandoff)
+                {
+                    return new SessionActivityRouteExitTeardownResult(
+                        SessionActivityRouteExitTeardownKind.Completed,
+                        sessionStateId,
+                        stage,
+                        _pipeline.State.CurrentDefinition.ActivityId,
+                        false,
+                        "route_exit_completed",
+                        "SessionActivity route-exit teardown is already completed.");
+                }
+
+                return new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.NotRequired,
+                    sessionStateId,
+                    stage,
+                    _pipeline.State.CurrentDefinition.ActivityId,
+                    hasPendingHandoff,
+                    "route_exit_not_required_no_active_session_activity",
+                    "SessionActivity is already completed without an active route-exit rail.");
+            }
+
+            if (_pipeline.State.CurrentPendingOperation.IsValid)
+            {
+                return BuildRouteExitTeardownInProgress(
+                    "route_exit_in_progress_pending_operation_active",
+                    $"SessionActivity route-exit teardown is in progress while pending operation is active. pendingOperation='{_pipeline.State.CurrentPendingOperation}'.");
+            }
+
+            if (hasPendingHandoff)
+            {
+                return BuildRouteExitTeardownFailed(
+                    "route_exit_failed_pending_handoff_present",
+                    $"SessionActivity route-exit teardown cannot complete while handoff is pending. handoff='{_pipeline.State.CurrentHandoff}'.");
+            }
+
+            if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
+            {
+                return new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.Completed,
+                    sessionStateId,
+                    stage,
+                    _pipeline.State.CurrentDefinition.ActivityId,
+                    false,
+                    "route_exit_completed_already_deactivated",
                     "Activity is already deactivated.");
+            }
+
+            if (IsRouteExitTransitStage(stage))
+            {
+                return BuildRouteExitTeardownInProgress(
+                    "route_exit_in_progress_transient_stage",
+                    $"SessionActivity route-exit teardown is in progress at stage '{stage}'.");
             }
 
             SessionActivityCommandResult closeForRouteExitResult = _pipeline.CloseForRouteExit(
                 normalizedSource,
                 $"{normalizedReason}/route_exit_teardown_close_for_route_exit");
-            if (!closeForRouteExitResult.IsValid || closeForRouteExitResult.IsRejected)
+            if (!closeForRouteExitResult.IsValid || closeForRouteExitResult.IsRejected || closeForRouteExitResult.IsFailed)
             {
-                return BuildRouteExitTeardownBlocked(
-                    "close_for_route_exit_rejected",
+                return BuildRouteExitTeardownFailed(
+                    "route_exit_close_for_route_exit_rejected",
                     $"CloseForRouteExit rejected during route exit teardown. resultKind='{closeForRouteExitResult.Kind}' reason='{closeForRouteExitResult.Reason}'.");
             }
 
             stage = _pipeline.State.CurrentStage;
-            bool hasPendingHandoff = _pipeline.State.CurrentHandoff.IsValid;
+            hasPendingHandoff = _pipeline.State.CurrentHandoff.IsValid;
             if ((stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit) && !hasPendingHandoff)
             {
                 return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.TeardownCompleted,
+                    SessionActivityRouteExitTeardownKind.Completed,
                     sessionStateId,
                     stage,
                     _pipeline.State.CurrentDefinition.ActivityId,
                     false,
-                    "teardown_completed",
+                    "route_exit_completed",
                     "SessionActivity deactivated before route unload.");
             }
 
-            return BuildRouteExitTeardownBlocked(
-                "teardown_not_completed_before_unload",
-                $"SessionActivity stage '{stage}' cannot proceed to route unload without explicit canonical close.");
+            if (closeForRouteExitResult.IsStarted)
+            {
+                return new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.Started,
+                    sessionStateId,
+                    stage,
+                    _pipeline.State.CurrentDefinition.ActivityId,
+                    hasPendingHandoff,
+                    "route_exit_started_close_for_route_exit_accepted",
+                    $"SessionActivity route-exit teardown started at stage '{stage}'.");
+            }
+
+            return BuildRouteExitTeardownInProgress(
+                "route_exit_in_progress_not_completed_before_unload",
+                $"SessionActivity route-exit teardown has started and is not completed yet. stage='{stage}'.");
         }
 
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)
@@ -447,10 +499,40 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return Application.isEditor || Debug.isDebugBuild;
         }
 
-        private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownBlocked(string reason, string detail)
+        private static bool IsRouteExitTransitStage(SessionActivityStage stage)
+        {
+            return stage == SessionActivityStage.ActivityCompletionRequested ||
+                   stage == SessionActivityStage.ActivityCompleting ||
+                   stage == SessionActivityStage.PlayerActorParticipationExitStageStarted ||
+                   stage == SessionActivityStage.PlayerActorParticipationExitStageCompleted ||
+                   stage == SessionActivityStage.DeactivationWindowStarted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
+                   stage == SessionActivityStage.DeactivationWindowReady ||
+                   stage == SessionActivityStage.DeactivationWindowCompleted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
+                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
+        }
+
+        private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownInProgress(string reason, string detail)
         {
             return new SessionActivityRouteExitTeardownResult(
-                SessionActivityRouteExitTeardownKind.Blocked,
+                SessionActivityRouteExitTeardownKind.InProgress,
+                sessionStateId,
+                _pipeline.State.CurrentStage,
+                _pipeline.State.CurrentDefinition.ActivityId,
+                _pipeline.State.CurrentHandoff.IsValid,
+                reason,
+                detail);
+        }
+
+        private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownFailed(string reason, string detail)
+        {
+            return new SessionActivityRouteExitTeardownResult(
+                SessionActivityRouteExitTeardownKind.Failed,
                 sessionStateId,
                 _pipeline.State.CurrentStage,
                 _pipeline.State.CurrentDefinition.ActivityId,

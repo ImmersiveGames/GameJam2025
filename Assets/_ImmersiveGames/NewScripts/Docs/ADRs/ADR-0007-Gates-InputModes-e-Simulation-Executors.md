@@ -114,3 +114,20 @@ SessionActivityPipeline decide participation lifecycle (exit + enter/reenter).
 SessionActivityPipeline decide continuidade por nextActivityId explicito ou LoopToFirst.
 QA/Host apenas aciona comandos de pipeline.
 ```
+
+## Checkpoint congelado - Gate/InputMode nao encerram rail async da Activity (2026-05-19)
+
+Contrato congelado:
+
+```text
+Gate/InputMode permanecem executores tecnicos.
+Nao podem ser usados para inferir conclusao de rail quando houver pending operation na SessionActivity.
+```
+
+Regras:
+
+```text
+1) Gate/InputMode nao autorizam route unload.
+2) Gate/InputMode nao substituem completion canonico de ActivityRouteExitRail.
+3) Estado transitivo de DeactivationWindow + pending operation nao e "closed".
+```

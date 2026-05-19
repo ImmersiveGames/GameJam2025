@@ -109,3 +109,12 @@ Leitura congelada:
 - Pipeline decide teardown/reentry/entrySequence/facts de restart.
 - WindowScene adapter executa side-effects de load/unload; nao decide restart lifecycle.
 - Host/DebugPanel apenas tooling/observabilidade; nao decide restart nem avanco de stage.
+## Checkpoint congelado - PendingOperation como command em execucao (2026-05-19)
+
+Contrato congelado para SessionActivity:
+
+- `PendingOperation` representa `Pipeline Command` em execucao (lifecycle ativo), nao estado tecnico solto.
+- `ISessionActivityPendingOperationRunner` e `ISessionActivityWindowSceneAdapter` permanecem executores de side-effect.
+- Adapters nao decidem continuidade de rail, completion semantico ou autorizacao de unload.
+- `ClearPendingOperation` so ocorre no ponto de consumo validado do callback de completion/failure do command pendente.
+- Sem fallback silencioso para completar rail quando callback/identity nao confere.

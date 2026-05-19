@@ -4,9 +4,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public enum SessionActivityRouteExitTeardownKind
     {
         Unknown = 0,
-        NoActiveSessionActivity = 1,
-        TeardownCompleted = 2,
-        Blocked = 3,
+        NotRequired = 1,
+        Started = 2,
+        InProgress = 3,
+        Completed = 4,
+        Failed = 5,
     }
 
     public readonly struct SessionActivityRouteExitTeardownResult
@@ -41,7 +43,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Kind != SessionActivityRouteExitTeardownKind.Unknown &&
             !string.IsNullOrWhiteSpace(Reason);
 
-        public bool IsBlocked => Kind == SessionActivityRouteExitTeardownKind.Blocked;
+        public bool IsInProgress => Kind == SessionActivityRouteExitTeardownKind.InProgress || Kind == SessionActivityRouteExitTeardownKind.Started;
+        public bool IsCompleted => Kind == SessionActivityRouteExitTeardownKind.Completed || Kind == SessionActivityRouteExitTeardownKind.NotRequired;
+        public bool IsFailed => Kind == SessionActivityRouteExitTeardownKind.Failed;
 
         public override string ToString()
         {

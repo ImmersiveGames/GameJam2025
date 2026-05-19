@@ -1095,3 +1095,20 @@ reenter retido + reset antes de Ready
 PlayerActorReleasePlanResolved nao reaparece
 ResetAll/Destroy/SetActive do PlayerActor nao aparecem
 ```
+
+## 23. Checkpoint congelado - Fronteira PlayerPreparation x rails deterministas da SessionActivity (2026-05-19)
+
+Contrato complementar congelado:
+
+```text
+PlayerPreparation permanece payload/intencao para handoff.
+Nao autoriza inferencia de completion de rail local da SessionActivity.
+```
+
+Regras de fronteira:
+
+```text
+SessionOperational prepara e transporta.
+SessionActivity decide lifecycle local (entry/completion/restart/navigation/route-exit).
+Enquanto houver pending operation de rail local, route scene unload permanece bloqueavel por contrato canonico.
+```

@@ -98,4 +98,18 @@ Este checkpoint confirma, na prática, a decisão central deste ADR:
 - Identity explícita protege o ciclo
 - Foreign/stale events permanecem inertes
 
+## Checkpoint congelado - SessionActivity deterministico e pending command lifecycle (2026-05-19)
+
+Contrato Base 1.1 congelado:
+
+- `SessionActivityPipeline` deve permanecer deterministico em todos os rails de lifecycle.
+- Comando sincronico nao pode representar conclusao de rail quando houver `pending async` em andamento.
+- Todo rail segue o shape:
+  - `request`
+  - `started/in-progress`
+  - `completed/failed`
+- `PendingOperation` e `Pipeline Command` em execucao; nao e estado solto.
+- `ClearPendingOperation` so pode ocorrer no consumo validado de completion do command pendente.
+- `SessionOperationalPipeline` nao pode descarregar route scene enquanto `SessionActivityPipeline` tiver rail/pending ativo.
+- Trilhos legacy/paralelos devem ser removidos no caminho de implementacao; nao manter compatibilidade narrativa paralela.
 

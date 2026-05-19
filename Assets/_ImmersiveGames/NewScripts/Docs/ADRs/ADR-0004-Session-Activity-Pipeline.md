@@ -1561,3 +1561,94 @@ reenter usa PlayerActor retido e reseta antes de Ready
 PlayerActorReleasePlanResolved nao voltou no caminho ativo
 ResetAll / Destroy / SetActive do PlayerActor nao aparecem no fluxo
 ```
+
+### 2026-05-19 - Checkpoint congelado - Contrato deterministico de lifecycle/pending da SessionActivity
+
+Status formal:
+
+```text
+SessionActivity deterministic lifecycle + pending command contract - FROZEN
+```
+
+Rails canonicos congelados:
+
+```text
+ActivityEntryRail
+ActivityCompletionRail
+ActivityRestartRail
+ActivityNavigationRail
+ActivityRouteExitRail
+```
+
+Contrato de execucao:
+
+```text
+Todo rail deve seguir:
+request -> started/in-progress -> completed/failed
+```
+
+Regras obrigatorias:
+
+```text
+1) SessionActivityPipeline decide continuidade de rail; adapters executam side-effects.
+2) Scene load/unload e o unico side-effect async permitido no lifecycle da Activity.
+3) PendingOperation e Pipeline Command em execucao, nunca estado solto.
+4) ClearPendingOperation so no consumo validado da completion do command pendente.
+5) Comando sincronico nao pode fingir "rail concluido" quando houver pending async.
+6) Resultado sincronico de comando representa aceite/inicio quando houver assinc.
+7) Route-exit local deve expor estado observavel ate fechamento canonico.
+8) CloseForRouteExit nao prepara handoff para proxima Activity.
+9) DeactivationWindow e fase transitoria e nao representa fechamento final.
+10) Trilhos antigos/paralelos devem ser removidos no caminho de implementacao.
+```
+
+Fronteira com SessionOperational:
+
+```text
+SessionOperational so pode liberar unload quando o ActivityRouteExitRail estiver completed
+e sem pending operation/handoff pendente.
+```
+
+### 2026-05-19 - Checkpoint CLOSED - ActivityRouteExitRail / BackToMenu ordering
+
+Status formal:
+
+```text
+CLOSED
+```
+
+Contrato congelado no lifecycle local:
+
+```text
+Durante ActivityRouteExitRail, DeactivationWindow nao auto-completa.
+DeactivationWindowReady aguarda comando explicito.
+No sandbox, QA CompleteDeactivationWindow simula o futuro botao real.
+```
+
+Regra obrigatoria de route-exit local:
+
+```text
+CompleteDeactivationWindow durante ActivityRouteExitRail finaliza:
+DeactivationWindowCompleted
+-> DeactivationWindowAdditiveSceneUnloadStarted
+-> DeactivationWindowAdditiveSceneUnloaded
+-> ActivityDeactivated
+-> ActivityRouteExitCompleted
+-> ClosedForRouteExit
+```
+
+Proibicoes no ActivityRouteExitRail:
+
+```text
+- nao preparar nextActivityId
+- nao emitir ActivityTransitionProfileSelected
+- nao emitir ActivityHandoffPrepared
+- nao chamar ContinueToNextActivity
+```
+
+Fronteira com SessionOperational congelada:
+
+```text
+SessionOperational so pode continuar side-effects operacionais da rota apos:
+SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false
+```

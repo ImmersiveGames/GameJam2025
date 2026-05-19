@@ -628,3 +628,98 @@ Looping de catalogo e decisao da SessionActivityPipeline.
 QA/Host nao decide looping.
 SessionOperational apenas consome o fechamento canonico da SessionActivity quando necessario para route-exit/unload.
 ```
+
+### Checkpoint - Route-exit handshake observavel com SessionActivity (2026-05-19)
+
+Contrato congelado:
+
+```text
+Route-exit com SessionActivity ativa e um handshake observavel, nao single-shot cego.
+SessionOperationalPipeline nao pode avancar para SceneComposition unload enquanto SessionActivity tiver rail/pending ativo.
+```
+
+Regras obrigatorias:
+
+```text
+1) SessionOperational solicita close/teardown local por boundary explicito.
+2) SessionActivity responde estado observavel do rail (request -> in-progress -> completed/failed).
+3) SessionOperational aguarda estado canonicamente fechado antes de liberar unload.
+4) DeactivationWindow transitoria nao libera unload por si.
+5) Handoff pendente bloqueia route-exit pre-unload.
+```
+
+Boundary de ownership mantido:
+
+```text
+SessionOperationalPipeline decide ordem da rota e autorizacao de unload.
+SessionActivityPipeline decide lifecycle local de fechamento.
+SceneComposition executa side-effect fisico, sem decidir lifecycle.
+```
+
+### Checkpoint CLOSED - ActivityRouteExitRail / BackToMenu ordering (2026-05-19)
+
+Status formal:
+
+```text
+CLOSED
+```
+
+Contrato congelado:
+
+```text
+Se existe SessionActivity ativa, BackToMenu/route-exit deve deferir a troca de rota
+antes de qualquer side-effect operacional da rota.
+```
+
+Sequencia obrigatoria:
+
+```text
+1) OperationalRouteRequestDeferredForSessionActivityTeardown
+2) SessionActivityRouteExitTeardownStarted
+3) ActivityRouteExitRail local:
+   ActivityRouteExitRequested
+   -> ActivityCompleting
+   -> DeactivationWindowStarted
+   -> DeactivationWindowReady
+4) DeactivationWindowReady aguarda comando explicito (sem auto-complete)
+5) CompleteDeactivationWindow (QA no sandbox; botao real no futuro)
+6) DeactivationWindowCompleted
+   -> DeactivationWindowAdditiveSceneUnloadStarted
+   -> DeactivationWindowAdditiveSceneUnloaded
+   -> ActivityDeactivated
+   -> ActivityRouteExitCompleted
+   -> ClosedForRouteExit
+7) SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false
+8) So depois iniciar side-effects operacionais da rota:
+   - ActivityCameraReleasePreviousStage
+   - RouteActivitySave save-on-exit
+   - TransitionPlanReady
+   - loading/fade
+   - ApplyOperationalRoute
+   - SceneComposition unload/load
+   - route reveal/fadeOut
+```
+
+Regras de fronteira:
+
+```text
+Planejamento puro antes do defer e aceitavel.
+Adapter/side-effect operacional antes de ClosedForRouteExit nao e aceitavel.
+```
+
+Smoke congelado:
+
+```text
+OperationalRouteRequestDeferredForSessionActivityTeardown ocorre antes de:
+- ActivityCameraReleasePreviousStageStarted
+- RouteActivitySaveSaveStarted/Skipped
+- TransitionPlanReady
+- fadeInStarted
+- ApplyOperationalRoute
+
+SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false
+ocorre antes dos mesmos side-effects.
+
+BackToMenu nao abre activity_02.
+ActivationWindow/DeactivationWindow continuam dependentes de comando explicito.
+```
