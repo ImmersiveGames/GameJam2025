@@ -352,6 +352,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"handoff='{State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{State.CurrentPendingOperation}'");
             builder.AppendLine($"activityContentLoadedSet='{State.CurrentActivityContentLoadedSet}'");
+            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory(State)}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
@@ -445,7 +446,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 stage == SessionActivityStage.ActivityContentSceneLoaded ||
                 stage == SessionActivityStage.ActivityContentLoadedSetReady ||
                 stage == SessionActivityStage.ActivityContentLoadSkippedNoContent ||
-                stage == SessionActivityStage.ActivityContentLoadFailed)
+                stage == SessionActivityStage.ActivityContentLoadFailed ||
+                stage == SessionActivityStage.ActivitySetupInventoryBuildStarted ||
+                stage == SessionActivityStage.ActivitySetupInventoryBuilt ||
+                stage == SessionActivityStage.ActivitySetupInventoryValidated ||
+                stage == SessionActivityStage.ActivitySetupInventorySkippedNoRequirements ||
+                stage == SessionActivityStage.ActivitySetupInventoryValidationFailed ||
+                stage == SessionActivityStage.ActivityParticipantBindingStarted ||
+                stage == SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements ||
+                stage == SessionActivityStage.ActivityParticipantBindingCompleted ||
+                stage == SessionActivityStage.ActivityParticipantBindingFailed)
             {
                 return "No local QA action";
             }
@@ -567,6 +577,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 : ActivityTransitionContinuePolicy.Unknown;
         }
 
+        private static string FormatActivitySetupInventory(SessionActivityRuntimeState state)
+        {
+            if (state == null)
+            {
+                return "<none>";
+            }
+
+            ActivitySetupInventory inventory = state.CurrentActivitySetupInventory;
+            if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
+            {
+                return "<none>";
+            }
+
+            return $"inventoryId='{inventory.InventoryId}', totalRequirements='{inventory.TotalRequirementCount}'";
+        }
+
         private static void RegisterGlobal<T>(T instance) where T : class
         {
             if (instance == null)
@@ -588,7 +614,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
-
 
 
 

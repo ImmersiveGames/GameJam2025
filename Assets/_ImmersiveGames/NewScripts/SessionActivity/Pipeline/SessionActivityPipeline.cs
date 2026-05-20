@@ -28,6 +28,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IPlayerActorParticipationAdapter _playerActorParticipationAdapter;
         private readonly IPlayerActorResetAdapter _playerActorResetAdapter;
         private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
+        private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
+        private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
         private SessionActivityRouteTransitionContext _routeTransitionContext;
@@ -40,6 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
         private PlayerSelectionSnapshot _lastPlayerSelectionSnapshot;
+        private SessionActivityPlayerPreparationHandoff _lastRouteSessionPlayerPreparationHandoff;
         private SessionActivityRailKind _activeRailKind;
         private PendingActivityContentLoadContext _pendingActivityContentLoadContext;
 
@@ -159,6 +162,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _playerActorParticipationAdapter = new PlayerActorParticipationAdapter();
             _playerActorResetAdapter = new PlayerActorResetAdapter();
             _activityPlayerActorRegistry = new ActivityPlayerActorRegistry();
+            _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
+            _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -331,6 +336,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingRestartCompletionEntrySequence = 0;
             _pendingActivityContentLoadContext = null;
             _lastPlayerSelectionSnapshot = BuildMvpPlayerSelectionSnapshotFromPlayerPreparation(handoff, activationIdentity, source, reason);
+            _lastRouteSessionPlayerPreparationHandoff = handoff.PlayerPreparation;
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _state.SetCurrentDefinition(initialDefinition);
@@ -996,6 +1002,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingRestartCompletionActivityId = string.Empty;
             _pendingRestartCompletionEntrySequence = 0;
             _pendingActivityContentLoadContext = null;
+            _lastRouteSessionPlayerPreparationHandoff = default;
             _lastPlayerSelectionSnapshot = new PlayerSelectionSnapshot(
                 activationIdentity,
                 Array.Empty<PlayerSelectionEntry>(),
@@ -1838,6 +1845,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _state.ClearCurrentActivityContentLoadedSet();
+            _state.ClearCurrentActivitySetupInventory();
 
             SessionActivityIdentity scopedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             _lastPlayerSelectionSnapshot = RebindPlayerSelectionSnapshotIdentity(_lastPlayerSelectionSnapshot, scopedIdentity, command.Source, command.Reason);
@@ -2306,6 +2314,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivitySetupStarted, setupStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             EmitSnapshot(snapshots, "activity_setup_started", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             ObserveActivitySceneContractOrSkip(definition, command, facts, snapshots, entrySequence);
+            BuildAndValidateActivitySetupInventory(definition, command, facts, snapshots, entrySequence);
+            EmitParticipantBindingStage(definition, command, facts, snapshots, entrySequence);
 
             if (definition.RequiresPlayerActor)
             {
@@ -2504,6 +2514,559 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
             EmitFact(facts, SessionActivityFactKind.ActivitySetupCompleted, setupCompletedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
             EmitSnapshot(snapshots, "activity_setup_completed", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
+        }
+
+        private void EmitParticipantBindingStage(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            ActivitySetupInventory inventory = _state.CurrentActivitySetupInventory;
+            SessionActivityIdentity startedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingStarted, entrySequence);
+            _state.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActivityParticipantBindingStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityParticipantBindingStarted,
+                startedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant binding stage started. routeSessionParticipantOwnership='external' activityOwnership='false'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_participant_binding_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant binding stage started. routeSessionParticipantOwnership='external' activityOwnership='false'.");
+
+            if (!inventory.IsValid || !inventory.Identity.Equals(BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence)))
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding failed because ActivitySetupInventory is missing or foreign/stale.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_participant_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding failed because ActivitySetupInventory is missing or foreign/stale.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Missing valid ActivitySetupInventory for activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            IReadOnlyList<ParticipantRequirement> participantRequirements = inventory.ParticipantRequirements;
+            if (participantRequirements == null || participantRequirements.Count == 0)
+            {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements,
+                    skippedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding skipped because no participant requirements were declared. inventoryId='{inventory.InventoryId}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_participant_binding_skipped_no_requirements",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding skipped because no participant requirements were declared.");
+
+                SessionActivityIdentity completedAfterSkipIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
+                _state.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingCompleted,
+                    completedAfterSkipIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding completed resolved='0' skipped='1'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_participant_binding_completed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding completed resolved='0' skipped='1'.");
+                return;
+            }
+
+            SessionActivityPlayerPreparationHandoff routeSessionPlayerPreparation = ResolveRouteSessionPlayerPreparationOrFail(
+                definition,
+                command,
+                facts,
+                snapshots,
+                entrySequence);
+            HashSet<string> plannedRouteSessionParticipants = BuildPlannedRouteSessionParticipantSet(routeSessionPlayerPreparation.PlayerIds);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityParticipantBindingResolutionStarted,
+                startedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant binding resolution started routeSessionParticipantOwnership='external' activityOwnership='false' participantOwnership='RouteSession' playerPreparationOutcome='{routeSessionPlayerPreparation.Outcome}' participationKind='{routeSessionPlayerPreparation.ParticipationKind}' plannedParticipants='{plannedRouteSessionParticipants.Count}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_participant_binding_resolution_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant binding resolution started plannedParticipants='{plannedRouteSessionParticipants.Count}'.");
+
+            int resolvedCount = 0;
+            int skippedCount = 0;
+            List<ActivityParticipantBindCommand> bindCommands = new(participantRequirements.Count);
+            List<ActivityParticipantMaterializationCommand> materializationCommands = new(participantRequirements.Count);
+            List<ActivityParticipantPlacementCommand> placementCommands = new(participantRequirements.Count);
+            List<ActivityParticipantResetCommand> resetCommands = new(participantRequirements.Count);
+
+            for (int index = 0; index < participantRequirements.Count; index++)
+            {
+                ParticipantRequirement requirement = participantRequirements[index];
+                if (!requirement.IsValid)
+                {
+                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantBindingFailed,
+                        failedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' participant binding failed invalid participant requirement index='{index}'.");
+                    EmitSnapshot(
+                        snapshots,
+                        "activity_participant_binding_failed",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' participant binding failed invalid participant requirement index='{index}'.");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Invalid ParticipantRequirement at index='{index}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantRequirementDeclared,
+                    startedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant requirement declared requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' participantId='{requirement.ParticipantId}' roleId='{requirement.RoleId}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' status='Declared'.");
+
+                string requestedParticipantId = Normalize(requirement.ParticipantId);
+                bool requirementRequired = requirement.Requirement.IsRequired;
+                bool hasRequestedHint = !string.IsNullOrWhiteSpace(requestedParticipantId);
+                bool resolvedFromHint = false;
+                bool resolved = false;
+                string resolvedParticipantId = string.Empty;
+                string resolutionReason = "no_route_session_participant_available";
+
+                if (hasRequestedHint)
+                {
+                    if (plannedRouteSessionParticipants.Contains(requestedParticipantId))
+                    {
+                        resolved = true;
+                        resolvedFromHint = true;
+                        resolvedParticipantId = requestedParticipantId;
+                        resolutionReason = "resolved_from_requested_participant_id";
+                    }
+                    else
+                    {
+                        resolutionReason = "requested_participant_id_not_found_in_route_session";
+                    }
+                }
+                else if (TryResolveSingleParticipantHint(plannedRouteSessionParticipants, out string inferredParticipantId))
+                {
+                    resolved = true;
+                    resolvedParticipantId = inferredParticipantId;
+                    resolutionReason = "resolved_from_route_session_single_participant";
+                }
+
+                if (resolved)
+                {
+                    resolvedCount += 1;
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantBindingResolved,
+                        startedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' participant requirement resolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' resolvedParticipantId='{resolvedParticipantId}' resolvedFromHint='{resolvedFromHint}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' status='ResolvedNominally' resolutionReason='{resolutionReason}'.");
+
+                    ActivityParticipantBindCommand bindCommand = new(
+                        startedIdentity,
+                        requirement.Requirement.RequirementId,
+                        requirement.ParticipantKind,
+                        requestedParticipantId,
+                        resolvedParticipantId,
+                        requirement.RoleId,
+                        command.Source,
+                        command.Reason);
+                    ActivityParticipantMaterializationCommand materializationCommand = new(
+                        startedIdentity,
+                        requirement.Requirement.RequirementId,
+                        requirement.ParticipantKind,
+                        resolvedParticipantId,
+                        ActivityParticipantMaterializationNeedKind.EnsureRouteSessionParticipantAvailable,
+                        command.Source,
+                        command.Reason);
+                    ActivityParticipantPlacementCommand placementCommand = new(
+                        startedIdentity,
+                        requirement.Requirement.RequirementId,
+                        resolvedParticipantId,
+                        requirement.PlacementRequirementId,
+                        command.Source,
+                        command.Reason);
+                    ActivityParticipantResetCommand resetCommand = new(
+                        startedIdentity,
+                        requirement.Requirement.RequirementId,
+                        resolvedParticipantId,
+                        BuildDefaultParticipantResetGroups(),
+                        command.Source,
+                        command.Reason);
+
+                    if (!bindCommand.IsValid || !materializationCommand.IsValid || !placementCommand.IsValid || !resetCommand.IsValid)
+                    {
+                        SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                        _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                        EmitFact(
+                            facts,
+                            SessionActivityFactKind.ActivityParticipantBindingFailed,
+                            failedIdentity,
+                            command.Source,
+                            command.Reason,
+                            $"'{definition.ActivityId}' participant command plan failed invalid command requirementId='{requirement.Requirement.RequirementId}' resolvedParticipantId='{resolvedParticipantId}'.");
+                        EmitSnapshot(
+                            snapshots,
+                            "activity_participant_binding_failed",
+                            command.Source,
+                            command.Reason,
+                            $"'{definition.ActivityId}' participant command plan failed invalid command requirementId='{requirement.Requirement.RequirementId}'.");
+                        throw new InvalidOperationException(
+                            $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Invalid participant command plan requirementId='{requirement.Requirement.RequirementId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                    }
+
+                    bindCommands.Add(bindCommand);
+                    materializationCommands.Add(materializationCommand);
+                    placementCommands.Add(placementCommand);
+                    resetCommands.Add(resetCommand);
+                    continue;
+                }
+
+                if (!requirementRequired)
+                {
+                    skippedCount += 1;
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantBindingResolved,
+                        startedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' optional participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' activityBinding='skipped' status='OptionalUnresolvedSkipped' resolutionReason='{resolutionReason}'.");
+                    continue;
+                }
+
+                SessionActivityIdentity requiredFailedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(requiredFailedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingFailed,
+                    requiredFailedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' required participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' resolutionReason='{resolutionReason}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_participant_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' required participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}'.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Required participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' resolutionReason='{resolutionReason}'.");
+            }
+
+            if (bindCommands.Count > 0)
+            {
+                EmitParticipantCommandPlan(
+                    definition,
+                    command,
+                    facts,
+                    snapshots,
+                    startedIdentity,
+                    bindCommands,
+                    materializationCommands,
+                    placementCommands,
+                    resetCommands);
+            }
+
+            SessionActivityIdentity completedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
+            _state.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityParticipantBindingCompleted,
+                completedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant binding completed resolved='{resolvedCount}' skipped='{skippedCount}' totalRequirements='{participantRequirements.Count}' participantOwnership='RouteSession' activityOwnership='false' status='ResolvedNominally'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_participant_binding_completed",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant binding completed resolved='{resolvedCount}' skipped='{skippedCount}' totalRequirements='{participantRequirements.Count}'.");
+        }
+
+
+        private void EmitParticipantCommandPlan(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            SessionActivityIdentity identity,
+            IReadOnlyList<ActivityParticipantBindCommand> bindCommands,
+            IReadOnlyList<ActivityParticipantMaterializationCommand> materializationCommands,
+            IReadOnlyList<ActivityParticipantPlacementCommand> placementCommands,
+            IReadOnlyList<ActivityParticipantResetCommand> resetCommands)
+        {
+            ActivityParticipantCommandPlan plan = new(
+                identity,
+                bindCommands,
+                materializationCommands,
+                placementCommands,
+                resetCommands,
+                command.Source,
+                command.Reason);
+
+            if (!plan.IsValid || !plan.HasCommands)
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingFailed,
+                    identity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant command plan failed invalid plan.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Invalid participant command plan activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}'.");
+            }
+
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityParticipantCommandPlanReady,
+                identity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant command plan ready totalCommands='{plan.TotalCommandCount}' bind='{bindCommands.Count}' materialization='{materializationCommands.Count}' placement='{placementCommands.Count}' reset='{resetCommands.Count}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='false' status='NominalCommandsOnly'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_participant_command_plan_ready",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' participant command plan ready totalCommands='{plan.TotalCommandCount}' adapterExecution='false'.");
+
+            for (int index = 0; index < bindCommands.Count; index++)
+            {
+                ActivityParticipantBindCommand bindCommand = bindCommands[index];
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindCommandIssued,
+                    bindCommand.Identity,
+                    bindCommand.Source,
+                    bindCommand.Reason,
+                    $"'{definition.ActivityId}' participant bind command issued requirementId='{bindCommand.RequirementId}' requestedParticipantId='{(string.IsNullOrWhiteSpace(bindCommand.RequestedParticipantId) ? "<none>" : bindCommand.RequestedParticipantId)}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='false'.");
+            }
+
+            for (int index = 0; index < materializationCommands.Count; index++)
+            {
+                ActivityParticipantMaterializationCommand materializationCommand = materializationCommands[index];
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantMaterializationCommandIssued,
+                    materializationCommand.Identity,
+                    materializationCommand.Source,
+                    materializationCommand.Reason,
+                    $"'{definition.ActivityId}' participant materialization command issued requirementId='{materializationCommand.RequirementId}' resolvedParticipantId='{materializationCommand.ResolvedParticipantId}' participantKind='{materializationCommand.ParticipantKind}' needKind='{materializationCommand.NeedKind}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='false'.");
+            }
+
+            for (int index = 0; index < placementCommands.Count; index++)
+            {
+                ActivityParticipantPlacementCommand placementCommand = placementCommands[index];
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantPlacementCommandIssued,
+                    placementCommand.Identity,
+                    placementCommand.Source,
+                    placementCommand.Reason,
+                    $"'{definition.ActivityId}' participant placement command issued requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' placementScope='ActivityLocal' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='false'.");
+            }
+
+            for (int index = 0; index < resetCommands.Count; index++)
+            {
+                ActivityParticipantResetCommand resetCommand = resetCommands[index];
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantResetCommandIssued,
+                    resetCommand.Identity,
+                    resetCommand.Source,
+                    resetCommand.Reason,
+                    $"'{definition.ActivityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='false'.");
+            }
+        }
+
+        private static IReadOnlyList<ActivityStateResetGroup> BuildDefaultParticipantResetGroups()
+        {
+            return new[]
+            {
+                ActivityStateResetGroup.Placement,
+                ActivityStateResetGroup.ActivityParticipation,
+                ActivityStateResetGroup.RuntimeTransient,
+            };
+        }
+
+        private static string FormatActivityStateResetGroups(IReadOnlyList<ActivityStateResetGroup> resetGroups)
+        {
+            if (resetGroups == null || resetGroups.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(",", resetGroups);
+        }
+
+        private void BuildAndValidateActivitySetupInventory(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            SessionActivityIdentity setupIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            SessionActivityIdentity buildStartedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryBuildStarted, entrySequence);
+            _state.SetCurrentIdentity(buildStartedIdentity, SessionActivityStage.ActivitySetupInventoryBuildStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivitySetupInventoryBuildStarted,
+                buildStartedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity setup inventory build started.");
+            EmitSnapshot(
+                snapshots,
+                "activity_setup_inventory_build_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity setup inventory build started.");
+
+            ActivitySetupInventoryBuildContext buildContext = new(
+                definition,
+                setupIdentity,
+                _state.CurrentActivityContentLoadedSet,
+                command.Source,
+                command.Reason);
+
+            ActivitySetupInventoryBuildResult buildResult = _activitySetupInventoryBuilder.Build(buildContext);
+            if (buildResult.IsFailed || !buildResult.IsValid)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidationFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivitySetupInventoryValidationFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_setup_inventory_build_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ActivitySetupInventory] Build failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' message='{buildResult.Message}'.");
+            }
+
+            _state.SetCurrentActivitySetupInventory(buildResult.Inventory);
+
+            if (buildResult.IsSkipped)
+            {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements,
+                    skippedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory skipped because no requirements were declared. inventoryId='{buildResult.Inventory.InventoryId}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_setup_inventory_skipped_no_requirements",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory skipped because no requirements were declared.");
+            }
+            else
+            {
+                SessionActivityIdentity builtIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryBuilt, entrySequence);
+                _state.SetCurrentIdentity(builtIdentity, SessionActivityStage.ActivitySetupInventoryBuilt);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivitySetupInventoryBuilt,
+                    builtIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory built inventoryId='{buildResult.Inventory.InventoryId}' totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_setup_inventory_built",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory built totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
+            }
+
+            ActivitySetupInventoryValidationResult validationResult = _activitySetupInventoryValidator.Validate(buildResult.Inventory, command.Source, command.Reason);
+            if (validationResult.IsFailed || !validationResult.IsValid)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidationFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivitySetupInventoryValidationFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}' message='{validationResult.Message}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_setup_inventory_validation_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}'.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ActivitySetupInventory] Validation failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' errors='{string.Join(" | ", validationResult.Errors)}'.");
+            }
+
+            SessionActivityIdentity validatedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidated, entrySequence);
+            _state.SetCurrentIdentity(validatedIdentity, SessionActivityStage.ActivitySetupInventoryValidated);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivitySetupInventoryValidated,
+                validatedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity setup inventory validated inventoryId='{validationResult.Inventory.InventoryId}' totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
+            EmitSnapshot(
+                snapshots,
+                "activity_setup_inventory_validated",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity setup inventory validated totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
         }
 
         private void ObserveActivitySceneContractOrSkip(
@@ -4719,6 +5282,77 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return new PlayerSelectionSnapshot(identity, entries, selectionSource, ignoredOptionalPlayersCount, source, reason);
         }
 
+        private SessionActivityPlayerPreparationHandoff ResolveRouteSessionPlayerPreparationOrFail(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            SessionActivityPlayerPreparationHandoff handoff = _lastRouteSessionPlayerPreparationHandoff;
+            if (!handoff.IsValid || !string.Equals(handoff.SessionId, _sessionId, StringComparison.Ordinal))
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding failed invalid route/session participant context sessionStateId='{_sessionId}' handoffSessionId='{handoff.SessionId}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_participant_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding failed invalid route/session participant context.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Missing or stale route/session player preparation context activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            return handoff;
+        }
+
+        private static HashSet<string> BuildPlannedRouteSessionParticipantSet(string playerIds)
+        {
+            HashSet<string> participants = new(StringComparer.Ordinal);
+            string normalized = Normalize(playerIds);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return participants;
+            }
+
+            string[] split = normalized.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            for (int index = 0; index < split.Length; index++)
+            {
+                string participantId = Normalize(split[index]);
+                if (!string.IsNullOrWhiteSpace(participantId))
+                {
+                    participants.Add(participantId);
+                }
+            }
+
+            return participants;
+        }
+
+        private static bool TryResolveSingleParticipantHint(HashSet<string> participants, out string participantId)
+        {
+            participantId = string.Empty;
+            if (participants == null || participants.Count != 1)
+            {
+                return false;
+            }
+
+            foreach (string candidate in participants)
+            {
+                participantId = candidate;
+                break;
+            }
+
+            return !string.IsNullOrWhiteSpace(participantId);
+        }
+
         private static string FormatPlayerSelectionSource(PlayerSelectionSnapshotSource source)
         {
             return source switch
@@ -4744,4 +5378,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
     }
 }
-

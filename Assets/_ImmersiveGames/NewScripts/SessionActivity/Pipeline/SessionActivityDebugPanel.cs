@@ -127,114 +127,129 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            EnsureHost();
-            EnsureStyles();
-
-            GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
-            GUILayout.Label("Session Activity", _titleStyle);
-            GUILayout.Space(SectionSpacing);
-            GUILayout.Label("QA canonicamente restrito: use apenas o lifecycle local sem atalhos de navegacao.", _labelStyle);
-            GUILayout.Label("Restart canônico: use RestartCurrentActivity em ActivityRunning; nao usar GoTo*/DebugStartActivity como rail de restart.", _labelStyle);
-            GUILayout.Space(SectionSpacing);
-
-            GUILayout.Space(SectionSpacing);
-
-            bool canCompleteActivationWindow = CanCompleteActivationWindow();
-            bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
-            bool canRestartCurrentActivity = CanRestartCurrentActivity();
-            bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
-            bool canContinueToNextActivity = CanContinueToNextActivity();
-
-            GUI.enabled = canCompleteActivationWindow;
-            if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
+            bool areaBegun = false;
+            try
             {
-                CompleteActivationWindow();
-            }
-            GUI.enabled = true;
+                EnsureHost();
+                EnsureStyles();
 
-            GUILayout.Space(SectionSpacing);
-
-            GUI.enabled = canCompleteCurrentActivity;
-            if (GUILayout.Button("CompleteCurrentActivity", _buttonStyle))
-            {
-                CompleteCurrentActivity();
-            }
-            GUI.enabled = true;
-
-            GUILayout.Space(SectionSpacing);
-
-            GUI.enabled = canRestartCurrentActivity;
-            if (GUILayout.Button("RestartCurrentActivity (rail canonico de restart local)", _buttonStyle))
-            {
-                RestartCurrentActivity();
-            }
-            GUI.enabled = true;
-
-            GUILayout.Space(SectionSpacing);
-
-            GUI.enabled = canCompleteDeactivationWindow;
-            if (GUILayout.Button("CompleteDeactivationWindow", _buttonStyle))
-            {
-                CompleteDeactivationWindow();
-            }
-            GUI.enabled = true;
-
-            GUILayout.Space(SectionSpacing);
-
-            GUI.enabled = canContinueToNextActivity;
-            if (GUILayout.Button("ContinueToNextActivity (apenas quando policy=ManualContinue)", _buttonStyle))
-            {
-                ContinueToNextActivity();
-            }
-            GUI.enabled = true;
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("DumpState", _buttonStyle))
-            {
-                DumpState();
-            }
-
-            GUILayout.Space(SectionSpacing);
-
-            if (GUILayout.Button("Trace", _buttonStyle))
-            {
-                Trace();
-            }
-
-            if (showForeignStaleQa)
-            {
+                GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
+                areaBegun = true;
+                GUILayout.Label("Session Activity", _titleStyle);
                 GUILayout.Space(SectionSpacing);
-                GUILayout.Label("Foreign/Stale QA", _labelStyle);
+                GUILayout.Label("QA canonicamente restrito: use apenas o lifecycle local sem atalhos de navegacao.", _labelStyle);
+                GUILayout.Label("Restart canônico: use RestartCurrentActivity em ActivityRunning; nao usar GoTo*/DebugStartActivity como rail de restart.", _labelStyle);
+                GUILayout.Space(SectionSpacing);
 
-                if (GUILayout.Button("SendStaleFirstActivityCommand", _buttonStyle))
+                GUILayout.Space(SectionSpacing);
+
+                bool canCompleteActivationWindow = CanCompleteActivationWindow();
+                bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
+                bool canRestartCurrentActivity = CanRestartCurrentActivity();
+                bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
+                bool canContinueToNextActivity = CanContinueToNextActivity();
+
+                GUI.enabled = canCompleteActivationWindow;
+                if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
                 {
-                    SendStaleFirstActivityCommand();
+                    CompleteActivationWindow();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canCompleteCurrentActivity;
+                if (GUILayout.Button("CompleteCurrentActivity", _buttonStyle))
+                {
+                    CompleteCurrentActivity();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canRestartCurrentActivity;
+                if (GUILayout.Button("RestartCurrentActivity (rail canonico de restart local)", _buttonStyle))
+                {
+                    RestartCurrentActivity();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canCompleteDeactivationWindow;
+                if (GUILayout.Button("CompleteDeactivationWindow", _buttonStyle))
+                {
+                    CompleteDeactivationWindow();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canContinueToNextActivity;
+                if (GUILayout.Button("ContinueToNextActivity (apenas quando policy=ManualContinue)", _buttonStyle))
+                {
+                    ContinueToNextActivity();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                if (GUILayout.Button("DumpState", _buttonStyle))
+                {
+                    DumpState();
                 }
 
                 GUILayout.Space(SectionSpacing);
 
-                if (GUILayout.Button("SendForeignSessionCommand", _buttonStyle))
+                if (GUILayout.Button("Trace", _buttonStyle))
                 {
-                    SendForeignSessionCommand();
+                    Trace();
+                }
+
+                if (showForeignStaleQa)
+                {
+                    GUILayout.Space(SectionSpacing);
+                    GUILayout.Label("Foreign/Stale QA", _labelStyle);
+
+                    if (GUILayout.Button("SendStaleFirstActivityCommand", _buttonStyle))
+                    {
+                        SendStaleFirstActivityCommand();
+                    }
+
+                    GUILayout.Space(SectionSpacing);
+
+                    if (GUILayout.Button("SendForeignSessionCommand", _buttonStyle))
+                    {
+                        SendForeignSessionCommand();
+                    }
+
+                    GUILayout.Space(SectionSpacing);
+
+                    if (GUILayout.Button("SendForeignPipelineCommand", _buttonStyle))
+                    {
+                        SendForeignPipelineCommand();
+                    }
                 }
 
                 GUILayout.Space(SectionSpacing);
+                GUILayout.Label("Current State", _labelStyle);
+                GUILayout.Label($"Observed State Revision: {_observedStateRevision}", _labelStyle);
 
-                if (GUILayout.Button("SendForeignPipelineCommand", _buttonStyle))
+                string stateSummary = BuildStateSummary();
+                GUILayout.TextArea(stateSummary, _dumpStyle, GUILayout.Height(TextAreaHeight));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[FATAL][SessionActivityDebugPanel] OnGUI render failed. error='{exception}'.");
+            }
+            finally
+            {
+                GUI.enabled = true;
+                if (areaBegun)
                 {
-                    SendForeignPipelineCommand();
+                    GUILayout.EndArea();
                 }
             }
-
-            GUILayout.Space(SectionSpacing);
-            GUILayout.Label("Current State", _labelStyle);
-            GUILayout.Label($"Observed State Revision: {_observedStateRevision}", _labelStyle);
-
-            string stateSummary = BuildStateSummary();
-            GUILayout.TextArea(stateSummary, _dumpStyle, GUILayout.Height(TextAreaHeight));
-
-            GUILayout.EndArea();
         }
 
         private void EnsureHost()
@@ -268,6 +283,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
             builder.AppendLine($"activityContentLoadedSet='{host.State.CurrentActivityContentLoadedSet}'");
+            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory(host.State)}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
@@ -309,6 +325,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
             builder.AppendLine($"activityContentLoadedSet='{host.State.CurrentActivityContentLoadedSet}'");
+            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory(host.State)}'");
             if (host.GateState != null)
             {
                 builder.AppendLine($"gateSessionBlocked='{host.GateState.SessionBlocked}' gateActivityBlocked='{host.GateState.ActivityBlocked}'");
@@ -368,7 +385,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 stage == SessionActivityStage.ActivityContentSceneLoaded ||
                 stage == SessionActivityStage.ActivityContentLoadedSetReady ||
                 stage == SessionActivityStage.ActivityContentLoadSkippedNoContent ||
-                stage == SessionActivityStage.ActivityContentLoadFailed)
+                stage == SessionActivityStage.ActivityContentLoadFailed ||
+                stage == SessionActivityStage.ActivitySetupInventoryBuildStarted ||
+                stage == SessionActivityStage.ActivitySetupInventoryBuilt ||
+                stage == SessionActivityStage.ActivitySetupInventoryValidated ||
+                stage == SessionActivityStage.ActivitySetupInventorySkippedNoRequirements ||
+                stage == SessionActivityStage.ActivitySetupInventoryValidationFailed ||
+                stage == SessionActivityStage.ActivityParticipantBindingStarted ||
+                stage == SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements ||
+                stage == SessionActivityStage.ActivityParticipantBindingCompleted ||
+                stage == SessionActivityStage.ActivityParticipantBindingFailed)
             {
                 return "No local QA action";
             }
@@ -551,6 +577,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ? current.NextActivityTransitionContinuePolicy
                 : ActivityTransitionContinuePolicy.Unknown;
         }
+
+        private static string FormatActivitySetupInventory(SessionActivityRuntimeState state)
+        {
+            if (state == null)
+            {
+                return "<none>";
+            }
+
+            ActivitySetupInventory inventory = state.CurrentActivitySetupInventory;
+            if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
+            {
+                return "<none>";
+            }
+
+            return $"inventoryId='{inventory.InventoryId}', totalRequirements='{inventory.TotalRequirementCount}'";
+        }
     }
 }
-

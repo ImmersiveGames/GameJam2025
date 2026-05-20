@@ -101,6 +101,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityContentLoadedSetReady = 40,
         ActivityContentLoadSkippedNoContent = 41,
         ActivityContentLoadFailed = 42,
+        ActivitySetupInventoryBuildStarted = 43,
+        ActivitySetupInventoryBuilt = 44,
+        ActivitySetupInventoryValidated = 45,
+        ActivitySetupInventorySkippedNoRequirements = 46,
+        ActivitySetupInventoryValidationFailed = 47,
+        ActivityParticipantBindingStarted = 48,
+        ActivityParticipantBindingSkippedNoRequirements = 49,
+        ActivityParticipantBindingCompleted = 50,
+        ActivityParticipantBindingFailed = 51,
     }
 
     public enum ActivityExecutionState
@@ -530,6 +539,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityContentLoadSkippedNoContent = 91,
         ActivityContentLoadFailed = 92,
         ActivityContentSceneLoadRejected = 93,
+        ActivitySetupInventoryBuildStarted = 94,
+        ActivitySetupInventoryBuilt = 95,
+        ActivitySetupInventorySkippedNoRequirements = 96,
+        ActivitySetupInventoryValidated = 97,
+        ActivitySetupInventoryValidationFailed = 98,
+        ActivityParticipantBindingStarted = 99,
+        ActivityParticipantBindingSkippedNoRequirements = 100,
+        ActivityParticipantRequirementDeclared = 101,
+        ActivityParticipantBindingCompleted = 102,
+        ActivityParticipantBindingFailed = 103,
+        ActivityParticipantBindingResolutionStarted = 104,
+        ActivityParticipantBindingResolved = 105,
+        ActivityParticipantCommandPlanReady = 106,
+        ActivityParticipantBindCommandIssued = 107,
+        ActivityParticipantMaterializationCommandIssued = 108,
+        ActivityParticipantPlacementCommandIssued = 109,
+        ActivityParticipantResetCommandIssued = 110,
     }
 
     public readonly struct SessionActivityFact
@@ -938,4 +964,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ISessionActivityPendingOperationCallback callback);
     }
 }
-
