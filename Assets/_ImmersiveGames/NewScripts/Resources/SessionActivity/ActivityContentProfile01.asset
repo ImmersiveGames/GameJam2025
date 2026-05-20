@@ -19,3 +19,20 @@ MonoBehaviour:
   - entryId: content.scene.activity01
     sceneKey: {fileID: 11400000, guid: f6f2e1196dd795d4abfef096e8950467, type: 2}
     requiredness: 2
+  setupRequirements:
+    participantRequirements:
+    - requirementId: participant.player.primary
+      requiredness: 2
+      participantKind: 1
+      participantId: player1
+      roleId: primary_player
+      placementRequirementId: 
+    objectEntryRequirements: []
+    sceneContributorRequirements: []
+    placementRequirements: []
+    cameraBindingRequirements: []
+    interactionBindingRequirements: []
+    hudBindingRequirements: []
+    warmupRequirements: []
+    stateResetRequirements: []
+    releaseRequirements: []

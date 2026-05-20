@@ -109,6 +109,24 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             return records;
         }
 
+        public bool TryGetActiveActorIdentities(SessionActivityIdentity expectedScopeIdentity, out IReadOnlyList<PlayerActorIdentityRecord> records)
+        {
+            records = Array.Empty<PlayerActorIdentityRecord>();
+            if (!_activeScopeIdentity.IsValid || !IsSameActivityCycle(_activeScopeIdentity, expectedScopeIdentity))
+            {
+                return false;
+            }
+
+            List<PlayerActorIdentityRecord> active = new(_activeIdentityByPlayerActorId.Count);
+            foreach (KeyValuePair<string, PlayerActorIdentityRecord> pair in _activeIdentityByPlayerActorId)
+            {
+                active.Add(pair.Value);
+            }
+
+            records = active;
+            return true;
+        }
+
         public GameObject ResolveActiveInstanceOrFail(SessionActivityIdentity expectedScopeIdentity, string playerActorId)
         {
             EnsureScopeMatchesOrFail(expectedScopeIdentity);

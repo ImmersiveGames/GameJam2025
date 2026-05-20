@@ -1,8 +1,75 @@
 using System;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
+    public readonly struct SessionActivityPlayerTechnicalPlanEntry : IEquatable<SessionActivityPlayerTechnicalPlanEntry>
+    {
+        public SessionActivityPlayerTechnicalPlanEntry(
+            string participantId,
+            bool required,
+            GameObject prefab,
+            ActorPlacementMode placementMode,
+            string placementId,
+            Vector3 localPosition,
+            Vector3 localEulerAngles)
+        {
+            ParticipantId = Normalize(participantId);
+            Required = required;
+            Prefab = prefab;
+            PlacementMode = placementMode;
+            PlacementId = Normalize(placementId);
+            LocalPosition = localPosition;
+            LocalEulerAngles = localEulerAngles;
+        }
+
+        public string ParticipantId { get; }
+        public bool Required { get; }
+        public GameObject Prefab { get; }
+        public ActorPlacementMode PlacementMode { get; }
+        public string PlacementId { get; }
+        public Vector3 LocalPosition { get; }
+        public Vector3 LocalEulerAngles { get; }
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(ParticipantId) &&
+            (PlacementMode == ActorPlacementMode.None ||
+             PlacementMode == ActorPlacementMode.SceneMarker ||
+             PlacementMode == ActorPlacementMode.FixedTransform);
+        public bool HasPrefab => Prefab != null;
+
+        public bool Equals(SessionActivityPlayerTechnicalPlanEntry other)
+        {
+            return string.Equals(ParticipantId, other.ParticipantId, StringComparison.Ordinal) &&
+                   Required == other.Required &&
+                   Equals(Prefab, other.Prefab) &&
+                   PlacementMode == other.PlacementMode &&
+                   string.Equals(PlacementId, other.PlacementId, StringComparison.Ordinal) &&
+                   LocalPosition.Equals(other.LocalPosition) &&
+                   LocalEulerAngles.Equals(other.LocalEulerAngles);
+        }
+
+        public override bool Equals(object obj) => obj is SessionActivityPlayerTechnicalPlanEntry other && Equals(other);
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = StringComparer.Ordinal.GetHashCode(ParticipantId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ (Required ? 1 : 0);
+                hashCode = (hashCode * 397) ^ (Prefab != null ? Prefab.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (int)PlacementMode;
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(PlacementId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ LocalPosition.GetHashCode();
+                hashCode = (hashCode * 397) ^ LocalEulerAngles.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public readonly struct SessionActivityRouteTransitionContext : IEquatable<SessionActivityRouteTransitionContext>
     {
         public SessionActivityRouteTransitionContext(
@@ -69,7 +136,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int materializedPlayers,
             int skippedPlayers,
             int pendingRequiredPlayers,
-            string playerIds)
+            string playerIds,
+            IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> technicalPlanEntries)
         {
             PipelineId = Normalize(pipelineId);
             SessionId = Normalize(sessionId);
@@ -86,6 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SkippedPlayers = skippedPlayers < 0 ? 0 : skippedPlayers;
             PendingRequiredPlayers = pendingRequiredPlayers < 0 ? 0 : pendingRequiredPlayers;
             PlayerIds = Normalize(playerIds);
+            TechnicalPlanEntries = technicalPlanEntries ?? Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
         }
 
         public string PipelineId { get; }
@@ -103,6 +172,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int SkippedPlayers { get; }
         public int PendingRequiredPlayers { get; }
         public string PlayerIds { get; }
+        public IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> TechnicalPlanEntries { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PipelineId) &&
@@ -112,7 +182,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
             !string.IsNullOrWhiteSpace(Outcome) &&
-            !string.IsNullOrWhiteSpace(ParticipationKind);
+            !string.IsNullOrWhiteSpace(ParticipationKind) &&
+            TechnicalPlanEntries != null;
 
         public bool Equals(SessionActivityPlayerPreparationHandoff other)
         {
@@ -130,7 +201,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                    MaterializedPlayers == other.MaterializedPlayers &&
                    SkippedPlayers == other.SkippedPlayers &&
                    PendingRequiredPlayers == other.PendingRequiredPlayers &&
-                   string.Equals(PlayerIds, other.PlayerIds, StringComparison.Ordinal);
+                   string.Equals(PlayerIds, other.PlayerIds, StringComparison.Ordinal) &&
+                   CountTechnicalEntries(TechnicalPlanEntries) == CountTechnicalEntries(other.TechnicalPlanEntries);
         }
 
         public override bool Equals(object obj)
@@ -157,8 +229,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 hashCode = (hashCode * 397) ^ SkippedPlayers;
                 hashCode = (hashCode * 397) ^ PendingRequiredPlayers;
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(PlayerIds ?? string.Empty);
+                hashCode = (hashCode * 397) ^ CountTechnicalEntries(TechnicalPlanEntries);
                 return hashCode;
             }
+        }
+
+        private static int CountTechnicalEntries(IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                if (entries[index].IsValid)
+                {
+                    count += 1;
+                }
+            }
+
+            return count;
         }
 
         private static string Normalize(string value)

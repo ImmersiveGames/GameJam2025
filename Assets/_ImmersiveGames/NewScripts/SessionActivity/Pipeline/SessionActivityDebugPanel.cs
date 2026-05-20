@@ -2,6 +2,7 @@
 using System.Text;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
@@ -28,6 +29,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private GUIStyle _buttonStyle;
         private GUIStyle _dumpStyle;
         private int _observedStateRevision;
+        private string _lastActivity01ToActivity02CheckpointToken = string.Empty;
+        private int _activeCheckpointFromEntrySequence;
+        private int _activeCheckpointToEntrySequence;
+        private bool _activeCheckpointObservedActivity02Running;
+        private int _frozenPassedCheckpointFromEntrySequence;
+        private int _frozenPassedCheckpointToEntrySequence;
+        private string _lastRestartCurrentActivityCheckpointToken = string.Empty;
+        private string _frozenRestartCheckpointActivityId = string.Empty;
+        private int _frozenRestartCheckpointFromEntrySequence;
+        private int _frozenRestartCheckpointToEntrySequence;
+        private string _activeRestartCheckpointActivityId = string.Empty;
+        private int _activeRestartCheckpointFromEntrySequence;
+        private int _activeRestartCheckpointToEntrySequence;
+        private bool _activeRestartCheckpointReleaseSceneSafeLatched;
+        private string _lastRouteExitBackToMenuCheckpointToken = string.Empty;
+        private string _frozenRouteExitActivityId = string.Empty;
+        private int _frozenRouteExitEntrySequence;
 
         private void OnEnable()
         {
@@ -47,7 +65,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.CompleteCurrentActivity();
-            DumpState();
         }
 
         [ContextMenu("RestartCurrentActivity")]
@@ -55,7 +72,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.RestartCurrentActivity();
-            DumpState();
         }
 
         [ContextMenu("CompleteActivationWindow")]
@@ -63,7 +79,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.CompleteActivationWindow();
-            DumpState();
         }
 
         [ContextMenu("CompleteDeactivationWindow")]
@@ -71,15 +86,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.CompleteDeactivationWindow();
-            DumpState();
-        }
-
-        [ContextMenu("ContinueToNextActivity")]
-        public void ContinueToNextActivity()
-        {
-            EnsureHost();
-            host.ContinueToNextActivity();
-            DumpState();
         }
 
         [ContextMenu("SendStaleFirstActivityCommand")]
@@ -87,7 +93,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.ExecuteCommand(BuildStaleFirstActivityCommand(), "SendStaleFirstActivityCommand");
-            DumpState();
         }
 
         [ContextMenu("SendForeignSessionCommand")]
@@ -95,7 +100,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.ExecuteCommand(BuildForeignSessionCommand(), "SendForeignSessionCommand");
-            DumpState();
         }
 
         [ContextMenu("SendForeignPipelineCommand")]
@@ -103,14 +107,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.ExecuteCommand(BuildForeignPipelineCommand(), "SendForeignPipelineCommand");
-            DumpState();
         }
 
         [ContextMenu("DumpState")]
         public void DumpState()
         {
             EnsureHost();
-            Debug.Log(BuildDumpText());
+            host.DumpState();
         }
 
         [ContextMenu("Trace")]
@@ -118,6 +121,49 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             EnsureHost();
             host.DumpTrace();
+        }
+
+        [ContextMenu("DumpActivityContentReleaseEvidence")]
+        public void DumpActivityContentReleaseEvidence()
+        {
+            EnsureHost();
+            host.DumpActivityContentReleaseEvidence();
+        }
+
+        [ContextMenu("DumpCurrentActivityEvidence")]
+        public void DumpCurrentActivityEvidence()
+        {
+            EnsureHost();
+            host.DumpCurrentActivityEvidence();
+        }
+
+        [ContextMenu("DumpParticipantBindingEvidence")]
+        public void DumpParticipantBindingEvidence()
+        {
+            EnsureHost();
+            host.DumpParticipantBindingEvidence();
+        }
+
+        [ContextMenu("DumpTransitionEvidence")]
+        public void DumpTransitionEvidence()
+        {
+            EnsureHost();
+            host.DumpTransitionEvidence();
+        }
+
+        [ContextMenu("DumpSceneState")]
+        public void DumpSceneState()
+        {
+            EnsureHost();
+            host.DumpSceneState();
+        }
+
+        [ContextMenu("Dump Current Evidence")]
+        public void SmokeDumpCurrentEvidence()
+        {
+            EnsureHost();
+            DumpCurrentActivityEvidence();
+            DumpActivityContentReleaseEvidence();
         }
 
         private void OnGUI()
@@ -147,7 +193,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
                 bool canRestartCurrentActivity = CanRestartCurrentActivity();
                 bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
-                bool canContinueToNextActivity = CanContinueToNextActivity();
 
                 GUI.enabled = canCompleteActivationWindow;
                 if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
@@ -182,29 +227,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     CompleteDeactivationWindow();
                 }
                 GUI.enabled = true;
-
-                GUILayout.Space(SectionSpacing);
-
-                GUI.enabled = canContinueToNextActivity;
-                if (GUILayout.Button("ContinueToNextActivity (apenas quando policy=ManualContinue)", _buttonStyle))
-                {
-                    ContinueToNextActivity();
-                }
-                GUI.enabled = true;
-
-                GUILayout.Space(SectionSpacing);
-
-                if (GUILayout.Button("DumpState", _buttonStyle))
-                {
-                    DumpState();
-                }
-
-                GUILayout.Space(SectionSpacing);
-
-                if (GUILayout.Button("Trace", _buttonStyle))
-                {
-                    Trace();
-                }
 
                 if (showForeignStaleQa)
                 {
@@ -287,6 +309,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
+            builder.AppendLine("checkpointEvidenceFacts(currentActivity):");
+            string currentActivityId = host.State.CurrentDefinition.ActivityId;
+            int currentEntrySequence = host.State.CurrentEntrySequence;
+            for (int index = 0; index < host.State.Facts.Count; index++)
+            {
+                SessionActivityFact fact = host.State.Facts[index];
+                if (ShouldIncludeCheckpointEvidenceFact(fact, currentActivityId, currentEntrySequence))
+                {
+                    builder.AppendLine($"- {fact}");
+                }
+            }
             builder.AppendLine("facts:");
 
             for (int index = 0; index < host.State.Facts.Count; index++)
@@ -307,6 +340,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return builder.ToString().TrimEnd();
+        }
+
+        private static bool ShouldIncludeCheckpointEvidenceFact(SessionActivityFact fact, string currentActivityId, int currentEntrySequence)
+        {
+            if (!fact.IsValid || !fact.Identity.IsValid)
+            {
+                return false;
+            }
+
+            if (!string.Equals(fact.Identity.ActivityId, currentActivityId, StringComparison.Ordinal) ||
+                fact.Identity.EntrySequence != currentEntrySequence)
+            {
+                return false;
+            }
+
+            return fact.Kind == SessionActivityFactKind.ActivityContentLoadSkippedNoContent ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuildStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuilt ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryValidated ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityActivationStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityRunningEntered ||
+                   fact.Kind == SessionActivityFactKind.GameplayContentSkippedNoContent;
         }
 
         private string BuildStateSummary()
@@ -564,10 +625,714 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private void OnHostStateObservedChanged()
         {
             _observedStateRevision++;
+            bool routeExitCheckpointActive = TryEmitRouteExitBackToMenuCheckpoint();
+            if (!routeExitCheckpointActive)
+            {
+                bool restartCheckpointActive = TryEmitRestartCurrentActivityCheckpoint();
+                if (!restartCheckpointActive)
+                {
+                    TryEmitActivity01ToActivity02Checkpoint();
+                }
+            }
             if (qaAutoDumpOnObservedStateChange)
             {
-                Debug.Log(BuildDumpText());
+                host.DumpCurrentActivityEvidence();
             }
+        }
+
+        private bool TryEmitRouteExitBackToMenuCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (!TryResolveLatestRouteExitContext(out string activityId, out int entrySequence))
+            {
+                return false;
+            }
+
+            if (string.Equals(activityId, _frozenRouteExitActivityId, StringComparison.Ordinal) &&
+                entrySequence == _frozenRouteExitEntrySequence)
+            {
+                return false;
+            }
+
+            bool releaseStarted = false;
+            bool releaseCompleted = false;
+            string releaseSceneName = "<none>";
+            string releaseStatus = "<none>";
+            bool closedForRouteExit = false;
+
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, activityId, StringComparison.Ordinal) ||
+                    fact.Identity.EntrySequence != entrySequence)
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseStarted)
+                {
+                    releaseStarted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseCompleted)
+                {
+                    releaseCompleted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityContentSceneUnloaded)
+                {
+                    releaseSceneName = ExtractToken(fact.Message, "sceneName");
+                    releaseStatus = ExtractToken(fact.Message, "releaseStatus");
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityRouteExitCompleted)
+                {
+                    closedForRouteExit = true;
+                }
+            }
+
+            if (!closedForRouteExit &&
+                string.Equals(state.CurrentDefinition.ActivityId, activityId, StringComparison.Ordinal) &&
+                state.CurrentEntrySequence == entrySequence &&
+                state.CurrentStage == SessionActivityStage.ClosedForRouteExit)
+            {
+                closedForRouteExit = true;
+            }
+
+            bool releaseSceneIsLoadedAfterRelease = false;
+            if (releaseCompleted && !closedForRouteExit)
+            {
+                releaseSceneIsLoadedAfterRelease = ResolveSceneLoaded("ActivityScene01");
+            }
+
+            bool routeExitTeardownCompleted = closedForRouteExit;
+            bool menuRouteApplied = routeExitTeardownCompleted && (
+                ContainsTraceToken("ApplyOperationalRoute") ||
+                ContainsTraceToken("MenuScene") ||
+                ContainsTraceToken("SessionActivityRouteExitTeardownCompleted"));
+
+            string checkpointStatus = "Waiting";
+            string failedCriterion = "<none>";
+
+            if (releaseCompleted &&
+                !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) &&
+                !string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal))
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseStatus";
+            }
+            else if (closedForRouteExit && !releaseCompleted)
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "closedForRouteExitBeforeReleaseCompleted";
+            }
+            else if (releaseCompleted && !closedForRouteExit && releaseSceneIsLoadedAfterRelease)
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseSceneIsLoadedAfterRelease";
+            }
+            else if (releaseCompleted &&
+                     string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
+                     closedForRouteExit &&
+                     routeExitTeardownCompleted)
+            {
+                checkpointStatus = "Passed";
+            }
+
+            string token =
+                $"{activityId}|{entrySequence}|{checkpointStatus}|{failedCriterion}|{releaseStarted}|{releaseCompleted}|{releaseSceneName}|{releaseStatus}|{releaseSceneIsLoadedAfterRelease}|{closedForRouteExit}|{routeExitTeardownCompleted}|{menuRouteApplied}";
+            if (!string.Equals(token, _lastRouteExitBackToMenuCheckpointToken, StringComparison.Ordinal))
+            {
+                _lastRouteExitBackToMenuCheckpointToken = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='RouteExitBackToMenu' checkpointStatus='{checkpointStatus}' failedCriterion='{failedCriterion}' " +
+                    $"activityId='{activityId}' entrySequence='{entrySequence}' " +
+                    $"releaseStarted='{releaseStarted.ToString().ToLowerInvariant()}' releaseCompleted='{releaseCompleted.ToString().ToLowerInvariant()}' " +
+                    $"releaseSceneName='{releaseSceneName}' releaseStatus='{releaseStatus}' releaseSceneIsLoadedAfterRelease='{releaseSceneIsLoadedAfterRelease.ToString().ToLowerInvariant()}' " +
+                    $"closedForRouteExit='{closedForRouteExit.ToString().ToLowerInvariant()}' routeExitTeardownCompleted='{routeExitTeardownCompleted.ToString().ToLowerInvariant()}' " +
+                    $"menuRouteApplied='{menuRouteApplied.ToString().ToLowerInvariant()}'");
+            }
+
+            if (string.Equals(checkpointStatus, "Passed", StringComparison.Ordinal))
+            {
+                _frozenRouteExitActivityId = activityId;
+                _frozenRouteExitEntrySequence = entrySequence;
+            }
+
+            return !string.Equals(checkpointStatus, "Passed", StringComparison.Ordinal);
+        }
+
+        private bool TryEmitRestartCurrentActivityCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (!TryResolveLatestRestartAccepted(out string fromActivity, out int fromEntrySequence, out int toEntrySequence))
+            {
+                return false;
+            }
+
+            if (string.Equals(fromActivity, _frozenRestartCheckpointActivityId, StringComparison.Ordinal) &&
+                fromEntrySequence == _frozenRestartCheckpointFromEntrySequence &&
+                toEntrySequence == _frozenRestartCheckpointToEntrySequence)
+            {
+                return false;
+            }
+
+            bool isNewActiveRestartContext =
+                !string.Equals(fromActivity, _activeRestartCheckpointActivityId, StringComparison.Ordinal) ||
+                fromEntrySequence != _activeRestartCheckpointFromEntrySequence ||
+                toEntrySequence != _activeRestartCheckpointToEntrySequence;
+            if (isNewActiveRestartContext)
+            {
+                _activeRestartCheckpointActivityId = fromActivity;
+                _activeRestartCheckpointFromEntrySequence = fromEntrySequence;
+                _activeRestartCheckpointToEntrySequence = toEntrySequence;
+                _activeRestartCheckpointReleaseSceneSafeLatched = false;
+            }
+
+            const string checkpointName = "RestartCurrentActivity";
+            string toActivity = fromActivity;
+            bool releaseStarted = false;
+            bool releaseCompleted = false;
+            bool releaseSkippedNoContent = false;
+            string releaseSceneName = "<none>";
+            string releaseStatus = "<none>";
+            bool newEntryStarted = false;
+            bool newEntryReachedActivationWindowReady = false;
+            bool newEntryReachedActivityRunning = false;
+
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (string.Equals(fact.Identity.ActivityId, fromActivity, StringComparison.Ordinal) &&
+                    fact.Identity.EntrySequence == fromEntrySequence)
+                {
+                    if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseStarted)
+                    {
+                        releaseStarted = true;
+                    }
+                    else if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseCompleted)
+                    {
+                        releaseCompleted = true;
+                    }
+                    else if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseSkippedNoContent)
+                    {
+                        releaseSkippedNoContent = true;
+                    }
+                    else if (fact.Kind == SessionActivityFactKind.ActivityContentSceneUnloaded)
+                    {
+                        releaseSceneName = ExtractToken(fact.Message, "sceneName");
+                        releaseStatus = ExtractToken(fact.Message, "releaseStatus");
+                    }
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, toActivity, StringComparison.Ordinal) ||
+                    fact.Identity.EntrySequence != toEntrySequence)
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityActivationStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivityContentLoadStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivityContentSceneLoadCommandIssued ||
+                    fact.Kind == SessionActivityFactKind.ActivityContentLoadedSetReady ||
+                    fact.Kind == SessionActivityFactKind.ActivitySetupStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivationWindowStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivationWindowReady ||
+                    fact.Kind == SessionActivityFactKind.ActivityRunningEntered)
+                {
+                    newEntryStarted = true;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivationWindowReady)
+                {
+                    newEntryReachedActivationWindowReady = true;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityRunningEntered)
+                {
+                    newEntryReachedActivityRunning = true;
+                }
+            }
+
+            if (string.Equals(state.CurrentDefinition.ActivityId, fromActivity, StringComparison.Ordinal) &&
+                state.CurrentEntrySequence == toEntrySequence &&
+                state.CurrentStage == SessionActivityStage.ActivityRunning)
+            {
+                newEntryStarted = true;
+                newEntryReachedActivityRunning = true;
+            }
+
+            bool releaseSceneIsLoadedAfterRelease = false;
+            bool shouldEvaluateReleaseScene = releaseCompleted &&
+                                              !newEntryStarted &&
+                                              !_activeRestartCheckpointReleaseSceneSafeLatched &&
+                                              state.CurrentEntrySequence <= toEntrySequence;
+            if (shouldEvaluateReleaseScene)
+            {
+                releaseSceneIsLoadedAfterRelease = ResolveSceneLoaded("ActivityScene01");
+                if (!releaseSceneIsLoadedAfterRelease)
+                {
+                    _activeRestartCheckpointReleaseSceneSafeLatched = true;
+                }
+            }
+            else if (_activeRestartCheckpointReleaseSceneSafeLatched)
+            {
+                // Uma vez comprovado "false" antes da nova entry, congelamos para este checkpoint.
+                releaseSceneIsLoadedAfterRelease = false;
+            }
+
+            bool hasReleasePath = releaseStarted ||
+                                  releaseCompleted ||
+                                  !string.Equals(releaseSceneName, "<none>", StringComparison.Ordinal) ||
+                                  !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal);
+            bool releasePass = releaseCompleted &&
+                               string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal) &&
+                               string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
+                               !releaseSceneIsLoadedAfterRelease;
+            bool entryPass = string.Equals(toActivity, fromActivity, StringComparison.Ordinal) &&
+                             toEntrySequence == fromEntrySequence + 1;
+            bool readyOrRunning = newEntryReachedActivationWindowReady || newEntryReachedActivityRunning;
+            bool noContentPass = (releaseSkippedNoContent || (!releaseStarted && !releaseCompleted)) &&
+                                 newEntryStarted &&
+                                 newEntryReachedActivityRunning;
+
+            bool checkpointPassed = entryPass && (
+                (hasReleasePath && releasePass && newEntryStarted && readyOrRunning) ||
+                noContentPass);
+
+            string checkpointStatus = checkpointPassed ? "Passed" : "Waiting";
+            string failedCriterion = "<none>";
+            if (!entryPass && (newEntryStarted || newEntryReachedActivationWindowReady || newEntryReachedActivityRunning))
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "restartEntrySequenceMismatch";
+            }
+            else if (releaseCompleted &&
+                !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) &&
+                !string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal))
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseStatus";
+            }
+            else if (releaseCompleted && !newEntryStarted && releaseSceneIsLoadedAfterRelease)
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseSceneIsLoadedAfterRelease";
+            }
+
+            if (string.Equals(checkpointStatus, "Passed", StringComparison.Ordinal))
+            {
+                _frozenRestartCheckpointActivityId = fromActivity;
+                _frozenRestartCheckpointFromEntrySequence = fromEntrySequence;
+                _frozenRestartCheckpointToEntrySequence = toEntrySequence;
+            }
+
+            string token =
+                $"{fromActivity}|{fromEntrySequence}|{toActivity}|{toEntrySequence}|{checkpointStatus}|{failedCriterion}|{releaseStarted}|{releaseCompleted}|{releaseSceneName}|{releaseStatus}|{releaseSceneIsLoadedAfterRelease}|{newEntryStarted}|{newEntryReachedActivationWindowReady}|{newEntryReachedActivityRunning}";
+            if (!string.Equals(token, _lastRestartCurrentActivityCheckpointToken, StringComparison.Ordinal))
+            {
+                _lastRestartCurrentActivityCheckpointToken = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='{checkpointName}' checkpointStatus='{checkpointStatus}' failedCriterion='{failedCriterion}' " +
+                    $"fromActivity='{fromActivity}' toActivity='{toActivity}' fromEntrySequence='{fromEntrySequence}' toEntrySequence='{toEntrySequence}' " +
+                    $"releaseStarted='{releaseStarted.ToString().ToLowerInvariant()}' releaseCompleted='{releaseCompleted.ToString().ToLowerInvariant()}' " +
+                    $"releaseSceneName='{releaseSceneName}' releaseStatus='{releaseStatus}' releaseSceneIsLoadedAfterRelease='{releaseSceneIsLoadedAfterRelease.ToString().ToLowerInvariant()}' " +
+                    $"newEntryStarted='{newEntryStarted.ToString().ToLowerInvariant()}' newEntryReachedActivationWindowReady='{newEntryReachedActivationWindowReady.ToString().ToLowerInvariant()}' " +
+                    $"newEntryReachedActivityRunning='{newEntryReachedActivityRunning.ToString().ToLowerInvariant()}'");
+            }
+
+            return !string.Equals(checkpointStatus, "Passed", StringComparison.Ordinal);
+        }
+
+        private bool TryRunSmokeStep(string smokeName, string stepName, SessionActivityStage? expectedStage, Action action)
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (state.CurrentPendingOperation.IsValid)
+            {
+                LogSmokeStepBlocked(smokeName, stepName, expectedStage, "pending_operation_active");
+                return false;
+            }
+
+            if (expectedStage.HasValue && state.CurrentStage != expectedStage.Value)
+            {
+                LogSmokeStepBlocked(smokeName, stepName, expectedStage, "unexpected_stage");
+                return false;
+            }
+
+            action();
+            return true;
+        }
+
+        private void LogSmokeStepBlocked(string smokeName, string stepName, SessionActivityStage? expectedStage, string reason)
+        {
+            SessionActivityRuntimeState state = host.State;
+            string expectedStageValue = expectedStage.HasValue ? expectedStage.Value.ToString() : "<any>";
+            Debug.Log($"[OBS][SessionActivityPipeline][QA] SmokeStepBlocked smokeName='{smokeName}' stepName='{stepName}' expectedStage='{expectedStageValue}' actualStage='{state.CurrentStage}' activityId='{state.CurrentDefinition.ActivityId}' entrySequence='{state.CurrentEntrySequence}' reason='{reason}'");
+        }
+
+        private void TryEmitActivity01ToActivity02Checkpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            const string checkpointName = "Activity01ToActivity02";
+            int latestFromEntrySequence = ResolveLatestEntrySequenceForActivity("activity_01");
+            if (latestFromEntrySequence <= 0)
+            {
+                return;
+            }
+
+            if (_activeCheckpointFromEntrySequence <= 0 || latestFromEntrySequence > _activeCheckpointFromEntrySequence)
+            {
+                _activeCheckpointFromEntrySequence = latestFromEntrySequence;
+                _activeCheckpointToEntrySequence = 0;
+                _activeCheckpointObservedActivity02Running = false;
+            }
+
+            if (_activeCheckpointFromEntrySequence == _frozenPassedCheckpointFromEntrySequence &&
+                _activeCheckpointToEntrySequence == _frozenPassedCheckpointToEntrySequence)
+            {
+                return;
+            }
+
+            int fromEntrySequence = _activeCheckpointFromEntrySequence;
+            if (_activeCheckpointToEntrySequence <= 0)
+            {
+                _activeCheckpointToEntrySequence = ResolveFirstEntrySequenceForActivityAfter("activity_02", fromEntrySequence);
+            }
+
+            int toEntrySequence = _activeCheckpointToEntrySequence;
+            if (toEntrySequence > 0 &&
+                string.Equals(state.CurrentDefinition.ActivityId, "activity_02", StringComparison.Ordinal) &&
+                state.CurrentEntrySequence == toEntrySequence &&
+                state.CurrentStage == SessionActivityStage.ActivityRunning)
+            {
+                _activeCheckpointObservedActivity02Running = true;
+            }
+
+            bool releaseStarted = false;
+            bool releaseCompleted = false;
+            string releaseSceneName = "<none>";
+            string releaseStatus = "<none>";
+            bool activity02ReachedRunning = _activeCheckpointObservedActivity02Running;
+            bool activity02SkipNoRequirementsObserved = false;
+            bool participantCommandsForActivity02Observed = false;
+
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Identity.EntrySequence == fromEntrySequence)
+                {
+                    if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseStarted)
+                    {
+                        releaseStarted = true;
+                    }
+                    else if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseCompleted)
+                    {
+                        releaseCompleted = true;
+                    }
+                    else if (fact.Kind == SessionActivityFactKind.ActivityContentSceneUnloaded)
+                    {
+                        releaseSceneName = ExtractToken(fact.Message, "sceneName");
+                        releaseStatus = ExtractToken(fact.Message, "releaseStatus");
+                    }
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, "activity_02", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (toEntrySequence <= 0)
+                {
+                    continue;
+                }
+
+                if (fact.Identity.EntrySequence != toEntrySequence)
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityRunningEntered && _activeCheckpointObservedActivity02Running)
+                {
+                    activity02ReachedRunning = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements ||
+                         fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements)
+                {
+                    activity02SkipNoRequirementsObserved = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityParticipantCommandPlanReady ||
+                         fact.Kind == SessionActivityFactKind.ActivityParticipantBindCommandIssued ||
+                         fact.Kind == SessionActivityFactKind.ActivityParticipantMaterializationCommandIssued ||
+                         fact.Kind == SessionActivityFactKind.ActivityParticipantPlacementCommandIssued ||
+                         fact.Kind == SessionActivityFactKind.ActivityParticipantResetCommandIssued)
+                {
+                    participantCommandsForActivity02Observed = true;
+                }
+            }
+
+            bool releaseSceneIsLoadedAfterRelease = false;
+            bool shouldEvaluateSceneLoadedForActiveScope = releaseCompleted &&
+                                                           toEntrySequence > 0 &&
+                                                           !_activeCheckpointObservedActivity02Running &&
+                                                           state.CurrentEntrySequence <= toEntrySequence;
+            if (shouldEvaluateSceneLoadedForActiveScope)
+            {
+                releaseSceneIsLoadedAfterRelease = ResolveSceneLoaded("ActivityScene01");
+            }
+
+            bool complete = releaseStarted &&
+                            releaseCompleted &&
+                            string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal) &&
+                            string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
+                            !releaseSceneIsLoadedAfterRelease &&
+                            activity02ReachedRunning &&
+                            activity02SkipNoRequirementsObserved &&
+                            !participantCommandsForActivity02Observed;
+
+            string checkpointStatus = complete ? "Passed" : "Waiting";
+            string failedCriterion = "<none>";
+            if (releaseCompleted &&
+                !string.Equals(releaseSceneName, "<none>", StringComparison.Ordinal) &&
+                !string.Equals(releaseSceneName, "ActivityScene01", StringComparison.Ordinal))
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseSceneName";
+            }
+            else if (releaseCompleted && releaseSceneIsLoadedAfterRelease)
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseSceneIsLoadedAfterRelease";
+            }
+            else if (releaseCompleted &&
+                     !string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) &&
+                     !string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal))
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "releaseStatus";
+            }
+            else if (participantCommandsForActivity02Observed)
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "participantCommandsForActivity02Observed";
+            }
+            else if (activity02ReachedRunning && !activity02SkipNoRequirementsObserved)
+            {
+                checkpointStatus = "Failed";
+                failedCriterion = "activity02SkipNoRequirementsObserved";
+            }
+
+            if (string.Equals(checkpointStatus, "Passed", StringComparison.Ordinal))
+            {
+                _frozenPassedCheckpointFromEntrySequence = fromEntrySequence;
+                _frozenPassedCheckpointToEntrySequence = toEntrySequence;
+            }
+
+            string token =
+                $"{fromEntrySequence}|{toEntrySequence}|{checkpointStatus}|{failedCriterion}|{releaseStarted}|{releaseCompleted}|{releaseSceneName}|{releaseStatus}|{releaseSceneIsLoadedAfterRelease}|{activity02ReachedRunning}|{activity02SkipNoRequirementsObserved}|{participantCommandsForActivity02Observed}";
+            if (string.Equals(token, _lastActivity01ToActivity02CheckpointToken, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _lastActivity01ToActivity02CheckpointToken = token;
+            Debug.Log(
+                $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='{checkpointName}' checkpointStatus='{checkpointStatus}' failedCriterion='{failedCriterion}' " +
+                $"fromActivity='activity_01' toActivity='activity_02' fromEntrySequence='{fromEntrySequence}' toEntrySequence='{toEntrySequence}' " +
+                $"releaseStarted='{releaseStarted.ToString().ToLowerInvariant()}' releaseCompleted='{releaseCompleted.ToString().ToLowerInvariant()}' " +
+                $"releaseSceneName='{releaseSceneName}' releaseStatus='{releaseStatus}' releaseSceneIsLoadedAfterRelease='{releaseSceneIsLoadedAfterRelease.ToString().ToLowerInvariant()}' " +
+                $"activity02ReachedRunning='{activity02ReachedRunning.ToString().ToLowerInvariant()}' activity02SkipNoRequirementsObserved='{activity02SkipNoRequirementsObserved.ToString().ToLowerInvariant()}' " +
+                $"participantCommandsForActivity02Observed='{participantCommandsForActivity02Observed.ToString().ToLowerInvariant()}'");
+        }
+
+        private int ResolveLatestEntrySequenceForActivity(string activityId)
+        {
+            int latest = 0;
+            for (int i = 0; i < host.State.Facts.Count; i++)
+            {
+                SessionActivityFact fact = host.State.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, activityId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.DeactivationWindowReady ||
+                    fact.Kind == SessionActivityFactKind.ActivityContentReleaseStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivityContentReleaseCompleted ||
+                    fact.Kind == SessionActivityFactKind.ContinueAccepted ||
+                    fact.Kind == SessionActivityFactKind.ActivityRunningEntered)
+                {
+                    latest = Math.Max(latest, fact.Identity.EntrySequence);
+                }
+            }
+
+            return latest;
+        }
+
+        private bool TryResolveLatestRestartAccepted(out string fromActivity, out int fromEntrySequence, out int toEntrySequence)
+        {
+            fromActivity = string.Empty;
+            fromEntrySequence = 0;
+            toEntrySequence = 0;
+
+            for (int i = host.State.Facts.Count - 1; i >= 0; i--)
+            {
+                SessionActivityFact fact = host.State.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind != SessionActivityFactKind.ActivityRestartAccepted)
+                {
+                    continue;
+                }
+
+                fromActivity = fact.Identity.ActivityId;
+                fromEntrySequence = fact.Identity.EntrySequence;
+                string parsed = ExtractToken(fact.Message, "nextEntrySequence");
+                if (!int.TryParse(parsed, out toEntrySequence) || toEntrySequence <= 0)
+                {
+                    toEntrySequence = fromEntrySequence + 1;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryResolveLatestRouteExitContext(out string activityId, out int entrySequence)
+        {
+            activityId = string.Empty;
+            entrySequence = 0;
+
+            for (int i = host.State.Facts.Count - 1; i >= 0; i--)
+            {
+                SessionActivityFact fact = host.State.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityRouteExitRequested ||
+                    fact.Kind == SessionActivityFactKind.ActivityRouteExitCompleted)
+                {
+                    activityId = fact.Identity.ActivityId;
+                    entrySequence = fact.Identity.EntrySequence;
+                    return true;
+                }
+            }
+
+            if (host.State.CurrentStage == SessionActivityStage.ClosedForRouteExit &&
+                host.State.CurrentIdentity.IsValid)
+            {
+                activityId = host.State.CurrentIdentity.ActivityId;
+                entrySequence = host.State.CurrentIdentity.EntrySequence;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool ContainsTraceToken(string token)
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < host.State.Trace.Count; i++)
+            {
+                string line = host.State.Trace[i];
+                if (line != null && line.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private int ResolveFirstEntrySequenceForActivityAfter(string activityId, int minimumExclusiveEntrySequence)
+        {
+            int candidate = 0;
+            for (int i = 0; i < host.State.Facts.Count; i++)
+            {
+                SessionActivityFact fact = host.State.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, activityId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (fact.Identity.EntrySequence <= minimumExclusiveEntrySequence)
+                {
+                    continue;
+                }
+
+                if (candidate == 0 || fact.Identity.EntrySequence < candidate)
+                {
+                    candidate = fact.Identity.EntrySequence;
+                }
+            }
+
+            return candidate;
+        }
+
+        private static string ExtractToken(string message, string key)
+        {
+            if (string.IsNullOrWhiteSpace(message) || string.IsNullOrWhiteSpace(key))
+            {
+                return "<none>";
+            }
+
+            string token = key + "='";
+            int start = message.IndexOf(token, StringComparison.Ordinal);
+            if (start < 0)
+            {
+                return "<none>";
+            }
+
+            start += token.Length;
+            int end = message.IndexOf('\'', start);
+            if (end <= start)
+            {
+                return "<none>";
+            }
+
+            return message.Substring(start, end - start);
+        }
+
+        private static bool ResolveSceneLoaded(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            Scene scene = SceneManager.GetSceneByName(sceneName.Trim());
+            return scene.IsValid() && scene.isLoaded;
         }
 
         private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
@@ -595,3 +1360,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
+
+
+

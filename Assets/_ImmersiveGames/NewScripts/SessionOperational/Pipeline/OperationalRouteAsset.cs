@@ -99,9 +99,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         [SerializeField] private bool loadActivitySaveOnEnter;
         [SerializeField] private bool saveActivityOnExit;
 
-        [Header("Player Preparation")]
+        [Header("Route Session Participants")]
         [FormerlySerializedAs("actorSetDefinition")]
-        [SerializeField] private PlayerSetDefinitionAsset playerSetDefinition;
+        [FormerlySerializedAs("playerSetDefinition")]
+        [SerializeField] private PlayerSetDefinitionAsset routeParticipantSetDefinition;
 
         [Header("Audio")]
         [SerializeField] private SessionOperationalRouteAudioMode routeAudioMode = SessionOperationalRouteAudioMode.None;
@@ -133,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool LoadActivitySaveOnEnter => loadActivitySaveOnEnter;
         public bool SaveActivityOnExit => saveActivityOnExit;
         public RouteActivitySavePolicy ActivitySavePolicy => new(loadActivitySaveOnEnter, saveActivityOnExit);
-        public PlayerSetDefinitionAsset PlayerSetDefinition => playerSetDefinition;
+        public PlayerSetDefinitionAsset RouteParticipantSetDefinition => routeParticipantSetDefinition;
         public SessionOperationalRouteAudioMode RouteAudioMode => routeAudioMode;
         public AudioCueAsset RouteAudioCue => routeAudioCue;
         public SessionOperationalRouteAudioTiming RouteAudioTiming => routeAudioTiming;
@@ -326,9 +327,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            if (playerSetDefinition != null && !playerSetDefinition.TryValidate(out string playerSetValidationError))
+            if (routeParticipantSetDefinition != null && !routeParticipantSetDefinition.TryValidate(out string playerSetValidationError))
             {
-                errorMessage = $"playerSetDefinition is invalid routeIdentity='{RouteIdentity}' asset='{playerSetDefinition.name}' detail='{playerSetValidationError}'.";
+                errorMessage = $"routeParticipantSetDefinition is invalid routeIdentity='{RouteIdentity}' asset='{routeParticipantSetDefinition.name}' detail='{playerSetValidationError}'.";
                 return false;
             }
 

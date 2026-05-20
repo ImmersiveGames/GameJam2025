@@ -5,67 +5,6 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 {
-    public enum PlayerSelectionSnapshotSource
-    {
-        Unknown = 0,
-        ExplicitPayload = 1,
-        MvpDefaultFromPlayerPreparation = 2,
-    }
-
-    public enum PlayerActorReadyStage
-    {
-        Unknown = 0,
-        MaterializedOnly = 1,
-        RetainedForActivity = 2,
-    }
-
-    public readonly struct PlayerSelectionEntry
-    {
-        public PlayerSelectionEntry(string playerId, bool required)
-        {
-            PlayerId = Normalize(playerId);
-            Required = required;
-        }
-
-        public string PlayerId { get; }
-        public bool Required { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
-
-    public readonly struct PlayerSelectionSnapshot
-    {
-        public PlayerSelectionSnapshot(
-            SessionActivityIdentity identity,
-            IReadOnlyList<PlayerSelectionEntry> entries,
-            PlayerSelectionSnapshotSource selectionSource,
-            int ignoredOptionalPlayersCount,
-            string source,
-            string reason)
-        {
-            Identity = identity;
-            Entries = entries ?? Array.Empty<PlayerSelectionEntry>();
-            SelectionSource = selectionSource;
-            IgnoredOptionalPlayersCount = ignoredOptionalPlayersCount < 0 ? 0 : ignoredOptionalPlayersCount;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-        }
-
-        public SessionActivityIdentity Identity { get; }
-        public IReadOnlyList<PlayerSelectionEntry> Entries { get; }
-        public PlayerSelectionSnapshotSource SelectionSource { get; }
-        public int IgnoredOptionalPlayersCount { get; }
-        public string Source { get; }
-        public string Reason { get; }
-        public bool IsValid =>
-            Identity.IsValid &&
-            Entries != null &&
-            SelectionSource != PlayerSelectionSnapshotSource.Unknown;
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
-
     public readonly struct PlayerActorIdentityRecord
     {
         public PlayerActorIdentityRecord(

@@ -428,7 +428,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         sourceText,
                         reasonText);
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationStarted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.",
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationStarted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' source='{sourceText}' reason='{reasonText}'.",
                         DebugUtility.Colors.Info);
 
                     playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan);
@@ -439,11 +439,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     hasPlayerPreparationResult = true;
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationIntentPrepared' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' playerIds='{FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries)}'.",
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationIntentPrepared' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' source='{sourceText}' reason='{reasonText}' playerIds='{FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries)}'.",
                         DebugUtility.Colors.Info);
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationCompleted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' outcome='{(playerPreparationResult.IsObservedNoOp ? "observed_noop" : (playerPreparationResult.IsPlannedOnly ? "planned_only" : "materialized"))}'.",
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationCompleted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' source='{sourceText}' reason='{reasonText}' outcome='{(playerPreparationResult.IsObservedNoOp ? "observed_noop" : (playerPreparationResult.IsPlannedOnly ? "planned_only" : "materialized"))}'.",
                         DebugUtility.Colors.Info);
 
                     ExecuteActivityCameraPreparationStageOrFail(
@@ -598,7 +598,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     }
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmitted' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry' playerPreparationOutcome='{FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome)}' plannedPlayers='{playerPreparationResult.Snapshot.PlannedPlayersCount}' materializedPlayers='{playerPreparationResult.Snapshot.MaterializedPlayersCount}' pendingRequiredPlayers='{playerPreparationResult.Snapshot.PendingRequiredPlayersCount}'.",
+                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmitted' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' playerPreparationOutcome='{FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome)}' plannedPlayers='{playerPreparationResult.Snapshot.PlannedPlayersCount}' materializedPlayers='{playerPreparationResult.Snapshot.MaterializedPlayersCount}' pendingRequiredPlayers='{playerPreparationResult.Snapshot.PendingRequiredPlayersCount}'.",
                         DebugUtility.Colors.Info);
 
                     SessionActivityPlayerPreparationHandoff playerPreparationHandoff = new(
@@ -616,7 +616,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         playerPreparationResult.Snapshot.MaterializedPlayersCount,
                         playerPreparationResult.Snapshot.SkippedPlayersCount,
                         playerPreparationResult.Snapshot.PendingRequiredPlayersCount,
-                        FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries));
+                        FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries),
+                        BuildPlayerTechnicalPlanEntriesForHandoff(route));
 
                     SessionActivityEntryHandoff handoff = new(
                         string.Empty,
@@ -2340,12 +2341,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static IReadOnlyList<PlayerSetEntry> ResolvePlayerSetFromRoute(OperationalRouteAsset route)
         {
-            if (route == null || route.PlayerSetDefinition == null)
+            if (route == null || route.RouteParticipantSetDefinition == null)
             {
                 return Array.Empty<PlayerSetEntry>();
             }
 
-            return route.PlayerSetDefinition.ResolveEntriesOrFail(nameof(SessionOperationalPipeline));
+            return route.RouteParticipantSetDefinition.ResolveEntriesOrFail(nameof(SessionOperationalPipeline));
         }
 
         private static string FormatPlayerPreparationOutcome(PlayerPreparationOutcome outcome)
@@ -2376,6 +2377,54 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             return playerIds.Count == 0 ? "<none>" : string.Join(", ", playerIds);
+        }
+
+        private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntriesForHandoff(OperationalRouteAsset route)
+        {
+            if (route == null || route.RouteParticipantSetDefinition == null)
+            {
+                return Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            }
+
+            IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> entries =
+                route.RouteParticipantSetDefinition.ResolvePlayerActorEntriesOrFail(nameof(SessionOperationalPipeline));
+            if (entries == null || entries.Count == 0)
+            {
+                return Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            }
+
+            List<SessionActivityPlayerTechnicalPlanEntry> technicalEntries = new(entries.Count);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                PlayerSetDefinitionAsset.PlayerActorResolvedEntry entry = entries[index];
+                if (!entry.IsValid)
+                {
+                    continue;
+                }
+
+                technicalEntries.Add(new SessionActivityPlayerTechnicalPlanEntry(
+                    entry.PlayerId,
+                    entry.Required,
+                    entry.Prefab,
+                    entry.PlacementMode,
+                    entry.PlacementId,
+                    entry.LocalPosition,
+                    entry.LocalRotation));
+            }
+
+            return technicalEntries;
+        }
+
+        private static string ResolveRouteParticipantSetDefinitionLabel(OperationalRouteAsset route)
+        {
+            if (route == null || route.RouteParticipantSetDefinition == null)
+            {
+                return "<none>";
+            }
+
+            return string.IsNullOrWhiteSpace(route.RouteParticipantSetDefinition.name)
+                ? "<unnamed>"
+                : route.RouteParticipantSetDefinition.name.Trim();
         }
 
         private static SessionOperationalRouteAudioCommand BuildRouteAudioCommandOrFail(

@@ -7,6 +7,12 @@
 - Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR, após aceite.
 
+
+- Checkpoint funcional registrado: F5E1 = PASS funcional (2026-05-21)
+
+
+- Checkpoint funcional registrado: F5E2 = PASS funcional (2026-05-21)
+
 ---
 
 ## Contexto
@@ -1193,10 +1199,467 @@ Contributor discovery após content load.
 ActivitySetupInventory construído por entry.
 Subplanos vazios emitindo skip explícito.
 ResetGroups v0 comandados por pipeline.
-ActivityContentRelease antes de ClosedForRouteExit em route-exit.
-RestartCurrentActivity criando nova entrySequence e recarregando content no v0.
+ActivityContentRelease antes de ClosedForRouteExit em route-exit. [Encerrado pela F5E2]
+RestartCurrentActivity criando nova entrySequence e recarregando content no v0. [Encerrado pela F5E1]
 WindowTemplateLibrary não duplicada nem descarregada por window close.
 Comandos stale/foreign rejeitados.
 Nenhum fallback silencioso para Route Scene quando content obrigatório faltar.
 ```
+
+---
+
+## 30. Checkpoint congelado F4D7 (PASS funcional)
+
+Status:
+
+```text
+PASS funcional (2026-05-20)
+```
+
+Objetivo deste checkpoint:
+
+```text
+Convergir a linguagem de participantes de rota/sessao no SessionOperationalPipeline.
+```
+
+Decisao congelada:
+
+```text
+OperationalRouteAsset.playerSetDefinition foi renomeado para routeParticipantSetDefinition.
+```
+
+A fonte tecnica de participantes permanece na rota/sessao, nao na Activity:
+
+```text
+OperationalRouteAsset.RouteParticipantSetDefinition
+-> SessionOperationalPipeline PlayerPreparation
+-> SessionActivityEntryHandoff.TechnicalPlanEntries
+-> SessionActivityPipeline ActivityParticipantBinding / ActivityParticipant* commands
+```
+
+Garantias congeladas:
+
+1. Activity nao volta a declarar `playerSetDefinition` como fonte semantica.
+2. Activity nao volta a declarar `RequiresPlayerActor`.
+3. `ParticipantRequirement` segue como fonte semantica da Activity.
+4. Route/Session segue como fonte tecnica de participant/player preparation.
+5. Player continua `RouteSession-owned`.
+6. `ActivityParticipantBinding` continua como rail canonico de setup local.
+
+Observacao tecnica:
+
+```text
+[FormerlySerializedAs("playerSetDefinition")] foi aceito como migracao tecnica de asset, sem manter propriedade publica antiga.
+```
+
+---
+
+## 31. Checkpoint congelado F4D8 (PASS funcional)
+
+Status:
+
+```text
+PASS funcional (2026-05-20)
+```
+
+Objetivo deste checkpoint:
+
+```text
+Fechar o branch de Activity sem ParticipantRequirements com skip explicito e observabilidade suficiente.
+```
+
+Shape congelado para Activity sem requirements:
+
+```text
+ActivitySetupInventoryBuilt totalRequirements='0'
+ActivitySetupInventoryValidated totalRequirements='0'
+ActivityParticipantBindingStarted
+ActivityParticipantBindingSkippedNoRequirements totalRequirements='0' routeSessionParticipantPreparationConsumed='false'
+ActivityParticipantBindingCompleted resolved='0' skipped='0' totalRequirements='0' status='SkippedNoRequirements'
+ActivitySetupCompleted
+ActivityActivationStarted
+ActivityRunning
+```
+
+Critérios negativos congelados:
+
+```text
+ActivityParticipantCommandPlanReady nao aparece para Activity sem requirements.
+ActivityParticipant*CommandIssued nao aparece para Activity sem requirements.
+ActivityParticipant*Applied nao aparece para Activity sem requirements.
+PlayerPreparation/TechnicalPlanEntries nao sao consumidos quando totalRequirements='0'.
+```
+
+Decisao de QA congelada:
+
+```text
+DumpState generico nao e fonte unica de verdade para checkpoint.
+Evidence/dumps devem ser compactos, filtrados e alinhados por activityId/entrySequence quando usados.
+```
+
+---
+
+## 32. Checkpoint congelado F5B-F5D (PASS estrutural + PASS funcional)
+
+Status:
+
+```text
+F5B -> F5C.2 = PASS estrutural (2026-05-21)
+F5D = PASS funcional (2026-05-21)
+```
+
+Objetivo deste checkpoint:
+
+```text
+Completar o lifecycle minimo de ActivityContent no fluxo Activity -> Activity.
+```
+
+Superficie estrutural preparada:
+
+```text
+SessionActivityPendingOperationKind.ActivityContentSceneUnload
+ActivityContentSceneUnloadCommand
+ActivityContentSceneUnloadResult
+ActivityContentUnloadResultKind
+IActivityContentSceneReleaseAdapter
+UnityActivityContentSceneReleaseAdapter
+CompleteActivityContentSceneUnloadOperation(..., ActivityContentSceneUnloadResult)
+ActivityContentSceneUnloadRejected
+```
+
+Decisoes estruturais congeladas:
+
+1. `ActivityContentSceneUnloadCommandIssued` pertence ao dispatch do command, nao ao callback de completion.
+2. `ActivityContentSceneUnloaded` pertence a completion valida do adapter/runner.
+3. `releaseStatus` vem de `ActivityContentSceneUnloadResult.Kind`, nao de payload concatenado em `reason`.
+4. Completion stale/foreign de unload deve ser rejeitada e observavel por `ActivityContentSceneUnloadRejected`.
+5. Failure valida de unload emite `ActivityContentReleaseFailed` e nao deve avancar o pipeline.
+6. Adapter executa unload; pipeline decide quando descarregar.
+7. Runner executa pending operation; runner nao decide retention policy.
+
+Policy minima F5D:
+
+```text
+ReleaseByDefault / ReleasePreviousActivityContent
+```
+
+Fluxo funcional congelado Activity -> Activity:
+
+```text
+ActivityDeactivated
+-> ActivityContentReleaseStarted
+-> ActivityContentRetentionPlanResolved policy='ReleaseByDefault'
+-> ActivityContentSceneUnloadCommandIssued sceneName='ActivityScene01'
+-> ActivityContentSceneUnloaded sceneName='ActivityScene01' releaseStatus='Unloaded'
+-> ActivityContentReleaseCompleted
+-> ActivityTransition / ContinueAccepted
+-> ActivityContentLoadSkippedNoContent activity_02
+-> ActivitySetupCompleted activity_02
+-> ActivityRunning activity_02
+```
+
+Evidencia funcional congelada do smoke manual `activity_01 -> activity_02`:
+
+```text
+QACheckpoint checkpoint='Activity01ToActivity02'
+checkpointStatus='Passed'
+fromActivity='activity_01'
+toActivity='activity_02'
+fromEntrySequence='1'
+toEntrySequence='2'
+releaseStarted='true'
+releaseCompleted='true'
+releaseSceneName='ActivityScene01'
+releaseStatus='Unloaded'
+releaseSceneIsLoadedAfterRelease='false'
+activity02ReachedRunning='true'
+activity02SkipNoRequirementsObserved='true'
+participantCommandsForActivity02Observed='false'
+```
+
+Critérios negativos confirmados:
+
+```text
+ActivityScene01 nao permanece carregada depois do release da entry anterior.
+activity_02 chega em ActivityRunning somente apos release concluido.
+activity_02 sem ParticipantRequirements nao emite ActivityParticipantCommandPlanReady.
+activity_02 sem ParticipantRequirements nao emite ActivityParticipant*CommandIssued.
+activity_02 sem ParticipantRequirements nao executa ActivityParticipant*Applied.
+```
+
+---
+
+## 33. Checkpoint congelado F5QA (PASS funcional)
+
+Status:
+
+```text
+PASS funcional (2026-05-21)
+```
+
+Objetivo deste checkpoint:
+
+```text
+Manter QA manual, objetivo e alinhado ao caminho canonico do SessionActivityPipeline.
+```
+
+Decisao congelada:
+
+```text
+Nao ha botao de smoke que dirige o pipeline.
+O smoke e manual.
+O QA apenas chama acoes canonicas e imprime evidencias compactas automaticamente.
+```
+
+Botões principais mantidos no painel QA:
+
+```text
+CompleteActivationWindow
+CompleteCurrentActivity
+CompleteDeactivationWindow
+RestartCurrentActivity
+```
+
+Botões removidos/escondidos do painel principal:
+
+```text
+Smoke Activity01 To Activity02
+Smoke Current Activity Complete
+Smoke Dump Current Evidence
+DumpParticipantBindingEvidence
+DumpTransitionEvidence
+DumpSceneState
+DumpActivityContentReleaseEvidence
+DumpState
+Trace
+ContinueToNextActivity
+```
+
+Regras congeladas:
+
+1. QA nao decide lifecycle.
+2. QA nao altera stage diretamente.
+3. QA nao limpa pending operation.
+4. QA nao cria handoff.
+5. QA nao executa adapter diretamente.
+6. QA nao tenta dirigir trilhos async por botao de smoke.
+7. QA chama apenas APIs canonicas do `SessionActivityHost`.
+8. Smokes sao manuais e usam os botoes reais do ciclo local.
+9. Evidencia de checkpoint vem por `QACheckpoint` automatico compacto.
+10. `QACheckpoint` deve ter escopo por transicao e por `entrySequence`.
+11. Checkpoint aprovado deve ser congelado e nao pode ser invalidado por ciclos posteriores.
+
+---
+
+## 34. Checkpoint congelado F5E1 (PASS funcional)
+
+Status:
+
+```text
+PASS funcional (2026-05-21)
+```
+
+Objetivo deste checkpoint:
+
+```text
+RestartCurrentActivity deve liberar ActivityContent da entry antiga antes de iniciar a nova entry.
+```
+
+Fluxo congelado para `activity_01` com `ActivityContent`:
+
+```text
+ActivityRunning activity_01 entrySequence=N
+-> RestartCurrentActivity
+-> DeactivationWindowReady
+-> CompleteDeactivationWindow
+-> ActivityContentReleaseStarted entrySequence=N
+-> ActivityContentSceneUnloadCommandIssued sceneName='ActivityScene01'
+-> ActivityContentSceneUnloaded releaseStatus='Unloaded'
+-> ActivityContentReleaseCompleted entrySequence=N
+-> nova entrySequence=N+1
+-> ActivityContentSceneLoading / ActivationWindowReady
+```
+
+Evidencia congelada do `QACheckpoint RestartCurrentActivity` para `activity_01`:
+
+```text
+checkpoint='RestartCurrentActivity'
+checkpointStatus='Passed'
+fromActivity='activity_01'
+toActivity='activity_01'
+fromEntrySequence='1'
+toEntrySequence='2'
+releaseStarted='true'
+releaseCompleted='true'
+releaseSceneName='ActivityScene01'
+releaseStatus='Unloaded'
+releaseSceneIsLoadedAfterRelease='false'
+newEntryStarted='true'
+newEntryReachedActivationWindowReady='true'
+```
+
+Fluxo congelado para `activity_02` sem `ActivityContent`:
+
+```text
+ActivityRunning activity_02 entrySequence=N
+-> RestartCurrentActivity
+-> ActivityRunning activity_02 entrySequence=N+1
+```
+
+Evidencia congelada do `QACheckpoint RestartCurrentActivity` para `activity_02`:
+
+```text
+checkpoint='RestartCurrentActivity'
+checkpointStatus='Passed'
+fromActivity='activity_02'
+toActivity='activity_02'
+fromEntrySequence='3'
+toEntrySequence='4'
+releaseStarted='false'
+releaseCompleted='false'
+newEntryStarted='true'
+newEntryReachedActivityRunning='true'
+```
+
+Decisoes congeladas:
+
+1. Restart nao usa ActivityTransition.
+2. Restart nao troca de Activity.
+3. Restart nao usa rota/navigation.
+4. Restart cria nova `entrySequence` da mesma Activity.
+5. Se houver `ActivityContent`, release e obrigatorio antes da nova entry.
+6. Se nao houver `ActivityContent`, restart pode seguir direto para nova entry com skip/no-content explicito ou ausencia aceita de release obrigatorio.
+7. `CurrentActivityContentLoadedSet` nao pode ser limpo antes de `ActivityContentReleaseCompleted`.
+8. `ActivityContentSceneUnloadCommandIssued` continua pertencendo ao dispatch, nao a completion.
+9. Route-exit permanece fluxo separado.
+
+---
+
+## 35. Checkpoint congelado F5E2 (PASS funcional)
+
+Status:
+
+```text
+PASS funcional (2026-05-21)
+```
+
+Objetivo deste checkpoint:
+
+```text
+Route-exit / BackToMenu deve liberar ActivityContent antes de ClosedForRouteExit e antes do SessionOperationalPipeline continuar a troca de rota.
+```
+
+Fluxo funcional congelado:
+
+```text
+BackToMenu
+-> OperationalRouteRequestDeferredForSessionActivityTeardown
+-> SessionActivityRouteExitTeardownStarted
+-> DeactivationWindowReady
+-> CompleteDeactivationWindow
+-> ActivityContentReleaseStarted
+-> ActivityContentRetentionPlanResolved policy='ReleaseByDefault'
+-> ActivityContentSceneUnloadCommandIssued sceneName='ActivityScene01'
+-> ActivityContentSceneUnloaded releaseStatus='Unloaded'
+-> ActivityContentReleaseCompleted
+-> ClosedForRouteExit
+-> SessionActivityRouteExitTeardownCompleted kind='Completed'
+-> ActivityCamera release
+-> RouteActivitySave save/skip
+-> TransitionPlanReady
+-> fadeIn
+-> ApplyOperationalRoute MenuScene
+-> UnloadSceneCompleted SessionActivitySandboxScene
+-> OperationalRouteCompleted
+```
+
+Evidencia congelada do `QACheckpoint RouteExitBackToMenu`:
+
+```text
+checkpoint='RouteExitBackToMenu'
+checkpointStatus='Passed'
+activityId='activity_01'
+entrySequence='1'
+releaseStarted='true'
+releaseCompleted='true'
+releaseSceneName='ActivityScene01'
+releaseStatus='Unloaded'
+releaseSceneIsLoadedAfterRelease='false'
+closedForRouteExit='true'
+routeExitTeardownCompleted='true'
+menuRouteApplied='false'
+```
+
+Observacao sobre `menuRouteApplied`:
+
+```text
+menuRouteApplied e campo observacional, nao criterio obrigatorio do SessionActivity QACheckpoint.
+A aplicacao de MenuScene pertence ao escopo do SessionOperationalPipeline e foi validada pelo log operacional.
+```
+
+Ordem operacional confirmada apos o teardown local:
+
+```text
+SessionActivityRouteExitTeardownCompleted
+-> ActivityCamera release
+-> RouteActivitySave save/skip
+-> TransitionPlanReady
+-> fadeIn
+-> ApplyOperationalRoute MenuScene
+-> UnloadSceneCompleted SessionActivitySandboxScene
+-> OperationalRouteCompleted
+```
+
+Decisoes congeladas:
+
+1. `SessionOperationalPipeline` deve deferir route change quando ha `SessionActivity` ativa.
+2. `SessionActivityPipeline` e owner do teardown local da Activity.
+3. `ActivityContent` carregado deve ser liberado antes de `ClosedForRouteExit`.
+4. `ClosedForRouteExit` nao pode ocorrer antes de `ActivityContentReleaseCompleted` quando ha content carregado.
+5. `SessionActivityRouteExitTeardownCompleted kind='Completed'` nao pode ocorrer antes de `ClosedForRouteExit`.
+6. `SessionOperationalPipeline` so pode continuar side-effects operacionais depois do teardown completed.
+7. Failure valida de unload nao pode emitir `ClosedForRouteExit`.
+8. Completion stale/foreign de unload nao pode alterar o pipeline ativo.
+9. `Route Scene`, `WindowTemplateLibrary` route-scoped, players/participants route-session-owned, save, camera e rota operacional permanecem fora do ownership de `ActivityContentRelease`.
+10. O pequeno ruido residual do QA `Activity01ToActivity02 Waiting` apos route-exit aprovado e classificado como higiene futura, nao bloqueio funcional.
+
+Critérios negativos confirmados:
+
+```text
+ClosedForRouteExit nao ocorre antes de releaseCompleted='true'.
+SessionActivityRouteExitTeardownCompleted nao ocorre antes de ClosedForRouteExit.
+ActivityCamera release, RouteActivitySave e TransitionPlanReady ocorrem depois do teardown completed.
+ApplyOperationalRoute MenuScene ocorre depois do teardown completed.
+```
+
+Fora do escopo deste checkpoint:
+
+```text
+ObjectRelease completo.
+Contributor unregister completo.
+Pooling canonico real / ReturnToPool.
+Retention avancada KeepRecentActivityContent / RetainUntilRouteExit.
+Progression snapshot real de objetos.
+Validacao automatica do SessionOperationalPipeline alem do log operacional.
+```
+
+---
+
+## 36. Próximas frentes após F5E2
+
+Com F5D, F5E1 e F5E2 congeladas, o lifecycle minimo de `ActivityContent` esta fechado para:
+
+```text
+Activity -> Activity
+RestartCurrentActivity
+Route-exit / BackToMenu
+```
+
+Próximas frentes recomendadas:
+
+1. `F6A` — auditoria do pooling canonico existente antes de integrar `ReturnToPool` em ObjectRelease/ObjectEntry.
+2. `F6B` — ObjectRelease minimo, sem destruir por padrao e sem pooling paralelo.
+3. `F6C` — Contributor unregister / cleanup de contributors descobertos por ActivityContent.
+4. `F6D` — ActivityContent Retention policies avancadas, mantendo `KeepRecentActivityContent` e `RetainUntilRouteExit` explicitamente unsupported ate haver caso concreto.
+5. `F7` — Progression snapshot providers reais de Activity/Object, separado de release/reset.
 

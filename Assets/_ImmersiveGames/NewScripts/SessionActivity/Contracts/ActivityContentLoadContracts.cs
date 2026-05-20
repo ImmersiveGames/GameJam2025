@@ -16,6 +16,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Failed = 6,
     }
 
+    public enum ActivityContentUnloadResultKind
+    {
+        Unknown = 0,
+        Started = 1,
+        Unloaded = 2,
+        SkippedNoContent = 3,
+        Rejected = 4,
+        Failed = 5,
+    }
+
     public readonly struct ActivityContentSceneLoadCommand
     {
         public ActivityContentSceneLoadCommand(
@@ -103,6 +113,127 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsLoaded => Kind == ActivityContentLoadResultKind.Loaded;
         public bool IsRejected => Kind == ActivityContentLoadResultKind.Rejected;
         public bool IsFailed => Kind == ActivityContentLoadResultKind.Failed;
+
+        public override string ToString()
+        {
+            return $"kind='{Kind}', command='{Command}', source='{Source}', reason='{Reason}', message='{Message}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityContentSceneUnloadCommand
+    {
+        public ActivityContentSceneUnloadCommand(
+            string operationId,
+            SessionActivityIdentity identity,
+            string contentProfileId,
+            int sceneOrdinal,
+            SceneKeyAsset sceneKey,
+            ActivityContentRequiredness requiredness,
+            string releaseSource,
+            string releaseReason,
+            string source,
+            string reason)
+        {
+            OperationId = Normalize(operationId);
+            Identity = identity;
+            PipelineId = Normalize(identity.PipelineId);
+            SessionStateId = Normalize(identity.SessionId);
+            ActivityId = Normalize(identity.ActivityId);
+            ActivityOrdinal = identity.ActivityOrdinal < 0 ? 0 : identity.ActivityOrdinal;
+            EntrySequence = identity.EntrySequence < 0 ? 0 : identity.EntrySequence;
+            ContentProfileId = Normalize(contentProfileId);
+            SceneOrdinal = sceneOrdinal < 0 ? 0 : sceneOrdinal;
+            SceneKey = sceneKey;
+            SceneName = sceneKey == null ? string.Empty : Normalize(sceneKey.SceneName);
+            Requiredness = requiredness;
+            ReleaseSource = Normalize(releaseSource);
+            ReleaseReason = Normalize(releaseReason);
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public string OperationId { get; }
+        public SessionActivityIdentity Identity { get; }
+        public string PipelineId { get; }
+        public string SessionStateId { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public int EntrySequence { get; }
+        public string ContentProfileId { get; }
+        public int SceneOrdinal { get; }
+        public SceneKeyAsset SceneKey { get; }
+        public string SceneName { get; }
+        public ActivityContentRequiredness Requiredness { get; }
+        public string ReleaseSource { get; }
+        public string ReleaseReason { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool HasSceneKey => SceneKey != null;
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(OperationId) &&
+            Identity.IsValid &&
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            EntrySequence > 0 &&
+            !string.IsNullOrWhiteSpace(ContentProfileId) &&
+            SceneOrdinal > 0 &&
+            HasSceneKey &&
+            !string.IsNullOrWhiteSpace(SceneName) &&
+            Requiredness != ActivityContentRequiredness.Unknown &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        public override string ToString()
+        {
+            return $"operationId='{OperationId}', identity='{Identity}', pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', activityOrdinal='{ActivityOrdinal}', entrySequence='{EntrySequence}', contentProfileId='{ContentProfileId}', sceneOrdinal='{SceneOrdinal}', sceneKey='{(HasSceneKey ? SceneKey.name : "<none>")}', sceneName='{(string.IsNullOrWhiteSpace(SceneName) ? "<none>" : SceneName)}', requiredness='{Requiredness}', releaseSource='{ReleaseSource}', releaseReason='{ReleaseReason}', source='{Source}', reason='{Reason}'";
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityContentSceneUnloadResult
+    {
+        public ActivityContentSceneUnloadResult(
+            ActivityContentUnloadResultKind kind,
+            ActivityContentSceneUnloadCommand command,
+            string source,
+            string reason,
+            string message)
+        {
+            Kind = kind;
+            Command = command;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+            Message = Normalize(message);
+        }
+
+        public ActivityContentUnloadResultKind Kind { get; }
+        public ActivityContentSceneUnloadCommand Command { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public string Message { get; }
+
+        public bool IsValid =>
+            Kind != ActivityContentUnloadResultKind.Unknown &&
+            Command.IsValid &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        public bool IsStarted => Kind == ActivityContentUnloadResultKind.Started;
+        public bool IsUnloaded => Kind == ActivityContentUnloadResultKind.Unloaded;
+        public bool IsSkippedNoContent => Kind == ActivityContentUnloadResultKind.SkippedNoContent;
+        public bool IsRejected => Kind == ActivityContentUnloadResultKind.Rejected;
+        public bool IsFailed => Kind == ActivityContentUnloadResultKind.Failed;
 
         public override string ToString()
         {
@@ -289,5 +420,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityContentSceneAdapter
     {
         Task<ActivityContentSceneLoadResult> LoadAdditiveAsync(ActivityContentSceneLoadCommand command);
+    }
+
+    public interface IActivityContentSceneReleaseAdapter
+    {
+        Task<ActivityContentSceneUnloadResult> UnloadAdditiveAsync(ActivityContentSceneUnloadCommand command);
     }
 }

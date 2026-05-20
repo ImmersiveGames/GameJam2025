@@ -110,6 +110,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityParticipantBindingSkippedNoRequirements = 49,
         ActivityParticipantBindingCompleted = 50,
         ActivityParticipantBindingFailed = 51,
+        ActivityContentRetentionPlanResolved = 52,
+        ActivityContentReleaseStarted = 53,
+        ActivityContentSceneUnloading = 54,
+        ActivityContentSceneUnloaded = 55,
+        ActivityContentReleaseSkippedNoContent = 56,
+        ActivityContentReleaseCompleted = 57,
+        ActivityContentReleaseFailed = 58,
     }
 
     public enum ActivityExecutionState
@@ -212,7 +219,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityTransitionProfileSource nextActivityTransitionProfileSource,
             ActivityTransitionContinuePolicy nextActivityTransitionContinuePolicy,
             ActivityTransitionProfileAsset nextActivityTransitionProfileOverride,
-            PlayerSetDefinitionAsset playerSetDefinition,
             string nextActivityId,
             string source)
         {
@@ -228,7 +234,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             NextActivityTransitionProfileSource = nextActivityTransitionProfileSource;
             NextActivityTransitionContinuePolicy = nextActivityTransitionContinuePolicy;
             NextActivityTransitionProfileOverride = nextActivityTransitionProfileOverride;
-            PlayerSetDefinition = playerSetDefinition;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
         }
@@ -246,7 +251,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityTransitionProfileSource NextActivityTransitionProfileSource { get; }
         public ActivityTransitionContinuePolicy NextActivityTransitionContinuePolicy { get; }
         public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride { get; }
-        public PlayerSetDefinitionAsset PlayerSetDefinition { get; }
         public string NextActivityId { get; }
         public string Source { get; }
 
@@ -263,7 +267,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
         public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
         public bool HasNextActivityTransitionProfileOverride => NextActivityTransitionProfileOverride != null;
-        public bool RequiresPlayerActor => PlayerSetDefinition != null;
         public bool HasValidNextActivityTransitionContinuePolicy => NextActivityTransitionContinuePolicy != ActivityTransitionContinuePolicy.Unknown;
 
         private bool IsActivityContentConfigurationValid =>
@@ -272,7 +275,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', requiresPlayerActor='{RequiresPlayerActor}', playerSetDefinition='{(RequiresPlayerActor ? PlayerSetDefinition.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -312,6 +315,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         DeactivationWindowSceneLoad = 12,
         DeactivationWindowSceneUnload = 13,
         ActivityContentSceneLoad = 20,
+        ActivityContentSceneUnload = 21,
     }
 
     public enum SessionActivityPendingWindowKind
@@ -511,15 +515,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityRestartSetupStarted = 63,
         ActivityRestartCompleted = 64,
         ActivityRestartRejected = 65,
-        PlayerActorSetupStarted = 66,
-        PlayerActorSelectionSnapshotValidated = 67,
-        PlayerActorEntryPlanResolved = 68,
-        PlayerActorResetPlanResolved = 69,
-        PlayerActorActivityParticipationPlanResolved = 70,
         PlayerActorMaterializationCommandIssued = 71,
         PlayerActorMaterialized = 72,
         PlayerActorReadyMaterializedOnly = 73,
-        PlayerActorSetupStageCompleted = 74,
         PlayerActorParticipationExitStageStarted = 75,
         PlayerActorParticipationExitCommandIssued = 76,
         PlayerActorParticipationExited = 77,
@@ -539,6 +537,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityContentLoadSkippedNoContent = 91,
         ActivityContentLoadFailed = 92,
         ActivityContentSceneLoadRejected = 93,
+        ActivityContentRetentionPlanResolved = 116,
+        ActivityContentReleaseStarted = 117,
+        ActivityContentSceneUnloadCommandIssued = 118,
+        ActivityContentSceneUnloaded = 119,
+        ActivityContentReleaseSkippedNoContent = 120,
+        ActivityContentReleaseCompleted = 121,
+        ActivityContentReleaseFailed = 122,
+        ActivityContentSceneUnloadRejected = 123,
         ActivitySetupInventoryBuildStarted = 94,
         ActivitySetupInventoryBuilt = 95,
         ActivitySetupInventorySkippedNoRequirements = 96,
@@ -556,6 +562,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityParticipantMaterializationCommandIssued = 108,
         ActivityParticipantPlacementCommandIssued = 109,
         ActivityParticipantResetCommandIssued = 110,
+        ActivityParticipantBindApplied = 111,
+        ActivityParticipantMaterialized = 112,
+        ActivityParticipantPlacementApplied = 113,
+        ActivityParticipantResetApplied = 114,
+        ActivityParticipantSetupFailed = 115,
     }
 
     public readonly struct SessionActivityFact
@@ -948,6 +959,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface ISessionActivityPendingOperationCallback
     {
         void CompletePendingOperation(SessionActivityPendingOperation operation, string source, string reason);
+        void CompleteActivityContentSceneUnloadOperation(SessionActivityPendingOperation operation, ActivityContentSceneUnloadResult unloadResult);
         void FailPendingOperation(SessionActivityPendingOperation operation, string source, string reason, string error);
     }
 
@@ -961,6 +973,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         void RunActivityContentOperation(
             SessionActivityPendingOperation operation,
             ActivityContentSceneLoadCommand command,
+            ISessionActivityPendingOperationCallback callback);
+
+        void RunActivityContentReleaseOperation(
+            SessionActivityPendingOperation operation,
+            ActivityContentSceneUnloadCommand command,
             ISessionActivityPendingOperationCallback callback);
     }
 }

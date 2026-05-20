@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -20,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivityTransitionProfileSource nextActivityTransitionProfileSource = ActivityTransitionProfileSource.None;
         [SerializeField] private ActivityTransitionContinuePolicy nextActivityTransitionContinuePolicy = ActivityTransitionContinuePolicy.Unknown;
         [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfileOverride;
-        [SerializeField] private PlayerSetDefinitionAsset playerSetDefinition;
 
         public string ActivityId => Normalize(activityId);
         public string DisplayName => Normalize(displayName);
@@ -35,8 +33,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public ActivityTransitionProfileSource NextActivityTransitionProfileSource => nextActivityTransitionProfileSource;
         public ActivityTransitionContinuePolicy NextActivityTransitionContinuePolicy => nextActivityTransitionContinuePolicy;
         public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride => nextActivityTransitionProfileOverride;
-        public PlayerSetDefinitionAsset PlayerSetDefinition => playerSetDefinition;
-        public bool RequiresPlayerActor => playerSetDefinition != null;
 
         public void ValidateOrThrow()
         {
@@ -102,11 +98,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 nextActivityTransitionProfileOverride.ValidateOrThrow($"ActivityAsset:{name}");
             }
 
-            if (playerSetDefinition != null &&
-                !playerSetDefinition.TryValidate(out string playerSetValidationError))
-            {
-                throw new InvalidOperationException($"ActivityAsset '{name}' invalid playerSetDefinition. detail='{playerSetValidationError}'.");
-            }
         }
 
         private void ValidateActivityContentOrThrow()

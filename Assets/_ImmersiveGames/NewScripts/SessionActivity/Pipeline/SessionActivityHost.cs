@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
@@ -6,6 +7,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
@@ -47,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _catalog = activityCatalog.BuildRuntimeCatalog();
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
+            UnityActivityContentSceneReleaseAdapter activityContentSceneReleaseAdapter = new();
             _pipeline = new SessionActivityPipeline(
                 _catalog,
                 sessionStateId,
@@ -55,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new SessionActivityTransitionAdapter(),
                 new SessionActivityTransitionLoadingAdapter(),
                 windowSceneAdapter,
-                new UnitySessionActivityPendingOperationRunner(windowSceneAdapter, activityContentSceneAdapter));
+                new UnitySessionActivityPendingOperationRunner(windowSceneAdapter, activityContentSceneAdapter, activityContentSceneReleaseAdapter));
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
@@ -362,6 +365,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 builder.AppendLine($"- {State.Facts[index]}");
             }
+            builder.AppendLine("checkpointEvidenceFacts(all):");
+            for (int index = 0; index < State.Facts.Count; index++)
+            {
+                SessionActivityFact fact = State.Facts[index];
+                if (fact.Kind == SessionActivityFactKind.ActivityContentLoadSkippedNoContent ||
+                    fact.Kind == SessionActivityFactKind.ActivitySetupStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuildStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuilt ||
+                    fact.Kind == SessionActivityFactKind.ActivitySetupInventoryValidated ||
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantBindingStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements ||
+                    fact.Kind == SessionActivityFactKind.ActivityParticipantBindingCompleted ||
+                    fact.Kind == SessionActivityFactKind.ActivitySetupCompleted ||
+                    fact.Kind == SessionActivityFactKind.ActivityActivationStarted ||
+                    fact.Kind == SessionActivityFactKind.ActivityRunningEntered ||
+                    fact.Kind == SessionActivityFactKind.GameplayContentSkippedNoContent)
+                {
+                    builder.AppendLine($"- {fact}");
+                }
+            }
 
             builder.AppendLine($"recentSnapshots(last={DumpRecentSnapshotsCount}):");
             for (int index = Math.Max(0, State.Snapshots.Count - DumpRecentSnapshotsCount); index < State.Snapshots.Count; index++)
@@ -386,6 +409,183 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string trace = BuildTraceDump();
             Debug.Log(trace);
             return trace;
+        }
+
+        public string DumpActivityContentReleaseEvidence()
+        {
+            EnsurePipeline();
+            StringBuilder builder = new();
+            SessionActivityRuntimeState state = State;
+            SessionActivityPendingOperation pendingOperation = state.CurrentPendingOperation;
+
+            int currentEntrySequence = state.CurrentEntrySequence;
+            int pendingReleaseEntrySequence = _pipeline.PendingActivityContentReleaseEntrySequence;
+            int previousActivityEntrySequence = ResolvePreviousActivityEntrySequence(state, currentEntrySequence);
+            int lastCompletedActivityEntrySequence = ResolveLastCompletedActivityEntrySequence(state);
+            string focusActivityId = ResolveReleaseFocusActivityId(state);
+
+            HashSet<int> targetEntrySequences = new();
+            AddEntrySequence(targetEntrySequences, currentEntrySequence);
+            AddEntrySequence(targetEntrySequences, pendingReleaseEntrySequence);
+            AddEntrySequence(targetEntrySequences, previousActivityEntrySequence);
+            AddEntrySequence(targetEntrySequences, lastCompletedActivityEntrySequence);
+
+            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpActivityContentReleaseEvidence");
+            AppendDumpSummary(builder);
+            builder.AppendLine($"pendingActivityContentReleaseContext='{_pipeline.PendingActivityContentReleaseSummary}'");
+            builder.AppendLine($"awaitingContinuationAfterActivityContentRelease='{_pipeline.AwaitingContinuationAfterActivityContentRelease}'");
+            builder.AppendLine($"focusActivityId='{focusActivityId}'");
+            builder.AppendLine($"entrySequenceFilter='current:{currentEntrySequence},pending:{pendingReleaseEntrySequence},previous:{previousActivityEntrySequence},lastCompleted:{lastCompletedActivityEntrySequence}'");
+
+            builder.AppendLine("facts(release_evidence):");
+            int factsCount = 0;
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!ShouldIncludeReleaseEvidenceFact(fact))
+                {
+                    continue;
+                }
+
+                if (!fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, focusActivityId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!targetEntrySequences.Contains(fact.Identity.EntrySequence))
+                {
+                    continue;
+                }
+
+                factsCount++;
+                builder.AppendLine($"- kind='{fact.Kind}' activityId='{fact.Identity.ActivityId}' entrySequence='{fact.Identity.EntrySequence}' stage='{fact.Identity.Stage}' message=\"{fact.Message}\"");
+            }
+
+            if (factsCount == 0)
+            {
+                builder.AppendLine("- <none>");
+            }
+
+            builder.AppendLine("trace(filtered_operation_kind):");
+            int traceCount = 0;
+            for (int i = 0; i < state.Trace.Count; i++)
+            {
+                string line = state.Trace[i];
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                if (line.IndexOf("ActivityContentSceneUnload", StringComparison.Ordinal) < 0 &&
+                    line.IndexOf("ActivityContentSceneLoad", StringComparison.Ordinal) < 0 &&
+                    line.IndexOf("DeactivationWindowSceneUnload", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                traceCount++;
+                builder.AppendLine($"- {line}");
+            }
+
+            if (traceCount == 0)
+            {
+                builder.AppendLine("- <none>");
+            }
+
+            builder.AppendLine("scene_state:");
+            builder.AppendLine($"- scene='ActivityScene01' isLoaded='{ResolveSceneLoaded("ActivityScene01")}'");
+            builder.AppendLine($"- scene='SessionActivitySandboxScene' isLoaded='{ResolveSceneLoaded("SessionActivitySandboxScene")}'");
+            builder.AppendLine($"- scene='IntroScene01' isLoaded='{ResolveSceneLoaded("IntroScene01")}'");
+            builder.AppendLine($"- scene='IntroScene02' isLoaded='{ResolveSceneLoaded("IntroScene02")}'");
+
+            string dump = builder.ToString().TrimEnd();
+            Debug.Log(dump);
+            return dump;
+        }
+
+        public string DumpCurrentActivityEvidence()
+        {
+            EnsurePipeline();
+            StringBuilder builder = new();
+            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpCurrentActivityEvidence");
+            AppendDumpSummary(builder);
+            builder.AppendLine("facts(current_activity_entry):");
+            AppendFactsByEntrySequence(builder, State.CurrentDefinition.ActivityId, State.CurrentEntrySequence, ShouldIncludeCurrentActivityEvidenceFact);
+            string dump = builder.ToString().TrimEnd();
+            Debug.Log(dump);
+            return dump;
+        }
+
+        public string DumpParticipantBindingEvidence()
+        {
+            EnsurePipeline();
+            StringBuilder builder = new();
+            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpParticipantBindingEvidence");
+            AppendDumpSummary(builder);
+            builder.AppendLine("facts(participant_binding):");
+            AppendFactsByEntrySequence(builder, State.CurrentDefinition.ActivityId, State.CurrentEntrySequence, ShouldIncludeParticipantBindingEvidenceFact);
+            string dump = builder.ToString().TrimEnd();
+            Debug.Log(dump);
+            return dump;
+        }
+
+        public string DumpTransitionEvidence()
+        {
+            EnsurePipeline();
+            StringBuilder builder = new();
+            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpTransitionEvidence");
+            AppendDumpSummary(builder);
+            builder.AppendLine("facts(transition):");
+            AppendRecentFacts(builder, ShouldIncludeTransitionEvidenceFact);
+            builder.AppendLine("trace(filtered_operation_kind):");
+            int traceCount = 0;
+            for (int i = 0; i < State.Trace.Count; i++)
+            {
+                string line = State.Trace[i];
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                if (line.IndexOf("ActivityTransition", StringComparison.Ordinal) < 0 &&
+                    line.IndexOf("DeactivationWindowSceneUnload", StringComparison.Ordinal) < 0)
+                {
+                    continue;
+                }
+
+                traceCount++;
+                builder.AppendLine($"- {line}");
+            }
+
+            if (traceCount == 0)
+            {
+                builder.AppendLine("- <none>");
+            }
+
+            string dump = builder.ToString().TrimEnd();
+            Debug.Log(dump);
+            return dump;
+        }
+
+        public string DumpSceneState()
+        {
+            EnsurePipeline();
+            StringBuilder builder = new();
+            builder.AppendLine("[OBS][SessionActivityPipeline][Host] DumpSceneState");
+            AppendDumpSummary(builder);
+            builder.AppendLine("scene_state:");
+            builder.AppendLine($"- scene='ActivityScene01' isLoaded='{ResolveSceneLoaded("ActivityScene01")}'");
+            builder.AppendLine($"- scene='SessionActivitySandboxScene' isLoaded='{ResolveSceneLoaded("SessionActivitySandboxScene")}'");
+            builder.AppendLine($"- scene='IntroScene01' isLoaded='{ResolveSceneLoaded("IntroScene01")}'");
+            builder.AppendLine($"- scene='IntroScene02' isLoaded='{ResolveSceneLoaded("IntroScene02")}'");
+            string dump = builder.ToString().TrimEnd();
+            Debug.Log(dump);
+            return dump;
         }
 
         private void EnsurePipeline()
@@ -540,6 +740,219 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                    stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
         }
 
+        private static string ResolveSceneLoaded(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return "false";
+            }
+
+            Scene scene = SceneManager.GetSceneByName(sceneName.Trim());
+            return (scene.IsValid() && scene.isLoaded) ? "true" : "false";
+        }
+
+        private static bool ShouldIncludeReleaseEvidenceFact(SessionActivityFact fact)
+        {
+            if (!fact.IsValid)
+            {
+                return false;
+            }
+
+            return fact.Kind == SessionActivityFactKind.ActivityDeactivated ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentReleaseStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentRetentionPlanResolved ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentSceneUnloadCommandIssued ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentSceneUnloaded ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentReleaseCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentReleaseSkippedNoContent ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentReleaseFailed ||
+                   fact.Kind == SessionActivityFactKind.ActivityContentSceneUnloadRejected ||
+                   fact.Kind == SessionActivityFactKind.ContinueAccepted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeInStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeInCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeOutStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeOutCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityRunningEntered;
+        }
+
+        private static bool ShouldIncludeCurrentActivityEvidenceFact(SessionActivityFact fact)
+        {
+            if (!fact.IsValid)
+            {
+                return false;
+            }
+
+            return fact.Kind == SessionActivityFactKind.ActivitySetupStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityActivationStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityRunningEntered ||
+                   fact.Kind == SessionActivityFactKind.ActivityCompletionRequested ||
+                   fact.Kind == SessionActivityFactKind.ActivityCompleting ||
+                   fact.Kind == SessionActivityFactKind.ActivityDeactivated ||
+                   fact.Kind == SessionActivityFactKind.ContinueAccepted;
+        }
+
+        private static bool ShouldIncludeParticipantBindingEvidenceFact(SessionActivityFact fact)
+        {
+            if (!fact.IsValid)
+            {
+                return false;
+            }
+
+            return fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuildStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryBuilt ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventoryValidated ||
+                   fact.Kind == SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingSkippedNoRequirements ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityParticipantBindingFailed;
+        }
+
+        private static bool ShouldIncludeTransitionEvidenceFact(SessionActivityFact fact)
+        {
+            if (!fact.IsValid)
+            {
+                return false;
+            }
+
+            return fact.Kind == SessionActivityFactKind.ContinueAccepted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeInStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeInCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeOutStarted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionFadeOutCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityTransitionCompleted ||
+                   fact.Kind == SessionActivityFactKind.ActivityRunningEntered;
+        }
+
+        private void AppendDumpSummary(StringBuilder builder)
+        {
+            builder.AppendLine($"currentActivityId='{State.CurrentDefinition.ActivityId}'");
+            builder.AppendLine($"currentEntrySequence='{State.CurrentEntrySequence}'");
+            builder.AppendLine($"currentStage='{State.CurrentStage}'");
+            builder.AppendLine($"pendingOperation='{State.CurrentPendingOperation}'");
+            builder.AppendLine($"currentActivityContentLoadedSet='{State.CurrentActivityContentLoadedSet}'");
+            builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
+            builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
+        }
+
+        private void AppendFactsByEntrySequence(StringBuilder builder, string activityId, int entrySequence, Func<SessionActivityFact, bool> includePredicate)
+        {
+            int count = 0;
+            for (int i = 0; i < State.Facts.Count; i++)
+            {
+                SessionActivityFact fact = State.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid || !includePredicate(fact))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(fact.Identity.ActivityId, activityId, StringComparison.Ordinal) ||
+                    fact.Identity.EntrySequence != entrySequence)
+                {
+                    continue;
+                }
+
+                count++;
+                builder.AppendLine($"- kind='{fact.Kind}' activityId='{fact.Identity.ActivityId}' entrySequence='{fact.Identity.EntrySequence}' stage='{fact.Identity.Stage}' message=\"{fact.Message}\"");
+            }
+
+            if (count == 0)
+            {
+                builder.AppendLine("- <none>");
+            }
+        }
+
+        private void AppendRecentFacts(StringBuilder builder, Func<SessionActivityFact, bool> includePredicate)
+        {
+            int count = 0;
+            for (int i = 0; i < State.Facts.Count; i++)
+            {
+                SessionActivityFact fact = State.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid || !includePredicate(fact))
+                {
+                    continue;
+                }
+
+                count++;
+                builder.AppendLine($"- kind='{fact.Kind}' activityId='{fact.Identity.ActivityId}' entrySequence='{fact.Identity.EntrySequence}' stage='{fact.Identity.Stage}' message=\"{fact.Message}\"");
+            }
+
+            if (count == 0)
+            {
+                builder.AppendLine("- <none>");
+            }
+        }
+
+        private static string ResolveReleaseFocusActivityId(SessionActivityRuntimeState state)
+        {
+            const string preferredActivityId = "activity_01";
+            for (int i = state.Facts.Count - 1; i >= 0; i--)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (string.Equals(fact.Identity.ActivityId, preferredActivityId, StringComparison.Ordinal) &&
+                    ShouldIncludeReleaseEvidenceFact(fact))
+                {
+                    return preferredActivityId;
+                }
+            }
+
+            return state.CurrentDefinition.ActivityId;
+        }
+
+        private static int ResolvePreviousActivityEntrySequence(SessionActivityRuntimeState state, int currentEntrySequence)
+        {
+            for (int i = state.Facts.Count - 1; i >= 0; i--)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityDeactivated &&
+                    fact.Identity.EntrySequence != currentEntrySequence)
+                {
+                    return fact.Identity.EntrySequence;
+                }
+            }
+
+            return 0;
+        }
+
+        private static int ResolveLastCompletedActivityEntrySequence(SessionActivityRuntimeState state)
+        {
+            for (int i = state.Facts.Count - 1; i >= 0; i--)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityContentReleaseCompleted)
+                {
+                    return fact.Identity.EntrySequence;
+                }
+            }
+
+            return 0;
+        }
+
+        private static void AddEntrySequence(HashSet<int> set, int value)
+        {
+            if (value > 0)
+            {
+                set.Add(value);
+            }
+        }
+
         private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownInProgress(string reason, string detail)
         {
             return new SessionActivityRouteExitTeardownResult(
@@ -614,6 +1027,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
-
-
-
