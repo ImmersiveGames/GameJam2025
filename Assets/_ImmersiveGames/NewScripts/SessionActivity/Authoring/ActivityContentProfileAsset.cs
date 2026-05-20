@@ -12,12 +12,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivitySceneDiscoveryMode discoveryMode = ActivitySceneDiscoveryMode.StrictDeclaredOnly;
         [SerializeField] private ActivityContentPreparationPolicy preparationPolicy = ActivityContentPreparationPolicy.LoadBeforeSetup;
         [SerializeField] private List<ActivityContentSceneEntry> contentScenes = new();
+        [SerializeField] private ActivitySetupRequirementsAuthoring setupRequirements = new();
 
         public string ContentProfileId => Normalize(contentProfileId);
         public ActivitySceneDiscoveryMode DiscoveryMode => discoveryMode;
         public ActivityContentPreparationPolicy PreparationPolicy => preparationPolicy;
         public IReadOnlyList<ActivityContentSceneEntry> ContentScenes => contentScenes;
+        public ActivitySetupRequirementsAuthoring SetupRequirements => setupRequirements;
         public bool HasContentScenes => contentScenes != null && contentScenes.Count > 0;
+        public bool HasSetupRequirements => setupRequirements != null && setupRequirements.HasRequirements;
 
         public void ValidateOrThrow(string source = null)
         {
@@ -56,6 +59,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 throw new InvalidOperationException($"{validationSource} requires at least one content scene when preparationPolicy=LoadBeforeSetup.");
             }
 
+            if (setupRequirements == null)
+            {
+                throw new InvalidOperationException($"{validationSource} requires setupRequirements container. Use an empty container when there are no requirements.");
+            }
+
+            setupRequirements.ValidateOrThrow(validationSource);
+
             if (contentScenes == null)
             {
                 return;
@@ -76,6 +86,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         private void OnValidate()
         {
             contentProfileId = Normalize(contentProfileId);
+
+            if (setupRequirements == null)
+            {
+                setupRequirements = new ActivitySetupRequirementsAuthoring();
+            }
         }
 
         private static string Normalize(string value)

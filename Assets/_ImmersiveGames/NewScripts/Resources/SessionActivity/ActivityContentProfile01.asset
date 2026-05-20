@@ -12,7 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f09365e9666160d49aaea77e1f7e6c35, type: 3}
   m_Name: ActivityContentProfile01
   m_EditorClassIdentifier: 
-  contentProfileId: 
+  contentProfileId: activity.profile01
   discoveryMode: 1
   preparationPolicy: 1
-  contentScenes: []
+  contentScenes:
+  - entryId: content.scene.activity01
+    sceneKey: {fileID: 11400000, guid: f6f2e1196dd795d4abfef096e8950467, type: 2}
+    requiredness: 2

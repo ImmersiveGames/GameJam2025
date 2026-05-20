@@ -2513,21 +2513,76 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            Scene activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.IsValid() || !activeScene.isLoaded)
+            Scene routeScene = SceneManager.GetActiveScene();
+            if (!routeScene.IsValid() || !routeScene.isLoaded)
             {
                 throw new InvalidOperationException(
-                    $"Activity '{definition.ActivityId}' activity setup requires valid loaded active scene for ActivitySceneContract observation.");
+                    $"Activity '{definition.ActivityId}' activity setup requires valid loaded route scene for ActivitySceneContract observation.");
             }
 
-            List<ActivitySceneContractAuthoring> contracts = new();
-            GameObject[] roots = activeScene.GetRootGameObjects();
-            for (int index = 0; index < roots.Length; index++)
+            ActivityContentLoadedSet loadedSet = _state.CurrentActivityContentLoadedSet;
+            bool hasLoadedSetForEntry = IsLoadedSetForCurrentEntry(loadedSet, definition, entrySequence);
+            bool hasActivityContentScenes = hasLoadedSetForEntry && loadedSet.HasScenes;
+
+            if (definition.ActivityContentMode == ActivityContentMode.Profile && !hasActivityContentScenes)
             {
-                contracts.AddRange(roots[index].GetComponentsInChildren<ActivitySceneContractAuthoring>(true));
+                throw new InvalidOperationException(
+                    $"Activity '{definition.ActivityId}' declared ActivityContentMode.Profile but has no valid ActivityContentLoadedSet for ActivitySceneContract observation. routeScene='{routeScene.name}' entrySequence='{entrySequence}'.");
             }
 
-            if (contracts.Count == 0)
+            List<ActivitySceneContractCandidate> contentCandidates = new();
+            List<string> contentSceneNames = new();
+
+            if (hasActivityContentScenes)
+            {
+                for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
+                {
+                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
+                    if (!record.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"Activity '{definition.ActivityId}' has invalid ActivityContentLoadedSceneRecord at index '{sceneIndex}' for ActivitySceneContract observation.");
+                    }
+
+                    Scene contentScene = SceneManager.GetSceneByName(record.SceneName);
+                    if (!contentScene.IsValid() || !contentScene.isLoaded)
+                    {
+                        throw new InvalidOperationException(
+                            $"Activity '{definition.ActivityId}' ActivityContentLoadedSet references scene='{record.SceneName}' but the scene is not loaded for ActivitySceneContract observation.");
+                    }
+
+                    contentSceneNames.Add(contentScene.name);
+                    AddContractCandidates(
+                        contentCandidates,
+                        contentScene,
+                        "ActivityContentScene",
+                        record.SceneOrdinal);
+                }
+            }
+
+            List<ActivitySceneContractCandidate> routeCandidates = new();
+            AddContractCandidates(routeCandidates, routeScene, "RouteScene", 0);
+
+            if (contentCandidates.Count > 1)
+            {
+                throw new InvalidOperationException(
+                    $"Activity '{definition.ActivityId}' activity content scope must have at most one ActivitySceneContractAuthoring in v0. contentScenes=[{FormatList(contentSceneNames)}] count='{contentCandidates.Count}'.");
+            }
+
+            ActivitySceneContractCandidate selectedCandidate = default;
+            bool hasSelectedCandidate = false;
+            string resolutionScope;
+            string resolutionDetail;
+
+            if (contentCandidates.Count == 1)
+            {
+                selectedCandidate = contentCandidates[0];
+                hasSelectedCandidate = true;
+                resolutionScope = selectedCandidate.ScopeKind;
+                resolutionDetail =
+                    $"routeScene='{routeScene.name}' contentScenes=[{FormatList(contentSceneNames)}] contentContracts='{contentCandidates.Count}' routeContracts='{routeCandidates.Count}' priority='activity_content'.";
+            }
+            else if (hasActivityContentScenes)
             {
                 SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
                 _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivitySetupStarted);
@@ -2537,34 +2592,60 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     skippedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity scene contract skipped as no-content in activeScene='{activeScene.name}'.");
+                    $"'{definition.ActivityId}' activity scene contract skipped because ActivityContentScenes had no ActivitySceneContractAuthoring. routeScene='{routeScene.name}' contentScenes=[{FormatList(contentSceneNames)}] routeContracts='{routeCandidates.Count}' fallback='disabled_for_activity_content'.");
                 EmitSnapshot(
                     snapshots,
                     "activity_scene_contract_skipped_no_content",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity scene contract skipped as no-content in activeScene='{activeScene.name}'.");
+                    $"'{definition.ActivityId}' activity scene contract skipped because ActivityContentScenes had no ActivitySceneContractAuthoring. routeScene='{routeScene.name}' contentScenes=[{FormatList(contentSceneNames)}] routeContracts='{routeCandidates.Count}' fallback='disabled_for_activity_content'.");
                 return;
             }
-
-            if (contracts.Count > 1)
+            else
             {
-                throw new InvalidOperationException(
-                    $"Activity '{definition.ActivityId}' activity scene contract must have exactly one instance per active scene. activeScene='{activeScene.name}' count='{contracts.Count}'.");
+                if (routeCandidates.Count == 0)
+                {
+                    SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+                    _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivitySetupStarted);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivitySceneContractSkippedNoContent,
+                        skippedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity scene contract skipped as no-content in routeScene='{routeScene.name}'.");
+                    EmitSnapshot(
+                        snapshots,
+                        "activity_scene_contract_skipped_no_content",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity scene contract skipped as no-content in routeScene='{routeScene.name}'.");
+                    return;
+                }
+
+                if (routeCandidates.Count > 1)
+                {
+                    throw new InvalidOperationException(
+                        $"Activity '{definition.ActivityId}' route scene scope must have at most one ActivitySceneContractAuthoring in v0. routeScene='{routeScene.name}' count='{routeCandidates.Count}'.");
+                }
+
+                selectedCandidate = routeCandidates[0];
+                hasSelectedCandidate = true;
+                resolutionScope = selectedCandidate.ScopeKind;
+                resolutionDetail = $"routeScene='{routeScene.name}' contentScenes=[<none>] contentContracts='0' routeContracts='{routeCandidates.Count}' priority='route_scene'.";
             }
 
-            ActivitySceneContractAuthoring contract = contracts[0];
-            if (contract == null)
+            if (!hasSelectedCandidate || selectedCandidate.Contract == null)
             {
                 throw new InvalidOperationException(
-                    $"Activity '{definition.ActivityId}' activity scene contract resolution returned null instance.");
+                    $"Activity '{definition.ActivityId}' activity scene contract resolution returned no selected candidate.");
             }
 
-            ActivitySceneContractSnapshot contractSnapshot = contract.BuildSnapshotOrThrow();
+            ActivitySceneContractSnapshot contractSnapshot = selectedCandidate.Contract.BuildSnapshotOrThrow();
             if (!contractSnapshot.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"Activity '{definition.ActivityId}' activity scene contract snapshot is invalid. activeScene='{activeScene.name}' component='{contract.name}'.");
+                    $"Activity '{definition.ActivityId}' activity scene contract snapshot is invalid. scope='{resolutionScope}' scene='{selectedCandidate.SceneName}' component='{selectedCandidate.Contract.name}'.");
             }
 
             SessionActivityIdentity observedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
@@ -2575,13 +2656,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 observedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity scene contract observed sceneId='{contractSnapshot.ActivitySceneId}' discoveryMode='{contractSnapshot.DiscoveryMode}' revealSafety='{contractSnapshot.RevealSafety}' allowUndeclaredContributors='{contractSnapshot.AllowUndeclaredContributors}' declaredContributors='{contractSnapshot.DeclaredContributors.Count}'.");
+                $"'{definition.ActivityId}' activity scene contract observed scope='{resolutionScope}' sceneName='{selectedCandidate.SceneName}' sceneId='{contractSnapshot.ActivitySceneId}' discoveryMode='{contractSnapshot.DiscoveryMode}' revealSafety='{contractSnapshot.RevealSafety}' allowUndeclaredContributors='{contractSnapshot.AllowUndeclaredContributors}' declaredContributors='{contractSnapshot.DeclaredContributors.Count}' {resolutionDetail}");
             EmitSnapshot(
                 snapshots,
                 "activity_scene_contract_observed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity scene contract observed sceneId='{contractSnapshot.ActivitySceneId}' discoveryMode='{contractSnapshot.DiscoveryMode}' revealSafety='{contractSnapshot.RevealSafety}' allowUndeclaredContributors='{contractSnapshot.AllowUndeclaredContributors}' declaredContributors='{contractSnapshot.DeclaredContributors.Count}'.");
+                $"'{definition.ActivityId}' activity scene contract observed scope='{resolutionScope}' sceneName='{selectedCandidate.SceneName}' sceneId='{contractSnapshot.ActivitySceneId}' discoveryMode='{contractSnapshot.DiscoveryMode}' revealSafety='{contractSnapshot.RevealSafety}' allowUndeclaredContributors='{contractSnapshot.AllowUndeclaredContributors}' declaredContributors='{contractSnapshot.DeclaredContributors.Count}' {resolutionDetail}");
 
             SessionActivityIdentity validatedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             _state.SetCurrentIdentity(validatedIdentity, SessionActivityStage.ActivitySetupStarted);
@@ -2591,13 +2672,86 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 validatedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity scene contract validated sceneId='{contractSnapshot.ActivitySceneId}'.");
+                $"'{definition.ActivityId}' activity scene contract validated scope='{resolutionScope}' sceneName='{selectedCandidate.SceneName}' sceneId='{contractSnapshot.ActivitySceneId}'.");
             EmitSnapshot(
                 snapshots,
                 "activity_scene_contract_validated",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity scene contract validated sceneId='{contractSnapshot.ActivitySceneId}'.");
+                $"'{definition.ActivityId}' activity scene contract validated scope='{resolutionScope}' sceneName='{selectedCandidate.SceneName}' sceneId='{contractSnapshot.ActivitySceneId}'.");
+
+            bool IsLoadedSetForCurrentEntry(
+                ActivityContentLoadedSet currentLoadedSet,
+                SessionActivityDefinition currentDefinition,
+                int currentEntrySequence)
+            {
+                return currentLoadedSet.IsValid &&
+                       currentLoadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
+                       string.Equals(currentLoadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                       string.Equals(currentLoadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                       string.Equals(currentLoadedSet.Identity.ActivityId, currentDefinition.ActivityId, StringComparison.Ordinal) &&
+                       currentLoadedSet.Identity.ActivityOrdinal == currentDefinition.ActivityOrdinal &&
+                       currentLoadedSet.Identity.EntrySequence == currentEntrySequence;
+            }
+
+            void AddContractCandidates(
+                List<ActivitySceneContractCandidate> candidates,
+                Scene scene,
+                string scopeKind,
+                int contentSceneOrdinal)
+            {
+                GameObject[] roots = scene.GetRootGameObjects();
+                for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+                {
+                    ActivitySceneContractAuthoring[] contracts =
+                        roots[rootIndex].GetComponentsInChildren<ActivitySceneContractAuthoring>(true);
+
+                    for (int contractIndex = 0; contractIndex < contracts.Length; contractIndex++)
+                    {
+                        ActivitySceneContractAuthoring contract = contracts[contractIndex];
+                        if (contract == null)
+                        {
+                            continue;
+                        }
+
+                        candidates.Add(new ActivitySceneContractCandidate(
+                            contract,
+                            scene.name,
+                            scopeKind,
+                            contentSceneOrdinal));
+                    }
+                }
+            }
+
+            string FormatList(IReadOnlyList<string> values)
+            {
+                if (values == null || values.Count == 0)
+                {
+                    return "<none>";
+                }
+
+                return string.Join(", ", values);
+            }
+        }
+
+        private readonly struct ActivitySceneContractCandidate
+        {
+            public ActivitySceneContractCandidate(
+                ActivitySceneContractAuthoring contract,
+                string sceneName,
+                string scopeKind,
+                int contentSceneOrdinal)
+            {
+                Contract = contract;
+                SceneName = Normalize(sceneName);
+                ScopeKind = Normalize(scopeKind);
+                ContentSceneOrdinal = contentSceneOrdinal < 0 ? 0 : contentSceneOrdinal;
+            }
+
+            public ActivitySceneContractAuthoring Contract { get; }
+            public string SceneName { get; }
+            public string ScopeKind { get; }
+            public int ContentSceneOrdinal { get; }
         }
 
         private void EmitNominalNextActivitySetup(
