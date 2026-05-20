@@ -46,6 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             _catalog = activityCatalog.BuildRuntimeCatalog();
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
+            UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
             _pipeline = new SessionActivityPipeline(
                 _catalog,
                 sessionStateId,
@@ -54,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new SessionActivityTransitionAdapter(),
                 new SessionActivityTransitionLoadingAdapter(),
                 windowSceneAdapter,
-                new UnitySessionActivityPendingOperationRunner(windowSceneAdapter));
+                new UnitySessionActivityPendingOperationRunner(windowSceneAdapter, activityContentSceneAdapter));
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
@@ -350,6 +351,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"identity='{State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{State.CurrentPendingOperation}'");
+            builder.AppendLine($"activityContentLoadedSet='{State.CurrentActivityContentLoadedSet}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
@@ -436,6 +438,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             SessionActivityStage stage = State.CurrentStage;
             bool hasPendingHandoff = State.CurrentHandoff.IsValid;
+
+            if (stage == SessionActivityStage.ActivityContentProfileResolved ||
+                stage == SessionActivityStage.ActivityContentLoadStarted ||
+                stage == SessionActivityStage.ActivityContentSceneLoading ||
+                stage == SessionActivityStage.ActivityContentSceneLoaded ||
+                stage == SessionActivityStage.ActivityContentLoadedSetReady ||
+                stage == SessionActivityStage.ActivityContentLoadSkippedNoContent ||
+                stage == SessionActivityStage.ActivityContentLoadFailed)
+            {
+                return "No local QA action";
+            }
 
             if (stage == SessionActivityStage.ActivationWindowReady)
             {

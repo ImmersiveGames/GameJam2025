@@ -94,6 +94,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         NextActivitySetupStarted = 27,
         NextActivitySetupSkippedNoContent = 28,
         NextActivitySetupCompleted = 29,
+        ActivityContentProfileResolved = 36,
+        ActivityContentLoadStarted = 37,
+        ActivityContentSceneLoading = 38,
+        ActivityContentSceneLoaded = 39,
+        ActivityContentLoadedSetReady = 40,
+        ActivityContentLoadSkippedNoContent = 41,
+        ActivityContentLoadFailed = 42,
     }
 
     public enum ActivityExecutionState
@@ -187,7 +194,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string activityId,
             string displayName,
             int activityOrdinal,
-            bool hasGameplayContent,
+            ActivityContentMode activityContentMode,
+            ActivityContentProfileAsset activityContentProfile,
             ActivityWindowMode activationWindowMode,
             SceneKeyAsset activationWindowAdditiveSceneKey,
             ActivityWindowMode deactivationWindowMode,
@@ -202,7 +210,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityId = Normalize(activityId);
             DisplayName = Normalize(displayName);
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
-            HasGameplayContent = hasGameplayContent;
+            ActivityContentMode = activityContentMode;
+            ActivityContentProfile = activityContentProfile;
             ActivationWindowMode = activationWindowMode;
             ActivationWindowAdditiveSceneKey = activationWindowAdditiveSceneKey;
             DeactivationWindowMode = deactivationWindowMode;
@@ -218,7 +227,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string ActivityId { get; }
         public string DisplayName { get; }
         public int ActivityOrdinal { get; }
-        public bool HasGameplayContent { get; }
+        public ActivityContentMode ActivityContentMode { get; }
+        public ActivityContentProfileAsset ActivityContentProfile { get; }
+        public bool HasGameplayContent => ActivityContentMode == ActivityContentMode.Profile;
         public ActivityWindowMode ActivationWindowMode { get; }
         public SceneKeyAsset ActivationWindowAdditiveSceneKey { get; }
         public ActivityWindowMode DeactivationWindowMode { get; }
@@ -234,18 +245,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(ActivityId) &&
             !string.IsNullOrWhiteSpace(DisplayName) &&
             ActivityOrdinal > 0 &&
-            !string.IsNullOrWhiteSpace(Source);
+            !string.IsNullOrWhiteSpace(Source) &&
+            IsActivityContentConfigurationValid;
 
         public bool HasNextActivity => !string.IsNullOrWhiteSpace(NextActivityId);
+        public bool HasActivityContentProfile => ActivityContentProfile != null;
+        public string ActivityContentProfileId => HasActivityContentProfile ? ActivityContentProfile.ContentProfileId : string.Empty;
         public bool HasActivationWindowAdditiveSceneKey => ActivationWindowAdditiveSceneKey != null;
         public bool HasDeactivationWindowAdditiveSceneKey => DeactivationWindowAdditiveSceneKey != null;
         public bool HasNextActivityTransitionProfileOverride => NextActivityTransitionProfileOverride != null;
         public bool RequiresPlayerActor => PlayerSetDefinition != null;
         public bool HasValidNextActivityTransitionContinuePolicy => NextActivityTransitionContinuePolicy != ActivityTransitionContinuePolicy.Unknown;
 
+        private bool IsActivityContentConfigurationValid =>
+            (ActivityContentMode == ActivityContentMode.None && ActivityContentProfile == null) ||
+            (ActivityContentMode == ActivityContentMode.Profile && ActivityContentProfile != null);
+
         public override string ToString()
         {
-            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', gameplay='{HasGameplayContent}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', requiresPlayerActor='{RequiresPlayerActor}', playerSetDefinition='{(RequiresPlayerActor ? PlayerSetDefinition.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
+            return $"activityId='{ActivityId}', displayName='{DisplayName}', ordinal='{ActivityOrdinal}', activityContentMode='{ActivityContentMode}', activityContentProfile='{(HasActivityContentProfile ? ActivityContentProfile.name : "<none>")}', activityContentProfileId='{(HasActivityContentProfile ? ActivityContentProfileId : "<none>")}', activationWindowMode='{ActivationWindowMode}', activationWindowAdditiveSceneKey='{(HasActivationWindowAdditiveSceneKey ? ActivationWindowAdditiveSceneKey.name : "<none>")}', deactivationWindowMode='{DeactivationWindowMode}', deactivationWindowAdditiveSceneKey='{(HasDeactivationWindowAdditiveSceneKey ? DeactivationWindowAdditiveSceneKey.name : "<none>")}', nextActivityTransitionProfileSource='{NextActivityTransitionProfileSource}', nextActivityTransitionContinuePolicy='{NextActivityTransitionContinuePolicy}', nextActivityTransitionProfileOverride='{(HasNextActivityTransitionProfileOverride ? NextActivityTransitionProfileOverride.name : "<none>")}', requiresPlayerActor='{RequiresPlayerActor}', playerSetDefinition='{(RequiresPlayerActor ? PlayerSetDefinition.name : "<none>")}', nextActivityId='{(HasNextActivity ? NextActivityId : "<none>")}'";
         }
 
         private static string Normalize(string value)
@@ -284,6 +302,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivationWindowSceneUnload = 11,
         DeactivationWindowSceneLoad = 12,
         DeactivationWindowSceneUnload = 13,
+        ActivityContentSceneLoad = 20,
     }
 
     public enum SessionActivityPendingWindowKind
@@ -503,6 +522,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PlayerActorReadyRetainedForActivity = 83,
         PlayerActorResetCommandIssued = 84,
         PlayerActorResetApplied = 85,
+        ActivityContentProfileResolved = 86,
+        ActivityContentLoadStarted = 87,
+        ActivityContentSceneLoadCommandIssued = 88,
+        ActivityContentSceneLoaded = 89,
+        ActivityContentLoadedSetReady = 90,
+        ActivityContentLoadSkippedNoContent = 91,
+        ActivityContentLoadFailed = 92,
+        ActivityContentSceneLoadRejected = 93,
     }
 
     public readonly struct SessionActivityFact
@@ -904,7 +931,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityPendingOperation operation,
             SceneKeyAsset sceneKey,
             ISessionActivityPendingOperationCallback callback);
+
+        void RunActivityContentOperation(
+            SessionActivityPendingOperation operation,
+            ActivityContentSceneLoadCommand command,
+            ISessionActivityPendingOperationCallback callback);
     }
 }
-
 

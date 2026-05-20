@@ -2,16 +2,21 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
 {
     public sealed class UnitySessionActivityPendingOperationRunner : ISessionActivityPendingOperationRunner
     {
         private readonly ISessionActivityWindowSceneAdapter _windowSceneAdapter;
+        private readonly IActivityContentSceneAdapter _activityContentSceneAdapter;
 
-        public UnitySessionActivityPendingOperationRunner(ISessionActivityWindowSceneAdapter windowSceneAdapter)
+        public UnitySessionActivityPendingOperationRunner(
+            ISessionActivityWindowSceneAdapter windowSceneAdapter,
+            IActivityContentSceneAdapter activityContentSceneAdapter)
         {
             _windowSceneAdapter = windowSceneAdapter ?? throw new ArgumentNullException(nameof(windowSceneAdapter));
+            _activityContentSceneAdapter = activityContentSceneAdapter ?? throw new ArgumentNullException(nameof(activityContentSceneAdapter));
         }
 
         public void RunWindowOperation(
@@ -30,6 +35,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             }
 
             _ = RunWindowOperationAsync(operation, sceneKey, callback);
+        }
+
+        public void RunActivityContentOperation(
+            SessionActivityPendingOperation operation,
+            ActivityContentSceneLoadCommand command,
+            ISessionActivityPendingOperationCallback callback)
+        {
+            if (!operation.IsValid)
+            {
+                throw new InvalidOperationException("Pending operation is invalid.");
+            }
+
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityContentSceneLoadCommand is invalid.");
+            }
+
+            if (callback == null)
+            {
+                throw new ArgumentNullException(nameof(callback));
+            }
+
+            _ = RunActivityContentOperationAsync(operation, command, callback);
         }
 
         private async Task RunWindowOperationAsync(
@@ -61,6 +89,52 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Adapters
             }
             catch (Exception exception)
             {
+                callback.FailPendingOperation(operation, operation.Source, operation.Reason, exception.Message);
+            }
+        }
+
+        private async Task RunActivityContentOperationAsync(
+            SessionActivityPendingOperation operation,
+            ActivityContentSceneLoadCommand command,
+            ISessionActivityPendingOperationCallback callback)
+        {
+            try
+            {
+                ActivityContentSceneLoadResult result = await _activityContentSceneAdapter.LoadAdditiveAsync(command);
+                if (!result.IsValid)
+                {
+                    callback.FailPendingOperation(operation, operation.Source, operation.Reason, "activity_content_scene_load_result_invalid");
+                    return;
+                }
+
+                if (result.IsLoaded)
+                {
+                    try
+                    {
+                        callback.CompletePendingOperation(operation, result.Source, result.Reason);
+                    }
+                    catch (Exception callbackException)
+                    {
+                        Debug.LogError(
+                            $"[FATAL][SessionActivityPendingOperationRunner] Activity content completion callback failed operationId='{operation.OperationId}' operationKind='{operation.OperationKind}' activityId='{operation.ActivityId}' entrySequence='{operation.EntrySequence}' sceneName='{operation.SceneName}' source='{result.Source}' reason='{result.Reason}' error='{callbackException}'.");
+                        callback.FailPendingOperation(operation, result.Source, result.Reason, $"activity_content_completion_callback_failed: {callbackException.Message}");
+                    }
+
+                    return;
+                }
+
+                if (result.IsRejected || result.IsFailed)
+                {
+                    callback.FailPendingOperation(operation, result.Source, result.Reason, result.Message);
+                    return;
+                }
+
+                callback.FailPendingOperation(operation, result.Source, result.Reason, $"activity_content_scene_load_unexpected_kind:{result.Kind}");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError(
+                    $"[FATAL][SessionActivityPendingOperationRunner] Activity content operation failed operationId='{operation.OperationId}' operationKind='{operation.OperationKind}' activityId='{operation.ActivityId}' entrySequence='{operation.EntrySequence}' sceneName='{operation.SceneName}' source='{operation.Source}' reason='{operation.Reason}' error='{exception}'.");
                 callback.FailPendingOperation(operation, operation.Source, operation.Reason, exception.Message);
             }
         }

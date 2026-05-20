@@ -10,6 +10,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 91bb4f809670486184f06300327f5bde, type: 3}
-  m_Name: SceneTest2
+  m_Name: IntroScene02
   m_EditorClassIdentifier: 
   sceneName: SceneTest2

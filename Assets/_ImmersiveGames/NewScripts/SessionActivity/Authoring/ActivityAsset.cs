@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [CreateAssetMenu(fileName = "Activity", menuName = "ImmersiveGames/SessionActivity/Activity Asset")]
@@ -10,7 +11,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
     {
         [SerializeField] private string activityId;
         [SerializeField] private string displayName;
-        [SerializeField] private bool hasGameplayContent;
+        [SerializeField] private ActivityContentMode activityContentMode = ActivityContentMode.None;
+        [SerializeField] private ActivityContentProfileAsset activityContentProfile;
         [SerializeField] private ActivityWindowMode activationWindowMode = ActivityWindowMode.None;
         [SerializeField] private SceneKeyAsset activationWindowAdditiveSceneKey;
         [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
@@ -22,7 +24,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 
         public string ActivityId => Normalize(activityId);
         public string DisplayName => Normalize(displayName);
-        public bool HasGameplayContent => hasGameplayContent;
+        public ActivityContentMode ActivityContentMode => activityContentMode;
+        public ActivityContentProfileAsset ActivityContentProfile => activityContentProfile;
+        public bool HasActivityContentProfile => activityContentProfile != null;
+        public bool HasGameplayContent => activityContentMode == ActivityContentMode.Profile;
         public ActivityWindowMode ActivationWindowMode => activationWindowMode;
         public SceneKeyAsset ActivationWindowAdditiveSceneKey => activationWindowAdditiveSceneKey;
         public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
@@ -54,6 +59,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' activityId cannot contain spaces.");
             }
+
+            ValidateActivityContentOrThrow();
 
             if (activationWindowMode == ActivityWindowMode.AdditiveScene &&
                 activationWindowAdditiveSceneKey == null)
@@ -99,6 +106,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                 !playerSetDefinition.TryValidate(out string playerSetValidationError))
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' invalid playerSetDefinition. detail='{playerSetValidationError}'.");
+            }
+        }
+
+        private void ValidateActivityContentOrThrow()
+        {
+            if (activityContentMode != ActivityContentMode.None &&
+                activityContentMode != ActivityContentMode.Profile)
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' has unsupported activityContentMode '{activityContentMode}'.");
+            }
+
+            if (activityContentMode == ActivityContentMode.None && activityContentProfile != null)
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' cannot reference activityContentProfile when activityContentMode=None.");
+            }
+
+            if (activityContentMode == ActivityContentMode.Profile && activityContentProfile == null)
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' requires activityContentProfile when activityContentMode=Profile.");
+            }
+
+            if (activityContentProfile != null)
+            {
+                activityContentProfile.ValidateOrThrow($"ActivityAsset:{name}:ActivityContentProfile");
             }
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [CreateAssetMenu(fileName = "ActivityCatalog", menuName = "ImmersiveGames/SessionActivity/Activity Catalog Asset")]
@@ -32,7 +33,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
                     activityId: current.ActivityId,
                     displayName: current.DisplayName,
                     activityOrdinal: index + 1,
-                    hasGameplayContent: current.HasGameplayContent,
+                    activityContentMode: current.ActivityContentMode,
+                    activityContentProfile: current.ActivityContentProfile,
                     activationWindowMode: current.ActivationWindowMode,
                     activationWindowAdditiveSceneKey: current.ActivationWindowAdditiveSceneKey,
                     deactivationWindowMode: current.DeactivationWindowMode,

@@ -267,6 +267,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
+            builder.AppendLine($"activityContentLoadedSet='{host.State.CurrentActivityContentLoadedSet}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
@@ -307,6 +308,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
+            builder.AppendLine($"activityContentLoadedSet='{host.State.CurrentActivityContentLoadedSet}'");
             if (host.GateState != null)
             {
                 builder.AppendLine($"gateSessionBlocked='{host.GateState.SessionBlocked}' gateActivityBlocked='{host.GateState.ActivityBlocked}'");
@@ -359,6 +361,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             SessionActivityStage stage = host.State.CurrentStage;
             bool hasPendingHandoff = host.State.CurrentHandoff.IsValid;
+
+            if (stage == SessionActivityStage.ActivityContentProfileResolved ||
+                stage == SessionActivityStage.ActivityContentLoadStarted ||
+                stage == SessionActivityStage.ActivityContentSceneLoading ||
+                stage == SessionActivityStage.ActivityContentSceneLoaded ||
+                stage == SessionActivityStage.ActivityContentLoadedSetReady ||
+                stage == SessionActivityStage.ActivityContentLoadSkippedNoContent ||
+                stage == SessionActivityStage.ActivityContentLoadFailed)
+            {
+                return "No local QA action";
+            }
 
             if (stage == SessionActivityStage.ActivationWindowReady)
             {
