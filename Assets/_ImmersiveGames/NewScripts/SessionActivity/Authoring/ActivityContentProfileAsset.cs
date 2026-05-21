@@ -90,7 +90,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             if (setupRequirements == null)
             {
                 setupRequirements = new ActivitySetupRequirementsAuthoring();
+                return;
             }
+
+            setupRequirements.PruneLegacyEmptyObjectEntryRequirements();
         }
 
         private static string Normalize(string value)

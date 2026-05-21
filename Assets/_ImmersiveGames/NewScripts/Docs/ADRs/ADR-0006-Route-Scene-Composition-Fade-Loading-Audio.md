@@ -169,14 +169,16 @@ RuntimeModeConfig
 1. `RuntimeModeConfig` é a entrada de configuração do modo.
 2. `RuntimePersistentScenesPolicyAsset` declara cenas persistentes; persistent scenes não são route-owned.
 3. `UIGlobalScene`, `FadeScene` e `LoadingHudScene` são persistent scenes do modo.
-4. `SessionOperationalRouteAsset` usa `SceneKeyAsset`, não string serializada de cena.
-5. `ActiveSceneKey` é obrigatório e entra implicitamente como primeira cena a carregar.
-6. `ScenesToLoad` representa apenas cenas adicionais da rota.
-7. `ScenesToUnload` permanece apenas para exceções explícitas.
-8. `UnloadPreviousRouteOwnedScenes` descarrega somente cenas owned pela última rota operacional concluída.
-9. `SessionOperationalPipeline` decide quando loading, fade e handoff acontecem.
-10. `SceneTransitionService` não é owner do fade/loading no Base11Sandbox.
-11. O rail canônico deve falhar cedo quando houver conflito entre persistent scene obrigatória e rota.
+4. `UIGlobalScene` hospeda o `InputRuntimeRoot` canonico do runtime operacional de input no Base11Sandbox.
+5. `InputRuntimeRoot` deve estar disponivel antes de qualquer validação de `SessionPlayerSlots` ou binding de input operacional.
+6. `SessionOperationalRouteAsset` usa `SceneKeyAsset`, não string serializada de cena.
+7. `ActiveSceneKey` é obrigatório e entra implicitamente como primeira cena a carregar.
+8. `ScenesToLoad` representa apenas cenas adicionais da rota.
+9. `ScenesToUnload` permanece apenas para exceções explícitas.
+10. `UnloadPreviousRouteOwnedScenes` descarrega somente cenas owned pela última rota operacional concluída.
+11. `SessionOperationalPipeline` decide quando loading, fade e handoff acontecem.
+12. `SceneTransitionService` não é owner do fade/loading no Base11Sandbox.
+13. O rail canônico deve falhar cedo quando houver conflito entre persistent scene obrigatória e rota.
 
 ## Invariantes
 
@@ -185,6 +187,7 @@ RuntimeModeConfig
 - Não criar compat paralelo.
 - Não criar fallback silencioso.
 - Não permitir que rotas carreguem, descarreguem ou ativem persistent scenes.
+- Não hospedar dependências operacionais persistentes, como `InputRuntimeRoot`, em cenas transientes/route-owned.
 - Não reativar `SceneFlow` legado como owner do loading/fade.
 - Pipeline decide lifecycle; SceneFlow/Navigation executa side-effects.
 - Foreign/stale events não podem alterar o pipeline ativo.

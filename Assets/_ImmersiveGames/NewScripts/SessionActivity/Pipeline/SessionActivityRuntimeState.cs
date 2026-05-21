@@ -22,6 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public ActivityExecutionState CurrentExecutionState { get; internal set; }
         public SessionActivityPendingOperation CurrentPendingOperation { get; internal set; }
         public ActivityContentLoadedSet CurrentActivityContentLoadedSet { get; internal set; }
+        public ActivityObjectContributorDiscoveryResult CurrentActivityObjectContributorDiscoveryResult { get; internal set; }
         public ActivitySetupInventory CurrentActivitySetupInventory { get; internal set; }
 
         public IReadOnlyList<SessionActivityFact> Facts => _facts;
@@ -44,6 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             CurrentExecutionState = ActivityExecutionState.Stopped;
             CurrentPendingOperation = default;
             CurrentActivityContentLoadedSet = default;
+            CurrentActivityObjectContributorDiscoveryResult = default;
             CurrentActivitySetupInventory = default;
             _facts.Clear();
             _snapshots.Clear();
@@ -103,6 +105,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             CurrentActivityContentLoadedSet = default;
         }
 
+        public void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result)
+        {
+            CurrentActivityObjectContributorDiscoveryResult = result;
+        }
+
+        public void ClearCurrentActivityObjectContributorDiscoveryResult()
+        {
+            CurrentActivityObjectContributorDiscoveryResult = default;
+        }
+
         public void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory)
         {
             CurrentActivitySetupInventory = inventory;
@@ -142,4 +154,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
-

@@ -35,7 +35,9 @@ Regras centrais:
 - `PlayerInputManager.maxPlayerCount` deve ser igual a `maxPlayerSlots`;
 - pipeline/adapters validam e falham cedo em mismatch; nao corrigem em runtime;
 - `PlayerInputManager` nao e owner de lifecycle;
-- `EventSystem`, `InputSystemUIInputModule` sao componentes tecnicos obrigatorios do runtime operacional.
+- `EventSystem`, `InputSystemUIInputModule` sao componentes tecnicos obrigatorios do runtime operacional;
+- `InputRuntimeRoot` e o root tecnico obrigatorio do runtime operacional de input no modo Base11Sandbox;
+- `InputRuntimeRoot` deve existir em persistent scene do modo, atualmente `UIGlobalScene`, e nao em `NewBootstrap`.
 
 ---
 
@@ -53,6 +55,8 @@ Regras centrais:
    - Deve ser unico no contexto operacional.
    - `PlayerInputManager.maxPlayerCount` deve bater com `maxPlayerSlots`.
    - O sistema **nao altera** `maxPlayerCount` em runtime.
+   - No Base11Sandbox, o `PlayerInputManager` canonico fica sob `InputRuntimeRoot` em `UIGlobalScene`.
+   - `NewBootstrap` nao e owner do runtime operacional de input e nao deve hospedar o unico `PlayerInputManager` canonico.
 
 3. **Validacao Minima** (congelado):
    - `SessionOperationalPipeline` (via adapter tecnico) valida durante `SessionOperationalSetup`:
@@ -66,33 +70,51 @@ Regras centrais:
 
 ## 2. Decisoes Congeladas - Operational Input Runtime
 
-### 2.1 EventSystem Persistente
+### 2.1 Root persistente de input operacional
 
-4. **Ausencia de EventSystem** (congelado - fail-fast controlado):
+4. **InputRuntimeRoot** (congelado):
+   - `InputRuntimeRoot` e o root tecnico obrigatorio do runtime operacional de input.
+   - No Base11Sandbox, `InputRuntimeRoot` deve estar em `UIGlobalScene`, porque `UIGlobalScene` e persistent scene do modo.
+   - `InputRuntimeRoot` deve carregar `PersistentRuntimeObject` com identity estavel `InputRuntimeRoot` ou contrato equivalente de persistencia.
+   - `InputRuntimeRoot` deve conter exatamente um `PlayerInputManager` valido para o contexto operacional.
+   - `InputRuntimeRoot` deve conter o `EventSystem` persistente e o `InputSystemUIInputModule` canonico no mesmo root persistente.
+   - Duplicidade de `InputRuntimeRoot`, `PlayerInputManager`, `EventSystem` ou `InputSystemUIInputModule` canonico e erro fail-fast.
+   - Ausencia do root ou de componentes obrigatorios e erro fail-fast, exceto nos casos ja definidos de criacao controlada de `EventSystem`/`InputSystemUIInputModule` pelo adapter quando o root persistente e valido.
+   - `InputRuntimeRoot` nao decide lifecycle, input mode, join policy ou materializacao de player.
+
+5. **Cena obrigatoria** (congelado):
+   - O modo Base11Sandbox deve garantir `UIGlobalScene` como persistent scene antes de qualquer rota operacional.
+   - O contrato operacional de input depende de `UIGlobalScene` estar carregada quando `SessionPlayerSlotsValidator` e `UnityOperationalInputRuntimeAdapter` rodam.
+   - `NewBootstrap` pode ser descarregada durante `route-boot-menu`; por isso nao pode ser fonte unica do runtime operacional de input.
+   - `RuntimePersistentScenesPolicyAsset` e a declaracao da disponibilidade de `UIGlobalScene`; nao ha fallback por busca em cenas transientes.
+
+### 2.2 EventSystem Persistente
+
+6. **Ausencia de EventSystem** (congelado - fail-fast controlado):
    - Se nao existir `EventSystem` persistente, o adapter cria:
      - `EventSystem` canonico no root persistente.
      - Inicializado com defaults canonicos Unity.
    - Esse e um fail-fast controlado (criar vs. nao fazer nada).
 
-5. **Duplicidade de EventSystem** (congelado - fail-fast):
+7. **Duplicidade de EventSystem** (congelado - fail-fast):
    - Mais de um `EventSystem` e erro.
    - `EventSystem` fora do root persistente e erro.
    - Falha explicitamente sem fallback.
 
-### 2.2 InputSystemUIInputModule Persistente
+### 2.3 InputSystemUIInputModule Persistente
 
-6. **Ausencia de InputSystemUIInputModule** (congelado - fail-fast controlado):
+8. **Ausencia de InputSystemUIInputModule** (congelado - fail-fast controlado):
    - Se nao existir `InputSystemUIInputModule` no `EventSystem`, o adapter:
      - Cria/adiciona o componente no `EventSystem` persistente.
      - Isso e um fail-fast controlado (criar vs. nao fazer nada).
 
-7. **StandaloneInputModule e Erro** (congelado - fail-fast):
+9. **StandaloneInputModule e Erro** (congelado - fail-fast):
    - `StandaloneInputModule` no `EventSystem` persistente e configuracao invalida.
    - Falha explicitamente.
 
-### 2.3 UI Actions Binding Canonico
+### 2.4 UI Actions Binding Canonico
 
-8. **Binding Obrigatorio** (congelado):
+10. **Binding Obrigatorio** (congelado):
    - `InputSystemUIInputModule` deve ser bindado com `uiActionsAsset` e 10 referencias canônicas:
      - `uiPoint`
      - `uiLeftClick`
@@ -105,24 +127,24 @@ Regras centrais:
      - `uiTrackedDevicePosition`
      - `uiTrackedDeviceOrientation`
 
-9. **Integridade de Asset** (congelado):
+11. **Integridade de Asset** (congelado):
    - Todas as 10 referencias devem pertencer ao mesmo `uiActionsAsset`.
    - Ausencia, nulidade ou asset desconexo e erro fail-fast.
 
-10. **Sequencia de Binding** (congelado):
+12. **Sequencia de Binding** (congelado):
     - O adapter segue a sequencia:
       1. `UnassignActions()` no modulo UI;
       2. Atribuir `actionsAsset`;
       3. Bind explícito das 10 referencias canonicas;
       4. Pos-validacao fail-fast.
 
-11. **Origem da Configuracao** (congelado):
+13. **Origem da Configuracao** (congelado):
     - `uiActionsAsset` e as 10 referencias vem de:
       - `RuntimeConfigRegistry` via `InputModesRuntimeConfigGroup` que referencia `OperationalInputRuntimeProfileAsset` obrigatorio.
     - Sao read-only via snapshot.
     - Ausencia de qualquer uma e erro no bootstrap.
 
-12. **Profile Dedicado de Input Operacional** (congelado):
+14. **Profile Dedicado de Input Operacional** (congelado):
     - `InputModesRuntimeConfigGroup` referencia `operationalInputRuntimeProfile` obrigatorio.
     - `OperationalInputRuntimeProfileAsset` concentra: `profileId`, `maxPlayerSlots`, `uiActionsAsset` e 10 `InputActionReferences`.
     - `RuntimeConfigSetAsset` nao carrega mais esses detalhes diretamente no grupo.
@@ -136,8 +158,10 @@ Regras centrais:
 - `OperationalSurfaceKind` permanece semântico (surface/rota) e não seleciona input mode.
 - `SessionPlayerSlotsValidator` valida apenas slots e `PlayerInputManager`.
 - `UnityOperationalInputRuntimeAdapter` executa side-effects Unity:
-  - `EventSystem` (criar/validar);
-  - `InputSystemUIInputModule` (criar/adicionar/validar);
+  - validar `InputRuntimeRoot` persistente;
+  - validar `PlayerInputManager` sob o root persistente;
+  - `EventSystem` (criar/validar quando o root persistente e valido);
+  - `InputSystemUIInputModule` (criar/adicionar/validar quando o `EventSystem` persistente e valido);
   - UI action binding (sequencia e integridade).
 - `InputModes` aplica o `inputMode` operacional requisitado (`FrontendMenu`/`Gameplay`/`PauseOverlay`) no rail canonico e, quando aplicavel, realiza switch de ActionMap nos `PlayerInput` ativos sem decidir lifecycle.
 - `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sao executores/adapters tecnicos, nao owners de lifecycle.
@@ -152,6 +176,8 @@ Regras centrais:
 - Nao criar fallback silencioso.
 - Nao alterar `PlayerInputManager.maxPlayerCount` em runtime.
 - Nao alterar `uiActionsAsset` ou bindings em runtime.
+- Nao hospedar o `PlayerInputManager` canonico em cena transiente ou route-owned.
+- `InputRuntimeRoot` canonico deve estar em persistent scene do modo.
 - `Pipeline Identity` e contexto de rota/sessao devem permanecer na trilha de validacao para bloquear `foreign/stale events`.
 
 ---
@@ -227,6 +253,58 @@ Mapeamento congelado:
 - `Unknown -> fail-fast`
 
 ---
+
+---
+
+## 10. Checkpoint Congelado - InputRuntimeRoot em Persistent Scene (2026-05-21)
+
+Root cause congelado:
+
+```text
+PlayerInputManager obrigatorio ausente
+```
+
+foi causado por hospedar o runtime operacional de input em `NewBootstrap`, enquanto o modo Base11Sandbox garante persistent scenes por `RuntimePersistentScenesPolicyAsset`:
+
+```text
+UIGlobalScene
+FadeScene
+LoadingHudScene
+```
+
+Decisao congelada:
+
+```text
+UIGlobalScene
+-> InputRuntimeRoot
+   -> PlayerInputManager
+   -> EventSystem
+   -> InputSystemUIInputModule
+```
+
+Regras:
+
+- `InputRuntimeRoot` pertence a persistent scene do modo, atualmente `UIGlobalScene`.
+- `InputRuntimeRoot` deve carregar identidade persistente estavel (`PersistentRuntimeObject.identityKey = InputRuntimeRoot` ou equivalente).
+- `PlayerInputManager` canonico deve estar sob `InputRuntimeRoot`.
+- `PlayerInputManager.maxPlayerCount` deve continuar igual a `maxPlayerSlots` do `OperationalInputRuntimeProfileAsset`.
+- `EventSystem` e `InputSystemUIInputModule` canonicos devem estar sob o mesmo root persistente.
+- `NewBootstrap` nao e fonte canonica de runtime operacional de input e pode ser descarregada pela rota inicial.
+- O contrato exige exatamente um `PlayerInputManager` canonico no contexto operacional.
+- Duplicidade ou ausencia continua fail-fast.
+- Nao ha fallback silencioso por busca em `NewBootstrap`, cenas de rota, nome de GameObject ou prefab alternativo.
+- `InputRuntimeRoot`, `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sao executores tecnicos; nao decidem lifecycle, input policy, join policy ou materializacao de player.
+
+Evidencia esperada em smoke:
+
+```text
+SessionPlayerSlotsValidationStarted
+PlayerInputManagerObserved playerInputManager='InputRuntimeRoot' observedMaxPlayerCount='4'
+MaxPlayerSlotsValidated maxPlayerSlots='4'
+SessionEventSystemReady eventSystem='InputRuntimeRoot' persistentRoot='InputRuntimeRoot'
+SessionInputModuleReady inputModule='InputRuntimeRoot' eventSystem='InputRuntimeRoot'
+```
+
 
 ## Nao Objetivos
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -46,6 +47,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string _lastRouteExitBackToMenuCheckpointToken = string.Empty;
         private string _frozenRouteExitActivityId = string.Empty;
         private int _frozenRouteExitEntrySequence;
+        private string _lastOnGuiErrorToken = string.Empty;
+        private readonly Dictionary<string, string> _lastActivityObjectContributorDiscoveryCheckpointTokenByEntry = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _lastActivityObjectResetCheckpointTokenByEntry = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _lastActivityObjectReleaseCheckpointTokenByEntry = new(StringComparer.Ordinal);
 
         private void OnEnable()
         {
@@ -176,7 +181,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             bool areaBegun = false;
             try
             {
-                EnsureHost();
+                if (!TryEnsureHost())
+                {
+                    EnsureStyles();
+                    GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
+                    areaBegun = true;
+                    GUILayout.Label("Session Activity", _titleStyle);
+                    GUILayout.Space(SectionSpacing);
+                    GUILayout.Label("SessionActivity unavailable / failed initialization", _labelStyle);
+                    GUILayout.Label("Host/Pipeline ainda nao disponivel.", _labelStyle);
+                    return;
+                }
+
                 EnsureStyles();
 
                 GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
@@ -262,7 +278,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
             catch (Exception exception)
             {
-                Debug.LogError($"[FATAL][SessionActivityDebugPanel] OnGUI render failed. error='{exception}'.");
+                string token = exception.GetType().FullName + "|" + exception.Message;
+                if (!string.Equals(token, _lastOnGuiErrorToken, StringComparison.Ordinal))
+                {
+                    _lastOnGuiErrorToken = token;
+                    Debug.LogError($"[FATAL][SessionActivityDebugPanel] OnGUI render failed. error='{exception}'.");
+                }
             }
             finally
             {
@@ -288,6 +309,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             TryBindHostStateObservation();
+        }
+
+        private bool TryEnsureHost()
+        {
+            if (host != null)
+            {
+                return true;
+            }
+
+            host = FindFirstObjectByType<SessionActivityHost>(FindObjectsInactive.Include);
+            if (host == null)
+            {
+                return false;
+            }
+
+            TryBindHostStateObservation();
+            return host != null;
         }
 
         private string BuildDumpText()
@@ -398,34 +436,64 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private bool CanCompleteActivationWindow()
         {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentStage == SessionActivityStage.ActivationWindowReady;
         }
 
         private bool CanCompleteCurrentActivity()
         {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private bool CanRestartCurrentActivity()
         {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private bool CanCompleteDeactivationWindow()
         {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentStage == SessionActivityStage.DeactivationWindowReady;
         }
 
         private bool CanContinueToNextActivity()
         {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
             return !host.State.CurrentPendingOperation.IsValid &&
                    host.State.CurrentHandoff.IsValid &&
                    ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue &&
                    host.State.CurrentStage == SessionActivityStage.NextActivitySetupCompleted;
+        }
+
+        private bool IsHostStateAvailable()
+        {
+            return host != null && host.State != null;
         }
 
         private string GetPendingHandoffTarget()
@@ -634,6 +702,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     TryEmitActivity01ToActivity02Checkpoint();
                 }
             }
+            TryEmitActivityObjectContributorDiscoveryCheckpoint();
+            TryEmitActivityObjectResetCheckpoint();
+            TryEmitActivityObjectReleaseCheckpoint();
             if (qaAutoDumpOnObservedStateChange)
             {
                 host.DumpCurrentActivityEvidence();
@@ -949,6 +1020,531 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return !string.Equals(checkpointStatus, "Passed", StringComparison.Ordinal);
+        }
+
+        private void TryEmitActivityObjectContributorDiscoveryCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (state == null || state.Facts == null || state.Facts.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ActivityObjectContributorDiscoveryCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind != SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorDiscovered &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorDiscoveryCompleted &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed)
+                {
+                    continue;
+                }
+
+                string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
+                if (!byEntry.TryGetValue(key, out ActivityObjectContributorDiscoveryCheckpointAggregation aggregation))
+                {
+                    aggregation = new ActivityObjectContributorDiscoveryCheckpointAggregation(
+                        fact.Identity.ActivityId,
+                        fact.Identity.EntrySequence);
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted)
+                {
+                    aggregation.DiscoveryStarted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscovered)
+                {
+                    aggregation.DiscoveredCount += 1;
+
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string roleId = ExtractToken(fact.Message, "roleId");
+                    if (!string.Equals(roleId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.RoleIds.Add(roleId);
+                    }
+
+                    string contributorKind = ExtractToken(fact.Message, "contributorKind");
+                    if (!string.Equals(contributorKind, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ContributorKinds.Add(contributorKind);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent)
+                {
+                    aggregation.SkippedNoContent = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoveryCompleted)
+                {
+                    aggregation.DiscoveryCompleted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed)
+                {
+                    aggregation.DiscoveryFailed = true;
+                }
+
+                byEntry[key] = aggregation;
+            }
+
+            foreach (KeyValuePair<string, ActivityObjectContributorDiscoveryCheckpointAggregation> pair in byEntry)
+            {
+                ActivityObjectContributorDiscoveryCheckpointAggregation aggregation = pair.Value;
+                string checkpointStatus = ResolveActivityObjectContributorDiscoveryCheckpointStatus(aggregation);
+                string targetIds = JoinValues(aggregation.TargetIds);
+                string roleIds = JoinValues(aggregation.RoleIds);
+                string contributorKinds = JoinValues(aggregation.ContributorKinds);
+
+                string token =
+                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.DiscoveryStarted}|{aggregation.DiscoveredCount}|{targetIds}|{roleIds}|{contributorKinds}|{aggregation.DiscoveryCompleted}|{aggregation.DiscoveryFailed}|{aggregation.SkippedNoContent}|{checkpointStatus}";
+
+                if (_lastActivityObjectContributorDiscoveryCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
+                    string.Equals(lastToken, token, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _lastActivityObjectContributorDiscoveryCheckpointTokenByEntry[pair.Key] = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectContributorDiscovery' checkpointStatus='{checkpointStatus}' " +
+                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' discoveryStarted='{aggregation.DiscoveryStarted.ToString().ToLowerInvariant()}' " +
+                    $"discoveredCount='{aggregation.DiscoveredCount}' targetIds='{targetIds}' roleIds='{roleIds}' contributorKinds='{contributorKinds}' " +
+                    $"discoveryCompleted='{aggregation.DiscoveryCompleted.ToString().ToLowerInvariant()}' discoveryFailed='{aggregation.DiscoveryFailed.ToString().ToLowerInvariant()}' " +
+                    $"skippedNoContent='{aggregation.SkippedNoContent.ToString().ToLowerInvariant()}'");
+            }
+        }
+
+        private static string ResolveActivityObjectContributorDiscoveryCheckpointStatus(ActivityObjectContributorDiscoveryCheckpointAggregation aggregation)
+        {
+            if (aggregation.DiscoveryFailed)
+            {
+                return "Failed";
+            }
+
+            if (string.Equals(aggregation.ActivityId, "activity_01", StringComparison.Ordinal))
+            {
+                return aggregation.DiscoveryCompleted && aggregation.DiscoveredCount >= 1
+                    ? "Passed"
+                    : "Waiting";
+            }
+
+            if (string.Equals(aggregation.ActivityId, "activity_02", StringComparison.Ordinal))
+            {
+                return aggregation.SkippedNoContent
+                    ? "Passed"
+                    : "Waiting";
+            }
+
+            if (aggregation.DiscoveryCompleted && aggregation.DiscoveredCount >= 1)
+            {
+                return "Passed";
+            }
+
+            if (aggregation.SkippedNoContent)
+            {
+                return "Passed";
+            }
+
+            return "Waiting";
+        }
+
+        private static string JoinValues(HashSet<string> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(",", values);
+        }
+
+        private void TryEmitActivityObjectResetCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (state == null || state.Facts == null || state.Facts.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ActivityObjectResetCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind != SessionActivityFactKind.ObjectResetStarted &&
+                    fact.Kind != SessionActivityFactKind.ObjectResetCommandIssued &&
+                    fact.Kind != SessionActivityFactKind.ObjectResetApplied &&
+                    fact.Kind != SessionActivityFactKind.ObjectResetSkippedOptional &&
+                    fact.Kind != SessionActivityFactKind.ObjectResetFailed &&
+                    fact.Kind != SessionActivityFactKind.ObjectResetCompleted)
+                {
+                    continue;
+                }
+
+                string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
+                if (!byEntry.TryGetValue(key, out ActivityObjectResetCheckpointAggregation aggregation))
+                {
+                    aggregation = new ActivityObjectResetCheckpointAggregation(
+                        fact.Identity.ActivityId,
+                        fact.Identity.EntrySequence);
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ObjectResetStarted)
+                {
+                    aggregation.ResetStarted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectResetCommandIssued)
+                {
+                    aggregation.CommandCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string resetGroup = ExtractToken(fact.Message, "resetGroup");
+                    if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ResetGroups.Add(resetGroup);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectResetApplied)
+                {
+                    aggregation.AppliedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string resetGroup = ExtractToken(fact.Message, "resetGroup");
+                    if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ResetGroups.Add(resetGroup);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectResetSkippedOptional)
+                {
+                    aggregation.SkippedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string resetGroup = ExtractToken(fact.Message, "resetGroup");
+                    if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ResetGroups.Add(resetGroup);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectResetFailed)
+                {
+                    aggregation.FailedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string resetGroup = ExtractToken(fact.Message, "resetGroup");
+                    if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ResetGroups.Add(resetGroup);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectResetCompleted)
+                {
+                    aggregation.ResetCompleted = true;
+                }
+
+                byEntry[key] = aggregation;
+            }
+
+            foreach (KeyValuePair<string, ActivityObjectResetCheckpointAggregation> pair in byEntry)
+            {
+                ActivityObjectResetCheckpointAggregation aggregation = pair.Value;
+                string targetIds = JoinValues(aggregation.TargetIds);
+                string resetGroups = JoinValues(aggregation.ResetGroups);
+                string checkpointStatus = ResolveActivityObjectResetCheckpointStatus(aggregation);
+
+                string token =
+                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ResetStarted}|{aggregation.CommandCount}|{aggregation.AppliedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{resetGroups}|{aggregation.ResetCompleted}|{checkpointStatus}";
+
+                if (_lastActivityObjectResetCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
+                    string.Equals(lastToken, token, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _lastActivityObjectResetCheckpointTokenByEntry[pair.Key] = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectReset' checkpointStatus='{checkpointStatus}' " +
+                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' resetStarted='{aggregation.ResetStarted.ToString().ToLowerInvariant()}' " +
+                    $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
+                    $"targetIds='{targetIds}' resetGroups='{resetGroups}' resetCompleted='{aggregation.ResetCompleted.ToString().ToLowerInvariant()}'");
+            }
+        }
+
+        private static string ResolveActivityObjectResetCheckpointStatus(ActivityObjectResetCheckpointAggregation aggregation)
+        {
+            if (aggregation.FailedCount > 0)
+            {
+                return "Failed";
+            }
+
+            if (aggregation.ResetCompleted)
+            {
+                return "Passed";
+            }
+
+            return "Waiting";
+        }
+
+        private void TryEmitActivityObjectReleaseCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (state == null || state.Facts == null || state.Facts.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ActivityObjectReleaseCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind != SessionActivityFactKind.ObjectReleaseStarted &&
+                    fact.Kind != SessionActivityFactKind.ObjectReleaseCommandIssued &&
+                    fact.Kind != SessionActivityFactKind.ObjectReleaseApplied &&
+                    fact.Kind != SessionActivityFactKind.ObjectReleaseSkippedOptional &&
+                    fact.Kind != SessionActivityFactKind.ObjectReleaseFailed &&
+                    fact.Kind != SessionActivityFactKind.ObjectReleaseCompleted)
+                {
+                    continue;
+                }
+
+                string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
+                if (!byEntry.TryGetValue(key, out ActivityObjectReleaseCheckpointAggregation aggregation))
+                {
+                    aggregation = new ActivityObjectReleaseCheckpointAggregation(
+                        fact.Identity.ActivityId,
+                        fact.Identity.EntrySequence);
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ObjectReleaseStarted)
+                {
+                    aggregation.ReleaseStarted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectReleaseCommandIssued)
+                {
+                    aggregation.CommandCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string releaseKind = ExtractToken(fact.Message, "releaseKind");
+                    if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ReleaseKinds.Add(releaseKind);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectReleaseApplied)
+                {
+                    aggregation.AppliedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string releaseKind = ExtractToken(fact.Message, "releaseKind");
+                    if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ReleaseKinds.Add(releaseKind);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectReleaseSkippedOptional)
+                {
+                    aggregation.SkippedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string releaseKind = ExtractToken(fact.Message, "releaseKind");
+                    if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ReleaseKinds.Add(releaseKind);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectReleaseFailed)
+                {
+                    aggregation.FailedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string releaseKind = ExtractToken(fact.Message, "releaseKind");
+                    if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.ReleaseKinds.Add(releaseKind);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ObjectReleaseCompleted)
+                {
+                    aggregation.ReleaseCompleted = true;
+                }
+
+                byEntry[key] = aggregation;
+            }
+
+            foreach (KeyValuePair<string, ActivityObjectReleaseCheckpointAggregation> pair in byEntry)
+            {
+                ActivityObjectReleaseCheckpointAggregation aggregation = pair.Value;
+                string targetIds = JoinValues(aggregation.TargetIds);
+                string releaseKinds = JoinValues(aggregation.ReleaseKinds);
+                string checkpointStatus = ResolveActivityObjectReleaseCheckpointStatus(aggregation);
+
+                string token =
+                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ReleaseStarted}|{aggregation.CommandCount}|{aggregation.AppliedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{releaseKinds}|{aggregation.ReleaseCompleted}|{checkpointStatus}";
+
+                if (_lastActivityObjectReleaseCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
+                    string.Equals(lastToken, token, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _lastActivityObjectReleaseCheckpointTokenByEntry[pair.Key] = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectRelease' checkpointStatus='{checkpointStatus}' " +
+                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' releaseStarted='{aggregation.ReleaseStarted.ToString().ToLowerInvariant()}' " +
+                    $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
+                    $"targetIds='{targetIds}' releaseKinds='{releaseKinds}' releaseCompleted='{aggregation.ReleaseCompleted.ToString().ToLowerInvariant()}'");
+            }
+        }
+
+        private static string ResolveActivityObjectReleaseCheckpointStatus(ActivityObjectReleaseCheckpointAggregation aggregation)
+        {
+            if (aggregation.FailedCount > 0)
+            {
+                return "Failed";
+            }
+
+            if (aggregation.ReleaseCompleted)
+            {
+                return "Passed";
+            }
+
+            return "Waiting";
+        }
+
+        private struct ActivityObjectContributorDiscoveryCheckpointAggregation
+        {
+            public ActivityObjectContributorDiscoveryCheckpointAggregation(string activityId, int entrySequence)
+            {
+                ActivityId = activityId;
+                EntrySequence = entrySequence;
+                DiscoveryStarted = false;
+                DiscoveredCount = 0;
+                DiscoveryCompleted = false;
+                DiscoveryFailed = false;
+                SkippedNoContent = false;
+                TargetIds = new HashSet<string>(StringComparer.Ordinal);
+                RoleIds = new HashSet<string>(StringComparer.Ordinal);
+                ContributorKinds = new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            public string ActivityId;
+            public int EntrySequence;
+            public bool DiscoveryStarted;
+            public int DiscoveredCount;
+            public bool DiscoveryCompleted;
+            public bool DiscoveryFailed;
+            public bool SkippedNoContent;
+            public HashSet<string> TargetIds;
+            public HashSet<string> RoleIds;
+            public HashSet<string> ContributorKinds;
+        }
+
+        private struct ActivityObjectResetCheckpointAggregation
+        {
+            public ActivityObjectResetCheckpointAggregation(string activityId, int entrySequence)
+            {
+                ActivityId = activityId;
+                EntrySequence = entrySequence;
+                ResetStarted = false;
+                CommandCount = 0;
+                AppliedCount = 0;
+                SkippedCount = 0;
+                FailedCount = 0;
+                ResetCompleted = false;
+                TargetIds = new HashSet<string>(StringComparer.Ordinal);
+                ResetGroups = new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            public string ActivityId;
+            public int EntrySequence;
+            public bool ResetStarted;
+            public int CommandCount;
+            public int AppliedCount;
+            public int SkippedCount;
+            public int FailedCount;
+            public bool ResetCompleted;
+            public HashSet<string> TargetIds;
+            public HashSet<string> ResetGroups;
+        }
+
+        private struct ActivityObjectReleaseCheckpointAggregation
+        {
+            public ActivityObjectReleaseCheckpointAggregation(string activityId, int entrySequence)
+            {
+                ActivityId = activityId;
+                EntrySequence = entrySequence;
+                ReleaseStarted = false;
+                CommandCount = 0;
+                AppliedCount = 0;
+                SkippedCount = 0;
+                FailedCount = 0;
+                ReleaseCompleted = false;
+                TargetIds = new HashSet<string>(StringComparer.Ordinal);
+                ReleaseKinds = new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            public string ActivityId;
+            public int EntrySequence;
+            public bool ReleaseStarted;
+            public int CommandCount;
+            public int AppliedCount;
+            public int SkippedCount;
+            public int FailedCount;
+            public bool ReleaseCompleted;
+            public HashSet<string> TargetIds;
+            public HashSet<string> ReleaseKinds;
         }
 
         private bool TryRunSmokeStep(string smokeName, string stepName, SessionActivityStage? expectedStage, Action action)
@@ -1360,6 +1956,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
+
 
 
 

@@ -21,12 +21,14 @@ F5E1 = PASS funcional
 F5E2 = PASS funcional
 F6A = boundary congelado / auditoria aceita
 F6B = PASS funcional
+F6C = PASS funcional
+F6D = PASS funcional
 ```
 
-Frente atual após F6B:
+Frente atual após F6D:
 
 ```text
-F6C — ObjectReset mínimo por objeto
+F6E — Contributor unregister / cleanup de contributors descobertos por ActivityContent, se necessário
 ```
 
 ---
@@ -49,7 +51,9 @@ Até este ADR, o projeto estabilizou:
 - participant/player preparation pertencente à rota/sessão;
 - `ActivityParticipantBinding` como rail canônico de setup local;
 - release mínimo de `ActivityContent` nos fluxos Activity -> Activity, Restart e Route-exit;
-- discovery observacional de `ActivityObjectContributor` por `entrySequence`.
+- discovery observacional de `ActivityObjectContributor` por `entrySequence`;
+- `ObjectReset` mínimo por objeto antes de `ActivitySetupCompleted`;
+- `ObjectRelease` mínimo por objeto antes de `ActivityContentSceneUnload` nos rails Activity -> Activity, Restart e Route-exit.
 
 O problema arquitetural tratado por este ADR é separar definitivamente:
 
@@ -1268,7 +1272,373 @@ e sem iniciar execução de reset/release por objeto.
 
 ---
 
-## 20. Unsupported v0 / Scope guard
+## 20. Checkpoint F6C — ObjectReset mínimo por objeto PASS funcional
+
+Status:
+
+```text
+F6C = PASS funcional (2026-05-21)
+```
+
+Objetivo:
+
+```text
+Executar o primeiro ObjectReset mínimo por objeto descoberto na ActivityContentScene,
+sem criar regras específicas de gameplay e sem implementar ObjectRelease.
+```
+
+Superfície validada:
+
+```text
+ActivityObjectResetCommand
+ActivityObjectResetResult
+ActivityObjectResetResultKind
+IActivityObjectResetEndpoint
+ActivityObjectDefaultResetEndpoint
+ObjectResetStarted
+ObjectResetCommandIssued
+ObjectResetApplied
+ObjectResetSkippedOptional
+ObjectResetFailed
+ObjectResetCompleted
+QACheckpoint ActivityObjectReset
+```
+
+Ponto de lifecycle congelado:
+
+```text
+ActivityObjectContributorDiscoveryCompleted
+-> ActivitySetupInventoryValidated
+-> ObjectResetStarted
+-> ObjectResetCommandIssued
+-> ObjectResetApplied / ObjectResetSkippedOptional / ObjectResetFailed
+-> ObjectResetCompleted
+-> ActivitySetupCompleted
+-> ActivationWindowPresentation / ActivationWindowReady
+```
+
+Decisões congeladas:
+
+1. `ObjectReset` é stage do `ActivityEntryPipeline` e roda antes de `ActivitySetupCompleted`.
+2. `SessionActivityPipeline` decide quando `ObjectReset` roda.
+3. O contributor/objeto não decide lifecycle e não avança pipeline.
+4. O stage consome contributors descobertos na entry atual e seus `supportedResetGroups`.
+5. Cada reset comandado carrega `Pipeline Identity`, `targetId` e `resetGroup`.
+6. Endpoint/adapter executa o reset concreto; pipeline apenas comanda e valida resultado.
+7. `ActivityObjectDefaultResetEndpoint` é endpoint explícito de teste/authoring mínimo; não é fallback silencioso global.
+8. Contributor sem `supportedResetGroups` gera skip explícito e não bloqueia a Activity.
+9. Optional sem endpoint compatível gera skip explícito.
+10. Required sem endpoint compatível ou failure válido da entry atual gera falha explícita.
+11. Resultado `foreign/stale` não pode avançar nem alterar o pipeline ativo.
+12. `ObjectReset` não implementa `ObjectRelease`.
+13. `ObjectReset` não implementa save/progression.
+14. `ObjectReset` não contém regra específica de porta, pickup, trigger, objetivo ou outro gameplay concreto.
+15. `ObjectReset` não altera `ActivityParticipantBinding`, `PlayerActor`, release de `ActivityContentScene`, restart ou route-exit.
+
+Evidência funcional congelada para entrada inicial de `activity_01`:
+
+```text
+checkpoint='ActivityObjectReset'
+checkpointStatus='Passed'
+activityId='activity_01'
+entrySequence='1'
+resetStarted='true'
+commandCount='1'
+appliedCount='1'
+skippedCount='0'
+failedCount='0'
+targetIds='test_object_01'
+resetGroups='TransformState'
+resetCompleted='true'
+```
+
+Evidência de reexecução após restart local de `activity_01`:
+
+```text
+checkpoint='ActivityObjectReset'
+checkpointStatus='Passed'
+activityId='activity_01'
+entrySequence='2'
+resetStarted='true'
+commandCount='1'
+appliedCount='1'
+skippedCount='0'
+failedCount='0'
+targetIds='test_object_01'
+resetGroups='TransformState'
+resetCompleted='true'
+```
+
+Evidência de Activity sem `ActivityContent`:
+
+```text
+checkpoint='ActivityObjectReset'
+checkpointStatus='Passed'
+activityId='activity_02'
+entrySequence='3'
+resetStarted='true'
+commandCount='0'
+appliedCount='0'
+skippedCount='0'
+failedCount='0'
+targetIds='<none>'
+resetGroups='<none>'
+resetCompleted='true'
+```
+
+A mesma regra foi observada novamente para `activity_02` em nova `entrySequence` após restart local:
+
+```text
+checkpoint='ActivityObjectReset'
+checkpointStatus='Passed'
+activityId='activity_02'
+entrySequence='4'
+commandCount='0'
+appliedCount='0'
+failedCount='0'
+resetCompleted='true'
+```
+
+Evidência de retorno posterior para `activity_01` em nova entry:
+
+```text
+checkpoint='ActivityObjectReset'
+checkpointStatus='Passed'
+activityId='activity_01'
+entrySequence='5'
+resetStarted='true'
+commandCount='1'
+appliedCount='1'
+failedCount='0'
+targetIds='test_object_01'
+resetGroups='TransformState'
+resetCompleted='true'
+```
+
+Smoke correlacionado preservado:
+
+```text
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+ActivityObjectContributorDiscovery checkpointStatus='Passed'
+```
+
+Critérios negativos confirmados:
+
+```text
+F6C não executa ObjectRelease.
+F6C não cria regra específica de gameplay.
+F6C não altera ActivityParticipantBinding.
+F6C não altera PlayerActor.
+F6C não altera ActivityContent scene release.
+F6C não altera RestartCurrentActivity.
+F6C não altera Route-exit.
+F6C não altera QA para dirigir lifecycle.
+```
+
+Observação:
+
+```text
+O smoke validou o caminho funcional normal.
+Rejeição foreign/stale de ObjectReset permanece garantia estrutural do contrato,
+mas não foi exercitada como evidência funcional neste checkpoint.
+```
+
+Conclusão:
+
+```text
+F6C fecha o primeiro reset mínimo por objeto como Pipeline Stage comandado,
+executado por endpoint explícito e validado por Pipeline Facts/QACheckpoint,
+sem transformar Activity em owner de estratégia técnica do objeto.
+```
+
+## 21. Checkpoint F6D — ObjectRelease mínimo por objeto PASS funcional
+
+Status:
+
+```text
+F6D = PASS funcional (2026-05-21)
+```
+
+Objetivo:
+
+```text
+Executar o primeiro ObjectRelease mínimo por objeto descoberto na ActivityContentScene,
+antes do unload da ActivityContentScene, sem criar regras específicas de gameplay
+e sem transferir ownership de release para o objeto, endpoint ou UI.
+```
+
+Superfície validada:
+
+```text
+ActivityObjectReleaseCommand
+ActivityObjectReleaseResult
+ActivityObjectReleaseResultKind
+IActivityObjectReleaseEndpoint
+ActivityObjectDefaultReleaseEndpoint
+ObjectReleaseStarted
+ObjectReleaseCommandIssued
+ObjectReleaseApplied
+ObjectReleaseSkippedOptional
+ObjectReleaseFailed
+ObjectReleaseRejectedForeignOrStale
+ObjectReleaseCompleted
+QACheckpoint ActivityObjectRelease
+```
+
+Ponto de lifecycle congelado:
+
+```text
+ActivityDeactivated
+-> ObjectReleaseStarted
+-> ObjectReleaseCommandIssued
+-> ObjectReleaseApplied / ObjectReleaseSkippedOptional / ObjectReleaseFailed
+-> ObjectReleaseCompleted
+-> ActivityContentReleaseStarted
+-> ActivityContentSceneUnloadCommandIssued
+-> ActivityContentSceneUnloaded
+-> ActivityContentReleaseCompleted
+```
+
+Decisões congeladas:
+
+1. `ObjectRelease` é stage de saída do lifecycle local da `SessionActivity`.
+2. `SessionActivityPipeline` decide quando `ObjectRelease` roda.
+3. O contributor/objeto não decide lifecycle, não inicia unload e não avança pipeline.
+4. O stage consome contributors descobertos na entry atual e seus `supportedReleaseKinds`.
+5. Cada release comandado carrega `Pipeline Identity`, `targetId` e `releaseKind`.
+6. Endpoint/adapter executa o release concreto; pipeline comanda e valida resultado.
+7. `ActivityObjectDefaultReleaseEndpoint` é endpoint explícito de teste/authoring mínimo; não é fallback silencioso global.
+8. Contributor sem `supportedReleaseKinds` gera skip explícito e não bloqueia a Activity.
+9. Optional sem endpoint compatível gera skip explícito.
+10. Required sem endpoint compatível ou failure válido da entry atual gera falha explícita e bloqueia `ActivityContentSceneUnload`.
+11. Resultado `foreign/stale` gera `ObjectReleaseRejectedForeignOrStale`, não incrementa failure, não avança pipeline e não altera a entry ativa.
+12. `ObjectReleaseFailed` fica reservado para failure válido da entry atual.
+13. `ObjectRelease` roda antes de `ActivityContentSceneUnload` em Activity -> Activity, Restart e Route-exit.
+14. `ObjectRelease` não implementa save/progression.
+15. `ObjectRelease` não contém regra específica de porta, pickup, trigger, objetivo ou outro gameplay concreto.
+16. `ObjectRelease` não altera `ActivityParticipantBinding`, `PlayerActor`, route/session ownership ou `ActivityContentRelease` além da ordenação necessária.
+
+Evidência funcional congelada para route button durante `ActivationWindow`:
+
+```text
+stage='ActivationWindowReady'
+RouteButtonRejectedNotRouteExitSafe
+blockedReason='session_activity_not_route_exit_safe'
+activityId='activity_01'
+entrySequence='1'
+pendingOperation='<none>'
+```
+
+Decisão associada:
+
+```text
+Route button não aborta ActivationWindow.
+Route button só pode emitir route request quando SessionActivity está route-exit-safe.
+AbortActivation, se existir no futuro, deve ser comando/policy próprio do SessionActivityPipeline.
+```
+
+Evidência funcional congelada para route-exit após `ActivityRunning`:
+
+```text
+OperationalRouteRequestDeferredForSessionActivityTeardown
+SessionActivityRouteExitTeardownStarted
+SessionActivityRouteExitTeardownInProgress stage='DeactivationWindowAdditiveSceneLoadStarted'
+DeactivationWindowReady
+CompleteDeactivationWindow
+```
+
+Evidência de `ObjectRelease` em route-exit:
+
+```text
+checkpoint='ActivityObjectRelease'
+checkpointStatus='Passed'
+activityId='activity_01'
+entrySequence='1'
+releaseStarted='true'
+commandCount='1'
+appliedCount='1'
+skippedCount='0'
+failedCount='0'
+targetIds='test_object_01'
+releaseKinds='UnloadActivityContentScene'
+releaseCompleted='true'
+```
+
+Evidência de `ActivityContentRelease` e fechamento de route-exit:
+
+```text
+checkpoint='RouteExitBackToMenu'
+checkpointStatus='Passed'
+activityId='activity_01'
+entrySequence='1'
+releaseStarted='true'
+releaseCompleted='true'
+releaseSceneName='ActivityScene01'
+releaseStatus='Unloaded'
+releaseSceneIsLoadedAfterRelease='false'
+closedForRouteExit='true'
+routeExitTeardownCompleted='true'
+```
+
+Evidência operacional correlacionada:
+
+```text
+SessionActivityRouteExitTeardownCompleted
+teardownResult.kind='Completed'
+stage='ClosedForRouteExit'
+hasPendingHandoff='False'
+reason='route_exit_completed'
+```
+
+Sequência validada no smoke F6D:
+
+```text
+ActivityRunning activity_01
+-> BackToMenu permitido
+-> SessionActivityRouteExitTeardownStarted
+-> DeactivationWindowReady
+-> CompleteDeactivationWindow
+-> ObjectRelease Passed
+-> ActivityContentSceneUnload
+-> RouteExitBackToMenu Passed
+-> ClosedForRouteExit
+-> SessionActivityRouteExitTeardownCompleted
+-> ActivityCamera release
+-> RouteActivitySave skip no_snapshot_provider
+-> SceneComposition MenuScene
+-> OperationalRouteCompleted
+```
+
+Critérios negativos confirmados:
+
+```text
+F6D não executa Save/Progression.
+F6D não cria regra específica de gameplay.
+F6D não altera ActivityParticipantBinding.
+F6D não altera PlayerActor.
+F6D não altera ownership de route/session.
+F6D não cria bypass de ActivationWindow.
+F6D não transforma route button em owner de lifecycle.
+```
+
+Observação:
+
+```text
+O smoke validou o caminho funcional normal e a rejeição de route button não-safe durante ActivationWindow.
+A rejeição foreign/stale de ObjectRelease foi corrigida estruturalmente por ObjectReleaseRejectedForeignOrStale,
+mas não foi exercitada como evidência funcional dedicada neste checkpoint.
+```
+
+Conclusão:
+
+```text
+F6D fecha o primeiro release mínimo por objeto como Pipeline Stage comandado,
+executado por endpoint explícito e validado por Pipeline Facts/QACheckpoint,
+antes do unload de ActivityContentScene e antes de ClosedForRouteExit.
+```
+
+## 22. Unsupported v0 / Scope guard
 
 v0 suporta conceitualmente:
 
@@ -1278,6 +1648,8 @@ Load/PrepareActivityContent obrigatório
 ActivityEntryPipeline único
 ActivitySetupInventory
 ActivityObjectContributor discovery observacional por entry
+ObjectReset mínimo por objeto
+ObjectRelease mínimo por objeto
 StateResetRequirements
 ResetGroups v0
 ReleasePreviousActivityContent
@@ -1308,7 +1680,7 @@ Unsupported deve ser explícito. Não criar fallback silencioso.
 
 ---
 
-## 21. Invariantes obrigatórios
+## 23. Invariantes obrigatórios
 
 - `SessionActivityPipeline` decide lifecycle local de Activity.
 - `SessionOperationalPipeline` decide lifecycle de rota.
@@ -1333,7 +1705,7 @@ Unsupported deve ser explícito. Não criar fallback silencioso.
 
 ---
 
-## 22. Auditorias obrigatórias antes de implementação pesada
+## 24. Auditorias obrigatórias antes de implementação pesada
 
 Antes de implementar novas partes deste ADR no runtime, auditar:
 
@@ -1362,7 +1734,7 @@ Objetivos da auditoria:
 
 ---
 
-## 23. Relação com ADRs existentes
+## 25. Relação com ADRs existentes
 
 ### ADR-0001
 
@@ -1402,7 +1774,7 @@ Operational Camera, Route Camera, Activity Camera e Window Camera permanecem cam
 
 ---
 
-## 24. Consequências
+## 26. Consequências
 
 - Activity deixa de ser confundida com cena.
 - Windows deixam de ser confundidas com conteúdo jogável.
@@ -1415,7 +1787,7 @@ Operational Camera, Route Camera, Activity Camera e Window Camera permanecem cam
 
 ---
 
-## 25. Critérios de aceite futuro
+## 27. Critérios de aceite futuro
 
 Este ADR poderá ser considerado implementado quando houver evidência de runtime para:
 
@@ -1428,8 +1800,8 @@ Contributor discovery após content load. [Encerrado pela F6B]
 ActivitySetupInventory construído por entry.
 Subplanos vazios emitindo skip explícito.
 ResetGroups v0 comandados por pipeline.
-ObjectReset por objeto comandado por pipeline.
-ObjectRelease por objeto comandado por pipeline.
+ObjectReset por objeto comandado por pipeline. [Encerrado pela F6C]
+ObjectRelease por objeto comandado por pipeline. [Encerrado pela F6D]
 ActivityContentRelease antes de ClosedForRouteExit em route-exit. [Encerrado pela F5E2]
 RestartCurrentActivity criando nova entrySequence e recarregando content no v0. [Encerrado pela F5E1]
 WindowTemplateLibrary não duplicada nem descarregada por window close.
@@ -1439,7 +1811,7 @@ Nenhum fallback silencioso para Route Scene quando content obrigatório faltar.
 
 ---
 
-## 26. Checkpoint F4D3-F4D6d — PASS funcional
+## 28. Checkpoint F4D3-F4D6d — PASS funcional
 
 Objetivo:
 
@@ -1459,7 +1831,7 @@ Decisões congeladas:
 
 ---
 
-## 27. Checkpoint F4D7 — PASS funcional
+## 29. Checkpoint F4D7 — PASS funcional
 
 Objetivo:
 
@@ -1486,7 +1858,7 @@ Garantias:
 
 ---
 
-## 28. Checkpoint F4D8 — PASS funcional
+## 30. Checkpoint F4D8 — PASS funcional
 
 Objetivo:
 
@@ -1518,7 +1890,7 @@ PlayerPreparation/TechnicalPlanEntries não são consumidos quando totalRequirem
 
 ---
 
-## 29. Checkpoint F5B-F5D — PASS estrutural + PASS funcional
+## 31. Checkpoint F5B-F5D — PASS estrutural + PASS funcional
 
 Status:
 
@@ -1590,7 +1962,7 @@ participantCommandsForActivity02Observed='false'
 
 ---
 
-## 30. Checkpoint F5QA — PASS funcional
+## 32. Checkpoint F5QA — PASS funcional
 
 Objetivo:
 
@@ -1631,7 +2003,7 @@ Regras:
 
 ---
 
-## 31. Checkpoint F5E1 — PASS funcional
+## 33. Checkpoint F5E1 — PASS funcional
 
 Objetivo:
 
@@ -1705,7 +2077,7 @@ Decisões:
 
 ---
 
-## 32. Checkpoint F5E2 — PASS funcional
+## 34. Checkpoint F5E2 — PASS funcional
 
 Objetivo:
 
@@ -1790,21 +2162,24 @@ Suprimir ruído residual de QA Activity01ToActivity02 Waiting após RouteExitBac
 
 ---
 
-## 33. Próximas frentes após F6B
+## 35. Próximas frentes após F6D
 
-Com F5D, F5E1, F5E2, F6A e F6B congeladas, o lifecycle mínimo de `ActivityContent` está fechado para cenas, o boundary de objetos/contributors foi definido e o discovery observacional por entry já foi validado:
+Com F5D, F5E1, F5E2, F6A, F6B, F6C e F6D congeladas, o lifecycle mínimo de `ActivityContent` está fechado para cenas, o discovery observacional por entry já foi validado, `ObjectReset` roda na entrada e `ObjectRelease` roda na saída antes do unload da `ActivityContentScene`:
 
 ```text
 Activity -> Activity
 RestartCurrentActivity
 Route-exit / BackToMenu
 ActivityObjectContributor discovery por entry
+ObjectReset mínimo por objeto antes de ActivationWindow
+ObjectRelease mínimo por objeto antes de ActivityContentSceneUnload
+Route button guard para impedir route request durante ActivationWindow
+Route-exit / BackToMenu validado com ObjectRelease + ActivityContentRelease
 ```
 
 Próximas frentes recomendadas:
 
-1. `F6C` — ObjectReset mínimo por objeto.
-2. `F6D` — ObjectRelease mínimo por objeto.
-3. `F6E` — Contributor unregister / cleanup de contributors descobertos por ActivityContent, se necessário após ObjectRelease.
-4. `F6F` — ActivityContent Retention policies avançadas, mantendo `KeepRecentActivityContent` e `RetainUntilRouteExit` explicitamente unsupported até haver caso concreto.
-5. `F7` — Progression snapshot providers reais de Activity/Object, separado de release/reset.
+1. `F6E` — Contributor unregister / cleanup de contributors descobertos por ActivityContent, se necessário.
+2. `F6F` — ActivityContent Retention policies avançadas, mantendo `KeepRecentActivityContent` e `RetainUntilRouteExit` explicitamente unsupported até haver caso concreto.
+3. `F7` — Progression snapshot providers reais de Activity/Object, separado de release/reset.
+4. Guard estrutural futuro no `SessionOperationalPipeline` para rejeição limpa de route request não-safe, sem depender apenas do binder/UI.

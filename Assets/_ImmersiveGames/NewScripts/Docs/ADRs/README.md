@@ -22,9 +22,8 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 11. **ADR-0011** - Runtime Configuration Registry and Config Sets (CLOSED - 2026-05-17)
 12. **ADR-0012** - Operational Camera Runtime e Future Activity Camera Binding (CONGELADO - 2026-05-14)
 13. **ADR-0013** - Camera Presentation Runtime e Activity Camera Director (ACEITO / IMPLEMENTADO NO MVP SINGLE-PLAYER)
-14. **ADR-0014** - ActivityContent, WindowTemplateLibrary e ActivityEntryPipeline (CHECKPOINT F4D3-F4D6d PASS FUNCIONAL - 2026-05-20)
 
-**Estes ADRs (0009-0014) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
+**Estes ADRs (0009-0013) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
 
 Notas:
 - **ADR-0009** (congelado) congela o contrato operacional de:
@@ -32,6 +31,7 @@ Notas:
   - inicializacao de EventSystem persistente;
   - inicializacao de InputSystemUIInputModule persistente;
   - binding canonico de 10 UI actions via `OperationalInputRuntimeProfileAsset` referenciado por `InputModesRuntimeConfigGroup`.
+  - checkpoint 2026-05-21: `InputRuntimeRoot` em `UIGlobalScene` como root persistente obrigatório de input operacional, contendo `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule`; `NewBootstrap` não é owner desse runtime.
   - `SessionOperationalInputPolicy` explicita por rota operacional; `OperationalSurfaceKind` permanece semantico e nao decide input mode.
   - pipeline resolve policy -> mode e emite `SessionOperationalInputModeCommand`; `InputModes` aplica modo/action map.
   - 11 decisoes congeladas sobre fail-fast, integridade, sequencia de binding.
@@ -42,6 +42,7 @@ Notas:
   - `RuntimeConfigRegistry` valida e expõe snapshots read-only
   - 6 grupos obrigatórios: RuntimePolicy, SessionOperational, Audio, Save, InputModes, Camera
   - InputModesRuntimeConfigGroup: referencia obrigatoria a `OperationalInputRuntimeProfileAsset` (profileId + `maxPlayerSlots`, `uiActionsAsset`, 10 `InputActionReferences` canonicas) (ADR-0009)
+  - disponibilidade física do input operacional: `InputRuntimeRoot` deve estar em persistent scene do modo (`UIGlobalScene` no Base11Sandbox), não em `NewBootstrap`.
   - CameraRuntimeConfigGroup: `operationalCameraPrefab`, `operationalCameraIdentity` (ADR-0012)
   - Checkpoint completo: nenhum item adiado.
 - **ADR-0012** (congelado) congela o contrato operacional de:
@@ -107,9 +108,9 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 
 ### Regra Obrigatória de Leitura
 
-- **ADRs de ADR-0001 a ADR-0014 são a fonte normativa viva de Base 1.1.**
+- **ADRs de ADR-0001 a ADR-0013 são a fonte normativa viva de Base 1.1.**
   - ADR-0001 a ADR-0008: Estruturais (pipeline, adapters, policies canônicas).
-  - ADR-0009 a ADR-0014: Checkpoints normativos aceitos/congelados/implementados.
+  - ADR-0009 a ADR-0013: Checkpoints normativos aceitos/congelados/implementados.
 - ADRs anteriores (históricos) devem ser lidos apenas como referência contextual.
 - Em caso de conflito entre um ADR histórico e um ADR Base 1.1, a **Base 1.1 prevalece**.
 - Ownership não é decidido por conveniência operacional, e sim pelo papel arquitetural definido na Base 1.1.
@@ -129,13 +130,12 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 - ADR-0007
 - ADR-0008
 
-**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0014):**
+**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0013):**
 - ADR-0009 (congelado - 2026-05-14)
 - ADR-0010 (congelado - 2026-05-14)
 - ADR-0011 (CLOSED - 2026-05-17)
 - ADR-0012 (congelado - 2026-05-14)
 - ADR-0013 (aceito/implementado no MVP single-player - 2026-05-15)
-- ADR-0014 (checkpoint F4D3-F4D6d PASS funcional - 2026-05-20)
 
 ### HISTÓRICO (Referência Apenas)
 
@@ -202,6 +202,7 @@ Limites atuais congelados:
 - Checkpoint RuntimeConfig/Wiring SessionOperational:
   - `RuntimeConfigRegistry` permanece a fonte canônica de resolução de config por domínio.
   - `InputModes` é resolvido exclusivamente por `RuntimeConfigRegistry`/`InputModesRuntimeConfigGroup`.
+  - `InputRuntimeRoot` é dependência operacional persistente do modo e deve estar em `UIGlobalScene`, com `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` canônicos.
   - `RuntimeModeConfig.inputModes`, `RuntimeModeConfigLoader` e `BootstrapConfigAsset` foram removidos do caminho ativo.
   - `CompositionProfileKind.Base11Sandbox` ativo; profiles não suportados falham explicitamente.
   - `SessionOperationalRuntimeComposer` registra apenas adapters canônicos.
@@ -748,68 +749,3 @@ ActivityRestartRail
 ActivityNavigationRail
 ActivityRouteExitRail
 ```
-
-### Checkpoint curto - ActivityRouteExitRail / BackToMenu ordering (2026-05-19)
-
-Status:
-
-```text
-CLOSED
-```
-
-Resumo normativo congelado:
-
-```text
-BackToMenu com SessionActivity ativa deve deferir a troca de rota antes de qualquer side-effect operacional.
-SessionOperational solicita ActivityRouteExitRail antes de ActivityCamera release, RouteActivitySave, TransitionPlanReady, fade, ApplyOperationalRoute e SceneComposition.
-DeactivationWindow nao auto-completa.
-DeactivationWindowReady aguarda comando explicito.
-No sandbox, QA CompleteDeactivationWindow simula o botao real futuro.
-CompleteDeactivationWindow durante ActivityRouteExitRail finaliza ActivityRouteExitCompleted/ClosedForRouteExit.
-So apos SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false
-os side-effects operacionais da rota podem continuar.
-Planejamento puro antes do defer e aceitavel; adapter/side-effect antes de ClosedForRouteExit nao e aceitavel.
-```
-
-Smoke congelado:
-
-```text
-OperationalRouteRequestDeferredForSessionActivityTeardown ocorre antes de side-effects operacionais.
-SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false ocorre antes de:
-- ActivityCameraReleasePreviousStageStarted
-- RouteActivitySaveSaveSkipped/Started
-- TransitionPlanReady
-- fadeInStarted
-- ApplyOperationalRoute
-BackToMenu nao abre activity_02.
-ActivationWindow e DeactivationWindow continuam dependentes de comando explicito.
-```
-
-
-### Checkpoint curto - ADR-0014 F4D3-F4D6d (2026-05-20)
-
-Status:
-
-```text
-PASS funcional
-```
-
-Resumo congelado:
-
-```text
-- Activity nao declara PlayerSetDefinition/RequiresPlayerActor.
-- ActivityCatalogAsset nao transporta legacy player set de Activity.
-- SessionActivityDefinition nao carrega LegacyPlayerSetDefinition/RequiresPlayerActor.
-- ParticipantRequirement e a fonte semantica da Activity.
-- PlayerPreparation + SessionActivityEntryHandoff.TechnicalPlanEntries sao a fonte tecnica da rota/sessao.
-- ActivityParticipantBinding + ActivityParticipant*CommandIssued/*Applied e o rail canonico ativo de setup local.
-- Player permanece RouteSession-owned; Activity nao possui Player.
-```
-
-Pendencias registradas:
-
-```text
-1) Convergir nomenclatura de OperationalRouteAsset.playerSetDefinition para linguagem de RouteSession Participant/PlayerPreparation.
-2) Rodar smoke especifico do caso sem requirements com evidencia explicita de ActivityParticipantBindingSkippedNoRequirements.
-```
-

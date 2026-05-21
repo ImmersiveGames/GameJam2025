@@ -60,6 +60,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             ValidateList(releaseRequirements, validationSource, nameof(releaseRequirements));
         }
 
+        public int PruneLegacyEmptyObjectEntryRequirements()
+        {
+            if (objectEntryRequirements == null || objectEntryRequirements.Count == 0)
+            {
+                return 0;
+            }
+
+            int removed = 0;
+            for (int index = objectEntryRequirements.Count - 1; index >= 0; index--)
+            {
+                ActivityObjectEntryRequirementAuthoring entry = objectEntryRequirements[index];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.RequirementId))
+                {
+                    objectEntryRequirements.RemoveAt(index);
+                    removed += 1;
+                }
+            }
+
+            return removed;
+        }
+
         private static void ValidateList<T>(IReadOnlyList<T> entries, string source, string listName)
             where T : class, IActivitySetupRequirementAuthoring
         {

@@ -301,6 +301,15 @@ Regras sobre UI Actions Binding:
 - Binding e executado por `UnityOperationalInputRuntimeAdapter` (ADR-0009);
 - Nao ha reconfiguracao de binding em runtime.
 
+Regra complementar de disponibilidade fisica do input operacional:
+
+- `OperationalInputRuntimeProfileAsset` declara dados de capacidade/config, nao cria root fisico.
+- O root fisico canonico e `InputRuntimeRoot`.
+- No Base11Sandbox, `InputRuntimeRoot` deve estar em `UIGlobalScene`, persistent scene garantida pelo `RuntimePersistentScenesPolicyAsset`.
+- `InputRuntimeRoot` deve conter `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` canonicos conforme ADR-0009.
+- `NewBootstrap` nao deve hospedar a unica instancia canonica do runtime operacional de input, pois pode ser descarregada pela rota inicial.
+- Config obrigatoria e cena persistente obrigatoria continuam fail-fast; nao ha fallback silencioso por cena transiente.
+
 A decisao de quando trocar input mode continua pertencendo ao pipeline.
 
 ### CameraRuntimeConfigGroup
@@ -562,6 +571,10 @@ Adicionar validações manuais/automáticas conforme necessário:
     - `uiActionsAsset`;
     - 10 `InputActionReferences` canonicas;
     - Snapshot read-only, nao reconfiguração em runtime.
+  - **Checkpoint (2026-05-21)**: disponibilidade fisica do runtime operacional de input:
+    - `InputRuntimeRoot` em `UIGlobalScene`;
+    - `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sob root persistente;
+    - `NewBootstrap` fora do ownership do input operacional persistente.
 - RuntimeModeConfig higienizado para permanecer asset puro/entry point.
 
 ### Campos removidos de RuntimeModeConfig (migrados)
