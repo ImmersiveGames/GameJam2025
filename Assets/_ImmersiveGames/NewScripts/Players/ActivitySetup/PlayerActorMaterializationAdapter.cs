@@ -46,17 +46,17 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 }
 
                 GameObject instance = UnityEngine.Object.Instantiate(plan.Prefab, root);
-                instance.name = $"PlayerActor::{plan.ActorIdentity.PlayerId}::{plan.ActorIdentity.PlayerActorId}";
+                instance.name = $"PlayerActor::{plan.ActorIdentity.PlayerSlotId}::{plan.ActorIdentity.PlayerActorId}";
                 instance.transform.localPosition = plan.LocalPosition;
                 instance.transform.localRotation = Quaternion.Euler(plan.LocalEulerAngles);
 
                 PlayerActor actor = instance.GetComponent<PlayerActor>();
                 if (actor == null)
                 {
-                    throw new InvalidOperationException($"PlayerActor prefab missing PlayerActor component. prefab='{plan.Prefab.name}' playerId='{plan.ActorIdentity.PlayerId}'.");
+                    throw new InvalidOperationException($"PlayerActor prefab missing PlayerActor component. prefab='{plan.Prefab.name}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}'.");
                 }
 
-                actor.Initialize(plan.ActorIdentity.PlayerId);
+                actor.Initialize(plan.ActorIdentity.PlayerSlotId);
 
                 PlayerActorIdentity identity = instance.GetComponent<PlayerActorIdentity>();
                 if (identity == null)
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     activeIdentity.ActivityId,
                     activeIdentity.ActivityOrdinal,
                     activeIdentity.EntrySequence,
-                    plan.ActorIdentity.PlayerId,
+                    plan.ActorIdentity.PlayerSlotId,
                     plan.ActorIdentity.PlayerActorId);
 
                 PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();

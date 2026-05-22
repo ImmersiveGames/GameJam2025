@@ -4,7 +4,6 @@
 
 - Estado: ACEITO / checkpoint normativo vivo da Base 1.1
 - Data: 2026-05-19
-- Última atualização: 2026-05-22
 - Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR, após aceite.
 
@@ -642,6 +641,9 @@ Ordem inicial aceita:
 5. BuildActivitySetupInventory
 6. ValidateActivitySetupInventory
 7. ParticipantSetupStage
+   - PlayerActorReadinessValidation
+   - PlayerInputBindingStage
+   - MovementBindingStage, quando houver requisito de controle/movimento ou binding retido válido
 8. ObjectEntrySetupStage
 9. PlacementSetupStage
 10. CameraBindingSetupStage
@@ -651,10 +653,13 @@ Ordem inicial aceita:
 14. ActivitySetupReadinessValidation
 15. ActivitySetupCompleted
 16. ActivationWindowPresentation ou ActivationWindowSkippedNoContent
-17. ActivityRunning
+17. CompleteActivationWindow, se houver window
+18. ActivityRunning
 ```
 
 Participant/ObjectEntry vêm antes de Placement. Camera vem depois de Placement. Interaction/HUD vêm depois da existência dos objetos. Warmup é sequencial em v0.
+
+`PlayerInputBindingStage` e `MovementBindingStage` fazem parte do setup/preparation do participante controlável. Eles não liberam gameplay control durante `ActivitySetup` ou `ActivationWindow`. A liberação de controle pertence ao lifecycle da Activity e ocorre somente quando o pipeline entra em `ActivityRunning`.
 
 ---
 
@@ -1235,6 +1240,250 @@ deve ser propagado no payload carregado ou marcado explicitamente como indispon�
 Essa dívida não bloqueia o PASS funcional e semântico porque `restoreVerified='true'` confirmou o resultado final e a ordem `ActivityObjectSnapshotContractValidation -> ObjectReset -> ActivityObjectSnapshotRestore` foi validada.
 
 
+## 22.2 Checkpoint congelado — PlayerActor Readiness, PlayerInputBinding e MovementControl — PASS funcional
+
+- Estado: CONGELADO / PASS funcional.
+- Data: 2026-05-22.
+- Escopo: `SessionActivityPipeline`, `ActivitySetup`, `PlayerActor` materializado, `PlayerInputBindingStage`, `MovementBindingStage`, `MovementControl` e binding retido em Activity sem novo participant command plan.
+- Fonte de evidência: smoke `Boot -> Menu -> Sandbox -> activity_01 -> activity_02 -> BackToMenu`, confirmando binding de input, binding de movimento, bloqueio em windows, liberação em running, retained binding em skip/no-content e retorno ao menu.
+
+### 22.2.1 Decisão congelada
+
+A Base 1.1 congela o seguinte shape para participante controlável mínimo dentro do `ActivityEntryPipeline`:
+
+```text
+SessionActivityPipeline / ActivitySetup
+-> materializa PlayerActor pela entry atual
+-> valida PlayerActor readiness
+-> executa PlayerInputBindingStage
+-> executa MovementBindingStage
+-> conclui ActivitySetup somente após os bindings obrigatórios aplicáveis
+```
+
+`PlayerActor` é materializado pelo `SessionActivityPipeline` / `ActivitySetup`.
+
+`PlayerInput` vem do `PlayerActorPrefab` materializado. Não existe `PlayerInput` operacional paralelo para gameplay.
+
+`MovementBindingStage` prepara/binda capacidade de movimento, mas não libera controle durante setup.
+
+```text
+MovementBindingStage = preparation/binding.
+MovementControl = lifecycle enable/disable comandado pelo pipeline.
+```
+
+### 22.2.2 Regras congeladas para PlayerInputBindingStage
+
+`PlayerInputBindingStage` usa o `PlayerInput` existente no `PlayerActor` materializado.
+
+Regras:
+
+- não criar `operationalPlayerInputPrefab`;
+- não criar `__OperationalPlayerInputsRuntimeRoot`;
+- não provisionar `PlayerInput` de gameplay no `SessionOperationalPipeline`;
+- não usar `UnityEditor` em runtime;
+- não usar reflection para escrever binding;
+- não buscar `PlayerInput` globalmente por nome, tag, singleton ou primeiro componente da cena;
+- resolver o `PlayerInput` a partir do `PlayerActor` materializado e da identidade da entry atual;
+- permitir rebind explícito de `PlayerInput.actions` para o asset canônico já validado pelo `RuntimeConfigRegistry` / `InputModesRuntime`, emitindo observabilidade;
+- falhar explicitamente se `PlayerInput`, action map `Player`, action `Move` ou asset canônico obrigatório estiverem ausentes.
+
+O rebind ao asset canônico é permitido porque:
+
+```text
+OperationalInputRuntime valida o InputActionAsset canônico.
+PlayerInputBindingStage aplica esse asset no endpoint técnico materializado.
+```
+
+Isso não é fallback silencioso. O rebind precisa ser explícito, observável e baseado no asset já validado, não em busca por nome.
+
+Evidência congelada:
+
+```text
+PlayerInputActionsReboundToCanonical
+PlayerInputBound / binding equivalente
+```
+
+### 22.2.3 Regras congeladas para MovementBindingStage
+
+`MovementBindingStage` roda depois de `PlayerInputBindingStage` e antes de `ActivitySetupCompleted`.
+
+Responsabilidades:
+
+```text
+resolver PlayerActor materializado
+resolver PlayerInput já bound
+resolver PlayerMoveInputReader / PlayerMovementController no PlayerActor
+bindar PlayerInput ao reader/controller
+emitir PlayerMovementBound
+emitir MovementBindingCompleted
+manter controlEnabled=false
+```
+
+Regras:
+
+- não usar `Input.GetAxis`;
+- não usar `Input.GetAxisRaw`;
+- não buscar `PlayerInput` globalmente;
+- não criar reader/controller automaticamente por fallback silencioso;
+- não liberar movimento em `ActivitySetup`;
+- não liberar movimento em `ActivationWindow`;
+- não mover lifecycle para `PlayerMovementController` ou `PlayerMoveInputReader`;
+- controller/reader executam side-effects técnicos, mas não decidem lifecycle da Activity.
+
+Evidência congelada:
+
+```text
+MovementBindingStarted
+PlayerMovementBound
+MovementBindingCompleted controlEnabled=false
+```
+
+### 22.2.4 Regras congeladas para MovementControl lifecycle
+
+A liberação/bloqueio de movimento pertence ao lifecycle comandado pelo `SessionActivityPipeline`.
+
+Fluxo congelado:
+
+```text
+ActivitySetup
+-> MovementBindingStage prepara/binda
+-> controlEnabled=false
+
+ActivationWindow
+-> movimento bloqueado
+
+CompleteActivationWindow
+-> transição para ActivityRunning
+-> MovementControlEnabled
+
+CompleteCurrentActivity / Deactivation / RouteExit
+-> MovementControlDisabled
+```
+
+Regras:
+
+- `ActivityRunning` habilita movimento somente quando houver alvo válido novo ou retido;
+- `DeactivationWindow`, `ActivityTransition` e `RouteExit` bloqueiam movimento;
+- disable deve limpar input e estado transitório de movimento;
+- disable duplicado no mesmo `activityId|entrySequence|source|reason` é idempotente e deve emitir `MovementControlDisableSkippedDuplicate`, não um segundo `MovementControlDisabled` real.
+
+Evidência congelada:
+
+```text
+MovementControlEnabled
+MovementControlDisabled
+MovementControlDisableSkippedDuplicate // quando houver segunda tentativa idempotente no mesmo contexto
+```
+
+### 22.2.5 Skip real não é retained binding
+
+A Base 1.1 congela a distinção semântica:
+
+```text
+MovementBindingSkippedNoRequiredMovement
+= não há requisito/capacidade de movimento a liberar para a entry.
+
+MovementBindingRetained
+= não há novo bind, mas existe binding válido retido na sessão para a entry atual.
+```
+
+`Activity` sem novo participant command plan pode reutilizar binding de player/control retido quando a identidade continuar válida.
+
+Regras:
+
+- skip real não habilita controle;
+- retained binding pode habilitar controle ao entrar em `ActivityRunning`;
+- binding retido precisa validar identidade e estado, incluindo `sessionStateId`, `activityId`/entry aplicável, `entrySequence`, `playerSlotId`, `playerActorId`, binding de input, binding de movimento e instance ainda válida;
+- foreign/stale binding não pode habilitar controle.
+
+Evidência congelada para `activity_02` skip/no-content:
+
+```text
+MovementBindingStarted
+MovementBindingRetained
+MovementBindingCompleted status='RetainedExistingBinding' controlEnabled=false
+MovementControlEnabled
+ActivityRunning
+```
+
+### 22.2.6 Route-exit e release no-content
+
+No route-exit, `ClosedForRouteExit` continua bloqueado até a conclusão semântica do release obrigatório de ActivityContent.
+
+Para Activity sem content scenes carregadas, o branch `SkippedNoContent` também precisa emitir conclusão semântica de release:
+
+```text
+ActivityContentReleaseSkippedNoContent
+ActivityContentReleaseCompleted status='SkippedNoContent'
+```
+
+Isso preserva a invariante:
+
+```text
+ClosedForRouteExit só pode ocorrer depois do release obrigatório de ActivityContent.
+```
+
+No caso `no-content`, `releaseStarted=false` com `releaseCompleted=true` significa:
+
+```text
+não houve release físico de content scene;
+houve conclusão semântica do stage de release.
+```
+
+Essa diferença deve permanecer observável para evitar falsos diagnósticos.
+
+### 22.2.7 Aprendizados congelados
+
+A implementação deste checkpoint consolida os seguintes aprendizados como guias para próximos stages do `ActivityEntryPipeline`:
+
+- preparação/binding não é liberação de gameplay;
+- skip real não é retained binding;
+- Activity sem novo participant command plan pode reutilizar binding válido retido;
+- ausência de log/fact de stage deve levar primeiro a auditoria de conexão/observabilidade do pipeline, não a criação de config nova;
+- prefab/config/adapter novo só deve ser criado depois de auditar capacidades existentes;
+- contratos existentes devem ser reaproveitados/adaptados quando já estiverem alinhados à Base 1.1;
+- não criar trilho paralelo para resolver problema de authoring ou de stage não conectado;
+- facts internos relevantes precisam ter observabilidade suficiente no smoke para evitar falso diagnóstico de configuração.
+
+### 22.2.8 Fora do checkpoint
+
+Este checkpoint não implementa nem congela:
+
+```text
+CameraBindingStage final
+InteractionBindingStage final
+HudBindingStage final
+split-screen real
+runtime rebind de input
+Player camera rig final
+ObjectEntry real completo
+Progression restore genérico
+```
+
+Esses pontos permanecem futuros e devem seguir a mesma regra: auditar o existente antes de criar contrato/config/prefab novo.
+
+
+## 22.3 Dívidas não bloqueantes pós-checkpoint PlayerInput/Movement
+
+As seguintes dívidas não bloqueiam o PASS funcional do checkpoint `PlayerActor Readiness + PlayerInputBinding + MovementControl`:
+
+- `RouteExitBackToMenu` deve emitir `checkpointStatus='Passed'` explicitamente depois de `menuRouteApplied='true'`.
+- Clarificar nos checkpoints a semântica `releaseStarted=false` + `releaseCompleted=true` quando o release físico é `SkippedNoContent`, mas o stage concluiu semanticamente.
+- Futuro: consolidar a distribuição de estado entre pipeline, registry e binding state components quando houver mais bindings.
+- Futuro: revisar criação runtime de `PlayerActorMovementBindingState` e preferir componente autorado no prefab se isso reduzir mutação implícita sem criar rigidez desnecessária.
+- Futuro: padronizar os vários usos de `PlayerId`, separando semanticamente `PlayerSlotId`, `PlayerActorId`, `PlayerDefinitionId`, `PlayerSelectionId` ou equivalentes.
+- Futuro: quando runtime rebind de input for implementado, manter readers lendo actions semânticas, não teclas/botões concretos.
+
+Essas dívidas são de hardening, observabilidade ou refinamento semântico. Elas não reabrem o ownership congelado:
+
+```text
+SessionActivityPipeline decide lifecycle.
+Adapters/componentes executam side-effects.
+InputModes valida/aplica modos, mas não decide lifecycle de Activity.
+PlayerInput/Movement endpoints não decidem ActivityRunning.
+```
+
+
 ## 23. Invariantes obrigatórios
 
 - `SessionActivityPipeline` decide lifecycle local de Activity.
@@ -1257,6 +1506,14 @@ Essa dívida não bloqueia o PASS funcional e semântico porque `restoreVerified
 - Nenhum objeto/contributor decide quando o pipeline avança.
 - ActivityObject snapshot/restore mínimo validado não transforma objeto em owner de Save.
 - `RouteActivitySave` não aplica estado em objeto; restore pertence ao `SessionActivityPipeline`.
+- `PlayerInputBindingStage` usa o `PlayerInput` do `PlayerActor` materializado, sem `PlayerInput` operacional paralelo.
+- `PlayerInputBindingStage` pode rebinder explicitamente para o asset canônico validado pelo `RuntimeConfigRegistry` / `InputModesRuntime`, mas não pode buscar asset por nome nem usar fallback silencioso.
+- `MovementBindingStage` prepara/binda movimento com `controlEnabled=false`.
+- `MovementControlEnabled` só ocorre quando o pipeline entra em `ActivityRunning` e há alvo válido.
+- `MovementControlDisabled` ocorre em deactivation, transition e route-exit quando houver alvo ativo/retido.
+- Skip real não é retained binding; `MovementBindingRetained` pode liberar controle em `ActivityRunning`, skip real não.
+- Disable duplicado deve ser idempotente e observável como duplicate/skip, não como segundo side-effect real.
+- Branch `SkippedNoContent` de release deve emitir conclusão semântica antes de `ClosedForRouteExit`.
 - Não criar Base 2.0 agora.
 - Não criar core genérico universal agora.
 - Não reorganizar fisicamente arquitetura em Core/Concrete/UnityAdapter.
@@ -1273,6 +1530,9 @@ ResolveActivityEntry
 -> BuildActivitySetupInventory
 -> ValidateActivitySetupInventory
 -> ParticipantSetupStage
+   -> PlayerActorReadinessValidation
+   -> PlayerInputBindingStage
+   -> MovementBindingStage, quando aplicável
 -> ObjectEntrySetupStage
 -> PlacementSetupStage
 -> CameraBindingSetupStage
@@ -1284,6 +1544,7 @@ ResolveActivityEntry
 -> ActivationWindowPresentation ou ActivationWindowSkippedNoContent
 -> CompleteActivationWindow, se houver window
 -> ActivityRunning
+   -> MovementControlEnabled, quando houver alvo válido
 ```
 
 A primeira Activity usa a cortina/loading da rota como contexto visual.
@@ -1358,6 +1619,21 @@ Restart/reset deste ADR não são Save/Restore. `ActivityObjectSnapshotCapture` 
 
 PlayerSlot é capacidade operacional. PlayerActor nasce no `ActivitySetup`. Player não é propriedade semântica da Activity.
 
+O checkpoint `PlayerActor Readiness + PlayerInputBinding + MovementControl` preserva a fronteira:
+
+```text
+SessionOperationalPipeline / InputModesRuntime
+-> valida capacidade operacional e asset canônico de input.
+
+SessionActivityPipeline / ActivitySetup
+-> materializa PlayerActor.
+-> binda PlayerInput do PlayerActor ao slot/ator da entry.
+-> binda Movement ao PlayerInput já validado.
+-> libera/bloqueia controle conforme lifecycle local da Activity.
+```
+
+Não há provisioning operacional paralelo de `PlayerInput` de gameplay.
+
 ### ADR-0012 / ADR-0013
 
 Operational Camera, Route Camera, Activity Camera e Window Camera permanecem camadas separadas. Este ADR registra prioridade e uso dentro do ActivityEntry/Window lifecycle.
@@ -1391,6 +1667,13 @@ ActivitySetupInventory construído por entry.
 Subplanos vazios emitindo skip explícito.
 ResetGroups v0 comandados por pipeline.
 ActivityContentRelease antes de ClosedForRouteExit em route-exit.
+Branch SkippedNoContent de release emitindo conclusão semântica antes de ClosedForRouteExit.
+PlayerActor readiness validado antes de ActivitySetupCompleted quando houver participante obrigatório.
+PlayerInputBindingStage usando PlayerInput do PlayerActor materializado, sem runtime paralelo.
+MovementBindingStage preparando controle com controlEnabled=false.
+MovementControlEnabled somente em ActivityRunning.
+MovementControlDisabled em deactivation/route-exit.
+MovementBindingRetained habilitando controle em Activity skip/no-content quando houver binding válido.
 RestartCurrentActivity criando nova entrySequence e recarregando content no v0.
 WindowTemplateLibrary não duplicada nem descarregada por window close.
 Comandos stale/foreign rejeitados.

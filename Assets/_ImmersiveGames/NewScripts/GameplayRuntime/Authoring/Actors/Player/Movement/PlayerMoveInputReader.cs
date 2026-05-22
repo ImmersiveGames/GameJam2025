@@ -1,65 +1,86 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     /// <summary>
-    /// Leitor mínimo de input para o stack do Player no NewScripts.
-    /// Usa Input.GetAxis/GetAxisRaw (Horizontal/Vertical) para manter o fluxo leve
-    /// e previsível durante resets.
+    /// Leitor canonico de movimento baseado em PlayerInput bound no ActivitySetup.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class PlayerMoveInputReader : MonoBehaviour
     {
-        [Header("Axes")]
-        [SerializeField]
-        private string horizontalAxis = "Horizontal";
+        private const string PlayerActionMapName = "Player";
+        private const string MoveActionName = "Move";
 
-        [SerializeField]
-        private string verticalAxis = "Vertical";
-
-        [SerializeField]
-        private bool useRawAxes = true;
-
-        [SerializeField]
-        [Range(0f, 1f)]
-        private float deadzone = 0.1f;
-
-        [SerializeField]
-        private bool clampMagnitude = true;
+        [Header("Filtering")]
+        [SerializeField] [Range(0f, 1f)] private float deadzone = 0.1f;
+        [SerializeField] private bool clampMagnitude = true;
 
         private Vector2 _currentInput;
+        private PlayerInput _boundPlayerInput;
+        private InputAction _moveAction;
         private bool _inputEnabled = true;
+        private bool _bound;
 
-        /// <summary>Input atual após deadzone e clamp.</summary>
         public Vector2 MoveInput => _currentInput;
+        public bool IsBound => _bound;
+        public PlayerInput BoundPlayerInput => _boundPlayerInput;
 
-        /// <summary>Deadzone aplicada na magnitude (ao quadrado).</summary>
-        public float Deadzone => deadzone;
-
-        /// <summary>Habilita/desabilita a leitura real; ao desativar, zera o cache.</summary>
         public void SetInputEnabled(bool enabled)
         {
             _inputEnabled = enabled;
-
             if (!enabled)
             {
                 _currentInput = Vector2.zero;
             }
         }
 
+        public void Bind(PlayerInput playerInput)
+        {
+            if (playerInput == null)
+            {
+                throw new System.InvalidOperationException("PlayerMoveInputReader.Bind requer PlayerInput valido.");
+            }
+
+            if (playerInput.actions == null)
+            {
+                throw new System.InvalidOperationException("PlayerMoveInputReader.Bind requer PlayerInput.actions configurado.");
+            }
+
+            InputActionMap playerMap = playerInput.actions.FindActionMap(PlayerActionMapName, throwIfNotFound: false);
+            if (playerMap == null)
+            {
+                throw new System.InvalidOperationException("PlayerMoveInputReader.Bind falhou: ActionMap 'Player' ausente.");
+            }
+
+            InputAction move = playerMap.FindAction(MoveActionName, throwIfNotFound: false);
+            if (move == null)
+            {
+                throw new System.InvalidOperationException("PlayerMoveInputReader.Bind falhou: action 'Move' ausente no map 'Player'.");
+            }
+
+            _boundPlayerInput = playerInput;
+            _moveAction = move;
+            _bound = true;
+            _currentInput = Vector2.zero;
+        }
+
+        public void ClearInput()
+        {
+            _currentInput = Vector2.zero;
+        }
+
         private void Update()
         {
-            if (!_inputEnabled)
+            if (!_inputEnabled || !_bound || _moveAction == null)
             {
                 _currentInput = Vector2.zero;
                 return;
             }
 
-            float x = useRawAxes ? Input.GetAxisRaw(horizontalAxis) : Input.GetAxis(horizontalAxis);
-            float y = useRawAxes ? Input.GetAxisRaw(verticalAxis) : Input.GetAxis(verticalAxis);
-
-            var value = new Vector2(x, y);
-
-            if (value.sqrMagnitude < deadzone * deadzone)
+            Vector2 value = _moveAction.ReadValue<Vector2>();
+            float sqrDeadzone = deadzone * deadzone;
+            if (value.sqrMagnitude < sqrDeadzone)
             {
                 _currentInput = Vector2.zero;
                 return;
@@ -73,18 +94,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             _currentInput = value;
         }
 
-        /// <summary>Limpa o input atual sem alterar o estado de habilitado.</summary>
-        public void ClearInput() => _currentInput = Vector2.zero;
-
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        /// <summary>QA: injeta input sintético para testes determinísticos.</summary>
         public void QA_SetMoveInput(Vector2 input) => _currentInput = input;
-
-        /// <summary>QA: limpa qualquer input em cache.</summary>
         public void QA_ClearInputs() => _currentInput = Vector2.zero;
 #endif
     }
 }
-
-
-

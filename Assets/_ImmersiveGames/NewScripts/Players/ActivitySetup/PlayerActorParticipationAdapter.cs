@@ -140,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 !string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
                 identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
                 identity.EntrySequence != activeIdentity.EntrySequence ||
-                !string.Equals(identity.PlayerId, expected.PlayerId, StringComparison.Ordinal) ||
+                !string.Equals(identity.PlayerSlotId, expected.PlayerSlotId, StringComparison.Ordinal) ||
                 !string.Equals(identity.PlayerActorId, expected.PlayerActorId, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(

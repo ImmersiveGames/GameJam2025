@@ -32,6 +32,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IPlayerActorMaterializationAdapter _playerActorMaterializationAdapter;
         private readonly IPlayerActorParticipationAdapter _playerActorParticipationAdapter;
         private readonly IPlayerActorResetAdapter _playerActorResetAdapter;
+        private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
+        private readonly IMovementBindingAdapter _movementBindingAdapter;
+        private readonly IPlayerMovementControlAdapter _playerMovementControlAdapter;
         private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
@@ -54,6 +57,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivitySnapshotPayload _lastSnapshotPayloadForSaveOnExit;
         private bool _lastSnapshotCaptureFailedForSaveOnExit;
         private string _lastSnapshotCaptureFailureDetail;
+        private IReadOnlyList<PlayerActorIdentityRecord> _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
+        private bool _movementControlEnableAllowedForCurrentEntry;
+        private string _lastMovementDisableEmissionKey;
 
         private sealed class PendingActivityContentLoadContext
         {
@@ -201,6 +207,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _playerActorMaterializationAdapter = new PlayerActorMaterializationAdapter();
             _playerActorParticipationAdapter = new PlayerActorParticipationAdapter();
             _playerActorResetAdapter = new PlayerActorResetAdapter();
+            _playerInputBindingAdapter = new PlayerInputBindingAdapter();
+            _movementBindingAdapter = new MovementBindingAdapter();
+            _playerMovementControlAdapter = new PlayerMovementControlAdapter();
             _activityPlayerActorRegistry = new ActivityPlayerActorRegistry();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
@@ -889,6 +898,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     snapshots,
                     currentEntrySequence,
                     SessionActivityStage.ActivityContentReleaseSkippedNoContent);
+                SessionActivityIdentity completedIdentity = BuildIdentity(current, SessionActivityStage.ActivityContentReleaseCompleted, currentEntrySequence);
+                _state.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityContentReleaseCompleted);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityContentReleaseCompleted,
+                    completedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' activity content release completed scenes='0' status='SkippedNoContent'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_content_release_completed",
+                    command.Source,
+                    command.Reason,
+                    $"'{current.ActivityId}' activity content release completed scenes='0' status='SkippedNoContent'.");
                 return false;
             }
 
@@ -2003,6 +2027,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(completingIdentity, SessionActivityStage.ActivityCompleting);
             EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing.");
             EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing.");
+            EmitMovementControlDisableForCurrentTargets(current, command, facts, snapshots, currentEntrySequence, reasonCode: "deactivation_window_started");
             EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
             SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
@@ -2118,6 +2143,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _state.SetCurrentIdentity(completingIdentity, SessionActivityStage.ActivityCompleting);
                 EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing for route-exit.");
                 EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing for route-exit.");
+                EmitMovementControlDisableForCurrentTargets(current, command, facts, snapshots, currentEntrySequence, reasonCode: "route_exit_requested");
                 EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
                 SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
@@ -2381,6 +2407,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityIdentity routeExitClosedIdentity = BuildIdentity(current, SessionActivityStage.ClosedForRouteExit, currentEntrySequence);
             _state.SetCurrentIdentity(routeExitClosedIdentity, SessionActivityStage.ClosedForRouteExit);
+            EmitMovementControlDisableForCurrentTargets(current, command, facts, snapshots, currentEntrySequence, reasonCode: "closed_for_route_exit");
             _state.MarkCompleted();
             EmitFact(facts, SessionActivityFactKind.ActivityRouteExitCompleted, routeExitClosedIdentity, command.Source, command.Reason, $"'{current.ActivityId}' route-exit closed.");
             EmitSnapshot(snapshots, "activity_route_exit_completed", command.Source, command.Reason, $"'{current.ActivityId}' route-exit closed.");
@@ -2712,6 +2739,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(completingIdentity, SessionActivityStage.ActivityCompleting);
             EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing.");
             EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing.");
+            EmitMovementControlDisableForCurrentTargets(current, command, facts, snapshots, currentEntrySequence, reasonCode: "activity_navigation_exit");
             EmitPlayerActorParticipationExitIfNeeded(current, command, facts, snapshots, currentEntrySequence);
 
             SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
@@ -3311,6 +3339,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
+            _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
+            _movementControlEnableAllowedForCurrentEntry = false;
+            _lastMovementDisableEmissionKey = string.Empty;
             SessionActivityIdentity setupStartedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             _state.SetCurrentIdentity(setupStartedIdentity, SessionActivityStage.ActivitySetupStarted);
             EmitFact(facts, SessionActivityFactKind.ActivitySetupStarted, setupStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
@@ -3321,14 +3352,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitObjectSnapshotContractValidationStage(definition, command, facts, snapshots, entrySequence);
             EmitObjectResetStage(definition, command, facts, snapshots, entrySequence);
             EmitObjectSnapshotRestoreStage(definition, command, facts, snapshots, entrySequence);
-            EmitParticipantBindingStage(definition, command, facts, snapshots, entrySequence);
+            ParticipantBindingStageResult participantBindingResult = EmitParticipantBindingStage(definition, command, facts, snapshots, entrySequence);
+            EmitPlayerActorReadinessStage(definition, command, facts, snapshots, entrySequence, participantBindingResult);
+            EmitPlayerInputBindingStage(definition, command, facts, snapshots, entrySequence, participantBindingResult);
+            EmitMovementBindingStage(definition, command, facts, snapshots, entrySequence, participantBindingResult);
             SessionActivityIdentity setupCompletedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
             _state.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
             EmitFact(facts, SessionActivityFactKind.ActivitySetupCompleted, setupCompletedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
             EmitSnapshot(snapshots, "activity_setup_completed", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
         }
 
-        private void EmitParticipantBindingStage(
+        private ParticipantBindingStageResult EmitParticipantBindingStage(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
@@ -3407,7 +3441,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' participant binding completed resolved='0' skipped='0' totalRequirements='0' status='SkippedNoRequirements'.");
-                return;
+                return new ParticipantBindingStageResult(
+                    completedAfterSkipIdentity,
+                    totalRequirements: 0,
+                    requiredRequirements: 0,
+                    resolvedRequirements: 0,
+                    skippedRequirements: 0,
+                    requiredResolvedRequirements: 0,
+                    resolvedParticipants: Array.Empty<ParticipantBindingResolvedRecord>());
             }
 
             SessionActivityPlayerPreparationHandoff routeSessionPlayerPreparation = ResolveRouteSessionPlayerPreparationOrFail(
@@ -3435,6 +3476,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             int resolvedCount = 0;
             int skippedCount = 0;
+            int requiredRequirementCount = 0;
+            int requiredResolvedCount = 0;
+            List<ParticipantBindingResolvedRecord> resolvedParticipants = new(participantRequirements.Count);
             List<ActivityParticipantBindCommand> bindCommands = new(participantRequirements.Count);
             List<ActivityParticipantMaterializationCommand> materializationCommands = new(participantRequirements.Count);
             List<ActivityParticipantPlacementCommand> placementCommands = new(participantRequirements.Count);
@@ -3474,6 +3518,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 string requestedParticipantId = Normalize(requirement.ParticipantId);
                 bool requirementRequired = requirement.Requirement.IsRequired;
+                if (requirementRequired)
+                {
+                    requiredRequirementCount += 1;
+                }
                 bool hasRequestedHint = !string.IsNullOrWhiteSpace(requestedParticipantId);
                 bool resolvedFromHint = false;
                 bool resolved = false;
@@ -3540,6 +3588,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     }
 
                     resolvedCount += 1;
+                    if (requirementRequired)
+                    {
+                        requiredResolvedCount += 1;
+                    }
+                    resolvedParticipants.Add(new ParticipantBindingResolvedRecord(
+                        requirement.Requirement.RequirementId,
+                        requirement.ParticipantKind,
+                        resolvedParticipantId,
+                        requirementRequired));
                     EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityParticipantBindingResolved,
@@ -3653,7 +3710,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     materializationCommands,
                     placementCommands,
                     resetCommands);
-                return;
             }
 
             SessionActivityIdentity completedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
@@ -3671,6 +3727,1090 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' participant binding completed resolved='{resolvedCount}' skipped='{skippedCount}' totalRequirements='{participantRequirements.Count}'.");
+            return new ParticipantBindingStageResult(
+                completedIdentity,
+                participantRequirements.Count,
+                requiredRequirementCount,
+                resolvedCount,
+                skippedCount,
+                requiredResolvedCount,
+                resolvedParticipants);
+        }
+
+        private void EmitPlayerActorReadinessStage(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            ParticipantBindingStageResult participantBindingResult)
+        {
+            SessionActivityIdentity startedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessStarted, entrySequence);
+            _state.SetCurrentIdentity(startedIdentity, SessionActivityStage.PlayerActorReadinessStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerActorReadinessStarted,
+                startedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player actor readiness started.");
+            EmitSnapshot(
+                snapshots,
+                "player_actor_readiness_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player actor readiness started.");
+
+            if (!participantBindingResult.IsValid || !IsSameActivityCycle(participantBindingResult.Identity, BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence)))
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerActorReadinessFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReadinessFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed due to missing or foreign participant binding result.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_readiness_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed due to missing or foreign participant binding result.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerActorReadiness] Missing or foreign participant binding result activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            if (participantBindingResult.RequiredRequirements <= 0)
+            {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessSkippedNoRequiredParticipant, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.PlayerActorReadinessSkippedNoRequiredParticipant);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReadinessSkippedNoRequiredParticipant,
+                    skippedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness skipped because no required participant was declared.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_readiness_skipped_no_required_participant",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness skipped because no required participant was declared.");
+
+                SessionActivityIdentity skippedCompletedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessCompleted, entrySequence);
+                _state.SetCurrentIdentity(skippedCompletedIdentity, SessionActivityStage.PlayerActorReadinessCompleted);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReadinessCompleted,
+                    skippedCompletedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness completed with skip.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_readiness_completed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness completed with skip.");
+                return;
+            }
+
+            if (participantBindingResult.RequiredResolvedRequirements < participantBindingResult.RequiredRequirements)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerActorReadinessFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReadinessFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed requiredResolved='{participantBindingResult.RequiredResolvedRequirements}' required='{participantBindingResult.RequiredRequirements}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_readiness_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed requiredResolved='{participantBindingResult.RequiredResolvedRequirements}' required='{participantBindingResult.RequiredRequirements}'.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerActorReadiness] Required participant not ready activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requiredResolved='{participantBindingResult.RequiredResolvedRequirements}' required='{participantBindingResult.RequiredRequirements}'.");
+            }
+
+            if (!_activityPlayerActorRegistry.TryGetActiveActorIdentities(startedIdentity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) || activeActors == null)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerActorReadinessFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReadinessFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed because registry scope is missing or foreign/stale.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_readiness_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed because registry scope is missing or foreign/stale.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerActorReadiness] Registry scope missing or foreign/stale activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            if (activeActors.Count < participantBindingResult.RequiredResolvedRequirements)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerActorReadinessFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerActorReadinessFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed because active actors are insufficient active='{activeActors.Count}' requiredReady='{participantBindingResult.RequiredResolvedRequirements}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_actor_readiness_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player actor readiness failed because active actors are insufficient active='{activeActors.Count}' requiredReady='{participantBindingResult.RequiredResolvedRequirements}'.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerActorReadiness] Active actors insufficient activityId='{definition.ActivityId}' entrySequence='{entrySequence}' active='{activeActors.Count}' requiredReady='{participantBindingResult.RequiredResolvedRequirements}'.");
+            }
+
+            SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessValidatedMaterializedOnly, entrySequence);
+            _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.PlayerActorReadinessValidatedMaterializedOnly);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerActorReadyMaterializedOnly,
+                readyIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player actor ready materialized-only requiredReady='{participantBindingResult.RequiredResolvedRequirements}' activeActors='{activeActors.Count}'.");
+            EmitSnapshot(
+                snapshots,
+                "player_actor_ready_materialized_only",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player actor ready materialized-only requiredReady='{participantBindingResult.RequiredResolvedRequirements}' activeActors='{activeActors.Count}'.");
+
+            SessionActivityIdentity completedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorReadinessCompleted, entrySequence);
+            _state.SetCurrentIdentity(completedIdentity, SessionActivityStage.PlayerActorReadinessCompleted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerActorReadinessCompleted,
+                completedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player actor readiness completed.");
+            EmitSnapshot(
+                snapshots,
+                "player_actor_readiness_completed",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player actor readiness completed.");
+        }
+
+        private readonly struct ParticipantBindingStageResult
+        {
+            public ParticipantBindingStageResult(
+                SessionActivityIdentity identity,
+                int totalRequirements,
+                int requiredRequirements,
+                int resolvedRequirements,
+                int skippedRequirements,
+                int requiredResolvedRequirements,
+                IReadOnlyList<ParticipantBindingResolvedRecord> resolvedParticipants)
+            {
+                Identity = identity;
+                TotalRequirements = totalRequirements < 0 ? 0 : totalRequirements;
+                RequiredRequirements = requiredRequirements < 0 ? 0 : requiredRequirements;
+                ResolvedRequirements = resolvedRequirements < 0 ? 0 : resolvedRequirements;
+                SkippedRequirements = skippedRequirements < 0 ? 0 : skippedRequirements;
+                RequiredResolvedRequirements = requiredResolvedRequirements < 0 ? 0 : requiredResolvedRequirements;
+                ResolvedParticipants = resolvedParticipants ?? Array.Empty<ParticipantBindingResolvedRecord>();
+            }
+
+            public SessionActivityIdentity Identity { get; }
+            public int TotalRequirements { get; }
+            public int RequiredRequirements { get; }
+            public int ResolvedRequirements { get; }
+            public int SkippedRequirements { get; }
+            public int RequiredResolvedRequirements { get; }
+            public IReadOnlyList<ParticipantBindingResolvedRecord> ResolvedParticipants { get; }
+
+            public bool IsValid =>
+                Identity.IsValid &&
+                Identity.Stage == SessionActivityStage.ActivityParticipantBindingCompleted &&
+                RequiredRequirements >= 0 &&
+                ResolvedRequirements >= 0 &&
+                SkippedRequirements >= 0 &&
+                RequiredResolvedRequirements >= 0 &&
+                RequiredResolvedRequirements <= RequiredRequirements &&
+                ResolvedParticipants != null;
+        }
+
+        private readonly struct ParticipantBindingResolvedRecord
+        {
+            public ParticipantBindingResolvedRecord(
+                string requirementId,
+                ActivityParticipantRequirementKind participantKind,
+                string resolvedParticipantId,
+                bool required)
+            {
+                RequirementId = Normalize(requirementId);
+                ParticipantKind = participantKind;
+                ResolvedParticipantId = Normalize(resolvedParticipantId);
+                Required = required;
+            }
+
+            public string RequirementId { get; }
+            public ActivityParticipantRequirementKind ParticipantKind { get; }
+            public string ResolvedParticipantId { get; }
+            public bool Required { get; }
+
+            public bool IsValid =>
+                !string.IsNullOrWhiteSpace(RequirementId) &&
+                ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
+                !string.IsNullOrWhiteSpace(ResolvedParticipantId);
+        }
+
+        private void EmitPlayerInputBindingStage(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            ParticipantBindingStageResult participantBindingResult)
+        {
+            SessionActivityIdentity startedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingStarted, entrySequence);
+            _state.SetCurrentIdentity(startedIdentity, SessionActivityStage.PlayerInputBindingStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerInputBindingStarted,
+                startedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player input binding started.");
+            EmitSnapshot(
+                snapshots,
+                "player_input_binding_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player input binding started.");
+
+            if (!participantBindingResult.IsValid || !IsSameActivityCycle(participantBindingResult.Identity, BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence)))
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed because participant binding result is missing or foreign/stale.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed because participant binding result is missing or foreign/stale.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerInputBinding] Missing or foreign participant binding result activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            List<PlayerInputBindingRequirement> requirements = new();
+            IReadOnlyList<ParticipantBindingResolvedRecord> resolvedParticipants = participantBindingResult.ResolvedParticipants;
+            for (int index = 0; index < resolvedParticipants.Count; index++)
+            {
+                ParticipantBindingResolvedRecord resolved = resolvedParticipants[index];
+                if (!resolved.IsValid || resolved.ParticipantKind != ActivityParticipantRequirementKind.ControllablePlayer)
+                {
+                    continue;
+                }
+
+                PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(startedIdentity, resolved.ResolvedParticipantId);
+                requirements.Add(new PlayerInputBindingRequirement(
+                    startedIdentity,
+                    resolved.RequirementId,
+                    actorIdentity.PlayerSlotId,
+                    actorIdentity.PlayerActorId,
+                    playerDefinitionId: string.Empty,
+                    resolved.Required,
+                    command.Source,
+                    command.Reason));
+            }
+
+            int requiredCount = 0;
+            for (int index = 0; index < requirements.Count; index++)
+            {
+                if (requirements[index].Required)
+                {
+                    requiredCount += 1;
+                }
+            }
+
+            if (requiredCount <= 0)
+            {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingSkippedNoRequiredInput,
+                    skippedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_skipped_no_required_input",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
+
+                SessionActivityIdentity skippedCompletedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingCompleted, entrySequence);
+                _state.SetCurrentIdentity(skippedCompletedIdentity, SessionActivityStage.PlayerInputBindingCompleted);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingCompleted,
+                    skippedCompletedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding completed with skip.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_completed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding completed with skip.");
+                return;
+            }
+
+            PlayerInputBindingCommand bindingCommand = new(startedIdentity, requirements, command.Source, command.Reason);
+            if (!bindingCommand.IsValid)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed because command is invalid.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed because command is invalid.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerInputBinding] Invalid binding command activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            for (int index = 0; index < requirements.Count; index++)
+            {
+                PlayerInputBindingRequirement requirement = requirements[index];
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingCommandIssued,
+                    startedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding command issued requirementId='{requirement.RequirementId}' playerSlotId='{requirement.PlayerSlotId}' playerActorId='{requirement.PlayerActorId}' required='{requirement.Required}'.");
+            }
+
+            IReadOnlyList<PlayerInputBindingRecord> records;
+            try
+            {
+                records = _playerInputBindingAdapter.Execute(bindingCommand, startedIdentity, _activityPlayerActorRegistry);
+            }
+            catch (Exception exception)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed error='{exception.Message}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed error='{exception.Message}'.");
+                throw;
+            }
+
+            if (records == null || records.Count != requirements.Count)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed because adapter result count mismatch expected='{requirements.Count}' observed='{(records == null ? 0 : records.Count)}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed because adapter result count mismatch.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerInputBinding] Adapter result mismatch activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            int requiredBoundCount = 0;
+            for (int index = 0; index < records.Count; index++)
+            {
+                PlayerInputBindingRecord record = records[index];
+                if (!record.IsValid)
+                {
+                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.PlayerInputBindingFailed,
+                        failedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
+                    EmitSnapshot(
+                        snapshots,
+                        "player_input_binding_failed",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerInputBinding] Invalid binding record activityId='{definition.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
+                }
+
+                if (record.Requirement.Required)
+                {
+                    requiredBoundCount += 1;
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBound,
+                    startedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input bound requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.Requirement.PlayerActorId}' observedInput='{record.ObservedInputId}'.");
+            }
+
+            if (requiredBoundCount < requiredCount)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerInputBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "player_input_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][PlayerInputBinding] Required binding incomplete activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+            }
+
+            SessionActivityIdentity completedIdentity = BuildIdentity(definition, SessionActivityStage.PlayerInputBindingCompleted, entrySequence);
+            _state.SetCurrentIdentity(completedIdentity, SessionActivityStage.PlayerInputBindingCompleted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PlayerInputBindingCompleted,
+                completedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
+            EmitSnapshot(
+                snapshots,
+                "player_input_binding_completed",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
+        }
+
+        private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
+        {
+            return left.IsValid &&
+                right.IsValid &&
+                string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
+                string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
+                left.ActivityOrdinal == right.ActivityOrdinal &&
+                left.EntrySequence == right.EntrySequence;
+        }
+
+        private void EmitMovementControlEnableAtRunning(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            if (!_movementControlEnableAllowedForCurrentEntry ||
+                _movementControlTargetsForCurrentEntry == null ||
+                _movementControlTargetsForCurrentEntry.Count == 0)
+            {
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlEnableSkippedNoTarget' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementControlEnableSkippedNoTarget,
+                    _state.CurrentIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement control enable skipped because no target is available for current entry.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_control_enable_skipped_no_target",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement control enable skipped because no target is available for current entry.");
+                return;
+            }
+
+            EmitMovementControlState(
+                definition,
+                command,
+                facts,
+                snapshots,
+                entrySequence,
+                _movementControlTargetsForCurrentEntry,
+                enable: true,
+                reasonCode: "activity_running_entered");
+        }
+
+        private void EmitMovementControlDisableForCurrentTargets(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            string reasonCode)
+        {
+            if (_movementControlTargetsForCurrentEntry == null || _movementControlTargetsForCurrentEntry.Count == 0)
+            {
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlDisableSkippedNoTarget' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Info);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementControlDisableSkippedNoTarget,
+                    _state.CurrentIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement control disable skipped because no target is available for current entry.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_control_disable_skipped_no_target",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement control disable skipped because no target is available for current entry.");
+                return;
+            }
+
+            EmitMovementControlState(
+                definition,
+                command,
+                facts,
+                snapshots,
+                entrySequence,
+                _movementControlTargetsForCurrentEntry,
+                enable: false,
+                reasonCode: reasonCode);
+        }
+
+        private void EmitMovementControlState(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            IReadOnlyList<PlayerActorIdentityRecord> targets,
+            bool enable,
+            string reasonCode)
+        {
+            SessionActivityIdentity scopeIdentity = BuildIdentity(definition, SessionActivityStage.PlayerActorParticipationExitStageStarted, entrySequence);
+            MovementControlCommand controlCommand = new(
+                scopeIdentity,
+                targets,
+                enable,
+                command.Source,
+                $"{command.Reason}|{reasonCode}");
+
+            if (!controlCommand.IsValid)
+            {
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementControl] Invalid command activityId='{definition.ActivityId}' entrySequence='{entrySequence}' enable='{enable}'.");
+            }
+
+            IReadOnlyList<MovementControlRecord> records = _playerMovementControlAdapter.Execute(controlCommand, scopeIdentity, _activityPlayerActorRegistry);
+            if (records == null || records.Count != targets.Count)
+            {
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementControl] Adapter result mismatch activityId='{definition.ActivityId}' entrySequence='{entrySequence}' enable='{enable}' expected='{targets.Count}' observed='{(records == null ? 0 : records.Count)}'.");
+            }
+
+            SessionActivityFactKind factKind = enable
+                ? SessionActivityFactKind.MovementControlEnabled
+                : SessionActivityFactKind.MovementControlDisabled;
+            string snapshotKey = enable ? "movement_control_enabled" : "movement_control_disabled";
+            string stateValue = enable ? "true" : "false";
+            string eventName = enable ? "MovementControlEnabled" : "MovementControlDisabled";
+            if (!enable)
+            {
+                string disableKey = $"{definition.ActivityId}|{entrySequence}|{command.Source}|{command.Reason}";
+                if (string.Equals(_lastMovementDisableEmissionKey, disableKey, StringComparison.Ordinal))
+                {
+                    DebugUtility.Log(
+                        typeof(SessionActivityPipeline),
+                        $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlDisableSkippedDuplicate' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
+                _lastMovementDisableEmissionKey = disableKey;
+            }
+            else
+            {
+                _lastMovementDisableEmissionKey = string.Empty;
+            }
+
+            for (int index = 0; index < records.Count; index++)
+            {
+                MovementControlRecord record = records[index];
+                if (!record.IsValid)
+                {
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementControl] Invalid record activityId='{definition.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
+                }
+
+                EmitFact(
+                    facts,
+                    factKind,
+                    _state.CurrentIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement control state changed controlEnabled='{stateValue}' playerSlotId='{record.ActorIdentity.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' endpoint='{record.ObservedEndpoint}'.");
+            }
+
+            EmitSnapshot(
+                snapshots,
+                snapshotKey,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' movement control state changed controlEnabled='{stateValue}' affectedActors='{records.Count}'.");
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][MovementControl] event='{eventName}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' controlEnabled='{stateValue}' affectedActors='{records.Count}' source='{command.Source}' reason='{command.Reason}'.",
+                enable ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+        }
+
+        private void EmitMovementBindingStage(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            ParticipantBindingStageResult participantBindingResult)
+        {
+            SessionActivityIdentity startedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingStarted, entrySequence);
+            _state.SetCurrentIdentity(startedIdentity, SessionActivityStage.MovementBindingStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.MovementBindingStarted,
+                startedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' movement binding started.");
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][MovementBinding] event='MovementBindingStarted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Info);
+            EmitSnapshot(
+                snapshots,
+                "movement_binding_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' movement binding started.");
+
+            if (!participantBindingResult.IsValid || !IsSameActivityCycle(participantBindingResult.Identity, BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence)))
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed because participant binding result is missing or foreign/stale.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed because participant binding result is missing or foreign/stale.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementBinding] Missing or foreign participant binding result activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            List<MovementBindingRequirement> requirements = new();
+            IReadOnlyList<ParticipantBindingResolvedRecord> resolvedParticipants = participantBindingResult.ResolvedParticipants;
+            for (int index = 0; index < resolvedParticipants.Count; index++)
+            {
+                ParticipantBindingResolvedRecord resolved = resolvedParticipants[index];
+                if (!resolved.IsValid || resolved.ParticipantKind != ActivityParticipantRequirementKind.ControllablePlayer)
+                {
+                    continue;
+                }
+
+                PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(startedIdentity, resolved.ResolvedParticipantId);
+                requirements.Add(new MovementBindingRequirement(
+                    startedIdentity,
+                    resolved.RequirementId,
+                    actorIdentity.PlayerSlotId,
+                    actorIdentity.PlayerActorId,
+                    resolved.Required,
+                    command.Source,
+                    command.Reason));
+            }
+
+            int requiredCount = 0;
+            for (int index = 0; index < requirements.Count; index++)
+            {
+                if (requirements[index].Required)
+                {
+                    requiredCount += 1;
+                }
+            }
+
+            if (requiredCount <= 0)
+            {
+                IReadOnlyList<PlayerActorIdentityRecord> retainedTargets = ResolveRetainedMovementTargetsOrEmpty(startedIdentity);
+                if (retainedTargets.Count > 0)
+                {
+                    _movementControlTargetsForCurrentEntry = retainedTargets;
+                    _movementControlEnableAllowedForCurrentEntry = true;
+
+                    for (int index = 0; index < retainedTargets.Count; index++)
+                    {
+                        PlayerActorIdentityRecord retained = retainedTargets[index];
+                        EmitFact(
+                            facts,
+                            SessionActivityFactKind.MovementBindingRetained,
+                            startedIdentity,
+                            command.Source,
+                            command.Reason,
+                            $"'{definition.ActivityId}' movement binding retained playerSlotId='{retained.PlayerSlotId}' playerActorId='{retained.PlayerActorId}'.");
+                        DebugUtility.Log(
+                            typeof(SessionActivityPipeline),
+                            $"[OBS][SessionActivityPipeline][MovementBinding] event='MovementBindingRetained' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{retained.PlayerSlotId}' playerActorId='{retained.PlayerActorId}' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Info);
+                    }
+
+                    SessionActivityIdentity retainedCompletedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingCompleted, entrySequence);
+                    _state.SetCurrentIdentity(retainedCompletedIdentity, SessionActivityStage.MovementBindingCompleted);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.MovementBindingCompleted,
+                        retainedCompletedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' movement binding completed status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false'.");
+                    DebugUtility.Log(
+                        typeof(SessionActivityPipeline),
+                        $"[OBS][SessionActivityPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Success);
+                    EmitSnapshot(
+                        snapshots,
+                        "movement_binding_completed",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' movement binding completed status='RetainedExistingBinding' retained='{retainedTargets.Count}' controlEnabled='false'.");
+                    return;
+                }
+
+                _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
+                _movementControlEnableAllowedForCurrentEntry = false;
+
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingSkippedNoRequiredMovement, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingSkippedNoRequiredMovement,
+                    skippedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding skipped because no movement capability target is required or retained.");
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][MovementBinding] event='MovementBindingSkippedNoRequiredMovement' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Info);
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_skipped_no_required_movement",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding skipped because no movement capability target is required or retained.");
+
+                SessionActivityIdentity skippedCompletedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingCompleted, entrySequence);
+                _state.SetCurrentIdentity(skippedCompletedIdentity, SessionActivityStage.MovementBindingCompleted);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingCompleted,
+                    skippedCompletedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding completed status='NoMovementCapabilityRequired' controlEnabled='false'.");
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' status='NoMovementCapabilityRequired' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Success);
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_completed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding completed status='NoMovementCapabilityRequired' controlEnabled='false'.");
+                return;
+            }
+
+            MovementBindingCommand bindingCommand = new(startedIdentity, requirements, command.Source, command.Reason);
+            if (!bindingCommand.IsValid)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed because command is invalid.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed because command is invalid.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementBinding] Invalid binding command activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            for (int index = 0; index < requirements.Count; index++)
+            {
+                MovementBindingRequirement requirement = requirements[index];
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingCommandIssued,
+                    startedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding command issued requirementId='{requirement.RequirementId}' playerSlotId='{requirement.PlayerSlotId}' playerActorId='{requirement.PlayerActorId}' required='{requirement.Required}'.");
+            }
+
+            IReadOnlyList<MovementBindingRecord> records;
+            try
+            {
+                records = _movementBindingAdapter.Execute(bindingCommand, startedIdentity, _activityPlayerActorRegistry);
+            }
+            catch (Exception exception)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed error='{exception.Message}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed error='{exception.Message}'.");
+                throw;
+            }
+
+            if (records == null || records.Count != requirements.Count)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed because adapter result count mismatch expected='{requirements.Count}' observed='{(records == null ? 0 : records.Count)}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed because adapter result count mismatch.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementBinding] Adapter result mismatch activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+            }
+
+            int requiredBoundCount = 0;
+            for (int index = 0; index < records.Count; index++)
+            {
+                MovementBindingRecord record = records[index];
+                if (!record.IsValid)
+                {
+                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingFailed, entrySequence);
+                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.MovementBindingFailed,
+                        failedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' movement binding failed because adapter produced invalid record index='{index}'.");
+                    EmitSnapshot(
+                        snapshots,
+                        "movement_binding_failed",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' movement binding failed because adapter produced invalid record index='{index}'.");
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementBinding] Invalid binding record activityId='{definition.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
+                }
+
+                if (record.Requirement.Required)
+                {
+                    requiredBoundCount += 1;
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.PlayerMovementBound,
+                    startedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement bound requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.Requirement.PlayerActorId}' endpoint='{record.ObservedEndpoint}'.");
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][MovementBinding] event='PlayerMovementBound' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.Requirement.PlayerActorId}' endpoint='{record.ObservedEndpoint}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Success);
+            }
+
+            if (requiredBoundCount < requiredCount)
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.MovementBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "movement_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' movement binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementBinding] Required binding incomplete activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+            }
+
+            List<PlayerActorIdentityRecord> boundTargets = new(records.Count);
+            for (int index = 0; index < records.Count; index++)
+            {
+                MovementBindingRecord record = records[index];
+                boundTargets.Add(new PlayerActorIdentityRecord(
+                    startedIdentity,
+                    record.Requirement.PlayerSlotId,
+                    record.Requirement.PlayerActorId));
+            }
+            _movementControlTargetsForCurrentEntry = boundTargets;
+            _movementControlEnableAllowedForCurrentEntry = true;
+
+            SessionActivityIdentity completedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingCompleted, entrySequence);
+            _state.SetCurrentIdentity(completedIdentity, SessionActivityStage.MovementBindingCompleted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.MovementBindingCompleted,
+                completedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' movement binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false'.");
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][MovementBinding] event='MovementBindingCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Success);
+            EmitSnapshot(
+                snapshots,
+                "movement_binding_completed",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' movement binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}' controlEnabled='false'.");
+        }
+
+        private IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargetsOrEmpty(SessionActivityIdentity identity)
+        {
+            IReadOnlyList<PlayerActorIdentityRecord> retained = _activityPlayerActorRegistry.GetRouteRetainedActorIdentitiesForSession(identity);
+            if (retained == null || retained.Count == 0)
+            {
+                return Array.Empty<PlayerActorIdentityRecord>();
+            }
+
+            List<PlayerActorIdentityRecord> resolved = new();
+            for (int index = 0; index < retained.Count; index++)
+            {
+                PlayerActorIdentityRecord candidate = retained[index];
+                if (!candidate.IsValid)
+                {
+                    continue;
+                }
+
+                if (!_activityPlayerActorRegistry.TryResolveInstanceForControl(identity, candidate.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
+                    instance == null ||
+                    !observedIdentity.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(observedIdentity.PlayerSlotId, candidate.PlayerSlotId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                PlayerActorMovementBindingState movementState = instance.GetComponent<PlayerActorMovementBindingState>();
+                if (movementState == null || !movementState.IsValid)
+                {
+                    continue;
+                }
+
+                PlayerActorInputBindingState inputState = instance.GetComponent<PlayerActorInputBindingState>();
+                if (inputState == null || !inputState.IsValid)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(inputState.PlayerSlotId, candidate.PlayerSlotId, StringComparison.Ordinal) ||
+                    !string.Equals(inputState.PlayerActorId, candidate.PlayerActorId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                resolved.Add(new PlayerActorIdentityRecord(
+                    identity,
+                    candidate.PlayerSlotId,
+                    candidate.PlayerActorId));
+            }
+
+            return resolved.Count == 0 ? Array.Empty<PlayerActorIdentityRecord>() : resolved;
         }
 
 
@@ -3991,7 +5131,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason)
         {
             string participantId = Normalize(command.ResolvedParticipantId);
-            if (_activityPlayerActorRegistry.TryGetRetainedForPlayer(identity, participantId, out GameObject retainedInstance, out PlayerActorIdentityRecord retainedIdentity))
+            if (_activityPlayerActorRegistry.TryGetRetainedForPlayerSlot(identity, participantId, out GameObject retainedInstance, out PlayerActorIdentityRecord retainedIdentity))
             {
                 if (retainedInstance == null)
                 {
@@ -4011,7 +5151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     identity.ActivityId,
                     identity.ActivityOrdinal,
                     identity.EntrySequence,
-                    reboundIdentity.PlayerId,
+                    reboundIdentity.PlayerSlotId,
                     reboundIdentity.PlayerActorId);
                 _activityPlayerActorRegistry.RegisterRetainedParticipation(identity, reboundIdentity, retainedInstance);
                 return reboundIdentity;
@@ -6053,6 +7193,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _state.SetExecutionState(ActivityExecutionState.Running);
                 EmitFact(facts, SessionActivityFactKind.GameplayContentSkippedNoContent, skipIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' gameplay content skipped as no-content.");
                 EmitSnapshot(snapshots, "gameplay_content_skipped_no_content", command.Source, command.Reason, $"'{definition.ActivityId}' gameplay content skipped as no-content.");
+                EmitMovementControlEnableAtRunning(definition, command, facts, snapshots, entrySequence);
                 TryEmitRestartCompletedAtRunning(definition, command, facts, snapshots, entrySequence);
                 return;
             }
@@ -6062,6 +7203,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetExecutionState(ActivityExecutionState.Running);
             EmitFact(facts, SessionActivityFactKind.ActivityRunningEntered, runningIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' running.");
             EmitSnapshot(snapshots, "activity_running_entered", command.Source, command.Reason, $"'{definition.ActivityId}' running.");
+            EmitMovementControlEnableAtRunning(definition, command, facts, snapshots, entrySequence);
             TryEmitRestartCompletedAtRunning(definition, command, facts, snapshots, entrySequence);
         }
 

@@ -1,65 +1,38 @@
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
-    /// <summary>
-    /// Controlador mínimo de movimento do Player no padrão NewScripts.
-    /// Com fallbacks para CharacterController, Rigidbody ou Transform.
-    /// </summary>
     [DisallowMultipleComponent]
-    [DebugLevel(DebugLevel.Verbose)]
     public sealed class PlayerMovementController : MonoBehaviour
     {
         [Header("Movement")]
-        [SerializeField]
-        [Tooltip("Velocidade de deslocamento (unidades por segundo).")]
-        private float moveSpeed = 5f;
-
-        [SerializeField]
-        [Tooltip("Velocidade angular para alinhar a rotação ao movimento (graus/segundo).")]
-        private float rotationSpeed = 360f;
-
-        [SerializeField]
-        [Tooltip("Deadzone aplicada como fallback adicional além do leitor de input.")]
-        private float inputDeadzone = 0.1f;
-
-        [SerializeField]
-        [Tooltip("Quando verdadeiro, aplica movimento físico no FixedUpdate ao usar Rigidbody.")]
-        private bool useFixedUpdateForPhysics = true;
-
-        [SerializeField]
-        [Tooltip("Leitor de input baseado em Input.GetAxis/Raw.")]
-        private PlayerMoveInputReader moveInputReader;
+        [SerializeField] private float moveSpeed = 5f;
+        [SerializeField] private float rotationSpeed = 360f;
+        [SerializeField] private float inputDeadzone = 0.1f;
+        [SerializeField] private bool useFixedUpdateForPhysics = true;
+        [SerializeField] private PlayerMoveInputReader inputReader;
 
         private CharacterController _characterController;
         private Rigidbody _rigidbody;
-        private PlayerActor _actor;
+        private bool _movementEnabled;
 
-        private string _sceneName;
-
-        #region Unity Lifecycle
+        public bool IsMovementEnabled => _movementEnabled;
 
         private void Awake()
         {
-            CacheComponents();
-            EnsureInputReader();
-            ResolveServices();
-        }
-
-        private void OnEnable()
-        {
-            EnsureInputReader();
-            ResolveServices();
-            EnableInputIfAllowed();
+            _characterController = GetComponent<CharacterController>();
+            _rigidbody = GetComponent<Rigidbody>();
+            _movementEnabled = false;
         }
 
         private void OnDisable()
         {
-            DisableInput();
-        }
-
-        private void OnDestroy()
-        {
+            // Fail-safe local: garante bloqueio técnico ao desabilitar o objeto.
+            // O lifecycle de controle continua sendo decidido pelo pipeline.
+            _movementEnabled = false;
+            inputReader?.SetInputEnabled(false);
+            inputReader?.ClearInput();
+            HaltHorizontalVelocity();
         }
 
         private void Update()
@@ -82,26 +55,61 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             TickMovement(Time.fixedDeltaTime);
         }
 
-        #endregion
+        public void BindReaderOrFail(PlayerMoveInputReader reader)
+        {
+            if (reader == null)
+            {
+                throw new System.InvalidOperationException("PlayerMovementController.BindReaderOrFail requer reader valido.");
+            }
 
-        #region Movement
+            inputReader = reader;
+        }
+
+        public void SetMovementEnabled(bool enabled)
+        {
+            _movementEnabled = enabled;
+            if (inputReader != null)
+            {
+                inputReader.SetInputEnabled(enabled);
+                if (!enabled)
+                {
+                    inputReader.ClearInput();
+                }
+            }
+
+            if (!enabled)
+            {
+                HaltHorizontalVelocity();
+            }
+        }
+
+        public void ClearMovementState()
+        {
+            inputReader?.ClearInput();
+            HaltHorizontalVelocity();
+        }
 
         private void TickMovement(float deltaTime)
         {
-            if (!CanSimulate())
+            if (!_movementEnabled)
             {
                 HaltHorizontalVelocity();
                 return;
             }
 
-            var input = ReadMoveInput();
-            if (input.sqrMagnitude <= float.Epsilon)
+            if (inputReader == null || !inputReader.IsBound)
+            {
+                throw new System.InvalidOperationException("PlayerMovementController requer PlayerMoveInputReader bound antes de simular movimento.");
+            }
+
+            Vector2 input = inputReader.MoveInput;
+            if (input.sqrMagnitude < inputDeadzone * inputDeadzone)
             {
                 HaltHorizontalVelocity();
                 return;
             }
 
-            Vector3 direction = new Vector3(input.x, 0f, input.y);
+            Vector3 direction = new(input.x, 0f, input.y);
             if (direction.sqrMagnitude > 1f)
             {
                 direction.Normalize();
@@ -111,33 +119,23 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             RotateTowards(direction, deltaTime);
         }
 
-        private Vector2 ReadMoveInput()
+        private bool ShouldUseFixedUpdate()
         {
-            if (moveInputReader != null)
-            {
-                var sampled = moveInputReader.MoveInput;
-                return sampled.sqrMagnitude < inputDeadzone * inputDeadzone ? Vector2.zero : sampled;
-            }
-
-            float x = Input.GetAxisRaw("Horizontal");
-            float y = Input.GetAxisRaw("Vertical");
-            var fallback = new Vector2(x, y);
-            return fallback.sqrMagnitude < inputDeadzone * inputDeadzone ? Vector2.zero : fallback;
+            return _rigidbody != null && useFixedUpdateForPhysics;
         }
 
         private void Move(Vector3 direction, float deltaTime)
         {
             if (_characterController != null)
             {
-                var displacement = direction * (moveSpeed * deltaTime);
-                _characterController.Move(displacement);
+                _characterController.Move(direction * (moveSpeed * deltaTime));
                 return;
             }
 
             if (_rigidbody != null)
             {
-                var current = _rigidbody.linearVelocity;
-                var target = direction * moveSpeed;
+                Vector3 current = _rigidbody.linearVelocity;
+                Vector3 target = direction * moveSpeed;
                 _rigidbody.linearVelocity = new Vector3(target.x, current.y, target.z);
                 return;
             }
@@ -152,7 +150,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
         }
 
@@ -163,118 +161,26 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            var current = _rigidbody.linearVelocity;
+            Vector3 current = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
             _rigidbody.angularVelocity = Vector3.zero;
         }
 
-        private bool CanSimulate()
-        {
-            if (!isActiveAndEnabled)
-            {
-                return false;
-            }
-
-            if (_actor != null && !_actor.IsActive)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private bool ShouldUseFixedUpdate()
-        {
-            return _rigidbody != null && useFixedUpdateForPhysics;
-        }
-
-        #endregion
-
-        #region Services
-
-        private void ResolveServices()
-        {
-            EnsureInputReader();
-        }
-
-        private void EnableInputIfAllowed()
-        {
-            if (moveInputReader == null)
-            {
-                return;
-            }
-
-            moveInputReader.SetInputEnabled(true);
-        }
-
-        #endregion
-
-        #region Setup Helpers
-
-        private void CacheComponents()
-        {
-            _characterController = GetComponent<CharacterController>();
-            _rigidbody = GetComponent<Rigidbody>();
-            _actor = GetComponent<PlayerActor>();
-            _sceneName = gameObject.scene.name;
-        }
-
-        private void EnsureInputReader()
-        {
-            if (moveInputReader != null)
-            {
-                return;
-            }
-
-            moveInputReader = GetComponent<PlayerMoveInputReader>();
-
-            if (moveInputReader == null)
-            {
-                moveInputReader = gameObject.AddComponent<PlayerMoveInputReader>();
-            }
-        }
-
-        public void SetInputReader(PlayerMoveInputReader reader)
-        {
-            moveInputReader = reader;
-            EnableInputIfAllowed();
-        }
-
-        private void DisableInput()
-        {
-            moveInputReader?.SetInputEnabled(false);
-        }
-
-        #endregion
-
-        #region QA Hooks
-
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         public void QA_SetMoveInput(Vector2 move)
         {
-            EnsureInputReader();
-            moveInputReader.QA_SetMoveInput(move);
-        }
+            if (inputReader == null)
+            {
+                throw new System.InvalidOperationException("PlayerMovementController.QA_SetMoveInput requer reader configurado.");
+            }
 
-        public void QA_SetLookInput(Vector2 look)
-        {
-            // Mantido para compatibilidade com cenários de QA existentes; o stack atual não usa look.
+            inputReader.QA_SetMoveInput(move);
         }
 
         public void QA_ClearInputs()
         {
-            EnsureInputReader();
-            moveInputReader.QA_ClearInputs();
+            inputReader?.QA_ClearInputs();
         }
 #endif
-
-        #endregion
     }
 }
-
-
-
-
-
-
-
