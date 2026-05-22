@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 {
@@ -98,11 +99,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             if (DependencyManager.Provider.TryGetGlobal<SessionOperationalPipeline>(out var existingPipeline) && existingPipeline != null)
             {
                 _sessionOperationalPipeline = existingPipeline;
+                DependencyManager.Provider.RegisterGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(_sessionOperationalPipeline);
                 return;
             }
 
             _sessionOperationalPipeline = new SessionOperationalPipeline();
             DependencyManager.Provider.RegisterGlobal(_sessionOperationalPipeline);
+            DependencyManager.Provider.RegisterGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(_sessionOperationalPipeline);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] SessionOperationalPipeline registered for canonical operational runtime.",

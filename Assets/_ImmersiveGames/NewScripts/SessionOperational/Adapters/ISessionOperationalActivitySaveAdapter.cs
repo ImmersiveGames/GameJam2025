@@ -17,18 +17,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             RouteActivitySaveLoadOutcomeKind outcomeKind,
             string skipReason,
             bool hasSnapshot,
-            string detail)
+            string detail,
+            string activitySnapshotPayload = "")
         {
             OutcomeKind = outcomeKind;
             SkipReason = string.IsNullOrWhiteSpace(skipReason) ? string.Empty : skipReason.Trim();
             HasSnapshot = hasSnapshot;
             Detail = string.IsNullOrWhiteSpace(detail) ? string.Empty : detail.Trim();
+            ActivitySnapshotPayload = string.IsNullOrWhiteSpace(activitySnapshotPayload) ? string.Empty : activitySnapshotPayload.Trim();
         }
 
         public RouteActivitySaveLoadOutcomeKind OutcomeKind { get; }
         public string SkipReason { get; }
         public bool HasSnapshot { get; }
         public string Detail { get; }
+        public string ActivitySnapshotPayload { get; }
 
         public bool IsLoaded => OutcomeKind == RouteActivitySaveLoadOutcomeKind.Loaded && HasSnapshot;
         public bool IsSkipped => OutcomeKind == RouteActivitySaveLoadOutcomeKind.Skipped;

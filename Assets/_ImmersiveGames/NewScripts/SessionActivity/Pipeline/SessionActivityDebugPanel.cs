@@ -50,7 +50,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string _lastOnGuiErrorToken = string.Empty;
         private readonly Dictionary<string, string> _lastActivityObjectContributorDiscoveryCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectResetCheckpointTokenByEntry = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _lastActivityObjectSnapshotCaptureCheckpointTokenByEntry = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _lastActivityObjectReleaseCheckpointTokenByEntry = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, string> _lastActivityObjectContributorUnregisterCheckpointTokenByEntry = new(StringComparer.Ordinal);
 
         private void OnEnable()
         {
@@ -704,7 +706,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
             TryEmitActivityObjectContributorDiscoveryCheckpoint();
             TryEmitActivityObjectResetCheckpoint();
+            TryEmitActivityObjectSnapshotCaptureCheckpoint();
             TryEmitActivityObjectReleaseCheckpoint();
+            TryEmitActivityObjectContributorUnregisterCheckpoint();
             if (qaAutoDumpOnObservedStateChange)
             {
                 host.DumpCurrentActivityEvidence();
@@ -1448,6 +1452,115 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
+        private void TryEmitActivityObjectSnapshotCaptureCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (state == null || state.Facts == null || state.Facts.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ActivityObjectSnapshotCaptureCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotCaptureStarted &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotCaptured &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotCaptureSkippedNoProviders &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectSnapshotCaptureCompleted)
+                {
+                    continue;
+                }
+
+                string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
+                if (!byEntry.TryGetValue(key, out ActivityObjectSnapshotCaptureCheckpointAggregation aggregation))
+                {
+                    aggregation = new ActivityObjectSnapshotCaptureCheckpointAggregation(
+                        fact.Identity.ActivityId,
+                        fact.Identity.EntrySequence);
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptureStarted)
+                {
+                    aggregation.CaptureStarted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptured)
+                {
+                    aggregation.CapturedCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+
+                    string hasTransformPayload = ExtractToken(fact.Message, "hasTransformPayload");
+                    if (string.Equals(hasTransformPayload, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        aggregation.HasTransformPayload = true;
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed)
+                {
+                    aggregation.CaptureFailed = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptureCompleted)
+                {
+                    aggregation.CaptureCompleted = true;
+                    string hasTransformPayload = ExtractToken(fact.Message, "hasTransformPayload");
+                    if (string.Equals(hasTransformPayload, "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        aggregation.HasTransformPayload = true;
+                    }
+                }
+
+                byEntry[key] = aggregation;
+            }
+
+            foreach (KeyValuePair<string, ActivityObjectSnapshotCaptureCheckpointAggregation> pair in byEntry)
+            {
+                ActivityObjectSnapshotCaptureCheckpointAggregation aggregation = pair.Value;
+                string targetIds = JoinValues(aggregation.TargetIds);
+                string checkpointStatus = ResolveActivityObjectSnapshotCaptureCheckpointStatus(aggregation);
+
+                string token =
+                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.CaptureStarted}|{aggregation.CapturedCount}|{targetIds}|{aggregation.HasTransformPayload}|{aggregation.CaptureCompleted}|{aggregation.CaptureFailed}|{checkpointStatus}";
+
+                if (_lastActivityObjectSnapshotCaptureCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
+                    string.Equals(lastToken, token, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _lastActivityObjectSnapshotCaptureCheckpointTokenByEntry[pair.Key] = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectSnapshotCapture' checkpointStatus='{checkpointStatus}' " +
+                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' captureStarted='{aggregation.CaptureStarted.ToString().ToLowerInvariant()}' " +
+                    $"capturedCount='{aggregation.CapturedCount}' targetIds='{targetIds}' hasTransformPayload='{aggregation.HasTransformPayload.ToString().ToLowerInvariant()}' " +
+                    $"captureCompleted='{aggregation.CaptureCompleted.ToString().ToLowerInvariant()}' captureFailed='{aggregation.CaptureFailed.ToString().ToLowerInvariant()}'");
+            }
+        }
+
+        private static string ResolveActivityObjectSnapshotCaptureCheckpointStatus(ActivityObjectSnapshotCaptureCheckpointAggregation aggregation)
+        {
+            if (aggregation.CaptureFailed)
+            {
+                return "Failed";
+            }
+
+            if (aggregation.CaptureCompleted)
+            {
+                return "Passed";
+            }
+
+            return "Waiting";
+        }
+
         private static string ResolveActivityObjectReleaseCheckpointStatus(ActivityObjectReleaseCheckpointAggregation aggregation)
         {
             if (aggregation.FailedCount > 0)
@@ -1456,6 +1569,109 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             if (aggregation.ReleaseCompleted)
+            {
+                return "Passed";
+            }
+
+            return "Waiting";
+        }
+
+        private void TryEmitActivityObjectContributorUnregisterCheckpoint()
+        {
+            SessionActivityRuntimeState state = host.State;
+            if (state == null || state.Facts == null || state.Facts.Count == 0)
+            {
+                return;
+            }
+
+            Dictionary<string, ActivityObjectContributorUnregisterCheckpointAggregation> byEntry = new(StringComparer.Ordinal);
+            for (int i = 0; i < state.Facts.Count; i++)
+            {
+                SessionActivityFact fact = state.Facts[i];
+                if (!fact.IsValid || !fact.Identity.IsValid)
+                {
+                    continue;
+                }
+
+                if (fact.Kind != SessionActivityFactKind.ActivityObjectContributorUnregisterStarted &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorUnregistered &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorUnregisterSkippedNoContributors &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorUnregisterCompleted &&
+                    fact.Kind != SessionActivityFactKind.ActivityObjectContributorUnregisterFailed)
+                {
+                    continue;
+                }
+
+                string key = $"{fact.Identity.ActivityId}|{fact.Identity.EntrySequence}";
+                if (!byEntry.TryGetValue(key, out ActivityObjectContributorUnregisterCheckpointAggregation aggregation))
+                {
+                    aggregation = new ActivityObjectContributorUnregisterCheckpointAggregation(
+                        fact.Identity.ActivityId,
+                        fact.Identity.EntrySequence);
+                }
+
+                if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterStarted)
+                {
+                    aggregation.UnregisterStarted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregistered)
+                {
+                    aggregation.UnregisteredCount += 1;
+                    string targetId = ExtractToken(fact.Message, "targetId");
+                    if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
+                    {
+                        aggregation.TargetIds.Add(targetId);
+                    }
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterSkippedNoContributors)
+                {
+                    aggregation.SkippedNoContributors = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterCompleted)
+                {
+                    aggregation.UnregisterCompleted = true;
+                }
+                else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterFailed)
+                {
+                    aggregation.UnregisterFailed = true;
+                }
+
+                byEntry[key] = aggregation;
+            }
+
+            foreach (KeyValuePair<string, ActivityObjectContributorUnregisterCheckpointAggregation> pair in byEntry)
+            {
+                ActivityObjectContributorUnregisterCheckpointAggregation aggregation = pair.Value;
+                string targetIds = JoinValues(aggregation.TargetIds);
+                string checkpointStatus = ResolveActivityObjectContributorUnregisterCheckpointStatus(aggregation);
+
+                string token =
+                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.UnregisterStarted}|{aggregation.UnregisteredCount}|{aggregation.SkippedNoContributors}|{aggregation.UnregisterCompleted}|{aggregation.UnregisterFailed}|{targetIds}|{checkpointStatus}";
+
+                if (_lastActivityObjectContributorUnregisterCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
+                    string.Equals(lastToken, token, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _lastActivityObjectContributorUnregisterCheckpointTokenByEntry[pair.Key] = token;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectContributorUnregister' checkpointStatus='{checkpointStatus}' " +
+                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' unregisterStarted='{aggregation.UnregisterStarted.ToString().ToLowerInvariant()}' " +
+                    $"unregisteredCount='{aggregation.UnregisteredCount}' skippedNoContributors='{aggregation.SkippedNoContributors.ToString().ToLowerInvariant()}' " +
+                    $"unregisterCompleted='{aggregation.UnregisterCompleted.ToString().ToLowerInvariant()}' unregisterFailed='{aggregation.UnregisterFailed.ToString().ToLowerInvariant()}' " +
+                    $"targetIds='{targetIds}'");
+            }
+        }
+
+        private static string ResolveActivityObjectContributorUnregisterCheckpointStatus(ActivityObjectContributorUnregisterCheckpointAggregation aggregation)
+        {
+            if (aggregation.UnregisterFailed)
+            {
+                return "Failed";
+            }
+
+            if (aggregation.UnregisterCompleted)
             {
                 return "Passed";
             }
@@ -1545,6 +1761,54 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public bool ReleaseCompleted;
             public HashSet<string> TargetIds;
             public HashSet<string> ReleaseKinds;
+        }
+
+        private struct ActivityObjectSnapshotCaptureCheckpointAggregation
+        {
+            public ActivityObjectSnapshotCaptureCheckpointAggregation(string activityId, int entrySequence)
+            {
+                ActivityId = activityId;
+                EntrySequence = entrySequence;
+                CaptureStarted = false;
+                CapturedCount = 0;
+                TargetIds = new HashSet<string>(StringComparer.Ordinal);
+                HasTransformPayload = false;
+                CaptureCompleted = false;
+                CaptureFailed = false;
+            }
+
+            public string ActivityId;
+            public int EntrySequence;
+            public bool CaptureStarted;
+            public int CapturedCount;
+            public HashSet<string> TargetIds;
+            public bool HasTransformPayload;
+            public bool CaptureCompleted;
+            public bool CaptureFailed;
+        }
+
+        private struct ActivityObjectContributorUnregisterCheckpointAggregation
+        {
+            public ActivityObjectContributorUnregisterCheckpointAggregation(string activityId, int entrySequence)
+            {
+                ActivityId = activityId;
+                EntrySequence = entrySequence;
+                UnregisterStarted = false;
+                UnregisteredCount = 0;
+                SkippedNoContributors = false;
+                UnregisterCompleted = false;
+                UnregisterFailed = false;
+                TargetIds = new HashSet<string>(StringComparer.Ordinal);
+            }
+
+            public string ActivityId;
+            public int EntrySequence;
+            public bool UnregisterStarted;
+            public int UnregisteredCount;
+            public bool SkippedNoContributors;
+            public bool UnregisterCompleted;
+            public bool UnregisterFailed;
+            public HashSet<string> TargetIds;
         }
 
         private bool TryRunSmokeStep(string smokeName, string stepName, SessionActivityStage? expectedStage, Action action)

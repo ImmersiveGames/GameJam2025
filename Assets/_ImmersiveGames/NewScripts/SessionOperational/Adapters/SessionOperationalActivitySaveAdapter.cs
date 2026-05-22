@@ -75,11 +75,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' loadReason='{Normalize(loadReason)}'");
             }
 
+            string activitySnapshotPayload = string.Empty;
+            if (loadResult.Entries != null &&
+                loadResult.Entries.TryGetValue(activitySaveKey, out string storedPayload) &&
+                !string.IsNullOrWhiteSpace(storedPayload))
+            {
+                activitySnapshotPayload = storedPayload.Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(activitySnapshotPayload))
+            {
+                return new RouteActivitySaveLoadResult(
+                    RouteActivitySaveLoadOutcomeKind.Skipped,
+                    "no_activity_snapshot",
+                    false,
+                    $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' detail='snapshot payload vazio para save key.'");
+            }
+
             return new RouteActivitySaveLoadResult(
                 RouteActivitySaveLoadOutcomeKind.Loaded,
                 string.Empty,
                 true,
-                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{loadResult.SchemaVersion}' revision='{loadResult.Revision}' entriesCount='{loadResult.Entries?.Count ?? 0}'");
+                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{loadResult.SchemaVersion}' revision='{loadResult.Revision}' entriesCount='{loadResult.Entries?.Count ?? 0}'",
+                activitySnapshotPayload);
         }
 
         public RouteActivitySaveSaveResult SaveActivityOnExit(

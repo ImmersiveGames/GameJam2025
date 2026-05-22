@@ -62,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RegisterGlobal(_catalog);
             RegisterGlobal(_pipeline);
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
+            RegisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
             RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
             Debug.Log(BuildHostBanner());
         }
