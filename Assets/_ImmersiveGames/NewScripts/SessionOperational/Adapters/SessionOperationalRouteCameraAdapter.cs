@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;

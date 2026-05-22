@@ -1,5 +1,3 @@
-using System;
-
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum ActivityObjectReleaseResultKind

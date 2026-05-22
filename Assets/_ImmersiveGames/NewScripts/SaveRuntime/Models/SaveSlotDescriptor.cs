@@ -1,5 +1,3 @@
-using System;
-
 namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 {
     public sealed class SaveSlotDescriptor

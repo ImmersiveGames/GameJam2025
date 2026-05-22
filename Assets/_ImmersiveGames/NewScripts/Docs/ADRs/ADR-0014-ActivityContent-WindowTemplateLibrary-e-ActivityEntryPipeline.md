@@ -2,7 +2,7 @@
 
 ## Status
 
-- Estado: PROPOSTO / pronto para aceite
+- Estado: ACEITO / checkpoint normativo vivo da Base 1.1
 - Data: 2026-05-19
 - Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR, após aceite.
@@ -1027,18 +1027,203 @@ ResetContentOnRestart real
 ref-count de content scenes compartilhadas
 content scenes compartilhadas entre entries retidas
 seamless real
-restore real de objetos
+restore genérico de objetos além do MVP `ActivityObjectSnapshotRestore` validado para `test_object_01`
 runtime spawn completo
 object release completo com todos os tipos
 pool integration real sem auditoria prévia
 budgeted retention/preload
 manual release por gameplay
-Progression restore real por objeto
+Progression restore genérico por objeto além do MVP `test_object_01`
 ```
 
 Unsupported deve ser explícito. Não criar fallback silencioso.
 
 ---
+
+## 22.1 Checkpoint congelado — ActivityObject Snapshot Save/Load/Restore — PASS funcional
+
+- Estado: CONGELADO / PASS funcional.
+- Data: 2026-05-21.
+- Escopo: `SessionActivityPipeline`, `SessionOperationalPipeline`, `RouteActivitySave`, `ActivityObjectSnapshot` e restore mínimo de `Transform`.
+- Fonte de evidência: smoke funcional com `test_object_01`.
+
+### 22.1.1 Decisão congelada
+
+A Base 1.1 congela o seguinte shape para snapshot mínimo de objeto de Activity:
+
+```text
+SessionActivityPipeline
+-> valida contrato de snapshot no ActivityEntryPipeline
+-> captura snapshot no route-exit antes de ObjectRelease/ActivityContentSceneUnload
+-> aplica restore no setup da Activity após ObjectReset e antes de ActivityRunning
+
+SessionOperationalPipeline
+-> decide load-on-enter/save-on-exit pelo RouteActivitySave
+-> resolve ProgressionSlotContext
+-> mantém payload carregado como pending/read-only
+-> persiste payload capturado via SaveRuntime
+
+SaveRuntime
+-> executa persistência por SaveAddress/SaveRequest
+-> não decide lifecycle
+-> não decide slot/snapshot
+-> não aplica estado em objetos
+
+ActivityObjectTransformSnapshotProvider
+-> lê estado do Transform alvo explicitamente configurado
+-> não chama SaveRuntime
+-> não decide quando salvar
+
+ActivityObjectTransformSnapshotRestoreEndpoint
+-> aplica side-effect local no Transform alvo explicitamente configurado
+-> não chama SaveRuntime
+-> não decide lifecycle
+```
+
+### 22.1.2 Ordem canônica do ActivityEntryPipeline para snapshot
+
+A ordem conceitual congelada para o setup da Activity passa a incluir validação de contrato de snapshot:
+
+```text
+ResolveActivityEntry
+-> ResolveActivityContentProfile
+-> Load/PrepareActivityContent
+-> DiscoverActivityContributors
+-> BuildActivitySetupInventory
+-> ValidateActivitySetupInventory
+-> ActivityObjectSnapshotContractValidation
+-> ObjectReset
+-> ActivityObjectSnapshotRestore
+-> ParticipantBinding
+-> ActivitySetupCompleted
+-> ActivationWindow
+-> ActivityRunning
+```
+
+`ActivityObjectSnapshotContractValidation` é `Pipeline Stage`, não adapter. Ele produz `Pipeline Facts` e bloqueia o pipeline se contrato obrigatório estiver quebrado.
+
+### 22.1.3 Regras de contrato de snapshot
+
+Para cada contributor descoberto na entry atual, o contrato de snapshot deve considerar:
+
+```text
+targetId
+requiredness
+snapshot provider capability
+snapshot restore endpoint capability
+targetTransform binding
+entry identity
+```
+
+Regras congeladas:
+
+- `targetTransform` é obrigatório quando um provider ou restore endpoint de snapshot existe.
+- Não existe fallback silencioso para `this.transform`.
+- Não existe busca por nome, tag ou singleton.
+- Se provider e restore endpoint existem para o mesmo `targetId`, ambos devem apontar para o mesmo `targetTransform`.
+- Capability quebrada não pode virar `SkippedOptional`.
+- `SkippedOptional` só é válido quando o contributor é opcional e nenhuma capability de snapshot foi declarada.
+- Contributor required sem capability obrigatória de snapshot, quando a policy exigir snapshot, falha explicitamente.
+- Contrato quebrado gera `ActivityObjectSnapshotContractFailed` e bloqueia `ObjectReset`, `ActivationWindowReady` e `ActivityRunning`.
+
+### 22.1.4 Regras de restore
+
+O restore é comandado pelo `SessionActivityPipeline`.
+
+```text
+ObjectReset
+-> ActivityObjectSnapshotRestore
+```
+
+`ObjectReset` retorna a entry para uma condição determinística base.
+`ActivityObjectSnapshotRestore` aplica o payload salvo por cima dessa base, quando houver payload carregado.
+
+Regras:
+
+- Sem payload carregado: skip explícito / checkpoint observável de ausência.
+- Payload foreign/stale: rejeição/falha explícita conforme policy.
+- Target ausente para payload obrigatório: falha explícita.
+- Endpoint obrigatório ausente ou inválido: falha explícita.
+- Restore só passa se `restoreVerified=true`.
+- O endpoint deve evidenciar `beforePosition`, `payloadPosition`, `afterPosition` e `restoreVerified`.
+
+### 22.1.5 Regras de capture/save/load
+
+O capture ocorre no rail de saída da Activity, antes de `ObjectRelease` e antes de unload da ActivityContent scene.
+
+```text
+RouteExit / Activity deactivation
+-> ActivityObjectSnapshotCapture
+-> ObjectRelease
+-> ActivityContentSceneUnload
+-> SessionOperational RouteActivitySave save-on-exit
+```
+
+O `SessionActivityPipeline` produz payload read-only. Ele não salva.
+
+O `SessionOperationalPipeline` decide save-on-exit e load-on-enter via policy de rota:
+
+```text
+loadActivitySaveOnEnter
+saveActivityOnExit
+```
+
+O `RouteActivitySave` usa `ProgressionSlotContext` resolvido e persiste via `ISaveService`/`SaveRuntime`.
+
+### 22.1.6 Checkpoint funcional validado
+
+Smoke funcional confirmou:
+
+```text
+ActivityObjectSnapshotContractValidation checkpointStatus='Passed'
+ActivityObjectSnapshotCapture checkpointStatus='Passed'
+RouteActivitySaveSnapshotPayload checkpointStatus='Passed'
+RouteActivitySaveSaveCompleted
+RouteActivitySnapshotPayloadLoaded
+RouteActivitySaveSnapshotLoad checkpointStatus='Passed'
+ActivityObjectSnapshotRestore checkpointStatus='Passed'
+restoreVerified='true'
+```
+
+Payload de restore validado:
+
+```text
+targetId='test_object_01'
+payloadAvailable='true'
+payloadObjectCount='1'
+matchedTargetCount='1'
+restoredCount='1'
+beforePosition='(960,540,0)'
+payloadPosition='(228,9,537,3,0)'
+afterPosition='(228,9,537,3,0)'
+restoreVerified='true'
+```
+
+### 22.1.7 Ownership congelado
+
+```text
+SessionOperationalPipeline = owner de route-level load/save policy.
+SessionActivityPipeline = owner de Activity setup, snapshot contract validation, capture timing e restore timing.
+SaveRuntime = executor de persistência.
+Object provider/endpoint = executor local/leitor local de estado do objeto.
+```
+
+Objetos não decidem quando salvar, carregar, restaurar ou liberar.
+Adapters/endpoints executam side-effects comandados por Pipeline Commands.
+Eventos foreign/stale não podem alterar a Activity ativa nem o payload ativo.
+
+### 22.1.8 Dívida não bloqueante
+
+O checkpoint atual restaurou corretamente, mas a observabilidade ainda pode melhorar:
+
+```text
+captureTargetTransformPath
+```
+
+deve ser propagado no payload carregado ou marcado explicitamente como indisponível quando o dado não existir no schema salvo.
+
+Essa dívida não bloqueia o PASS funcional porque `restoreVerified='true'` confirmou o resultado final.
+
 
 ## 23. Invariantes obrigatórios
 
@@ -1060,6 +1245,8 @@ Unsupported deve ser explícito. Não criar fallback silencioso.
 - Foreign/stale events não alteram pipeline ativo.
 - Nenhum adapter decide lifecycle.
 - Nenhum objeto/contributor decide quando o pipeline avança.
+- ActivityObject snapshot/restore mínimo validado não transforma objeto em owner de Save.
+- `RouteActivitySave` não aplica estado em objeto; restore pertence ao `SessionActivityPipeline`.
 - Não criar Base 2.0 agora.
 - Não criar core genérico universal agora.
 - Não reorganizar fisicamente arquitetura em Core/Concrete/UnityAdapter.
@@ -1155,7 +1342,7 @@ Gates/InputModes/GameLoop seguem como executores técnicos, não owners de lifec
 
 ### ADR-0008
 
-Restart/reset deste ADR não são Save/Restore. `ActivityObjectSnapshotCapture` produz dado local para Progression Save MVP; `RouteActivitySave`/`SaveRuntime` permanecem no ADR-0008. Restore de Progression ainda é futuro e não deve sobrescrever/ser sobrescrito por Placement/ObjectReset sem policy explícita.
+Restart/reset deste ADR não são Save/Restore. `ActivityObjectSnapshotCapture` produz dado local para Progression Save MVP; `RouteActivitySave`/`SaveRuntime` permanecem no ADR-0008. O MVP funcional `RouteActivitySave + ActivityObjectSnapshotRestore` validou restore mínimo de `Transform` para `test_object_01`, mantendo a regra de ownership: `SessionOperationalPipeline` decide load/save de rota, `SessionActivityPipeline` decide timing de capture/restore, e endpoints apenas executam side-effects comandados. Restore genérico de Progression permanece futuro e não deve sobrescrever/ser sobrescrito por Placement/ObjectReset sem policy explícita.
 
 ### ADR-0009 / ADR-0010
 

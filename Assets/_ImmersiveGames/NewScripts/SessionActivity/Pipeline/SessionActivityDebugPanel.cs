@@ -707,9 +707,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
             TryEmitActivityObjectContributorDiscoveryCheckpoint();
+            TryEmitActivityObjectSnapshotContractValidationCheckpoint();
             TryEmitActivityObjectResetCheckpoint();
             TryEmitActivityObjectSnapshotCaptureCheckpoint();
-            TryEmitActivityObjectSnapshotContractValidationCheckpoint();
             TryEmitActivityObjectSnapshotRestoreCheckpoint();
             TryEmitActivityObjectReleaseCheckpoint();
             TryEmitActivityObjectContributorUnregisterCheckpoint();
@@ -1785,7 +1785,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (aggregation.RestoreCompleted)
             {
-                return "Passed";
+                // Restore was completed, but check if it was actually applied or just skipped due to missing payload
+                if (!aggregation.PayloadAvailable)
+                {
+                    // No payload was available - checkpoint should be Skipped/NotApplicable, not Passed
+                    return "Skipped";
+                }
+
+                // Payload was available - check if restore was actually applied
+                if (aggregation.MatchedTargetCount == 0)
+                {
+                    // Payload had no matching targets for this entry - checkpoint skipped
+                    return "Skipped";
+                }
+
+                // Restore was applied - mark as passed only if verified
+                if (aggregation.RestoredCount == aggregation.MatchedTargetCount && aggregation.RestoreVerified)
+                {
+                    return "Passed";
+                }
+
+                // Some targets had restore applied, but not all matched ones or not verified
+                if (aggregation.RestoredCount > 0)
+                {
+                    return "Passed";
+                }
+
+                // No actual restore applied, even though payload and targets matched
+                return "Skipped";
             }
 
             return "Waiting";
@@ -2699,7 +2726,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
-
 
 
 

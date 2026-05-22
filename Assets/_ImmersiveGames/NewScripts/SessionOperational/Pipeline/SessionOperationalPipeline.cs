@@ -17,6 +17,7 @@ using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using DebugUtility = _ImmersiveGames.NewScripts.Foundation.Core.Logging.DebugUtility;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public enum RouteRequestSubmissionKind
@@ -301,7 +302,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 unloadPlan.FinalScenesToUnload);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
+                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey?.name ?? string.Empty}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
@@ -327,8 +328,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    sourceText,
-                    reasonText);
+                    source,
+                    reason);
 
                 if (!TryBeginRouteOperation(
                         routeOperationId,
@@ -336,8 +337,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeSequence,
                         routeIdentity,
                         routeIdentity,
-                        sourceText,
-                        reasonText))
+                        source,
+                        reason))
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][H1][SessionOperationalPipeline][Route] Failed to record RouteOperationStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.");
@@ -349,8 +350,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    sourceText,
-                    reasonText);
+                    source,
+                    reason);
 
                 ExecuteRouteActivitySaveSaveOnExitOrFail(
                     runtimeModeConfig,
@@ -359,8 +360,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    sourceText,
-                    reasonText);
+                    source,
+                    reason);
 
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
                     $"[OBS][SessionOperationalPipeline][Transition] command='TransitionPlanReady' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.",
@@ -467,8 +468,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    sourceText,
-                    reasonText);
+                    source,
+                    reason);
 
                 if (loadingCommand.IsEnabled)
                 {
@@ -499,8 +500,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    sourceText,
-                    reasonText);
+                    source,
+                    reason);
 
                 SessionOperationalInputPolicy inputPolicy = route.InputPolicy;
                 SessionOperationalInputModeKind initialInputMode = PrepareInputCapabilityOrFail(
@@ -511,8 +512,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    sourceText,
-                    reasonText);
+                    source,
+                    reason);
 
                 string routeClass = route.OperationalSurfaceKind.ToString();
                 if (!TryObserveInputCapabilityPrepared(
@@ -524,8 +525,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeClass,
                         inputPolicy,
                         initialInputMode,
-                        sourceText,
-                        reasonText))
+                        source,
+                        reason))
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
@@ -540,8 +541,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeClass,
                         inputPolicy,
                         initialInputMode,
-                        sourceText,
-                        reasonText))
+                        source,
+                        reason))
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
@@ -594,8 +595,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         transitionId,
                         routeSequence,
                         route.HandoffSessionStateId,
-                        sourceText,
-                        reasonText);
+                        source,
+                        reason);
                 }
 
                 if (loadingCommand.IsEnabled)
@@ -1857,7 +1858,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 teardownResult.Stage == SessionActivityStage.ActivationWindowCompleted ||
                 teardownResult.Stage == SessionActivityStage.ActivationWindowSceneUnloading ||
                 teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneUnloadStarted ||
-                teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneUnloaded)
+                teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneUnloaded ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowStarted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowSceneLoading ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowReady ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowCompleted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowSkippedNoContent)
             {
                 return "activation_window_not_completed";
             }
@@ -2405,16 +2416,32 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
                     $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='{checkpointStatus}' activityIdentity='{Normalize(previousActivityIdentity)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' payloadObjectCount='0' targetIds='<none>' payloadSize='0' failureReason='{Normalize(payloadResolution.FailureReason)}'.",
                     DebugUtility.Colors.Info);
-                LogRouteActivitySaveSaveSkipped(
-                    previousCompletedRoute,
-                    currentRouteIdentity,
-                    currentRouteOperationId,
-                    currentTransitionId,
-                    currentRouteSequence,
-                    skipReason,
-                    Normalize(payloadResolution.FailureReason),
-                    source,
-                    reason);
+                if (isCaptureFailed)
+                {
+                    LogRouteActivitySaveCaptureFailed(
+                        previousCompletedRoute,
+                        currentRouteIdentity,
+                        currentRouteOperationId,
+                        currentTransitionId,
+                        currentRouteSequence,
+                        skipReason,
+                        Normalize(payloadResolution.FailureReason),
+                        source,
+                        reason);
+                }
+                else
+                {
+                    LogRouteActivitySaveSaveSkipped(
+                        previousCompletedRoute,
+                        currentRouteIdentity,
+                        currentRouteOperationId,
+                        currentTransitionId,
+                        currentRouteSequence,
+                        skipReason,
+                        Normalize(payloadResolution.FailureReason),
+                        source,
+                        reason);
+                }
                 return;
             }
 
@@ -2604,6 +2631,23 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             DebugUtility.Log(typeof(SessionOperationalPipeline),
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveSkipped previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousCompletedRoute.ActivityIdentity)}' previousActivitySaveKey='{BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity)}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' skipReason='{Normalize(skipReason)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static void LogRouteActivitySaveCaptureFailed(
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            string currentRouteIdentity,
+            string currentRouteOperationId,
+            string currentTransitionId,
+            int currentRouteSequence,
+            string failureReason,
+            string detail,
+            string source,
+            string reason)
+        {
+            // Semantic failure: snapshot capture failed - this is NOT a normal skip but a failure condition
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveCaptureFailed previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousCompletedRoute.ActivityIdentity)}' previousActivitySaveKey='{BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity)}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' failureReason='{Normalize(failureReason)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Warning);
         }
 
         private static string BuildActivitySaveKey(string activityIdentity)

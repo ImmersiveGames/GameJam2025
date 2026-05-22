@@ -22,8 +22,9 @@ A partir da reorganização de Base 1.1, estes ADRs são a **única fonte normat
 11. **ADR-0011** - Runtime Configuration Registry and Config Sets (CLOSED - 2026-05-17)
 12. **ADR-0012** - Operational Camera Runtime e Future Activity Camera Binding (CONGELADO - 2026-05-14)
 13. **ADR-0013** - Camera Presentation Runtime e Activity Camera Director (ACEITO / IMPLEMENTADO NO MVP SINGLE-PLAYER)
+14. **ADR-0014** - ActivityContent, WindowTemplateLibrary e ActivityEntryPipeline (ACEITO / CHECKPOINT NORMATIVO VIVO)
 
-**Estes ADRs (0009-0013) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
+**Estes ADRs (0009-0014) são fonte normativa Base 1.1 no mesmo nível do ADR-0001 a 0008. Não são "complementares".**
 
 Notas:
 - **ADR-0009** (congelado) congela o contrato operacional de:
@@ -52,12 +53,18 @@ Notas:
   - UnityOperationalCameraRuntimeAdapter como executor técnico;
   - Sem fallback para Camera.main;
   - Activity Camera Binding é futura, fora deste checkpoint.
+- **ADR-0014** (ACEITO / checkpoint normativo vivo):
+  - `ActivityContent`, `WindowTemplateLibrary` e `ActivityEntryPipeline` passam a ser fonte normativa Base 1.1.
+  - `ActivityEntryPipeline` é único; o que varia é o `ActivitySetupInventory`.
+  - `ActivityObjectSnapshotContractValidation` valida provider/restore endpoint e `targetTransform` antes de `ObjectReset`.
+  - `RouteActivitySave + ActivityObjectSnapshotRestore` está congelado como PASS funcional para `test_object_01`.
+  - Ownership congelado: `SessionOperationalPipeline` decide load/save de rota; `SessionActivityPipeline` decide capture/restore timing; `SaveRuntime` persiste; provider/endpoint apenas lê/aplica estado local comandado.
 - **Checkpoint SessionOperational (2026-05-14)**:
   - `RouteActivitySavePlanReady` permanece plano;
   - `load-on-enter` executa após `SceneCompositionCompleted` e antes de `InputCapability`/`PlayerPreparation`;
   - ausência de save gera skip explícito `no_snapshot`;
   - `save-on-exit` por troca de rota usa a rota anterior completa e ocorre antes do unload da cena anterior;
-  - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`;
+  - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`; após o MVP `ActivityObjectSnapshotRestore`, falha de capture/config obrigatória gera falha explícita e não pode ser mascarada como provider ausente;
   - rota QA `route-sandbox-menu` habilita smoke manual `Menu -> Sandbox -> Menu`.
 - **Checkpoint RouteActivitySave boundary (CLOSED - 2026-05-17)**:
   - `OperationalRouteAsset` declara policy (`loadActivitySaveOnEnter`/`saveActivityOnExit`);
@@ -99,7 +106,16 @@ Notas:
     - `SaveConfigAsset.defaultSlotId` pode existir como detalhe tecnico/legado, sem virar policy canonica.
     - Contratos existentes/previstos: `SaveSlotId`, `SaveSlotKind`, `SaveSnapshotId`, `SaveSlotDescriptor`, `SaveSnapshotHeader`, `SaveSlotManifest`, `ProgressionSlotContext`, `ProgressionSnapshotEnvelope`, `IProgressionSnapshotProvider`, `IProgressionSnapshotReceiver`.
     - Protecoes: comando com `Pipeline Identity`; foreign/stale rejeitado ou skip explicito; mismatch de `slotId`/`snapshotId` rejeitado/skip; ausencia de contexto obrigatorio fail-fast; rota/activity nao save-eligible com skip explicito.
-    - Ainda sem actors/world objects/inventory/run save/UI de slots/autosave real/ProgressionManager/auto-scan global.
+    - Ainda sem actors/world objects genéricos/inventory/run save/UI de slots/autosave real/ProgressionManager/auto-scan global; há MVP funcional de objeto de Activity (`test_object_01`) com capture/save/load/restore.
+
+- **Checkpoint RouteActivitySave + ActivityObjectSnapshotRestore (PASS funcional - 2026-05-21):**
+  - Validado para `test_object_01`.
+  - `ActivityObjectSnapshotContractValidation` passou nos casos negativo/positivo e bloqueia contrato obrigatório quebrado antes de `ObjectReset`/`ActivityRunning`.
+  - Capture ocorre no rail de saída da Activity antes de `ObjectRelease`/unload da `ActivityContentScene`.
+  - `RouteActivitySave` resolve payload, salva no exit da rota anterior e carrega no enter da rota atual.
+  - Restore ocorre no setup da Activity após `ObjectReset` e antes de `ActivityRunning`.
+  - Evidência funcional: `restoreVerified=true`, `beforePosition='(960,540,0)'`, `payloadPosition='(228,9,537,3,0)'`, `afterPosition='(228,9,537,3,0)'`.
+  - Dívida não bloqueante: melhorar propagação/observabilidade de `captureTargetTransformPath` no payload restaurado.
 - Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
 
 ## Precedência Normativa
@@ -108,9 +124,9 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 
 ### Regra Obrigatória de Leitura
 
-- **ADRs de ADR-0001 a ADR-0013 são a fonte normativa viva de Base 1.1.**
+- **ADRs de ADR-0001 a ADR-0014 são a fonte normativa viva de Base 1.1.**
   - ADR-0001 a ADR-0008: Estruturais (pipeline, adapters, policies canônicas).
-  - ADR-0009 a ADR-0013: Checkpoints normativos aceitos/congelados/implementados.
+  - ADR-0009 a ADR-0014: Checkpoints normativos aceitos/congelados/implementados.
 - ADRs anteriores (históricos) devem ser lidos apenas como referência contextual.
 - Em caso de conflito entre um ADR histórico e um ADR Base 1.1, a **Base 1.1 prevalece**.
 - Ownership não é decidido por conveniência operacional, e sim pelo papel arquitetural definido na Base 1.1.
@@ -130,12 +146,13 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 - ADR-0007
 - ADR-0008
 
-**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0013):**
+**Checkpoints Normativos Aceitos/Congelados/Implementados (ADR-0009 a ADR-0014):**
 - ADR-0009 (congelado - 2026-05-14)
 - ADR-0010 (congelado - 2026-05-14)
 - ADR-0011 (CLOSED - 2026-05-17)
 - ADR-0012 (congelado - 2026-05-14)
 - ADR-0013 (aceito/implementado no MVP single-player - 2026-05-15)
+- ADR-0014 (aceito/checkpoint normativo vivo - 2026-05-21)
 
 ### HISTÓRICO (Referência Apenas)
 
@@ -190,7 +207,7 @@ Base11Sandbox Minimal Route + Session Activity Cycle foi aprovado e congelado co
 
 Limites atuais congelados:
 - `PlayerPreparation` no trilho ativo operacional resulta em `planned_only`/`observed_noop` e produz payload minimo para handoff.
-- Não há `Activity Snapshot Provider` canônico.
+- Há MVP canônico de `ActivityObjectSnapshot` para `test_object_01` com capture/save/load/restore; providers/receivers genéricos de Progression ainda ficam fora do checkpoint.
 - Não há gameplay input canônico neste checkpoint.
 - PlayerActor v0 MaterializedOnly nasce em SessionActivityPipeline/ActivitySetup; SessionOperational nao materializa PlayerActor.
 - Camera pré-reveal está fechada no MVP single-player (Route/Surface + Activity + release determinístico entre rotas).
@@ -208,8 +225,8 @@ Limites atuais congelados:
   - `SessionOperationalRuntimeComposer` registra apenas adapters canônicos.
 - Fora do escopo deste checkpoint:
   - Save/Progression real;
-  - Activity Snapshot Provider;
-  - Activity lifecycle/deactivation;
+  - providers/receivers genéricos de Activity Snapshot além do MVP `test_object_01`;
+  - Activity lifecycle/deactivation genérico além dos rails validados;
   - PlayerActor final;
   - gameplay input final;
   - Run Pipeline.

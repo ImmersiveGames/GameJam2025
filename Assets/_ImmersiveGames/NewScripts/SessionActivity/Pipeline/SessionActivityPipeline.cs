@@ -5599,7 +5599,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 afterPositionZ: 0f,
                 command.Source,
                 command.Reason,
-                hasSupportingEndpoint ? "restore_result_invalid_or_failed_required" : (isRequired ? "restore_endpoint_missing_required" : "target_has_no_restore_endpoint_optional"));
+                (isRequired ? "restore_endpoint_missing_required" : "target_has_no_restore_endpoint_optional"));
         }
 
         private static string ToCoordinateSpaceToken(ActivityObjectSnapshotCoordinateSpace coordinateSpace)

@@ -143,7 +143,7 @@ Progression Save Fase 1 / 1.1 / 1.2 - PASS estrutural, sem progressao funcional 
 - Fase 1.2 fez `RouteActivitySave` usar a API nativa de `ISaveService` por `SaveAddress`/`SaveRequest`.
 - `SessionOperationalActivitySaveAdapter` usa `SaveScope.Progression` e `SaveGroup.RouteActivity` no contrato semantico.
 - Ainda nao ha `SaveSlotManifest`/`SaveSnapshotHeader` real como fonte de snapshotId canonico.
-- Ha MVP funcional de provider/payload de objeto para `RouteActivitySave` (`test_object_01`) com capture/save/load; ainda nao ha receiver/restore real de gameplay persistence.
+- Ha MVP funcional de provider/payload de objeto para `RouteActivitySave` (`test_object_01`) com capture/save/load/restore real de `Transform`; ainda nao ha receiver/restore generico de gameplay persistence.
 - Ainda nao salvar actors;
 - Ainda nao salvar world objects de forma geral; ha apenas MVP de snapshot de objeto de Activity para `test_object_01`;
 - Ainda nao salvar inventory;
@@ -241,7 +241,7 @@ Fora do escopo deste checkpoint:
 - Save/Progression real completo (manifest/header reais, policies completas de auto/manual/checkpoint, UI de slots).
 
 
-### 2.3 Checkpoint Progression Save MVP — Activity Object Snapshot Capture/Save/Load (2026-05-21)
+### 2.3 Checkpoint Progression Save MVP — Activity Object Snapshot Capture/Save/Load/Restore (2026-05-21)
 
 Status:
 
@@ -249,13 +249,14 @@ Status:
 Progression Save MVP — Etapa 1 Capture-only = PASS funcional
 Progression Save MVP — Etapa 2 Save-only = PASS funcional
 Progression Save MVP — Etapa 3 Load-only = PASS funcional
+Progression Save MVP — Etapa 4 Restore-only = PASS funcional
 ```
 
 Objetivo do checkpoint:
 
 ```text
-Persistir e carregar um snapshot mínimo de objeto de Activity,
-sem implementar restore, autosave, manual save, checkpoint save ou progression completo.
+Persistir, carregar e restaurar um snapshot mínimo de objeto de Activity,
+sem implementar autosave, manual save, checkpoint save ou progression completo.
 ```
 
 Objeto validado no MVP:
@@ -424,6 +425,92 @@ RouteActivitySaveLoadCompleted
 requestAddress='scope='Progression' group='RouteActivity' ownerId='SessionActivitySandboxSession' recordId='snapshot-rev-1779411116806' slotId='save' schemaId='progression.route_activity' schemaVersion='1''
 ```
 
+#### Etapa 4 — Restore-only funcional
+
+O `SessionActivityPipeline`, durante o setup da Activity, aplica o payload previamente carregado pelo `SessionOperationalPipeline` como pending/read-only.
+
+Ponto de lifecycle congelado:
+
+```text
+ActivityContentLoad
+-> ActivityObjectContributorDiscovery
+-> ActivitySetupInventory
+-> ActivityObjectSnapshotContractValidation
+-> ObjectReset
+-> ActivityObjectSnapshotRestore
+-> ActivitySetupCompleted
+-> ActivationWindow
+```
+
+Decisões congeladas:
+
+1. `SessionOperationalPipeline` carrega payload e mantém dado pending/read-only.
+2. `SessionOperationalPipeline` não aplica `Transform`.
+3. `SessionActivityPipeline` decide timing do restore.
+4. Restore roda depois de `ObjectReset`.
+5. Endpoint de objeto apenas aplica estado comandado.
+6. Endpoint não chama `SaveRuntime`.
+7. Objeto não decide lifecycle, load, save, restore ou release.
+8. `targetTransform` é binding obrigatório e explícito para provider/restore endpoint.
+9. Capability quebrada falha em `ActivityObjectSnapshotContractValidation`, antes de `ObjectReset` e antes de `ActivityRunning`.
+10. Restore funcional só passa quando `restoreVerified=true`.
+
+Evidência funcional congelada:
+
+```text
+checkpoint='ActivityObjectSnapshotContractValidation'
+checkpointStatus='Passed'
+targetIds='test_object_01'
+mismatchReason='<none>'
+
+checkpoint='ActivityObjectSnapshotRestore'
+checkpointStatus='Passed'
+payloadAvailable='true'
+payloadObjectCount='1'
+matchedTargetCount='1'
+restoredCount='1'
+targetIds='test_object_01'
+beforePosition='(960,540,0)'
+payloadPosition='(228,9,537,3,0)'
+afterPosition='(228,9,537,3,0)'
+restoreVerified='true'
+restoreFailed='false'
+```
+
+#### SnapshotContractValidation
+
+O contrato de snapshot passou a ser validado no `ActivityEntryPipeline`, antes de `ObjectReset`.
+
+Regras congeladas:
+
+- Provider/restore endpoint existente exige `targetTransform`.
+- Não há fallback para `this.transform`.
+- Não há busca por nome/tag/singleton.
+- Provider e restore endpoint do mesmo `targetId` devem apontar para o mesmo `targetTransform`.
+- Capability quebrada não pode virar `SkippedOptional`.
+- `SkippedOptional` só vale quando contributor opcional não declara capability de snapshot.
+- Falha obrigatória bloqueia `ObjectReset`, `ActivationWindowReady` e `ActivityRunning`.
+
+#### Ownership do MVP funcional
+
+```text
+Object/provider
+-> produz snapshot e aplica restore local comandado
+
+SessionActivityPipeline
+-> valida contrato
+-> captura snapshot no rail de saída
+-> aplica restore no setup
+
+SessionOperationalPipeline
+-> decide RouteActivitySave load/save por policy de rota
+
+SaveRuntime
+-> persiste por SaveAddress/SaveRequest
+-> não decide lifecycle nem aplica estado em objetos
+```
+
+
 #### CurrentSnapshotId / recordId / revision
 
 Correção congelada neste checkpoint:
@@ -460,14 +547,14 @@ Next load: snapshotId='snapshot-rev-1779411116806'
 RouteActivitySaveSnapshotLoad checkpointStatus='Passed'
 ```
 
-#### Restore e autosave continuam fora do escopo
+#### Restore genérico e autosave continuam fora do escopo
 
-Este checkpoint não implementa:
+Este checkpoint implementa restore mínimo de `Transform` para `test_object_01`, mas não implementa:
 
 ```text
-ObjectRestore
-ProgressionRestore
-IProgressionSnapshotReceiver real
+ObjectRestore genérico além do MVP
+ProgressionRestore genérico além do MVP
+IProgressionSnapshotReceiver genérico
 AutoSave
 ManualSave
 CheckpointSave
@@ -477,11 +564,11 @@ SaveSnapshotHeader real
 ProgressionManager
 ```
 
-Regra futura congelada para Restore:
+Regra futura congelada para Restore genérico:
 
 ```text
 Load pode ocorrer no SessionOperationalPipeline.
-Restore pertence ao ActivityEntryPipeline ou stage equivalente de Activity setup.
+Restore pertence ao ActivityEntryPipeline ou stage equivalente de Activity setup. O MVP atual validou essa regra para `test_object_01`.
 Restore de TransformState não pode rodar antes de Placement e ObjectReset,
 pois Placement/ObjectReset podem sobrescrever o estado salvo.
 ```
@@ -500,7 +587,7 @@ ActivityContentLoad
 -> ActivationWindow
 ```
 
-Para o MVP futuro, a policy preferida é:
+Para expansão futura, a policy preferida é:
 
 ```text
 ObjectReset roda primeiro.
@@ -525,7 +612,7 @@ Qualquer alternativa como “ObjectReset pula grupos restaurados” deve ser def
 | Tipo de dado | Owner canonico | Pipeline/adapter responsavel | Executor/backend | Observacao/acao futura |
 |---|---|---|---|---|
 | Preferences (audio/video/input/layout/idioma/acessibilidade) | `PreferencesRuntimePipeline` | `PreferencesRuntimePipeline` (decide) + `PreferencesSaveAdapter` (executa persistencia por `SaveAddress`/`SaveRequest`) + binders apenas como intencao UI | `SaveRuntime` (`ISaveService`) + `PlayerPrefsSaveBackend` (provisorio) | PASS funcional: defaults -> commit -> reload persistido via PlayerPrefs |
-| Route Activity Save | `SessionOperationalPipeline` (scope de rota/activity) | `RouteActivitySave` + `SessionOperationalActivitySaveAdapter` usando `ProgressionSlotContext` resolvido + payload read-only capturado por `SessionActivityPipeline` quando existir | `SaveRuntime` (`ISaveService` por `SaveAddress`/`SaveRequest` + backend configurado) | PASS funcional MVP: capture-only, save-only e load-only de `test_object_01`; restore/autosave ainda fora do escopo |
+| Route Activity Save | `SessionOperationalPipeline` (scope de rota/activity) | `RouteActivitySave` + `SessionOperationalActivitySaveAdapter` usando `ProgressionSlotContext` resolvido + payload read-only capturado por `SessionActivityPipeline` quando existir | `SaveRuntime` (`ISaveService` por `SaveAddress`/`SaveRequest` + backend configurado) | PASS funcional MVP: capture-only, save-only, load-only e restore-only de `test_object_01`; autosave ainda fora do escopo |
 | Run Save / Continuity | `RunPipeline` (quando materializado) | `RunPipeline` + adapter de save do dominio run | `SaveRuntime` (backend substituivel) | Owner ainda futuro, mas ja congelado no trilho canonico |
 | Progression de objetos/dominios | Pipeline dono do ciclo correspondente | Pipeline do ciclo + adapter de save do dominio | `SaveRuntime` (backend substituivel) | Dominios produzem snapshot/registro; dominio nao chama backend direto |
 
@@ -539,8 +626,9 @@ Qualquer alternativa como “ObjectReset pula grupos restaurados” deve ser def
 
 ## Roadmap Futuro
 
+- Melhorar observabilidade de `captureTargetTransformPath` no payload restaurado.
 - Implementar `SaveSlotManifest` e `SaveSnapshotHeader` reais para substituir `snapshotId` sintetico.
-- Expandir providers/receivers de Progression a partir do MVP validado (`test_object_01`), sem transformar o objeto em owner de save e sem implementar restore/autosave sem policy explícita.
+- Expandir providers/receivers de Progression a partir do MVP validado (`test_object_01`), sem transformar o objeto em owner de save e sem implementar autosave sem policy explícita.
 - Definir owner de `CurrentSave` completo fora do core de `SaveRuntime`.
 - Evoluir Run save/continuity pelo `RunPipeline` quando esse fluxo for materializado.
 - Considerar backend robusto futuro substituindo `PlayerPrefsSaveBackend`, sem alterar a API publica de `ISaveService`.
