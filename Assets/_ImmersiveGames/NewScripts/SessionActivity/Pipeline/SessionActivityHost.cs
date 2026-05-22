@@ -31,6 +31,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivityPipeline _pipeline;
         private string _lastObservedStateToken = string.Empty;
         private float _nextObserveAt;
+        private bool _globalsRegistered;
 
         public event Action StateObservedChanged;
 
@@ -38,6 +39,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityCatalog Catalog => _catalog;
         public SessionActivityPipeline Pipeline => _pipeline;
         public ActivityExecutionBlockingState GateState => _pipeline?.GateState;
+        public SessionActivityRailKind CurrentRailKind => _pipeline != null ? _pipeline.ActiveRailKind : SessionActivityRailKind.None;
+        public SessionActivityStage CurrentStage => _pipeline != null ? _pipeline.State.CurrentStage : SessionActivityStage.Unknown;
+        public bool HasPendingOperation => _pipeline != null && _pipeline.State.CurrentPendingOperation.IsValid;
 
         private void Awake()
         {
@@ -64,6 +68,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
             RegisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
             RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
+            _globalsRegistered = true;
             Debug.Log(BuildHostBanner());
         }
 
@@ -96,6 +101,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             throw new InvalidOperationException(
                 $"[FATAL][Lifecycle][SessionActivityPipeline][Host] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{sessionStateId}' stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' reason='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
+        }
+
+        private void OnDestroy()
+        {
+            UnregisterGlobalsIfNeeded();
         }
 
         private void Update()
@@ -280,6 +290,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     false,
                     "route_exit_completed_already_deactivated",
                     "Activity is already deactivated.");
+            }
+
+            if (IsDeactivationTransitionStage(stage) && _pipeline.ActiveRailKind != SessionActivityRailKind.ActivityRouteExitRail)
+            {
+                return BuildRouteExitTeardownFailed(
+                    "deactivation_window_not_route_exit_owned",
+                    $"SessionActivity is progressing through local activity transition and route-exit is not owner. stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' entrySequence='{_pipeline.State.CurrentEntrySequence}'.");
             }
 
             if (IsRouteExitTransitStage(stage))
@@ -741,6 +758,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                    stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
         }
 
+        private static bool IsDeactivationTransitionStage(SessionActivityStage stage)
+        {
+            return stage == SessionActivityStage.ActivityCompletionRequested ||
+                   stage == SessionActivityStage.ActivityCompleting ||
+                   stage == SessionActivityStage.PlayerActorParticipationExitStageStarted ||
+                   stage == SessionActivityStage.PlayerActorParticipationExitStageCompleted ||
+                   stage == SessionActivityStage.DeactivationWindowStarted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
+                   stage == SessionActivityStage.DeactivationWindowReady ||
+                   stage == SessionActivityStage.DeactivationWindowCompleted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
+                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
+        }
+
         private static string ResolveSceneLoaded(string sceneName)
         {
             if (string.IsNullOrWhiteSpace(sceneName))
@@ -1025,6 +1060,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             DependencyManager.Provider.RegisterGlobal(instance);
+        }
+
+        private void UnregisterGlobalsIfNeeded()
+        {
+            if (!_globalsRegistered)
+            {
+                return;
+            }
+
+            if (_catalog != null)
+            {
+                UnregisterGlobal(_catalog);
+            }
+
+            if (_pipeline != null)
+            {
+                UnregisterGlobal(_pipeline);
+                UnregisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
+                UnregisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
+            }
+
+            UnregisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
+            _globalsRegistered = false;
+        }
+
+        private static void UnregisterGlobal<T>(T instance) where T : class
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            DependencyManager.Provider.UnregisterGlobal(instance);
         }
     }
 }

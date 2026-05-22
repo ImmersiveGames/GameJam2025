@@ -4,6 +4,7 @@
 
 - Estado: Accepted
 - Data: 2026-05-12
+- Última atualização: 2026-05-21
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canônica deste contrato: este ADR.
 
@@ -722,4 +723,138 @@ ocorre antes dos mesmos side-effects.
 
 BackToMenu nao abre activity_02.
 ActivationWindow/DeactivationWindow continuam dependentes de comando explicito.
+```
+
+### 2026-05-21 - Checkpoint CLOSED - Route Request Submission / Preflight Safety
+
+Status formal:
+
+```text
+Route Request Submission / Preflight Safety - CLOSED / PASS
+```
+
+Contrato congelado:
+
+```text
+Route Button / UI
+-> submete intencao imediata
+-> SessionOperationalPipeline faz preflight antes de qualquer plano/comando operacional
+-> se rejeitado por policy, nenhum lifecycle operacional nasce
+-> se aceito, SessionOperationalPipeline assume a operacao de rota
+-> completion operacional e reportada por sinal explicito
+```
+
+Ownership congelado:
+
+```text
+SessionOperationalPipeline decide policy, aceite, rejeicao, lifecycle e completion da rota.
+Frontend/UI/Binder apenas submete intencao e observa resultado de submissao/completion.
+Adapters executam side-effects somente depois que o pipeline aceitar a rota.
+```
+
+Regras obrigatorias:
+
+```text
+1) UI/Binder nao decide lifecycle de rota.
+2) UI/Binder nao aguarda lifecycle por async/await, ContinueWith ou inspecao posterior de Task.
+3) SubmitRouteRequest representa submissao/preflight, nao conclusao da rota.
+4) RejectedByPolicy e resultado valido de submissao e nao e falha fatal.
+5) IgnoredAlreadyInFlight e resultado valido quando ja existe operacao ativa.
+6) FailedInvalidConfig permanece falha explicita de contrato/config.
+7) Accepted inicia operacao controlada pelo SessionOperationalPipeline.
+8) Operacao aceita reabilita UI apenas por completion signal explicito.
+```
+
+Preflight obrigatorio antes de qualquer plano/comando operacional:
+
+```text
+TryPreflightRouteRequest
+-> RouteRequestSubmissionResult
+```
+
+Quando a request e rejeitada por policy, o pipeline deve emitir observabilidade explicita e **nao** deve criar:
+
+```text
+LoadingPlanReady
+RouteAudioPlanReady
+OperationalRouteCommand
+RouteActivitySavePlanReady
+TransitionPlanReady
+OperationalRouteRequestDeferredForSessionActivityTeardown
+```
+
+Bloqueios canonicos de policy:
+
+```text
+ActivationWindowReady
+-> route request rejeitada com activation_window_not_completed
+
+ActivityCompletionRail / DeactivationWindowReady nao route-exit-owned
+-> route request rejeitada com activity_transition_in_progress
+
+Operacao de rota ja ativa
+-> route request ignorada como already_in_flight, sem criar trilho paralelo
+```
+
+Route-exit permitido:
+
+```text
+ActivityRunning
+-> route request aceita
+-> OperationalRouteRequestDeferredForSessionActivityTeardown
+-> SessionActivityRouteExitTeardownStarted
+-> ActivityRouteExitRail
+-> ClosedForRouteExit
+-> SessionActivityRouteExitTeardownCompleted
+-> side-effects operacionais da nova rota
+```
+
+Invariantes:
+
+```text
+1) Rejeicao de policy ocorre antes de qualquer side-effect operacional.
+2) Nao existe route transition parcialmente planejada quando a SessionActivity bloqueia preflight.
+3) BackToMenu em ActivationWindowReady nao deve iniciar teardown, fade, loading, save, audio ou SceneComposition.
+4) BackToMenu durante Activity -> Activity local nao deve sequestrar o rail local nem descarregar a route scene.
+5) SceneComposition unload da route scene anterior so pode ocorrer depois de ClosedForRouteExit.
+6) Eventos/completions foreign/stale nao podem alterar a operacao de rota ativa.
+```
+
+Smoke congelado:
+
+```text
+Caso A:
+ActivationWindowReady
+-> BackToMenu
+-> RouteRequestBlockedBySessionActivity reason='activation_window_not_completed'
+-> RouteRequestRejectedByPolicy
+-> sem planos/comandos operacionais
+
+Caso B:
+DeactivationWindowReady em ActivityCompletionRail
+-> BackToMenu
+-> RouteRequestBlockedBySessionActivity reason='activity_transition_in_progress'
+-> RouteRequestRejectedByPolicy
+-> ActivityTransition local continua
+-> SessionActivitySandboxScene nao e descarregada
+
+Caso C:
+ActivityRunning
+-> BackToMenu
+-> OperationalRouteRequestDeferredForSessionActivityTeardown
+-> SessionActivityRouteExitTeardownCompleted stage='ClosedForRouteExit'
+-> ActivityCamera release
+-> RouteActivitySave save-on-exit
+-> ApplyOperationalRoute
+-> OperationalRouteCompleted routeIdentity='route-boot-menu'
+```
+
+Resultado aceito:
+
+```text
+Sem RouteButtonResultInspectionFailed.
+Sem erro de main thread por manipulacao Unity fora do contexto principal.
+Sem route_transition_failed para rejeicao de policy.
+Sem [FATAL] em bloqueio operacional esperado.
+Sem SessionActivityRouteExitWithoutCanonicalDeactivation.
 ```

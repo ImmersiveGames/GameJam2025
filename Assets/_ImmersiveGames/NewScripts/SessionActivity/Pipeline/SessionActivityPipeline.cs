@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -50,6 +52,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivityRailKind _activeRailKind;
         private PendingActivityContentLoadContext _pendingActivityContentLoadContext;
         private SessionActivitySnapshotPayload _lastSnapshotPayloadForSaveOnExit;
+        private bool _lastSnapshotCaptureFailedForSaveOnExit;
+        private string _lastSnapshotCaptureFailureDetail;
 
         private sealed class PendingActivityContentLoadContext
         {
@@ -221,6 +225,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ? $"activityId='{_pendingActivityContentReleaseContext.Definition.ActivityId}', entrySequence='{_pendingActivityContentReleaseContext.EntrySequence}', nextSceneIndex='{_pendingActivityContentReleaseContext.NextSceneIndex}', totalScenes='{_pendingActivityContentReleaseContext.LoadedSet.Scenes.Count}'"
             : "<none>";
         public string SessionId => _sessionId;
+        public SessionActivityRailKind ActiveRailKind => _activeRailKind;
 
         public SessionActivityCommand BuildStartCommand(string source, string reason)
         {
@@ -381,6 +386,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingActivityContentReleaseContext = null;
             _awaitingContinuationAfterActivityContentRelease = false;
             _lastSnapshotPayloadForSaveOnExit = default;
+            _lastSnapshotCaptureFailedForSaveOnExit = false;
+            _lastSnapshotCaptureFailureDetail = string.Empty;
             _lastRouteSessionPlayerPreparationHandoff = handoff.PlayerPreparation;
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
@@ -1143,6 +1150,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 discoveryResult.Reports.Count == 0)
             {
                 _lastSnapshotPayloadForSaveOnExit = default;
+                _lastSnapshotCaptureFailedForSaveOnExit = false;
+                _lastSnapshotCaptureFailureDetail = string.Empty;
                 EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotCaptureSkippedNoProviders,
@@ -1169,6 +1178,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int capturedCount = 0;
             int failedCount = 0;
             bool hasTransformPayload = false;
+            string captureFailureDetail = string.Empty;
             HashSet<string> capturedTargetIds = new(StringComparer.Ordinal);
             List<SessionActivitySnapshotPayloadObject> capturedObjects = new();
 
@@ -1203,6 +1213,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (!captureCommand.IsValid)
                 {
                     failedCount += 1;
+                    if (string.IsNullOrWhiteSpace(captureFailureDetail))
+                    {
+                        captureFailureDetail = "invalid_capture_command";
+                    }
                     EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
@@ -1217,6 +1231,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (!captureResult.IsValid || !IsObjectSnapshotCaptureResultForCurrentEntry(captureResult, definition, entrySequence))
                 {
                     failedCount += 1;
+                    if (string.IsNullOrWhiteSpace(captureFailureDetail))
+                    {
+                        captureFailureDetail = "invalid_or_foreign_capture_result";
+                    }
                     EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
@@ -1252,7 +1270,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         captureIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot captured targetId='{captureResult.Command.TargetId}' contentProfileId='{captureResult.Command.ContentProfileId}' hasTransformPayload='{captureResult.HasTransformPayload.ToString().ToLowerInvariant()}' position='({snapshotData.PositionX:0.###},{snapshotData.PositionY:0.###},{snapshotData.PositionZ:0.###})' rotation='({snapshotData.RotationX:0.###},{snapshotData.RotationY:0.###},{snapshotData.RotationZ:0.###},{snapshotData.RotationW:0.###})' scale='({snapshotData.ScaleX:0.###},{snapshotData.ScaleY:0.###},{snapshotData.ScaleZ:0.###})'.");
+                        $"'{definition.ActivityId}' activity object snapshot captured targetId='{captureResult.Command.TargetId}' contentProfileId='{captureResult.Command.ContentProfileId}' coordinateSpace='{ToCoordinateSpaceToken(snapshotData.CoordinateSpace)}' hasTransformPayload='{captureResult.HasTransformPayload.ToString().ToLowerInvariant()}' capturedPosition='({snapshotData.PositionX:0.###},{snapshotData.PositionY:0.###},{snapshotData.PositionZ:0.###})' position='({snapshotData.PositionX:0.###},{snapshotData.PositionY:0.###},{snapshotData.PositionZ:0.###})' rotation='({snapshotData.RotationX:0.###},{snapshotData.RotationY:0.###},{snapshotData.RotationZ:0.###},{snapshotData.RotationW:0.###})' scale='({snapshotData.ScaleX:0.###},{snapshotData.ScaleY:0.###},{snapshotData.ScaleZ:0.###})' detail='{captureResult.Detail}'.");
                     continue;
                 }
 
@@ -1269,6 +1287,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 failedCount += 1;
+                if (string.IsNullOrWhiteSpace(captureFailureDetail))
+                {
+                    captureFailureDetail = string.IsNullOrWhiteSpace(captureResult.Detail)
+                        ? "snapshot_capture_failed"
+                        : Normalize(captureResult.Detail);
+                }
                 EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
@@ -1289,10 +1313,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     definition.ActivityOrdinal,
                     entrySequence,
                     capturedObjects);
+                _lastSnapshotCaptureFailedForSaveOnExit = false;
+                _lastSnapshotCaptureFailureDetail = string.Empty;
             }
             else
             {
                 _lastSnapshotPayloadForSaveOnExit = default;
+                _lastSnapshotCaptureFailedForSaveOnExit = failedCount > 0;
+                _lastSnapshotCaptureFailureDetail = failedCount > 0
+                    ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail))
+                    : string.Empty;
             }
 
             EmitFact(
@@ -1904,6 +1934,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingActivityContentLoadContext = null;
             _pendingActivityContentReleaseContext = null;
             _lastSnapshotPayloadForSaveOnExit = default;
+            _lastSnapshotCaptureFailedForSaveOnExit = false;
+            _lastSnapshotCaptureFailureDetail = string.Empty;
             _lastRouteSessionPlayerPreparationHandoff = default;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _state.SetCurrentDefinition(firstDefinition);
@@ -3286,7 +3318,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ObserveActivitySceneContractOrSkip(definition, command, facts, snapshots, entrySequence);
             DiscoverActivityObjectContributorsOrSkip(definition, command, facts, snapshots, entrySequence);
             BuildAndValidateActivitySetupInventory(definition, command, facts, snapshots, entrySequence);
+            EmitObjectSnapshotContractValidationStage(definition, command, facts, snapshots, entrySequence);
             EmitObjectResetStage(definition, command, facts, snapshots, entrySequence);
+            EmitObjectSnapshotRestoreStage(definition, command, facts, snapshots, entrySequence);
             EmitParticipantBindingStage(definition, command, facts, snapshots, entrySequence);
             SessionActivityIdentity setupCompletedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
             _state.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
@@ -4668,6 +4702,175 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
+        private void EmitObjectSnapshotContractValidationStage(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
+            SessionActivityIdentity validationIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            _state.SetCurrentIdentity(validationIdentity, SessionActivityStage.ActivitySetupStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityObjectSnapshotContractValidationStarted,
+                validationIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity object snapshot contract validation started.");
+
+            if (!discoveryResult.IsValid || !IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence) || discoveryResult.Reports.Count == 0)
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted,
+                    validationIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='0' skippedCount='0' failedCount='0' targetIds='<none>' providerPaths='<none>' restoreEndpointPaths='<none>' targetTransformPaths='<none>' mismatchReason='<none>'.");
+                return;
+            }
+
+            int validatedCount = 0;
+            int skippedCount = 0;
+            int failedCount = 0;
+            string mismatchReason = "<none>";
+            HashSet<string> targetIds = new(StringComparer.Ordinal);
+            HashSet<string> providerPaths = new(StringComparer.Ordinal);
+            HashSet<string> restoreEndpointPaths = new(StringComparer.Ordinal);
+            HashSet<string> targetTransformPaths = new(StringComparer.Ordinal);
+
+            for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
+            {
+                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                if (!report.IsValid || !IsReportForCurrentEntry(report, definition, entrySequence))
+                {
+                    continue;
+                }
+
+                targetIds.Add(report.TargetId);
+                bool required = report.Requiredness == ActivitySetupRequirementRequiredness.Required;
+                GameObject targetObject = ResolveContributorObjectOrFail(definition, report);
+                IActivityObjectSnapshotProvider[] providers = ResolveObjectSnapshotProviders(targetObject);
+                IActivityObjectSnapshotRestoreEndpoint[] restoreEndpoints = ResolveObjectSnapshotRestoreEndpoints(targetObject, report);
+
+                bool providerFound = TryResolveSupportingSnapshotProvider(report.TargetId, providers, out IActivityObjectSnapshotProvider provider);
+                bool restoreFound = TryResolveSupportingSnapshotRestoreEndpoint(report.TargetId, restoreEndpoints, out IActivityObjectSnapshotRestoreEndpoint restoreEndpoint);
+
+                string providerPath = "<none>";
+                string providerTargetTransformPath = "<none>";
+                string providerFailureReason = providerFound ? "<none>" : "snapshot_provider_missing";
+                if (providerFound && provider is IActivityObjectSnapshotProviderContractView providerView)
+                {
+                    bool providerValid = providerView.TryDescribeContract(report.TargetId, out providerPath, out providerTargetTransformPath, out providerFailureReason);
+                    if (!providerValid && string.IsNullOrWhiteSpace(providerFailureReason))
+                    {
+                        providerFailureReason = "snapshot_provider_contract_invalid";
+                    }
+                }
+                else if (providerFound)
+                {
+                    providerFailureReason = "snapshot_provider_contract_view_missing";
+                }
+
+                string restorePath = "<none>";
+                string restoreTargetTransformPath = "<none>";
+                string restoreFailureReason = restoreFound ? "<none>" : "snapshot_restore_endpoint_missing";
+                if (restoreFound && restoreEndpoint is IActivityObjectSnapshotRestoreEndpointContractView restoreView)
+                {
+                    bool restoreValid = restoreView.TryDescribeContract(report.TargetId, out restorePath, out restoreTargetTransformPath, out restoreFailureReason);
+                    if (!restoreValid && string.IsNullOrWhiteSpace(restoreFailureReason))
+                    {
+                        restoreFailureReason = "snapshot_restore_contract_invalid";
+                    }
+                }
+                else if (restoreFound)
+                {
+                    restoreFailureReason = "snapshot_restore_contract_view_missing";
+                }
+
+                providerPaths.Add(string.IsNullOrWhiteSpace(providerPath) ? "<none>" : providerPath);
+                restoreEndpointPaths.Add(string.IsNullOrWhiteSpace(restorePath) ? "<none>" : restorePath);
+                if (!string.IsNullOrWhiteSpace(providerTargetTransformPath) && !string.Equals(providerTargetTransformPath, "<none>", StringComparison.Ordinal))
+                {
+                    targetTransformPaths.Add(providerTargetTransformPath);
+                }
+
+                if (!string.IsNullOrWhiteSpace(restoreTargetTransformPath) && !string.Equals(restoreTargetTransformPath, "<none>", StringComparison.Ordinal))
+                {
+                    targetTransformPaths.Add(restoreTargetTransformPath);
+                }
+
+                bool providerContractValid = providerFound && string.Equals(providerFailureReason, "resolved", StringComparison.Ordinal);
+                bool restoreContractValid = restoreFound && string.Equals(restoreFailureReason, "resolved", StringComparison.Ordinal);
+                bool transformMismatch = providerContractValid &&
+                                         restoreContractValid &&
+                                         !string.Equals(providerTargetTransformPath, restoreTargetTransformPath, StringComparison.Ordinal);
+                string failureReason = transformMismatch
+                    ? "snapshot_restore_target_transform_mismatch"
+                    : ResolveSnapshotContractFailureReason(providerFailureReason, restoreFailureReason, providerFound, restoreFound);
+
+                bool hasDeclaredSnapshotCapability = providerFound || restoreFound;
+                bool hasNoSnapshotCapability = !providerFound && !restoreFound;
+                bool contractValid = providerContractValid && restoreContractValid && !transformMismatch;
+
+                if (hasDeclaredSnapshotCapability && contractValid)
+                {
+                    validatedCount += 1;
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityObjectSnapshotContractValidated,
+                        validationIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity object snapshot contract validated targetId='{report.TargetId}' requiredness='{report.Requiredness}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='{providerTargetTransformPath}'.");
+                    continue;
+                }
+
+                if (hasNoSnapshotCapability && !required)
+                {
+                    skippedCount += 1;
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityObjectSnapshotContractSkippedOptional,
+                        validationIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity object snapshot contract skipped optional targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='snapshot_capability_not_declared_optional' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='<none>'.");
+                    continue;
+                }
+
+                failedCount += 1;
+                if (transformMismatch)
+                {
+                    mismatchReason = "snapshot_restore_target_transform_mismatch";
+                }
+                else if (!string.Equals(failureReason, "<none>", StringComparison.Ordinal))
+                {
+                    mismatchReason = failureReason;
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotContractFailed,
+                    validationIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot contract failed targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
+                throw new InvalidOperationException(
+                    $"snapshot_contract_validation_failed: activityId='{definition.ActivityId}' targetId='{report.TargetId}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
+            }
+
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted,
+                validationIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='{validatedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' targetIds='{JoinValues(targetIds)}' providerPaths='{JoinValues(providerPaths)}' restoreEndpointPaths='{JoinValues(restoreEndpointPaths)}' targetTransformPaths='{JoinValues(targetTransformPaths)}' mismatchReason='{mismatchReason}'.");
+        }
+
         private void EmitObjectResetStage(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
@@ -4849,6 +5052,213 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 $"'{definition.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
         }
 
+        private void EmitObjectSnapshotRestoreStage(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
+            SessionActivityIdentity restoreIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            _state.SetCurrentIdentity(restoreIdentity, SessionActivityStage.ActivitySetupStarted);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityObjectSnapshotRestoreStarted,
+                restoreIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity object snapshot restore started.");
+
+            if (!TryResolveRouteLoadedSnapshotPayload(out LoadedSessionActivitySnapshotPayload loadedPayload, out string payloadFailureReason))
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoPayload,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='no_loaded_payload' failureReason='{payloadFailureReason}'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='false' payloadObjectCount='0' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
+                return;
+            }
+
+            if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, definition))
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='payload_foreign_or_stale' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
+                throw new InvalidOperationException(
+                    $"payload_foreign_or_stale: activityId='{definition.ActivityId}' entrySequence='{entrySequence}' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
+            }
+
+            if (!discoveryResult.IsValid || !IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence) || discoveryResult.Reports.Count == 0)
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoMatchingTarget,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
+                return;
+            }
+
+            Dictionary<string, LoadedSessionActivitySnapshotPayloadObject> payloadByTargetId = BuildLoadedSnapshotPayloadByTargetId(loadedPayload.Objects);
+            int matchedTargetCount = 0;
+            int restoredCount = 0;
+            bool restoreFailed = false;
+            HashSet<string> matchedTargetIds = new(StringComparer.Ordinal);
+
+            for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
+            {
+                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
+                if (!report.IsValid || !IsReportForCurrentEntry(report, definition, entrySequence))
+                {
+                    continue;
+                }
+
+                if (!payloadByTargetId.TryGetValue(report.TargetId, out LoadedSessionActivitySnapshotPayloadObject payloadObject) || !payloadObject.IsValid)
+                {
+                    continue;
+                }
+
+                matchedTargetCount += 1;
+                matchedTargetIds.Add(report.TargetId);
+                GameObject targetObject = ResolveContributorObjectOrFail(definition, report);
+                IActivityObjectSnapshotRestoreEndpoint[] endpoints = ResolveObjectSnapshotRestoreEndpoints(targetObject, report);
+                ActivityObjectSnapshotRestoreCommand restoreCommand = new(
+                    restoreIdentity,
+                    PipelineId,
+                    _sessionId,
+                    definition.ActivityId,
+                    definition.ActivityOrdinal,
+                    entrySequence,
+                    report.TargetId,
+                    ActivityObjectSnapshotCoordinateSpace.WorldTransform,
+                    payloadObject.PositionX,
+                    payloadObject.PositionY,
+                    payloadObject.PositionZ,
+                    payloadObject.RotationX,
+                    payloadObject.RotationY,
+                    payloadObject.RotationZ,
+                    payloadObject.RotationW,
+                    payloadObject.ScaleX,
+                    payloadObject.ScaleY,
+                    payloadObject.ScaleZ,
+                    command.Source,
+                    command.Reason);
+
+                ActivityObjectSnapshotRestoreResult result = ExecuteObjectSnapshotRestoreCommand(restoreCommand, endpoints, report);
+                if (!IsObjectSnapshotRestoreResultForCurrentEntry(result, definition, entrySequence))
+                {
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
+                        restoreIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_result_invalid_or_failed_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                    throw new InvalidOperationException(
+                        $"restore_result_invalid_or_failed_required: activityId='{definition.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                }
+
+                if (result.IsRestored)
+                {
+                    restoredCount += 1;
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityObjectSnapshotRestoreApplied,
+                        restoreIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity object snapshot restore applied targetId='{report.TargetId}' coordinateSpace='{ToCoordinateSpaceToken(restoreCommand.CoordinateSpace)}' payloadPosition='({payloadObject.PositionX:0.###},{payloadObject.PositionY:0.###},{payloadObject.PositionZ:0.###})' beforePosition='({result.BeforePositionX:0.###},{result.BeforePositionY:0.###},{result.BeforePositionZ:0.###})' afterPosition='({result.AfterPositionX:0.###},{result.AfterPositionY:0.###},{result.AfterPositionZ:0.###})' restoreVerified='{result.RestoreVerified.ToString().ToLowerInvariant()}' hasTransformPayload='true' detail='{result.Detail}'.");
+                    continue;
+                }
+
+                if (result.IsSkippedOptional)
+                {
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoEndpointOptional,
+                        restoreIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' activity object snapshot restore skipped optional targetId='{report.TargetId}' reason='{result.Detail}'.");
+                    continue;
+                }
+
+                restoreFailed = true;
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_endpoint_missing_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                throw new InvalidOperationException(
+                    $"restore_endpoint_missing_required: activityId='{definition.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
+            }
+
+            if (matchedTargetCount == 0)
+            {
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoMatchingTarget,
+                    restoreIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
+            }
+
+            EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
+                restoreIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='{matchedTargetCount}' restoredCount='{restoredCount}' targetIds='{JoinValues(matchedTargetIds)}' appliedTargetIds='{JoinValues(matchedTargetIds)}' failedTargetIds='<none>' coordinateSpace='world_transform' restoreVerified='{(!restoreFailed && restoredCount == matchedTargetCount).ToString().ToLowerInvariant()}' restoreFailed='{restoreFailed.ToString().ToLowerInvariant()}'.");
+        }
+
+        private static Dictionary<string, LoadedSessionActivitySnapshotPayloadObject> BuildLoadedSnapshotPayloadByTargetId(IReadOnlyList<LoadedSessionActivitySnapshotPayloadObject> objects)
+        {
+            Dictionary<string, LoadedSessionActivitySnapshotPayloadObject> byTargetId = new(StringComparer.Ordinal);
+            if (objects == null)
+            {
+                return byTargetId;
+            }
+
+            for (int index = 0; index < objects.Count; index++)
+            {
+                LoadedSessionActivitySnapshotPayloadObject current = objects[index];
+                if (!current.IsValid || string.IsNullOrWhiteSpace(current.TargetId))
+                {
+                    continue;
+                }
+
+                byTargetId[current.TargetId] = current;
+            }
+
+            return byTargetId;
+        }
+
         private IActivityObjectResetEndpoint[] ResolveObjectResetEndpoints(GameObject targetObject, ActivityObjectContributionReport report)
         {
             if (targetObject == null)
@@ -5010,6 +5420,249 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return providers.ToArray();
+        }
+
+        private IActivityObjectSnapshotRestoreEndpoint[] ResolveObjectSnapshotRestoreEndpoints(GameObject targetObject, ActivityObjectContributionReport report)
+        {
+            if (targetObject == null)
+            {
+                return Array.Empty<IActivityObjectSnapshotRestoreEndpoint>();
+            }
+
+            List<IActivityObjectSnapshotRestoreEndpoint> endpoints = new();
+            ActivityObjectContributor contributor = targetObject.GetComponent<ActivityObjectContributor>();
+            bool includeChildren = contributor != null && contributor.IncludeChildrenForEndpointDiscovery;
+            MonoBehaviour[] behaviours = includeChildren
+                ? targetObject.GetComponentsInChildren<MonoBehaviour>(true)
+                : targetObject.GetComponents<MonoBehaviour>();
+
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                if (behaviours[index] is IActivityObjectSnapshotRestoreEndpoint endpoint)
+                {
+                    endpoints.Add(endpoint);
+                }
+            }
+
+            return endpoints.ToArray();
+        }
+
+        private static bool TryResolveSupportingSnapshotProvider(
+            string targetId,
+            IActivityObjectSnapshotProvider[] providers,
+            out IActivityObjectSnapshotProvider resolvedProvider)
+        {
+            resolvedProvider = null;
+            if (providers == null || providers.Length == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < providers.Length; index++)
+            {
+                IActivityObjectSnapshotProvider provider = providers[index];
+                if (provider == null || !provider.Supports(targetId))
+                {
+                    continue;
+                }
+
+                resolvedProvider = provider;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveSupportingSnapshotRestoreEndpoint(
+            string targetId,
+            IActivityObjectSnapshotRestoreEndpoint[] endpoints,
+            out IActivityObjectSnapshotRestoreEndpoint resolvedEndpoint)
+        {
+            resolvedEndpoint = null;
+            if (endpoints == null || endpoints.Length == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < endpoints.Length; index++)
+            {
+                IActivityObjectSnapshotRestoreEndpoint endpoint = endpoints[index];
+                if (endpoint == null || !endpoint.Supports(targetId))
+                {
+                    continue;
+                }
+
+                resolvedEndpoint = endpoint;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static string ResolveSnapshotContractFailureReason(
+            string providerFailureReason,
+            string restoreFailureReason,
+            bool providerFound,
+            bool restoreFound)
+        {
+            if (!providerFound && !restoreFound)
+            {
+                return "snapshot_provider_and_restore_endpoint_missing";
+            }
+
+            if (!providerFound)
+            {
+                return "snapshot_provider_missing";
+            }
+
+            if (!restoreFound)
+            {
+                return "snapshot_restore_endpoint_missing";
+            }
+
+            if (!string.Equals(providerFailureReason, "resolved", StringComparison.Ordinal))
+            {
+                return string.IsNullOrWhiteSpace(providerFailureReason) ? "snapshot_provider_contract_invalid" : providerFailureReason;
+            }
+
+            if (!string.Equals(restoreFailureReason, "resolved", StringComparison.Ordinal))
+            {
+                return string.IsNullOrWhiteSpace(restoreFailureReason) ? "snapshot_restore_contract_invalid" : restoreFailureReason;
+            }
+
+            return "<none>";
+        }
+
+        private ActivityObjectSnapshotRestoreResult ExecuteObjectSnapshotRestoreCommand(
+            ActivityObjectSnapshotRestoreCommand command,
+            IActivityObjectSnapshotRestoreEndpoint[] endpoints,
+            ActivityObjectContributionReport report)
+        {
+            bool isRequired = report.Requiredness == ActivitySetupRequirementRequiredness.Required;
+            if (endpoints == null || endpoints.Length == 0)
+            {
+                return new ActivityObjectSnapshotRestoreResult(
+                    isRequired ? ActivityObjectSnapshotRestoreResultKind.Failed : ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
+                    command,
+                    restoreVerified: false,
+                    beforePositionX: 0f,
+                    beforePositionY: 0f,
+                    beforePositionZ: 0f,
+                    afterPositionX: 0f,
+                    afterPositionY: 0f,
+                    afterPositionZ: 0f,
+                    command.Source,
+                    command.Reason,
+                    isRequired ? "restore_endpoint_missing_required" : "target_has_no_restore_endpoint_optional");
+            }
+
+            bool hasSupportingEndpoint = false;
+            for (int index = 0; index < endpoints.Length; index++)
+            {
+                IActivityObjectSnapshotRestoreEndpoint endpoint = endpoints[index];
+                if (endpoint == null || !endpoint.Supports(command.TargetId))
+                {
+                    continue;
+                }
+
+                hasSupportingEndpoint = true;
+                ActivityObjectSnapshotRestoreResult result = endpoint.ApplyRestore(command);
+                if (!result.IsValid)
+                {
+                    return new ActivityObjectSnapshotRestoreResult(
+                        ActivityObjectSnapshotRestoreResultKind.Failed,
+                        command,
+                        restoreVerified: false,
+                        beforePositionX: 0f,
+                        beforePositionY: 0f,
+                        beforePositionZ: 0f,
+                        afterPositionX: 0f,
+                        afterPositionY: 0f,
+                        afterPositionZ: 0f,
+                        command.Source,
+                        command.Reason,
+                        "restore_result_invalid_or_failed_required");
+                }
+
+                return result;
+            }
+
+            return new ActivityObjectSnapshotRestoreResult(
+                isRequired ? ActivityObjectSnapshotRestoreResultKind.Failed : ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
+                command,
+                restoreVerified: false,
+                beforePositionX: 0f,
+                beforePositionY: 0f,
+                beforePositionZ: 0f,
+                afterPositionX: 0f,
+                afterPositionY: 0f,
+                afterPositionZ: 0f,
+                command.Source,
+                command.Reason,
+                hasSupportingEndpoint ? "restore_result_invalid_or_failed_required" : (isRequired ? "restore_endpoint_missing_required" : "target_has_no_restore_endpoint_optional"));
+        }
+
+        private static string ToCoordinateSpaceToken(ActivityObjectSnapshotCoordinateSpace coordinateSpace)
+        {
+            return coordinateSpace == ActivityObjectSnapshotCoordinateSpace.LocalTransform
+                ? "local_transform"
+                : "world_transform";
+        }
+
+        private bool IsObjectSnapshotRestoreResultForCurrentEntry(
+            ActivityObjectSnapshotRestoreResult result,
+            SessionActivityDefinition definition,
+            int entrySequence)
+        {
+            ActivityObjectSnapshotRestoreCommand command = result.Command;
+            SessionActivityIdentity identity = command.Identity;
+            return result.IsValid &&
+                   identity.IsValid &&
+                   string.Equals(identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   identity.EntrySequence == entrySequence &&
+                   string.Equals(command.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(command.SessionStateId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   command.ActivityOrdinal == definition.ActivityOrdinal &&
+                   command.EntrySequence == entrySequence &&
+                   !string.IsNullOrWhiteSpace(command.TargetId);
+        }
+
+        private bool TryResolveRouteLoadedSnapshotPayload(
+            out LoadedSessionActivitySnapshotPayload loadedPayload,
+            out string failureReason)
+        {
+            loadedPayload = default;
+            if (!DependencyManager.Provider.TryGetGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(out var payloadProvider) ||
+                payloadProvider == null)
+            {
+                failureReason = "no_loaded_payload_provider";
+                return false;
+            }
+
+            bool resolved = payloadProvider.TryGetPendingLoadedSnapshotPayload(_sessionId, out loadedPayload, out failureReason);
+            if (!resolved || !loadedPayload.IsValid)
+            {
+                loadedPayload = default;
+                return false;
+            }
+
+            failureReason = "resolved";
+            return true;
+        }
+
+        private bool IsLoadedSnapshotPayloadForCurrentActivity(
+            LoadedSessionActivitySnapshotPayload loadedPayload,
+            SessionActivityDefinition definition)
+        {
+            return loadedPayload.IsValid &&
+                   string.Equals(loadedPayload.SchemaId, RouteActivitySnapshotSchemaId, StringComparison.Ordinal) &&
+                   string.Equals(loadedPayload.SessionStateId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(loadedPayload.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   loadedPayload.SourceEntrySequence > 0;
         }
 
         private ActivityObjectSnapshotCaptureResult ExecuteObjectSnapshotCaptureCommand(
@@ -7299,6 +7952,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!_lastSnapshotPayloadForSaveOnExit.IsValid)
             {
+                if (_lastSnapshotCaptureFailedForSaveOnExit)
+                {
+                    string detail = string.IsNullOrWhiteSpace(_lastSnapshotCaptureFailureDetail)
+                        ? "snapshot_capture_failed"
+                        : Normalize(_lastSnapshotCaptureFailureDetail);
+                    failureReason = $"snapshot_capture_failed:{detail}";
+                    return false;
+                }
+
                 failureReason = "snapshot_payload_missing";
                 return false;
             }
@@ -7306,6 +7968,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             payload = _lastSnapshotPayloadForSaveOnExit;
             failureReason = "resolved";
             return true;
+        }
+
+        private static string JoinValues(HashSet<string> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return "<none>";
+            }
+
+            List<string> sorted = new(values);
+            sorted.Sort(StringComparer.Ordinal);
+            return string.Join(",", sorted);
         }
 
         private void EnsureStartedOrFail(string operation)

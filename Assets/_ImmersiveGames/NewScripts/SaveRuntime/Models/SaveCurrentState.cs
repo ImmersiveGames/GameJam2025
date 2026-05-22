@@ -9,7 +9,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
             string slotId,
             int schemaVersion,
             long revision,
-            string savedAtUtc)
+            string savedAtUtc,
+            string currentSnapshotId = "")
         {
             ProfileId = NormalizeRequired(profileId, nameof(profileId));
             SlotId = NormalizeRequired(slotId, nameof(slotId));
@@ -27,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
             SchemaVersion = schemaVersion;
             Revision = revision;
             SavedAtUtc = NormalizeTimestamp(savedAtUtc);
+            CurrentSnapshotId = NormalizeOptional(currentSnapshotId);
         }
 
         public string ProfileId { get; }
@@ -34,6 +36,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
         public int SchemaVersion { get; }
         public long Revision { get; }
         public string SavedAtUtc { get; }
+        public string CurrentSnapshotId { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(ProfileId) &&
@@ -44,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
 
         public override string ToString()
         {
-            return $"profileId='{ProfileId}' slotId='{SlotId}' schemaVersion='{SchemaVersion}' revision='{Revision}' savedAtUtc='{SavedAtUtc}'";
+            return $"profileId='{ProfileId}' slotId='{SlotId}' schemaVersion='{SchemaVersion}' revision='{Revision}' currentSnapshotId='{CurrentSnapshotId}' savedAtUtc='{SavedAtUtc}'";
         }
 
         private static string NormalizeRequired(string value, string paramName)
@@ -65,6 +68,11 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Models
             }
 
             return value.Trim();
+        }
+
+        private static string NormalizeOptional(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

@@ -296,12 +296,20 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Core
 
         private static SaveCurrentState BuildCurrentState(SaveRecord record)
         {
+            string currentSnapshotId = string.Empty;
+            if (record?.Entries != null &&
+                record.Entries.TryGetValue(AddressRecordEntryKey, out string recordId))
+            {
+                currentSnapshotId = recordId;
+            }
+
             return new SaveCurrentState(
                 record.Identity.ProfileId,
                 record.Identity.SlotId,
                 record.SchemaVersion,
                 record.Revision,
-                record.SavedAtUtc);
+                record.SavedAtUtc,
+                currentSnapshotId);
         }
 
         private static SaveCurrentState CloneCurrentState(SaveCurrentState state)
@@ -311,7 +319,8 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Core
                 state.SlotId,
                 state.SchemaVersion,
                 state.Revision,
-                state.SavedAtUtc);
+                state.SavedAtUtc,
+                state.CurrentSnapshotId);
         }
 
         private bool TryResolveProfileIdForAddress(SaveAddress address, out string profileId, out string reason)

@@ -43,7 +43,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             try
             {
                 SaveSlotId slotId = new SaveSlotId(currentState.SlotId);
-                SaveSnapshotId snapshotId = new SaveSnapshotId($"snapshot-rev-{currentState.Revision}");
+                string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
+                string snapshotPointer = string.IsNullOrWhiteSpace(currentSnapshotId)
+                    ? $"snapshot-rev-{currentState.Revision}"
+                    : currentSnapshotId;
+                SaveSnapshotId snapshotId = new SaveSnapshotId(snapshotPointer);
                 slotContext = new ProgressionSlotContext(
                     currentState.ProfileId,
                     slotId,

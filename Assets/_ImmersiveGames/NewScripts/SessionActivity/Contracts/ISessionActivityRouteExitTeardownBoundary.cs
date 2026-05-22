@@ -60,6 +60,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface ISessionActivityRouteExitTeardownBoundary
     {
+        SessionActivityRailKind CurrentRailKind { get; }
+        SessionActivityStage CurrentStage { get; }
+        bool HasPendingOperation { get; }
+
         SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(
             string sessionStateId,
             string source,

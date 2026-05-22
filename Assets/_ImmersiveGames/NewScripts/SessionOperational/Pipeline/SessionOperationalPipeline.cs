@@ -12,12 +12,60 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
+    public enum RouteRequestSubmissionKind
+    {
+        Unknown = 0,
+        Accepted = 1,
+        RejectedByPolicy = 2,
+        IgnoredAlreadyInFlight = 3,
+        FailedInvalidConfig = 4,
+    }
+
+    public readonly struct RouteRequestSubmissionResult
+    {
+        public RouteRequestSubmissionResult(RouteRequestSubmissionKind kind, string routeIdentity, string reason, string detail)
+        {
+            Kind = kind;
+            RouteIdentity = Normalize(routeIdentity);
+            Reason = Normalize(reason);
+            Detail = Normalize(detail);
+        }
+
+        public RouteRequestSubmissionKind Kind { get; }
+        public string RouteIdentity { get; }
+        public string Reason { get; }
+        public string Detail { get; }
+        public bool IsAccepted => Kind == RouteRequestSubmissionKind.Accepted;
+        public bool IsRejectedByPolicy => Kind == RouteRequestSubmissionKind.RejectedByPolicy;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public readonly struct RouteOperationCompletionSignal
+    {
+        public RouteOperationCompletionSignal(string routeIdentity, string routeOperationId, bool succeeded, string reason)
+        {
+            RouteIdentity = Normalize(routeIdentity);
+            RouteOperationId = Normalize(routeOperationId);
+            Succeeded = succeeded;
+            Reason = Normalize(reason);
+        }
+
+        public string RouteIdentity { get; }
+        public string RouteOperationId { get; }
+        public bool Succeeded { get; }
+        public string Reason { get; }
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public sealed class SessionOperationalPipeline : IRouteActivityLoadedSnapshotPayloadProvider
     {
         private const string DefaultPipelineId = "SessionOperationalPipeline.v0";
@@ -33,6 +81,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private string _activeOperationalTransitionId = string.Empty;
         private string _activeOperationalRouteIdentity = string.Empty;
         private LoadedRouteActivitySnapshotPayloadContext _pendingLoadedRouteActivitySnapshotPayload;
+        public event Action<RouteOperationCompletionSignal> RouteOperationCompleted;
 
         public SessionOperationalPipeline(string sessionOperationalPipelineId = DefaultPipelineId)
         {
@@ -45,6 +94,60 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         public SessionOperationalRuntimeState State => _state;
+
+        public RouteRequestSubmissionResult SubmitRouteRequest(
+            OperationalRouteAsset route,
+            string source,
+            string reason)
+        {
+            string routeIdentity = route != null ? Normalize(route.RouteIdentity) : string.Empty;
+            string sourceText = Normalize(source);
+            string reasonText = Normalize(reason);
+
+            if (route == null)
+            {
+                return new RouteRequestSubmissionResult(
+                    RouteRequestSubmissionKind.FailedInvalidConfig,
+                    routeIdentity,
+                    "route_missing",
+                    "OperationalRouteAsset is required.");
+            }
+
+            if (!route.TryValidate(out string routeValidationError))
+            {
+                return new RouteRequestSubmissionResult(
+                    RouteRequestSubmissionKind.FailedInvalidConfig,
+                    routeIdentity,
+                    "route_invalid",
+                    Normalize(routeValidationError));
+            }
+
+            RouteRequestSubmissionResult preflight = TryPreflightRouteRequest(route, sourceText, reasonText);
+            if (!preflight.IsAccepted)
+            {
+                return preflight;
+            }
+
+            try
+            {
+                ValidatePersistentScenesPolicyOrFail(route);
+            }
+            catch (Exception ex)
+            {
+                return new RouteRequestSubmissionResult(
+                    RouteRequestSubmissionKind.FailedInvalidConfig,
+                    routeIdentity,
+                    "invalid_runtime_config",
+                    $"{ex.GetType().Name}:{Normalize(ex.Message)}");
+            }
+
+            _ = RequestOperationalRouteAsync(route, sourceText, reasonText);
+            return new RouteRequestSubmissionResult(
+                RouteRequestSubmissionKind.Accepted,
+                routeIdentity,
+                "accepted",
+                "Route request accepted.");
+        }
 
         public bool TryGetPendingLoadedSnapshotPayload(
             string activityIdentity,
@@ -197,19 +300,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 unloadPlan.AutoScenesToUnload,
                 unloadPlan.FinalScenesToUnload);
 
-            if (!TryBeginRouteOperation(
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    routeIdentity,
-                    routeIdentity,
-                    sourceText,
-                    reasonText))
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][H1][SessionOperationalPipeline][Route] Failed to record RouteOperationStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.");
-            }
-
             DebugUtility.Log(typeof(SessionOperationalPipeline),
                 $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey.name}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
@@ -225,6 +315,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             bool loadingHidden = false;
             PlayerPreparationResult playerPreparationResult = default;
             bool hasPlayerPreparationResult = false;
+            bool routeOperationSucceeded = false;
+            string completionReason = "failed";
 
             try
             {
@@ -237,6 +329,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeSequence,
                     sourceText,
                     reasonText);
+
+                if (!TryBeginRouteOperation(
+                        routeOperationId,
+                        transitionId,
+                        routeSequence,
+                        routeIdentity,
+                        routeIdentity,
+                        sourceText,
+                        reasonText))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][H1][SessionOperationalPipeline][Route] Failed to record RouteOperationStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.");
+                }
 
                 ExecuteReleasePreviousActivityCameraStageOrFail(
                     previousCompletedRoute,
@@ -675,10 +780,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     }
                 }
 
+                routeOperationSucceeded = true;
+                completionReason = "completed";
                 return adapterFact;
+            }
+            catch (RouteRequestBlockedBySessionActivityException blockedException)
+            {
+                completionReason = $"blocked:{blockedException.BlockedReason}";
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][Route] RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' blockedReason='{blockedException.BlockedReason}' detail='{blockedException.BlockedDetail}' source='{sourceText}' reason='{reasonText}'.",
+                    DebugUtility.Colors.Info);
+                return new SessionOperationalRouteCompletedFact(
+                    command,
+                    routeOperationId,
+                    $"route_request_blocked_by_session_activity:{blockedException.BlockedReason}");
             }
             catch (Exception ex)
             {
+                completionReason = $"failed:{ex.GetType().Name}";
                 if (loadingCommand.IsEnabled && loadingStarted && !loadingHidden)
                 {
                     try
@@ -718,6 +837,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
             finally
             {
+                EmitRouteOperationCompleted(new RouteOperationCompletionSignal(
+                    routeIdentity,
+                    routeOperationId,
+                    routeOperationSucceeded,
+                    completionReason));
                 lock (_operationalRouteSync)
                 {
                     _hasActiveOperationalRouteOperation = false;
@@ -726,6 +850,93 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     _activeOperationalRouteIdentity = string.Empty;
                 }
             }
+        }
+
+        private RouteRequestSubmissionResult TryPreflightRouteRequest(
+            OperationalRouteAsset route,
+            string source,
+            string reason)
+        {
+            string routeIdentity = Normalize(route.RouteIdentity);
+            lock (_operationalRouteSync)
+            {
+                if (_hasActiveOperationalRouteOperation)
+                {
+                    return new RouteRequestSubmissionResult(
+                        RouteRequestSubmissionKind.IgnoredAlreadyInFlight,
+                        routeIdentity,
+                        "already_in_flight",
+                        $"activeRouteIdentity='{_activeOperationalRouteIdentity}' activeRouteOperationId='{_activeOperationalRouteOperationId}' activeTransitionId='{_activeOperationalTransitionId}'.");
+                }
+            }
+
+            if (!_lastCompletedRouteSnapshot.IsValid ||
+                string.IsNullOrWhiteSpace(_lastCompletedRouteSnapshot.ActivityIdentity))
+            {
+                return new RouteRequestSubmissionResult(RouteRequestSubmissionKind.Accepted, routeIdentity, "accepted", string.Empty);
+            }
+
+            ISessionActivityRouteExitTeardownBoundary boundary = ResolveActivityRouteExitTeardownBoundaryOrFail();
+            if (boundary.HasPendingOperation)
+            {
+                return RejectByPolicy(routeIdentity, "pending_operation_active", source, reason, boundary.CurrentStage, boundary.CurrentRailKind);
+            }
+
+            if (boundary.CurrentStage == SessionActivityStage.ActivationWindowReady ||
+                boundary.CurrentStage == SessionActivityStage.ActivationWindowStarted ||
+                boundary.CurrentStage == SessionActivityStage.ActivationWindowSceneLoading ||
+                boundary.CurrentStage == SessionActivityStage.ActivationWindowAdditiveSceneLoadStarted ||
+                boundary.CurrentStage == SessionActivityStage.ActivationWindowAdditiveSceneLoaded)
+            {
+                return RejectByPolicy(routeIdentity, "activation_window_not_completed", source, reason, boundary.CurrentStage, boundary.CurrentRailKind);
+            }
+
+            if (IsDeactivationStage(boundary.CurrentStage) &&
+                boundary.CurrentRailKind != SessionActivityRailKind.ActivityRouteExitRail)
+            {
+                return RejectByPolicy(routeIdentity, "activity_transition_in_progress", source, reason, boundary.CurrentStage, boundary.CurrentRailKind);
+            }
+
+            return new RouteRequestSubmissionResult(RouteRequestSubmissionKind.Accepted, routeIdentity, "accepted", string.Empty);
+        }
+
+        private RouteRequestSubmissionResult RejectByPolicy(
+            string routeIdentity,
+            string reason,
+            string source,
+            string detail,
+            SessionActivityStage stage,
+            SessionActivityRailKind railKind)
+        {
+            DebugUtility.LogWarning<SessionOperationalPipeline>(
+                $"[OBS][SessionOperationalPipeline][Route] RouteRequestBlockedBySessionActivity routeIdentity='{routeIdentity}' reason='{reason}' stage='{stage}' railKind='{railKind}' source='{Normalize(source)}' reasonDetail='{Normalize(detail)}'.");
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][Route] RouteRequestRejectedByPolicy routeIdentity='{routeIdentity}' reason='{reason}' stage='{stage}' railKind='{railKind}' source='{Normalize(source)}' reasonDetail='{Normalize(detail)}'.",
+                DebugUtility.Colors.Info);
+            return new RouteRequestSubmissionResult(
+                RouteRequestSubmissionKind.RejectedByPolicy,
+                routeIdentity,
+                reason,
+                $"stage='{stage}' railKind='{railKind}'");
+        }
+
+        private static bool IsDeactivationStage(SessionActivityStage stage)
+        {
+            return stage == SessionActivityStage.DeactivationWindowStarted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
+                   stage == SessionActivityStage.DeactivationWindowReady ||
+                   stage == SessionActivityStage.DeactivationWindowCompleted ||
+                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
+                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
+                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
+        }
+
+        private void EmitRouteOperationCompleted(RouteOperationCompletionSignal signal)
+        {
+            RouteOperationCompleted?.Invoke(signal);
         }
 
         public bool TryBeginRouteOperation(
@@ -1628,10 +1839,82 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string blockedDetail,
             SessionActivityRouteExitTeardownResult teardownResult)
         {
-            DebugUtility.LogError<SessionOperationalPipeline>(
-                $"[OBS][SessionOperationalPipeline][Route] SessionActivityRouteExitBlocked routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}' teardownResult='{teardownResult}' source='{source}' reason='{reason}'.");
-            throw new InvalidOperationException(
-                $"[FATAL][Lifecycle][SessionOperationalPipeline] SessionActivity route exit blocked before SceneComposition unload. routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' blockedReason='{blockedReason}' detail='{blockedDetail}'.");
+            string routeRequestBlockedReason = ResolveRouteRequestBlockedBySessionActivityReason(teardownResult, blockedReason);
+            DebugUtility.LogWarning<SessionOperationalPipeline>(
+                $"[OBS][SessionOperationalPipeline][Route] RouteRequestBlockedBySessionActivity routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' sessionStateId='{previousCompletedRoute.ActivityIdentity}' reason='{routeRequestBlockedReason}' blockedReason='{blockedReason}' detail='{blockedDetail}' teardownResult='{teardownResult}' source='{source}' reasonDetail='{reason}'.");
+            throw new RouteRequestBlockedBySessionActivityException(blockedReason, blockedDetail);
+        }
+
+        private static string ResolveRouteRequestBlockedBySessionActivityReason(
+            SessionActivityRouteExitTeardownResult teardownResult,
+            string blockedReason)
+        {
+            if (teardownResult.Stage == SessionActivityStage.ActivationWindowStarted ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowSceneLoading ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneLoadStarted ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneLoaded ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowReady ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowCompleted ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowSceneUnloading ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneUnloadStarted ||
+                teardownResult.Stage == SessionActivityStage.ActivationWindowAdditiveSceneUnloaded)
+            {
+                return "activation_window_not_completed";
+            }
+
+            if (teardownResult.Stage == SessionActivityStage.DeactivationWindowStarted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowSceneLoading ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowReady ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowCompleted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
+                teardownResult.Stage == SessionActivityStage.DeactivationWindowSkippedNoContent)
+            {
+                return "deactivation_window_in_progress";
+            }
+
+            if (teardownResult.Stage == SessionActivityStage.ActivityContentRetentionPlanResolved ||
+                teardownResult.Stage == SessionActivityStage.ActivityContentReleaseStarted ||
+                teardownResult.Stage == SessionActivityStage.ActivityContentSceneUnloading ||
+                teardownResult.Stage == SessionActivityStage.ActivityContentSceneUnloaded ||
+                teardownResult.Stage == SessionActivityStage.ActivityContentReleaseFailed)
+            {
+                return "activity_content_release_in_progress";
+            }
+
+            if (string.Equals(blockedReason, "pending_activity_handoff_during_route_exit", StringComparison.Ordinal) ||
+                string.Equals(blockedReason, "pending_activity_handoff_after_route_exit_close", StringComparison.Ordinal))
+            {
+                return "pending_handoff_present";
+            }
+
+            if (string.Equals(blockedReason, "invalid_teardown_result", StringComparison.Ordinal))
+            {
+                return "invalid_teardown_result";
+            }
+
+            if (string.Equals(blockedReason, "deactivation_window_not_route_exit_owned", StringComparison.Ordinal))
+            {
+                return "activity_transition_in_progress";
+            }
+
+            return "session_activity_not_route_exit_safe";
+        }
+
+        private sealed class RouteRequestBlockedBySessionActivityException : Exception
+        {
+            public RouteRequestBlockedBySessionActivityException(string blockedReason, string blockedDetail)
+                : base("route_request_blocked_by_session_activity")
+            {
+                BlockedReason = Normalize(blockedReason);
+                BlockedDetail = Normalize(blockedDetail);
+            }
+
+            public string BlockedReason { get; }
+            public string BlockedDetail { get; }
         }
 
         private static bool ShouldRequireSessionActivityRouteExitTeardown(
@@ -2116,8 +2399,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!TryResolvePreviousActivitySnapshotPayload(previousCompletedRoute, out string activitySnapshotPayload, out RouteActivitySnapshotPayloadResolution payloadResolution))
             {
+                bool isCaptureFailed = IsSnapshotCaptureFailedReason(payloadResolution.FailureReason);
+                string skipReason = ResolveSnapshotPayloadSkipReason(payloadResolution.FailureReason);
+                string checkpointStatus = isCaptureFailed ? "Failed" : "Waiting";
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='Waiting' activityIdentity='{Normalize(previousActivityIdentity)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' payloadObjectCount='0' targetIds='<none>' payloadSize='0'.",
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='{checkpointStatus}' activityIdentity='{Normalize(previousActivityIdentity)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' payloadObjectCount='0' targetIds='<none>' payloadSize='0' failureReason='{Normalize(payloadResolution.FailureReason)}'.",
                     DebugUtility.Colors.Info);
                 LogRouteActivitySaveSaveSkipped(
                     previousCompletedRoute,
@@ -2125,8 +2411,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    "no_snapshot_provider",
-                    "provedor canonic de snapshot da activity ainda indisponivel.",
+                    skipReason,
+                    Normalize(payloadResolution.FailureReason),
                     source,
                     reason);
                 return;
@@ -2222,6 +2508,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             ISessionOperationalActivitySaveAdapter adapter = ResolveSessionOperationalActivitySaveAdapterOrFail();
             _pendingLoadedRouteActivitySnapshotPayload = default;
+            if (!TryResolveCurrentSnapshotIdForRouteActivityLoad(out string currentSnapshotId, out string snapshotFailureReason))
+            {
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Waiting' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' payloadObjectCount='0' targetIds='<none>' payloadSize='0'.",
+                    DebugUtility.Colors.Info);
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipReason='no_current_snapshot' detail='snapshotPointerReason={Normalize(snapshotFailureReason)}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
                 routeIdentity: routeIdentity,
                 routeOperationId: routeOperationId,
@@ -2229,6 +2526,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 routeSequence: routeSequence,
                 source: source,
                 reason: reason);
+            if (!string.Equals(slotContext.SnapshotId.Value, currentSnapshotId, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] ProgressionSlotContext snapshotId mismatch with CurrentSnapshotId routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' slotSnapshotId='{Normalize(slotContext.SnapshotId.Value)}' currentSnapshotId='{Normalize(currentSnapshotId)}'.");
+            }
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{source}' reason='{reason}'.",
@@ -2320,17 +2622,41 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!previousCompletedRoute.IsValid)
             {
+                resolution = new RouteActivitySnapshotPayloadResolution(
+                    schemaId: string.Empty,
+                    sourceActivityId: string.Empty,
+                    sourceEntrySequence: 0,
+                    payloadObjectCount: 0,
+                    targetIds: string.Empty,
+                    payloadSize: 0,
+                    failureReason: "previous_route_invalid");
                 return false;
             }
 
             string sessionStateId = Normalize(previousCompletedRoute.ActivityIdentity);
             if (string.IsNullOrWhiteSpace(sessionStateId))
             {
+                resolution = new RouteActivitySnapshotPayloadResolution(
+                    schemaId: string.Empty,
+                    sourceActivityId: string.Empty,
+                    sourceEntrySequence: 0,
+                    payloadObjectCount: 0,
+                    targetIds: string.Empty,
+                    payloadSize: 0,
+                    failureReason: "session_state_id_missing");
                 return false;
             }
 
             if (!DependencyManager.Provider.TryGetGlobal<ISessionActivitySnapshotPayloadProvider>(out var provider) || provider == null)
             {
+                resolution = new RouteActivitySnapshotPayloadResolution(
+                    schemaId: string.Empty,
+                    sourceActivityId: string.Empty,
+                    sourceEntrySequence: 0,
+                    payloadObjectCount: 0,
+                    targetIds: string.Empty,
+                    payloadSize: 0,
+                    failureReason: "no_snapshot_provider");
                 return false;
             }
 
@@ -2341,13 +2667,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!resolved || !payload.IsValid)
             {
-                _ = failureReason;
+                resolution = new RouteActivitySnapshotPayloadResolution(
+                    schemaId: string.Empty,
+                    sourceActivityId: string.Empty,
+                    sourceEntrySequence: 0,
+                    payloadObjectCount: 0,
+                    targetIds: string.Empty,
+                    payloadSize: 0,
+                    failureReason: string.IsNullOrWhiteSpace(failureReason) ? "no_snapshot_payload" : Normalize(failureReason));
                 return false;
             }
 
             activitySnapshotPayload = SerializeSnapshotPayload(payload);
             if (string.IsNullOrWhiteSpace(activitySnapshotPayload))
             {
+                resolution = new RouteActivitySnapshotPayloadResolution(
+                    payload.SchemaId,
+                    payload.ActivityId,
+                    payload.EntrySequence,
+                    payload.Objects.Count,
+                    BuildTargetIdsLabel(payload.Objects),
+                    0,
+                    "snapshot_payload_serialization_failed");
                 return false;
             }
 
@@ -2357,8 +2698,32 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 payload.EntrySequence,
                 payload.Objects.Count,
                 BuildTargetIdsLabel(payload.Objects),
-                activitySnapshotPayload.Length);
+                activitySnapshotPayload.Length,
+                "resolved");
             return true;
+        }
+
+        private static string ResolveSnapshotPayloadSkipReason(string failureReason)
+        {
+            string normalized = Normalize(failureReason);
+            if (string.Equals(normalized, "no_snapshot_provider", StringComparison.Ordinal))
+            {
+                return "no_snapshot_provider";
+            }
+
+            if (IsSnapshotCaptureFailedReason(normalized))
+            {
+                return "snapshot_capture_failed";
+            }
+
+            return "no_snapshot_payload";
+        }
+
+        private static bool IsSnapshotCaptureFailedReason(string failureReason)
+        {
+            string normalized = Normalize(failureReason);
+            return normalized.StartsWith("snapshot_capture_failed", StringComparison.Ordinal) ||
+                   normalized.Contains("target_transform_missing", StringComparison.Ordinal);
         }
 
         private static string SerializeSnapshotPayload(SessionActivitySnapshotPayload payload)
@@ -2618,7 +2983,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 int sourceEntrySequence,
                 int payloadObjectCount,
                 string targetIds,
-                int payloadSize)
+                int payloadSize,
+                string failureReason)
             {
                 SchemaId = Normalize(schemaId);
                 SourceActivityId = Normalize(sourceActivityId);
@@ -2626,6 +2992,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 PayloadObjectCount = payloadObjectCount < 0 ? 0 : payloadObjectCount;
                 TargetIds = Normalize(targetIds);
                 PayloadSize = payloadSize < 0 ? 0 : payloadSize;
+                FailureReason = Normalize(failureReason);
             }
 
             public string SchemaId { get; }
@@ -2634,6 +3001,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             public int PayloadObjectCount { get; }
             public string TargetIds { get; }
             public int PayloadSize { get; }
+            public string FailureReason { get; }
         }
 
         private readonly struct LoadedRouteActivitySnapshotPayloadContext
@@ -2688,6 +3056,43 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             return slotContext;
+        }
+
+        private static bool TryResolveCurrentSnapshotIdForRouteActivityLoad(
+            out string currentSnapshotId,
+            out string failureReason)
+        {
+            currentSnapshotId = string.Empty;
+            if (!DependencyManager.Provider.TryGetGlobal<ISaveStateService>(out var saveStateService) ||
+                saveStateService == null)
+            {
+                failureReason = "save_state_service_missing";
+                return false;
+            }
+
+            if (!saveStateService.HasCurrent)
+            {
+                failureReason = "current_save_missing";
+                return false;
+            }
+
+            SaveCurrentState currentState = saveStateService.CurrentState;
+            if (currentState == null || !currentState.IsValid)
+            {
+                failureReason = "current_state_invalid";
+                return false;
+            }
+
+            string snapshotPointer = Normalize(currentState.CurrentSnapshotId);
+            if (string.IsNullOrWhiteSpace(snapshotPointer))
+            {
+                failureReason = "current_snapshot_missing";
+                return false;
+            }
+
+            currentSnapshotId = snapshotPointer;
+            failureReason = "resolved";
+            return true;
         }
 
         private static SessionOperationalInputModeKind PrepareInputCapabilityOrFail(

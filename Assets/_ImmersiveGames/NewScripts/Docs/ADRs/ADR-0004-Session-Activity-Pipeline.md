@@ -3,7 +3,7 @@
 ## Status
 - Estado: Accepted / Living Canonical Checkpoint
 - Data inicial: 2026-05-12
-- Última atualização: 2026-05-17
+- Última atualização: 2026-05-21
 - Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR.
 
@@ -1651,4 +1651,155 @@ Fronteira com SessionOperational congelada:
 ```text
 SessionOperational so pode continuar side-effects operacionais da rota apos:
 SessionActivityRouteExitTeardownCompleted kind=Completed stage=ClosedForRouteExit hasPendingHandoff=false
+```
+
+### 2026-05-21 - Checkpoint CLOSED - Route-exit safety contra rails locais
+
+Status formal:
+
+```text
+Route-exit safety contra rails locais - CLOSED / PASS
+```
+
+Contrato congelado:
+
+```text
+SessionActivity ativa expõe boundary explicito para route-exit.
+SessionOperationalPipeline consulta esse boundary no preflight de route request.
+SessionActivityPipeline continua owner do rail local ativo.
+Route-exit nao pode sequestrar ActivityCompletionRail, ActivityTransitionRail ou Window pending operation.
+```
+
+Estado minimo exposto pelo boundary:
+
+```text
+CurrentRailKind
+CurrentStage
+HasPendingOperation
+```
+
+O estado exposto e observabilidade/contrato de fronteira. Ele nao transfere ownership do lifecycle local para o `SessionOperationalPipeline`.
+
+Regras de rejeicao local:
+
+```text
+ActivationWindowReady
+-> nao e route-exit-safe
+-> rejeitar com activation_window_not_completed
+
+ActivationWindow* com pending operation
+-> nao e route-exit-safe
+-> rejeitar/bloquear conforme pending_operation_active
+
+ActivityCompletionRail / DeactivationWindowReady sem ownership de route-exit
+-> nao e route-exit-safe
+-> rejeitar com activity_transition_in_progress
+
+ActivityTransition local em andamento
+-> nao e route-exit-safe
+-> rejeitar com activity_transition_in_progress
+```
+
+Regra de aceite local:
+
+```text
+ActivityRunning
+-> route-exit pode iniciar ActivityRouteExitRail canonico
+```
+
+O route-exit canonico continua sendo:
+
+```text
+ActivityRouteExitRequested
+-> ActivityCompleting
+-> DeactivationWindowStarted
+-> DeactivationWindowReady
+-> CompleteDeactivationWindow
+-> DeactivationWindowCompleted
+-> DeactivationWindowAdditiveSceneUnloadStarted
+-> DeactivationWindowAdditiveSceneUnloaded
+-> ActivityDeactivated
+-> ActivityRouteExitCompleted
+-> ClosedForRouteExit
+```
+
+Fronteira com Activity -> Activity local:
+
+```text
+CompleteCurrentActivity
+-> ActivityCompletionRail
+-> DeactivationWindow
+-> ActivityDeactivated
+-> ActivityTransition
+-> NextActivitySetup
+-> ActivityHandoffPrepared
+-> ContinueToNextActivity
+```
+
+Esse rail pertence ao `SessionActivityPipeline`.
+
+Durante esse rail, uma route request externa deve ser rejeitada por policy enquanto o estado nao for route-exit-owned. Ela nao pode converter a DeactivationWindow local em CloseForRouteExit.
+
+Proibicoes:
+
+```text
+1) DeactivationWindowReady de ActivityCompletionRail nao libera unload de rota.
+2) ActivityDeactivated de ActivityCompletionRail nao equivale a ClosedForRouteExit.
+3) ActivityTransition local nao pode continuar em paralelo com unload da SessionActivity route scene.
+4) Route-exit nao pode preparar, consumir ou limpar ActivityHandoffPrepared de Activity -> Activity.
+5) Route-exit nao pode considerar Gate/InputMode como prova de fechamento local.
+6) Route-exit nao pode tratar pending operation ausente como fechamento canonico se o rail local ainda estiver ativo.
+```
+
+Invariantes:
+
+```text
+SessionActivityPipeline decide:
+- ActivationWindow lifecycle
+- DeactivationWindow lifecycle
+- ActivityCompletionRail
+- ActivityTransition local
+- ActivityRouteExitRail
+- ClosedForRouteExit
+
+SessionOperationalPipeline decide:
+- aceite/rejeicao de route request
+- ordem operacional de rota
+- quando pode iniciar side-effects operacionais
+- quando pode liberar SceneComposition unload
+
+SceneComposition executa:
+- load/unload/set-active comandados
+- sem decidir lifecycle local de Activity
+```
+
+Smoke congelado:
+
+```text
+Caso A:
+BackToMenu em ActivationWindowReady
+-> rejeicao limpa
+-> activity continua podendo receber CompleteActivationWindow
+
+Caso B:
+BackToMenu em DeactivationWindowReady de ActivityCompletionRail
+-> rejeicao limpa como activity_transition_in_progress
+-> Activity -> Activity local continua
+-> activity_02 pode entrar em ActivityRunning
+-> nao ha unload prematuro da SessionActivitySandboxScene
+
+Caso C:
+BackToMenu em ActivityRunning
+-> ActivityRouteExitRail canonico
+-> ClosedForRouteExit
+-> SessionOperationalPipeline pode continuar side-effects operacionais
+```
+
+Resultado aceito:
+
+```text
+Nao ha SessionActivityRouteExitWithoutCanonicalDeactivation.
+Nao ha unload da route scene antes de ClosedForRouteExit.
+Nao ha Activity -> Activity local rodando em paralelo com route unload.
+Nao ha fallback silencioso por stage/pending ambíguo.
 ```

@@ -1,9 +1,6 @@
 using System;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 using UnityEngine;
 
@@ -13,6 +10,8 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
     public class SessionOperationalRouteButtonBinder : FrontendButtonBinderBase
     {
         private const string RouteButtonSource = "SessionOperationalRouteButtonBinder";
+        private SessionOperationalPipeline _subscribedPipeline;
+        private bool _awaitingAcceptedRouteCompletion;
 
         [Header("Route")]
         [SerializeField] private OperationalRouteAsset routeDefinition;
@@ -28,13 +27,6 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
             }
 
             string normalizedReason = ResolveReasonOrFallback(reasonOverride, actionReason, resolvedRouteDefinition);
-            if (!TryValidateRouteExitSafety(out string blockedReason, out string safetyDetail))
-            {
-                DebugUtility.LogWarning<SessionOperationalRouteButtonBinder>(
-                    $"[OBS][FrontendUI][RouteButton] RouteButtonRejectedNotRouteExitSafe routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' blockedReason='{blockedReason}' detail='{safetyDetail}'.");
-                return false;
-            }
-
             if (!DependencyManager.Provider.TryGetGlobal<SessionOperationalPipeline>(out var operationalPipeline) || operationalPipeline == null)
             {
                 DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
@@ -46,110 +38,82 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
                 $"[OBS][SessionOperationalPipeline][RouteButton] routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
-            Task routeTask = operationalPipeline.RequestOperationalRouteAsync(
+            EnsurePipelineSubscription(operationalPipeline);
+            RouteRequestSubmissionResult submission = operationalPipeline.SubmitRouteRequest(
                 resolvedRouteDefinition,
                 RouteButtonSource,
                 normalizedReason);
-            routeTask.ContinueWith(completed =>
+
+            if (submission.Kind == RouteRequestSubmissionKind.Accepted)
             {
-                if (!completed.IsFaulted && !completed.IsCanceled)
-                {
-                    return;
-                }
+                _awaitingAcceptedRouteCompletion = true;
+                return true;
+            }
 
-                if (button != null)
-                {
-                    button.interactable = true;
-                }
+            if (submission.Kind == RouteRequestSubmissionKind.RejectedByPolicy)
+            {
+                DebugUtility.Log(typeof(SessionOperationalRouteButtonBinder),
+                    $"[OBS][FrontendUI][RouteButton] RouteRequestRejectedByPolicy routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' blockedReason='{submission.Reason}' detail='{submission.Detail}'.",
+                    DebugUtility.Colors.Info);
+                return false;
+            }
 
-                Exception exception = completed.Exception?.GetBaseException() ?? completed.Exception;
-                DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
-                    $"[OBS][FrontendUI][RouteButton] routeIdentity='{resolvedRouteDefinition.RouteIdentity}' exceptionType='{exception?.GetType().Name}' exceptionMessage='{exception?.Message}'.");
+            if (submission.Kind == RouteRequestSubmissionKind.IgnoredAlreadyInFlight)
+            {
                 DebugUtility.LogWarning<SessionOperationalRouteButtonBinder>(
-                    $"[OBS][FrontendUI][RouteButton] RouteButtonReenabledAfterAsyncFailure routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}'.");
-            }, TaskScheduler.Default);
-
-            return true;
-        }
-
-        private bool TryValidateRouteExitSafety(out string blockedReason, out string detail)
-        {
-            blockedReason = string.Empty;
-            detail = string.Empty;
-
-            if (!DependencyManager.Provider.TryGetGlobal<SessionActivityPipeline>(out var activityPipeline) || activityPipeline == null || activityPipeline.State == null)
-            {
-                return true;
-            }
-
-            SessionActivityRuntimeState state = activityPipeline.State;
-            string pendingOperation = state.CurrentPendingOperation.IsValid
-                ? state.CurrentPendingOperation.ToString()
-                : "<none>";
-            string activityId = state.CurrentDefinition.IsValid ? state.CurrentDefinition.ActivityId : "<none>";
-            int entrySequence = state.CurrentEntrySequence;
-            SessionActivityStage stage = state.CurrentStage;
-
-            if (!state.HasStarted)
-            {
-                return true;
-            }
-
-            if (state.CurrentPendingOperation.IsValid)
-            {
-                blockedReason = "pending_operation_active";
-                detail = $"stage='{stage}' activityId='{activityId}' entrySequence='{entrySequence}' pendingOperation='{pendingOperation}'.";
+                    $"[OBS][FrontendUI][RouteButton] RouteRequestIgnoredAlreadyInFlight routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' detail='{submission.Detail}'.");
                 return false;
             }
 
-            if (stage == SessionActivityStage.ClosedForRouteExit)
-            {
-                blockedReason = "route_exit_already_closed";
-                detail = $"stage='{stage}' activityId='{activityId}' entrySequence='{entrySequence}' pendingOperation='{pendingOperation}'.";
-                return false;
-            }
-
-            if (state.HasCompleted)
-            {
-                return true;
-            }
-
-            if (IsRouteExitTransitStage(stage))
-            {
-                blockedReason = "route_exit_in_progress";
-                detail = $"stage='{stage}' activityId='{activityId}' entrySequence='{entrySequence}' pendingOperation='{pendingOperation}'.";
-                return false;
-            }
-
-            if (stage == SessionActivityStage.ActivityRunning ||
-                stage == SessionActivityStage.DeactivationWindowReady)
-            {
-                return true;
-            }
-
-            blockedReason = "session_activity_not_route_exit_safe";
-            detail = $"stage='{stage}' activityId='{activityId}' entrySequence='{entrySequence}' pendingOperation='{pendingOperation}'.";
+            DebugUtility.LogError<SessionOperationalRouteButtonBinder>(
+                $"[OBS][FrontendUI][RouteButton] RouteRequestFailedInvalidConfig routeIdentity='{resolvedRouteDefinition.RouteIdentity}' source='{RouteButtonSource}' reason='{normalizedReason}' detail='{submission.Detail}'.");
             return false;
         }
 
-        private static bool IsRouteExitTransitStage(SessionActivityStage stage)
+        protected override void OnDisable()
         {
-            return stage == SessionActivityStage.ActivityCompletionRequested ||
-                   stage == SessionActivityStage.ActivityCompleting ||
-                   stage == SessionActivityStage.PlayerActorParticipationExitStageStarted ||
-                   stage == SessionActivityStage.PlayerActorParticipationExitStageCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowStarted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
-                   stage == SessionActivityStage.DeactivationWindowCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
-                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent ||
-                   stage == SessionActivityStage.ActivityContentReleaseStarted ||
-                   stage == SessionActivityStage.ActivityContentRetentionPlanResolved ||
-                   stage == SessionActivityStage.ActivityContentSceneUnloading;
+            base.OnDisable();
+            _awaitingAcceptedRouteCompletion = false;
+            if (_subscribedPipeline != null)
+            {
+                _subscribedPipeline.RouteOperationCompleted -= OnRouteOperationCompleted;
+                _subscribedPipeline = null;
+            }
+        }
+
+        private void EnsurePipelineSubscription(SessionOperationalPipeline operationalPipeline)
+        {
+            if (_subscribedPipeline == operationalPipeline)
+            {
+                return;
+            }
+
+            if (_subscribedPipeline != null)
+            {
+                _subscribedPipeline.RouteOperationCompleted -= OnRouteOperationCompleted;
+            }
+
+            _subscribedPipeline = operationalPipeline;
+            _subscribedPipeline.RouteOperationCompleted += OnRouteOperationCompleted;
+        }
+
+        private void OnRouteOperationCompleted(RouteOperationCompletionSignal signal)
+        {
+            if (!_awaitingAcceptedRouteCompletion || routeDefinition == null)
+            {
+                return;
+            }
+
+            if (!string.Equals(signal.RouteIdentity, routeDefinition.RouteIdentity, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _awaitingAcceptedRouteCompletion = false;
+            if (button != null)
+            {
+                button.interactable = true;
+            }
         }
 
         private static string ResolveReasonOrFallback(string configuredReason, string actionReason, OperationalRouteAsset resolvedRouteDefinition)
