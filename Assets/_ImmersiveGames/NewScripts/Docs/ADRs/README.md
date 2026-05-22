@@ -56,15 +56,20 @@ Notas:
 - **ADR-0014** (ACEITO / checkpoint normativo vivo):
   - `ActivityContent`, `WindowTemplateLibrary` e `ActivityEntryPipeline` passam a ser fonte normativa Base 1.1.
   - `ActivityEntryPipeline` é único; o que varia é o `ActivitySetupInventory`.
-  - `ActivityObjectSnapshotContractValidation` valida provider/restore endpoint e `targetTransform` antes de `ObjectReset`.
-  - `RouteActivitySave + ActivityObjectSnapshotRestore` está congelado como PASS funcional para `test_object_01`.
+  - `ActivityObjectSnapshotContractValidation` valida provider/restore endpoint e `targetTransform` antes de `ObjectReset`, com evidência final de smoke confirmando a ordem canônica.
+  - `RouteActivitySave + ActivityObjectSnapshotRestore` está congelado como PASS funcional e semântico para `test_object_01`.
   - Ownership congelado: `SessionOperationalPipeline` decide load/save de rota; `SessionActivityPipeline` decide capture/restore timing; `SaveRuntime` persiste; provider/endpoint apenas lê/aplica estado local comandado.
+
+  - Checkpoint final congelado: `Progression Save MVP — RouteActivitySave + ActivityObjectSnapshotRestore — PASS funcional e semântico`.
+  - Smoke final confirmou: `ActivityObjectSnapshotContractValidation -> ActivityObjectReset -> ActivityObjectSnapshotRestore`.
+  - Smoke final confirmou: primeira entrada sem payload gera `ActivityObjectSnapshotRestore checkpointStatus='Skipped'`.
+  - Smoke final confirmou: segunda entrada com payload carregado gera `ActivityObjectSnapshotRestore checkpointStatus='Passed'`, `afterPosition == payloadPosition` e `restoreVerified='true'`.
 - **Checkpoint SessionOperational (2026-05-14)**:
   - `RouteActivitySavePlanReady` permanece plano;
   - `load-on-enter` executa após `SceneCompositionCompleted` e antes de `InputCapability`/`PlayerPreparation`;
   - ausência de save gera skip explícito `no_snapshot`;
   - `save-on-exit` por troca de rota usa a rota anterior completa e ocorre antes do unload da cena anterior;
-  - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`; após o MVP `ActivityObjectSnapshotRestore`, falha de capture/config obrigatória gera falha explícita e não pode ser mascarada como provider ausente;
+  - sem `Activity Snapshot Provider`, `save-on-exit` gera skip `no_snapshot_provider`; após o MVP `ActivityObjectSnapshotRestore`, falha de capture/config obrigatória gera falha explícita e não pode ser mascarada como provider ausente; restore sem payload é `Skipped`; restore com payload só passa com `restoreVerified=true`;
   - rota QA `route-sandbox-menu` habilita smoke manual `Menu -> Sandbox -> Menu`.
 - **Checkpoint RouteActivitySave boundary (CLOSED - 2026-05-17)**:
   - `OperationalRouteAsset` declara policy (`loadActivitySaveOnEnter`/`saveActivityOnExit`);
@@ -114,7 +119,7 @@ Notas:
   - Capture ocorre no rail de saída da Activity antes de `ObjectRelease`/unload da `ActivityContentScene`.
   - `RouteActivitySave` resolve payload, salva no exit da rota anterior e carrega no enter da rota atual.
   - Restore ocorre no setup da Activity após `ObjectReset` e antes de `ActivityRunning`.
-  - Evidência funcional: `restoreVerified=true`, `beforePosition='(960,540,0)'`, `payloadPosition='(228,9,537,3,0)'`, `afterPosition='(228,9,537,3,0)'`.
+  - Evidência funcional: `restoreVerified=true`, `beforePosition='(960,540,0)'`, `payloadPosition='(2,3,0)'`, `afterPosition='(2,3,0)'`.
   - Dívida não bloqueante: melhorar propagação/observabilidade de `captureTargetTransformPath` no payload restaurado.
 - Input atual fora do contrato Base 1.1 permanece legado/teste e não é fonte canônica.
 

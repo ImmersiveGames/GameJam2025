@@ -241,7 +241,7 @@ Fora do escopo deste checkpoint:
 - Save/Progression real completo (manifest/header reais, policies completas de auto/manual/checkpoint, UI de slots).
 
 
-### 2.3 Checkpoint Progression Save MVP — Activity Object Snapshot Capture/Save/Load/Restore (2026-05-21)
+### 2.3 Checkpoint Progression Save MVP — Activity Object Snapshot Capture/Save/Load/Restore (2026-05-22)
 
 Status:
 
@@ -249,7 +249,8 @@ Status:
 Progression Save MVP — Etapa 1 Capture-only = PASS funcional
 Progression Save MVP — Etapa 2 Save-only = PASS funcional
 Progression Save MVP — Etapa 3 Load-only = PASS funcional
-Progression Save MVP — Etapa 4 Restore-only = PASS funcional
+Progression Save MVP — Etapa 4 Restore-only = PASS funcional e semântico
+Progression Save MVP — Ordem SnapshotContractValidation -> ObjectReset = PASS funcional e semântico
 ```
 
 Objetivo do checkpoint:
@@ -347,7 +348,8 @@ Decisões congeladas:
 6. `SaveRuntime` persiste no endereço recebido.
 7. Ausência de payload mantém skip explícito; não há fallback silencioso.
 8. `SessionOperationalActivitySaveAdapter` continua usando `SaveAddress`/`SaveRequest`/`ISaveService`.
-9. Não há load/restore/autosave nesta etapa.
+9. Falha de capture/config obrigatória é falha semântica (`RouteActivitySaveCaptureFailed`), não `no_snapshot_provider`.
+10. Não há autosave/manual/checkpoint save nesta etapa.
 
 Evidência funcional congelada:
 
@@ -359,7 +361,7 @@ sourceEntrySequence='1'
 payloadObjectCount='1'
 targetIds='test_object_01'
 schemaId='progression.route_activity.object_snapshot.v1'
-payloadSize='296'
+payloadSize='292'
 
 checkpoint='RouteActivitySaveSnapshotPayload'
 checkpointStatus='Passed'
@@ -368,7 +370,7 @@ payloadObjectCount='1'
 targetIds='test_object_01'
 
 RouteActivitySaveSaveCompleted
-requestAddress='scope='Progression' group='RouteActivity' ownerId='SessionActivitySandboxSession' recordId='snapshot-rev-1779411116806' slotId='save' schemaId='progression.route_activity' schemaVersion='1''
+requestAddress='scope='Progression' group='RouteActivity' ownerId='SessionActivitySandboxSession' recordId='snapshot-rev-0' slotId='save' schemaId='progression.route_activity' schemaVersion='1''
 ```
 
 #### Etapa 3 — Load-only
@@ -401,10 +403,10 @@ Evidência funcional congelada:
 
 ```text
 ProgressionSlotContextResolved
-snapshotId='snapshot-rev-1779411116806'
+snapshotId='snapshot-rev-0'
 
 RouteActivitySaveLoadStarted
-snapshotId='snapshot-rev-1779411116806'
+snapshotId='snapshot-rev-0'
 
 RouteActivitySnapshotPayloadLoaded
 activityIdentity='SessionActivitySandboxSession'
@@ -413,7 +415,7 @@ sourceEntrySequence='1'
 payloadObjectCount='1'
 targetIds='test_object_01'
 schemaId='progression.route_activity.object_snapshot.v1'
-payloadSize='296'
+payloadSize='292'
 
 checkpoint='RouteActivitySaveSnapshotLoad'
 checkpointStatus='Passed'
@@ -422,10 +424,10 @@ payloadObjectCount='1'
 targetIds='test_object_01'
 
 RouteActivitySaveLoadCompleted
-requestAddress='scope='Progression' group='RouteActivity' ownerId='SessionActivitySandboxSession' recordId='snapshot-rev-1779411116806' slotId='save' schemaId='progression.route_activity' schemaVersion='1''
+requestAddress='scope='Progression' group='RouteActivity' ownerId='SessionActivitySandboxSession' recordId='snapshot-rev-0' slotId='save' schemaId='progression.route_activity' schemaVersion='1''
 ```
 
-#### Etapa 4 — Restore-only funcional
+#### Etapa 4 — Restore-only funcional e semântico
 
 O `SessionActivityPipeline`, durante o setup da Activity, aplica o payload previamente carregado pelo `SessionOperationalPipeline` como pending/read-only.
 
@@ -447,22 +449,43 @@ Decisões congeladas:
 1. `SessionOperationalPipeline` carrega payload e mantém dado pending/read-only.
 2. `SessionOperationalPipeline` não aplica `Transform`.
 3. `SessionActivityPipeline` decide timing do restore.
-4. Restore roda depois de `ObjectReset`.
-5. Endpoint de objeto apenas aplica estado comandado.
-6. Endpoint não chama `SaveRuntime`.
-7. Objeto não decide lifecycle, load, save, restore ou release.
-8. `targetTransform` é binding obrigatório e explícito para provider/restore endpoint.
-9. Capability quebrada falha em `ActivityObjectSnapshotContractValidation`, antes de `ObjectReset` e antes de `ActivityRunning`.
-10. Restore funcional só passa quando `restoreVerified=true`.
+4. `ActivityObjectSnapshotContractValidation` roda antes de `ObjectReset`.
+5. Restore roda depois de `ObjectReset`.
+6. Endpoint de objeto apenas aplica estado comandado.
+7. Endpoint não chama `SaveRuntime`.
+8. Objeto não decide lifecycle, load, save, restore ou release.
+9. `targetTransform` é binding obrigatório e explícito para provider/restore endpoint.
+10. Capability quebrada falha em `ActivityObjectSnapshotContractValidation`, antes de `ObjectReset` e antes de `ActivityRunning`.
+11. Restore sem payload carregado é `Skipped`, não `Passed`.
+12. Restore funcional só passa quando há restore aplicado e `restoreVerified=true`.
 
-Evidência funcional congelada:
+Evidência funcional e semântica congelada:
 
 ```text
+checkpoint='ActivityObjectContributorDiscovery'
+checkpointStatus='Passed'
+
 checkpoint='ActivityObjectSnapshotContractValidation'
 checkpointStatus='Passed'
+validationStarted='true'
+validatedCount='1'
+failedCount='0'
 targetIds='test_object_01'
 mismatchReason='<none>'
 
+checkpoint='ActivityObjectReset'
+checkpointStatus='Passed'
+resetGroups='TransformState'
+
+// primeira entrada sem payload carregado
+checkpoint='ActivityObjectSnapshotRestore'
+checkpointStatus='Skipped'
+payloadAvailable='false'
+restoredCount='0'
+restoreCompleted='true'
+restoreFailed='false'
+
+// segunda entrada com payload carregado
 checkpoint='ActivityObjectSnapshotRestore'
 checkpointStatus='Passed'
 payloadAvailable='true'
@@ -471,15 +494,15 @@ matchedTargetCount='1'
 restoredCount='1'
 targetIds='test_object_01'
 beforePosition='(960,540,0)'
-payloadPosition='(228,9,537,3,0)'
-afterPosition='(228,9,537,3,0)'
+payloadPosition='(2,3,0)'
+afterPosition='(2,3,0)'
 restoreVerified='true'
 restoreFailed='false'
 ```
 
 #### SnapshotContractValidation
 
-O contrato de snapshot passou a ser validado no `ActivityEntryPipeline`, antes de `ObjectReset`.
+O contrato de snapshot é validado no `ActivityEntryPipeline`, antes de `ObjectReset`.
 
 Regras congeladas:
 
@@ -490,6 +513,22 @@ Regras congeladas:
 - Capability quebrada não pode virar `SkippedOptional`.
 - `SkippedOptional` só vale quando contributor opcional não declara capability de snapshot.
 - Falha obrigatória bloqueia `ObjectReset`, `ActivationWindowReady` e `ActivityRunning`.
+
+#### Semântica de checkpoint e falha
+
+Semântica congelada:
+
+```text
+ActivityObjectSnapshotRestore Skipped = sem payload carregado, sem target matching ou nenhum restore aplicado.
+ActivityObjectSnapshotRestore Passed = payload carregado, target matching, restore aplicado e restoreVerified=true.
+ActivityObjectSnapshotRestore Failed = restoreVerified=false, endpoint falhou, mismatch de targetTransform ou restore obrigatório inválido.
+RouteActivitySaveSnapshotPayload Passed = payload resolvido e serializado.
+RouteActivitySaveSnapshotPayload Waiting = ausência aceitável de provider/payload.
+RouteActivitySaveSnapshotPayload Failed = snapshot_capture_failed ou falha semântica de producer da Activity anterior.
+```
+
+`no_snapshot_provider` só significa ausência do provider global/read-only.  
+`snapshot_capture_failed` não pode ser mascarado como provider ausente.
 
 #### Ownership do MVP funcional
 
@@ -509,7 +548,6 @@ SaveRuntime
 -> persiste por SaveAddress/SaveRequest
 -> não decide lifecycle nem aplica estado em objetos
 ```
-
 
 #### CurrentSnapshotId / recordId / revision
 
@@ -542,8 +580,8 @@ Contrato congelado:
 Evidência funcional congelada:
 
 ```text
-Save: recordId='snapshot-rev-1779411116806'
-Next load: snapshotId='snapshot-rev-1779411116806'
+Save: recordId='snapshot-rev-0'
+Next load: snapshotId='snapshot-rev-0'
 RouteActivitySaveSnapshotLoad checkpointStatus='Passed'
 ```
 

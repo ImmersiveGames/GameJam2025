@@ -1040,12 +1040,12 @@ Unsupported deve ser explícito. Não criar fallback silencioso.
 
 ---
 
-## 22.1 Checkpoint congelado — ActivityObject Snapshot Save/Load/Restore — PASS funcional
+## 22.1 Checkpoint congelado — ActivityObject Snapshot Save/Load/Restore — PASS funcional e semântico
 
-- Estado: CONGELADO / PASS funcional.
-- Data: 2026-05-21.
-- Escopo: `SessionActivityPipeline`, `SessionOperationalPipeline`, `RouteActivitySave`, `ActivityObjectSnapshot` e restore mínimo de `Transform`.
-- Fonte de evidência: smoke funcional com `test_object_01`.
+- Estado: CONGELADO / PASS funcional e semântico.
+- Data: 2026-05-22.
+- Escopo: `SessionActivityPipeline`, `SessionOperationalPipeline`, `RouteActivitySave`, `ActivityObjectSnapshot`, validação de contrato de snapshot e restore mínimo de `Transform`.
+- Fonte de evidência: smoke final com `test_object_01` confirmando ordem canônica, save-on-exit, load-on-enter e restore verificado.
 
 ### 22.1.1 Decisão congelada
 
@@ -1054,8 +1054,9 @@ A Base 1.1 congela o seguinte shape para snapshot mínimo de objeto de Activity:
 ```text
 SessionActivityPipeline
 -> valida contrato de snapshot no ActivityEntryPipeline
+-> executa ObjectReset somente depois do contrato de snapshot validado
+-> aplica restore no setup da Activity depois de ObjectReset e antes de ActivityRunning
 -> captura snapshot no route-exit antes de ObjectRelease/ActivityContentSceneUnload
--> aplica restore no setup da Activity após ObjectReset e antes de ActivityRunning
 
 SessionOperationalPipeline
 -> decide load-on-enter/save-on-exit pelo RouteActivitySave
@@ -1082,7 +1083,7 @@ ActivityObjectTransformSnapshotRestoreEndpoint
 
 ### 22.1.2 Ordem canônica do ActivityEntryPipeline para snapshot
 
-A ordem conceitual congelada para o setup da Activity passa a incluir validação de contrato de snapshot:
+A ordem observável e normativa do setup da Activity inclui validação de contrato de snapshot antes de qualquer side-effect de reset:
 
 ```text
 ResolveActivityEntry
@@ -1104,7 +1105,7 @@ ResolveActivityEntry
 
 ### 22.1.3 Regras de contrato de snapshot
 
-Para cada contributor descoberto na entry atual, o contrato de snapshot deve considerar:
+Para cada contributor descoberto na entry atual, o contrato de snapshot considera:
 
 ```text
 targetId
@@ -1131,20 +1132,22 @@ Regras congeladas:
 O restore é comandado pelo `SessionActivityPipeline`.
 
 ```text
-ObjectReset
+ActivityObjectSnapshotContractValidation
+-> ObjectReset
 -> ActivityObjectSnapshotRestore
 ```
 
-`ObjectReset` retorna a entry para uma condição determinística base.
+`ObjectReset` retorna a entry para uma condição determinística base.  
 `ActivityObjectSnapshotRestore` aplica o payload salvo por cima dessa base, quando houver payload carregado.
 
 Regras:
 
-- Sem payload carregado: skip explícito / checkpoint observável de ausência.
+- Sem payload carregado: `ActivityObjectSnapshotRestore` completa como `Skipped`, não como `Passed`.
+- Payload carregado sem target compatível para a entry atual: skip explícito, salvo quando policy futura exigir restore obrigatório.
 - Payload foreign/stale: rejeição/falha explícita conforme policy.
-- Target ausente para payload obrigatório: falha explícita.
+- Target obrigatório ausente: falha explícita.
 - Endpoint obrigatório ausente ou inválido: falha explícita.
-- Restore só passa se `restoreVerified=true`.
+- Restore só passa se houver restore aplicado e `restoreVerified=true`.
 - O endpoint deve evidenciar `beforePosition`, `payloadPosition`, `afterPosition` e `restoreVerified`.
 
 ### 22.1.5 Regras de capture/save/load
@@ -1170,22 +1173,27 @@ saveActivityOnExit
 
 O `RouteActivitySave` usa `ProgressionSlotContext` resolvido e persiste via `ISaveService`/`SaveRuntime`.
 
-### 22.1.6 Checkpoint funcional validado
+### 22.1.6 Checkpoint funcional e semântico validado
 
-Smoke funcional confirmou:
+Smoke final confirmou a ordem canônica e o ciclo completo:
 
 ```text
+ActivityObjectContributorDiscovery checkpointStatus='Passed'
 ActivityObjectSnapshotContractValidation checkpointStatus='Passed'
+ActivityObjectReset checkpointStatus='Passed'
+ActivityObjectSnapshotRestore checkpointStatus='Skipped' // primeira entrada sem payload
 ActivityObjectSnapshotCapture checkpointStatus='Passed'
 RouteActivitySaveSnapshotPayload checkpointStatus='Passed'
 RouteActivitySaveSaveCompleted
 RouteActivitySnapshotPayloadLoaded
 RouteActivitySaveSnapshotLoad checkpointStatus='Passed'
+ActivityObjectSnapshotContractValidation checkpointStatus='Passed'
+ActivityObjectReset checkpointStatus='Passed'
 ActivityObjectSnapshotRestore checkpointStatus='Passed'
 restoreVerified='true'
 ```
 
-Payload de restore validado:
+Payload de restore validado no smoke final:
 
 ```text
 targetId='test_object_01'
@@ -1194,9 +1202,10 @@ payloadObjectCount='1'
 matchedTargetCount='1'
 restoredCount='1'
 beforePosition='(960,540,0)'
-payloadPosition='(228,9,537,3,0)'
-afterPosition='(228,9,537,3,0)'
+payloadPosition='(2,3,0)'
+afterPosition='(2,3,0)'
 restoreVerified='true'
+restoreFailed='false'
 ```
 
 ### 22.1.7 Ownership congelado
@@ -1208,8 +1217,8 @@ SaveRuntime = executor de persistência.
 Object provider/endpoint = executor local/leitor local de estado do objeto.
 ```
 
-Objetos não decidem quando salvar, carregar, restaurar ou liberar.
-Adapters/endpoints executam side-effects comandados por Pipeline Commands.
+Objetos não decidem quando salvar, carregar, restaurar ou liberar.  
+Adapters/endpoints executam side-effects comandados por `Pipeline Commands`.  
 Eventos foreign/stale não podem alterar a Activity ativa nem o payload ativo.
 
 ### 22.1.8 Dívida não bloqueante
@@ -1222,7 +1231,7 @@ captureTargetTransformPath
 
 deve ser propagado no payload carregado ou marcado explicitamente como indisponível quando o dado não existir no schema salvo.
 
-Essa dívida não bloqueia o PASS funcional porque `restoreVerified='true'` confirmou o resultado final.
+Essa dívida não bloqueia o PASS funcional e semântico porque `restoreVerified='true'` confirmou o resultado final e a ordem `ActivityObjectSnapshotContractValidation -> ObjectReset -> ActivityObjectSnapshotRestore` foi validada.
 
 
 ## 23. Invariantes obrigatórios
