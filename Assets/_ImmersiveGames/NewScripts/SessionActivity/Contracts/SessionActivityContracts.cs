@@ -129,6 +129,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         MovementBindingSkippedNoRequiredMovement = 69,
         MovementBindingFailed = 70,
         MovementBindingCompleted = 71,
+        CameraBindingStarted = 72,
+        CameraBindingFailed = 73,
+        CameraBindingSkippedNoRequiredCamera = 74,
+        CameraBindingCompleted = 75,
     }
 
     public enum ActivityExecutionState
@@ -618,6 +622,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         MovementBindingRetained = 182,
         MovementControlEnableSkippedNoTarget = 183,
         MovementControlDisableSkippedNoTarget = 184,
+        CameraBindingStarted = 185,
+        PlayerCameraEndpointResolved = 186,
+        ActivityCameraTargetBound = 187,
+        CameraBindingSkippedNoRequiredCamera = 188,
+        CameraBindingFailed = 189,
+        CameraBindingCompleted = 190,
         ActivitySetupInventoryBuildStarted = 94,
         ActivitySetupInventoryBuilt = 95,
         ActivitySetupInventorySkippedNoRequirements = 96,

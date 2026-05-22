@@ -124,6 +124,63 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             return true;
         }
 
+        public bool TryRebindTargets(
+            ActivityCameraRebindTargetsCommand command,
+            out ActivityCameraRebindTargetsResult result,
+            out string reason)
+        {
+            if (director == null)
+            {
+                reason = "activity_camera_director_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command?.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (command == null)
+            {
+                reason = "rebind_command_null";
+                result = ActivityCameraRebindTargetsResult.Failed(string.Empty, reason);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(command.ActivityIdentity))
+            {
+                reason = "activity_identity_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (command.TrackingTarget == null)
+            {
+                reason = "tracking_target_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (activeBinding == null || activeBinding.Handle == null)
+            {
+                reason = "active_camera_binding_missing";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (!string.Equals(activeBinding.Handle.ActivityIdentity, command.ActivityIdentity, System.StringComparison.Ordinal))
+            {
+                reason = "foreign_or_stale_activity_identity";
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            if (!director.TryRebindActivityCameraTargets(activeBinding.Handle, command, out reason))
+            {
+                result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
+                return false;
+            }
+
+            result = ActivityCameraRebindTargetsResult.Bound(command.ActivityIdentity, reason);
+            return true;
+        }
+
         private static ActivityCameraReleaseResult BuildReleaseFailure(
             ActivityCameraReleaseCommand command,
             string failureReason)

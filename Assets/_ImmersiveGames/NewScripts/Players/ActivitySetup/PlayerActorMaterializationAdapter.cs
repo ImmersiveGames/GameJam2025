@@ -73,6 +73,19 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     plan.ActorIdentity.PlayerSlotId,
                     plan.ActorIdentity.PlayerActorId);
 
+                PlayerCameraEndpoint cameraEndpoint = instance.GetComponent<PlayerCameraEndpoint>();
+                if (cameraEndpoint != null)
+                {
+                    cameraEndpoint.Bind(
+                        activeIdentity.PipelineId,
+                        activeIdentity.SessionId,
+                        activeIdentity.ActivityId,
+                        activeIdentity.ActivityOrdinal,
+                        activeIdentity.EntrySequence,
+                        plan.ActorIdentity.PlayerSlotId,
+                        plan.ActorIdentity.PlayerActorId);
+                }
+
                 PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();
                 if (participation == null)
                 {

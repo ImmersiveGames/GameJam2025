@@ -137,6 +137,51 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             return true;
         }
 
+        public bool TryRebindActivityCameraTargets(
+            ActivityCameraBindingHandle bindingHandle,
+            ActivityCameraRebindTargetsCommand command,
+            out string reason)
+        {
+            if (bindingHandle == null)
+            {
+                reason = "binding_handle_missing";
+                return false;
+            }
+
+            if (command == null)
+            {
+                reason = "rebind_command_null";
+                return false;
+            }
+
+            if (bindingHandle.CameraRigInstance == null)
+            {
+                reason = "camera_rig_instance_missing";
+                return false;
+            }
+
+            if (command.TrackingTarget == null)
+            {
+                reason = "tracking_target_missing";
+                return false;
+            }
+
+            if (!TryGetSingleCinemachineCamera(bindingHandle.CameraRigInstance, out CinemachineCamera cinemachineCamera, out reason))
+            {
+                return false;
+            }
+
+            cinemachineCamera.Target.TrackingTarget = command.TrackingTarget;
+            cinemachineCamera.Target.LookAtTarget = command.LookAtTarget;
+
+            DebugUtility.Log(typeof(CinemachineActivityCameraDirector),
+                $"[OBS][CameraPresentation][Director] ActivityCameraTargetsRebound activityIdentity='{command.ActivityIdentity}' presentationRig='{bindingHandle.CameraRigInstance.name}' trackingTarget='{command.TrackingTarget.name}' lookAtTarget='{command.LookAtTarget?.name ?? "<none>"}'.",
+                DebugUtility.Colors.Info);
+
+            reason = "activity_camera_targets_rebound";
+            return true;
+        }
+
         private static bool EnsurePresentationRigHasNoUnityCamera(
             GameObject rigInstance,
             out string reason)

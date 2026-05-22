@@ -9,6 +9,11 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Contracts
             out ActivityCameraPreparationResult result,
             out string reason);
 
+        bool TryRebindTargets(
+            ActivityCameraRebindTargetsCommand command,
+            out ActivityCameraRebindTargetsResult result,
+            out string reason);
+
         bool TryRelease(
             ActivityCameraReleaseCommand command,
             out ActivityCameraReleaseResult result,
