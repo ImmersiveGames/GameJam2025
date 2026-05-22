@@ -4,97 +4,97 @@
 - Estado: Accepted
 - Data: 2026-05-12
 - Tipo: Direction / Canonical architecture
-- Fonte de verdade canônica deste contrato: este ADR.
+- Fonte de verdade canï¿½nica deste contrato: este ADR.
 
 ## Contexto
 
-A Base 1.0 separou semântica, seam e execução de forma útil, mas ainda permitiu leituras ambíguas sobre quem decide e quem apenas executa. Na Base 1.1 essa separação precisa virar regra de sistema obrigatória.
+A Base 1.0 separou semï¿½ntica, seam e execuï¿½ï¿½o de forma ï¿½til, mas ainda permitiu leituras ambï¿½guas sobre quem decide e quem apenas executa. Na Base 1.1 essa separaï¿½ï¿½o precisa virar regra de sistema obrigatï¿½ria.
 
-## Decisão
+## Decisï¿½o
 
 Adota-se a regra separadora de responsabilidades:
 
-### 1. Módulos Produzem Pipeline Facts ou Pipeline Commands
+### 1. Mï¿½dulos Produzem Pipeline Facts ou Pipeline Commands
 
-Módulos são partes da arquitetura que fornecem dados, estado ou intenções:
+Mï¿½dulos sï¿½o partes da arquitetura que fornecem dados, estado ou intenï¿½ï¿½es:
 
-- **Pipeline Facts**: Representam observações, estado capturado ou eventos do domínio.
-- **Pipeline Commands**: Representam intenções, requisições de ação ou directives operacionais.
+- **Pipeline Facts**: Representam observaï¿½ï¿½es, estado capturado ou eventos do domï¿½nio.
+- **Pipeline Commands**: Representam intenï¿½ï¿½es, requisiï¿½ï¿½es de aï¿½ï¿½o ou directives operacionais.
 
 Regra complementar:
 
-- Nenhum módulo operacional reescreve a identidade do ciclo.
+- Nenhum mï¿½dulo operacional reescreve a identidade do ciclo.
 - Nenhum pipeline depende de leitura foreign/stale para decidir o ativo.
-- Módulos expõem facts/commands via interfaces claras ou eventos canônicos.
+- Mï¿½dulos expï¿½em facts/commands via interfaces claras ou eventos canï¿½nicos.
 
 ### 2. Pipelines Decidem Ordem, Lifecycle, Policy e Handoffs
 
-Pipelines orquestram a sequência de operações:
+Pipelines orquestram a sequï¿½ncia de operaï¿½ï¿½es:
 
-- **Decidi ordem**: Sequência de steps.
-- **Decidem lifecycle**: Quando algo começa, continua ou encerra.
+- **Decidi ordem**: Sequï¿½ncia de steps.
+- **Decidem lifecycle**: Quando algo comeï¿½a, continua ou encerra.
 - **Decidem Pipeline Policies**: Regras de comportamento.
-- **Decidem Pipeline Handoffs**: Transições entre fases/stages.
+- **Decidem Pipeline Handoffs**: Transiï¿½ï¿½es entre fases/stages.
 
 ### 3. Pipeline Adapters Executam Side-Effects
 
-Adapters são a camada de execução;
+Adapters sï¿½o a camada de execuï¿½ï¿½o;
 
 - Executam o que foi comandado pelo pipeline.
-- Não criam política própria.
-- Não reescrevem decisões do pipeline.
+- Nï¿½o criam polï¿½tica prï¿½pria.
+- Nï¿½o reescrevem decisï¿½es do pipeline.
 - Reportam completion, failure ou status back ao pipeline.
 
-#### Exemplos Canônicos
+#### Exemplos Canï¿½nicos
 
 - `SceneCompositionAdapter` executa carregamento/descarregamento de cenas comandado pelo pipeline.
 - `FadeAdapter` executa fade/unfade comandado pelo pipeline.
 - `LoadingAdapter` executa UI de loading comandada pelo pipeline.
-- `AudioAdapter` executa playing/stopping de áudio comandado pelo pipeline.
+- `AudioAdapter` executa playing/stopping de ï¿½udio comandado pelo pipeline.
 
-Nota normativa curta (checkpoint de áudio operacional de rota):
-- `AudioAdapter` é `Pipeline Adapter` de execução e observabilidade; não é owner de policy, timing ou lifecycle de rota.
+Nota normativa curta (checkpoint de ï¿½udio operacional de rota):
+- `AudioAdapter` ï¿½ `Pipeline Adapter` de execuï¿½ï¿½o e observabilidade; nï¿½o ï¿½ owner de policy, timing ou lifecycle de rota.
 
 ## Invariantes
 
-- `Pipeline Command` não é efeito; é decisão registrada.
-- `Pipeline Fact` não é decisão; é observação ou estado.
-- `Pipeline Adapter` não é owner de semântica; executa o contratado.
-- Side-effect executa o que foi comandado, não inventa o que deve ser feito.
+- `Pipeline Command` nï¿½o ï¿½ efeito; ï¿½ decisï¿½o registrada.
+- `Pipeline Fact` nï¿½o ï¿½ decisï¿½o; ï¿½ observaï¿½ï¿½o ou estado.
+- `Pipeline Adapter` nï¿½o ï¿½ owner de semï¿½ntica; executa o contratado.
+- Side-effect executa o que foi comandado, nï¿½o inventa o que deve ser feito.
 - Nenhum adapter cria fallback silencioso.
 - Nenhum adapter muda a identidade do ciclo.
-- Nenhum módulo decide sequência global sem passar pelo pipeline.
+- Nenhum mï¿½dulo decide sequï¿½ncia global sem passar pelo pipeline.
 
-## Consequências
+## Consequï¿½ncias
 
-- A responsabilidade de decisão fica concentrada no pipeline.
+- A responsabilidade de decisï¿½o fica concentrada no pipeline.
 - O lado executor deixa de ser confundido com o lado decisor.
-- Integração externa fica por adaptação, não por ownership oculto.
-- Falhas de side-effect não podem ser mascaradas como decisão de lifecycle.
-- A auditoria do fluxo fica clara: comando -> adapt -> report -> próximo paso.
+- Integraï¿½ï¿½o externa fica por adaptaï¿½ï¿½o, nï¿½o por ownership oculto.
+- Falhas de side-effect nï¿½o podem ser mascaradas como decisï¿½o de lifecycle.
+- A auditoria do fluxo fica clara: comando -> adapt -> report -> prï¿½ximo paso.
 
 ## Materializacao Base11Sandbox - Checkpoint Congelado
 
 O checkpoint validado confirmou a regra deste ADR sem ambiguidade:
 
 - `SessionOperationalPipeline` emite `OperationalRouteCommand` e `OperationalRouteCompleted`.
-- `Base11SandboxOperationalRouteTransitionAdapter` só executa `load/unload/set-active`.
-- `SessionActivityEntryHandoff` é produzido pelo pipeline, não pelo adapter.
-- `SceneCompositionExecutor` permanece estritamente executor físico.
+- `Base11SandboxOperationalRouteTransitionAdapter` sï¿½ executa `load/unload/set-active`.
+- `SessionActivityEntryHandoff` ï¿½ produzido pelo pipeline, nï¿½o pelo adapter.
+- `SceneCompositionExecutor` permanece estritamente executor fï¿½sico.
 - `SessionActivityPipeline` decide a entrada de activity e o controle interno do ciclo.
 
 Leitura congelada:
 
-- Comando não é efeito.
-- Fato não é decisão.
-- Adapter não é owner de semântica.
+- Comando nï¿½o ï¿½ efeito.
+- Fato nï¿½o ï¿½ decisï¿½o.
+- Adapter nï¿½o ï¿½ owner de semï¿½ntica.
 - Policy continua concentrada no pipeline.
 
-## Relação com Base 1.0 e Base 2.0
+## Relaï¿½ï¿½o com Base 1.0 e Base 2.0
 
-- Base 1.0 estabeleceu os blocos e rails que permitiram enxergar a separação.
-- Base 1.1 transforma essa separação em contrato normativo central.
-- Base 2.0 futura só deve reutilizar a regra se ela continuar provada por evidências de runtime.
+- Base 1.0 estabeleceu os blocos e rails que permitiram enxergar a separaï¿½ï¿½o.
+- Base 1.1 transforma essa separaï¿½ï¿½o em contrato normativo central.
+- Base 2.0 futura sï¿½ deve reutilizar a regra se ela continuar provada por evidï¿½ncias de runtime.
 
 
 ## Checkpoint complementar - ActivityWindowProfile (decisao futura, 2026-05-18)

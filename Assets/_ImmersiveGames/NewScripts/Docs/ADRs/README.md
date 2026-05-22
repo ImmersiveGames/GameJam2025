@@ -113,7 +113,7 @@ Notas:
     - Protecoes: comando com `Pipeline Identity`; foreign/stale rejeitado ou skip explicito; mismatch de `slotId`/`snapshotId` rejeitado/skip; ausencia de contexto obrigatorio fail-fast; rota/activity nao save-eligible com skip explicito.
     - Ainda sem actors/world objects genéricos/inventory/run save/UI de slots/autosave real/ProgressionManager/auto-scan global; há MVP funcional de objeto de Activity (`test_object_01`) com capture/save/load/restore.
 
-- **Checkpoint RouteActivitySave + ActivityObjectSnapshotRestore (PASS funcional - 2026-05-21):**
+- **Checkpoint RouteActivitySave + ActivityObjectSnapshotRestore (PASS funcional e semântico - 2026-05-22):**
   - Validado para `test_object_01`.
   - `ActivityObjectSnapshotContractValidation` passou nos casos negativo/positivo e bloqueia contrato obrigatório quebrado antes de `ObjectReset`/`ActivityRunning`.
   - Capture ocorre no rail de saída da Activity antes de `ObjectRelease`/unload da `ActivityContentScene`.
@@ -157,7 +157,7 @@ Em decisões de arquitetura e ownership, prevalecem os ADRs acima em ordem de pr
 - ADR-0011 (CLOSED - 2026-05-17)
 - ADR-0012 (congelado - 2026-05-14)
 - ADR-0013 (aceito/implementado no MVP single-player - 2026-05-15)
-- ADR-0014 (aceito/checkpoint normativo vivo - 2026-05-21)
+- ADR-0014 (aceito/checkpoint normativo vivo - 2026-05-22)
 
 ### HISTÓRICO (Referência Apenas)
 

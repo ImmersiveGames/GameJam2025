@@ -1,8 +1,9 @@
 # ADR-0008 - SaveSystem Canonical
 
 ## Status
-- Estado: Accepted
+- Estado: Accepted / Checkpoint Progression Save MVP fechado
 - Data: 2026-05-12
+- Última atualização: 2026-05-22
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canônica deste contrato: este ADR.
 

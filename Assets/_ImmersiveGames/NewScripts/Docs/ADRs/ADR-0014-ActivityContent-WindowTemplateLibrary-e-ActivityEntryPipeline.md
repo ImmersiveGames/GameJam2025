@@ -4,6 +4,7 @@
 
 - Estado: ACEITO / checkpoint normativo vivo da Base 1.1
 - Data: 2026-05-19
+- Última atualização: 2026-05-22
 - Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR, após aceite.
 
