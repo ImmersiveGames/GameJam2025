@@ -3,7 +3,6 @@ using _ImmersiveGames.Scripts.PlanetSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Managers;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Services
 {
 

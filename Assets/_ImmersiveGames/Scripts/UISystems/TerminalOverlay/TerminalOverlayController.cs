@@ -6,7 +6,6 @@ using ImmersiveGames.GameJam2025.Core.Logging;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 {
     [DebugLevel(DebugLevel.Verbose)]

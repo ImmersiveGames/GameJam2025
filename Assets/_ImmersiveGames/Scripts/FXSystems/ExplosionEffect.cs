@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.FXSystems
 {
     /// <summary>

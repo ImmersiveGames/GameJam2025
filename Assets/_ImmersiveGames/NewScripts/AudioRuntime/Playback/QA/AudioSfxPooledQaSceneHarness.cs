@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 {
     /// <summary>
@@ -608,7 +609,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             probeCue.name = $"{sourceCue.name}_SequenceProbeClone";
 
             selectedClipLengthSeconds = 0f;
-            sourceClipCount = sourceCue.Clips != null ? sourceCue.Clips.Count : 0;
+            sourceClipCount = sourceCue.Clips?.Count ?? 0;
             AudioClip selectedClip = null;
             float shortestLength = float.MaxValue;
 
@@ -683,7 +684,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
         }
 
-        private static string SafeName(UnityEngine.Object obj)
+        private static string SafeName(Object obj)
         {
             return obj != null ? obj.name : "null";
         }

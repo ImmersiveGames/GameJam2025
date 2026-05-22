@@ -8,17 +8,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     {
         public static class Feature
         {
-            public const string SceneFlow = "SceneFlow";
+            public const string SceneRouting = "SceneRouting";
             public const string Loading = "Loading";
             public const string Fade = "Fade";
             public const string WorldLifecycle = "WorldLifecycle";
-            public const string GameLoop = "GameLoop";
+            public const string RunLifecycle = "RunLifecycle";
             public const string Gameplay = "Gameplay";
             public const string Levels = "Levels";
             public const string Navigation = "Navigation";
             public const string Gates = "Gates";
             public const string InputModes = "InputModes";
-            public const string PostRun = "PostRun";
             public const string Infrastructure = "Infrastructure";
         }
 
@@ -28,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             public const string MissingAsset = "MissingAsset";
             public const string Timeout = "Timeout";
             public const string Disabled = "Disabled";
-            public const string Fallback = "Fallback";
+            public const string CapacityLimit = "CapacityLimit";
             public const string InvalidConfig = "InvalidConfig";
             public const string Unsupported = "Unsupported";
             public const string Unknown = "Unknown";

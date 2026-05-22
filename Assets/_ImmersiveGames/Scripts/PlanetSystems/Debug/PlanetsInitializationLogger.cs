@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.PlanetSystems.Events;
 using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Debug
 {
     /// <summary>

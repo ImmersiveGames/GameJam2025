@@ -1,6 +1,5 @@
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
-
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     /// <summary>
@@ -64,10 +63,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 //FilteredEventBus<DeathEvent>.RaiseFiltered(
                     //new DeathEvent(_entityId, runtimeAttributeType, DisableSkinOnDeath, TriggerGameOverOnDeath),_entityId);
             }
-            else
-            {
-                //FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
-            }
+            //FilteredEventBus<ReviveEvent>.RaiseFiltered(new ReviveEvent(_entityId), _entityId);
         }
 
         public void Clear()

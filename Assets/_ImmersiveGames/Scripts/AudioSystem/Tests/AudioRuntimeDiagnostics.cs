@@ -80,8 +80,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
 
         private void Awake()
         {
-            AudioSystemBootstrap.EnsureAudioSystemInitialized();
-
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _sfxService);
@@ -310,4 +308,5 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Tests
         }
     }
 }
+
 

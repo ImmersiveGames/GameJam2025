@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public abstract class PoolableObjectData : ScriptableObject

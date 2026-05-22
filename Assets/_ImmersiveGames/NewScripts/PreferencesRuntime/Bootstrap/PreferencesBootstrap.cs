@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
 namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
 {
@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
     {
         private static bool _runtimeComposed;
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(PreferencesBootstrap));
 
@@ -18,59 +18,20 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
                 return;
             }
 
-            _ = bootstrapConfig;
+            _ = runtimeModeConfig;
 
             if (!DependencyManager.Provider.TryGetGlobal<IPreferencesStateService>(out var stateService) || stateService == null)
             {
                 throw new InvalidOperationException("[FATAL][Preferences] IPreferencesStateService obrigatorio ausente para bootstrap.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesSaveService>(out var saveService) || saveService == null)
+            if (!DependencyManager.Provider.TryGetGlobal<IPreferencesRuntimePipeline>(out var runtimePipeline) || runtimePipeline == null)
             {
-                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService obrigatorio ausente para bootstrap.");
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline obrigatorio ausente para bootstrap.");
             }
 
-            DebugUtility.LogVerbose(typeof(PreferencesBootstrap),
-                $"[Preferences] load requested. backend='{saveService.BackendId}' profile='{AudioPreferencesSnapshot.BootstrapProfileId}' slot='{AudioPreferencesSnapshot.BootstrapSlotId}'.",
-                DebugUtility.Colors.Info);
-
-            bool loaded = saveService.TryLoad(
-                AudioPreferencesSnapshot.BootstrapProfileId,
-                AudioPreferencesSnapshot.BootstrapSlotId,
-                out var loadedSnapshot,
-                out string loadReason);
-
-            if (loaded && loadedSnapshot != null)
-            {
-                stateService.SetCurrent(loadedSnapshot, "Preferences/BootstrapLoad");
-            }
-            else
-            {
-                DebugUtility.LogVerbose(typeof(PreferencesBootstrap),
-                    $"[Preferences] bootstrap kept installer seed. backend='{saveService.BackendId}' reason='{loadReason}'.",
-                    DebugUtility.Colors.Info);
-            }
-
-            DebugUtility.LogVerbose(typeof(PreferencesBootstrap),
-                $"[Preferences] video load requested. backend='{saveService.BackendId}' profile='{VideoPreferencesSnapshot.BootstrapProfileId}' slot='{VideoPreferencesSnapshot.BootstrapSlotId}'.",
-                DebugUtility.Colors.Info);
-
-            bool videoLoaded = saveService.TryLoadVideo(
-                VideoPreferencesSnapshot.BootstrapProfileId,
-                VideoPreferencesSnapshot.BootstrapSlotId,
-                out var loadedVideoSnapshot,
-                out string videoLoadReason);
-
-            if (videoLoaded && loadedVideoSnapshot != null)
-            {
-                stateService.SetCurrent(loadedVideoSnapshot, "Preferences/BootstrapLoad");
-            }
-            else
-            {
-                DebugUtility.LogVerbose(typeof(PreferencesBootstrap),
-                    $"[Preferences] bootstrap kept installer seed for video. backend='{saveService.BackendId}' reason='{videoLoadReason}'.",
-                    DebugUtility.Colors.Info);
-            }
+            runtimePipeline.RequestBootstrapLoadAudio("Preferences/BootstrapLoadAudio");
+            runtimePipeline.RequestBootstrapLoadVideo("Preferences/BootstrapLoadVideo");
 
             stateService.ApplyCurrentVideoToRuntime("Preferences/BootstrapApply");
 
@@ -87,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bootstrap
             _runtimeComposed = true;
 
             DebugUtility.Log(typeof(PreferencesBootstrap),
-                $"[Preferences] Runtime preparation concluded. backend='{saveService.BackendId}' audio={stateService.CurrentSnapshot} video={stateService.CurrentVideoSnapshot}.",
+                $"[Preferences] Runtime preparation concluded. audio={stateService.CurrentSnapshot} video={stateService.CurrentVideoSnapshot}.",
                 DebugUtility.Colors.Info);
         }
     }

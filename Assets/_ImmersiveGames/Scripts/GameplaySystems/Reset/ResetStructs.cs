@@ -29,7 +29,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Reset
 
         public override string ToString()
         {
-            int count = actorIds != null ? actorIds.Count : 0;
+            int count = actorIds?.Count ?? 0;
             return $"ResetRequest(Scope={scope}, Reason='{reason ?? "null"}', ActorIds={count})";
         }
     }

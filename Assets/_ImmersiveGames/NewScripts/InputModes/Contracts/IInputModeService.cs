@@ -1,8 +1,9 @@
 /*
  * VALIDACAO / CHECKLIST (UIGlobalScene)
- * - Criar PauseOverlayRoot desativado, adicionar GamePauseOverlayController e arrastar a referencia.
- * - Conectar botao Resume para GamePauseOverlayController.Resume().
+ * - Recriar a UI de pause em formato canônico futuro.
+ * - Conectar o fluxo de resume ao producer canônico adequado quando ele existir.
  */
+
 namespace _ImmersiveGames.NewScripts.InputModes.Contracts
 {
     /// <summary>
@@ -13,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Contracts
         void SetFrontendMenu(string reason);
         void SetGameplay(string reason);
         void SetPauseOverlay(string reason);
+        void SetInputLocked(string reason);
     }
 }
 

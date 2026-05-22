@@ -1,8 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.AnimationSystems.Interfaces;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Services
 {
     public class GlobalAnimationService

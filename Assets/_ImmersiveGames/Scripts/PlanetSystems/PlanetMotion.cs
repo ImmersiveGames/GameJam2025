@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DisallowMultipleComponent]

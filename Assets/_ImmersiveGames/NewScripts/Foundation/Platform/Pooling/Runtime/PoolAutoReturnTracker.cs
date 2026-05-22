@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 {
     /// <summary>
@@ -109,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 
             if (_coroutineHost != null)
             {
-                UnityEngine.Object.Destroy(_coroutineHost.gameObject);
+                Object.Destroy(_coroutineHost.gameObject);
             }
         }
 

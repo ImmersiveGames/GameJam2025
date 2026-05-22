@@ -4,9 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
 using _ImmersiveGames.Scripts.EaterSystem.States;
 using _ImmersiveGames.Scripts.PlanetSystems.Events;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Fsm;
-
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     /// <summary>

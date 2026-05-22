@@ -135,7 +135,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind
             }
 
             // Reset de valores mantendo a instância => UI não perde referência.
-            _service?.ResetToInitialValues(RuntimeAttributeChangeSource.Manual);
+            _service?.ResetToInitialValues();
 
             return Task.CompletedTask;
         }

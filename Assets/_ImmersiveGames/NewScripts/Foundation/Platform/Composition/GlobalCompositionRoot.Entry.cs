@@ -1,25 +1,19 @@
 /*
  * ChangeLog
- * - GamePauseGateBridge e GameplayStateGate deixaram o root e passaram para os modulos donos.
- * - Entrada de infraestrutura mínima (SimulationGate/WorldReset/SceneReset/DI) para NewScripts.
+ * - Entrada de infraestrutura mínima (Scene/DI) para NewScripts.
  *
  * Ajustes (jan/2026):
- * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0):
- *   - ResolvePlayerActor IGameLoopService uma vez e injeta nos registradores de GameRunStatus/Outcome.
- *   - ResolvePlayerActor ISimulationGateService uma vez e injeta em GameReadinessService e PauseBridge.
- * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual do SceneFlow).
+ * - Reduzidas resoluções repetidas no DI global (evita warnings de "chamada repetida" no frame 0).
+ * - Removido registro duplicado de coordinators antigos de reset/scene flow (centralizado no wiring atual).
  *
  * Nota (QA):
- * - O coordinator NÃO deve cachear IGameLoopService; deve resolver no momento do sync
- *   para que overrides de QA no DI sejam observados.
+ * - O coordinator deve resolver dependências no momento do sync para que overrides de QA no DI sejam observados.
  *
  * Reorganização (jan/2026):
  * - Arquivo reordenado por seções (Init -> Pipeline -> Registradores -> Helpers), sem mudar assinaturas.
  */
 
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
-using _ImmersiveGames.NewScripts.SceneFlow.Readiness.Runtime;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
@@ -34,8 +28,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         // --------------------------------------------------------------------
 
         private static bool _initialized;
-        private static GameReadinessService _gameReadinessService;
-
         // --------------------------------------------------------------------
         // Entry
         // --------------------------------------------------------------------
@@ -44,8 +36,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static void Initialize()
         {
 #if !NEWSCRIPTS_MODE
-            DebugUtility.Log(typeof(GlobalCompositionRoot),
-                "NEWSCRIPTS_MODE desativado: GlobalCompositionRoot ignorado.");
             return;
 #else
             if (_initialized)
@@ -64,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                 "[OBS][Config] Plan=DataCleanup v1 (post StringsToDirectRefs v1)",
                 DebugUtility.Colors.Info);
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[OBS][Config] DataCleanupV1Anchor snapshot='SceneFlow-Config-Snapshot-DataCleanup-v1.md'",
+                "[OBS][Config] DataCleanupV1Anchor snapshot='DataCleanup-v1.md'",
                 DebugUtility.Colors.Info);
             RegisterEssentialServicesOnly();
 
@@ -81,40 +71,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             DebugUtility.Log(typeof(GlobalCompositionRoot),
                 "[BOOT][Logging] EarlyDefault policy applied.",
                 DebugUtility.Colors.Info);
-
-            if (TryGetBootstrapConfigForLogging(out var bootstrapConfig, out string bootstrapVia, out string bootstrapReason))
-            {
-                LoggingConfigAsset loggingConfig = bootstrapConfig.LoggingConfig;
-                if (loggingConfig != null)
-                {
-                    string source = $"BootstrapConfigAsset/{bootstrapVia}";
-                    DebugUtility.ApplyLoggingPolicyFromAsset(loggingConfig, source);
-                    DebugUtility.Log(typeof(GlobalCompositionRoot),
-                        $"[STARTUP][Logging] Final policy applied from LoggingConfigAsset. source='{source}' asset='{loggingConfig.name}'.",
-                        DebugUtility.Colors.Info);
-                    return;
-                }
-
-                ApplyHardcodedFallbackLoggingPolicy(
-                    $"bootstrap_without_logging_config via='{bootstrapVia}' bootstrap='{bootstrapConfig.name}'");
-                return;
-            }
-
-            ApplyHardcodedFallbackLoggingPolicy($"bootstrap_unresolved reason='{bootstrapReason}'");
-        }
-
-        private static void ApplyHardcodedFallbackLoggingPolicy(string reason)
-        {
-            DebugUtility.ApplyLoggingPolicyFromBootstrap(
-                defaultLevel: DebugLevel.Verbose,
-                verboseEnabled: Application.isEditor,
-                fallbacksEnabled: Application.isEditor,
-                globalDebugEnabled: true,
-                repeatedVerboseEnabled: true,
-                source: "FallbackHardcoded");
-
-            DebugUtility.LogWarning(typeof(GlobalCompositionRoot),
-                $"[STARTUP][Logging] Applied hardcoded fallback logging policy. reason='{reason}'.");
         }
 
         private static void EnsureDependencyProvider()

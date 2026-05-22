@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
@@ -11,7 +12,6 @@ using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 {
     [DefaultExecutionOrder(-50)]
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.Scripts.AnimationSystems.Components
 
         private bool _listenersRegistered;
 
-        public event System.Action<Animator> OnAnimatorChanged;
+        public event Action<Animator> OnAnimatorChanged;
 
         public Animator GetAnimator() => _cachedAnimator ??= ResolveAnimator();
 

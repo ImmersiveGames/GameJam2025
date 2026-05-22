@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Detections
 {
     public class PlayerDetectionController : AbstractDetector, IResetInterfaces, IResetScopeFilter, IResetOrder

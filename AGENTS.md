@@ -12,14 +12,14 @@
 - **Input System**: Uses Unity Input System (`InputSystem_Actions.cs` auto-generated from `.inputactions`).
 
 ## Project-Specific Conventions
-- **Historical terms** (`LevelFlow`, `LevelLifecycle`, `ContentSwap`, `PostRun`) are deprecated. Use canonical module names and boundaries.
-- **Ownership**: Each module is owner only of its boundary. E.g., `Gameplay` does not own `SceneFlow` or `Navigation`.
+- **Historical terms** (`LevelFlow`, `LevelLifecycle`, `ContentSwap`, `PostRun`, `macro`, `local`) are deprecated. Use canonical Base 1.1 architecture.
+- **Ownership**: Defined by Base 1.1 pipelines, not by module convenience. See `Docs/ADRs/ADR-0001.md` through `ADR-0008.md`.
 - **Event hooks**: Public events are documented in `Docs/Guides/Event-Hooks-Reference.md`. Use only canonical hooks for cross-module signaling.
-- **Phase/session composition**: `GameplaySessionFlow` is the canonical entry for session/phase logic. See ADRs 0045–0050 for rationale.
+- **Session/Activity composition**: `SessionOperationalPipeline` owns routs/transitions; `SessionActivityPipeline` owns activity lifecycle. See `Docs/ADRs/ADR-0003.md` and `ADR-0004.md`.
 - **Reset**: Macro reset is handled by `WorldReset`; local reset by `SceneReset`; bridge logic in `ResetInterop`.
-- **Input modes**: Managed by `InputModeService` and `InputModeCoordinator`. Only use canonical requests (`FrontendMenu`, `Gameplay`, `PauseOverlay`).
-- **Save/Progression**: `Experience/Save` is the official hook surface; `Progression` and `Checkpoint` are placeholders, not final features.
-- **Audio**: Now a pure playback module; no domain arbitration. See `Docs/Modules/Audio.md` for current shape.
+- **Input modes**: Managed by `InputModeService` and `InputModeCoordinator`. Only use canonical requests (`FrontendMenu`, `Gameplay`, `PauseOverlay`). See `Docs/ADRs/ADR-0007.md`.
+- **Save/Progression**: `SaveSystem` is adapter driven by pipelines. `Progression` and `Checkpoint` are placeholders. See `Docs/ADRs/ADR-0008.md`.
+- **Audio**: Pure playback adapter driven by pipelines; no domain arbitration. See `Docs/Modules/Audio.md` and `Docs/ADRs/ADR-0006.md`.
 
 ## Integration Points & Patterns
 - **Cross-module communication**: Always via explicit services, events, or bridges. Never assume implicit ownership.

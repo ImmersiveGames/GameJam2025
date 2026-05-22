@@ -3,7 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
@@ -13,8 +12,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
     public sealed class InputModeCoordinator : IDisposable
     {
         private readonly EventBinding<InputModeRequestEvent> _requestBinding;
-        private int _lastRequestFrame = -1;
-        private string _lastRequestKey = string.Empty;
 
         public InputModeCoordinator()
         {
@@ -33,16 +30,8 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             string contextSignature = string.IsNullOrWhiteSpace(evt.ContextSignature) ? "<none>" : evt.ContextSignature;
 
             DebugUtility.Log(typeof(InputModeCoordinator),
-                $"[OBS][InputModes] InputModeRequested kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
+                $"[OBS][InputModes] InputModeRequested routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
                 DebugUtility.Colors.Info);
-
-            if (Time.frameCount == _lastRequestFrame && string.Equals(_lastRequestKey, requestKey, StringComparison.Ordinal))
-            {
-                DebugUtility.Log(typeof(InputModeCoordinator),
-                    $"[OBS][InputModes] InputModeRequestDeduped reason='same_frame' key='{requestKey}' contextSignature='{contextSignature}'",
-                    DebugUtility.Colors.Info);
-                return;
-            }
 
             if (!DependencyManager.HasInstance || DependencyManager.Provider == null ||
                 !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var service) || service == null)
@@ -53,8 +42,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
 
             ApplyRequest(service, evt, requestKey, contextSignature);
-            _lastRequestFrame = Time.frameCount;
-            _lastRequestKey = requestKey;
         }
 
         private static void ApplyRequest(IInputModeService service, InputModeRequestEvent evt, string requestKey, string contextSignature)
@@ -63,23 +50,34 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             {
                 case InputModeRequestKind.FrontendMenu:
                     service.SetFrontendMenu(evt.Reason);
-                    break;
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.Gameplay:
                     service.SetGameplay(evt.Reason);
-                    break;
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.PauseOverlay:
                     service.SetPauseOverlay(evt.Reason);
-                    break;
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                case InputModeRequestKind.InputLocked:
+                    service.SetInputLocked(evt.Reason);
+                    DebugUtility.Log(typeof(InputModeCoordinator),
+                        $"[OBS][InputModes] InputModeRequestDelegated routeIdentity='{evt.RouteIdentity}' routeOperationId='{evt.RouteOperationId}' transitionId='{evt.TransitionId}' routeSequence='{evt.RouteSequence}' initialInputMode='{evt.InitialInputMode}' inputMode='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}' outcomeKind='delegated'.",
+                        DebugUtility.Colors.Info);
+                    return;
                 case InputModeRequestKind.Unspecified:
                 default:
                     HardFailFastH1.Trigger(typeof(InputModeCoordinator),
                         $"[FATAL][H1][InputModes] Unsupported InputModeRequestKind '{evt.Kind}' key='{requestKey}'.");
                     return;
             }
-
-            DebugUtility.Log(typeof(InputModeCoordinator),
-                $"[OBS][InputModes] InputModeApplied kind='{evt.Kind}' source='{evt.Source}' reason='{evt.Reason}' contextSignature='{contextSignature}'",
-                DebugUtility.Colors.Info);
         }
 
         private static string BuildRequestKey(InputModeRequestEvent evt)

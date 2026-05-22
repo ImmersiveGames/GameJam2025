@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
     public class RingActivationSkin : SkinConfigurable
@@ -69,7 +71,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             UpdateRingVisibility();
             if (showDebugLogs)
             {
-                DebugUtility.LogVerbose<RingActivationSkin>($"Applied dynamic modifications");
+                DebugUtility.LogVerbose<RingActivationSkin>("Applied dynamic modifications");
             }
         }
 
@@ -244,7 +246,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
         #endregion
     }
 
-    [System.Serializable]
+    [Serializable]
     public struct RingState
     {
         public bool hasRing;

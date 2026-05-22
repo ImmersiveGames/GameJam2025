@@ -10,13 +10,11 @@ using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting.Strategy;
 using _ImmersiveGames.Scripts.SkinSystems.Data;
-using _ImmersiveGames.Scripts.StateMachineSystems;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 using UnityEngine.InputSystem;
-
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 {
     /// <summary>
@@ -72,7 +70,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
         private EntityAudioEmitter _audioEmitter;
         private bool _isInitialized;
 
-        [Inject] private IStateDependentService _stateService;
 
         /// <summary>
         /// Provedor de �udio baseado na skin atual (SkinAudioConfigurable).
@@ -394,10 +391,6 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 
         private void OnSpawnPerformed(InputAction.CallbackContext context)
         {
-            if (!_actor.IsActive || !_stateService.CanExecuteAction(OldActionType.Shoot))
-            {
-                return;
-            }
 
             if (_pool == null)
             {

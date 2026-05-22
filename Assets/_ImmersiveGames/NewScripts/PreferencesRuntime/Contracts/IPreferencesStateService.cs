@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Config;
 using UnityEngine;
@@ -11,6 +12,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
         bool HasVideoSnapshot { get; }
         VideoPreferencesSnapshot CurrentVideoSnapshot { get; }
         IReadOnlyList<Vector2Int> GetVideoResolutionPresets();
+        AudioDefaultsAsset AudioDefaults { get; }
         VideoDefaultsAsset VideoDefaults { get; }
 
         void SetCurrent(
@@ -27,6 +29,20 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts
 
         void ApplyCurrentVideoToRuntime(
             string reason);
+
+        bool TryPreviewAudioVolumes(
+            float masterVolume,
+            float bgmVolume,
+            float sfxVolume,
+            string reason,
+            out bool changed);
+
+        bool TryPreviewVideoResolution(
+            int width,
+            int height,
+            bool fullscreen,
+            string reason,
+            out bool changed);
     }
 }
 

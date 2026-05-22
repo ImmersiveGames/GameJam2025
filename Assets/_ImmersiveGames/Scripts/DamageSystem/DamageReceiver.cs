@@ -13,7 +13,6 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DamageSystem
 {
     public class DamageReceiver : MonoBehaviour, IDamageReceiver

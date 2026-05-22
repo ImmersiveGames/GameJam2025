@@ -1,15 +1,14 @@
+using _ImmersiveGames.NewScripts.Foundation.Core.Fsm;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
     /// Estado base sem regras enquanto o comportamento completo é reimplementado.
     /// </summary>
-    internal abstract class EaterBehaviorState : IOldIState
+    internal abstract class EaterBehaviorState : IState
     {
         protected EaterBehaviorState(string stateName)
         {
@@ -18,7 +17,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         public string StateName { get; }
 
-        protected Behavior.EaterBehavior Behavior { get; private set; }
+        protected EaterBehavior Behavior { get; private set; }
 
         protected Transform Transform => Behavior != null ? Behavior.transform : null;
 
@@ -26,7 +25,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         protected EaterConfigSo Config => Behavior != null ? Behavior.Config : null;
 
-        internal void Attach(Behavior.EaterBehavior behavior)
+        internal void Attach(EaterBehavior behavior)
         {
             Behavior = behavior;
         }
@@ -49,7 +48,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             LogStateEvent("Saiu");
         }
 
-        public virtual bool CanPerformAction(OldActionType action)
+        public virtual bool CanPerformAction(object action)
         {
             return true;
         }

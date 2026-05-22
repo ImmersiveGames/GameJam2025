@@ -2,8 +2,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.PlanetSystems.Defense.Minions;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
-using ImmersiveGames.GameJam2025.Core.Events;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>

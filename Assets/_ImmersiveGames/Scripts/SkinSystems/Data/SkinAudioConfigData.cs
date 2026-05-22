@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
     /// <summary>

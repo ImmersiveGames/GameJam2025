@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
 

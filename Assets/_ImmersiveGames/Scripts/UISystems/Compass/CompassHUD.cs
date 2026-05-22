@@ -116,7 +116,7 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
                 return;
             }
 
-            if (!CompassRuntimeService.TryGet(out var service) || service.PlayerTransform == null)
+            if (!TryResolveRuntimeService(out var service) || service.PlayerTransform == null)
             {
                 return;
             }
@@ -306,6 +306,17 @@ namespace _ImmersiveGames.Scripts.UISystems.Compass
         public void ScheduleBind(string actorId, RuntimeAttributeType runtimeAttributeType, IRuntimeAttributeValue data) { }
         public bool CanAcceptBinds() => State == AttributeCanvasInitializationState.Ready;
         public IReadOnlyDictionary<string, Dictionary<RuntimeAttributeType, RuntimeAttributeUISlot>> GetActorSlots() => EmptyActorSlots;
+
+        private static bool TryResolveRuntimeService(out ICompassRuntimeService runtimeService)
+        {
+            runtimeService = null;
+            if (DependencyManager.Provider == null)
+            {
+                return false;
+            }
+
+            return DependencyManager.Provider.TryGetGlobal(out runtimeService);
+        }
     }
 }
 

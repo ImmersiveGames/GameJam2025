@@ -1,6 +1,5 @@
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Runtime
 {
     public enum SensorDetectionMode

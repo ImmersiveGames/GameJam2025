@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
         [SerializeField] private bool syncOnEnable = true;
 
         private IPreferencesStateService _stateService;
-        private IPreferencesSaveService _saveService;
+        private IPreferencesRuntimePipeline _runtimePipeline;
         private bool _servicesResolved;
         private bool _listenersRegistered;
         private bool _syncingFromState;
@@ -63,14 +63,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 
         public void RestoreVideoDefaults()
         {
-            if (_saveService == null)
+            if (_runtimePipeline == null)
             {
-                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService ausente no VideoPreferencesOptionsBinder.");
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline ausente no VideoPreferencesOptionsBinder.");
             }
 
-            _saveService.TryRestoreVideoDefaults(
-                reason: "VideoPreferences/RestoreDefaults",
-                out string _);
+            _runtimePipeline.RequestVideoRestoreDefaults("VideoPreferences/RestoreDefaults");
 
             SyncFromCurrentState("VideoPreferences/RestoreDefaults");
         }
@@ -94,26 +92,21 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 
             try
             {
-                if (_saveService == null)
+                if (_runtimePipeline == null)
                 {
-                    throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService ausente no VideoPreferencesOptionsBinder.");
+                    throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline ausente no VideoPreferencesOptionsBinder.");
                 }
 
                 Vector2Int selectedPreset = ReadSelectedPreset();
                 bool fullscreen = ReadFullscreen();
 
-                _saveService.TryPreviewVideoResolution(
+                _runtimePipeline.RequestVideoPreview(
                     width: selectedPreset.x,
                     height: selectedPreset.y,
                     fullscreen: fullscreen,
-                    reason: reason,
-                    out bool _);
+                    reason: reason);
 
-                _saveService.TryCommitCurrentVideoResolution(
-                    reason: reason,
-                    fieldHint: fieldHint,
-                    out bool _,
-                    out string _);
+                _runtimePipeline.RequestVideoCommit(fieldHint, reason);
             }
             catch (Exception ex)
             {
@@ -271,9 +264,9 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 throw new InvalidOperationException("[FATAL][Preferences] IPreferencesStateService obrigatorio ausente para VideoPreferencesOptionsBinder.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal(out _saveService) || _saveService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _runtimePipeline) || _runtimePipeline == null)
             {
-                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService obrigatorio ausente para VideoPreferencesOptionsBinder.");
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline obrigatorio ausente para VideoPreferencesOptionsBinder.");
             }
 
             _servicesResolved = true;

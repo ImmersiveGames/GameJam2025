@@ -6,6 +6,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
     {
         void RegisterGlobal<T>(T service, bool allowOverride = false) where T : class;
         bool TryGetGlobal<T>(out T service) where T : class;
+        bool UnregisterGlobal<T>(T service) where T : class;
 
         void RegisterForObject<T>(string objectId, T service, bool allowOverride = false) where T : class;
         bool TryGetForObject<T>(string objectId, out T service) where T : class;

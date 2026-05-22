@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.Scripts.ActorSystems;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     public interface IPoolable

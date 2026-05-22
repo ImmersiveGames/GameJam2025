@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.Core;
 using _ImmersiveGames.Scripts.AudioSystem.Interfaces;
 using _ImmersiveGames.Scripts.AudioSystem.System;
 using ImmersiveGames.GameJam2025.Core.Logging;
@@ -35,7 +34,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
 
         /// <summary>
         /// Cria um SoundBuilder para o SoundData informado, resolvendo o serviço global
-        /// de SFX (IAudioSfxService) via AudioSystemBootstrap/DependencyManager.
+        /// de SFX (IAudioSfxService) via DependencyManager.
         /// </summary>
         public static SoundBuilder For(SoundData sound)
         {
@@ -178,8 +177,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
 
         private static IAudioSfxService ResolveSfxService()
         {
-            AudioSystemBootstrap.EnsureAudioSystemInitialized();
-
             if (DependencyManager.Provider != null &&
                 DependencyManager.Provider.TryGetGlobal(out IAudioSfxService service))
             {
@@ -215,4 +212,6 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Base
         #endregion
     }
 }
+
+
 

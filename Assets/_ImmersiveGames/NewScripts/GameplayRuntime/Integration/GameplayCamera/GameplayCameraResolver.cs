@@ -8,19 +8,20 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
 {
     [DebugLevel(DebugLevel.Verbose)]
     public sealed class GameplayCameraResolver : IGameplayCameraResolver
     {
-        private readonly Dictionary<int, UnityEngine.Camera> _cameraByPlayerId = new();
-        private UnityEngine.Camera _defaultCamera;
+        private readonly Dictionary<int, Camera> _cameraByPlayerId = new();
+        private Camera _defaultCamera;
 
-        public event Action<UnityEngine.Camera> OnDefaultCameraChanged;
+        public event Action<Camera> OnDefaultCameraChanged;
 
-        public IReadOnlyDictionary<int, UnityEngine.Camera> AllCameras => _cameraByPlayerId;
+        public IReadOnlyDictionary<int, Camera> AllCameras => _cameraByPlayerId;
 
-        public void RegisterCamera(int playerId, UnityEngine.Camera camera)
+        public void RegisterCamera(int playerId, Camera camera)
         {
             if (camera == null)
             {
@@ -46,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
             }
         }
 
-        public void UnregisterCamera(int playerId, UnityEngine.Camera camera)
+        public void UnregisterCamera(int playerId, Camera camera)
         {
             if (!_cameraByPlayerId.TryGetValue(playerId, out var currentCamera) || currentCamera != camera)
             {
@@ -65,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
             }
         }
 
-        public UnityEngine.Camera GetCamera(int playerId)
+        public Camera GetCamera(int playerId)
         {
             if (_cameraByPlayerId.TryGetValue(playerId, out var camera) && camera != null)
             {
@@ -75,12 +76,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Integration.GameplayCamera
             return GetDefaultCamera();
         }
 
-        public UnityEngine.Camera GetDefaultCamera()
+        public Camera GetDefaultCamera()
         {
-            return _defaultCamera ?? UnityEngine.Camera.main;
+            return _defaultCamera ?? Camera.main;
         }
 
-        private void UpdateDefaultCamera(UnityEngine.Camera nextDefault)
+        private void UpdateDefaultCamera(Camera nextDefault)
         {
             if (_defaultCamera == nextDefault)
             {

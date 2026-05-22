@@ -1,11 +1,10 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class OldSimulationGateService : IOldSimulationGateService
+    public sealed class OldLegacySimulationGateService : IOldLegacySimulationGateService
     {
         private readonly HashSet<string> _tokens = new();
         private readonly object _lock = new();
@@ -38,7 +37,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
         {
             if (string.IsNullOrWhiteSpace(token))
             {
-                DebugUtility.LogWarning<OldSimulationGateService>("Acquire chamado com token nulo/vazio. Ignorando.");
+                DebugUtility.LogWarning<OldLegacySimulationGateService>("Acquire chamado com token nulo/vazio. Ignorando.");
                 return new ReleaseHandle(this, string.Empty, shouldRelease: false);
             }
 
@@ -56,7 +55,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 RaiseGateChanged();
             }
 
-            DebugUtility.LogVerbose<OldSimulationGateService>($"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+            DebugUtility.LogVerbose<OldLegacySimulationGateService>($"[Gate] Acquire token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
             return new ReleaseHandle(this, token, shouldRelease: true);
         }
 
@@ -80,7 +79,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
 
             if (!removed)
             {
-                DebugUtility.LogVerbose<OldSimulationGateService>($"[Gate] Release token='{token}' ignorado (token n�o estava ativo).");
+                DebugUtility.LogVerbose<OldLegacySimulationGateService>($"[Gate] Release token='{token}' ignorado (token n�o estava ativo).");
                 return;
             }
 
@@ -89,7 +88,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 RaiseGateChanged();
             }
 
-            DebugUtility.LogVerbose<OldSimulationGateService>($"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
+            DebugUtility.LogVerbose<OldLegacySimulationGateService>($"[Gate] Release token='{token}'. Active={ActiveTokenCount}. IsOpen={IsOpen}");
         }
 
         public bool IsTokenActive(string token)
@@ -114,18 +113,18 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
             }
             catch (Exception ex)
             {
-                DebugUtility.LogError<OldSimulationGateService>($"Exception ao disparar GateChanged: {ex}");
+                DebugUtility.LogError<OldLegacySimulationGateService>($"Exception ao disparar GateChanged: {ex}");
             }
         }
         [DebugLevel(DebugLevel.Verbose)]
         private sealed class ReleaseHandle : IDisposable
         {
-            private readonly OldSimulationGateService _service;
+            private readonly OldLegacySimulationGateService _service;
             private readonly string _token;
             private readonly bool _shouldRelease;
             private bool _disposed;
 
-            public ReleaseHandle(OldSimulationGateService service, string token, bool shouldRelease)
+            public ReleaseHandle(OldLegacySimulationGateService service, string token, bool shouldRelease)
             {
                 _service = service;
                 _token = token;

@@ -1,4 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 namespace _ImmersiveGames.Scripts.EaterSystem.Events
 {
     /// <summary>
@@ -7,13 +8,13 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Events
     /// </summary>
     public readonly struct EaterDesireInfoChangedEvent : IEvent
     {
-        public EaterDesireInfoChangedEvent(Behavior.EaterBehavior behavior, EaterDesireInfo info)
+        public EaterDesireInfoChangedEvent(EaterBehavior behavior, EaterDesireInfo info)
         {
             Behavior = behavior;
             Info = info;
         }
 
-        public Behavior.EaterBehavior Behavior { get; }
+        public EaterBehavior Behavior { get; }
 
         public EaterDesireInfo Info { get; }
 

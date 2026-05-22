@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Events
     /// <summary>
     /// Utilitário de limpeza/gerenciamento do EventBus no NewScripts (sem dependências do legado).
     /// </summary>
-    public static partial class EventBusUtil
+    public static class EventBusUtil
     {
         private static readonly HashSet<Type> _eventTypes = new();
         private static readonly HashSet<(Type Scope, Type Event)> _filteredEventTypes = new();

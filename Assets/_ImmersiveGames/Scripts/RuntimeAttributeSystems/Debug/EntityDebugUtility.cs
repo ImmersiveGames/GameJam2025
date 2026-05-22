@@ -17,7 +17,6 @@ using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
 {
 
@@ -851,7 +850,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Debug
                 var resourceSystem = bridge.GetResourceSystem();
                 if (resourceSystem != null)
                 {
-                    DebugUtility.LogWarning<EntityDebugUtility>($"📊 Threshold Service Status:");
+                    DebugUtility.LogWarning<EntityDebugUtility>("📊 Threshold Service Status:");
                     DebugUtility.LogWarning<EntityDebugUtility>($" - Resources: {resourceSystem.GetAll().Count}");
 
                     foreach (var (resourceType, _) in resourceSystem.GetAll())

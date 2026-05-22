@@ -1,15 +1,18 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {
-        private static bool _bootstrapConfigResolutionAttempted;
-        private static bool _bootstrapConfigResolutionLogged;
-        private static BootstrapConfigAsset _cachedBootstrapConfig;
-        private static string _cachedBootstrapConfigVia = "None";
+        private const string RuntimeModeConfigResourcesPath = "RuntimeMode/RuntimeModeConfig";
+
+        private static bool _runtimeModeConfigResolutionAttempted;
+        private static bool _runtimeModeConfigResolutionLogged;
+        private static RuntimeModeConfig _cachedRuntimeModeConfig;
+        private static string _cachedRuntimeModeConfigVia = "None";
         private static bool _fatalAbortRequested;
 
         private static void FailFast(string message)
@@ -34,92 +37,92 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
         static partial void RequestEditorStopPlayMode();
 
-        private static bool TryResolveBootstrapConfigFromSources(out BootstrapConfigAsset bootstrapConfig, out string via, out string reason)
+        private static bool TryResolveRuntimeModeConfigFromSources(out RuntimeModeConfig runtimeModeConfig, out string via, out string reason)
         {
-            bootstrapConfig = null;
+            runtimeModeConfig = null;
             via = "None";
             reason = string.Empty;
 
-            if (_cachedBootstrapConfig != null)
+            if (_cachedRuntimeModeConfig != null)
             {
-                bootstrapConfig = _cachedBootstrapConfig;
-                via = _cachedBootstrapConfigVia;
+                runtimeModeConfig = _cachedRuntimeModeConfig;
+                via = _cachedRuntimeModeConfigVia;
                 return true;
             }
 
             if (DependencyManager.HasInstance)
             {
                 var provider = DependencyManager.Provider;
-                if (provider != null && provider.TryGetGlobal<BootstrapConfigAsset>(out var diConfig) && diConfig != null)
+                if (provider != null && provider.TryGetGlobal<RuntimeModeConfig>(out var diConfig) && diConfig != null)
                 {
-                    bootstrapConfig = diConfig;
+                    runtimeModeConfig = diConfig;
                     via = "DI";
-                    _cachedBootstrapConfig = diConfig;
-                    _cachedBootstrapConfigVia = via;
+                    _cachedRuntimeModeConfig = diConfig;
+                    _cachedRuntimeModeConfigVia = via;
                     return true;
                 }
             }
 
-            bootstrapConfig = Resources.Load<BootstrapConfigAsset>("BootstrapConfig");
-            if (bootstrapConfig == null)
+            runtimeModeConfig = Resources.Load<RuntimeModeConfig>(RuntimeModeConfigResourcesPath);
+            if (runtimeModeConfig == null)
             {
-                reason = "bootstrap_config_resource_missing";
+                reason = "runtime_mode_config_resource_missing";
                 return false;
             }
 
-            via = "Resources/BootstrapConfig";
-            _cachedBootstrapConfig = bootstrapConfig;
-            _cachedBootstrapConfigVia = via;
+            via = $"Resources/{RuntimeModeConfigResourcesPath}";
+            _cachedRuntimeModeConfig = runtimeModeConfig;
+            _cachedRuntimeModeConfigVia = via;
 
             if (DependencyManager.HasInstance)
             {
-                DependencyManager.Provider.RegisterGlobal(_cachedBootstrapConfig, allowOverride: false);
+                DependencyManager.Provider.RegisterGlobal(_cachedRuntimeModeConfig, allowOverride: false);
             }
 
             return true;
         }
 
-        private static bool TryGetBootstrapConfigForLogging(out BootstrapConfigAsset bootstrapConfig, out string via, out string reason)
+        private static bool TryGetRuntimeModeConfigForLogging(out RuntimeModeConfig runtimeModeConfig, out string via, out string reason)
         {
-            bool resolved = TryResolveBootstrapConfigFromSources(out bootstrapConfig, out via, out reason);
-            if (resolved && !_bootstrapConfigResolutionLogged)
+            bool resolved = TryResolveRuntimeModeConfigFromSources(out runtimeModeConfig, out via, out reason);
+            if (resolved && !_runtimeModeConfigResolutionLogged)
             {
-                _bootstrapConfigResolutionLogged = true;
+                _runtimeModeConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][BOOT] BootstrapConfigResolvedVia={via} asset={bootstrapConfig.name}",
+                    $"[OBS][BOOT] RuntimeModeConfigResolvedVia={via} asset={runtimeModeConfig.name}",
                     DebugUtility.Colors.Info);
             }
 
             return resolved;
         }
 
-        private static BootstrapConfigAsset GetRequiredBootstrapConfig(out string via)
+        private static RuntimeModeConfig GetRequiredRuntimeModeConfig(out string via)
         {
-            if (!_bootstrapConfigResolutionAttempted)
+            if (!_runtimeModeConfigResolutionAttempted)
             {
-                _bootstrapConfigResolutionAttempted = true;
-                if (!TryResolveBootstrapConfigFromSources(out _cachedBootstrapConfig, out _cachedBootstrapConfigVia, out string reason))
+                _runtimeModeConfigResolutionAttempted = true;
+                if (!TryResolveRuntimeModeConfigFromSources(out _cachedRuntimeModeConfig, out _cachedRuntimeModeConfigVia, out string reason))
                 {
-                    FailFast($"Missing required BootstrapConfigAsset. reason='{reason}'.");
+                    FailFast($"Missing required RuntimeModeConfig. reason='{reason}'.");
                 }
             }
 
-            via = _cachedBootstrapConfigVia;
+            via = _cachedRuntimeModeConfigVia;
 
-            if (!_bootstrapConfigResolutionLogged)
+            if (!_runtimeModeConfigResolutionLogged)
             {
-                _bootstrapConfigResolutionLogged = true;
+                _runtimeModeConfigResolutionLogged = true;
                 DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                    $"[OBS][Config] BootstrapConfigResolvedVia={via} asset={_cachedBootstrapConfig.name}",
+                    $"[OBS][Config] RuntimeModeConfigResolvedVia={via} asset={_cachedRuntimeModeConfig.name}",
                     DebugUtility.Colors.Info);
             }
 
-            if (_cachedBootstrapConfig == null || _fatalAbortRequested)
+            if (_cachedRuntimeModeConfig == null || _fatalAbortRequested)
             {
-                throw new InvalidOperationException("[FATAL][Config] Bootstrap config resolution aborted.");
+                throw new InvalidOperationException("[FATAL][Config] RuntimeModeConfig resolution aborted.");
             }
 
-            return _cachedBootstrapConfig;
+            return _cachedRuntimeModeConfig;
         }
     }
 }

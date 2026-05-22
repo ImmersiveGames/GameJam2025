@@ -1,8 +1,6 @@
 using System;
-using _ImmersiveGames.NewScripts.ActorsSystem.Contracts.Inbound;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
@@ -11,40 +9,20 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
     public static class InputModesInstaller
     {
         private static bool _installed;
-        private static bool _defaultsAppliedLogged;
 
-        public static void Install(BootstrapConfigAsset bootstrapConfig)
+        public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
             if (_installed)
             {
                 return;
             }
 
-            _ = bootstrapConfig;
+            _ = runtimeModeConfig;
 
-            RuntimeModeConfig runtimeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimeModeConfig.InputModesSettings settings = runtimeConfig.inputModes;
-
-            if (settings != null && !settings.enableInputModes)
-            {
-                throw new InvalidOperationException(
-                    "[FATAL][Config][InputModes] InputModes disabled by RuntimeModeConfig. Canonical InputModes rail is mandatory in Base 1.0.");
-            }
-
-            bool logVerbose = settings?.logVerbose ?? true;
-            (string playerMapName, string menuMapName) = InputModesDefaults.ResolveFrom(runtimeConfig);
-
-            if (logVerbose
-                && !_defaultsAppliedLogged
-                && (settings == null
-                    || string.IsNullOrWhiteSpace(settings.playerActionMapName)
-                    || string.IsNullOrWhiteSpace(settings.menuActionMapName)))
-            {
-                _defaultsAppliedLogged = true;
-                DebugUtility.LogVerbose(typeof(InputModesInstaller),
-                    $"[OBS][InputModes][Installer] ActionMapDefaultsApplied reason='blank_config' player='{playerMapName}' menu='{menuMapName}'.",
-                    DebugUtility.Colors.Info);
-            }
+            _ = ResolveRuntimeModeConfigOrFail();
+            string playerMapName = InputModesDefaults.PlayerActionMapName;
+            string menuMapName = InputModesDefaults.MenuActionMapName;
+            ValidateRequiredActionMapNamesOrFail(playerMapName, menuMapName);
 
             EnsureCanonicalInputModeService(playerMapName, menuMapName);
 
@@ -73,8 +51,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
         private static void EnsureCanonicalInputModeService(string playerMapName, string menuMapName)
         {
-            IActorsOperationalBindingQueryPort operationalBindingQueryPort = ResolveOperationalBindingQueryPortOrFail();
-
             if (DependencyManager.Provider.TryGetGlobal<IInputModeService>(out var existingService) && existingService != null)
             {
                 if (existingService is not InputModeService)
@@ -88,21 +64,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                     DependencyManager.Provider.RegisterGlobal<IInputModeStateService>((InputModeService)existingService);
                 }
 
-                if (!DependencyManager.Provider.TryGetGlobal<IPlayerInputLocator>(out var existingLocator) || existingLocator == null)
-                {
-                    DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(new PlayerInputLocator(operationalBindingQueryPort));
-                }
-
                 DebugUtility.LogVerbose(typeof(InputModesInstaller),
                     "[OBS][InputModes][Installer] Canonical IInputModeService already present.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            var playerInputLocator = new PlayerInputLocator(operationalBindingQueryPort);
-            var inputModeService = new InputModeService(playerInputLocator, playerMapName, menuMapName);
-
-            DependencyManager.Provider.RegisterGlobal<IPlayerInputLocator>(playerInputLocator);
+            var inputModeService = new InputModeService(playerMapName, menuMapName);
             DependencyManager.Provider.RegisterGlobal<IInputModeService>(inputModeService);
             DependencyManager.Provider.RegisterGlobal<IInputModeStateService>(inputModeService);
             DependencyManager.Provider.RegisterGlobal(inputModeService);
@@ -112,15 +80,17 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 DebugUtility.Colors.Info);
         }
 
-        private static IActorsOperationalBindingQueryPort ResolveOperationalBindingQueryPortOrFail()
+        private static void ValidateRequiredActionMapNamesOrFail(string playerMapName, string menuMapName)
         {
-            if (DependencyManager.Provider.TryGetGlobal<IActorsOperationalBindingQueryPort>(out var queryPort) && queryPort != null)
+            if (string.IsNullOrWhiteSpace(playerMapName))
             {
-                return queryPort;
+                throw new InvalidOperationException("[FATAL][Config][InputModes] canonical player action map name obrigatorio ausente.");
             }
 
-            throw new InvalidOperationException(
-                "[FATAL][Config][InputModes] IActorsOperationalBindingQueryPort obrigatorio ausente no DI global antes de instalar InputModes.");
+            if (string.IsNullOrWhiteSpace(menuMapName))
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModes] canonical menu action map name obrigatorio ausente.");
+            }
         }
     }
 }

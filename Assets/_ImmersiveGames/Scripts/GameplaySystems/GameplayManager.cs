@@ -5,7 +5,6 @@ using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems
 {
     public interface IGameplayManager

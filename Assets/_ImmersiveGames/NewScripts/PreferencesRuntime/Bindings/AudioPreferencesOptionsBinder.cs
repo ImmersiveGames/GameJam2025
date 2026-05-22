@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
         [SerializeField] private AudioSfxCueAsset sfxPreviewCue;
 
         private IPreferencesStateService _stateService;
-        private IPreferencesSaveService _saveService;
+        private IPreferencesRuntimePipeline _runtimePipeline;
         private bool _servicesResolved;
         private bool _listenersRegistered;
         private bool _syncingFromState;
@@ -88,17 +88,16 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 
             try
             {
-                if (_saveService == null)
+                if (_runtimePipeline == null)
                 {
-                    throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService ausente no AudioPreferencesOptionsBinder.");
+                    throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline ausente no AudioPreferencesOptionsBinder.");
                 }
 
-                _saveService.TryPreviewAudioVolumes(
+                _runtimePipeline.RequestAudioPreview(
                     masterVolume: ReadSliderValue(masterVolumeSlider),
                     bgmVolume: ReadSliderValue(bgmVolumeSlider),
                     sfxVolume: ReadSliderValue(sfxVolumeSlider),
-                    reason: reason,
-                    out bool _);
+                    reason: reason);
             }
             catch (Exception ex)
             {
@@ -110,16 +109,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
         {
             try
             {
-                if (_saveService == null)
+                if (_runtimePipeline == null)
                 {
-                    throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService ausente no AudioPreferencesOptionsBinder.");
+                    throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline ausente no AudioPreferencesOptionsBinder.");
                 }
 
-                return _saveService.TryCommitCurrentAudioVolumes(
-                    reason: reason,
-                    fieldHint: fieldHint,
-                    out bool _,
-                    out string _);
+                return _runtimePipeline.RequestAudioCommit(fieldHint, reason);
             }
             catch (Exception ex)
             {
@@ -130,14 +125,12 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
 
         public void RestoreAudioDefaults()
         {
-            if (_saveService == null)
+            if (_runtimePipeline == null)
             {
-                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService ausente no AudioPreferencesOptionsBinder.");
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline ausente no AudioPreferencesOptionsBinder.");
             }
 
-            _saveService.TryRestoreAudioDefaults(
-                reason: "AudioPreferences/RestoreDefaults",
-                out string _);
+            _runtimePipeline.RequestAudioRestoreDefaults("AudioPreferences/RestoreDefaults");
 
             SyncFromCurrentState("AudioPreferences/RestoreDefaults");
         }
@@ -232,9 +225,9 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Bindings
                 throw new InvalidOperationException("[FATAL][Preferences] IPreferencesStateService obrigatorio ausente para AudioPreferencesOptionsBinder.");
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal(out _saveService) || _saveService == null)
+            if (!DependencyManager.Provider.TryGetGlobal(out _runtimePipeline) || _runtimePipeline == null)
             {
-                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesSaveService obrigatorio ausente para AudioPreferencesOptionsBinder.");
+                throw new InvalidOperationException("[FATAL][Preferences] IPreferencesRuntimePipeline obrigatorio ausente para AudioPreferencesOptionsBinder.");
             }
 
             _servicesResolved = true;

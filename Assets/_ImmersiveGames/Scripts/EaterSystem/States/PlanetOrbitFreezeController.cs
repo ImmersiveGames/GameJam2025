@@ -1,9 +1,9 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
             _requester = requester ?? throw new ArgumentNullException(nameof(requester));
         }
 
-        public bool TryFreeze(Behavior.EaterBehavior behavior, Transform target)
+        public bool TryFreeze(EaterBehavior behavior, Transform target)
         {
             if (target == null)
             {
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.States
 
         }
 
-        private void LogMissingPlanetMotion(Behavior.EaterBehavior behavior)
+        private void LogMissingPlanetMotion(EaterBehavior behavior)
         {
             if (behavior == null || !behavior.ShouldLogStateTransitions || _loggedMissingMotion)
             {

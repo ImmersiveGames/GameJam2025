@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.CameraSystems
 {
     /// <summary>
@@ -24,7 +24,7 @@ namespace _ImmersiveGames.Scripts.CameraSystems
         Camera GetDefaultCamera();
 
         /// <summary>Evento disparado quando a câmera padrão muda.</summary>
-        event System.Action<Camera> OnDefaultCameraChanged;
+        event Action<Camera> OnDefaultCameraChanged;
 
         /// <summary>
         /// Retorna um dicionário somente, leitura com todas as câmeras registradas.

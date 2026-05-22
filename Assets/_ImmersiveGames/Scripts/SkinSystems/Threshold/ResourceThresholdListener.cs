@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.Scripts.ActorSystems;
@@ -7,10 +8,9 @@ using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 using UnityEngine.Events;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Threshold
 {
-    [System.Serializable]
+    [Serializable]
     public class ThresholdConfig
     {
         [Header("Configuration")]

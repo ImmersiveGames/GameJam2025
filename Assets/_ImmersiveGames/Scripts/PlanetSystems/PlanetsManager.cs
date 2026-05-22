@@ -14,7 +14,6 @@ using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems
 {
     [DefaultExecutionOrder(-80), DebugLevel(DebugLevel.Verbose)]

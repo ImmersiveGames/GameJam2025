@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public interface ICompositionModuleDescriptor
@@ -13,8 +13,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         bool Optional { get; }
         bool InstallerOnly { get; }
         string Description { get; }
-        Action<BootstrapConfigAsset> Installer { get; }
-        Action<BootstrapConfigAsset> Bootstrap { get; }
+        Action<RuntimeModeConfig> Installer { get; }
+        Action<RuntimeModeConfig> Bootstrap { get; }
     }
 
     public sealed class CompositionModuleDescriptor : ICompositionModuleDescriptor
@@ -23,8 +23,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             string moduleId,
             IReadOnlyList<string> installerDependencies,
             IReadOnlyList<string> bootstrapDependencies,
-            Action<BootstrapConfigAsset> installer,
-            Action<BootstrapConfigAsset> bootstrap,
+            Action<RuntimeModeConfig> installer,
+            Action<RuntimeModeConfig> bootstrap,
             string installerEntry = null,
             string runtimeComposerEntry = null,
             bool optional = false,
@@ -72,8 +72,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         public bool Optional { get; }
         public bool InstallerOnly { get; }
         public string Description { get; }
-        public Action<BootstrapConfigAsset> Installer { get; }
-        public Action<BootstrapConfigAsset> Bootstrap { get; }
+        public Action<RuntimeModeConfig> Installer { get; }
+        public Action<RuntimeModeConfig> Bootstrap { get; }
     }
 }
 

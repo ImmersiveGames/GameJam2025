@@ -63,6 +63,33 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
             return false;
         }
 
+        public bool Unregister<T>(T service) where T : class
+        {
+            if (service == null)
+            {
+                return false;
+            }
+
+            Type type = typeof(T);
+            if (!_services.TryGetValue(type, out object existing) || existing == null)
+            {
+                return false;
+            }
+
+            if (!ReferenceEquals(existing, service))
+            {
+                return false;
+            }
+
+            _services.Remove(type);
+            DisposeServiceIfNeeded(existing);
+            DebugUtility.LogVerbose(
+                typeof(GlobalServiceRegistry),
+                $"Serviço {type.Name} removido do escopo global.",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
         public override void Clear(string key)
         {
             foreach (object service in _services.Values)

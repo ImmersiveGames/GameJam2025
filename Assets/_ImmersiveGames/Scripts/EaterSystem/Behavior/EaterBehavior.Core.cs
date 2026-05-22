@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.Scripts.AnimationSystems.Components;
 using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
@@ -12,7 +13,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
     /// Controle básico do comportamento do Eater.
     /// Cria os estados conhecidos e integra com desejos, recursos, animação, etc.
     /// </summary>
-    [RequireComponent(typeof(EaterMaster), typeof(EaterAnimationController), typeof(AnimationSystems.Components.AnimationResolver))]
+    [RequireComponent(typeof(EaterMaster), typeof(EaterAnimationController), typeof(AnimationResolver))]
     [AddComponentMenu("ImmersiveGames/Eater/Eater Behavior")]
     [DefaultExecutionOrder(10)]
     public sealed partial class EaterBehavior : MonoBehaviour
@@ -45,7 +46,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
             CaptureInitialPoseIfNeeded();
             TryEnsureAutoFlowBridge();
             EnsureDesireService();
-            EnsureStatesInitialized();
         }
 
 #if UNITY_EDITOR
@@ -67,7 +67,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         private void Update()
         {
             _desireService?.Update();
-            _stateMachine?.Update();
         }
 
         private void OnDestroy()
@@ -77,16 +76,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 _desireService.EventDesireChanged -= HandleDesireChanged;
                 _desireService.Stop();
             }
-
-            _deathPredicate?.Dispose();
-            _deathPredicate = null;
-
-            _revivePredicate?.Dispose();
-            _revivePredicate = null;
-
-            _planetUnmarkedPredicate?.Dispose();
-            _planetUnmarkedPredicate = null;
-            _eatingWanderingPredicate = null;
         }
     }
 }

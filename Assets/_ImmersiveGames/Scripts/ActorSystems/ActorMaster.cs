@@ -10,7 +10,6 @@ using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.ActorSystems
 {
     [DefaultExecutionOrder(-10), DebugLevel(DebugLevel.Warning)]

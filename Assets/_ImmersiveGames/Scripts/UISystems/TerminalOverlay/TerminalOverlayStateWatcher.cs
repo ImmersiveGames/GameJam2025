@@ -1,9 +1,6 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
-using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -11,7 +8,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
     {
         [SerializeField] private TerminalOverlayController overlay;
 
-        private System.Type _lastStateType;
+        private Type _lastStateType;
 
         private void Awake()
         {
@@ -25,7 +22,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         private void Update()
         {
-            var state = OldGameManagerStateMachine.Instance != null ? OldGameManagerStateMachine.Instance.CurrentState : null;
+            object state = null;
             var currentType = state?.GetType();
 
             if (currentType == _lastStateType)
@@ -44,18 +41,6 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
                 return;
             }
 
-            // Terminal states => mostra overlay.
-            if (state is OldVictoryState)
-            {
-                overlay.ShowVictory();
-                return;
-            }
-
-            if (state is OldGameOverState)
-            {
-                overlay.ShowGameOver();
-                return;
-            }
 
             // Qualquer outro estado => garante que o terminal overlay n�o fique �travado�.
             overlay.Hide();
@@ -63,7 +48,7 @@ namespace _ImmersiveGames.Scripts.UISystems.TerminalOverlay
 
         private void SnapshotState(string label)
         {
-            var state = OldGameManagerStateMachine.Instance != null ? OldGameManagerStateMachine.Instance.CurrentState : null;
+            object state = null;
             _lastStateType = state?.GetType();
             DebugUtility.LogVerbose<TerminalOverlayStateWatcher>(
                 $"[TerminalOverlayWatcher] {label} | State='{_lastStateType?.Name ?? "null"}'");

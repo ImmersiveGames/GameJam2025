@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionFlow.GameLoop.RunLifecycle.Core;
-using _ImmersiveGames.NewScripts.SessionFlow.Semantic.GameplaySession.Diagnostics;
+using _ImmersiveGames.NewScripts.RunPipeline.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
 {
@@ -19,16 +18,15 @@ namespace _ImmersiveGames.NewScripts.FrontendRuntime.UI.Bindings
         protected override bool OnClickCore(string actionReason)
         {
             string normalizedReason = string.IsNullOrWhiteSpace(actionReason) ? "Menu/PlayButton" : actionReason.Trim();
-            GameplaySessionFlowSmokeReporter.ReportCurrentState("MenuPlayButton/BeforeRaise", normalizedReason);
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
-                $"[OBS][FrontendUI][Intent] MenuPlay -> GamePlayRequestedEvent reason='{normalizedReason}'.",
+                $"[OBS][FrontendUI][Intent] MenuPlay -> RunActivationRequestedEvent reason='{normalizedReason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.LogVerbose<MenuPlayButtonBinder>(
                 "[OBS][FrontendUI][Delegate] Intent de Play delegada downstream para o backbone canonico.",
                 DebugUtility.Colors.Info);
 
-            EventBus<GamePlayRequestedEvent>.Raise(new GamePlayRequestedEvent(normalizedReason));
+            EventBus<RunActivationRequestedEvent>.Raise(new RunActivationRequestedEvent(normalizedReason));
 
             return true;
         }

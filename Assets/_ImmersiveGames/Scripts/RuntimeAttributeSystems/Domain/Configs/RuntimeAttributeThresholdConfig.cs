@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
@@ -16,7 +17,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
         {
             thresholds ??= Array.Empty<float>();
 
-            var set = new System.Collections.Generic.HashSet<float>();
+            var set = new HashSet<float>();
             foreach (float t in thresholds)
             {
                 float clamped = Mathf.Clamp01(t);
@@ -26,7 +27,7 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
             set.Add(0f);
             set.Add(1f);
 
-            var list = new System.Collections.Generic.List<float>(set);
+            var list = new List<float>(set);
             list.Sort();
             return list.ToArray();
         }

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e723cb3f3804f4abf6f34295be0882d, type: 3}
+  m_Name: ActivityCatalog_Default
+  m_EditorClassIdentifier: 
+  catalogId: activity_catalog_default
+  advanceAtEndMode: 1
+  activities:
+  - {fileID: 11400000, guid: 7e00c8fd7db0457389e637499f6fda17, type: 2}
+  - {fileID: 11400000, guid: 489ed87ad55c44a8b48f37f42f0ea03d, type: 2}

@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
@@ -9,11 +9,12 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
     public static class InputModesRuntimeComposer
     {
         private const string CanonicalTrail =
-            "InputModeRequestEvent->InputModeCoordinator->IInputModeService->InputModeChangedEvent";
+            "InputModeRequestEvent->InputModeCoordinator->IInputModeService";
 
         private static bool _runtimeComposed;
+        private static SessionOperationalInputModeAdapter _sessionOperationalInputModeAdapter;
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(InputModesRuntimeComposer));
 
@@ -22,9 +23,13 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
                 return;
             }
 
-            _ = bootstrapConfig;
+            if (runtimeModeConfig == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][InputModes] RuntimeModeConfig obrigatorio ausente para compor o runtime de InputModes.");
+            }
 
             EnsureCanonicalTrailOrFail(requireCoordinator: false);
+            EnsureSessionOperationalInputModeAdapter(runtimeModeConfig);
             EnsureCoordinatorOrFail();
             EnsureCanonicalTrailOrFail(requireCoordinator: true);
 
@@ -50,6 +55,32 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
             DebugUtility.Log(typeof(InputModesRuntimeComposer),
                 "[OBS][InputModes][Pipeline] coordinator='registered'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalInputModeAdapter(RuntimeModeConfig runtimeModeConfig)
+        {
+            if (runtimeModeConfig.compositionProfile != CompositionProfileKind.Base11Sandbox)
+            {
+                return;
+            }
+
+            if (_sessionOperationalInputModeAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionOperationalInputModeAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _sessionOperationalInputModeAdapter = existingAdapter;
+                return;
+            }
+
+            _sessionOperationalInputModeAdapter = new SessionOperationalInputModeAdapter();
+            DependencyManager.Provider.RegisterGlobal(_sessionOperationalInputModeAdapter);
+
+            DebugUtility.Log(typeof(InputModesRuntimeComposer),
+                "[OBS][InputModes][Pipeline] adapter='SessionOperationalInputModeAdapter' registered for canonical input modes.",
                 DebugUtility.Colors.Info);
         }
 

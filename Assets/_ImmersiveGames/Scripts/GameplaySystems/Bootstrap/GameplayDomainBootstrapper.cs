@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.GameplaySystems.Domain;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameplaySystems.Bootstrap
 {
     [DefaultExecutionOrder(-200)]

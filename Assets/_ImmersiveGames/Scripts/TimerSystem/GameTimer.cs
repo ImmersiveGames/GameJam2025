@@ -3,8 +3,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.GameManagerSystems;
 using _ImmersiveGames.Scripts.GameManagerSystems.Events;
-using _ImmersiveGames.Scripts.StateMachineSystems;
-using _ImmersiveGames.Scripts.StateMachineSystems.GameStates;
 using _ImmersiveGames.Scripts.TimerSystem.Events;
 using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
@@ -12,7 +10,6 @@ using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using ImprovedTimers;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.TimerSystem
 {
     /// <summary>
@@ -367,12 +364,6 @@ namespace _ImmersiveGames.Scripts.TimerSystem
         private void TryStartWhenPlaying()
         {
             if (_sessionActive || _autoStartLocked)
-            {
-                return;
-            }
-
-            var stateMachine = OldGameManagerStateMachine.Instance;
-            if (stateMachine == null || stateMachine.CurrentState is not OldPlayingState)
             {
                 return;
             }

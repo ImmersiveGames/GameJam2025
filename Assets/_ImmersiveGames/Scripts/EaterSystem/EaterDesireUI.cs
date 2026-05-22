@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.Scripts.EaterSystem.Behavior;
 using _ImmersiveGames.Scripts.EaterSystem.Events;
 using _ImmersiveGames.Scripts.GameplaySystems;
 using _ImmersiveGames.Scripts.PlanetSystems;
@@ -11,7 +12,6 @@ using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
 using UnityEngine.UI;
-
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     [DebugLevel(DebugLevel.Verbose)]
@@ -21,7 +21,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
     {
         [Header("Referências")]
         [SerializeField] private Image desireIcon;
-        [SerializeField] private Behavior.EaterBehavior eaterBehavior;
+        [SerializeField] private EaterBehavior eaterBehavior;
         [SerializeField, Tooltip("Sprite utilizada quando não houver desejo ativo ou quando o ícone do recurso estiver indisponível.")]
         private Sprite fallbackSprite;
         [SerializeField, Tooltip("Quando verdadeiro, oculta a imagem se não existir desejo ativo.")]
@@ -531,7 +531,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (!eaterTransform.TryGetComponent(out eaterBehavior))
             {
-                eaterBehavior = eaterTransform.GetComponentInChildren<Behavior.EaterBehavior>(true);
+                eaterBehavior = eaterTransform.GetComponentInChildren<EaterBehavior>(true);
             }
 
             if (eaterBehavior != null)

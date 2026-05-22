@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Data
 {
     public interface ISkinCollection

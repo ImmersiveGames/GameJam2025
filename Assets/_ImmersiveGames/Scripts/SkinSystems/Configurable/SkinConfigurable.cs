@@ -8,7 +8,6 @@ using _ImmersiveGames.Scripts.SkinSystems.Events;
 using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 {
     public abstract class SkinConfigurable : MonoBehaviour

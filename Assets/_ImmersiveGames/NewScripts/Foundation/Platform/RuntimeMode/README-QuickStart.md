@@ -4,18 +4,16 @@
    Create -> ImmersiveGames -> Runtime Mode Config
 
 2) Salve em:
-   Assets/_ImmersiveGames/NewScripts/Resources/RuntimeModeConfig.asset
-   e referencie esse asset em `BootstrapConfig.asset`.
+   Assets/_ImmersiveGames/NewScripts/Resources/RuntimeMode/RuntimeModeConfig.asset
 
-3) Valores padrão recomendados (já configurados no script):
+3) Referencie explicitamente um `RuntimeConfigSetAsset` valido em `RuntimeModeConfig.runtimeConfigSet`.
+
+4) Valores padrao recomendados (ja configurados no script):
    - ModeOverride: Auto
-   - DedupStrategy: CooldownSeconds
-   - CooldownSeconds: 5
-   - EmitSummaryEverySeconds: 30
-   - MaxUniqueKeys: 256
-   - LogFirstOccurrence: true
-   - IncludeCountInLog: true
-   - Strict: DegradedAsError=true, DegradedAsException=false
+   - CompositionProfile: Base11Sandbox
 
-Observação:
-- Se o asset não existir, o bootstrap falha cedo. Não há mais degraded path automático para esse config.
+Observacao:
+- Se o asset nao existir, o bootstrap falha cedo.
+- Nao ha fallback via BootstrapConfigAsset.
+- Caminho canonico ativo: RuntimeModeConfig -> RuntimeConfigSetAsset -> RuntimeConfigRegistry -> RuntimeConfigSnapshot read-only.
+

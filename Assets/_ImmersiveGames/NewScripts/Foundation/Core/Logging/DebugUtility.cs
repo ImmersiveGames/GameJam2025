@@ -101,7 +101,6 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         public static void Initialize()
         {
 #if NEWSCRIPTS_MODE
-            Debug.Log("NEWSCRIPTS_MODE ativo: DebugUtility.Initialize executando reset de estado.");
 #endif
             _scriptDebugLevels.Clear();
             _localLevels.Clear();
@@ -193,15 +192,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
         public static void ApplyLoggingPolicyFromBootstrap(
             DebugLevel defaultLevel,
             bool verboseEnabled,
-            bool fallbacksEnabled,
+            bool taggedVerboseEnabled,
             bool globalDebugEnabled = true,
             bool repeatedVerboseEnabled = true,
-            string source = "BootstrapFallbackHardcoded")
+            string source = "DirectBootstrapHardcoded")
         {
             ApplyLoggingPolicyInternal(
                 globalDebugEnabled,
                 verboseEnabled,
-                fallbacksEnabled,
+                taggedVerboseEnabled,
                 repeatedVerboseEnabled,
                 defaultLevel,
                 source,
@@ -566,11 +565,11 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             _lastAppliedEarlyDefault = isEarlyDefault;
 
             string phase = isEarlyDefault ? "BOOT" : "STARTUP";
-            string policyFlavor = isEarlyDefault ? "EarlyDefault" : "BootstrapConfigAsset";
+            string policyFlavor = isEarlyDefault ? "EarlyDefault" : "RuntimeConfigRegistry";
             LogRuntimeModeObs(
                 $"[OBS][{phase}] LoggingPolicyApplied source='{source}' policy='{policyFlavor}' " +
                 $"defaultLevel='{defaultLevel}' activeRuleCount={_activeNamespaceRules.Count} " +
-                $"global={globalDebugEnabled} verbose={verboseEnabled} fallbacks={fallbacksEnabled} repeatedVerbose={repeatedVerboseEnabled}");
+                $"global={globalDebugEnabled} verbose={verboseEnabled} taggedVerbose={fallbacksEnabled} repeatedVerbose={repeatedVerboseEnabled}");
         }
 
         private static void InvalidateResolvedCaches(string reason)
@@ -596,7 +595,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             bool verboseEnabled,
             DebugLevel defaultLevel,
             bool repeatedVerboseEnabled,
-            bool fallbacksEnabled,
+            bool taggedVerboseEnabled,
             string source,
             bool isEarlyDefault,
             string rulesSignature)
@@ -608,7 +607,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 .Append(";verbose=").Append(verboseEnabled)
                 .Append(";default=").Append(defaultLevel)
                 .Append(";repeated=").Append(repeatedVerboseEnabled)
-                .Append(";fallbacks=").Append(fallbacksEnabled)
+                .Append(";taggedVerbose=").Append(taggedVerboseEnabled)
                 .Append(";early=").Append(isEarlyDefault)
                 .Append(";source=").Append(source)
                 .Append("|rules=").Append(rulesSignature);
@@ -632,7 +631,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
                 _stringBuilder.Append("[VERBOSE] [").Append(typeName).Append("] ").Append(message);
                 if (isFallback)
                 {
-                    _stringBuilder.Append(" (fallback)");
+                    _stringBuilder.Append(" (tagged)");
                 }
 
                 baseMessage = _stringBuilder.ToString();
@@ -793,7 +792,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Core.Logging
             }
 
             // Suprime apenas spam de observabilidade idempotente do catalogo de navegacao.
-            return message.Contains("[OBS][SceneFlow] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
+            return message.Contains("[OBS][SceneRouting] RouteResolvedVia=AssetRef", StringComparison.Ordinal) ||
                 message.Contains("[OBS][Config] RouteResolvedVia=AssetRef", StringComparison.Ordinal);
         }
         #endregion

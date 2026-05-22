@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.GameplaySystems.Reset;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.Utils.CameraSystems
 {
     /// <summary>
@@ -49,7 +48,6 @@ namespace _ImmersiveGames.Scripts.Utils.CameraSystems
                     $"[{name}] OldCameraResolverService n�o encontrado. CanvasCameraBinder desativado.",
                     this);
                 enabled = false;
-                return;
             }
         }
 

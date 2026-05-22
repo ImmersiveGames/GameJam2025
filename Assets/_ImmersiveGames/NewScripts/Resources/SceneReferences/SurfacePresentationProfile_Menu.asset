@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4d6b6b38b4b4bcb8e5942a89d277d15, type: 3}
+  m_Name: SurfacePresentationProfile_Menu
+  m_EditorClassIdentifier: 
+  profileId: surface.presentation.menu
+  routeCameraPresentationMode: 10
+  activationTiming: 0
+  presentationRigPrefab: {fileID: 8419699310393173373, guid: 980c3443749163c4885356f2564db770, type: 3}
+  trackingAnchorId: menu.camera.tracking
+  lookAtAnchorId: menu.camera.lookAt
+  priority: 20
+  required: 1

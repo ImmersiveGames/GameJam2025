@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 {
     /// <summary>
@@ -50,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
         {
             if (Root != null)
             {
-                UnityEngine.Object.Destroy(Root.gameObject);
+                Object.Destroy(Root.gameObject);
             }
         }
     }

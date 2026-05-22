@@ -8,7 +8,6 @@ using _ImmersiveGames.Scripts.Utils;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.SkinSystems.Runtime
 {
     /// <summary>

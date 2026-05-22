@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-
+using Random = System.Random;
 namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
 {
     /// <summary>
@@ -9,14 +9,14 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
     /// </summary>
     public static class SpawnFuzzyUtility
     {
-        private static System.Random _seededRandom;
+        private static Random _seededRandom;
         private static bool _useSeed;
 
         public static void SetSeed(int? seed)
         {
             if (seed.HasValue)
             {
-                _seededRandom = new System.Random(seed.Value);
+                _seededRandom = new Random(seed.Value);
                 _useSeed = true;
             }
             else
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Shooting
                 return min + (max - min) * t;
             }
 
-            return Random.Range(min, max);
+            return UnityEngine.Random.Range(min, max);
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
 {
     /// <summary>
@@ -19,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             IsBootstrapped = true;
             var root = new GameObject("NewScripts_PoolingRuntime");
             _globalRoot = root.transform;
-            UnityEngine.Object.DontDestroyOnLoad(root);
+            Object.DontDestroyOnLoad(root);
 
             DebugUtility.Log(typeof(PoolService),
                 "[BOOT][Pooling] PoolService bootstrapped (Package B runtime core).",
@@ -107,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             _pools.Clear();
             if (_globalRoot != null)
             {
-                UnityEngine.Object.Destroy(_globalRoot.gameObject);
+                Object.Destroy(_globalRoot.gameObject);
             }
 
             DebugUtility.Log(typeof(PoolService),

@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             ApplyGroupedMaterials();
             if (showDebugLogs)
             {
-                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Configured from skin");
+                DebugUtility.LogVerbose<GroupedMaterialSkin>("Configured from skin");
             }
         }
 
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             ApplyGroupedMaterials();
             if (showDebugLogs)
             {
-                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Applied dynamic modifications");
+                DebugUtility.LogVerbose<GroupedMaterialSkin>("Applied dynamic modifications");
             }
         }
 
@@ -250,7 +250,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
 
             if (showDebugLogs)
             {
-                DebugUtility.LogVerbose<GroupedMaterialSkin>($"Reset all materials to original");
+                DebugUtility.LogVerbose<GroupedMaterialSkin>("Reset all materials to original");
             }
         }
 
@@ -387,7 +387,7 @@ namespace _ImmersiveGames.Scripts.SkinSystems.Configurable
             RandomizeAllGroups();
             var state = GetGroupedMaterialState();
 
-            DebugUtility.LogVerbose<GroupedMaterialSkin>($"Randomization Test:");
+            DebugUtility.LogVerbose<GroupedMaterialSkin>("Randomization Test:");
             DebugUtility.LogVerbose<GroupedMaterialSkin>($"Total slots: {state.totalSlots}, Valid: {state.validSlots}");
 
             foreach (var groupState in state.groupStates)

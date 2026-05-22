@@ -1,16 +1,14 @@
 using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.ResetFlow.WorldReset.Policies;
 namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 {
     public static partial class GlobalCompositionRoot
     {
         private static void RegisterRuntimePolicyServices()
         {
-            var bootstrapConfig = GetRequiredBootstrapConfig(out _);
-            var config = ResolveRuntimeModeConfigOrFailFast(bootstrapConfig);
+            var config = GetRequiredRuntimeModeConfig(out _);
 
             var provider = DependencyManager.Provider;
 
@@ -26,9 +24,16 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
                         $"[RuntimePolicy] RuntimeModeConfig carregado (asset='{config.name}').",
                         DebugUtility.Colors.Info);
                 }
+
             }
 
             // Provider configurável: o config agora é obrigatório no boot; o fallback do provider fica só para override explícito no asset.
+            RuntimeConfigRegistry.InitializeOrFail(config);
+            DebugUtility.Log(typeof(GlobalCompositionRoot),
+                $"[RuntimePolicy] RuntimeConfigRegistry initialized from RuntimeModeConfig.RuntimeConfigSet (runtimeModeConfig='{config.name}' configSet='{config.RuntimeConfigSet.name}').",
+                DebugUtility.Colors.Info);
+            ApplyRuntimePolicyLoggingConfigOrFail();
+
             RegisterIfMissing<IRuntimeModeProvider>(() =>
                 new ConfigurableRuntimeModeProvider(new UnityRuntimeModeProvider(), config));
 
@@ -44,46 +49,34 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
 
             provider.TryGetGlobal<IDegradedModeReporter>(out var degradedReporter);
 
-            RegisterIfMissing<IWorldResetPolicy>(() =>
-                new ProductionWorldResetPolicy(runtimeModeProvider, degradedReporter));
-
             DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter + IWorldResetPolicy registrados no DI global.",
+                "[RuntimePolicy] IRuntimeModeProvider + IDegradedModeReporter registrados no DI global.",
                 DebugUtility.Colors.Info);
         }
 
-        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFailFast(BootstrapConfigAsset bootstrapConfig)
+        private static void ApplyRuntimePolicyLoggingConfigOrFail()
         {
-            if (bootstrapConfig == null)
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
             {
-                string message = "[FATAL][Config][RuntimePolicy] BootstrapConfigAsset obrigatorio ausente antes de resolver RuntimeModeConfig.";
+                string message = "[FATAL][Config][RuntimePolicy] RuntimeConfigRegistry snapshot obrigatorio ausente para LoggingConfig.";
                 DebugUtility.LogError(typeof(GlobalCompositionRoot), message);
                 throw new InvalidOperationException(message);
             }
 
-            RuntimeModeConfig config = bootstrapConfig.RuntimeModeConfig;
-            if (config == null)
+            LoggingConfigAsset loggingConfig = snapshot.RuntimePolicy?.LoggingConfig;
+            if (loggingConfig == null)
             {
                 string message =
-                    $"[FATAL][Config][RuntimePolicy] RuntimeModeConfig obrigatorio ausente no BootstrapConfigAsset. bootstrap='{bootstrapConfig.name}'.";
-
+                    "[FATAL][Config][RuntimePolicy] RuntimeConfigRegistry invariant breach: RuntimePolicy.loggingConfig obrigatorio ausente.";
                 DebugUtility.LogError(typeof(GlobalCompositionRoot), message);
                 throw new InvalidOperationException(message);
             }
 
-            if (DependencyManager.HasInstance)
-            {
-                var provider = DependencyManager.Provider;
-                if (provider != null && (!provider.TryGetGlobal<RuntimeModeConfig>(out var existingConfig) || existingConfig == null))
-                {
-                    provider.RegisterGlobal(config, allowOverride: false);
-                }
-            }
-
-            DebugUtility.LogVerbose(typeof(GlobalCompositionRoot),
-                $"[RuntimePolicy] RuntimeModeConfig resolvido via BootstrapConfigAsset (asset='{config.name}').",
+            const string source = "RuntimeConfigRegistry/RuntimePolicy.loggingConfig";
+            DebugUtility.ApplyLoggingPolicyFromAsset(loggingConfig, source);
+            DebugUtility.Log(typeof(GlobalCompositionRoot),
+                $"[STARTUP][Logging] Final policy applied from LoggingConfigAsset. source='{source}' asset='{loggingConfig.name}'.",
                 DebugUtility.Colors.Info);
-            return config;
         }
 
     }

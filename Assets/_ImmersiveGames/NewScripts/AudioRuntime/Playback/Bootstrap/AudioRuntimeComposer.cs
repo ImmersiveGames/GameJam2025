@@ -1,16 +1,13 @@
 using System;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
-using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Context;
-using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bridges;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Host;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.PreferencesRuntime.Contracts;
-using _ImmersiveGames.NewScripts.SceneFlow.NavigationDispatch.NavigationMacro;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
 {
     /// <summary>
@@ -19,13 +16,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
     /// Responsabilidade:
     /// - compor o wiring operacional do Audio depois que os installers concluirem;
     /// - nao registrar contratos pre-runtime;
-    /// - nao mascarar ausencias de prerequisitos do installer.
+    /// - nao mascarar ausencias de prerequisitos do installer;
+    /// - manter o runtime de playback isolado do trilho operacional.
     /// </summary>
     public static class AudioRuntimeComposer
     {
         private static bool _runtimeComposed;
 
-        public static void ComposeRuntime(BootstrapConfigAsset bootstrapConfig)
+        public static void ComposeRuntime(RuntimeModeConfig runtimeModeConfig)
         {
             CompositionPipelineExecutor.RequireBootstrapPhaseOpen(nameof(AudioRuntimeComposer));
 
@@ -34,16 +32,17 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 return;
             }
 
-            if (bootstrapConfig == null)
+            if (runtimeModeConfig == null)
             {
-                throw new InvalidOperationException("[FATAL][Config][Audio] BootstrapConfigAsset obrigatorio ausente para compor o runtime.");
+                throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para compor o runtime.");
             }
+
+            ResolveRuntimeModeConfigOrFail();
 
             ApplyPreferencesToAudioSettings();
             EnsureAudioListenerHost();
             EnsureAudioBgmService();
-            EnsureAudioBgmContextService(bootstrapConfig);
-            EnsureNavigationLevelRouteBgmBridge();
+
             EnsureGlobalAudioService();
 
             _runtimeComposed = true;
@@ -51,6 +50,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
             DebugUtility.Log(typeof(AudioRuntimeComposer),
                 "[Audio] Runtime composition concluida.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) && runtimeModeConfig != null)
+            {
+                return runtimeModeConfig;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][Audio] RuntimeModeConfig obrigatorio ausente para compor o Audio.");
         }
 
         private static void EnsureAudioListenerHost()
@@ -98,44 +107,6 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
                 registeredMessage: "[Audio][BOOT] IAudioBgmService registered (F3 BGM runtime).");
         }
 
-        private static void EnsureNavigationLevelRouteBgmBridge()
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmContextService>(out var bgmContextService) || bgmContextService == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Bridge] Skipped registration: IAudioBgmContextService unavailable.");
-                return;
-            }
-
-            RegisterIfMissing<NavigationLevelRouteBgmBridge>(
-                () => new NavigationLevelRouteBgmBridge(bgmContextService),
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge already registered in global DI.",
-                "[Audio][BGM][Bridge] NavigationLevelRouteBgmBridge registered in global DI.");
-        }
-
-        private static void EnsureAudioBgmContextService(BootstrapConfigAsset bootstrapConfig)
-        {
-            if (!DependencyManager.Provider.TryGetGlobal<IAudioBgmService>(out var bgmService) || bgmService == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Context] Skipped registration: IAudioBgmService unavailable.");
-                return;
-            }
-
-            var navigationCatalog = bootstrapConfig.NavigationCatalog as GameNavigationCatalogAsset;
-            if (navigationCatalog == null)
-            {
-                DebugUtility.LogWarning(typeof(AudioRuntimeComposer),
-                    "[Audio][BGM][Context] Skipped registration: NavigationCatalog missing in bootstrap.");
-                return;
-            }
-
-            RegisterIfMissing<IAudioBgmContextService>(
-                () => new AudioBgmContextService(bgmService, navigationCatalog),
-                "[Audio][BGM][Context] IAudioBgmContextService already registered in global DI.",
-                "[Audio][BGM][Context] IAudioBgmContextService registered in global DI.");
-        }
-
         private static void EnsureGlobalAudioService()
         {
             if (!DependencyManager.Provider.TryGetGlobal<IPoolService>(out var poolService) || poolService == null)
@@ -178,4 +149,3 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap
         }
     }
 }
-

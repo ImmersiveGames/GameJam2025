@@ -4,20 +4,20 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
     /// Provider de modo de execução que respeita o RuntimeModeConfig.
     ///
     /// Regra:
-    /// - se config não existir ou ModeOverride=Auto -> delega para fallback (UnityRuntimeModeProvider).
+    /// - se config não existir ou ModeOverride=Auto -> delega para provider padrão (UnityRuntimeModeProvider).
     /// - ForceStrict/ForceRelease -> força o modo.
     ///
     /// Observação:
-    /// - Mantém compatibilidade: módulos continuam dependendo só de IRuntimeModeProvider.
+    /// - Módulos dependem somente de IRuntimeModeProvider.
     /// </summary>
     public sealed class ConfigurableRuntimeModeProvider : IRuntimeModeProvider
     {
-        private readonly IRuntimeModeProvider _fallback;
+        private readonly IRuntimeModeProvider _defaultProvider;
         private readonly RuntimeModeConfig _config;
 
-        public ConfigurableRuntimeModeProvider(IRuntimeModeProvider fallback, RuntimeModeConfig config)
+        public ConfigurableRuntimeModeProvider(IRuntimeModeProvider defaultProvider, RuntimeModeConfig config)
         {
-            _fallback = fallback ?? new UnityRuntimeModeProvider();
+            _defaultProvider = defaultProvider ?? new UnityRuntimeModeProvider();
             _config = config;
         }
 
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
             {
                 if (_config == null)
                 {
-                    return _fallback.Current;
+                    return _defaultProvider.Current;
                 }
 
                 switch (_config.modeOverride)
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
                         return RuntimeMode.Release;
                     case RuntimeModeOverride.Auto:
                     default:
-                        return _fallback.Current;
+                        return _defaultProvider.Current;
                 }
             }
         }

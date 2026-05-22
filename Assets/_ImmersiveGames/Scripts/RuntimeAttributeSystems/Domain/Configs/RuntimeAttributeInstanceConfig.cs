@@ -1,8 +1,9 @@
+using System;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs
 {
-    [System.Serializable]
+    [Serializable]
     public class RuntimeAttributeInstanceConfig
     {
         [Tooltip("O SO base que define o recurso")]

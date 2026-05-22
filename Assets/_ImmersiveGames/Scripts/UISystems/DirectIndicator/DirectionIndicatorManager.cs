@@ -43,12 +43,12 @@ namespace _ImmersiveGames.Scripts.UISystems.DirectIndicator
         private void Update()
         {
             // LEGADO: tenta novamente se o eater ainda não existia no Start (spawn tardio).
-            if (_hasSpawnedEaterIndicator == false)
+            if (!_hasSpawnedEaterIndicator)
             {
                 TrySpawnEaterIndicator();
             }
 
-            if (_hasSpawnedPlanets == false)
+            if (!_hasSpawnedPlanets)
             {
                 SpawnPlanetsIndicators();
             }

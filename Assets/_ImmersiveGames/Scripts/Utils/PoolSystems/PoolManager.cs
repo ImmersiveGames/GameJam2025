@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
 using UnityUtils;
-
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
 

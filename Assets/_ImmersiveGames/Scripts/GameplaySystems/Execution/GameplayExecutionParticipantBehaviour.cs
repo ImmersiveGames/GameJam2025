@@ -216,7 +216,7 @@ namespace _ImmersiveGames.Scripts.GameplaySystems.Execution
                 {
                     for (int i = collected.Count - 1; i >= 0; i--)
                     {
-                        if (collected[i] != null && collected[i].enabled == false)
+                        if (collected[i] != null && !collected[i].enabled)
                         {
                             collected.RemoveAt(i);
                         }

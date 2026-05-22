@@ -4,7 +4,6 @@ using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
 using UnityEngine.Serialization;
-
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>

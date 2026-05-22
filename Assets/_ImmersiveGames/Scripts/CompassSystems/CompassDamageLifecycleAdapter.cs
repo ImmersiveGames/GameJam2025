@@ -1,5 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.DamageSystem.Events;
@@ -18,7 +19,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
     {
         private ActorMaster _actor;
         private ICompassTrackable _trackable;
-        private ICompassRuntimeService _runtimeService;
+        private IICompassRuntimeService _runtimeService;
         private string _entityId;
         private bool _isRegisteredWithCompass;
         private bool _eventsRegistered;
@@ -115,7 +116,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
 
             if (_isRegisteredWithCompass)
             {
-                _runtimeService?.UnregisterTarget(_trackable);
+                _runtimeService?.UnregisterTarget();
                 _isRegisteredWithCompass = false;
             }
         }
@@ -152,7 +153,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
                 return;
             }
 
-            _runtimeService.RegisterTarget(_trackable);
+            _runtimeService.RegisterTarget();
             _isRegisteredWithCompass = true;
         }
 
@@ -168,7 +169,7 @@ namespace _ImmersiveGames.Scripts.CompassSystems
                 return;
             }
 
-            _runtimeService.UnregisterTarget(_trackable);
+            _runtimeService.UnregisterTarget();
             _isRegisteredWithCompass = false;
         }
 
@@ -191,17 +192,39 @@ namespace _ImmersiveGames.Scripts.CompassSystems
                 return true;
             }
 
-            if (CompassRuntimeService.TryGet(out var runtimeService))
+            if (TryResolveRuntimeService(out var runtimeService))
             {
                 _runtimeService = runtimeService;
                 return true;
             }
 
             DebugUtility.LogError<CompassDamageLifecycleAdapter>(
-                "CompassRuntimeService não encontrado para sincronizar ciclo de vida da bússola.",
+                "ICompassRuntimeService não encontrado para sincronizar ciclo de vida da bússola.",
                 this);
             return false;
         }
+
+        private static bool TryResolveRuntimeService(out IICompassRuntimeService runtimeService)
+        {
+            runtimeService = null;
+            if (DependencyManager.Provider == null)
+            {
+                return false;
+            }
+
+            return DependencyManager.Provider.TryGetGlobal(out runtimeService);
+        }
+    }
+    internal interface IICompassRuntimeService
+    {
+        void RegisterTarget(CompassTarget compassTarget);
+        void UnregisterTarget(CompassTarget compassTarget);
+        void SetPlayer(Transform transform);
+        void ClearPlayer(Transform transform);
+        void UnregisterTarget();
+        void RegisterTarget();
     }
 }
+
+
 

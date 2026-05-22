@@ -8,7 +8,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Runtime;
 using ImmersiveGames.GameJam2025.Core.Events;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.DetectionsSystems.Mono
 {
     public abstract class AbstractDetectable : MonoBehaviour, IDetectable

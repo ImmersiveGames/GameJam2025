@@ -1,6 +1,5 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.Utils.PoolSystems
 {
     [CreateAssetMenu(fileName = "PoolData", menuName = "ImmersiveGames/Legacy/PoolSystem/PoolData")]

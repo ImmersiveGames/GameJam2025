@@ -6,7 +6,6 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using DG.Tweening;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.States
 {
     /// <summary>

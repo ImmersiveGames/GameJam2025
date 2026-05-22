@@ -9,9 +9,8 @@ using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Values;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bind;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Presentation.Bridges;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Utils;
-using ImmersiveGames.GameJam2025.Core.Events;
-using ImmersiveGames.GameJam2025.Core.Logging;
-using ImmersiveGames.GameJam2025.Infrastructure.Composition;
+using UnityEngine;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
 {
     public interface IRuntimeAttributeOrchestrator
@@ -61,9 +60,9 @@ namespace _ImmersiveGames.Scripts.RuntimeAttributeSystems.Application.Services
                 DebugUtility.Colors.CrucialInfo);
 
             // Se já existirem Canvas Binders na cena, registrar automaticamente.
-            RuntimeAttributeActorCanvas[] existingBinders = UnityEngine.Object.FindObjectsByType<RuntimeAttributeActorCanvas>(
-                UnityEngine.FindObjectsInactive.Include,
-                UnityEngine.FindObjectsSortMode.None
+            RuntimeAttributeActorCanvas[] existingBinders = Object.FindObjectsByType<RuntimeAttributeActorCanvas>(
+                FindObjectsInactive.Include,
+                FindObjectsSortMode.None
             );
             foreach (var binder in existingBinders)
             {

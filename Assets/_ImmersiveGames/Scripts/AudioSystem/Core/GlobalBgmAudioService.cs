@@ -52,7 +52,7 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
                 return;
             }
 
-            // DI: obter math (AudioSystemBootstrap garante registro)
+            // DI: obter math via container de composição.
             if (DependencyManager.Provider != null)
             {
                 DependencyManager.Provider.TryGetGlobal(out _math);
@@ -386,4 +386,5 @@ namespace _ImmersiveGames.Scripts.AudioSystem.Core
         private static bool IsSourceValid(AudioSource source) => source != null && source;
     }
 }
+
 

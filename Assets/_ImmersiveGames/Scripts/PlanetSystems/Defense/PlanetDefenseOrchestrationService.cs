@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.SkinSystems.Runtime;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
 {
     /// <summary>
@@ -293,7 +293,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Defense
                 return null;
             }
 
-            int index = UnityEngine.Random.Range(0, entries.Count);
+            int index = Random.Range(0, entries.Count);
             return entries[index];
         }
 

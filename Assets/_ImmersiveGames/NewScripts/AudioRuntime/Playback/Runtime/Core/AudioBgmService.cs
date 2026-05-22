@@ -3,6 +3,8 @@ using System.Collections;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using UnityEngine;
+using UnityEngine.Audio;
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 {
     /// <summary>
@@ -450,11 +452,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             source.Stop();
             source.clip = clip;
             source.loop = cue.Loop;
-            source.pitch = UnityEngine.Random.Range(cue.PitchMin, cue.PitchMax);
+            source.pitch = Random.Range(cue.PitchMin, cue.PitchMax);
             source.outputAudioMixerGroup = ResolveMixerGroup(cue);
         }
 
-        private UnityEngine.Audio.AudioMixerGroup ResolveMixerGroup(AudioBgmCueAsset cue)
+        private AudioMixerGroup ResolveMixerGroup(AudioBgmCueAsset cue)
         {
             return _routing.ResolveBgmMixerGroup(cue);
         }

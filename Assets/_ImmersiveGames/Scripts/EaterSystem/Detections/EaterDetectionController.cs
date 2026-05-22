@@ -5,7 +5,6 @@ using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using _ImmersiveGames.Scripts.PlanetSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.EaterSystem.Detections
 {
     /// <summary>

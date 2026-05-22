@@ -1,4 +1,3 @@
-using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     internal static class InputModesDefaults
@@ -6,17 +5,9 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public const string PlayerActionMapName = "Player";
         public const string MenuActionMapName = "UI";
 
-        public static (string player, string menu) ResolveFrom(RuntimeModeConfig config)
+        public static string Normalize(string value)
         {
-            RuntimeModeConfig.InputModesSettings settings = config?.inputModes;
-            string player = NormalizeOrDefault(settings?.playerActionMapName, PlayerActionMapName);
-            string menu = NormalizeOrDefault(settings?.menuActionMapName, MenuActionMapName);
-            return (player, menu);
-        }
-
-        public static string NormalizeOrDefault(string value, string fallback)
-        {
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

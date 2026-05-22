@@ -1,150 +1,78 @@
-using System;
-using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
+using UnityEngine;
 using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
-    /// Controla action maps (Player/UI) alternando entre gameplay, pause overlay e frontend menu.
-    ///
-    /// Regras de arquitetura:
-    /// - Nao existe PlayerInput "global".
-    /// - Em gameplay, podem existir multiplos PlayerInput (multiplayer).
-    /// - Menu/UI deve funcionar via EventSystem + InputSystemUIInputModule (sem PlayerInput obrigatorio).
+    /// Trilha canonica de InputMode nesta etapa.
+    /// Aplica ActionMap nos PlayerInput ativos sem assumir ownership de lifecycle.
     /// </summary>
     public sealed class InputModeService : IInputModeService, IInputModeStateService
     {
-        private readonly IPlayerInputLocator _playerInputLocator;
-        private readonly string _playerMapName;
         private readonly string _menuMapName;
+        private readonly string _playerMapName;
 
         private InputModeRequestKind _currentMode = InputModeRequestKind.Unspecified;
 
-        public InputModeService(IPlayerInputLocator playerInputLocator, string playerMapName, string menuMapName)
+        public InputModeService(string playerMapName, string menuMapName)
         {
-            _playerInputLocator = playerInputLocator ?? throw new ArgumentNullException(nameof(playerInputLocator));
-            _playerMapName = InputModesDefaults.NormalizeOrDefault(playerMapName, InputModesDefaults.PlayerActionMapName);
-            _menuMapName = InputModesDefaults.NormalizeOrDefault(menuMapName, InputModesDefaults.MenuActionMapName);
+            _playerMapName = InputModesDefaults.Normalize(playerMapName);
+            _menuMapName = InputModesDefaults.Normalize(menuMapName);
+
+            if (string.IsNullOrWhiteSpace(_playerMapName))
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService), "[FATAL][Config][InputModes] playerActionMapName obrigatorio ausente.");
+            }
+
+            if (string.IsNullOrWhiteSpace(_menuMapName))
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService), "[FATAL][Config][InputModes] menuActionMapName obrigatorio ausente.");
+            }
         }
 
-        public void SetFrontendMenu(string reason) => ApplyMode(InputModeRequestKind.FrontendMenu, reason);
-        public void SetGameplay(string reason) => ApplyMode(InputModeRequestKind.Gameplay, reason);
-        public void SetPauseOverlay(string reason) => ApplyMode(InputModeRequestKind.PauseOverlay, reason);
+        public void SetFrontendMenu(string reason) => HandleRequest(InputModeRequestKind.FrontendMenu, reason);
+        public void SetGameplay(string reason) => HandleRequest(InputModeRequestKind.Gameplay, reason);
+        public void SetPauseOverlay(string reason) => HandleRequest(InputModeRequestKind.PauseOverlay, reason);
+        public void SetInputLocked(string reason) => HandleRequest(InputModeRequestKind.InputLocked, reason);
 
         public InputModeRequestKind CurrentMode => _currentMode;
 
-        private void ApplyMode(InputModeRequestKind mode, string reason)
+        private void HandleRequest(InputModeRequestKind mode, string reason)
         {
             string resolvedReason = NormalizeReason(reason);
-            InputModeRequestKind previousMode = _currentMode;
 
-            bool isRepeat = previousMode == mode;
-            _currentMode = mode;
-            PlayerInput[] preResolvedInputs = null;
-
-            if (isRepeat && mode != InputModeRequestKind.Gameplay)
+            switch (mode)
             {
-                preResolvedInputs = _playerInputLocator.GetActivePlayerInputs();
-                if (preResolvedInputs.Length == 0)
-                {
-                    DebugUtility.LogVerbose<InputModeService>(
-                        $"[InputMode] Modo '{mode}' ja ativo e sem PlayerInput ativo. Skip reapply ({resolvedReason}).",
-                        DebugUtility.Colors.Info);
-                    PublishModeChanged(previousMode, mode, resolvedReason);
+                case InputModeRequestKind.FrontendMenu:
+                    ApplyModeToActivePlayerInputs(mode, _menuMapName, resolvedReason);
                     return;
-                }
+
+                case InputModeRequestKind.Gameplay:
+                    ApplyModeToActivePlayerInputs(mode, _playerMapName, resolvedReason);
+                    return;
+
+                case InputModeRequestKind.PauseOverlay:
+                    _currentMode = mode;
+                    DebugUtility.Log(typeof(InputModeService),
+                        $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='pause overlay does not switch action maps in Base 1.1 operational scope'.",
+                        DebugUtility.Colors.Info);
+                    return;
+
+                case InputModeRequestKind.InputLocked:
+                    _currentMode = mode;
+                    DebugUtility.Log(typeof(InputModeService),
+                        $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{resolvedReason}' target='state_only' detail='input locked policy does not switch action maps'.",
+                        DebugUtility.Colors.Info);
+                    return;
+
+                case InputModeRequestKind.Unspecified:
+                default:
+                    HardFailFastH1.Trigger(typeof(InputModeService),
+                        $"[FATAL][H1][InputModes] Unsupported InputModeRequestKind '{mode}' reason='{resolvedReason}'.");
+                    return;
             }
-
-            if (isRepeat)
-            {
-                DebugUtility.LogVerbose<InputModeService>(
-                    $"[InputMode] Modo '{mode}' ja ativo. Reaplicando ({resolvedReason}).",
-                    DebugUtility.Colors.Info);
-            }
-            else
-            {
-                DebugUtility.Log<InputModeService>(
-                    $"[InputMode] Modo alterado para '{mode}' ({resolvedReason}).",
-                    DebugUtility.Colors.Info);
-            }
-
-            string targetMapName = ShouldUseMenuMap(mode) ? _menuMapName : _playerMapName;
-            PlayerInput[] inputs = preResolvedInputs ?? _playerInputLocator.GetActivePlayerInputs();
-            if (inputs.Length == 0)
-            {
-                DebugUtility.LogVerbose<InputModeService>(
-                    $"[InputMode] Nenhum PlayerInput ativo encontrado ao aplicar modo '{mode}'. " +
-                    "Isto e esperado em Menu/Frontend. Em Gameplay, verifique se o Player foi spawnado.",
-                    DebugUtility.Colors.Info);
-                PublishModeChanged(previousMode, mode, resolvedReason);
-                return;
-            }
-
-            bool anyHandled = false;
-            bool anyMissingActions = false;
-            int switchedCount = 0;
-
-            foreach (var pi in inputs)
-            {
-                if (pi == null)
-                {
-                    continue;
-                }
-
-                var actions = pi.actions;
-                if (actions == null)
-                {
-                    anyMissingActions = true;
-                    continue;
-                }
-
-                if (!HasActionMap(actions, targetMapName))
-                {
-                    DebugUtility.LogWarning<InputModeService>(
-                        $"[InputMode] ActionMap '{targetMapName}' nao encontrada no PlayerInput '{pi.gameObject.name}'.");
-                    anyHandled = true;
-                    continue;
-                }
-
-                pi.SwitchCurrentActionMap(targetMapName);
-                switchedCount++;
-                anyHandled = true;
-            }
-
-            if (anyMissingActions)
-            {
-                DebugUtility.LogWarning<InputModeService>(
-                    "[InputMode] PlayerInput encontrado sem 'actions' atribuidas; nao e possivel alternar action map. " +
-                    "Corrija o prefab do Player (PlayerInput -> Actions = seu InputActionAsset).");
-                anyHandled = true;
-            }
-
-            if (anyHandled)
-            {
-                DebugUtility.LogVerbose<InputModeService>(
-                    $"[InputMode] Applied map '{targetMapName}' em {switchedCount}/{inputs.Length} PlayerInput(s) ({resolvedReason}).",
-                    DebugUtility.Colors.Info);
-                PublishModeChanged(previousMode, mode, resolvedReason);
-                return;
-            }
-
-            DebugUtility.LogWarning<InputModeService>(
-                "[InputMode] Nenhum PlayerInput pode ser processado para alternar action maps (todos nulos/desabilitados/sem actions).");
-            PublishModeChanged(previousMode, mode, resolvedReason);
         }
-
-        private static bool HasActionMap(InputActionAsset asset, string mapName)
-        {
-            if (asset == null || string.IsNullOrWhiteSpace(mapName))
-            {
-                return false;
-            }
-
-            return asset.FindActionMap(mapName) != null;
-        }
-
-        private static bool ShouldUseMenuMap(InputModeRequestKind mode) => mode != InputModeRequestKind.Gameplay;
 
         private static string NormalizeReason(string reason)
         {
@@ -156,14 +84,45 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             return reason.Trim();
         }
 
-        private static void PublishModeChanged(InputModeRequestKind previousMode, InputModeRequestKind currentMode, string reason)
+        private void ApplyModeToActivePlayerInputs(InputModeRequestKind mode, string actionMapName, string reason)
         {
-            if (previousMode == currentMode)
+            if (string.IsNullOrWhiteSpace(actionMapName))
             {
+                HardFailFastH1.Trigger(typeof(InputModeService),
+                    $"[FATAL][Config][InputModes] Action map obrigatorio ausente inputMode='{mode}' reason='{reason}'.");
                 return;
             }
 
-            EventBus<InputModeChangedEvent>.Raise(new InputModeChangedEvent(previousMode, currentMode, reason));
+            PlayerInput[] playerInputs = Object.FindObjectsByType<PlayerInput>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            int switchedCount = 0;
+            int observedCount = playerInputs?.Length ?? 0;
+
+            if (playerInputs != null)
+            {
+                for (int i = 0; i < playerInputs.Length; i++)
+                {
+                    PlayerInput playerInput = playerInputs[i];
+                    if (playerInput == null || playerInput.actions == null)
+                    {
+                        continue;
+                    }
+
+                    if (playerInput.actions.FindActionMap(actionMapName, throwIfNotFound: false) == null)
+                    {
+                        HardFailFastH1.Trigger(typeof(InputModeService),
+                            $"[FATAL][Config][InputModes] ActionMap ausente no PlayerInput. playerInput='{playerInput.name}' inputMode='{mode}' actionMap='{actionMapName}' reason='{reason}'.");
+                        return;
+                    }
+
+                    playerInput.SwitchCurrentActionMap(actionMapName);
+                    switchedCount += 1;
+                }
+            }
+
+            _currentMode = mode;
+            DebugUtility.Log(typeof(InputModeService),
+                $"[OBS][InputModes] InputModeApplied inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' observedPlayerInputs='{observedCount}' switchedPlayerInputs='{switchedCount}'.",
+                DebugUtility.Colors.Success);
         }
     }
 }

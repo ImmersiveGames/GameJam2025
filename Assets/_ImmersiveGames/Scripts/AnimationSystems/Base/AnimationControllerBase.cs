@@ -7,7 +7,6 @@ using _ImmersiveGames.Scripts.AnimationSystems.Services;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImmersiveGames.GameJam2025.Infrastructure.Composition;
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.AnimationSystems.Base
 {
     public abstract class AnimationControllerBase : MonoBehaviour

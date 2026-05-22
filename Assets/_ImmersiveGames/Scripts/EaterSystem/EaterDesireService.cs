@@ -9,7 +9,7 @@ using _ImmersiveGames.Scripts.PlanetSystems;
 using ImmersiveGames.GameJam2025.Core.Logging;
 using ImprovedTimers;
 using UnityEngine;
-
+using Random = UnityEngine.Random;
 namespace _ImmersiveGames.Scripts.EaterSystem
 {
     /// <summary>
@@ -428,7 +428,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                     return TrySelectDesire(out desire, out available, out availableCount, out selectionWeight);
                 }
 
-                var fallbackResource = _resourcePool[UnityEngine.Random.Range(0, _resourcePool.Length)];
+                var fallbackResource = _resourcePool[Random.Range(0, _resourcePool.Length)];
                 availability.TryGetValue(fallbackResource, out int fallbackCount);
                 desire = fallbackResource;
                 available = fallbackCount > 0;
@@ -466,7 +466,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
 
             if (totalWeight <= 0f)
             {
-                var fallbackCandidate = _candidateBuffer[UnityEngine.Random.Range(0, _candidateBuffer.Count)];
+                var fallbackCandidate = _candidateBuffer[Random.Range(0, _candidateBuffer.Count)];
                 desire = fallbackCandidate.Resource;
                 available = fallbackCandidate.IsAvailable;
                 availableCount = fallbackCandidate.AvailableCount;
@@ -474,7 +474,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem
                 return true;
             }
 
-            float roll = UnityEngine.Random.value * totalWeight;
+            float roll = Random.value * totalWeight;
             foreach (var candidate in _candidateBuffer)
             {
                 roll -= candidate.Weight;

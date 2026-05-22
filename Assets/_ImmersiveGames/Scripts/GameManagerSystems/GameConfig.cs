@@ -1,5 +1,4 @@
 using UnityEngine;
-
 namespace _ImmersiveGames.Scripts.GameManagerSystems
 {
     [CreateAssetMenu(fileName = "GameConfig", menuName = "ImmersiveGames/Legacy/GameManager/GameConfig", order = 0)]
