@@ -181,10 +181,10 @@ Evidencias normativas validadas:
 
 - `PlayerPreparationStage` inclui `routeOperationId` na identidade observavel.
 - `SessionActivityEntryHandoffEmitted` inclui payload minimo de `PlayerPreparation` com:
-  - `playerPreparationOutcome`
-  - `plannedPlayers`
-  - `materializedPlayers`
-  - `pendingRequiredPlayers`
+    - `playerPreparationOutcome`
+    - `plannedPlayers`
+    - `materializedPlayers`
+    - `pendingRequiredPlayers`
 - `SessionActivityEntryHandoffAccepted` confirma o mesmo payload minimo.
 - Materializacao de `PrototypePlayer` no `SessionOperational` pertence ao checkpoint historico e foi removida do caminho ativo.
 
@@ -678,7 +678,7 @@ Regras congeladas:
 ```text
 Todo PlayerActor RouteOwned/RouteScoped deve ser liberado ou retido por policy explicita antes de fechar o ciclo relevante da Activity.
 No MVP, PlayerActor RouteOwned/RouteScoped usa ReleasePlayersOnRouteExit (default) ou PersistPlayersAcrossRoutes.
-PlayerActorReleaseAdapter executa side-effects tecnicos de destroy/disable/pool futuro, mas nao decide lifecycle.
+PlayerActorReleaseAdapter executa side-effects tecnicos de destroy/disable/return-to-pool quando policy futura exigir, consumindo o `IPoolService` canônico existente; ele nao decide lifecycle.
 ActivityPlayerActorRegistry.Unregister ocorre apos release valido.
 Sem PlayerActorReleasedFact obrigatorio, o ciclo que exige release nao deve concluir.
 ```
@@ -687,7 +687,7 @@ Ficam fora deste corte:
 
 ```text
 retention real
-pooling real
+integração pool-backed de PlayerActor release quando houver policy concreta
 restore de checkpoint/save
 release completo de HUD, input, camera, inventory ou subscriptions
 ```
@@ -1111,4 +1111,47 @@ Regras de fronteira:
 SessionOperational prepara e transporta.
 SessionActivity decide lifecycle local (entry/completion/restart/navigation/route-exit).
 Enquanto houver pending operation de rail local, route scene unload permanece bloqueavel por contrato canonico.
+```
+
+
+## 24. Checkpoint complementar - RestartCurrentActivity pós PlayerInput/Movement/Camera (2026-05-22)
+
+Status:
+
+```text
+RestartCurrentActivity com participante controlável - PASS funcional atualizado
+```
+
+O smoke grande confirmou que o `PlayerActor` materializado/retido permanece compatível com restart local depois dos cortes de input, movement e camera.
+
+Evidência congelada:
+
+```text
+activity_01 restart:
+- nova entrySequence=2
+- PlayerInput permanece resolvido pelo PlayerActor materializado
+- MovementBindingCompleted controlEnabled=false
+- CameraBindingCompleted
+- ActivationWindowReady
+- MovementControlEnabled somente após CompleteActivationWindow
+
+activity_02 restart no-content:
+- nova entrySequence=4
+- MovementBindingRetained
+- MovementControlEnabled em ActivityRunning
+```
+
+Regra preservada:
+
+```text
+SessionActivityPipeline decide restart/lifecycle.
+PlayerActor, PlayerInput, Movement e Camera endpoints executam side-effects ou expõem capacidade.
+Nenhum endpoint decide ActivityRunning, restart ou continuidade.
+```
+
+Classificação:
+
+```text
+não é pendência ativa de PlayerPreparation;
+era apenas recongelamento necessário após os novos checkpoints.
 ```

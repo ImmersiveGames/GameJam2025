@@ -59,6 +59,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private void OnEnable()
         {
             TryBindHostStateObservation();
+            SceneManager.sceneLoaded -= OnSceneLoadedForQaCheckpoint;
+            SceneManager.sceneLoaded += OnSceneLoadedForQaCheckpoint;
+            SceneManager.activeSceneChanged -= OnActiveSceneChangedForQaCheckpoint;
+            SceneManager.activeSceneChanged += OnActiveSceneChangedForQaCheckpoint;
         }
 
         private void OnDisable()
@@ -67,6 +71,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 host.StateObservedChanged -= OnHostStateObservedChanged;
             }
+
+            SceneManager.sceneLoaded -= OnSceneLoadedForQaCheckpoint;
+            SceneManager.activeSceneChanged -= OnActiveSceneChangedForQaCheckpoint;
+        }
+
+        private void OnSceneLoadedForQaCheckpoint(Scene scene, LoadSceneMode mode)
+        {
+            TryEmitRouteExitBackToMenuCheckpointIfPossible();
+        }
+
+        private void OnActiveSceneChangedForQaCheckpoint(Scene previousScene, Scene nextScene)
+        {
+            TryEmitRouteExitBackToMenuCheckpointIfPossible();
+        }
+
+        private void TryEmitRouteExitBackToMenuCheckpointIfPossible()
+        {
+            if (host == null)
+            {
+                return;
+            }
+
+            TryEmitRouteExitBackToMenuCheckpoint();
         }
 
         [ContextMenu("CompleteCurrentActivity")]
@@ -787,10 +814,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             bool routeExitTeardownCompleted = closedForRouteExit;
-            bool menuRouteApplied = routeExitTeardownCompleted && (
-                ContainsTraceToken("ApplyOperationalRoute") ||
-                ContainsTraceToken("MenuScene") ||
-                ContainsTraceToken("SessionActivityRouteExitTeardownCompleted"));
+            bool menuRouteApplied = routeExitTeardownCompleted && ResolveSceneLoadedOrActive("MenuScene");
+            bool releaseCompletedWithValidStatus =
+                releaseCompleted &&
+                (string.Equals(releaseStatus, "<none>", StringComparison.Ordinal) ||
+                 string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal));
 
             string checkpointStatus = "Waiting";
             string failedCriterion = "<none>";
@@ -812,10 +840,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 checkpointStatus = "Failed";
                 failedCriterion = "releaseSceneIsLoadedAfterRelease";
             }
-            else if (releaseCompleted &&
-                     string.Equals(releaseStatus, "Unloaded", StringComparison.Ordinal) &&
+            else if (releaseCompletedWithValidStatus &&
                      closedForRouteExit &&
-                     routeExitTeardownCompleted)
+                     routeExitTeardownCompleted &&
+                     menuRouteApplied)
             {
                 checkpointStatus = "Passed";
             }
@@ -2701,6 +2729,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return scene.IsValid() && scene.isLoaded;
         }
 
+        private static bool ResolveSceneLoadedOrActive(string sceneName)
+        {
+            if (string.IsNullOrWhiteSpace(sceneName))
+            {
+                return false;
+            }
+
+            string normalizedSceneName = sceneName.Trim();
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (activeScene.IsValid() && string.Equals(activeScene.name, normalizedSceneName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return ResolveSceneLoaded(normalizedSceneName);
+        }
+
         private ActivityTransitionContinuePolicy ResolveCurrentContinuePolicy()
         {
             SessionActivityDefinition current = host.State.CurrentDefinition;
@@ -2726,6 +2771,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
     }
 }
-
-
-

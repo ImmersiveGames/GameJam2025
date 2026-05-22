@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f272839991067644a228f070f8dc52c, type: 3}
+  m_Name: ActorPresentationProfile
+  m_EditorClassIdentifier: 
+  profileId: actor.presentation.test
+  requiredness: 2
+  releasePolicy: 2
+  resetPolicy: 2
+  variationPolicy: 1
+  variationSeed: 0
+  visualPrefab: {fileID: 7678704797045127535, guid: bcda19af55909a94d8b4af5f6a98f0e6, type: 3}
+  primarySlotKind: 1
+  primarySlotId: visual.root
+  slotRequirements:
+  - slotKind: 1
+    slotId: visual.root
+    requiredness: 2

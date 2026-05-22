@@ -201,6 +201,23 @@ TryDelete(SaveAddress, out SaveResult, out reason)
 - APIs publicas legadas por `SaveIdentity`/`SaveRecord`/`TrySaveCurrent` foram removidas da superficie de `ISaveService`.
 - Metadados de endereco sao unificados em `save.address.*`.
 
+
+Checkpoint de triagem Progression Save real (2026-05-22):
+
+```text
+Progression Save real não é ação ativa agora.
+SaveRuntimeConfigGroup mantém SaveConfig/backend como capacidade técnica.
+Config não deve forçar UI de slots, ProgressionManager, autosave/manual/checkpoint ou manifest funcional enquanto não houver progressão concreta.
+```
+
+Regras adicionais:
+
+- `SaveConfigAsset.defaultSlotId` pode continuar como seed técnico/default de backend, não como policy canônica de Progression.
+- `RuntimeConfigRegistry` valida config obrigatória existente, mas não cria necessidade funcional de Progression Save.
+- Não adicionar config nova de progressão sem consumidor real e pipeline owner definido.
+- Não criar fallback silencioso para slot/snapshot ausente em fluxo que ainda não existe.
+
+
 ### PreferencesRuntimeConfigGroup
 
 Agrupa configurações do runtime de preferences.
@@ -282,16 +299,16 @@ Exemplo de Inicializacao Operacional de Input UI (ADR-0009):
 - `maxPlayerSlots` (capacidade operacional de entrada) dentro do profile;
 - `uiActionsAsset` (asset de UI actions canonico) dentro do profile;
 - 10 `InputActionReferences` canonicas obrigatorias dentro do profile:
-  - `uiPoint`
-  - `uiLeftClick`
-  - `uiRightClick`
-  - `uiMiddleClick`
-  - `uiScrollWheel`
-  - `uiMove`
-  - `uiSubmit`
-  - `uiCancel`
-  - `uiTrackedDevicePosition`
-  - `uiTrackedDeviceOrientation`
+    - `uiPoint`
+    - `uiLeftClick`
+    - `uiRightClick`
+    - `uiMiddleClick`
+    - `uiScrollWheel`
+    - `uiMove`
+    - `uiSubmit`
+    - `uiCancel`
+    - `uiTrackedDevicePosition`
+    - `uiTrackedDeviceOrientation`
 
 Regras sobre UI Actions Binding:
 
@@ -565,16 +582,16 @@ Adicionar validações manuais/automáticas conforme necessário:
 - SessionOperationalRuntimeConfigGroup aplicado via snapshot/read-only.
 - SaveRuntimeConfigGroup aplicado via snapshot/read-only.
 - InputModesRuntimeConfigGroup aplicado com:
-  - Configuracao de input modes (nomes de maps, flags, bindings).
-  - **NOVO (2026-05-14)**: Inicializacao operacional de input UI (ADR-0009):
-    - `maxPlayerSlots`;
-    - `uiActionsAsset`;
-    - 10 `InputActionReferences` canonicas;
-    - Snapshot read-only, nao reconfiguração em runtime.
-  - **Checkpoint (2026-05-21)**: disponibilidade fisica do runtime operacional de input:
-    - `InputRuntimeRoot` em `UIGlobalScene`;
-    - `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sob root persistente;
-    - `NewBootstrap` fora do ownership do input operacional persistente.
+    - Configuracao de input modes (nomes de maps, flags, bindings).
+    - **NOVO (2026-05-14)**: Inicializacao operacional de input UI (ADR-0009):
+        - `maxPlayerSlots`;
+        - `uiActionsAsset`;
+        - 10 `InputActionReferences` canonicas;
+        - Snapshot read-only, nao reconfiguração em runtime.
+    - **Checkpoint (2026-05-21)**: disponibilidade fisica do runtime operacional de input:
+        - `InputRuntimeRoot` em `UIGlobalScene`;
+        - `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` sob root persistente;
+        - `NewBootstrap` fora do ownership do input operacional persistente.
 - RuntimeModeConfig higienizado para permanecer asset puro/entry point.
 
 ### Campos removidos de RuntimeModeConfig (migrados)
@@ -599,7 +616,7 @@ Adicionar validações manuais/automáticas conforme necessário:
 
 - `SaveRuntimeConfigGroup` fornece config read-only para execução.
 - Decisão de lifecycle permanece no pipeline:
-  - `load-on-enter` e `save-on-exit` são decididos pelo `SessionOperationalPipeline`.
+    - `load-on-enter` e `save-on-exit` são decididos pelo `SessionOperationalPipeline`.
 - `SaveRuntime`/adapter executa side-effects comandados.
 - `SessionOperationalActivitySaveAdapter` usa `ISaveService` por `SaveAddress`/`SaveRequest`.
 - `RouteActivitySave` consome `ProgressionSlotContext` resolvido por `IProgressionSlotContextResolver`.
@@ -612,12 +629,12 @@ Adicionar validações manuais/automáticas conforme necessário:
 - Progression Save esta em PASS estrutural de contratos/encaixe passivo, mas ainda sem persistencia funcional de gameplay.
 - Permanecem adiados: manifest/header real de snapshots, providers/receivers reais, autosave/manual/checkpoint, UI de slots e Run save.
 - Fora do escopo deste checkpoint:
-  - Save/Progression real;
-  - Activity Snapshot Provider;
-  - Activity lifecycle/deactivation;
-  - PlayerActor final;
-  - gameplay input final;
-  - Run Pipeline.
+    - Save/Progression real;
+    - Activity Snapshot Provider;
+    - Activity lifecycle/deactivation;
+    - PlayerActor final;
+    - gameplay input final;
+    - Run Pipeline.
 
 ---
 ## Não objetivos

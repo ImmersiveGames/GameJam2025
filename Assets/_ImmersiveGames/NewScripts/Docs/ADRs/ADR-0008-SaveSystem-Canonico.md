@@ -1,9 +1,8 @@
 # ADR-0008 - SaveSystem Canonical
 
 ## Status
-- Estado: Accepted / Checkpoint Progression Save MVP fechado
+- Estado: Accepted
 - Data: 2026-05-12
-- Última atualização: 2026-05-22
 - Tipo: Direction / Canonical architecture
 - Fonte de verdade canônica deste contrato: este ADR.
 
@@ -528,7 +527,7 @@ RouteActivitySaveSnapshotPayload Waiting = ausência aceitável de provider/payl
 RouteActivitySaveSnapshotPayload Failed = snapshot_capture_failed ou falha semântica de producer da Activity anterior.
 ```
 
-`no_snapshot_provider` só significa ausência do provider global/read-only.  
+`no_snapshot_provider` só significa ausência do provider global/read-only.
 `snapshot_capture_failed` não pode ser mascarado como provider ausente.
 
 #### Ownership do MVP funcional
@@ -635,6 +634,86 @@ ProgressionRestore roda depois e vence para grupos salvos.
 
 Qualquer alternativa como “ObjectReset pula grupos restaurados” deve ser definida por policy explícita posterior.
 
+
+### 2.4 Checkpoint de triagem — Progression Save real fora do escopo ativo agora (2026-05-22)
+
+Status:
+
+```text
+Progression Save real = FORA DE ESCOPO ATIVO AGORA.
+SaveRuntime = PASS estrutural / capacidade técnica existente.
+RouteActivitySave + ActivityObjectSnapshotRestore MVP = PASS funcional e semântico.
+Progression funcional completa = futura, condicionada a jogo/progressão real.
+```
+
+Evidência de código atual:
+
+```text
+SaveRuntime/Contracts/ISaveService.cs
+SaveRuntime/Core/SaveCoreService.cs
+SaveRuntime/Models/SaveAddress.cs
+SaveRuntime/Models/SaveRequest.cs
+SaveRuntime/Models/SaveResult.cs
+SaveRuntime/Models/ProgressionSlotContext.cs
+SaveRuntime/Models/ProgressionSnapshotEnvelope.cs
+SaveRuntime/Models/SaveSlotManifest.cs
+SaveRuntime/Models/SaveSnapshotHeader.cs
+SaveRuntime/Contracts/IProgressionSnapshotProvider.cs
+SaveRuntime/Contracts/IProgressionSnapshotReceiver.cs
+SaveRuntime/Backends/PlayerPrefs/PlayerPrefsSaveBackend.cs
+SaveRuntime/Persistence/Bootstrap/SaveInstaller.cs
+```
+
+Classificação:
+
+```text
+Não é déficit ativo da Base 1.1 agora.
+É capacidade técnica preparada + MVP funcional limitado.
+Progression Save real não deve ser implementado por ansiedade arquitetural.
+```
+
+Decisão congelada:
+
+- Não implementar `ProgressionManager` agora.
+- Não implementar UI de slots agora.
+- Não implementar autosave/manual/checkpoint save real agora.
+- Não implementar providers/receivers genéricos agora.
+- Não implementar save de actors, inventory, world objects ou run agora.
+- Não expandir `SaveSlotManifest`/`SaveSnapshotHeader` para fluxo funcional real agora.
+- Não criar auto-scan global de providers/receivers.
+- Não transformar `RouteActivitySave` em owner genérico de Progression.
+- Não transformar `SaveRuntime` em owner de slot/snapshot/lifecycle.
+- Não introduzir fallback silencioso quando não houver progressão concreta a salvar.
+
+Regra de retorno ao tema:
+
+```text
+Progression Save real só volta ao escopo quando houver gameplay/progressão concreta a preservar.
+```
+
+Exemplos de gatilhos válidos para retomar:
+
+```text
+inventário real
+objetivos persistentes
+desbloqueios
+posição/estado de actors entre sessões
+estado de mundo persistente
+seleção real de slot/current save pelo jogador
+continuidade de run materializada
+```
+
+Até lá, o contrato ativo é:
+
+```text
+SaveRuntime fornece API estável e backend técnico.
+RouteActivitySave mantém MVP de Activity snapshot quando a rota declarar load/save.
+SessionActivityPipeline decide capture/restore timing.
+SessionOperationalPipeline decide load/save de rota.
+Objetos/domínios só entram quando houver provider/receiver concreto e necessidade real.
+```
+
+
 ### 3. Invariantes
 
 - `SaveCoreService` não decide quando salvar.
@@ -666,10 +745,10 @@ Qualquer alternativa como “ObjectReset pula grupos restaurados” deve ser def
 ## Roadmap Futuro
 
 - Melhorar observabilidade de `captureTargetTransformPath` no payload restaurado.
-- Implementar `SaveSlotManifest` e `SaveSnapshotHeader` reais para substituir `snapshotId` sintetico.
-- Expandir providers/receivers de Progression a partir do MVP validado (`test_object_01`), sem transformar o objeto em owner de save e sem implementar autosave sem policy explícita.
-- Definir owner de `CurrentSave` completo fora do core de `SaveRuntime`.
-- Evoluir Run save/continuity pelo `RunPipeline` quando esse fluxo for materializado.
+- Manter `SaveSlotManifest` e `SaveSnapshotHeader` reais como capacidade prevista; só torná-los fluxo funcional quando houver progressão concreta e seleção real de slot/snapshot.
+- Expandir providers/receivers de Progression apenas a partir de casos concretos de gameplay/progressão real, sem transformar objeto/domínio em owner de save e sem implementar autosave sem policy explícita.
+- Definir owner de `CurrentSave` completo fora do core de `SaveRuntime` somente quando houver fluxo real de slots/current save.
+- Evoluir Run save/continuity pelo `RunPipeline` apenas quando esse fluxo for materializado.
 - Considerar backend robusto futuro substituindo `PlayerPrefsSaveBackend`, sem alterar a API publica de `ISaveService`.
 
 ## Relação com Base 1.0 e Base 2.0

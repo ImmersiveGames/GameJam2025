@@ -4,67 +4,26 @@
 
 - Estado: ACEITO / checkpoint normativo vivo da Base 1.1
 - Data: 2026-05-19
+- Última atualização: 2026-05-22
 - Tipo: Direction / Canonical architecture / Base 1.1 checkpoint
 - Fonte de verdade canônica deste contrato: este ADR, após aceite.
 
 ---
 
-## Contexto
+## 1. Decisão central
 
-A Base 1.1 — Pipeline Convergence / Convergência para Pipelines Determinísticos — já materializou o `SessionOperationalPipeline` e o `SessionActivityPipeline` como owners separados de rota e ciclo local de activity.
-
-Até este ponto, o projeto estabilizou:
-
-- entrada de `SessionActivity` por `SessionActivityEntryHandoff`;
-- `ActivationWindow` e `DeactivationWindow` com comando explícito;
-- `ActivityTransition` local Activity -> Activity;
-- `ActivityRouteExitRail` antes de qualquer side-effect operacional de troca de rota;
-- nascimento mínimo de `PlayerActor` no `ActivitySetup`;
-- `PlayerActorReset` v0;
-- fronteira entre `SessionOperationalPipeline`, `SessionActivityPipeline`, adapters e executores técnicos.
-
-O próximo problema arquitetural é separar definitivamente:
-
-```text
-Activity
-ActivityContent
-ActivationWindow
-DeactivationWindow
-Route Scene
-WindowTemplateLibrary
-ActivityEntryPipeline
-ActivitySetupInventory
-```
-
-Sem essa separação, há risco de regressão para:
-
-- tratar Activity como cena;
-- misturar window scenes com conteúdo jogável;
-- carregar todo o catálogo de activities da rota;
-- fazer setup especial para a primeira Activity;
-- duplicar templates de janela;
-- destruir objetos que deveriam voltar ao pool;
-- criar branches paralelos para activities “com player”, “sem player”, “com NPC”, “sem NPC”;
-- aplicar reset/release/save como se fossem o mesmo conceito.
-
-Este ADR consolida o shape canônico para `ActivityContent`, `WindowTemplateLibrary`, `ActivityEntryPipeline`, `ActivitySetupInventory`, reset, retention/release, pooling e restart de Activity.
-
----
-
-## Decisão
-
-A Base 1.1 adota um pipeline único de entrada de Activity:
+A Base 1.1 — Pipeline Convergence / Convergência para Pipelines Determinísticos — adota um único pipeline de entrada de Activity:
 
 ```text
 ActivityEntryPipeline
 ```
 
-Toda Activity passa pelo mesmo pipeline. O que varia entre Activities é o `ActivitySetupInventory` resolvido, não o lifecycle.
+Toda Activity passa pelo mesmo lifecycle. O que varia entre Activities é o `ActivitySetupInventory` resolvido, não a ordem global do pipeline.
 
-A Base 1.1 separa:
+Separação normativa:
 
 ```text
-Activity = lifecycle.
+Activity = lifecycle determinístico local.
 ActivityContent = conteúdo jogável/material usado pela Activity.
 ActivationWindow = janela autoral de entrada.
 DeactivationWindow = janela autoral de saída.
@@ -72,101 +31,87 @@ Route Scene = superfície/base da rota.
 WindowTemplateLibrary = capacidade visual compartilhada route-scoped para janelas.
 ```
 
-O `SessionActivityPipeline` é owner do lifecycle local da Activity, do `ActivityEntryPipeline`, do `ActivityContent`, das windows autorais e do reset/release de conteúdo Activity-owned.
+Ownership:
 
-O `SessionOperationalPipeline` continua owner da rota, da `Route Scene`, da transição operacional de rota, do fade/loading de rota, da `SceneComposition` de rota e da disponibilidade route-scoped da `WindowTemplateLibrary` quando a rota declarar essa capacidade.
-
-Adapters executam side-effects comandados. Objetos, módulos e contributors produzem requisitos, facts, commands ou capacidades; não decidem lifecycle.
-
----
-
-## 1. Separação conceitual
-
-### 1.1 Activity
-
-`Activity` é lifecycle determinístico local:
-
-```text
-setup
--> activation
--> running
--> deactivation
--> transition/release
-```
-
-A Activity não é uma cena.
-A Activity não é seu conteúdo.
-A Activity não é sua window de ativação/desativação.
-
-### 1.2 ActivityContent
-
-`ActivityContent` é o conteúdo jogável/material usado pela Activity.
-
-Pode incluir:
-
-- cenas additive de conteúdo;
-- markers;
-- props;
-- objetos interativos;
-- actors não-player;
-- object entries;
-- contributors;
-- pontos de placement;
-- rig/camera profile da Activity;
-- contratos locais de cena;
-- dados de discovery/setup.
-
-`ActivityContent` é específico por Activity.
-
-### 1.3 ActivationWindow
-
-`ActivationWindow` é janela autoral de entrada.
-
-Pode representar:
-
-- introdução;
-- tutorial local;
-- disclaimer;
-- prompt “aperte para começar”;
-- apresentação narrativa;
-- confirmação antes de liberar gameplay.
-
-Ela não é setup técnico e não auto-completa.
-
-### 1.4 DeactivationWindow
-
-`DeactivationWindow` é janela autoral de saída.
-
-Pode representar:
-
-- resultado local;
-- recompensa;
-- resumo;
-- cutscene de saída;
-- confirmação;
-- post-run local da Activity.
-
-Ela não é release técnico e não auto-completa.
-
-### 1.5 Route Scene
-
-`Route Scene` é a superfície/base da rota.
-
-Ela pertence ao domínio operacional da rota e é carregada pelo `SessionOperationalPipeline` via adapters/SceneComposition.
-
-A `SessionActivityPipeline` não descarrega a `Route Scene`.
+- `SessionActivityPipeline` decide lifecycle local da Activity, `ActivityEntryPipeline`, `ActivityContent`, windows autorais, setup, reset, release, restart e route-exit local.
+- `SessionOperationalPipeline` decide rota, transição operacional, `SceneComposition` de rota, loading/fade de rota, save/load operacional de rota/activity e handoff inicial para `SessionActivityPipeline`.
+- Adapters executam side-effects comandados.
+- Objetos/contributors produzem requisitos, facts, commands ou capacidades; não decidem lifecycle.
 
 ---
 
-## 2. ActivityContentProfile
+## 2. Conceitos normativos
 
-`ActivityContent` não deve ser modelado apenas como `SceneKeyAsset[]`.
+### Activity
 
-A Base 1.1 adota o conceito:
+`Activity` é lifecycle local:
 
 ```text
-ActivityContentProfile
+setup -> activation -> running -> deactivation -> transition/release
 ```
+
+A Activity não é uma cena, não é seu conteúdo e não é sua window.
+
+### ActivityContent
+
+`ActivityContent` é conteúdo jogável/material específico da Activity. Pode conter cenas additive, markers, props, objetos interativos, contributors, contracts, pontos de placement, rigs ou metadados de câmera.
+
+`ActivityContent` não é `WindowTemplateLibrary` e não substitui a `Route Scene`.
+
+### ActivationWindow / DeactivationWindow
+
+Windows são janelas autorais visíveis, não setup técnico e não release técnico.
+
+Regras:
+
+- não auto-completam;
+- exigem comando explícito quando presentes;
+- podem usar payload da Activity, Route Scene e ActivityContent;
+- podem usar camera rig/profile próprio;
+- não são fallback para resolver setup quebrado.
+
+### Route Scene
+
+A `Route Scene` pertence ao domínio operacional da rota. A `SessionActivityPipeline` não descarrega a `Route Scene`.
+
+### WindowTemplateLibrary
+
+`WindowTemplateLibrary route-scoped` permanece o shape final desejado para janelas compartilhadas por rota, mas **não é pendência ativa do checkpoint atual**.
+
+O runtime v0 ativo usa windows additive simples:
+
+```text
+ActivationWindow / DeactivationWindow
+-> ActivityWindowMode.None ou AdditiveScene
+-> load
+-> ready
+-> complete explícito
+-> unload
+```
+
+Esse trilho additive v0 está aceito enquanto não houver necessidade concreta de templates compartilhados, standby, payload bind/unbind ou reaproveitamento visual entre Activities.
+
+Regra final futura para `WindowTemplateLibrary`:
+
+```text
+window close != UnloadScene da template
+window close = unbind payload + reset presenter + standby
+route-exit = release/descarregamento da WindowTemplateLibrary
+```
+
+Reabrir `WindowTemplateLibrary route-scoped` somente quando houver necessidade concreta de:
+
+- templates compartilhados por rota;
+- window scenes em `Standby`;
+- payload bind/unbind;
+- reaproveitamento visual real entre Activities;
+- release da biblioteca somente no route-exit.
+
+---
+
+## 3. ActivityContentProfile e scenes
+
+`ActivityContent` é declarado por `ActivityContentProfile`, não apenas por `SceneKeyAsset[]`.
 
 Campos conceituais:
 
@@ -179,27 +124,7 @@ contributor discovery policy
 loading/preparation metadata
 ```
 
-Exemplo:
-
-```text
-Activity 1-1
-  contentScenes = [World1_1_Ground, World1_1_Props, World1_1_Markers]
-
-Activity 1-2
-  contentScenes = [World1_2_Caves, World1_2_Enemies, World1_2_Markers]
-```
-
-As cenas de `ActivityContent` são específicas da Activity. Elas não são templates comuns da rota.
-
----
-
-## 3. ActivityContentScenes
-
-### 3.1 Regras
-
-`ActivityContentScenes` são sempre additive sobre a `Route Scene`.
-
-Regras obrigatórias:
+Regras de scenes:
 
 ```text
 LoadSceneMode.Additive
@@ -209,32 +134,12 @@ não usar WindowSceneAdapter semanticamente
 não usar fallback silencioso para Route Scene
 ```
 
-### 3.2 Stage obrigatório
+Toda Activity passa por `Load/PrepareActivityContent`.
 
-Toda Activity passa por:
+- sem conteúdo: `ActivityContentLoadSkippedNoContent`;
+- com conteúdo: `LoadActivityContentScene -> ActivityContentSceneLoaded`.
 
-```text
-Load/PrepareActivityContent
-```
-
-Se a Activity não tiver conteúdo próprio:
-
-```text
-ActivityContentLoadSkippedNoContent
-```
-
-Se tiver content scenes:
-
-```text
-LoadActivityContentScene Command
--> ActivityContentSceneAdapter
--> LoadSceneAsync Additive
--> ActivityContentSceneLoaded
-```
-
-### 3.3 Identidade
-
-Toda operação de conteúdo deve carregar identidade suficiente:
+Toda operação de conteúdo carrega `Pipeline Identity`, incluindo:
 
 ```text
 pipelineId
@@ -248,338 +153,38 @@ sceneName
 operationId
 ```
 
-Chave crítica:
-
-```text
-activityId + entrySequence
-```
-
 Completion stale/foreign não pode alterar o pipeline ativo.
 
-### 3.4 Ordem
-
-`ActivityContent` precisa estar pronto antes de:
-
-- contributor discovery;
-- `ActivitySetupInventory`;
-- placement;
-- camera binding;
-- activation window presentation;
-- `ActivityRunning`.
-
 ---
 
-## 4. ActivityCatalog e carregamento
+## 4. ActivityEntryPipeline e ActivitySetupInventory
 
-Uma rota pode apontar para um `ActivityCatalog`.
+O `ActivityEntryPipeline` é único para qualquer Activity.
 
-Isso não significa carregar todas as Activities do catálogo.
-
-```text
-ActivityCatalog = índice autoral de Activities.
-Não é pacote de cenas a carregar integralmente.
-```
-
-Exemplo:
+Ordem conceitual:
 
 ```text
-Route World_1_X
-  ActivityCatalog:
-    1-1
-    1-2
-    1-3
+ResolveActivityEntry
+ResolveActivityContentProfile
+Load/PrepareActivityContent
+DiscoverActivityContributors
+BuildActivitySetupInventory
+ValidateActivitySetupInventory
+ParticipantSetupStage
+ObjectEntrySetupStage
+PlacementSetupStage
+CameraBindingSetupStage
+InteractionBindingSetupStage
+HudBindingSetupStage
+WarmupSetupStage
+ActivitySetupReadinessValidation
+ActivitySetupCompleted
+ActivationWindowPresentation ou ActivationWindowSkippedNoContent
+CompleteActivationWindow, se houver window
+ActivityRunning
 ```
 
-Na entrada da rota:
-
-```text
-carrega/prepara Activity 1-1
-não carrega Activity 1-2
-não carrega Activity 1-3
-```
-
-Activities seguintes são resolvidas e preparadas pelo `SessionActivityPipeline` durante `ActivityTransition`.
-
----
-
-## 5. WindowTemplateLibrary route-scoped
-
-A rota pode fornecer uma biblioteca de templates de janela:
-
-```text
-WindowTemplateLibrary
-  -> ActivationWindowTemplateScene
-  -> DeactivationWindowTemplateScene
-  -> layouts
-  -> animações
-  -> camera rigs
-  -> variantes visuais
-  -> presenters
-```
-
-Essas templates são `route-scoped` e podem ser pré-carregadas com a rota.
-
-A Activity não precisa declarar cena exclusiva de window. Ela pode declarar:
-
-```text
-templateId
-variantId
-payload/data
-presentation intent
-```
-
-Exemplo:
-
-```text
-Activity 1-1
-  activationTemplate = "IntroShort"
-  deactivationTemplate = "ResultCollectibles"
-
-Activity 1-2
-  activationTemplate = "IntroDanger"
-  deactivationTemplate = "ResultTimeScore"
-```
-
-Regra de ownership:
-
-```text
-A rota fornece capacidade visual compartilhada para janelas.
-A Activity fornece intenção, payload e conteúdo jogável.
-O SessionActivityPipeline decide o lifecycle.
-```
-
----
-
-## 6. WindowTemplateLibrary não é descarregada por window close
-
-Encerrar uma `ActivationWindow` ou `DeactivationWindow` não descarrega a template scene da rota.
-
-Fechar uma window significa:
-
-```text
-unbind payload
-parar animações locais
-resetar presenter
-resetar câmera local da presentation
-desativar layout/view usado
-limpar estado local de apresentação
-retornar para Standby
-```
-
-Fechar uma window não significa:
-
-```text
-UnloadScene
-Destroy template scene
-duplicar template scene
-recarregar template scene
-```
-
-Estados conceituais:
-
-```text
-NotLoaded
-Loaded
-Prepared
-Standby
-Presenting
-ReadyForExplicitCompletion
-Closing
-Resetting
-Standby
-ReleasedOnRouteExit
-```
-
-Regra v0:
-
-```text
-Uma WindowTemplateLibrary por rota ativa.
-Uma ActivationWindow presentation ativa por vez.
-Uma DeactivationWindow presentation ativa por vez.
-Duplicação de template scene não é permitida.
-Comando stale/foreign deve ser rejeitado por identity/presentationId.
-```
-
-A template scene só é descarregada no route-exit/liberação da rota.
-
----
-
-## 7. ActivationWindow e DeactivationWindow
-
-Activation e Deactivation Windows são janelas autorais separadas do `ActivityContent`.
-
-Ambas:
-
-```text
-não auto-completam
-aguardam comando explícito
-podem consumir dados da Route Scene e do ActivityContent
-podem usar camera rig/profile próprio
-podem usar templates fornecidos pela rota
-```
-
-No sandbox, QA simula futuro botão real:
-
-```text
-CompleteActivationWindow
-CompleteDeactivationWindow
-```
-
-A apresentação da window não deve depender de load async tardio. A template/window capability deve estar preparada/standby quando o pipeline precisar apresentá-la.
-
----
-
-## 8. Prioridade de câmera
-
-Ordem de suplantação, da menor para a maior prioridade:
-
-```text
-Camera default
--> Camera da rota
--> Camera da Activity
--> Camera da ActivationWindow
--> Camera da DeactivationWindow
-```
-
-Interpretação:
-
-- `Route camera`: câmera base da rota.
-- `Activity camera`: suplanta route camera durante a Activity.
-- `ActivationWindow camera`: suplanta Activity camera durante a janela de ativação.
-- `DeactivationWindow camera`: suplanta Activity camera durante a janela de desativação.
-
----
-
-## 9. Load/preparation vs apresentação
-
-Separação obrigatória:
-
-```text
-load/preparation != apresentação/ativação autoral
-```
-
-As cenas/templates de janela podem estar:
-
-```text
-Loaded / Prepared / Standby
-```
-
-antes de serem apresentadas.
-
-Quando chega a hora da janela:
-
-```text
-ActivationWindowStarted
--> ActivationWindowPresented/Ready
-```
-
-ou:
-
-```text
-DeactivationWindowStarted
--> DeactivationWindowPresented/Ready
-```
-
-O load técnico Unity pode ser async, mas deve estar encapsulado:
-
-```text
-Pipeline Command
--> PendingOperation
--> Completion validada
--> Pipeline Fact
--> próximo stage
-```
-
-A apresentação/ativação autoral deve ser determinística e comandada pelo pipeline.
-
----
-
-## 10. ActivityEntryPipeline único
-
-Toda Activity passa pelo mesmo `ActivityEntryPipeline`.
-
-A primeira Activity e as seguintes não têm pipelines diferentes.
-
-A diferença é apenas o contexto visual em volta do setup:
-
-```text
-Primeira Activity:
-  setup ocorre com cortina/loading da rota ainda fechado.
-
-Activities seguintes:
-  setup ocorre com cortina/transição local da Activity fechada.
-```
-
-Regra:
-
-```text
-Toda Activity passa pelo mesmo ActivityEntryPipeline.
-O que varia é o ActivitySetupInventory resolvido, não o lifecycle.
-```
-
-Não devem existir branches de lifecycle como:
-
-```text
-Activity com PlayerActor
-Activity sem PlayerActor
-Activity com NPC
-Activity sem NPC
-```
-
-O pipeline deve emitir skip explícito para subplanos vazios.
-
----
-
-## 11. Player não é propriedade semântica da Activity
-
-`Player` não é atributo estrutural da Activity.
-
-```text
-Player = participante/capacidade da rota/sessão.
-Activity entry = pode exigir, posicionar, bindar ou resetar esse participante.
-```
-
-A Activity não deve depender de um booleano semântico como:
-
-```text
-requiresPlayer = true
-```
-
-O shape correto é inventário:
-
-```text
-ParticipantRequirements
-PlacementRequirements
-InteractionBindingRequirements
-```
-
-Exemplo correto:
-
-```text
-Esta Activity precisa de um participante controlável no placementId='start_A'.
-```
-
-Não:
-
-```text
-Esta Activity tem PlayerActor = true.
-```
-
----
-
-## 12. ActivitySetupInventory
-
-`ActivitySetupInventory` é o contrato que transforma:
-
-```text
-ActivityContent
-ActivitySceneContract
-contributors descobertos
-```
-
-em requisitos determinísticos de setup.
-
-Subplanos possíveis:
+Subplanos possíveis no `ActivitySetupInventory`:
 
 ```text
 ParticipantRequirements
@@ -596,96 +201,213 @@ StateResetRequirements
 
 Regras:
 
-```text
-Requisito obrigatório ausente -> fail-fast.
-Requisito opcional ausente -> skip explícito.
-Subplano vazio -> skip explícito.
-```
-
-O inventário é resolvido por entry, não por classe de Activity.
-
----
-
-## 13. Execução do ActivitySetupInventory
-
-O `ActivityEntryPipeline` é dono da ordem e do lifecycle.
-
-Ele não implementa diretamente regras específicas de player, NPC, HUD, câmera, interaction ou objetos.
-
-Cada `Pipeline Stage` consome o `ActivitySetupInventory` e produz:
-
-```text
-Pipeline Fact
-Pipeline Command
-Skipped
-Failed
-```
-
-Adapters executam side-effects comandados pelos stages.
-
-Regra de avanço:
-
-```text
-Completed -> avança.
-Skipped -> avança quando subplano é vazio/opcional.
-Failed -> bloqueia/fail-fast.
-```
-
-Ordem inicial aceita:
-
-```text
-1. ResolveActivityEntry
-2. ResolveActivityContentProfile
-3. Load/PrepareActivityContent
-4. DiscoverActivityContributors
-5. BuildActivitySetupInventory
-6. ValidateActivitySetupInventory
-7. ParticipantSetupStage
-   - PlayerActorReadinessValidation
-   - PlayerInputBindingStage
-   - MovementBindingStage, quando houver requisito de controle/movimento ou binding retido válido
-8. ObjectEntrySetupStage
-9. PlacementSetupStage
-10. CameraBindingSetupStage
-11. InteractionBindingSetupStage
-12. HudBindingSetupStage
-13. WarmupSetupStage
-14. ActivitySetupReadinessValidation
-15. ActivitySetupCompleted
-16. ActivationWindowPresentation ou ActivationWindowSkippedNoContent
-17. CompleteActivationWindow, se houver window
-18. ActivityRunning
-```
-
-Participant/ObjectEntry vêm antes de Placement. Camera vem depois de Placement. Interaction/HUD vêm depois da existência dos objetos. Warmup é sequencial em v0.
-
-`PlayerInputBindingStage` e `MovementBindingStage` fazem parte do setup/preparation do participante controlável. Eles não liberam gameplay control durante `ActivitySetup` ou `ActivationWindow`. A liberação de controle pertence ao lifecycle da Activity e ocorre somente quando o pipeline entra em `ActivityRunning`.
+- requisito obrigatório ausente = fail-fast;
+- requisito opcional ausente = skip explícito;
+- subplano vazio = skip explícito;
+- stage produz `Pipeline Fact`, `Pipeline Command`, `Skipped` ou `Failed`;
+- adapters executam side-effects comandados;
+- `Completed` avança;
+- `Skipped` avança quando vazio/opcional;
+- `Failed` bloqueia/fail-fast.
 
 ---
 
-## 14. ActivitySceneContract
+## 5. Participante controlável v0
 
-`ActivitySceneContract` observa o escopo da entry atual:
-
-```text
-Route Scene
-+ ActivityContentScenes carregadas da entry atual
-```
-
-Prioridade semântica:
+`Player` não é propriedade semântica da Activity.
 
 ```text
-Activity-specific markers/contributors vêm das ActivityContentScenes.
-Route Scene fornece base/superfície/infra da rota.
+Player = participante/capacidade da rota/sessão.
+Activity entry = pode exigir, posicionar, bindar ou resetar esse participante.
 ```
 
-Se a Activity declarou conteúdo obrigatório, não pode haver fallback silencioso para Route Scene.
+A Activity não deve ter branches de lifecycle como “com player”/“sem player”. Ela resolve requisitos no inventário.
+
+### PlayerActor readiness — PASS
+
+Checkpoint congelado:
+
+```text
+ActivityParticipantBindingCompleted
+-> PlayerActorReadinessStarted
+-> PlayerActorReadyMaterializedOnly, quando obrigatório e válido
+-> PlayerActorReadinessCompleted
+-> ActivitySetupCompleted
+```
+
+Sem participante obrigatório, o stage emite skip explícito e completa readiness.
+
+### PlayerInputBindingStage — PASS
+
+O `PlayerInputBindingStage` liga o `PlayerInput` do `PlayerActor` materializado ao asset canônico já validado pelo runtime de input.
+
+Regras:
+
+- usa asset canônico do `RuntimeConfigRegistry`/InputModes;
+- não provisiona `PlayerInput` operacional paralelo;
+- pode rebinder explicitamente `PlayerInput.actions` para o asset canônico;
+- não usa reflection/UnityEditor runtime;
+- não decide lifecycle.
+
+### MovementBindingStage + MovementControl — PASS
+
+Separação obrigatória:
+
+```text
+binding/preparation != enable de controle
+```
+
+`MovementBindingStage` prepara reader/controller e deixa controle bloqueado.
+
+`MovementControlEnabled` ocorre somente em `ActivityRunning`.
+
+`MovementControlDisabled` ocorre em complete/deactivation/route-exit.
+
+Binding retido em Activity skip/no-content é permitido quando validado por identity/registry.
 
 ---
 
-## 15. Activity Reset / Object StateReset
+## 6. PlacementSetupStage v0 — FECHADO COMO IMPLÍCITO
 
-Reset pertence ao `ActivityEntryPipeline` / `ActivitySetup`.
+Classificação: `B) placement mínimo já coberto implicitamente`.
+
+No checkpoint atual, não existe `PlacementSetupStage` nominal separado no código ativo. O placement mínimo de `PlayerActor` está materializado no caminho ativo por:
+
+```text
+PlayerActorSetupStage
+-> PlayerActor materialization
+-> PlayerActorResetGroup.Placement
+-> PlayerActorDefaultResetEndpoint
+```
+
+Fonte de dados:
+
+```text
+SessionActivityPlayerTechnicalPlanEntry
+<- PlayerSetDefinition
+<- ActorDefinition
+```
+
+Modos aceitos no v0 atual:
+
+```text
+SceneMarker + placementKey
+FixedTransform + local transform
+```
+
+Ownership:
+
+- `SessionActivityPipeline / ActivitySetup` é owner semântico do placement v0.
+- `SessionOperationalPipeline` apenas transporta plano técnico no handoff; não posiciona `PlayerActor`.
+- `PlayerActorMaterializationAdapter` e `PlayerActorResetAdapter` executam side-effects.
+- Required placement inválido deve falhar explicitamente.
+
+Este fechamento remove da lista ativa a pendência “implementar `PlacementSetupStage` explícito”.
+
+Reabrir somente se surgir requirement próprio que não caiba no `PlayerActorSetup/Reset` atual, como:
+
+- múltiplos targets de placement por Activity;
+- placement de objetos não-player com policy própria;
+- placement dependente de contributors de `ActivityContent`;
+- troca dinâmica de marker por Activity;
+- necessidade de ordenar placement separadamente de materialização/reset.
+
+---
+
+## 7. Window AdditiveScene v0 — ACEITO / WindowTemplateLibrary futura
+
+Classificação: `D) parcialmente coberto pelo sistema atual de window additive scenes`.
+
+Não existe `WindowTemplateLibrary route-scoped` runtime no caminho ativo atual. Isso não é déficit funcional do sandbox v0.
+
+O caminho ativo de windows é:
+
+```text
+ActivityWindowMode.None
+ou
+ActivityWindowMode.AdditiveScene
+```
+
+No modo `AdditiveScene`, o `SessionActivityPipeline` executa:
+
+```text
+ActivationWindowSceneLoad
+-> ActivationWindowReady
+-> CompleteActivationWindow
+-> ActivationWindowSceneUnload
+-> ActivityRunning
+```
+
+E, na saída:
+
+```text
+DeactivationWindowSceneLoad
+-> DeactivationWindowReady
+-> CompleteDeactivationWindow
+-> DeactivationWindowSceneUnload
+-> ActivityDeactivated
+```
+
+Esse load/unload da window scene faz parte do contrato v0 atual. Ele não deve ser tratado como bug nem como blocker arquitetural enquanto as windows forem simples/QA.
+
+Permanece normativo:
+
+- `SessionActivityPipeline` é owner do lifecycle das windows;
+- `CompleteActivationWindow` e `CompleteDeactivationWindow` permanecem comandos explícitos;
+- pending operations e identity continuam obrigatórios;
+- ausência/configuração inválida de window obrigatória continua fail-fast;
+- não há fallback silencioso para completar window sem contrato.
+
+Fica fora da pendência ativa:
+
+```text
+Implementar WindowTemplateLibrary route-scoped agora.
+```
+
+`WindowTemplateLibrary route-scoped` permanece futuro explícito e só deve ser reaberto com necessidade real de template compartilhado, standby, payload bind/unbind ou reuse visual entre Activities.
+
+---
+
+## 8. CameraBindingSetupStage v0 — PASS
+
+Para câmera solo atual, o `PlayerActor` não carrega `Camera` nem `CinemachineBrain` como filhos obrigatórios.
+
+O `PlayerActor` expõe:
+
+```text
+PlayerCameraEndpoint
+-> CameraFollowTarget
+-> CameraLookAtTarget
+```
+
+Regras:
+
+- `OperationalCameraRuntime` fornece output camera / `CinemachineBrain`.
+- `CameraPresentation` fornece rigs/directors/virtual cameras.
+- `SessionActivityPipeline` decide binding da ActivityCamera ao `PlayerCameraEndpoint`.
+- `CinemachineActivityCameraDirector` / adapter executam o rebind técnico.
+- `PlayerActor` expõe anchors/endpoints; não decide lifecycle de câmera.
+- `PlayerInput.camera` fica reservado para split-screen futuro.
+
+Checkpoint congelado:
+
+```text
+ActivityCameraPrepared
+PlayerCameraEndpointResolved
+ActivityCameraTargetsRebound
+ActivityCameraTargetBound
+CameraBindingCompleted
+```
+
+A identidade correta para rebind é a identidade da sessão de Activity (`SessionActivitySandboxSession`), não o `activityId` local.
+
+Activity sem `CameraBindingRequirements` pode emitir `CameraBindingSkippedNoRequiredCamera`. Isso não implica release da câmera ativa já preparada.
+
+---
+
+## 9. Activity Reset / StateReset
+
+Reset pertence ao `ActivityEntryPipeline / ActivitySetup`.
 
 Reset não é:
 
@@ -695,40 +417,15 @@ Restore de Save
 Activation
 ```
 
-Reset é o processo determinístico que retorna participants, objetos e estado transitório da Activity para uma condição válida da entry atual.
-
-Objetos/participants relevantes que mantêm estado runtime devem expor capacidade de reset por contrato explícito.
-
-O `ActivitySetupInventory` resolve:
-
-```text
-StateResetRequirements
-```
-
-A partir de:
-
-```text
-ActivityContent
-ActivitySceneContract
-contributors descobertos
-```
-
 Regras:
 
-```text
-SessionActivityPipeline comanda reset.
-Stages/adapters/endpoints executam.
-Pipeline Facts confirmam completion/failure.
-Objetos aplicam seus próprios campos resetáveis.
-Objetos não decidem quando resetar.
-ResetAll cego é proibido.
-Reset obrigatório ausente/falho bloqueia ActivitySetupCompleted.
-Reset opcional ausente gera skip explícito.
-```
-
----
-
-## 16. ResetGroups v0
+- pipeline comanda reset;
+- adapters/endpoints executam;
+- objetos/participants aplicam seus próprios campos resetáveis;
+- objetos não decidem quando resetar;
+- reset obrigatório ausente/falho bloqueia `ActivitySetupCompleted`;
+- reset opcional ausente gera skip explícito;
+- `ResetAll` cego é proibido.
 
 ResetGroups v0:
 
@@ -741,33 +438,7 @@ InteractionState
 ObjectiveState
 ```
 
-`ResetGroup` define o tipo de estado a resetar, não o componente específico.
-
-### Placement
-
-Reseta posicionamento semântico por marker/anchor/spawn.
-
-### ActivityParticipation
-
-Reseta/atualiza participação na Activity atual, `activityId`, `entrySequence` e estado de participação.
-
-### TransformState
-
-Reseta transform autoral/técnico, como posição/rotação/escala local inicial.
-
-### RuntimeTransient
-
-Limpa estado momentâneo da execução atual, como velocity, timers, cooldowns, buffers e flags efêmeras.
-
-### InteractionState
-
-Reseta estado de interação local, como interactable enabled/disabled, trigger armado/desarmado, porta aberta/fechada quando autoralmente resetável.
-
-### ObjectiveState
-
-Reseta estado local de objetivo da Activity, como contador, objetivo concluído/falhado, score local e coleta local.
-
-Grupos avançados ficam fora do v0:
+Grupos avançados ficam fora do v0 até componentes reais exigirem:
 
 ```text
 AIState
@@ -780,22 +451,15 @@ InventoryState
 AudioState
 ```
 
-Eles serão adicionados quando componentes reais forem migrados/adaptados ao novo shape.
-
 ---
 
-## 17. ActivityContent Retention / Release
+## 10. ActivityContent Retention / Release
 
 `Deactivation` não implica `Release`.
 
 ```text
-ActivityContentRetention
-= policy que decide se conteúdo deactivated será liberado, mantido ou retido.
-```
-
-```text
-ActivityContentRelease
-= processo determinístico comandado pelo SessionActivityPipeline para liberar conteúdo ActivityOwned.
+ActivityContentRetention = policy de manter/liberar conteúdo deactivated.
+ActivityContentRelease = processo determinístico de liberação comandado pelo SessionActivityPipeline.
 ```
 
 Release pode incluir:
@@ -806,7 +470,7 @@ Release pode incluir:
 - HUD cleanup;
 - camera release;
 - interaction release;
-- unload de ActivityContentScenes;
+- unload de `ActivityContentScenes`;
 - limpeza de `ActivityContentLoadedSet`.
 
 Release não inclui:
@@ -820,137 +484,88 @@ Release não inclui:
 - SaveRuntime backend;
 - PlayerSlot.
 
-Policies canônicas:
-
-```text
-ReleasePreviousActivityContent
-KeepRecentActivityContent(count)
-RetainUntilRouteExit
-```
-
 v0 runtime suporta:
 
 ```text
 ReleasePreviousActivityContent
 ```
 
-Ficam previstos, mas unsupported em v0:
+Futuro/unsupported v0:
 
 ```text
 KeepRecentActivityContent(count)
 RetainUntilRouteExit
+ResetContentOnRestart
 ```
+
+Route-exit só pode declarar `ClosedForRouteExit` depois do release obrigatório de `ActivityContent`.
 
 ---
 
-## 18. ActivityContentRelease no Activity -> Activity
+## 11. Pooling canônico — SEM AÇÃO ATIVA
 
-Com `ReleasePreviousActivityContent`, ordem conceitual:
-
-```text
-ActivityRunning
--> CompleteCurrentActivity
--> DeactivationWindow
--> CompleteDeactivationWindow, se houver window
--> ActivityDeactivated
--> ActivityTransition curtain/fade in
--> ActivityContentRetentionPolicyResolved
--> PreviousActivityContentReleaseStarted
--> ObjectRelease / BindingRelease / CameraRelease / HudRelease
--> ActivityContentSceneUnloadStarted
--> ActivityContentSceneUnloaded
--> PreviousActivityContentReleased
--> Load/PrepareActivityContent da próxima Activity
--> ActivitySetupInventory
--> ActivitySetupCompleted
--> ActivationWindow da próxima
--> ActivityRunning
-```
-
-Release do conteúdo anterior ocorre com a cortina/transição local fechada.
-
----
-
-## 19. Route-exit e release de ActivityContent
-
-No route-exit, conteúdo ActivityOwned/retained precisa ser liberado antes de declarar fechamento canônico da `SessionActivity`.
-
-Ordem:
+O projeto já possui pooling canônico transversal:
 
 ```text
-BackToMenu / RouteExit
--> ActivityRouteExitRail
--> DeactivationWindow
--> CompleteDeactivationWindow, se houver window
--> ActivityDeactivated
--> ActivityContentReleaseStarted
--> libera conteúdo ActivityOwned/retained
--> ActivityContentReleased
--> ActivityRouteExitCompleted
--> ClosedForRouteExit
--> SessionOperational continua route transition
+IPoolService
+PoolService
+PoolDefinitionAsset
+GameObjectPool
+PoolRuntimeHost
+PoolRuntimeInstance
+PoolAutoReturnTracker
+IPoolableObject
+PooledBehaviour
+PoolingQaContextMenuDriver
 ```
 
-Regra:
+Este ADR não exige criar pooling nem integrar pooling agora por antecipação.
 
-```text
-ClosedForRouteExit só pode ocorrer depois do release obrigatório de ActivityContent.
-```
+Pooling só entra em `ActivityEntryPipeline`, `ObjectEntry`, `RuntimeSpawn`, `ActivityContentRelease` ou `ObjectRelease` quando houver:
 
-A `WindowTemplateLibrary` route-scoped não é liberada por `ActivityContentRelease`.
-
-ActivityRouteExitRail fecha presentations e devolve templates para Standby. A liberação/descarregamento da `WindowTemplateLibrary` pertence à rota, quando a rota for liberada.
-
----
-
-## 20. Pooling canônico como capacidade transversal
-
-O projeto possui um sistema de pooling canônico.
-
-Pooling não é assunto apenas de Release. É capacidade técnica transversal.
-
-Pode aparecer em:
-
-```text
-PoolWarmup
-ObjectEntry / Materialization
-RuntimeSpawn futuro
-Reset / reuse
-ActivityContentRetention
-ActivityContentRelease / ObjectRelease
-```
+- objeto concreto;
+- policy explícita;
+- requisito real de reuse/pool.
 
 Regras:
 
-```text
-Não criar pooling paralelo em SessionActivity.
-Não criar pool ad hoc dentro de ActivityContentRelease.
-Não destruir por padrão objeto que deveria retornar ao pool.
-Quando releasePolicy/ownerScope indicar pool, usar o sistema de pool canônico existente.
-```
-
-Policies/ownership conceituais:
-
-```text
-ReturnToPool
-Destroy
-DisableAndRetain
-UnregisterOnly
-SharedPoolOwned
-```
-
-Antes de implementar integração real com pool, deve ser feita auditoria do pooling existente para mapear:
-
-- contratos atuais;
-- ownership;
-- lifecycle;
-- adapters;
-- policies corretas;
-- como `Pipeline Commands` entram no sistema de pool.
+- não criar pooling paralelo em `SessionActivity`;
+- não criar pool ad hoc dentro de `ActivityContentRelease`;
+- não destruir por padrão objeto que deveria retornar ao pool;
+- quando policy/ownerScope indicar pool, usar `IPoolService` canônico.
 
 ---
 
-## 21. RestartCurrentActivity e ActivityContent
+## 12. Save / Progression boundary
+
+`SessionActivityPipeline` não salva progression diretamente.
+
+Boundary ativa:
+
+- `SessionActivityPipeline` decide timing de capture/restore local da Activity.
+- `SessionOperationalPipeline` decide load/save operacional por rota/activity.
+- `SaveRuntime` persiste por comando; não decide lifecycle.
+- provider/endpoint lê/aplica estado local comandado.
+
+Progression Save real completo está fora do escopo ativo atual da Activity. Reabrir somente quando houver progressão real de jogo para salvar, como inventário, objetivos persistentes, estado de actors, mundo, run continuity ou UI de slots.
+
+MVP validado:
+
+```text
+RouteActivitySave + ActivityObjectSnapshotRestore para test_object_01
+```
+
+Ordem congelada:
+
+```text
+ActivityObjectSnapshotContractValidation
+-> ActivityObjectReset
+-> ActivityObjectSnapshotRestore
+```
+
+---
+
+## 13. RestartCurrentActivity — PASS
 
 `RestartCurrentActivity` é rail local do `SessionActivityPipeline`.
 
@@ -969,59 +584,64 @@ v0 usa:
 ReloadContentOnRestart
 ```
 
-Fluxo v0:
+Checkpoint validado em 2026-05-22:
 
-```text
-RestartCurrentActivityRequested
--> RestartCurrentActivityAccepted
--> ActivityRestartTeardownStarted
--> DeactivationWindowStarted ou DeactivationWindowSkippedNoContent
--> CompleteDeactivationWindow, se houver window
--> ActivityDeactivated
--> ActivityContentReleaseStarted da entry antiga
--> ObjectRelease / BindingRelease / CameraRelease
--> ActivityContentSceneUnloadStarted
--> ActivityContentSceneUnloaded
--> ActivityContentReleased
--> ActivityRestartSetupStarted
--> nova entrySequence
--> ResolveActivityEntry
--> ResolveActivityContentProfile
--> Load/PrepareActivityContent
--> DiscoverActivityContributors
--> BuildActivitySetupInventory
--> ValidateActivitySetupInventory
--> execute setup stages
--> ActivitySetupCompleted
--> ActivityActivationStarted
--> ActivationWindowPresented/Ready ou ActivationWindowSkippedNoContent
--> CompleteActivationWindow, se houver window
--> ActivityRunning
--> RestartCurrentActivityCompleted
-```
-
-`WindowTemplateLibrary` route-scoped não é descarregada nem duplicada durante restart. Apenas presentations são limpas/resetadas para Standby.
-
-`ResetContentOnRestart` fica previsto como policy futura, mas só pode ser suportado quando `StateResetRequirements` obrigatórios estiverem completos e confiáveis.
+- restart com `ActivityContent` real passou por release/unload/reload e nova `entrySequence`;
+- restart em Activity sem conteúdo passou por conclusão semântica `no-content`;
+- ambos retornaram ao mesmo `ActivityEntryPipeline`;
+- bindings de input/movement/camera e object reset foram reexecutados conforme aplicável.
 
 ---
 
-## 22. Unsupported v0 / Scope guard
+## 14. RouteExitBackToMenu QA checkpoint — PASS
 
-v0 suporta conceitualmente:
+O retorno ao menu foi validado como lifecycle correto e observabilidade QA corrigida.
+
+Critério de PASS:
+
+```text
+releaseCompleted=true
+closedForRouteExit=true
+routeExitTeardownCompleted=true
+menuRouteApplied=true
+checkpointStatus=Passed
+```
+
+Isto remove da lista ativa a pendência de `RouteExitBackToMenu checkpoint Passed explícito`.
+
+---
+
+## 15. Unsupported v0 / Scope guard
+
+v0 suporta:
 
 ```text
 ActivityContentProfile
 Load/PrepareActivityContent obrigatório
 ActivityEntryPipeline único
 ActivitySetupInventory
+ActivationWindow/DeactivationWindow em AdditiveScene simples
+CompleteActivationWindow / CompleteDeactivationWindow explícitos
+PlayerActor readiness
+PlayerInputBindingStage
+MovementBindingStage + MovementControl lifecycle
+Placement v0 implícito por PlayerActorSetup + Reset(Placement)
+CameraBindingSetupStage mínimo
 StateResetRequirements
 ResetGroups v0
 ReleasePreviousActivityContent
 ReloadContentOnRestart
-WindowTemplateLibrary route-scoped
-Window presentations em Standby/reset
-Pooling canônico como capacidade a auditar antes de integração real
+Pooling canônico existente como capacidade transversal
+RouteActivitySave + ActivityObjectSnapshotRestore MVP para test_object_01
+```
+
+Futuro explícito / não pendência ativa agora:
+
+```text
+WindowTemplateLibrary route-scoped completa em runtime final
+standby de templates
+payload bind/unbind de window
+release da WindowTemplateLibrary somente no route-exit
 ```
 
 v0 não suporta ainda:
@@ -1031,652 +651,64 @@ KeepRecentActivityContent real
 RetainUntilRouteExit real
 ResetContentOnRestart real
 ref-count de content scenes compartilhadas
-content scenes compartilhadas entre entries retidas
 seamless real
-restore genérico de objetos além do MVP `ActivityObjectSnapshotRestore` validado para `test_object_01`
+restore genérico de objetos além do MVP test_object_01
 runtime spawn completo
 object release completo com todos os tipos
-pool integration real sem auditoria prévia
+pool-backed Activity/ObjectRelease sem objeto concreto/policy explícita
 budgeted retention/preload
 manual release por gameplay
-Progression restore genérico por objeto além do MVP `test_object_01`
+Progression real completa
+HUD binding real
+NPC/materialization real
+InteractionBinding real
+split-screen
+camera priority/cutscene policy completa
 ```
 
 Unsupported deve ser explícito. Não criar fallback silencioso.
 
 ---
 
-## 22.1 Checkpoint congelado — ActivityObject Snapshot Save/Load/Restore — PASS funcional e semântico
-
-- Estado: CONGELADO / PASS funcional e semântico.
-- Data: 2026-05-22.
-- Escopo: `SessionActivityPipeline`, `SessionOperationalPipeline`, `RouteActivitySave`, `ActivityObjectSnapshot`, validação de contrato de snapshot e restore mínimo de `Transform`.
-- Fonte de evidência: smoke final com `test_object_01` confirmando ordem canônica, save-on-exit, load-on-enter e restore verificado.
-
-### 22.1.1 Decisão congelada
-
-A Base 1.1 congela o seguinte shape para snapshot mínimo de objeto de Activity:
-
-```text
-SessionActivityPipeline
--> valida contrato de snapshot no ActivityEntryPipeline
--> executa ObjectReset somente depois do contrato de snapshot validado
--> aplica restore no setup da Activity depois de ObjectReset e antes de ActivityRunning
--> captura snapshot no route-exit antes de ObjectRelease/ActivityContentSceneUnload
-
-SessionOperationalPipeline
--> decide load-on-enter/save-on-exit pelo RouteActivitySave
--> resolve ProgressionSlotContext
--> mantém payload carregado como pending/read-only
--> persiste payload capturado via SaveRuntime
-
-SaveRuntime
--> executa persistência por SaveAddress/SaveRequest
--> não decide lifecycle
--> não decide slot/snapshot
--> não aplica estado em objetos
-
-ActivityObjectTransformSnapshotProvider
--> lê estado do Transform alvo explicitamente configurado
--> não chama SaveRuntime
--> não decide quando salvar
-
-ActivityObjectTransformSnapshotRestoreEndpoint
--> aplica side-effect local no Transform alvo explicitamente configurado
--> não chama SaveRuntime
--> não decide lifecycle
-```
-
-### 22.1.2 Ordem canônica do ActivityEntryPipeline para snapshot
-
-A ordem observável e normativa do setup da Activity inclui validação de contrato de snapshot antes de qualquer side-effect de reset:
-
-```text
-ResolveActivityEntry
--> ResolveActivityContentProfile
--> Load/PrepareActivityContent
--> DiscoverActivityContributors
--> BuildActivitySetupInventory
--> ValidateActivitySetupInventory
--> ActivityObjectSnapshotContractValidation
--> ObjectReset
--> ActivityObjectSnapshotRestore
--> ParticipantBinding
--> ActivitySetupCompleted
--> ActivationWindow
--> ActivityRunning
-```
-
-`ActivityObjectSnapshotContractValidation` é `Pipeline Stage`, não adapter. Ele produz `Pipeline Facts` e bloqueia o pipeline se contrato obrigatório estiver quebrado.
-
-### 22.1.3 Regras de contrato de snapshot
-
-Para cada contributor descoberto na entry atual, o contrato de snapshot considera:
-
-```text
-targetId
-requiredness
-snapshot provider capability
-snapshot restore endpoint capability
-targetTransform binding
-entry identity
-```
-
-Regras congeladas:
-
-- `targetTransform` é obrigatório quando um provider ou restore endpoint de snapshot existe.
-- Não existe fallback silencioso para `this.transform`.
-- Não existe busca por nome, tag ou singleton.
-- Se provider e restore endpoint existem para o mesmo `targetId`, ambos devem apontar para o mesmo `targetTransform`.
-- Capability quebrada não pode virar `SkippedOptional`.
-- `SkippedOptional` só é válido quando o contributor é opcional e nenhuma capability de snapshot foi declarada.
-- Contributor required sem capability obrigatória de snapshot, quando a policy exigir snapshot, falha explicitamente.
-- Contrato quebrado gera `ActivityObjectSnapshotContractFailed` e bloqueia `ObjectReset`, `ActivationWindowReady` e `ActivityRunning`.
-
-### 22.1.4 Regras de restore
-
-O restore é comandado pelo `SessionActivityPipeline`.
-
-```text
-ActivityObjectSnapshotContractValidation
--> ObjectReset
--> ActivityObjectSnapshotRestore
-```
-
-`ObjectReset` retorna a entry para uma condição determinística base.  
-`ActivityObjectSnapshotRestore` aplica o payload salvo por cima dessa base, quando houver payload carregado.
-
-Regras:
-
-- Sem payload carregado: `ActivityObjectSnapshotRestore` completa como `Skipped`, não como `Passed`.
-- Payload carregado sem target compatível para a entry atual: skip explícito, salvo quando policy futura exigir restore obrigatório.
-- Payload foreign/stale: rejeição/falha explícita conforme policy.
-- Target obrigatório ausente: falha explícita.
-- Endpoint obrigatório ausente ou inválido: falha explícita.
-- Restore só passa se houver restore aplicado e `restoreVerified=true`.
-- O endpoint deve evidenciar `beforePosition`, `payloadPosition`, `afterPosition` e `restoreVerified`.
-
-### 22.1.5 Regras de capture/save/load
-
-O capture ocorre no rail de saída da Activity, antes de `ObjectRelease` e antes de unload da ActivityContent scene.
-
-```text
-RouteExit / Activity deactivation
--> ActivityObjectSnapshotCapture
--> ObjectRelease
--> ActivityContentSceneUnload
--> SessionOperational RouteActivitySave save-on-exit
-```
-
-O `SessionActivityPipeline` produz payload read-only. Ele não salva.
-
-O `SessionOperationalPipeline` decide save-on-exit e load-on-enter via policy de rota:
-
-```text
-loadActivitySaveOnEnter
-saveActivityOnExit
-```
-
-O `RouteActivitySave` usa `ProgressionSlotContext` resolvido e persiste via `ISaveService`/`SaveRuntime`.
-
-### 22.1.6 Checkpoint funcional e semântico validado
-
-Smoke final confirmou a ordem canônica e o ciclo completo:
-
-```text
-ActivityObjectContributorDiscovery checkpointStatus='Passed'
-ActivityObjectSnapshotContractValidation checkpointStatus='Passed'
-ActivityObjectReset checkpointStatus='Passed'
-ActivityObjectSnapshotRestore checkpointStatus='Skipped' // primeira entrada sem payload
-ActivityObjectSnapshotCapture checkpointStatus='Passed'
-RouteActivitySaveSnapshotPayload checkpointStatus='Passed'
-RouteActivitySaveSaveCompleted
-RouteActivitySnapshotPayloadLoaded
-RouteActivitySaveSnapshotLoad checkpointStatus='Passed'
-ActivityObjectSnapshotContractValidation checkpointStatus='Passed'
-ActivityObjectReset checkpointStatus='Passed'
-ActivityObjectSnapshotRestore checkpointStatus='Passed'
-restoreVerified='true'
-```
-
-Payload de restore validado no smoke final:
-
-```text
-targetId='test_object_01'
-payloadAvailable='true'
-payloadObjectCount='1'
-matchedTargetCount='1'
-restoredCount='1'
-beforePosition='(960,540,0)'
-payloadPosition='(2,3,0)'
-afterPosition='(2,3,0)'
-restoreVerified='true'
-restoreFailed='false'
-```
-
-### 22.1.7 Ownership congelado
-
-```text
-SessionOperationalPipeline = owner de route-level load/save policy.
-SessionActivityPipeline = owner de Activity setup, snapshot contract validation, capture timing e restore timing.
-SaveRuntime = executor de persistência.
-Object provider/endpoint = executor local/leitor local de estado do objeto.
-```
-
-Objetos não decidem quando salvar, carregar, restaurar ou liberar.  
-Adapters/endpoints executam side-effects comandados por `Pipeline Commands`.  
-Eventos foreign/stale não podem alterar a Activity ativa nem o payload ativo.
-
-### 22.1.8 Dívida não bloqueante
-
-O checkpoint atual restaurou corretamente, mas a observabilidade ainda pode melhorar:
-
-```text
-captureTargetTransformPath
-```
-
-deve ser propagado no payload carregado ou marcado explicitamente como indisponível quando o dado não existir no schema salvo.
-
-Essa dívida não bloqueia o PASS funcional e semântico porque `restoreVerified='true'` confirmou o resultado final e a ordem `ActivityObjectSnapshotContractValidation -> ObjectReset -> ActivityObjectSnapshotRestore` foi validada.
-
-
-## 22.2 Checkpoint congelado — PlayerActor Readiness, PlayerInputBinding e MovementControl — PASS funcional
-
-- Estado: CONGELADO / PASS funcional.
-- Data: 2026-05-22.
-- Escopo: `SessionActivityPipeline`, `ActivitySetup`, `PlayerActor` materializado, `PlayerInputBindingStage`, `MovementBindingStage`, `MovementControl` e binding retido em Activity sem novo participant command plan.
-- Fonte de evidência: smoke `Boot -> Menu -> Sandbox -> activity_01 -> activity_02 -> BackToMenu`, confirmando binding de input, binding de movimento, bloqueio em windows, liberação em running, retained binding em skip/no-content e retorno ao menu.
-
-### 22.2.1 Decisão congelada
-
-A Base 1.1 congela o seguinte shape para participante controlável mínimo dentro do `ActivityEntryPipeline`:
-
-```text
-SessionActivityPipeline / ActivitySetup
--> materializa PlayerActor pela entry atual
--> valida PlayerActor readiness
--> executa PlayerInputBindingStage
--> executa MovementBindingStage
--> conclui ActivitySetup somente após os bindings obrigatórios aplicáveis
-```
-
-`PlayerActor` é materializado pelo `SessionActivityPipeline` / `ActivitySetup`.
-
-`PlayerInput` vem do `PlayerActorPrefab` materializado. Não existe `PlayerInput` operacional paralelo para gameplay.
-
-`MovementBindingStage` prepara/binda capacidade de movimento, mas não libera controle durante setup.
-
-```text
-MovementBindingStage = preparation/binding.
-MovementControl = lifecycle enable/disable comandado pelo pipeline.
-```
-
-### 22.2.2 Regras congeladas para PlayerInputBindingStage
-
-`PlayerInputBindingStage` usa o `PlayerInput` existente no `PlayerActor` materializado.
-
-Regras:
-
-- não criar `operationalPlayerInputPrefab`;
-- não criar `__OperationalPlayerInputsRuntimeRoot`;
-- não provisionar `PlayerInput` de gameplay no `SessionOperationalPipeline`;
-- não usar `UnityEditor` em runtime;
-- não usar reflection para escrever binding;
-- não buscar `PlayerInput` globalmente por nome, tag, singleton ou primeiro componente da cena;
-- resolver o `PlayerInput` a partir do `PlayerActor` materializado e da identidade da entry atual;
-- permitir rebind explícito de `PlayerInput.actions` para o asset canônico já validado pelo `RuntimeConfigRegistry` / `InputModesRuntime`, emitindo observabilidade;
-- falhar explicitamente se `PlayerInput`, action map `Player`, action `Move` ou asset canônico obrigatório estiverem ausentes.
-
-O rebind ao asset canônico é permitido porque:
-
-```text
-OperationalInputRuntime valida o InputActionAsset canônico.
-PlayerInputBindingStage aplica esse asset no endpoint técnico materializado.
-```
-
-Isso não é fallback silencioso. O rebind precisa ser explícito, observável e baseado no asset já validado, não em busca por nome.
-
-Evidência congelada:
-
-```text
-PlayerInputActionsReboundToCanonical
-PlayerInputBound / binding equivalente
-```
-
-### 22.2.3 Regras congeladas para MovementBindingStage
-
-`MovementBindingStage` roda depois de `PlayerInputBindingStage` e antes de `ActivitySetupCompleted`.
-
-Responsabilidades:
-
-```text
-resolver PlayerActor materializado
-resolver PlayerInput já bound
-resolver PlayerMoveInputReader / PlayerMovementController no PlayerActor
-bindar PlayerInput ao reader/controller
-emitir PlayerMovementBound
-emitir MovementBindingCompleted
-manter controlEnabled=false
-```
-
-Regras:
-
-- não usar `Input.GetAxis`;
-- não usar `Input.GetAxisRaw`;
-- não buscar `PlayerInput` globalmente;
-- não criar reader/controller automaticamente por fallback silencioso;
-- não liberar movimento em `ActivitySetup`;
-- não liberar movimento em `ActivationWindow`;
-- não mover lifecycle para `PlayerMovementController` ou `PlayerMoveInputReader`;
-- controller/reader executam side-effects técnicos, mas não decidem lifecycle da Activity.
-
-Evidência congelada:
-
-```text
-MovementBindingStarted
-PlayerMovementBound
-MovementBindingCompleted controlEnabled=false
-```
-
-### 22.2.4 Regras congeladas para MovementControl lifecycle
-
-A liberação/bloqueio de movimento pertence ao lifecycle comandado pelo `SessionActivityPipeline`.
-
-Fluxo congelado:
-
-```text
-ActivitySetup
--> MovementBindingStage prepara/binda
--> controlEnabled=false
-
-ActivationWindow
--> movimento bloqueado
-
-CompleteActivationWindow
--> transição para ActivityRunning
--> MovementControlEnabled
-
-CompleteCurrentActivity / Deactivation / RouteExit
--> MovementControlDisabled
-```
-
-Regras:
-
-- `ActivityRunning` habilita movimento somente quando houver alvo válido novo ou retido;
-- `DeactivationWindow`, `ActivityTransition` e `RouteExit` bloqueiam movimento;
-- disable deve limpar input e estado transitório de movimento;
-- disable duplicado no mesmo `activityId|entrySequence|source|reason` é idempotente e deve emitir `MovementControlDisableSkippedDuplicate`, não um segundo `MovementControlDisabled` real.
-
-Evidência congelada:
-
-```text
-MovementControlEnabled
-MovementControlDisabled
-MovementControlDisableSkippedDuplicate // quando houver segunda tentativa idempotente no mesmo contexto
-```
-
-### 22.2.5 Skip real não é retained binding
-
-A Base 1.1 congela a distinção semântica:
-
-```text
-MovementBindingSkippedNoRequiredMovement
-= não há requisito/capacidade de movimento a liberar para a entry.
-
-MovementBindingRetained
-= não há novo bind, mas existe binding válido retido na sessão para a entry atual.
-```
-
-`Activity` sem novo participant command plan pode reutilizar binding de player/control retido quando a identidade continuar válida.
-
-Regras:
-
-- skip real não habilita controle;
-- retained binding pode habilitar controle ao entrar em `ActivityRunning`;
-- binding retido precisa validar identidade e estado, incluindo `sessionStateId`, `activityId`/entry aplicável, `entrySequence`, `playerSlotId`, `playerActorId`, binding de input, binding de movimento e instance ainda válida;
-- foreign/stale binding não pode habilitar controle.
-
-Evidência congelada para `activity_02` skip/no-content:
-
-```text
-MovementBindingStarted
-MovementBindingRetained
-MovementBindingCompleted status='RetainedExistingBinding' controlEnabled=false
-MovementControlEnabled
-ActivityRunning
-```
-
-### 22.2.6 Route-exit e release no-content
-
-No route-exit, `ClosedForRouteExit` continua bloqueado até a conclusão semântica do release obrigatório de ActivityContent.
-
-Para Activity sem content scenes carregadas, o branch `SkippedNoContent` também precisa emitir conclusão semântica de release:
-
-```text
-ActivityContentReleaseSkippedNoContent
-ActivityContentReleaseCompleted status='SkippedNoContent'
-```
-
-Isso preserva a invariante:
-
-```text
-ClosedForRouteExit só pode ocorrer depois do release obrigatório de ActivityContent.
-```
-
-No caso `no-content`, `releaseStarted=false` com `releaseCompleted=true` significa:
-
-```text
-não houve release físico de content scene;
-houve conclusão semântica do stage de release.
-```
-
-Essa diferença deve permanecer observável para evitar falsos diagnósticos.
-
-### 22.2.7 Aprendizados congelados
-
-A implementação deste checkpoint consolida os seguintes aprendizados como guias para próximos stages do `ActivityEntryPipeline`:
-
-- preparação/binding não é liberação de gameplay;
-- skip real não é retained binding;
-- Activity sem novo participant command plan pode reutilizar binding válido retido;
-- ausência de log/fact de stage deve levar primeiro a auditoria de conexão/observabilidade do pipeline, não a criação de config nova;
-- prefab/config/adapter novo só deve ser criado depois de auditar capacidades existentes;
-- contratos existentes devem ser reaproveitados/adaptados quando já estiverem alinhados à Base 1.1;
-- não criar trilho paralelo para resolver problema de authoring ou de stage não conectado;
-- facts internos relevantes precisam ter observabilidade suficiente no smoke para evitar falso diagnóstico de configuração.
-
-### 22.2.8 Fora do checkpoint
-
-Este checkpoint não implementa nem congela:
-
-```text
-CameraBindingStage final
-InteractionBindingStage final
-HudBindingStage final
-split-screen real
-runtime rebind de input
-Player camera rig final
-ObjectEntry real completo
-Progression restore genérico
-```
-
-Esses pontos permanecem futuros e devem seguir a mesma regra: auditar o existente antes de criar contrato/config/prefab novo.
-
-
-## 22.3 Dívidas não bloqueantes pós-checkpoint PlayerInput/Movement
-
-As seguintes dívidas não bloqueiam o PASS funcional do checkpoint `PlayerActor Readiness + PlayerInputBinding + MovementControl`:
-
-- `RouteExitBackToMenu` deve emitir `checkpointStatus='Passed'` explicitamente depois de `menuRouteApplied='true'`.
-- Clarificar nos checkpoints a semântica `releaseStarted=false` + `releaseCompleted=true` quando o release físico é `SkippedNoContent`, mas o stage concluiu semanticamente.
-- Futuro: consolidar a distribuição de estado entre pipeline, registry e binding state components quando houver mais bindings.
-- Futuro: revisar criação runtime de `PlayerActorMovementBindingState` e preferir componente autorado no prefab se isso reduzir mutação implícita sem criar rigidez desnecessária.
-- Futuro: padronizar os vários usos de `PlayerId`, separando semanticamente `PlayerSlotId`, `PlayerActorId`, `PlayerDefinitionId`, `PlayerSelectionId` ou equivalentes.
-- Futuro: quando runtime rebind de input for implementado, manter readers lendo actions semânticas, não teclas/botões concretos.
-
-Essas dívidas são de hardening, observabilidade ou refinamento semântico. Elas não reabrem o ownership congelado:
-
-```text
-SessionActivityPipeline decide lifecycle.
-Adapters/componentes executam side-effects.
-InputModes valida/aplica modos, mas não decide lifecycle de Activity.
-PlayerInput/Movement endpoints não decidem ActivityRunning.
-```
-
-
-## 23. Invariantes obrigatórios
-
-- `SessionActivityPipeline` decide lifecycle local de Activity.
-- `SessionOperationalPipeline` decide lifecycle de rota.
-- `ActivityEntryPipeline` é único para todas as Activities.
-- O que varia é `ActivitySetupInventory`, não lifecycle.
-- `ActivityContent` é específico da Activity.
-- `WindowTemplateLibrary` é route-scoped.
-- Fechar window não descarrega template scene.
-- Activity sem conteúdo gera skip explícito.
-- Subplano vazio gera skip explícito.
-- Requisito obrigatório ausente falha explicitamente.
-- Reset não é Release.
-- Restart não é Save/Restore.
-- Release não é Destroy por default.
-- Pooling canônico deve ser preferido quando policy/ownership indicar pool.
-- Todo command relevante carrega `Pipeline Identity`.
-- Foreign/stale events não alteram pipeline ativo.
-- Nenhum adapter decide lifecycle.
-- Nenhum objeto/contributor decide quando o pipeline avança.
-- ActivityObject snapshot/restore mínimo validado não transforma objeto em owner de Save.
-- `RouteActivitySave` não aplica estado em objeto; restore pertence ao `SessionActivityPipeline`.
-- `PlayerInputBindingStage` usa o `PlayerInput` do `PlayerActor` materializado, sem `PlayerInput` operacional paralelo.
-- `PlayerInputBindingStage` pode rebinder explicitamente para o asset canônico validado pelo `RuntimeConfigRegistry` / `InputModesRuntime`, mas não pode buscar asset por nome nem usar fallback silencioso.
-- `MovementBindingStage` prepara/binda movimento com `controlEnabled=false`.
-- `MovementControlEnabled` só ocorre quando o pipeline entra em `ActivityRunning` e há alvo válido.
-- `MovementControlDisabled` ocorre em deactivation, transition e route-exit quando houver alvo ativo/retido.
-- Skip real não é retained binding; `MovementBindingRetained` pode liberar controle em `ActivityRunning`, skip real não.
-- Disable duplicado deve ser idempotente e observável como duplicate/skip, não como segundo side-effect real.
-- Branch `SkippedNoContent` de release deve emitir conclusão semântica antes de `ClosedForRouteExit`.
-- Não criar Base 2.0 agora.
-- Não criar core genérico universal agora.
-- Não reorganizar fisicamente arquitetura em Core/Concrete/UnityAdapter.
+## 16. Invariantes obrigatórios
+
+- `SessionActivityPipeline` decide lifecycle local.
+- `SessionOperationalPipeline` decide ordem de rota/unload/handoff operacional.
+- `SceneComposition` executa scene changes, não lifecycle.
+- `ActivityAsset`/`ActivityCatalogAsset` definem dados autorais, não lifecycle.
+- Objetos/domínios contribuem requirements, não avançam pipeline.
+- Policies decidem estratégia/bloqueio, não conteúdo concreto de gameplay.
+- Adapters executam side-effects comandados.
+- Facts confirmam readiness/completion/failure.
+- Toda etapa relevante carrega `Pipeline Identity`.
+- `foreign/stale events` não podem alterar Activity ativa.
+- Nenhuma ausência obrigatória vira fallback silencioso.
+- Deactivation não implica Release.
+- Conteúdo declarado e conteúdo descoberto convergem para o mesmo `ActivitySetup/ObjectEntry` pipeline.
 
 ---
 
-## 24. Ordem conceitual de entrada da Activity
+## 17. Relação com ADRs existentes
 
-```text
-ResolveActivityEntry
--> ResolveActivityContentProfile
--> Load/PrepareActivityContent ou ActivityContentLoadSkippedNoContent
--> DiscoverActivityContributors
--> BuildActivitySetupInventory
--> ValidateActivitySetupInventory
--> ParticipantSetupStage
-   -> PlayerActorReadinessValidation
-   -> PlayerInputBindingStage
-   -> MovementBindingStage, quando aplicável
--> ObjectEntrySetupStage
--> PlacementSetupStage
--> CameraBindingSetupStage
--> InteractionBindingSetupStage
--> HudBindingSetupStage
--> WarmupSetupStage
--> ActivitySetupReadinessValidation
--> ActivitySetupCompleted
--> ActivationWindowPresentation ou ActivationWindowSkippedNoContent
--> CompleteActivationWindow, se houver window
--> ActivityRunning
-   -> MovementControlEnabled, quando houver alvo válido
-```
-
-A primeira Activity usa a cortina/loading da rota como contexto visual.
-
-Activities seguintes usam cortina/transição local da Activity como contexto visual.
-
-O pipeline interno é o mesmo.
+- **ADR-0001**: preserva Base 1.1 como Pipeline Convergence com identidade explícita e isolamento contra `foreign/stale events`.
+- **ADR-0003**: `SessionOperationalPipeline` permanece owner da rota, transição operacional e handoff para `SessionActivityPipeline`.
+- **ADR-0004**: `SessionActivityPipeline` permanece owner do lifecycle local da Activity.
+- **ADR-0005**: módulos produzem facts/commands; adapters executam side-effects.
+- **ADR-0007**: gates/input modes executam estado/efeito, não lifecycle.
+- **ADR-0008/ADR-0011**: save/runtime config executam persistência/config validada, não lifecycle de Activity.
+- **ADR-0009/ADR-0010**: slots/player preparation operacional são intenção/handoff; `PlayerActor` jogável nasce no `SessionActivityPipeline/ActivitySetup`.
+- **ADR-0012/ADR-0013**: `OperationalCameraRuntime` e `CameraPresentation` são base técnica; Activity camera binding mínimo é decidido pelo `SessionActivityPipeline`.
 
 ---
 
-## 25. Auditorias obrigatórias antes da implementação
+## 18. Critérios de aceite futuros
 
-Antes de implementar este ADR no runtime, fazer auditoria sobre:
+Implementações futuras devem provar por smoke/log:
 
-```text
-ActivityAsset / ActivityCatalogAsset atuais
-ActivationWindow / DeactivationWindow atuais
-Window AdditiveScene atual
-ActivityTransition atual
-PlayerActorSetup/Reset atual
-ActivitySceneContract atual
-SceneKeyAsset e scene loading atual
-CameraPresentation / ActivityCamera atual
-Pooling canônico existente
-ObjectEntry / contributor contracts existentes
-Save/RouteActivitySave boundaries atuais
-```
-
-Objetivos da auditoria:
-
-- mapear o que existe;
-- mapear o que deve ser removido;
-- mapear o que deve ser reaproveitado;
-- identificar conflitos com este ADR;
-- evitar compat paralelo;
-- evitar trilho fantasma;
-- evitar implementação ansiosa antes de ownership correto.
-
----
-
-## 26. Relação com ADRs existentes
-
-### ADR-0001
-
-Este ADR preserva Pipeline Convergence, identidade explícita e isolamento contra foreign/stale events.
-
-### ADR-0003
-
-`SessionOperationalPipeline` continua owner de rota, transição operacional, SceneComposition operacional e handoff inicial para `SessionActivityPipeline`.
-
-### ADR-0004
-
-Este ADR detalha e atualiza o shape de `ActivityContent`, `ActivityEntryPipeline`, windows, reset, retention/release e ObjectEntry dentro do domínio do `SessionActivityPipeline`.
-
-### ADR-0005
-
-Mantém a regra: pipeline decide, facts/commands registram, adapters executam side-effects.
-
-### ADR-0006
-
-SceneComposition, fade e loading de rota permanecem adapters/execução do domínio operacional.
-
-### ADR-0007
-
-Gates/InputModes/GameLoop seguem como executores técnicos, não owners de lifecycle.
-
-### ADR-0008
-
-Restart/reset deste ADR não são Save/Restore. `ActivityObjectSnapshotCapture` produz dado local para Progression Save MVP; `RouteActivitySave`/`SaveRuntime` permanecem no ADR-0008. O MVP funcional `RouteActivitySave + ActivityObjectSnapshotRestore` validou restore mínimo de `Transform` para `test_object_01`, mantendo a regra de ownership: `SessionOperationalPipeline` decide load/save de rota, `SessionActivityPipeline` decide timing de capture/restore, e endpoints apenas executam side-effects comandados. Restore genérico de Progression permanece futuro e não deve sobrescrever/ser sobrescrito por Placement/ObjectReset sem policy explícita.
-
-### ADR-0009 / ADR-0010
-
-PlayerSlot é capacidade operacional. PlayerActor nasce no `ActivitySetup`. Player não é propriedade semântica da Activity.
-
-O checkpoint `PlayerActor Readiness + PlayerInputBinding + MovementControl` preserva a fronteira:
-
-```text
-SessionOperationalPipeline / InputModesRuntime
--> valida capacidade operacional e asset canônico de input.
-
-SessionActivityPipeline / ActivitySetup
--> materializa PlayerActor.
--> binda PlayerInput do PlayerActor ao slot/ator da entry.
--> binda Movement ao PlayerInput já validado.
--> libera/bloqueia controle conforme lifecycle local da Activity.
-```
-
-Não há provisioning operacional paralelo de `PlayerInput` de gameplay.
-
-### ADR-0012 / ADR-0013
-
-Operational Camera, Route Camera, Activity Camera e Window Camera permanecem camadas separadas. Este ADR registra prioridade e uso dentro do ActivityEntry/Window lifecycle.
-
----
-
-## 27. Consequências
-
-- Activity deixa de ser confundida com cena.
-- Windows deixam de ser confundidas com conteúdo jogável.
-- A rota pode fornecer templates de janela sem virar owner de lifecycle da janela.
-- `ActivityContent` passa a ser específico, carregável, rastreável e liberável por entry.
-- O catálogo de activities não vira pacote de scenes a carregar integralmente.
-- O setup da Activity passa a convergir por inventário e stages, não branches especiais.
-- Reset, release, restart e pooling deixam de ser efeitos soltos.
-- O sistema fica preparado para migrar componentes reais gradualmente, adicionando ResetGroups, Save providers e ObjectEntry adapters quando houver necessidade concreta.
-
----
-
-## 28. Critérios de aceite futuro
-
-Este ADR poderá ser considerado implementado quando houver evidência de runtime para:
-
-```text
-ActivityContentProfile resolvido por Activity.
-Load/PrepareActivityContent emitindo facts e commands com identity.
-Activity sem content emitindo skip explícito.
-Content scenes additive sem SetActiveScene.
-Contributor discovery após content load.
-ActivitySetupInventory construído por entry.
-Subplanos vazios emitindo skip explícito.
-ResetGroups v0 comandados por pipeline.
-ActivityContentRelease antes de ClosedForRouteExit em route-exit.
-Branch SkippedNoContent de release emitindo conclusão semântica antes de ClosedForRouteExit.
-PlayerActor readiness validado antes de ActivitySetupCompleted quando houver participante obrigatório.
-PlayerInputBindingStage usando PlayerInput do PlayerActor materializado, sem runtime paralelo.
-MovementBindingStage preparando controle com controlEnabled=false.
-MovementControlEnabled somente em ActivityRunning.
-MovementControlDisabled em deactivation/route-exit.
-MovementBindingRetained habilitando controle em Activity skip/no-content quando houver binding válido.
-RestartCurrentActivity criando nova entrySequence e recarregando content no v0.
-WindowTemplateLibrary não duplicada nem descarregada por window close.
-Comandos stale/foreign rejeitados.
-Nenhum fallback silencioso para Route Scene quando content obrigatório faltar.
-```
-
+- identity correta por `activityId + entrySequence`;
+- skip explícito para subplano vazio/opcional;
+- fail-fast para requisito obrigatório quebrado;
+- ausência de fallback por tag/nome/singleton/`Camera.main`;
+- command -> adapter -> fact/completion;
+- route-exit sem side-effect operacional antes de teardown local;
+- nenhum owner duplo ativo após migração de ownership.
