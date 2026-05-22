@@ -145,6 +145,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActorPresentationReleaseSkipped = 85,
         ActorPresentationReleaseFailed = 86,
         ActorPresentationReleaseCompleted = 87,
+        ActorPresentationRetained = 88,
+        ActorPresentationRetentionSkipped = 89,
+        ActorPresentationRetentionFailed = 90,
+        ActorPresentationResetSkipped = 91,
     }
 
     public enum ActivityExecutionState
@@ -652,6 +656,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActorPresentationReleaseSkipped = 200,
         ActorPresentationReleaseFailed = 201,
         ActorPresentationReleaseCompleted = 202,
+        ActorPresentationRetained = 203,
+        ActorPresentationRetentionSkipped = 204,
+        ActorPresentationRetentionFailed = 205,
+        ActorPresentationResetSkipped = 206,
         ActivitySetupInventoryBuildStarted = 94,
         ActivitySetupInventoryBuilt = 95,
         ActivitySetupInventorySkippedNoRequirements = 96,

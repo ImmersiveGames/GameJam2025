@@ -4020,17 +4020,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 PlayerActorIdentityRecord actor = activeActors[index];
                 GameObject actorInstance = _activityPlayerActorRegistry.ResolveActiveInstanceOrFail(startedIdentity, actor.PlayerActorId);
-                if (_activeActorPresentationHandlesByPlayerActorId.TryGetValue(actor.PlayerActorId, out _))
-                {
-                    EmitActorPresentationReleaseStage(
-                        definition,
-                        command,
-                        facts,
-                        snapshots,
-                        entrySequence,
-                        ActorPresentationReleaseRail.BeforeRematerialization,
-                        actor.PlayerActorId);
-                }
 
                 if (!actorInstance.TryGetComponent(out ActorPresentationEndpoint endpoint) || endpoint == null)
                 {
@@ -4087,6 +4076,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 EmitSnapshot(snapshots, "actor_presentation_plan_resolved", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation plan resolved playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' profileId='{planResult.ResolvedPlan.ProfileId}'.");
                 DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationPlanResolved' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' profileId='{planResult.ResolvedPlan.ProfileId}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
+                if (_activeActorPresentationHandlesByPlayerActorId.TryGetValue(actor.PlayerActorId, out ActorPresentationRuntimeHandle activeHandle))
+                {
+                    EvaluateActorPresentationRetentionOrFail(
+                        definition,
+                        command,
+                        facts,
+                        snapshots,
+                        entrySequence,
+                        actor,
+                        activeHandle,
+                        planResult.ResolvedPlan);
+
+                    if (TryRetainActorPresentationHandle(
+                            definition,
+                            command,
+                            facts,
+                            snapshots,
+                            entrySequence,
+                            actor,
+                            activeHandle,
+                            planResult.ResolvedPlan))
+                    {
+                        continue;
+                    }
+
+                    EmitActorPresentationReleaseStage(
+                        definition,
+                        command,
+                        facts,
+                        snapshots,
+                        entrySequence,
+                        ActorPresentationReleaseRail.BeforeRematerialization,
+                        actor.PlayerActorId);
+                }
+
                 ActorPresentationMaterializationCommand materializationCommand = new(
                     planResult.ResolvedPlan,
                     nameof(SessionActivityPipeline),
@@ -4132,6 +4156,176 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActorPresentationSetupCompleted, completedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation setup completed.");
             EmitSnapshot(snapshots, "actor_presentation_setup_completed", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation setup completed.");
             DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationSetupCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+        }
+
+        private bool TryRetainActorPresentationHandle(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            PlayerActorIdentityRecord actor,
+            ActorPresentationRuntimeHandle activeHandle,
+            ActorPresentationResolvedPlan resolvedPlan)
+        {
+            bool compatible = IsActorPresentationRetentionCompatible(actor.PlayerActorId, activeHandle, resolvedPlan, out string compatibilityReason);
+            if (!compatible)
+            {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationRetentionSkipped, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationRetentionSkipped);
+                EmitFact(facts, SessionActivityFactKind.ActorPresentationRetentionSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retention skipped playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' reason='{compatibilityReason}'.");
+                EmitSnapshot(snapshots, "actor_presentation_retention_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retention skipped playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' reason='{compatibilityReason}'.");
+                DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationRetentionSkipped' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' reason='{compatibilityReason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
+                return false;
+            }
+
+            if (!IsRetentionPolicyAllowed(activeHandle.ResolvedPlan.ReleasePolicy, out string policyReason))
+            {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationRetentionSkipped, entrySequence);
+                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationRetentionSkipped);
+                EmitFact(facts, SessionActivityFactKind.ActorPresentationRetentionSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retention skipped playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' reason='{policyReason}'.");
+                EmitSnapshot(snapshots, "actor_presentation_retention_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retention skipped playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' reason='{policyReason}'.");
+                DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationRetentionSkipped' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' reason='{policyReason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
+                EmitActorPresentationResetSkippedObservation(definition, command, facts, snapshots, entrySequence, actor, activeHandle.ResolvedPlan.ResetPolicy);
+                return false;
+            }
+
+            SessionActivityIdentity retainedIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationRetained, entrySequence);
+            _state.SetCurrentIdentity(retainedIdentity, SessionActivityStage.ActorPresentationRetained);
+            EmitFact(facts, SessionActivityFactKind.ActorPresentationRetained, retainedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retained playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' profileId='{activeHandle.ResolvedPlan.ProfileId}'.");
+            EmitSnapshot(snapshots, "actor_presentation_retained", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retained playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}'.");
+            DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationRetained' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{activeHandle.ResolvedPlan.ReleasePolicy}' profileId='{activeHandle.ResolvedPlan.ProfileId}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+
+            SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationReady, entrySequence);
+            _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActorPresentationReady);
+            EmitFact(facts, SessionActivityFactKind.ActorPresentationReady, readyIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation ready retained playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' instance='{activeHandle.PresentationInstance.name}'.");
+            EmitSnapshot(snapshots, "actor_presentation_ready", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation ready retained playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' instance='{activeHandle.PresentationInstance.name}'.");
+            DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationReady' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' mode='Retained' instance='{activeHandle.PresentationInstance.name}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+            return true;
+        }
+
+        private void EvaluateActorPresentationRetentionOrFail(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            PlayerActorIdentityRecord actor,
+            ActorPresentationRuntimeHandle activeHandle,
+            ActorPresentationResolvedPlan resolvedPlan)
+        {
+            if (activeHandle.ResolvedPlan.ReleasePolicy != ActorPresentationReleasePolicy.KeepBound)
+            {
+                return;
+            }
+
+            bool compatible = IsActorPresentationRetentionCompatible(actor.PlayerActorId, activeHandle, resolvedPlan, out string compatibilityReason);
+            if (compatible)
+            {
+                return;
+            }
+
+            SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationRetentionFailed, entrySequence);
+            _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorPresentationRetentionFailed);
+            EmitFact(facts, SessionActivityFactKind.ActorPresentationRetentionFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retention failed playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' reason='keep_bound_incompatible_rematerialization' detail='{compatibilityReason}'.");
+            EmitSnapshot(snapshots, "actor_presentation_retention_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation retention failed playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' reason='keep_bound_incompatible_rematerialization' detail='{compatibilityReason}'.");
+            DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationRetentionFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' reason='keep_bound_incompatible_rematerialization' detail='{compatibilityReason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
+            throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][ActorPresentationRetention] KeepBound policy forbids incompatible rematerialization playerActorId='{actor.PlayerActorId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' detail='{compatibilityReason}'.");
+        }
+
+        private void EmitActorPresentationResetSkippedObservation(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence,
+            PlayerActorIdentityRecord actor,
+            ActorPresentationResetPolicy resetPolicy)
+        {
+            string reasonCode = resetPolicy == ActorPresentationResetPolicy.None
+                ? "reset_policy_none"
+                : "reset_not_implemented_v0";
+
+            SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationResetSkipped, entrySequence);
+            _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationResetSkipped);
+            EmitFact(facts, SessionActivityFactKind.ActorPresentationResetSkipped, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation reset skipped playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{resetPolicy}' reason='{reasonCode}'.");
+            EmitSnapshot(snapshots, "actor_presentation_reset_skipped", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation reset skipped playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{resetPolicy}' reason='{reasonCode}'.");
+            DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationResetSkipped' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerSlotId='{actor.PlayerSlotId}' playerActorId='{actor.PlayerActorId}' policy='{resetPolicy}' reason='{reasonCode}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
+        }
+
+        private static bool IsRetentionPolicyAllowed(ActorPresentationReleasePolicy policy, out string reasonCode)
+        {
+            switch (policy)
+            {
+                case ActorPresentationReleasePolicy.KeepBound:
+                case ActorPresentationReleasePolicy.ReleaseOnRouteExit:
+                    reasonCode = "retention_allowed";
+                    return true;
+                case ActorPresentationReleasePolicy.ReleaseOnActivityExit:
+                    reasonCode = "policy_requires_activity_exit_release";
+                    return false;
+                default:
+                    reasonCode = "policy_unknown";
+                    return false;
+            }
+        }
+
+        private static bool IsActorPresentationRetentionCompatible(
+            string expectedPlayerActorId,
+            ActorPresentationRuntimeHandle activeHandle,
+            ActorPresentationResolvedPlan resolvedPlan,
+            out string reasonCode)
+        {
+            if (string.IsNullOrWhiteSpace(expectedPlayerActorId))
+            {
+                reasonCode = "player_actor_id_missing";
+                return false;
+            }
+
+            if (!activeHandle.IsValid)
+            {
+                reasonCode = "active_handle_invalid";
+                return false;
+            }
+
+            if (!string.Equals(activeHandle.ResolvedPlan.ActorId, expectedPlayerActorId, StringComparison.Ordinal))
+            {
+                reasonCode = "actor_id_mismatch";
+                return false;
+            }
+
+            if (!resolvedPlan.IsValid)
+            {
+                reasonCode = "resolved_plan_invalid";
+                return false;
+            }
+
+            if (!string.Equals(activeHandle.ResolvedPlan.ProfileId, resolvedPlan.ProfileId, StringComparison.Ordinal))
+            {
+                reasonCode = "profile_id_mismatch";
+                return false;
+            }
+
+            if (activeHandle.ResolvedPlan.PrimarySlotKind != resolvedPlan.PrimarySlotKind)
+            {
+                reasonCode = "primary_slot_kind_mismatch";
+                return false;
+            }
+
+            if (!string.Equals(activeHandle.ResolvedPlan.PrimarySlotId, resolvedPlan.PrimarySlotId, StringComparison.Ordinal))
+            {
+                reasonCode = "primary_slot_id_mismatch";
+                return false;
+            }
+
+            if (activeHandle.PresentationInstance == null)
+            {
+                reasonCode = "presentation_instance_missing";
+                return false;
+            }
+
+            reasonCode = "compatible";
+            return true;
         }
 
         private void EmitActorPresentationReleaseStage(

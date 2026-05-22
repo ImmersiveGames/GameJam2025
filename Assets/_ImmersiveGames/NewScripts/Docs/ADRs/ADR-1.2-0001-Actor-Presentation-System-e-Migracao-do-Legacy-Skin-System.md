@@ -2,12 +2,12 @@
 
 ## Status
 
-- Estado: Final para revisão / candidato a aceite
+- Estado: Aceito / fechado para o MVP de ActorPresentation
 - Base: Base 1.2 — Actors Convergence / Convergência de Atores
 - Origem histórica: Legacy Skin System
 - Fonte normativa anterior: Base 1.1, ADR-0001 a ADR-0014
-- Escopo: decisão arquitetural inicial para migração de Skin/Presentation de Actor
-- Implementação: fora deste ADR
+- Escopo: decisão arquitetural para migração de Skin/Presentation de Actor
+- Implementação: MVP inicial validado até setup, release policy e retention explícita; reset/snapshot/subgrupos avançados permanecem futuros
 
 ---
 
@@ -410,7 +410,42 @@ Quando usar pool, deve usar a capacidade canônica existente do projeto, com pol
 
 Não criar pooling paralelo.
 
-### 7.4 Snapshot futuro
+### 7.4 Release policy e retenção de ActorPresentation
+
+`ActorPresentation` deve seguir o lifecycle real do `ActorInstance` / `ActorParticipation`, não o estado momentâneo da simulação.
+
+Regra:
+
+```text
+SimulationStopped não implica ActorPresentationRelease.
+MovementControlDisabled não implica ActorPresentationRelease.
+ActivationWindow não implica ActorPresentationRelease.
+DeactivationWindow não implica ActorPresentationRelease.
+Transição entre Activities não implica release automático se o ActorInstance continuar retido.
+```
+
+A decisão de release deve ser uma `Pipeline Policy` explícita.
+
+Policies aceitas no MVP:
+
+| Policy | Uso correto |
+|---|---|
+| `ReleaseOnActivityExit` | Para actors/presentations pertencentes somente à Activity atual. Deve liberar ao sair da Activity. |
+| `ReleaseOnRouteExit` | Para `PlayerActor` ou actors retidos entre Activities da mesma rota. Deve liberar apenas no route-exit / release real do actor. |
+| `KeepBound` | Para retenção especial. Não deve destruir a instância, mas também não pode permitir duplicação silenciosa em rematerialização. |
+
+Consequências:
+
+```text
+PlayerActor retido entre activity_01, janelas e activity_02 deve usar ReleaseOnRouteExit.
+Actor específico da Activity pode usar ReleaseOnActivityExit.
+KeepBound exige skip/reuse/falha explícita se houver tentativa de rematerialização com handle ativo.
+Unknown policy deve falhar explicitamente.
+```
+
+A Base 1.2 rejeita a interpretação de que parar input, movimento ou simulação seja motivo suficiente para remover presentation visual.
+
+### 7.5 Snapshot futuro
 
 Fluxo conceitual futuro:
 
@@ -678,6 +713,113 @@ Online/DLC packages
 Snapshot completo
 ```
 
+### 15.1 Checkpoint MVP implementado até a Fase 8B
+
+Checkpoint registrado durante a Base 1.2 — Actors Convergence.
+
+Fases executadas/validadas até aqui:
+
+| Fase | Resultado |
+|---|---|
+| Fase 1 / 1.1 | Contratos passivos e authoring inicial de `ActorPresentation` criados em `NewScripts`, sem dependência do legado. |
+| Fase 2 | `ActorPresentationEndpoint`, containers explícitos e resolução de `SlotRequirement` para `SlotBinding`. |
+| Fase 3 | Adapter mínimo de materialização/release isolado. |
+| Fase 4 | `ActorPresentationPlanResolver` isolado. |
+| Fase 5 | Probe manual validou `Profile + Endpoint/Containers -> PlanResolver -> Adapter -> Release`. |
+| Fase 6 | `ActorPresentationSetupStage` integrado ao `SessionActivityPipeline` após `PlayerActorReadiness` e antes de input/movement/camera. |
+| Fase 7 | Release explícito de `ActorPresentation` integrado ao `SessionActivityPipeline` com policy configurável. |
+| Fase 8B | Retention explícita validada: `ReleaseOnRouteExit` retém a presentation entre restart/activity transition e libera no route-exit. |
+
+Shape validado:
+
+```text
+ActorPresentationProfileAsset
++ ActorPresentationEndpoint/Containers
+-> ActorPresentationPlanResolver
+-> ActorPresentationMaterializationCommand
+-> UnityActorPresentationMaterializationAdapter
+-> ActorPresentationReadyFact
+-> ActorPresentationRuntimeHandle
+-> ActorPresentationReleaseCommand
+-> ActorPresentationReleasedFact
+
+Quando há handle ativo compatível:
+ActorPresentationRuntimeHandle
+-> ActorPresentationRetained
+-> ActorPresentationReady mode='Retained'
+-> ActorPresentationSetupCompleted
+```
+
+Ordem aceita para setup do `PlayerActor` no MVP:
+
+```text
+PlayerActorReadiness
+-> ActorPresentationSetup
+-> PlayerInputBinding
+-> MovementBinding
+-> CameraBinding
+```
+
+Policy validada para o `PlayerActor` sandbox:
+
+```text
+ReleaseOnRouteExit
+```
+
+Motivo:
+
+```text
+PlayerActor continua existindo entre Activities da mesma rota.
+A presentation deve continuar existindo durante ActivationWindow, DeactivationWindow, pausa de simulação, MovementControlDisabled, restart da Activity e transição para activity_02.
+```
+
+`ReleaseOnActivityExit` permanece válido, mas apenas para actors/presentations cujo lifecycle pertença à Activity atual.
+
+Comportamento validado pela Fase 8B:
+
+```text
+Entry inicial:
+ActorPresentationMaterialized
+ActorPresentationReady
+
+RestartCurrentActivity com ReleaseOnRouteExit:
+ActorPresentationReleaseSkipped rail='ActivityExit' reason='policy_mismatch'
+ActorPresentationRetained
+ActorPresentationReady mode='Retained'
+sem nova ActorPresentationMaterialized
+
+Activity transition para activity_02:
+ActorPresentationReleaseSkipped rail='ActivityExit' reason='policy_mismatch'
+handle preservado até RouteExit
+
+BackToMenu / RouteExit:
+ActorPresentationReleaseStarted rail='RouteExit'
+ActorPresentationReleased policy='ReleaseOnRouteExit'
+ActorPresentationReleaseCompleted
+```
+
+Invariantes adicionadas pelo checkpoint:
+
+```text
+ActorPresentation release policy deve seguir o lifecycle do ActorInstance, não o estado da simulação.
+ActorPresentation retida deve emitir fato explícito de retention.
+Rematerialização não deve ocorrer se houver handle ativo compatível e policy permitir retenção.
+RouteExit é o ponto de release real para PlayerActor retido por ReleaseOnRouteExit.
+```
+
+Ainda fora deste checkpoint:
+
+```text
+ActorPresentationReset completo.
+ActorPresentationSnapshot completo.
+DLC/online package loading.
+Animation/audio/fx ownership real.
+NonPlayerActor completo.
+Pooling real.
+Observabilidade refinada para Activity sem active player actors com handle retido.
+Limpeza física do Legacy Skin System.
+```
+
 ---
 
 ## 16. Fora do v0
@@ -744,6 +886,22 @@ A Base 1.2 cria arquivos novos em NewScripts.
 
 O Legacy Skin System não vira dependência ativa.
 
+ActorPresentation release policy segue o lifecycle do ActorInstance/ActorParticipation.
+
+SimulationStopped, MovementControlDisabled, ActivationWindow e DeactivationWindow não implicam release automático de ActorPresentation.
+
+ReleaseOnActivityExit é policy válida para presentation pertencente à Activity.
+
+ReleaseOnRouteExit é policy válida para PlayerActor/Actor retido entre Activities da mesma rota.
+
+KeepBound não pode causar rematerialização duplicada silenciosa.
+
+ActorPresentationRetained deve ser emitido quando há handle ativo compatível e policy permite retenção.
+
+ActorPresentationReady pode ser emitido em modo Retained quando a presentation já existente continua válida.
+
+Rematerialização com handle ativo compatível é proibida salvo se policy/compatibilidade exigir trilho explícito de release + materialize.
+
 Nomes explícitos são preferíveis no primeiro corte se reduzirem ambiguidade de ownership.
 ```
 
@@ -765,6 +923,10 @@ preservar containers como boa ideia
 remover owners errados do legado
 integrar presentation ao ActivityEntryPipeline
 criar implementação nova em NewScripts sem depender da pasta legada
+reter ActorPresentation entre Activities quando o ActorInstance continuar vivo
+separar release de presentation de pause/stop de simulação
+evitar churn visual em restart/activity transition quando o handle ativo é compatível
+emitir retention explícita para diferenciar reutilização de rematerialização
 ```
 
 Também cria uma fronteira clara:
@@ -794,9 +956,9 @@ quais arquivos novos em NewScripts devem nascer no primeiro corte
 
 ---
 
-## 20. Próximo passo recomendado
+## 20. Próximos passos após fechamento deste ADR
 
-Depois de validar este ADR, o próximo passo deve ser uma auditoria localizada do Legacy Skin System no projeto, sem implementação, para gerar a matriz:
+Com o MVP de `ActorPresentation` fechado até setup, release policy e retention explícita, os próximos passos ficam separados em frentes futuras:
 
 ```text
 arquivo legado
@@ -805,7 +967,19 @@ arquivo legado
 -> manter/adaptar/remover/futuro
 ```
 
-Prompt sugerido depois da validação do ADR:
+Frentes futuras:
+
+```text
+1. ActorPresentationReset real, quando houver endpoints concretos de visual/material/fx/animation para resetar.
+2. ActorPresentationSnapshot real, quando houver estado visual relevante para persistir.
+3. Subgrupos: material variants, visual parts, audio, animation e fx.
+4. NonPlayerActor / Enemy / NPC / PropActor usando o mesmo shape de capability.
+5. Limpeza física do Legacy Skin System após validação dos equivalentes em NewScripts.
+```
+
+A auditoria localizada do Legacy Skin System continua útil para migrar os subgrupos restantes:
+
+Prompt sugerido para próxima auditoria localizada:
 
 ```text
 Audite apenas o Legacy Skin System para Base 1.2 Actor Presentation.
@@ -841,4 +1015,49 @@ Identifique:
 6. uso de containers;
 7. pontos que hoje decidem lifecycle indevidamente;
 8. primeira matriz de migração.
+```
+
+
+---
+
+## 21. Fechamento
+
+Este ADR fica fechado para o MVP inicial de `ActorPresentation` da Base 1.2.
+
+Checkpoint aceito:
+
+```text
+ActorPresentation MVP — setup + release policy + retention explícita
+```
+
+Garantias congeladas:
+
+```text
+SessionActivityPipeline / ActivityEntryPipeline é o owner de lifecycle.
+SessionOperationalPipeline transporta intenção/handoff, mas não materializa presentation.
+ActorPresentation é capability opcional de Actor.
+Skin é subgrupo de ActorPresentation.
+Actor lógico e conteúdo de presentation permanecem separados.
+Presentation é materializada em containers explícitos.
+Profile/definition fornece dados; adapter executa side-effects.
+ReleasePolicy segue lifecycle do ActorInstance/ActorParticipation.
+ReleaseOnRouteExit retém PlayerActor presentation entre Activities da rota.
+ReleaseOnActivityExit permanece válido para actors pertencentes à Activity.
+Retention compatível emite ActorPresentationRetained e ActorPresentationReady mode='Retained'.
+Ausência obrigatória é fail-fast.
+Ausência opcional é skip explícito.
+Legacy Skin System é referência funcional, não dependência ativa.
+Arquivos novos devem nascer em Assets/_ImmersiveGames/NewScripts.
+```
+
+Não congelado neste ADR:
+
+```text
+Reset visual completo.
+Snapshot visual completo.
+Online/DLC package delivery.
+Subgrupos avançados de audio/animation/fx/material variants.
+NonPlayerActor completo.
+Pooling real.
+Limpeza física do legado.
 ```
