@@ -15,6 +15,8 @@ GameObject:
   - component: {fileID: 240041504808191800}
   - component: {fileID: 8906509120750850877}
   - component: {fileID: 333333333333333333}
+  - component: {fileID: 444444444444444444}
+  - component: {fileID: 555555555555555555}
   m_Layer: 0
   m_Name: PlayerActor_v0
   m_TagString: Untagged
@@ -163,6 +165,37 @@ MonoBehaviour:
   entrySequence: 0
   playerSlotId: 
   playerActorId: 
+--- !u!114 &444444444444444444
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f464df97db516e4aa51708c5b89dd73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  endpointId: actor.presentation.endpoint.player
+  profile: {fileID: 11400000, guid: 5d3146a592284c77be540f63a9611938, type: 2}
+  containers:
+  - {fileID: 555555555555555555}
+--- !u!114 &555555555555555555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ac2f768a3dfb1b4b812b7ec3409138b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slotKind: 1
+  slotId: visual.root
+  containerTransform: {fileID: 100001}
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0

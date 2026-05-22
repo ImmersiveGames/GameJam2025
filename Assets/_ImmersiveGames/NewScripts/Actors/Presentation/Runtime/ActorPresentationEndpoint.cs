@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using UnityEngine;
 
@@ -14,9 +15,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
     public sealed class ActorPresentationEndpoint : MonoBehaviour
     {
         [SerializeField] private string endpointId = "actor.presentation.endpoint";
+        [SerializeField] private ActorPresentationProfileAsset profile;
         [SerializeField] private List<ActorPresentationContainer> containers = new List<ActorPresentationContainer>();
 
         public string EndpointId => Normalize(endpointId);
+        public ActorPresentationProfileAsset Profile => profile;
         public IReadOnlyList<ActorPresentationContainer> Containers => (IReadOnlyList<ActorPresentationContainer>)containers ?? Array.Empty<ActorPresentationContainer>();
 
         public bool IsValid =>
@@ -68,6 +71,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
             if (string.IsNullOrWhiteSpace(EndpointId))
             {
                 throw new InvalidOperationException($"{origin} requires non-empty endpointId.");
+            }
+
+            if (profile == null)
+            {
+                throw new InvalidOperationException($"{origin} requires ActorPresentationProfileAsset.");
             }
 
             if (containers == null)

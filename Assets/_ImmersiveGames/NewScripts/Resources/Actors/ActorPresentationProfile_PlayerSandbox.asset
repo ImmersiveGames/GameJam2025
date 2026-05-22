@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f272839991067644a228f070f8dc52c, type: 3}
-  m_Name: ActorPresentationProfile
+  m_Name: ActorPresentationProfile_PlayerSandbox
   m_EditorClassIdentifier: 
-  profileId: actor.presentation.test
+  profileId: actor.presentation.player.sandbox
   requiredness: 2
   releasePolicy: 2
   resetPolicy: 2
   variationPolicy: 1
-  variationSeed: 0
+  variationSeed: 101
   visualPrefab: {fileID: 7678704797045127535, guid: bcda19af55909a94d8b4af5f6a98f0e6, type: 3}
   primarySlotKind: 1
   primarySlotId: visual.root
