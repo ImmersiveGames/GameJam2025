@@ -209,27 +209,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             LogResult("RequestResume", result);
         }
 
-        public bool QaSubtractActorAttribute(string actorId, string attributeId, float amount = 10f)
+        internal bool QaSubtractActorAttribute(string actorId, string attributeId, float amount = 10f)
         {
             return QaApplyActorAttributeCommand("QaSubtractActorAttribute", actorId, attributeId, ActorAttributeOperation.Subtract, amount, 0f);
         }
 
-        public bool QaAddActorAttribute(string actorId, string attributeId, float amount = 5f)
+        internal bool QaAddActorAttribute(string actorId, string attributeId, float amount = 5f)
         {
             return QaApplyActorAttributeCommand("QaAddActorAttribute", actorId, attributeId, ActorAttributeOperation.Add, amount, 0f);
         }
 
-        public bool QaSetActorAttribute(string actorId, string attributeId, float value)
+        internal bool QaSetActorAttribute(string actorId, string attributeId, float value)
         {
             return QaApplyActorAttributeCommand("QaSetActorAttribute", actorId, attributeId, ActorAttributeOperation.Set, 0f, value);
         }
 
-        public bool QaResetActorAttributeToInitial(string actorId, string attributeId)
+        internal bool QaResetActorAttributeToInitial(string actorId, string attributeId)
         {
             return QaApplyActorAttributeCommand("QaResetActorAttributeToInitial", actorId, attributeId, ActorAttributeOperation.ResetToInitial, 0f, 0f);
         }
 
-        public bool QaRestoreActorAttributeToMax(string actorId, string attributeId)
+        internal bool QaRestoreActorAttributeToMax(string actorId, string attributeId)
         {
             return QaApplyActorAttributeCommand("QaRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
         }

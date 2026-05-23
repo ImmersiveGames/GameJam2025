@@ -238,6 +238,70 @@ A migração para typed IDs pode ser incremental.
 
 Este ADR não exige converter toda a Base 1.1 imediatamente.
 
+### 6.1 Typed IDs são identidades opacas
+
+Typed IDs podem armazenar string internamente, mas consumidores não devem interpretar o texto do ID para decidir comportamento.
+
+A string interna existe para:
+
+```text
+indexação
+lookup
+logs
+debug
+save/snapshot futuro
+integração externa futura
+```
+
+Ela não deve ser usada para inferir:
+
+```text
+tipo de ator
+regra de gameplay
+policy
+UI
+combat/damage
+reset
+save
+participation
+lifecycle
+```
+
+Proibido:
+
+```text
+parsear prefixo/sufixo de ID
+usar StartsWith/EndsWith/Contains para escolher comportamento
+tratar "npc.", "player.", "actor.", "health" ou nomes semelhantes como regra
+criar fallback por convenção textual de ID
+```
+
+Comportamento deve vir de campos e contratos explícitos, como:
+
+```text
+asset reference
+enum
+typed policy
+profile
+command
+fact
+capability
+pipeline owner
+```
+
+Dois typed IDs diferentes podem representar registros diferentes mesmo que compartilhem a mesma categoria semântica.
+
+Exemplo:
+
+```text
+npc.attribute.health
+actor.attribute.health
+```
+
+Esses valores só significam identidades diferentes. O sistema não deve derivar comportamento a partir do prefixo `npc` ou `actor`.
+
+Se dois registros devem ser tratados como o mesmo atributo, eles devem referenciar a mesma definition/identity. Se devem ser distintos, podem compartilhar `semanticKind` e ainda assim manter IDs diferentes.
+
 ---
 
 ## 7. Strings permitidas
@@ -561,6 +625,7 @@ Campos string antigos em authoring não devem ficar como trilho paralelo permane
 ```text
 Authoring novo deve preferir asset reference, enum ou typed ID.
 Runtime deve preferir typed identity quando a identidade cruza domínio.
+Typed IDs são identidades opacas; texto interno não dita comportamento.
 Logs/save/snapshot usam string estável derivada.
 String manual em Inspector só é aceita com justificativa explícita.
 Config obrigatória ausente é erro.

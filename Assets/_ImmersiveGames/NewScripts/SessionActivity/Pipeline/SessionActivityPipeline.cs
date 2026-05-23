@@ -4894,60 +4894,48 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                ActorAttributeEndpoint attributeEndpoint = entry.ActorInstance.GetComponent<ActorAttributeEndpoint>();
-                if (attributeEndpoint == null)
+                if (!ActorAttributeSetupStage.TryExecute(entry, pipelineIdentity, activityIdentity, out ActorAttributeSetupStageResult stageResult))
+                {
+                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeSetupFailed, entrySequence);
+                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.NonPlayerActorAttributeSetupFailed);
+                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}'.");
+                    EmitSnapshot(snapshots, "non_player_actor_attribute_setup_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}'.");
+                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeSetupFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeSetup] Initialization failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}'.");
+                }
+
+                if (!stageResult.HasEndpoint)
                 {
                     continue;
                 }
 
                 observedEndpointCount += 1;
-                ActorAttributeProfileAsset profile = attributeEndpoint.AttributeProfile;
+                ActorAttributeProfileAsset profile = stageResult.Profile;
                 SessionActivityIdentity profileResolvedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeProfileResolved, entrySequence);
                 _state.SetCurrentIdentity(profileResolvedIdentity, SessionActivityStage.NonPlayerActorAttributeProfileResolved);
                 EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeProfileResolved, profileResolvedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute profile resolved nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' profileId='{(profile != null ? profile.ProfileId : "<none>")}'.");
                 EmitSnapshot(snapshots, "non_player_actor_attribute_profile_resolved", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute profile resolved nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' profileId='{(profile != null ? profile.ProfileId : "<none>")}'.");
                 DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeProfileResolved' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' profileId='{(profile != null ? profile.ProfileId : "<none>")}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
-                if (profile == null)
-                {
-                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeSetupFailed, entrySequence);
-                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.NonPlayerActorAttributeSetupFailed);
-                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='attribute_profile_missing'.");
-                    EmitSnapshot(snapshots, "non_player_actor_attribute_setup_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='attribute_profile_missing'.");
-                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeSetupFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='attribute_profile_missing' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
-                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeSetup] Missing ActorAttributeProfileAsset nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
-                }
-
-                if (!attributeEndpoint.TryInitialize(entry.ActorIdentity.NonPlayerActorId, pipelineIdentity, activityIdentity, out ActorAttributeSetupResult setupResult))
-                {
-                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeSetupFailed, entrySequence);
-                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.NonPlayerActorAttributeSetupFailed);
-                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeSetupFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}'.");
-                    EmitSnapshot(snapshots, "non_player_actor_attribute_setup_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}'.");
-                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeSetupFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
-                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeSetup] Initialization failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}'.");
-                }
-
-                if (setupResult.IsSkippedNoContent)
+                if (stageResult.IsSkippedNoContent)
                 {
                     SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeSetupSkippedNoContent, entrySequence);
                     _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.NonPlayerActorAttributeSetupSkippedNoContent);
-                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeSetupSkippedNoContent, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup skipped no-content nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}'.");
-                    EmitSnapshot(snapshots, "non_player_actor_attribute_setup_skipped_no_content", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup skipped no-content nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}'.");
-                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeSetupSkippedNoContent' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{setupResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
+                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeSetupSkippedNoContent, skippedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup skipped no-content nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}'.");
+                    EmitSnapshot(snapshots, "non_player_actor_attribute_setup_skipped_no_content", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute setup skipped no-content nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}'.");
+                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeSetupSkippedNoContent' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{stageResult.SetupResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Info);
                     _activeActorAttributeCapabilitiesByNonPlayerActorId.Remove(entry.ActorIdentity.NonPlayerActorId);
                     continue;
                 }
 
                 _activeActorAttributeCapabilitiesByNonPlayerActorId[entry.ActorIdentity.NonPlayerActorId] =
-                    new NonPlayerActorAttributeCapabilityState(attributeEndpoint, pipelineIdentity, activityIdentity);
+                    new NonPlayerActorAttributeCapabilityState(stageResult.Endpoint, pipelineIdentity, activityIdentity);
 
-                string resolvedAttributeIds = BuildActorAttributeIdList(attributeEndpoint);
                 SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeReady, entrySequence);
                 _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.NonPlayerActorAttributeReady);
-                EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeReady, readyIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute ready actorId='{entry.ActorIdentity.NonPlayerActorId}' actorKind='{entry.ActorIdentity.ActorKind}' attributeCount='{setupResult.AttributeCount}' attributeIds='{resolvedAttributeIds}'.");
-                EmitSnapshot(snapshots, "non_player_actor_attribute_ready", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute ready actorId='{entry.ActorIdentity.NonPlayerActorId}' actorKind='{entry.ActorIdentity.ActorKind}' attributeCount='{setupResult.AttributeCount}' attributeIds='{resolvedAttributeIds}'.");
-                DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][Actor] event='ActorAttributeReady' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{entry.ActorIdentity.NonPlayerActorId}' actorKind='{entry.ActorIdentity.ActorKind}' attributeCount='{setupResult.AttributeCount}' attributeIds='{resolvedAttributeIds}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
+                EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeReady, readyIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute ready actorId='{entry.ActorIdentity.NonPlayerActorId}' actorKind='{entry.ActorIdentity.ActorKind}' attributeCount='{stageResult.SetupResult.AttributeCount}' attributeIds='{stageResult.AttributeIds}'.");
+                EmitSnapshot(snapshots, "non_player_actor_attribute_ready", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute ready actorId='{entry.ActorIdentity.NonPlayerActorId}' actorKind='{entry.ActorIdentity.ActorKind}' attributeCount='{stageResult.SetupResult.AttributeCount}' attributeIds='{stageResult.AttributeIds}'.");
+                DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][Actor] event='ActorAttributeReady' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{entry.ActorIdentity.NonPlayerActorId}' actorKind='{entry.ActorIdentity.ActorKind}' attributeCount='{stageResult.SetupResult.AttributeCount}' attributeIds='{stageResult.AttributeIds}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
             }
 
             if (observedEndpointCount == 0)
@@ -5226,44 +5214,44 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (!capabilityState.Endpoint.TryRelease(capabilityState.PipelineIdentity, capabilityState.ActivityIdentity, out ActorAttributeReleaseResult releaseResult))
+                if (!ActorAttributeReleaseStage.TryExecute(entry, capabilityState.Endpoint, capabilityState.PipelineIdentity, capabilityState.ActivityIdentity, out ActorAttributeReleaseStageResult releaseStageResult))
                 {
                     SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeReleaseFailed, entrySequence);
                     _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.NonPlayerActorAttributeReleaseFailed);
-                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}'.");
-                    EmitSnapshot(snapshots, "non_player_actor_attribute_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}'.");
-                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeReleaseFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
-                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeRelease] Release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}'.");
+                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}'.");
+                    EmitSnapshot(snapshots, "non_player_actor_attribute_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}'.");
+                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeReleaseFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeRelease] Release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}'.");
                 }
 
-                if (releaseResult.Rejected || releaseResult.Failed)
+                if (releaseStageResult.Rejected || releaseStageResult.Failed)
                 {
                     SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.NonPlayerActorAttributeReleaseFailed, entrySequence);
                     _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.NonPlayerActorAttributeReleaseFailed);
-                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}'.");
-                    EmitSnapshot(snapshots, "non_player_actor_attribute_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}'.");
-                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeReleaseFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
-                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeRelease] Release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}'.");
+                    EmitFact(facts, SessionActivityFactKind.NonPlayerActorAttributeReleaseFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}'.");
+                    EmitSnapshot(snapshots, "non_player_actor_attribute_release_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}'.");
+                    DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='NonPlayerActorAttributeReleaseFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}' source='{command.Source}' reasonDetail='{command.Reason}'.", DebugUtility.Colors.Error);
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][NonPlayerActorAttributeRelease] Release failed nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}'.");
                 }
 
-                SessionActivityStage stage = releaseResult.SkippedNoContent
+                SessionActivityStage stage = releaseStageResult.SkippedNoContent
                     ? SessionActivityStage.NonPlayerActorAttributeReleaseSkippedNoContent
                     : SessionActivityStage.NonPlayerActorAttributeReleased;
-                SessionActivityFactKind factKind = releaseResult.SkippedNoContent
+                SessionActivityFactKind factKind = releaseStageResult.SkippedNoContent
                     ? SessionActivityFactKind.NonPlayerActorAttributeReleaseSkippedNoContent
                     : SessionActivityFactKind.NonPlayerActorAttributeReleased;
-                string snapshotKind = releaseResult.SkippedNoContent
+                string snapshotKind = releaseStageResult.SkippedNoContent
                     ? "non_player_actor_attribute_release_skipped_no_content"
                     : "non_player_actor_attribute_released";
-                string eventName = releaseResult.SkippedNoContent
+                string eventName = releaseStageResult.SkippedNoContent
                     ? "NonPlayerActorAttributeReleaseSkippedNoContent"
                     : "NonPlayerActorAttributeReleased";
 
                 SessionActivityIdentity outcomeIdentity = BuildIdentity(definition, stage, entrySequence);
                 _state.SetCurrentIdentity(outcomeIdentity, stage);
-                EmitFact(facts, factKind, outcomeIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release outcome nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}'.");
-                EmitSnapshot(snapshots, snapshotKind, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release outcome nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}'.");
-                DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='{eventName}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseResult.Reason}' releasedAttributeCount='{releaseResult.ReleasedAttributeCount}' source='{command.Source}' reasonDetail='{command.Reason}'.", releaseResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
+                EmitFact(facts, factKind, outcomeIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release outcome nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}' releasedAttributeCount='{releaseStageResult.ReleaseResult.ReleasedAttributeCount}'.");
+                EmitSnapshot(snapshots, snapshotKind, command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor attribute release outcome nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}' releasedAttributeCount='{releaseStageResult.ReleaseResult.ReleasedAttributeCount}'.");
+                DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][NonPlayerActor] event='{eventName}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' nonPlayerActorId='{entry.ActorIdentity.NonPlayerActorId}' reason='{releaseStageResult.ReleaseResult.Reason}' releasedAttributeCount='{releaseStageResult.ReleaseResult.ReleasedAttributeCount}' source='{command.Source}' reasonDetail='{command.Reason}'.", releaseStageResult.SkippedNoContent ? DebugUtility.Colors.Info : DebugUtility.Colors.Success);
 
                 _activeActorAttributeCapabilitiesByNonPlayerActorId.Remove(entry.ActorIdentity.NonPlayerActorId);
                 releasedOrSkippedCount += 1;
@@ -5287,34 +5275,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.ActivityOrdinal}|{identity.EntrySequence}";
-        }
-
-        private static string BuildActorAttributeIdList(ActorAttributeEndpoint endpoint)
-        {
-            if (endpoint == null || endpoint.RuntimeStates == null || endpoint.RuntimeStates.Count == 0)
-            {
-                return "<none>";
-            }
-
-            List<string> ids = new(endpoint.RuntimeStates.Count);
-            for (int index = 0; index < endpoint.RuntimeStates.Count; index++)
-            {
-                ActorAttributeState state = endpoint.RuntimeStates[index];
-                if (state == null || !state.AttributeId.IsValid)
-                {
-                    continue;
-                }
-
-                ids.Add(state.AttributeId.ToString());
-            }
-
-            if (ids.Count == 0)
-            {
-                return "<none>";
-            }
-
-            ids.Sort(StringComparer.Ordinal);
-            return string.Join(",", ids);
         }
 
         private static ActorAttributeCommand BuildActorAttributeCommand(
