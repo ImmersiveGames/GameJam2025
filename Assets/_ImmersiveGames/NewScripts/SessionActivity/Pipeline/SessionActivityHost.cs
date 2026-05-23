@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
@@ -206,6 +207,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EnsurePipeline();
             SessionActivityCommandResult result = _pipeline.ResumeRequested(QaSource("RequestResume"), QaReason("RequestResume"));
             LogResult("RequestResume", result);
+        }
+
+        public bool QaSubtractActorAttribute(string actorId, string attributeId, float amount = 10f)
+        {
+            return QaApplyActorAttributeCommand("QaSubtractActorAttribute", actorId, attributeId, ActorAttributeOperation.Subtract, amount, 0f);
+        }
+
+        public bool QaAddActorAttribute(string actorId, string attributeId, float amount = 5f)
+        {
+            return QaApplyActorAttributeCommand("QaAddActorAttribute", actorId, attributeId, ActorAttributeOperation.Add, amount, 0f);
+        }
+
+        public bool QaSetActorAttribute(string actorId, string attributeId, float value)
+        {
+            return QaApplyActorAttributeCommand("QaSetActorAttribute", actorId, attributeId, ActorAttributeOperation.Set, 0f, value);
+        }
+
+        public bool QaResetActorAttributeToInitial(string actorId, string attributeId)
+        {
+            return QaApplyActorAttributeCommand("QaResetActorAttributeToInitial", actorId, attributeId, ActorAttributeOperation.ResetToInitial, 0f, 0f);
+        }
+
+        public bool QaRestoreActorAttributeToMax(string actorId, string attributeId)
+        {
+            return QaApplyActorAttributeCommand("QaRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
         }
 
         public SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(string requestedSessionStateId, string source, string reason)
@@ -1011,6 +1037,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline.State.CurrentHandoff.IsValid,
                 reason,
                 detail);
+        }
+
+        private bool QaApplyActorAttributeCommand(
+            string action,
+            string actorId,
+            string attributeId,
+            ActorAttributeOperation operation,
+            float amount,
+            float setValue)
+        {
+            EnsurePipeline();
+
+            bool applied = _pipeline.TryApplyActorAttributeCommand(
+                State.CurrentIdentity,
+                actorId,
+                operation,
+                attributeId,
+                amount,
+                setValue,
+                QaSource(action),
+                QaReason(action),
+                out ActorAttributeApplyResult result);
+
+            string outcome = applied ? "Applied" : (result.Rejected ? "Rejected" : "Failed");
+            Debug.Log(
+                $"[OBS][SessionActivityPipeline][Host] action='{action}' outcomeKind='{outcome}' operation='{operation}' actorId='{Normalize(actorId)}' attributeId='{Normalize(attributeId)}' amount='{amount:0.###}' setValue='{setValue:0.###}' reason='{result.Reason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}'");
+
+            if (applied && result.HasFact)
+            {
+                ActorAttributeChangedFact fact = result.Fact;
+                Debug.Log(
+                    $"[OBS][SessionActivityPipeline][Host][ActorAttributeFact] operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceId='{fact.ActorInstanceId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineIdentity='{fact.PipelineIdentity}'");
+            }
+
+            return applied;
         }
 
         private static string Normalize(string value)

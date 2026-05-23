@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 473356860399608770}
   - component: {fileID: 651234567890123456}
   - component: {fileID: 2527674146183889330}
+  - component: {fileID: 2258523653316105712}
   m_Layer: 0
   m_Name: NPC_Generic
   m_TagString: Untagged
@@ -34,22 +35,6 @@ Transform:
   - {fileID: 6230500782231504634}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2527674146183889330
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1574379559858498907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f464df97db516e4aa51708c5b89dd73, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  endpointId: actor.presentation.endpoint
-  profile: {fileID: 11400000, guid: 100c35551ac94d742bb6ee3f88f65662, type: 2}
-  containers:
-  - {fileID: 7890999837741589754}
 --- !u!114 &651234567890123456
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -70,6 +55,35 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7e00c8fd7db0457389e637499f6fda17, type: 2}
   presentationProfile: {fileID: 11400000, guid: 100c35551ac94d742bb6ee3f88f65662, type: 2}
   presentationEndpoint: {fileID: 2527674146183889330}
+--- !u!114 &2527674146183889330
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f464df97db516e4aa51708c5b89dd73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  endpointId: actor.presentation.endpoint
+  profile: {fileID: 11400000, guid: 100c35551ac94d742bb6ee3f88f65662, type: 2}
+  containers:
+  - {fileID: 7890999837741589754}
+--- !u!114 &2258523653316105712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4eb46280374d55c468bb862c435a2e41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  attributeProfile: {fileID: 11400000, guid: 4f0dab15635e13847a67f7a90f2d8a95, type: 2}
 --- !u!1 &1996203835894000634
 GameObject:
   m_ObjectHideFlags: 0
