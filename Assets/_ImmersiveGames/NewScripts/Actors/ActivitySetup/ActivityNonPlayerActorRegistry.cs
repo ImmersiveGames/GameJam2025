@@ -42,11 +42,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             if (_activeByActorId.ContainsKey(identity.NonPlayerActorId))
             {
-                throw new InvalidOperationException($"Duplicate nonPlayerActorId discovered in same entry. nonPlayerActorId='{identity.NonPlayerActorId}'.");
+                throw new InvalidOperationException($"Duplicate nonPlayerActorId discovered in same entry across sources/scopes. nonPlayerActorId='{identity.NonPlayerActorId}'.");
             }
 
             _activeByActorId.Add(identity.NonPlayerActorId, entry);
-            _routeRetainedByActorId[identity.NonPlayerActorId] = entry;
+            if (identity.ActorScope == NonPlayerActorScope.RouteScoped)
+            {
+                _routeRetainedByActorId[identity.NonPlayerActorId] = entry;
+            }
         }
 
         public bool TryGetActive(SessionActivityIdentity expectedScopeIdentity, string nonPlayerActorId, out NonPlayerActorRuntimeEntry entry)
@@ -97,7 +100,10 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             NonPlayerActorRuntimeEntry updated = new(current.ActorIdentity, current.Endpoint, current.ActorInstance, handle);
             _activeByActorId[normalized] = updated;
-            _routeRetainedByActorId[normalized] = updated;
+            if (current.ActorIdentity.ActorScope == NonPlayerActorScope.RouteScoped)
+            {
+                _routeRetainedByActorId[normalized] = updated;
+            }
         }
 
         public void MarkParticipationEntered(SessionActivityIdentity expectedScopeIdentity, string nonPlayerActorId)
@@ -152,6 +158,18 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             {
                 _routeRetainedByActorId[normalized] = new NonPlayerActorRuntimeEntry(retained.ActorIdentity, retained.Endpoint, retained.ActorInstance, default);
             }
+        }
+
+        public bool TryGetIdentity(SessionActivityIdentity expectedScopeIdentity, string nonPlayerActorId, out NonPlayerActorIdentityRecord identity)
+        {
+            identity = default;
+            if (!TryGetActive(expectedScopeIdentity, nonPlayerActorId, out NonPlayerActorRuntimeEntry entry))
+            {
+                return false;
+            }
+
+            identity = entry.ActorIdentity;
+            return identity.IsValid;
         }
 
         public void RemoveFromActiveScope(SessionActivityIdentity expectedIdentity, string nonPlayerActorId)

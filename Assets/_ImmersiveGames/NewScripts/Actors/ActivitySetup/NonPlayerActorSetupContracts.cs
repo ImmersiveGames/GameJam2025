@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -6,26 +7,69 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 {
+    public enum NonPlayerActorScope
+    {
+        Unknown = 0,
+        ActivityScoped = 1,
+        RouteScoped = 2,
+        GlobalScopedUnsupported = 3,
+    }
+
+    public enum NonPlayerActorParticipationPolicy
+    {
+        Unknown = 0,
+        ExplicitActivityIds = 1,
+        AllActivitiesInRoute = 2,
+        Disabled = 3,
+    }
+
+    public enum NonPlayerActorOriginSource
+    {
+        Unknown = 0,
+        ActivityContent = 1,
+        RouteScene = 2,
+    }
+
     public readonly struct NonPlayerActorIdentityRecord
     {
         public NonPlayerActorIdentityRecord(
             SessionActivityIdentity identity,
             string nonPlayerActorId,
-            string actorKind)
+            string actorKind,
+            NonPlayerActorScope actorScope,
+            NonPlayerActorParticipationPolicy participationPolicy,
+            IReadOnlyList<string> activityIds,
+            NonPlayerActorOriginSource originSource,
+            string originSceneName)
         {
             Identity = identity;
             NonPlayerActorId = Normalize(nonPlayerActorId);
             ActorKind = Normalize(actorKind);
+            ActorScope = actorScope;
+            ParticipationPolicy = participationPolicy;
+            ActivityIds = activityIds ?? Array.Empty<string>();
+            OriginSource = originSource;
+            OriginSceneName = Normalize(originSceneName);
         }
 
         public SessionActivityIdentity Identity { get; }
         public string NonPlayerActorId { get; }
         public string ActorKind { get; }
+        public NonPlayerActorScope ActorScope { get; }
+        public NonPlayerActorParticipationPolicy ParticipationPolicy { get; }
+        public IReadOnlyList<string> ActivityIds { get; }
+        public NonPlayerActorOriginSource OriginSource { get; }
+        public string OriginSceneName { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(NonPlayerActorId) &&
-            !string.IsNullOrWhiteSpace(ActorKind);
+            !string.IsNullOrWhiteSpace(ActorKind) &&
+            ActorScope != NonPlayerActorScope.Unknown &&
+            ActorScope != NonPlayerActorScope.GlobalScopedUnsupported &&
+            ParticipationPolicy != NonPlayerActorParticipationPolicy.Unknown &&
+            OriginSource != NonPlayerActorOriginSource.Unknown &&
+            !string.IsNullOrWhiteSpace(OriginSceneName);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

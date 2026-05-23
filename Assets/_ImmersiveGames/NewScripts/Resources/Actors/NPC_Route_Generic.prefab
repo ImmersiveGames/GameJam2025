@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 651234567890123456}
   - component: {fileID: 2527674146183889330}
   m_Layer: 0
-  m_Name: NPC_Generic
+  m_Name: NPC_Route_Generic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   endpointId: actor.presentation.endpoint
-  profile: {fileID: 11400000, guid: 100c35551ac94d742bb6ee3f88f65662, type: 2}
+  profile: {fileID: 11400000, guid: f6181426ce0fb224e839479dd7cb196c, type: 2}
   containers:
   - {fileID: 7890999837741589754}
 --- !u!114 &651234567890123456
@@ -62,13 +62,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1b6f71a4c8e4d38b73a2d9c46a2f0a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  nonPlayerActorId: npc.generic.01
+  nonPlayerActorId: npc.route.generic.01
   actorKind: NonPlayerActor
-  actorScope: 1
+  actorScope: 2
   participationPolicy: 1
   activityIds:
   - activity_01
-  presentationProfile: {fileID: 11400000, guid: 100c35551ac94d742bb6ee3f88f65662, type: 2}
+  - activity_02
+  presentationProfile: {fileID: 11400000, guid: f6181426ce0fb224e839479dd7cb196c, type: 2}
   presentationEndpoint: {fileID: 2527674146183889330}
 --- !u!1 &1996203835894000634
 GameObject:
