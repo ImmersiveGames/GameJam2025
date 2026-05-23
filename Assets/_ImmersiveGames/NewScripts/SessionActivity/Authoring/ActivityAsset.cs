@@ -16,6 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private SceneKeyAsset activationWindowAdditiveSceneKey;
         [SerializeField] private ActivityWindowMode deactivationWindowMode = ActivityWindowMode.None;
         [SerializeField] private SceneKeyAsset deactivationWindowAdditiveSceneKey;
+        [SerializeField] private ActivityAsset nextActivity;
         [SerializeField] private ActivityTransitionProfileSource nextActivityTransitionProfileSource = ActivityTransitionProfileSource.None;
         [SerializeField] private ActivityTransitionContinuePolicy nextActivityTransitionContinuePolicy = ActivityTransitionContinuePolicy.Unknown;
         [SerializeField] private ActivityTransitionProfileAsset nextActivityTransitionProfileOverride;
@@ -30,6 +31,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public SceneKeyAsset ActivationWindowAdditiveSceneKey => activationWindowAdditiveSceneKey;
         public ActivityWindowMode DeactivationWindowMode => deactivationWindowMode;
         public SceneKeyAsset DeactivationWindowAdditiveSceneKey => deactivationWindowAdditiveSceneKey;
+        public ActivityAsset NextActivity => nextActivity;
+        public string NextActivityId => nextActivity != null ? Normalize(nextActivity.ActivityId) : string.Empty;
+        public bool HasNextActivity => nextActivity != null;
         public ActivityTransitionProfileSource NextActivityTransitionProfileSource => nextActivityTransitionProfileSource;
         public ActivityTransitionContinuePolicy NextActivityTransitionContinuePolicy => nextActivityTransitionContinuePolicy;
         public ActivityTransitionProfileAsset NextActivityTransitionProfileOverride => nextActivityTransitionProfileOverride;
@@ -91,6 +95,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
             if (nextActivityTransitionContinuePolicy == ActivityTransitionContinuePolicy.Unknown)
             {
                 throw new InvalidOperationException($"ActivityAsset '{name}' requires explicit nextActivityTransitionContinuePolicy.");
+            }
+
+            if (HasNextActivity && string.IsNullOrWhiteSpace(NextActivityId))
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' references nextActivity '{nextActivity.name}' with empty activityId.");
+            }
+
+            if (HasNextActivity && string.Equals(ActivityId, NextActivityId, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"ActivityAsset '{name}' cannot reference itself as nextActivity.");
+            }
+
+            if (!HasNextActivity)
+            {
+                if (nextActivityTransitionProfileSource != ActivityTransitionProfileSource.None)
+                {
+                    throw new InvalidOperationException($"ActivityAsset '{name}' without nextActivity requires nextActivityTransitionProfileSource=None.");
+                }
+
+                if (nextActivityTransitionProfileOverride != null)
+                {
+                    throw new InvalidOperationException($"ActivityAsset '{name}' without nextActivity cannot define nextActivityTransitionProfileOverride.");
+                }
             }
 
             if (nextActivityTransitionProfileOverride != null)

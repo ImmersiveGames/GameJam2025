@@ -66,8 +66,8 @@ MonoBehaviour:
   actorKind: NonPlayerActor
   actorScope: 1
   participationPolicy: 1
-  activityIds:
-  - activity_01
+  participatingActivities:
+  - {fileID: 11400000, guid: 7e00c8fd7db0457389e637499f6fda17, type: 2}
   presentationProfile: {fileID: 11400000, guid: 100c35551ac94d742bb6ee3f88f65662, type: 2}
   presentationEndpoint: {fileID: 2527674146183889330}
 --- !u!1 &1996203835894000634

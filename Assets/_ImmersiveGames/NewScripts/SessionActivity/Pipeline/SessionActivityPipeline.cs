@@ -4633,7 +4633,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         endpoint.ActorKind,
                         endpoint.ActorScope,
                         endpoint.ParticipationPolicy,
-                        endpoint.ActivityIds,
+                        endpoint.ResolveParticipatingActivityIdsOrFail($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{endpointIndex}"),
                         originSource,
                         sourceScene.name);
                     _activityNonPlayerActorRegistry.RegisterDiscovered(identity, endpoint, endpoint.gameObject);
@@ -4923,7 +4923,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 case NonPlayerActorParticipationPolicy.ExplicitActivityIds:
                     {
                         bool matched = false;
-                        IReadOnlyList<string> activityIds = entry.ActorIdentity.ActivityIds;
+                        IReadOnlyList<string> activityIds = entry.ActorIdentity.ParticipatingActivityIds;
                         if (activityIds != null)
                         {
                             for (int index = 0; index < activityIds.Count; index++)

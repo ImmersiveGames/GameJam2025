@@ -140,7 +140,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   moveSpeed: 5
-  rotationSpeed: 360
+  rotationSpeed: 500
   inputDeadzone: 0.1
   useFixedUpdateForPhysics: 1
   inputReader: {fileID: 240041504808191800}

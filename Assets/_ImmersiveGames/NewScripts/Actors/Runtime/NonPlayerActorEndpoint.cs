@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
+using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         [SerializeField] private string actorKind = "NonPlayerActor";
         [SerializeField] private NonPlayerActorScope actorScope = NonPlayerActorScope.ActivityScoped;
         [SerializeField] private NonPlayerActorParticipationPolicy participationPolicy = NonPlayerActorParticipationPolicy.ExplicitActivityIds;
-        [SerializeField] private List<string> activityIds = new();
+        [SerializeField] private List<ActivityAsset> participatingActivities = new();
         [SerializeField] private ActorPresentationProfileAsset presentationProfile;
         [SerializeField] private ActorPresentationEndpoint presentationEndpoint;
 
@@ -22,9 +23,52 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public string ActorKind => Normalize(actorKind);
         public NonPlayerActorScope ActorScope => actorScope;
         public NonPlayerActorParticipationPolicy ParticipationPolicy => participationPolicy;
-        public IReadOnlyList<string> ActivityIds => (IReadOnlyList<string>)activityIds ?? Array.Empty<string>();
+        public IReadOnlyList<ActivityAsset> ParticipatingActivities => (IReadOnlyList<ActivityAsset>)participatingActivities ?? Array.Empty<ActivityAsset>();
         public ActorPresentationProfileAsset PresentationProfile => presentationProfile;
         public ActorPresentationEndpoint PresentationEndpoint => presentationEndpoint;
+
+        public IReadOnlyList<string> ResolveParticipatingActivityIdsOrFail(string source)
+        {
+            string origin = string.IsNullOrWhiteSpace(source)
+                ? $"{nameof(NonPlayerActorEndpoint)}:{name}"
+                : source.Trim();
+
+            if (participationPolicy != NonPlayerActorParticipationPolicy.ExplicitActivityIds)
+            {
+                return Array.Empty<string>();
+            }
+
+            if (participatingActivities == null || participatingActivities.Count == 0)
+            {
+                throw new InvalidOperationException($"{origin} requires at least one ActivityAsset when participationPolicy=ExplicitActivityIds.");
+            }
+
+            List<string> resolved = new(participatingActivities.Count);
+            HashSet<string> dedupe = new(StringComparer.Ordinal);
+            for (int index = 0; index < participatingActivities.Count; index++)
+            {
+                ActivityAsset activity = participatingActivities[index];
+                if (activity == null)
+                {
+                    throw new InvalidOperationException($"{origin} has null participatingActivities[{index}] with participationPolicy=ExplicitActivityIds.");
+                }
+
+                string activityId = Normalize(activity.ActivityId);
+                if (string.IsNullOrWhiteSpace(activityId))
+                {
+                    throw new InvalidOperationException($"{origin} has participatingActivities[{index}]='{activity.name}' with empty ActivityId.");
+                }
+
+                if (!dedupe.Add(activityId))
+                {
+                    throw new InvalidOperationException($"{origin} has duplicate participating activityId='{activityId}'.");
+                }
+
+                resolved.Add(activityId);
+            }
+
+            return resolved;
+        }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(NonPlayerActorId) &&
@@ -32,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             actorScope != NonPlayerActorScope.Unknown &&
             actorScope != NonPlayerActorScope.GlobalScopedUnsupported &&
             participationPolicy != NonPlayerActorParticipationPolicy.Unknown &&
-            IsActivityIdsConfigValid() &&
+            IsParticipatingActivitiesConfigValid($"{nameof(NonPlayerActorEndpoint)}:{nameof(IsValid)}:{name}") &&
             presentationProfile != null &&
             presentationEndpoint != null;
 
@@ -67,9 +111,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 throw new InvalidOperationException($"{origin} requires explicit participationPolicy.");
             }
 
-            if (!IsActivityIdsConfigValid())
+            if (!IsParticipatingActivitiesConfigValid(origin))
             {
-                throw new InvalidOperationException($"{origin} requires at least one activityId when participationPolicy=ExplicitActivityIds.");
+                throw new InvalidOperationException($"{origin} has invalid participatingActivities when participationPolicy=ExplicitActivityIds.");
             }
 
             if (presentationProfile == null)
@@ -87,29 +131,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             nonPlayerActorId = Normalize(nonPlayerActorId);
             actorKind = Normalize(actorKind);
-            if (activityIds == null)
+            if (participatingActivities == null)
             {
-                activityIds = new List<string>();
-                return;
-            }
-
-            for (int index = 0; index < activityIds.Count; index++)
-            {
-                activityIds[index] = Normalize(activityIds[index]);
+                participatingActivities = new List<ActivityAsset>();
             }
         }
 
         public bool ContainsActivityId(string activityId)
         {
             string normalized = Normalize(activityId);
-            if (string.IsNullOrWhiteSpace(normalized) || activityIds == null || activityIds.Count == 0)
+            if (string.IsNullOrWhiteSpace(normalized))
             {
                 return false;
             }
 
-            for (int index = 0; index < activityIds.Count; index++)
+            IReadOnlyList<string> resolvedActivityIds = ResolveParticipatingActivityIdsOrFail($"{nameof(ContainsActivityId)}:{name}");
+            for (int index = 0; index < resolvedActivityIds.Count; index++)
             {
-                if (string.Equals(Normalize(activityIds[index]), normalized, StringComparison.Ordinal))
+                if (string.Equals(Normalize(resolvedActivityIds[index]), normalized, StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -118,24 +157,40 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             return false;
         }
 
-        private bool IsActivityIdsConfigValid()
+        private bool IsParticipatingActivitiesConfigValid(string origin)
         {
             if (participationPolicy != NonPlayerActorParticipationPolicy.ExplicitActivityIds)
             {
                 return true;
             }
 
-            if (activityIds == null || activityIds.Count == 0)
+            if (participatingActivities == null || participatingActivities.Count == 0)
             {
                 return false;
             }
 
-            for (int index = 0; index < activityIds.Count; index++)
+            for (int index = 0; index < participatingActivities.Count; index++)
             {
-                if (string.IsNullOrWhiteSpace(Normalize(activityIds[index])))
+                ActivityAsset activity = participatingActivities[index];
+                if (activity == null)
                 {
                     return false;
                 }
+
+                string activityId = Normalize(activity.ActivityId);
+                if (string.IsNullOrWhiteSpace(activityId))
+                {
+                    return false;
+                }
+            }
+
+            try
+            {
+                ResolveParticipatingActivityIdsOrFail(origin);
+            }
+            catch
+            {
+                return false;
             }
 
             return true;

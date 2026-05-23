@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             string actorKind,
             NonPlayerActorScope actorScope,
             NonPlayerActorParticipationPolicy participationPolicy,
-            IReadOnlyList<string> activityIds,
+            IReadOnlyList<string> participatingActivityIds,
             NonPlayerActorOriginSource originSource,
             string originSceneName)
         {
@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             ActorKind = Normalize(actorKind);
             ActorScope = actorScope;
             ParticipationPolicy = participationPolicy;
-            ActivityIds = activityIds ?? Array.Empty<string>();
+            ParticipatingActivityIds = participatingActivityIds ?? Array.Empty<string>();
             OriginSource = originSource;
             OriginSceneName = Normalize(originSceneName);
         }
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public string ActorKind { get; }
         public NonPlayerActorScope ActorScope { get; }
         public NonPlayerActorParticipationPolicy ParticipationPolicy { get; }
-        public IReadOnlyList<string> ActivityIds { get; }
+        public IReadOnlyList<string> ParticipatingActivityIds { get; }
         public NonPlayerActorOriginSource OriginSource { get; }
         public string OriginSceneName { get; }
 
@@ -68,8 +68,32 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             ActorScope != NonPlayerActorScope.Unknown &&
             ActorScope != NonPlayerActorScope.GlobalScopedUnsupported &&
             ParticipationPolicy != NonPlayerActorParticipationPolicy.Unknown &&
+            HasValidParticipationActivities() &&
             OriginSource != NonPlayerActorOriginSource.Unknown &&
             !string.IsNullOrWhiteSpace(OriginSceneName);
+
+        private bool HasValidParticipationActivities()
+        {
+            if (ParticipationPolicy != NonPlayerActorParticipationPolicy.ExplicitActivityIds)
+            {
+                return true;
+            }
+
+            if (ParticipatingActivityIds == null || ParticipatingActivityIds.Count == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < ParticipatingActivityIds.Count; index++)
+            {
+                if (string.IsNullOrWhiteSpace(Normalize(ParticipatingActivityIds[index])))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
