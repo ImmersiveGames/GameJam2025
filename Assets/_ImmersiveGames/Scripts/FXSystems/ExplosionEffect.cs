@@ -1,9 +1,6 @@
 using System.Collections;
 using System.Linq;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.Utils.PoolSystems;
 using UnityEngine;
 namespace _ImmersiveGames.Scripts.FXSystems
@@ -14,8 +11,8 @@ namespace _ImmersiveGames.Scripts.FXSystems
     public class ExplosionEffect : PooledObject
     {
         [SerializeField] private ParticleSystem[] particleSystems;
-        [SerializeField] private EntityAudioEmitter audioEmitter;
-        [SerializeField] private SoundData explosionSound;
+        /*[SerializeField] private EntityAudioEmitter audioEmitter;
+        [SerializeField] private SoundData explosionSound;*/
 
         private Coroutine _playingRoutine;
 
@@ -27,7 +24,7 @@ namespace _ImmersiveGames.Scripts.FXSystems
                 particleSystems = GetComponentsInChildren<ParticleSystem>(true);
             }
 
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            //audioEmitter ??= GetComponent<EntityAudioEmitter>();
         }
 
         protected override void OnActivated(Vector3 pos, Vector3? direction, IActor spawner)
@@ -37,11 +34,11 @@ namespace _ImmersiveGames.Scripts.FXSystems
                 StopCoroutine(_playingRoutine);
             }
 
-            if (audioEmitter != null && explosionSound != null && explosionSound.clip != null)
+            /*if (audioEmitter != null && explosionSound != null && explosionSound.clip != null)
             {
                 var ctx = AudioContext.Default(pos, audioEmitter.UsesSpatialBlend);
                 audioEmitter.Play(explosionSound, ctx);
-            }
+            }*/
 
             _playingRoutine = StartCoroutine(PlayParticlesRoutine());
         }

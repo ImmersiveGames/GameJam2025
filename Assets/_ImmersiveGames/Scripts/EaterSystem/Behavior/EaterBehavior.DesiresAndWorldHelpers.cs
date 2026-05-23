@@ -361,7 +361,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
                 return false;
             }
 
-            _desireService = new EaterDesireService(Master, Config, _audioEmitter);
+            _desireService = new EaterDesireService(Master, Config, null);
             _desireService.EventDesireChanged += HandleDesireChanged;
             _missingDesireServiceLogged = false;
             return true;

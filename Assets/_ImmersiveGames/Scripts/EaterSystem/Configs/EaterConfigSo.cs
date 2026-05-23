@@ -1,4 +1,3 @@
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
 using _ImmersiveGames.Scripts.DamageSystem;
 using _ImmersiveGames.Scripts.RuntimeAttributeSystems.Domain.Configs;
 using UnityEngine;
@@ -50,8 +49,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
         [SerializeField, Tooltip("Multiplicador de duraÃ§Ã£o quando o desejo nÃ£o estÃ¡ disponÃ­vel em nenhum planeta.")]
         private float unavailableDesireDurationMultiplier = 0.5f;
 
-        [SerializeField, Tooltip("Som reproduzido quando um novo desejo Ã© selecionado.")]
-        private SoundData desireSelectedSound;
+        /*[SerializeField, Tooltip("Som reproduzido quando um novo desejo Ã© selecionado.")]
+        private SoundData desireSelectedSound;*/
 
         [Header("MovimentaÃ§Ã£o Geral")]
         [SerializeField, Tooltip("Velocidade mÃ­nima de roaming.")]
@@ -117,8 +116,8 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
         [SerializeField, Tooltip("Tipo de dano aplicado durante alimentaÃ§Ã£o.")]
         private DamageType eatingDamageType = DamageType.Physical;
 
-        [SerializeField, Tooltip("Som reproduzido em cada mordida durante alimentaÃ§Ã£o.")]
-        private SoundData eatingBiteSound;
+        /*[SerializeField, Tooltip("Som reproduzido em cada mordida durante alimentaÃ§Ã£o.")]
+        private SoundData eatingBiteSound;*/
 
         [Header("RecuperaÃ§Ã£o do Eater Durante AlimentaÃ§Ã£o")]
         [SerializeField, Tooltip("Recurso que o eater recupera enquanto se alimenta.")]
@@ -184,7 +183,7 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
 
         public DamageType EatingDamageType => eatingDamageType;
 
-        public SoundData EatingBiteSound => eatingBiteSound;
+        /*public SoundData EatingBiteSound => eatingBiteSound;*/
 
         public RuntimeAttributeType EatingRecoveryRuntimeAttribute => eatingRecoveryRuntimeAttribute;
 
@@ -208,6 +207,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Configs
 
         public float RecentDesireWeightMultiplier => Mathf.Max(0f, recentDesireWeightMultiplier);
 
-        public SoundData DesireSelectedSound => desireSelectedSound;
+        /*public SoundData DesireSelectedSound => desireSelectedSound;*/
     }
 }

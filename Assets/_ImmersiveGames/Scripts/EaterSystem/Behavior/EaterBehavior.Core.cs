@@ -1,6 +1,5 @@
 using System;
 using _ImmersiveGames.Scripts.AnimationSystems.Components;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
 using _ImmersiveGames.Scripts.EaterSystem.Animations;
 using _ImmersiveGames.Scripts.EaterSystem.Configs;
 using _ImmersiveGames.Scripts.EaterSystem.Detections;
@@ -38,7 +37,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
         {
             Master = GetComponent<EaterMaster>();
             Config = Master != null ? Master.Config : null;
-            _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
             _animationController = GetComponent<EaterAnimationController>();
             _planetMarkingManager = PlanetMarkingManager.Instance;
@@ -58,7 +56,6 @@ namespace _ImmersiveGames.Scripts.EaterSystem.Behavior
 
             Master ??= GetComponent<EaterMaster>();
             Config = Master != null ? Master.Config : null;
-            _audioEmitter = GetComponent<EntityAudioEmitter>();
             _detectionController = GetComponent<EaterDetectionController>();
             _animationController = GetComponent<EaterAnimationController>();
         }

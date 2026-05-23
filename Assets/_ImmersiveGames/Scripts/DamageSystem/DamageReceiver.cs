@@ -1,9 +1,6 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.Scripts.ActorSystems;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.DamageSystem.Commands;
 using _ImmersiveGames.Scripts.DamageSystem.Strategies;
 using _ImmersiveGames.Scripts.GameManagerSystems;
@@ -56,10 +53,10 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         private IPoolable _poolable;
 
         [Header("Audio")]
-        [SerializeField] private EntityAudioEmitter audioEmitter;
+        /*[SerializeField] private EntityAudioEmitter audioEmitter;
         [SerializeField] private SoundData hitSound;
         [SerializeField] private SoundData deathSound;
-        [SerializeField] private SoundData reviveSound;
+        [SerializeField] private SoundData reviveSound;*/
 
         [Inject] private IGameManager _gameManager;
 
@@ -80,7 +77,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             };
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
             SyncLifecycleOptions();
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            //audioEmitter ??= GetComponent<EntityAudioEmitter>();
 
             EnsureStrategyConfiguration();
             BuildStrategy();
@@ -99,7 +96,7 @@ namespace _ImmersiveGames.Scripts.DamageSystem
             BuildStrategy();
             BuildCommandPipeline();
             _explosion = new DamageExplosionModule(transform, explosionPoolData, explosionOffset);
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            //audioEmitter ??= GetComponent<EntityAudioEmitter>();
             SyncLifecycleOptions();
         }
 #endif
@@ -308,29 +305,30 @@ namespace _ImmersiveGames.Scripts.DamageSystem
         {
             TryRaiseGameOver(notification);
 
-            if (audioEmitter == null)
+            /*if (audioEmitter == null)
             {
                 return;
-            }
+            }*/
 
             var soundFlags = GetSoundFlags();
 
-            PlayHitSoundIfApplicable(notification, soundFlags);
+            //PlayHitSoundIfApplicable(notification, soundFlags);
 
             if (!notification.DeathStateChanged)
             {
                 return;
             }
 
-            HandleDeathOrRevive(notification, soundFlags);
+            //HandleDeathOrRevive(notification, soundFlags);
         }
 
-        private (bool hasHit, bool hasDeath, bool hasRevive) GetSoundFlags()
+        private (bool hasHit, bool hasDeath, bool hasRevive)? GetSoundFlags()
         {
-            bool hasHitSound = hitSound != null && hitSound.clip != null;
+            return null;
+            /*bool hasHitSound = hitSound != null && hitSound.clip != null;
             bool hasDeathSound = deathSound != null && deathSound.clip != null;
             bool hasReviveSound = reviveSound != null && reviveSound.clip != null;
-            return (hasHitSound, hasDeathSound, hasReviveSound);
+            return (hasHitSound, hasDeathSound, hasReviveSound);*/
         }
 
         private void PlayHitSoundIfApplicable(DamageLifecycleNotification notification, (bool hasHit, bool hasDeath, bool hasRevive) flags)
@@ -345,27 +343,27 @@ namespace _ImmersiveGames.Scripts.DamageSystem
                 ? request.hitPosition
                 : transform.position;
 
-            var ctx = AudioContext.Default(hitPosition, audioEmitter.UsesSpatialBlend);
-            audioEmitter.Play(hitSound, ctx);
+            /*var ctx = AudioContext.Default(hitPosition, audioEmitter.UsesSpatialBlend);
+            audioEmitter.Play(hitSound, ctx);*/
         }
 
         private void HandleDeathOrRevive(DamageLifecycleNotification notification, (bool hasHit, bool hasDeath, bool hasRevive) flags)
         {
             var center = transform.position;
-            var deathCtx = AudioContext.Default(center, audioEmitter.UsesSpatialBlend);
+            //var deathCtx = AudioContext.Default(center, audioEmitter.UsesSpatialBlend);
 
             if (notification.IsDead)
             {
                 if (flags.hasDeath)
                 {
-                    audioEmitter.Play(deathSound, deathCtx);
+                   // audioEmitter.Play(deathSound, deathCtx);
                 }
 
                 ExecuteDeathReturn();
             }
             else if (flags.hasRevive)
             {
-                audioEmitter.Play(reviveSound, deathCtx);
+               // audioEmitter.Play(reviveSound, deathCtx);
             }
         }
 
@@ -401,28 +399,28 @@ namespace _ImmersiveGames.Scripts.DamageSystem
 
         private void PlayNonResourceDamageSound(DamageContext ctx)
         {
-            if (audioEmitter == null)
+            /*if (audioEmitter == null)
             {
                 return;
-            }
+            }*/
 
-            var sound = SelectDamageSound();
+            /*var sound = SelectDamageSound();
             if (sound == null)
             {
                 return;
-            }
+            }*/
 
             var position = ctx.hasHitPosition ? ctx.hitPosition : transform.position;
-            var audioCtx = AudioContext.Default(position, audioEmitter.UsesSpatialBlend);
-            audioEmitter.Play(sound, audioCtx);
+            /*var audioCtx = AudioContext.Default(position, audioEmitter.UsesSpatialBlend);
+            audioEmitter.Play(sound, audioCtx);*/
         }
 
-        private SoundData SelectDamageSound()
+        /*private SoundData SelectDamageSound()
         {
             bool hasDeathSound = deathSound != null && deathSound.clip != null;
             bool hasHitSound = hitSound != null && hitSound.clip != null;
             return hasDeathSound ? deathSound : (hasHitSound ? hitSound : null);
-        }
+        }*/
 
         private void TriggerExplosionIfConfigured(DamageContext ctx)
         {

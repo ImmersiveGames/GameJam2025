@@ -1,7 +1,4 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.Scripts.AudioSystem.Components;
-using _ImmersiveGames.Scripts.AudioSystem.Configs;
-using _ImmersiveGames.Scripts.AudioSystem.System;
 using _ImmersiveGames.Scripts.DetectionsSystems.Core;
 using _ImmersiveGames.Scripts.DetectionsSystems.Mono;
 using UnityEngine;
@@ -18,9 +15,9 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
     {
         private PlanetsMaster _planetMaster;
 
-        [Header("Audio")]
+        /*[Header("Audio")]
         [SerializeField] private EntityAudioEmitter audioEmitter;
-        [SerializeField] private SoundData discoverySound;
+        [SerializeField] private SoundData discoverySound;*/
 
         protected override void Awake()
         {
@@ -90,7 +87,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
                 }
             }
 
-            audioEmitter ??= GetComponent<EntityAudioEmitter>();
+            /*audioEmitter ??= GetComponent<EntityAudioEmitter>();*/
 
             if (_planetMaster == null)
             {
@@ -102,7 +99,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
 
         private void TryPlayDiscoveryAudio()
         {
-            if (audioEmitter == null)
+            /*if (audioEmitter == null)
             {
                 DebugUtility.LogVerbose<PlanetDetectableController>(
                     $"Nenhum EntityAudioEmitter configurado para tocar áudio de descoberta em {gameObject.name}.",
@@ -117,7 +114,7 @@ namespace _ImmersiveGames.Scripts.PlanetSystems.Detectable
             }
 
             var context = AudioContext.Default(transform.position, audioEmitter.UsesSpatialBlend);
-            audioEmitter.Play(discoverySound, context);
+            audioEmitter.Play(discoverySound, context);*/
         }
     }
 }
