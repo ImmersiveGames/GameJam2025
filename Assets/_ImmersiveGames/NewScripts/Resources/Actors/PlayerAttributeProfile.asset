@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45419ec050cf7ba4fa31367ed4e6fb76, type: 3}
   m_Name: PlayerAttributeProfile
   m_EditorClassIdentifier: 
-  profileId: player.attributte.profile
+  profileId: player.attribute.profile
   entries:
   - definition: {fileID: 11400000, guid: 8f8c68d1bda378349b75d85c34ed5536, type: 2}
     initialValue: 100

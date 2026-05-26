@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     plan.ActorIdentity.PlayerSlotId,
                     plan.ActorIdentity.PlayerActorId);
 
-                PlayerCameraEndpoint cameraEndpoint = instance.GetComponent<PlayerCameraEndpoint>();
+                PlayerCameraEndpoint cameraEndpoint = ResolveSingleCameraEndpointOrNull(instance, plan.ActorIdentity);
                 if (cameraEndpoint != null)
                 {
                     cameraEndpoint.Bind(
@@ -98,6 +98,28 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             }
 
             return records;
+        }
+
+        private static PlayerCameraEndpoint ResolveSingleCameraEndpointOrNull(GameObject instance, PlayerActorIdentityRecord actorIdentity)
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            PlayerCameraEndpoint[] endpoints = instance.GetComponentsInChildren<PlayerCameraEndpoint>(true);
+            if (endpoints == null || endpoints.Length == 0)
+            {
+                return null;
+            }
+
+            if (endpoints.Length > 1)
+            {
+                throw new InvalidOperationException(
+                    $"PlayerActor prefab camera endpoint is ambiguous. playerSlotId='{actorIdentity.PlayerSlotId}' playerActorId='{actorIdentity.PlayerActorId}' endpointCount='{endpoints.Length}'.");
+            }
+
+            return endpoints[0];
         }
 
         private static SceneContext ResolveActiveSceneOrFail()

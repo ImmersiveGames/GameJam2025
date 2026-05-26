@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Players.Runtime;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
@@ -8,6 +9,13 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 {
     public sealed class PlayerActorParticipationAdapter : IPlayerActorParticipationAdapter
     {
+        private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
+
+        public PlayerActorParticipationAdapter(IActivityCapabilityPermissionRuntime permissionRuntime)
+        {
+            _permissionRuntime = permissionRuntime ?? throw new InvalidOperationException("PlayerActorParticipationAdapter requires non-null permission runtime.");
+        }
+
         public IReadOnlyList<PlayerActorParticipationExitRecord> Execute(
             PlayerActorParticipationExitCommand command,
             SessionActivityIdentity activeIdentity,
@@ -32,6 +40,12 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             {
                 throw new InvalidOperationException("PlayerActorParticipationAdapter requires a non-null registry.");
             }
+
+            _permissionRuntime.SetActiveIdentity(
+                activeIdentity.PipelineId,
+                activeIdentity.SessionId,
+                activeIdentity.ActivityId,
+                activeIdentity.EntrySequence);
 
             List<PlayerActorParticipationExitRecord> records = new(command.Actors.Count);
             for (int index = 0; index < command.Actors.Count; index++)
@@ -63,6 +77,25 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 }
 
                 participation.MarkExitedActivityRetainedForRoute();
+
+                ActivityCapabilityPermissionCommand permissionCommand = new(
+                    ActivityCapabilityPermissionId.ActivityGameplayControl,
+                    ActivityCapabilityPermissionScope.Actor,
+                    ActivityCapabilityPermissionState.Unbound,
+                    activeIdentity.PipelineId,
+                    activeIdentity.SessionId,
+                    activeIdentity.ActivityId,
+                    activeIdentity.EntrySequence,
+                    actorIdentity.PlayerActorId,
+                    command.Source,
+                    command.Reason);
+
+                ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
+                if (IsRejected(fact))
+                {
+                    throw new InvalidOperationException($"Player participation exit permission publish rejected outcome='{fact.Outcome}' playerActorId='{actorIdentity.PlayerActorId}'.");
+                }
+
                 records.Add(new PlayerActorParticipationExitRecord(actorIdentity, exited: true, retainedForRoute: true));
             }
 
@@ -128,6 +161,13 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             }
 
             return records;
+        }
+
+        private static bool IsRejected(ActivityCapabilityPermissionFact fact)
+        {
+            return fact.IsValid &&
+                !string.IsNullOrWhiteSpace(fact.Outcome) &&
+                fact.Outcome.StartsWith("rejected", StringComparison.Ordinal);
         }
 
         private static void EnsureIdentityMatches(

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.Players.Runtime;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,6 +11,13 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 {
     public sealed class MovementBindingAdapter : IMovementBindingAdapter
     {
+        private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
+
+        public MovementBindingAdapter(IActivityCapabilityPermissionRuntime permissionRuntime)
+        {
+            _permissionRuntime = permissionRuntime ?? throw new InvalidOperationException("MovementBindingAdapter requires non-null permission runtime.");
+        }
+
         public IReadOnlyList<MovementBindingRecord> Execute(
             MovementBindingCommand command,
             SessionActivityIdentity activeIdentity,
@@ -34,6 +42,12 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             {
                 throw new InvalidOperationException("MovementBindingAdapter requires non-null registry.");
             }
+
+            _permissionRuntime.SetActiveIdentity(
+                activeIdentity.PipelineId,
+                activeIdentity.SessionId,
+                activeIdentity.ActivityId,
+                activeIdentity.EntrySequence);
 
             List<MovementBindingRecord> records = new(command.Requirements.Count);
             for (int index = 0; index < command.Requirements.Count; index++)
@@ -69,8 +83,6 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 reader.SetInputEnabled(false);
                 reader.ClearInput();
                 controller.BindReaderOrFail(reader);
-                controller.SetMovementEnabled(false);
-                controller.ClearMovementState();
 
                 PlayerActorMovementBindingState bindingState = actorInstance.GetComponent<PlayerActorMovementBindingState>();
                 if (bindingState == null)
@@ -87,11 +99,36 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     requirement.PlayerActorId,
                     bindEndpointType: nameof(PlayerMovementController));
 
+                ActivityCapabilityPermissionCommand permissionCommand = new(
+                    ActivityCapabilityPermissionId.ActivityGameplayControl,
+                    ActivityCapabilityPermissionScope.Actor,
+                    ActivityCapabilityPermissionState.Blocked,
+                    activeIdentity.PipelineId,
+                    activeIdentity.SessionId,
+                    activeIdentity.ActivityId,
+                    activeIdentity.EntrySequence,
+                    requirement.PlayerActorId,
+                    command.Source,
+                    command.Reason);
+
+                ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
+                if (IsRejected(fact))
+                {
+                    throw new InvalidOperationException($"Movement binding permission publish rejected outcome='{fact.Outcome}' playerActorId='{requirement.PlayerActorId}'.");
+                }
+
                 records.Add(new MovementBindingRecord(requirement, bound: true,
                     observedEndpoint: $"{controller.GetType().Name}|reader={reader.GetType().Name}|playerInput={input.name}|controlEnabled=false"));
             }
 
             return records;
+        }
+
+        private static bool IsRejected(ActivityCapabilityPermissionFact fact)
+        {
+            return fact.IsValid &&
+                !string.IsNullOrWhiteSpace(fact.Outcome) &&
+                fact.Outcome.StartsWith("rejected", StringComparison.Ordinal);
         }
 
         private static PlayerInput ResolveBoundPlayerInputOrFail(GameObject actorInstance, MovementBindingRequirement requirement)

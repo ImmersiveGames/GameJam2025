@@ -1,3 +1,9 @@
+<!--
+STATUS: HISTÓRICO PARA CONSULTA.
+Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
+Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
+-->
+
 # ADR-0014 — ActivityContent, WindowTemplateLibrary e ActivityEntryPipeline
 
 ## Status
