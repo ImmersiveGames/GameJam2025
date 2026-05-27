@@ -82,6 +82,35 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
                 $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{actorKind}|{normalizedActorId}|{normalizedScopeDiscriminator}");
         }
 
+        public static ActorInstanceId FromScopedIdentity(
+            SessionActivityIdentity identity,
+            ActorKind actorKind,
+            string actorId,
+            ActorScope actorScope,
+            string actorScopeDiscriminator)
+        {
+            if (!identity.IsValid)
+            {
+                return default;
+            }
+
+            string normalizedActorId = Normalize(actorId);
+            string normalizedScopeDiscriminator = Normalize(actorScopeDiscriminator);
+            if (string.IsNullOrWhiteSpace(normalizedActorId))
+            {
+                return default;
+            }
+
+            return actorScope switch
+            {
+                ActorScope.RouteScoped => new ActorInstanceId(
+                    $"{identity.PipelineId}|{identity.SessionId}|route|{actorKind}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                ActorScope.ActivityScoped => new ActorInstanceId(
+                    $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{actorKind}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                _ => default,
+            };
+        }
+
         public static bool operator ==(ActorInstanceId left, ActorInstanceId right) => left.Equals(right);
         public static bool operator !=(ActorInstanceId left, ActorInstanceId right) => !left.Equals(right);
 
@@ -218,12 +247,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
     public readonly struct ActorParticipationRecord
     {
+        public enum ActorParticipationPolicy
+        {
+            None = 0,
+            AllActivitiesInRoute = 1,
+            ExplicitActivityIds = 2,
+        }
+
         public ActorParticipationRecord(
             SessionActivityIdentity identity,
             ActorInstanceId actorInstanceId,
             bool participatesInCurrentEntry,
             bool retainedForRoute,
-            string policy,
+            ActorParticipationPolicy policy,
+            IReadOnlyList<string> explicitActivityIds,
+            string policyMetadata,
             string source,
             string reason)
         {
@@ -231,7 +269,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ActorInstanceId = actorInstanceId;
             ParticipatesInCurrentEntry = participatesInCurrentEntry;
             RetainedForRoute = retainedForRoute;
-            Policy = Normalize(policy);
+            Policy = policy;
+            ExplicitActivityIds = explicitActivityIds ?? Array.Empty<string>();
+            PolicyMetadata = Normalize(policyMetadata);
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -240,10 +280,35 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public ActorInstanceId ActorInstanceId { get; }
         public bool ParticipatesInCurrentEntry { get; }
         public bool RetainedForRoute { get; }
-        public string Policy { get; }
+        public ActorParticipationPolicy Policy { get; }
+        public IReadOnlyList<string> ExplicitActivityIds { get; }
+        public string PolicyMetadata { get; }
         public string Source { get; }
         public string Reason { get; }
-        public bool IsValid => Identity.IsValid && ActorInstanceId.IsValid && !string.IsNullOrWhiteSpace(Policy) && !string.IsNullOrWhiteSpace(Source);
+        public bool IsValid => Identity.IsValid && ActorInstanceId.IsValid && HasValidExplicitActivities() && !string.IsNullOrWhiteSpace(Source);
+
+        private bool HasValidExplicitActivities()
+        {
+            if (Policy != ActorParticipationPolicy.ExplicitActivityIds)
+            {
+                return true;
+            }
+
+            if (ExplicitActivityIds == null || ExplicitActivityIds.Count == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < ExplicitActivityIds.Count; index++)
+            {
+                if (string.IsNullOrWhiteSpace(Normalize(ExplicitActivityIds[index])))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

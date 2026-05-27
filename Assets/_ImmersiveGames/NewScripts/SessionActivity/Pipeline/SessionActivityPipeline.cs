@@ -54,6 +54,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly Dictionary<string, ActorPresentationRuntimeHandle> _activeActorPresentationHandlesByPlayerActorId = new(StringComparer.Ordinal);
         private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
         private readonly ActivityNonPlayerActorRegistry _activityNonPlayerActorRegistry;
+        private readonly HashSet<ActorInstanceId> _activeActorParticipationsByActorInstanceId = new();
+        private readonly Dictionary<ActorInstanceId, ActorPresentationCapabilityState> _activeActorPresentationByActorInstanceId = new();
         private readonly Dictionary<string, ActorPresentationRuntimeHandle> _activeActorPresentationHandlesByNonPlayerActorId = new(StringComparer.Ordinal);
         private readonly Dictionary<ActorInstanceId, ActorAttributeCapabilityState> _activeActorAttributeCapabilitiesByActorInstanceId = new();
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
@@ -138,6 +140,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             BeforeRematerialization = 1,
             ActivityExit = 2,
             RouteExit = 3
+        }
+
+        internal readonly struct ActorPresentationCapabilityState
+        {
+            public ActorPresentationCapabilityState(
+                ActorInstanceId actorInstanceRuntimeId,
+                string actorId,
+                ActorPresentationEndpoint endpoint,
+                ActorPresentationRuntimeHandle runtimeHandle,
+                string pipelineIdentity,
+                string activityIdentity)
+            {
+                ActorInstanceRuntimeId = actorInstanceRuntimeId;
+                ActorId = Normalize(actorId);
+                Endpoint = endpoint;
+                RuntimeHandle = runtimeHandle;
+                PipelineIdentity = Normalize(pipelineIdentity);
+                ActivityIdentity = Normalize(activityIdentity);
+            }
+
+            public ActorInstanceId ActorInstanceRuntimeId { get; }
+            public string ActorId { get; }
+            public ActorPresentationEndpoint Endpoint { get; }
+            public ActorPresentationRuntimeHandle RuntimeHandle { get; }
+            public string PipelineIdentity { get; }
+            public string ActivityIdentity { get; }
+            public bool IsValid =>
+                ActorInstanceRuntimeId.IsValid &&
+                !string.IsNullOrWhiteSpace(ActorId) &&
+                Endpoint != null &&
+                RuntimeHandle.IsValid &&
+                !string.IsNullOrWhiteSpace(PipelineIdentity) &&
+                !string.IsNullOrWhiteSpace(ActivityIdentity);
         }
 
 
@@ -605,6 +640,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activityNonPlayerActorRegistry.ClearAllRouteRetained();
+            _activeActorParticipationsByActorInstanceId.Clear();
+            _activeActorPresentationByActorInstanceId.Clear();
             _activeActorPresentationHandlesByPlayerActorId.Clear();
             _activeActorPresentationHandlesByNonPlayerActorId.Clear();
             _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
@@ -2301,6 +2338,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastRouteSessionPlayerPreparationHandoff = default;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activityNonPlayerActorRegistry.ClearAllRouteRetained();
+            _activeActorParticipationsByActorInstanceId.Clear();
+            _activeActorPresentationByActorInstanceId.Clear();
             _activeActorPresentationHandlesByPlayerActorId.Clear();
             _activeActorPresentationHandlesByNonPlayerActorId.Clear();
             _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
@@ -3702,6 +3741,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityIdentity setupStartedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             _state.SetCurrentIdentity(setupStartedIdentity, SessionActivityStage.ActivitySetupStarted);
             _activityNonPlayerActorRegistry.BeginActivityScope(setupStartedIdentity);
+            _activeActorParticipationsByActorInstanceId.Clear();
             EmitFact(facts, SessionActivityFactKind.ActivitySetupStarted, setupStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             EmitSnapshot(snapshots, "activity_setup_started", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             ObserveActivitySceneContractOrSkip(definition, command, facts, snapshots, entrySequence);
@@ -4433,6 +4473,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return false;
         }
 
+        private bool TryResolveActorInstanceMetadata(
+            SessionActivityIdentity identity,
+            ActorInstanceId actorInstanceId,
+            out ActorInstanceRecord instance)
+        {
+            instance = default;
+            if (!identity.IsValid || !actorInstanceId.IsValid)
+            {
+                return false;
+            }
+
+            ActorInventoryFeedResult feedResult = BuildActorInventoryFeedForCurrentEntry(identity, "actor_presentation_release", "resolve_actor_instance_metadata");
+            for (int index = 0; index < feedResult.ActorInstances.Count; index++)
+            {
+                ActorInstanceRecord current = feedResult.ActorInstances[index];
+                if (!current.IsValid)
+                {
+                    continue;
+                }
+
+                if (current.ActorInstanceId == actorInstanceId)
+                {
+                    instance = current;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private bool IsActorParticipationEligibleFromPolicy(
             SessionActivityIdentity identity,
             string activityId,
@@ -4452,42 +4522,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            if (_activityNonPlayerActorRegistry.TryGetIdentity(identity, instance.ActorId, out NonPlayerActorIdentityRecord actorIdentity) &&
-                actorIdentity.IsValid)
+            switch (participation.Policy)
             {
-                switch (actorIdentity.ParticipationPolicy)
-                {
-                    case NonPlayerActorParticipationPolicy.Disabled:
-                        reasonCode = "policy_disabled";
-                        return false;
-                    case NonPlayerActorParticipationPolicy.AllActivitiesInRoute:
-                        reasonCode = "eligible";
-                        return true;
-                    case NonPlayerActorParticipationPolicy.ExplicitActivityIds:
+                case ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute:
+                    reasonCode = "eligible";
+                    return true;
+                case ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds:
+                    {
+                        IReadOnlyList<string> activityIds = participation.ExplicitActivityIds;
+                        for (int index = 0; index < activityIds.Count; index++)
                         {
-                            IReadOnlyList<string> activityIds = actorIdentity.ParticipatingActivityIds;
-                            for (int index = 0; index < activityIds.Count; index++)
+                            if (string.Equals(Normalize(activityIds[index]), Normalize(activityId), StringComparison.Ordinal))
                             {
-                                if (string.Equals(Normalize(activityIds[index]), Normalize(activityId), StringComparison.Ordinal))
-                                {
-                                    reasonCode = "eligible";
-                                    return true;
-                                }
+                                reasonCode = "eligible";
+                                return true;
                             }
-
-                            reasonCode = "activity_not_listed";
-                            return false;
                         }
-                    case NonPlayerActorParticipationPolicy.Unknown:
-                    default:
-                        reasonCode = "policy_unknown";
-                        return false;
-                }
-            }
 
-            // Transitional in 4D: non-registry actors stay outside this stage.
-            reasonCode = "transitional_non_registry_actor";
-            return false;
+                        reasonCode = "activity_not_listed";
+                        return false;
+                    }
+                case ActorParticipationRecord.ActorParticipationPolicy.None:
+                default:
+                    reasonCode = "policy_disabled";
+                    return false;
+            }
         }
 
         private bool IsActorParticipationReady(SessionActivityIdentity identity, ActorInstanceRecord instance, out string reasonCode)
@@ -4520,7 +4579,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (profile.IsRequired)
             {
-                if (!_activeActorPresentationHandlesByNonPlayerActorId.TryGetValue(instance.ActorId, out ActorPresentationRuntimeHandle handle) || !handle.IsValid)
+                if (!_activeActorPresentationByActorInstanceId.TryGetValue(instance.ActorInstanceId, out ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
                 {
                     reasonCode = "required_presentation_not_ready";
                     return false;
@@ -4903,12 +4962,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private bool TryGetActivePresentationHandle(ActorPresentationEndpointReference presentationReference, out ActorPresentationRuntimeHandle handle)
         {
             handle = default;
-            if (IsNonPlayerPresentationReference(presentationReference))
+            if (presentationReference == null || !presentationReference.IsValid)
             {
-                return _activeActorPresentationHandlesByNonPlayerActorId.TryGetValue(presentationReference.ActorId, out handle) && handle.IsValid;
+                return false;
             }
 
-            return _activeActorPresentationHandlesByPlayerActorId.TryGetValue(presentationReference.ActorId, out handle) && handle.IsValid;
+            if (!_activeActorPresentationByActorInstanceId.TryGetValue(presentationReference.ActorInstanceRuntimeId, out ActorPresentationCapabilityState state) || !state.IsValid)
+            {
+                return false;
+            }
+
+            handle = state.RuntimeHandle;
+            return handle.IsValid;
         }
 
         private bool CanRetainPresentationHandle(
@@ -4916,10 +4981,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorPresentationRuntimeHandle activeHandle,
             ActorPresentationResolvedPlan resolvedPlan)
         {
+            if (!resolvedPlan.IsValid || !activeHandle.IsValid || !activeHandle.ResolvedPlan.IsValid)
+            {
+                return false;
+            }
+
+            if (resolvedPlan.ReleasePolicy == ActorPresentationReleasePolicy.ReleaseOnActivityExit)
+            {
+                return false;
+            }
+
             return activeHandle.IsValid &&
                 activeHandle.ResolvedPlan.IsValid &&
                 activeHandle.PresentationInstance != null &&
-                activeHandle.ResolvedPlan.ReleasePolicy == ActorPresentationReleasePolicy.KeepBound &&
+                activeHandle.ResolvedPlan.ReleasePolicy == resolvedPlan.ReleasePolicy &&
                 string.Equals(activeHandle.ResolvedPlan.ProfileId, resolvedPlan.ProfileId, StringComparison.Ordinal) &&
                 string.Equals(activeHandle.ResolvedPlan.ActorId, presentationReference.ActorId, StringComparison.Ordinal);
         }
@@ -4929,28 +5004,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorPresentationEndpointReference presentationReference,
             ActorPresentationRuntimeHandle handle)
         {
-            if (IsNonPlayerPresentationReference(presentationReference))
+            if (presentationReference == null || !presentationReference.IsValid || !handle.IsValid)
             {
-                _activeActorPresentationHandlesByNonPlayerActorId[presentationReference.ActorId] = handle;
-                SyncNonPlayerPresentationHandle(identity, presentationReference, handle);
                 return;
             }
 
+            _activeActorPresentationByActorInstanceId[presentationReference.ActorInstanceRuntimeId] = new ActorPresentationCapabilityState(
+                presentationReference.ActorInstanceRuntimeId,
+                presentationReference.ActorId,
+                presentationReference.Endpoint,
+                handle,
+                identity.PipelineId,
+                BuildActorAttributeActivityIdentity(identity));
+
+            // Transitional mirrors for legacy release/discovery integration.
             _activeActorPresentationHandlesByPlayerActorId[presentationReference.ActorId] = handle;
+            _activeActorPresentationHandlesByNonPlayerActorId[presentationReference.ActorId] = handle;
+            SyncNonPlayerPresentationHandle(identity, presentationReference, handle);
         }
 
         private void RemoveActivePresentationHandle(
             SessionActivityIdentity identity,
             ActorPresentationEndpointReference presentationReference)
         {
-            if (IsNonPlayerPresentationReference(presentationReference))
+            if (presentationReference == null || !presentationReference.IsValid)
             {
-                _activeActorPresentationHandlesByNonPlayerActorId.Remove(presentationReference.ActorId);
-                _activityNonPlayerActorRegistry.ClearPresentationHandle(identity, presentationReference.ActorId);
                 return;
             }
 
+            _activeActorPresentationByActorInstanceId.Remove(presentationReference.ActorInstanceRuntimeId);
             _activeActorPresentationHandlesByPlayerActorId.Remove(presentationReference.ActorId);
+            _activeActorPresentationHandlesByNonPlayerActorId.Remove(presentationReference.ActorId);
+            if (IsNonPlayerPresentationReference(presentationReference))
+            {
+                _activityNonPlayerActorRegistry.ClearPresentationHandle(identity, presentationReference.ActorId);
+            }
         }
 
         private void SyncNonPlayerPresentationHandle(
@@ -4958,6 +5046,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorPresentationEndpointReference presentationReference,
             ActorPresentationRuntimeHandle handle)
         {
+            if (presentationReference == null || !presentationReference.IsValid || !handle.IsValid)
+            {
+                return;
+            }
+
             if (!IsNonPlayerPresentationReference(presentationReference))
             {
                 return;
@@ -5263,30 +5356,35 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitSnapshot(snapshots, "actor_presentation_release_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release started rail='{rail}'.");
             DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][ActorPresentation] event='ActorPresentationReleaseStarted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' rail='{rail}' target='{(string.IsNullOrWhiteSpace(specificActorId) ? "all" : specificActorId)}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
-            HashSet<string> actorIds = new(StringComparer.Ordinal);
+            List<ActorPresentationCapabilityState> activeStates = new();
             if (!string.IsNullOrWhiteSpace(specificActorId))
             {
                 string normalized = Normalize(specificActorId);
-                if (_activeActorPresentationHandlesByPlayerActorId.ContainsKey(normalized) ||
-                    _activeActorPresentationHandlesByNonPlayerActorId.ContainsKey(normalized))
+                foreach (ActorPresentationCapabilityState state in _activeActorPresentationByActorInstanceId.Values)
                 {
-                    actorIds.Add(normalized);
+                    if (!state.IsValid)
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(state.ActorId, normalized, StringComparison.Ordinal))
+                    {
+                        activeStates.Add(state);
+                    }
                 }
             }
             else
             {
-                foreach (KeyValuePair<string, ActorPresentationRuntimeHandle> pair in _activeActorPresentationHandlesByPlayerActorId)
+                foreach (ActorPresentationCapabilityState state in _activeActorPresentationByActorInstanceId.Values)
                 {
-                    actorIds.Add(pair.Key);
-                }
-
-                foreach (KeyValuePair<string, ActorPresentationRuntimeHandle> pair in _activeActorPresentationHandlesByNonPlayerActorId)
-                {
-                    actorIds.Add(pair.Key);
+                    if (state.IsValid)
+                    {
+                        activeStates.Add(state);
+                    }
                 }
             }
 
-            if (actorIds.Count == 0)
+            if (activeStates.Count == 0)
             {
                 SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
                 _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorPresentationReleaseSkipped);
@@ -5302,33 +5400,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            foreach (string actorId in actorIds)
+            for (int index = 0; index < activeStates.Count; index++)
             {
-                bool isNonPlayer = _activeActorPresentationHandlesByNonPlayerActorId.TryGetValue(actorId, out ActorPresentationRuntimeHandle nonPlayerHandle);
-                bool isPlayer = _activeActorPresentationHandlesByPlayerActorId.TryGetValue(actorId, out ActorPresentationRuntimeHandle playerHandle);
-                ActorPresentationRuntimeHandle handle = isNonPlayer ? nonPlayerHandle : playerHandle;
+                ActorPresentationCapabilityState state = activeStates[index];
+                string actorId = state.ActorId;
+                ActorPresentationRuntimeHandle handle = state.RuntimeHandle;
                 if (!handle.IsValid)
                 {
                     continue;
                 }
 
-                _ImmersiveGames.NewScripts.Actors.Foundation.ActorKind actorKind = isNonPlayer
-                    ? _ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.NonPlayer
-                    : _ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Player;
-                _ImmersiveGames.NewScripts.Actors.Foundation.ActorRole actorRole = isNonPlayer
-                    ? _ImmersiveGames.NewScripts.Actors.Foundation.ActorRole.SceneAuthoredNonPlayer
-                    : _ImmersiveGames.NewScripts.Actors.Foundation.ActorRole.PrimaryPlayer;
-                _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope actorScope = _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.RouteScoped;
-                if (isNonPlayer &&
-                    _activityNonPlayerActorRegistry.TryGetIdentity(startedIdentity, actorId, out NonPlayerActorIdentityRecord nonPlayerIdentity) &&
-                    nonPlayerIdentity.IsValid &&
-                    nonPlayerIdentity.ActorScope == NonPlayerActorScope.ActivityScoped)
+                ActorInstanceId actorInstanceRuntimeId = state.ActorInstanceRuntimeId;
+                ActorRole actorRole = ActorRole.Unknown;
+                ActorScope actorScope = ActorScope.Unknown;
+                _ImmersiveGames.NewScripts.Actors.Foundation.ActorKind actorKind = _ImmersiveGames.NewScripts.Actors.Foundation.ActorKind.Unknown;
+                if (TryResolveActorInstanceMetadata(startedIdentity, actorInstanceRuntimeId, out ActorInstanceRecord instance))
                 {
-                    actorScope = _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.ActivityScoped;
+                    actorRole = instance.Role;
+                    actorScope = instance.Scope;
+                    actorKind = instance.Kind;
                 }
-
-                _ImmersiveGames.NewScripts.Actors.Foundation.ActorInstanceId actorInstanceRuntimeId =
-                    _ImmersiveGames.NewScripts.Actors.Foundation.ActorInstanceId.FromIdentity(startedIdentity, actorKind, actorId, actorScope.ToString());
 
                 ActorPresentationReleasePolicy policy = handle.ResolvedPlan.ReleasePolicy;
                 bool shouldRelease = rail switch
@@ -5382,17 +5473,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
+                _activeActorPresentationByActorInstanceId.Remove(actorInstanceRuntimeId);
                 _activeActorPresentationHandlesByPlayerActorId.Remove(actorId);
                 _activeActorPresentationHandlesByNonPlayerActorId.Remove(actorId);
-                if (isNonPlayer)
+                try
                 {
-                    try
-                    {
-                        _activityNonPlayerActorRegistry.ClearPresentationHandle(startedIdentity, actorId);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
+                    _activityNonPlayerActorRegistry.ClearPresentationHandle(startedIdentity, actorId);
+                }
+                catch (InvalidOperationException)
+                {
                 }
             }
 
@@ -5846,7 +5935,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                _activityNonPlayerActorRegistry.MarkParticipationEntered(startedIdentity, instance.ActorId);
+                _activeActorParticipationsByActorInstanceId.Add(instance.ActorInstanceId);
                 entered += 1;
 
                 EmitFact(facts, SessionActivityFactKind.ActorParticipationEntered, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation entered actorId='{instance.ActorId}' actorRole='{instance.Role}' actorScope='{instance.Scope}'.");
@@ -5919,7 +6008,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 try
                 {
-                    _activityNonPlayerActorRegistry.MarkParticipationExited(startedIdentity, instance.ActorId);
+                    _activeActorParticipationsByActorInstanceId.Remove(instance.ActorInstanceId);
                 }
                 catch (InvalidOperationException ex)
                 {

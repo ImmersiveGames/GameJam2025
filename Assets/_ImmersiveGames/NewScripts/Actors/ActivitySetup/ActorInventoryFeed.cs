@@ -107,7 +107,6 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                ActorInstanceId actorInstanceId = ActorInstanceId.FromIdentity(identity, ActorKind.Player, resolvedIdentity.PlayerActorId, actorScopeDiscriminator: "route");
                 Actor runtimeActor = actorRoot.GetComponent<Actor>();
                 if (runtimeActor == null)
                 {
@@ -123,14 +122,26 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
                 ActorRole actorRole = runtimeActor != null ? runtimeActor.ActorRoleMetadata : ActorRole.PrimaryPlayer;
                 ActorScope actorScope = runtimeActor != null ? runtimeActor.ActorScopeMetadata : ActorScope.RouteScoped;
+                if (actorScope == ActorScope.Unknown)
+                {
+                    throw new InvalidOperationException($"ActorInventoryFeed requires known ActorScope for playerActorId='{resolvedIdentity.PlayerActorId}'.");
+                }
+
+                string stableActorId = runtimeActor != null && !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
+                    ? runtimeActor.ActorId
+                    : resolvedIdentity.PlayerActorId;
+                ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedIdentity(
+                    identity,
+                    ActorKind.Player,
+                    stableActorId,
+                    actorScope,
+                    actorScopeDiscriminator: actorScope.ToString());
                 ActorDefinitionRef definitionRef = runtimeActor != null ? runtimeActor.ActorDefinitionRef : default;
                 ActorInstanceRecord instance = new(
                     identity,
                     actorInstanceId,
                     definitionRef: definitionRef,
-                    actorId: runtimeActor != null && !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
-                        ? runtimeActor.ActorId
-                        : resolvedIdentity.PlayerActorId,
+                    actorId: stableActorId,
                     actorKind: ActorKind.Player,
                     runtimeActor: runtimeActor,
                     capabilitySurface: capabilitySurface,
@@ -156,7 +167,9 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     actorInstanceId,
                     participatesInCurrentEntry: true,
                     retainedForRoute: true,
-                    policy: "all_activities_in_route",
+                    policy: ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
+                    explicitActivityIds: Array.Empty<string>(),
+                    policyMetadata: "all_activities_in_route",
                     source: source,
                     reason: reason));
             }
@@ -191,9 +204,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 ActorSourceKind sourceKind = actorIdentity.OriginSource == NonPlayerActorOriginSource.RouteScene
                     ? ActorSourceKind.RouteScene
                     : ActorSourceKind.ActivityContent;
-                string policy = actorIdentity.ParticipationPolicy.ToString();
+                ActorParticipationRecord.ActorParticipationPolicy participationPolicy = MapParticipationPolicy(actorIdentity.ParticipationPolicy);
+                IReadOnlyList<string> explicitActivityIds = participationPolicy == ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds
+                    ? actorIdentity.ParticipatingActivityIds
+                    : Array.Empty<string>();
+                string policyMetadata = actorIdentity.ParticipationPolicy.ToString();
 
-                ActorInstanceId actorInstanceId = ActorInstanceId.FromIdentity(identity, ActorKind.NonPlayer, actorIdentity.NonPlayerActorId, actorScopeDiscriminator: scope.ToString());
                 Actor runtimeActor = entry.ActorInstance != null ? entry.ActorInstance.GetComponent<Actor>() : null;
                 if (runtimeActor == null)
                 {
@@ -221,20 +237,32 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 }
                 ActorRole actorRole = runtimeActor != null ? runtimeActor.ActorRoleMetadata : ActorRole.SceneAuthoredNonPlayer;
                 ActorScope runtimeScope = runtimeActor != null ? runtimeActor.ActorScopeMetadata : scope;
+                if (runtimeScope == ActorScope.Unknown)
+                {
+                    throw new InvalidOperationException($"ActorInventoryFeed requires known ActorScope for nonPlayerActorId='{actorIdentity.NonPlayerActorId}'.");
+                }
+
+                string stableActorId = runtimeActor != null && !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
+                    ? runtimeActor.ActorId
+                    : actorIdentity.NonPlayerActorId;
+                ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedIdentity(
+                    identity,
+                    ActorKind.NonPlayer,
+                    stableActorId,
+                    runtimeScope,
+                    actorScopeDiscriminator: runtimeScope.ToString());
                 ActorInstanceRecord instance = new(
                     identity,
                     actorInstanceId,
                     definitionRef,
-                    runtimeActor != null && !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
-                        ? runtimeActor.ActorId
-                        : actorIdentity.NonPlayerActorId,
+                    stableActorId,
                     ActorKind.NonPlayer,
                     runtimeActor,
                     capabilitySurface,
                     actorRole,
                     runtimeScope,
                     sourceKind,
-                    policy,
+                    policyMetadata,
                     entry.ActorInstance,
                     actorIdentity.OriginSceneName,
                     entry.ActorInstance != null ? BuildTransformPath(entry.ActorInstance.transform) : string.Empty,
@@ -253,10 +281,22 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     actorInstanceId,
                     participatesInCurrentEntry: true,
                     retainedForRoute: scope == ActorScope.RouteScoped,
-                    policy: policy,
+                    policy: participationPolicy,
+                    explicitActivityIds: explicitActivityIds,
+                    policyMetadata: policyMetadata,
                     source: source,
                     reason: reason));
             }
+        }
+
+        private static ActorParticipationRecord.ActorParticipationPolicy MapParticipationPolicy(NonPlayerActorParticipationPolicy policy)
+        {
+            return policy switch
+            {
+                NonPlayerActorParticipationPolicy.AllActivitiesInRoute => ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
+                NonPlayerActorParticipationPolicy.ExplicitActivityIds => ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds,
+                _ => ActorParticipationRecord.ActorParticipationPolicy.None,
+            };
         }
 
         private static string BuildTransformPath(Transform transform)
