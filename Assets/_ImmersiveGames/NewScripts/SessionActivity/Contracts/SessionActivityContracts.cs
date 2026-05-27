@@ -193,6 +193,105 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         Paused = 3,
     }
 
+    public readonly struct SessionActivityCycleKey : IEquatable<SessionActivityCycleKey>
+    {
+        public SessionActivityCycleKey(
+            string pipelineId,
+            string sessionStateId,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence)
+        {
+            PipelineId = Normalize(pipelineId);
+            SessionStateId = Normalize(sessionStateId);
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
+        }
+
+        public string PipelineId { get; }
+        public string SessionStateId { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public int EntrySequence { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            EntrySequence > 0;
+
+        public bool Equals(SessionActivityCycleKey other)
+        {
+            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
+                   string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
+                   ActivityOrdinal == other.ActivityOrdinal &&
+                   EntrySequence == other.EntrySequence;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityCycleKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(ActivityId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ ActivityOrdinal;
+                hashCode = (hashCode * 397) ^ EntrySequence;
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(SessionActivityCycleKey left, SessionActivityCycleKey right) => left.Equals(right);
+        public static bool operator !=(SessionActivityCycleKey left, SessionActivityCycleKey right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionActivityStageKey : IEquatable<SessionActivityStageKey>
+    {
+        public SessionActivityStageKey(SessionActivityCycleKey cycleKey, SessionActivityStage stage)
+        {
+            CycleKey = cycleKey;
+            Stage = stage;
+        }
+
+        public SessionActivityCycleKey CycleKey { get; }
+        public SessionActivityStage Stage { get; }
+        public bool IsValid => CycleKey.IsValid && Stage != SessionActivityStage.Unknown;
+
+        public bool Equals(SessionActivityStageKey other)
+        {
+            return CycleKey.Equals(other.CycleKey) && Stage == other.Stage;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionActivityStageKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (CycleKey.GetHashCode() * 397) ^ (int)Stage;
+            }
+        }
+
+        public static bool operator ==(SessionActivityStageKey left, SessionActivityStageKey right) => left.Equals(right);
+        public static bool operator !=(SessionActivityStageKey left, SessionActivityStageKey right) => !left.Equals(right);
+    }
+
     public readonly struct SessionActivityIdentity : IEquatable<SessionActivityIdentity>
     {
         public SessionActivityIdentity(
@@ -211,6 +310,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             Stage = stage;
             Source = Normalize(source);
+            CycleKey = new SessionActivityCycleKey(PipelineId, SessionId, ActivityId, ActivityOrdinal, EntrySequence);
+            StageKey = new SessionActivityStageKey(CycleKey, Stage);
             CycleSignature = BuildCycleSignature(PipelineId, SessionId, ActivityId, ActivityOrdinal, EntrySequence, Stage);
         }
 
@@ -221,22 +322,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int EntrySequence { get; }
         public SessionActivityStage Stage { get; }
         public string Source { get; }
+        public SessionActivityCycleKey CycleKey { get; }
+        public SessionActivityStageKey StageKey { get; }
         public string CycleSignature { get; }
 
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
-            Stage != SessionActivityStage.Unknown &&
+            CycleKey.IsValid &&
+            StageKey.IsValid &&
             !string.IsNullOrWhiteSpace(CycleSignature);
 
         public static SessionActivityIdentity Empty => default;
 
         public bool Equals(SessionActivityIdentity other)
         {
-            return string.Equals(CycleSignature, other.CycleSignature, StringComparison.Ordinal);
+            return StageKey.Equals(other.StageKey);
         }
 
         public override bool Equals(object obj)
@@ -246,7 +345,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override int GetHashCode()
         {
-            return StringComparer.Ordinal.GetHashCode(CycleSignature ?? string.Empty);
+            return StageKey.GetHashCode();
         }
 
         public override string ToString()
@@ -728,10 +827,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         NonPlayerActorAttributeReleased = 238,
         NonPlayerActorAttributeReleaseSkippedNoContent = 239,
         NonPlayerActorAttributeReleaseFailed = 240,
-        ActivityCapabilityPermissionParticipantDiscoveryStarted = 241,
-        ActivityCapabilityPermissionParticipantDiscovered = 242,
-        ActivityCapabilityPermissionParticipantDiscoveryCompleted = 243,
-        ActivityCapabilityPermissionParticipantDiscoverySkippedNoParticipants = 244,
         ActivityCapabilityInventoryPreviewStarted = 245,
         ActivityCapabilityInventoryPreviewSkippedNoDiscovery = 246,
         ActivityCapabilityInventoryPreviewObserved = 247,

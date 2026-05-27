@@ -1,9 +1,3 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-0014 — ActivityContent, WindowTemplateLibrary e ActivityEntryPipeline
 
 ## Status
@@ -218,6 +212,34 @@ Regras:
 
 ---
 
+## 4.1 Escopo normativo — Activity, Actor, ActivityObject e capability local
+
+Este ADR não autoriza tratar `Activity`, `Actor`, `ActivityObject` e gameplay local como o mesmo owner.
+
+Separação obrigatória:
+
+| Item | Owner de decisão | Executor / reação local |
+|---|---|---|
+| Entrada da Activity | `SessionActivityPipeline` / `ActivityEntryPipeline` | stages e adapters comandados |
+| Ordem de setup/readiness | `ActivityEntryPipeline` | stages específicos |
+| Descoberta de capability | scanners/contributors autorizados | `ActivityCapabilityInventory` |
+| Reset timing | pipeline/stage | endpoint local de objeto/actor |
+| Snapshot timing | pipeline dono do ciclo/save boundary | provider local |
+| Restore timing | pipeline/stage | endpoint local |
+| Release timing | pipeline/stage | endpoint local / adapter |
+| Mutação local de gameplay | capability local | endpoint/runtime local |
+
+`ActivityObject` e `Actor` são conceitos separados:
+
+```text
+Um objeto pode ser ActivityObject sem ser Actor.
+Um Actor pode expor ActivityObject-like capabilities, mas isso deve ser explícito.
+Um Actor deve ter identidade, participation e lifecycle de ator.
+Um ActivityObject deve ter participação/capability local, não identity de ator implícita.
+```
+
+A `Activity` decide lifecycle, policies, readiness e timing. A instância local decide como executar sua própria capability. Dano, heal, stamina, interação local e variações internas de atributo não entram no pipeline como commands obrigatórios quando podem ser resolvidos por relação local segura.
+
 ## 5. Participante controlável v0
 
 `Player` não é propriedade semântica da Activity.
@@ -255,12 +277,12 @@ Regras:
 - não usa reflection/UnityEditor runtime;
 - não decide lifecycle.
 
-### MovementBindingStage + MovementControl — PASS
+### MovementBindingStage + MovementControl — PASS / transição controlada
 
 Separação obrigatória:
 
 ```text
-binding/preparation != enable de controle
+binding/preparation != permissão de execução local
 ```
 
 `MovementBindingStage` prepara reader/controller e deixa controle bloqueado.
@@ -270,6 +292,16 @@ binding/preparation != enable de controle
 `MovementControlDisabled` ocorre em complete/deactivation/route-exit.
 
 Binding retido em Activity skip/no-content é permitido quando validado por identity/registry.
+
+Decisão complementar Base 1.2:
+
+```text
+MovementControlStage é checkpoint transitório validado, não padrão final para novas capabilities.
+```
+
+A direção normativa futura é que o pipeline publique `ActivityCapabilityPermission` semântica, como `activity.gameplay.control`, e que `PlayerMovementController` ou receiver local reaja a essa permission.
+
+O `ActivityEntryPipeline` continua owner de setup/binding/readiness. Ele não deve virar owner de controle individual de attack, interaction, inventory, NPC brain ou outras funções internas.
 
 ---
 
@@ -630,7 +662,7 @@ ActivationWindow/DeactivationWindow em AdditiveScene simples
 CompleteActivationWindow / CompleteDeactivationWindow explícitos
 PlayerActor readiness
 PlayerInputBindingStage
-MovementBindingStage + MovementControl lifecycle
+MovementBindingStage + MovementControl lifecycle transitório; direção futura via ActivityCapabilityPermission
 Placement v0 implícito por PlayerActorSetup + Reset(Placement)
 CameraBindingSetupStage mínimo
 StateResetRequirements

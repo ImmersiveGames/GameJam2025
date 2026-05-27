@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
                 if (IsRejected(fact))
                 {
-                    throw new InvalidOperationException($"Movement control permission publish rejected outcome='{fact.Outcome}' playerActorId='{actor.PlayerActorId}'.");
+                    throw new InvalidOperationException($"Movement control permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actor.PlayerActorId}'.");
                 }
 
                 records.Add(new MovementControlRecord(actor, command.Enable, $"{controller.GetType().Name}|reader={reader.GetType().Name}"));
@@ -104,8 +104,16 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         private static bool IsRejected(ActivityCapabilityPermissionFact fact)
         {
             return fact.IsValid &&
-                !string.IsNullOrWhiteSpace(fact.Outcome) &&
-                fact.Outcome.StartsWith("rejected", StringComparison.Ordinal);
+                IsRejected(fact.OutcomeKind);
+        }
+
+        private static bool IsRejected(PermissionOutcomeKind outcomeKind)
+        {
+            return outcomeKind == PermissionOutcomeKind.RejectedInvalidCommand ||
+                   outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
+                   outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
+                   outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
+                   outcomeKind == PermissionOutcomeKind.Failed;
         }
 
         private static T ResolveSingleComponentOrFail<T>(GameObject actorInstance, PlayerActorIdentityRecord actor, string componentLabel)
@@ -140,10 +148,6 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
     public sealed class PlayerMovementPermissionReceiver : IActivityCapabilityPermissionReceiver
     {
         private readonly PlayerMovementController _controller;
-        private readonly string _pipelineId;
-        private readonly string _sessionStateId;
-        private readonly string _activityId;
-        private readonly int _entrySequence;
         private readonly string _playerActorId;
         private readonly string _playerSlotId;
         private readonly string _receiverId;
@@ -151,28 +155,16 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         public PlayerMovementPermissionReceiver(
             PlayerMovementController controller,
             string receiverId,
-            string pipelineId,
-            string sessionStateId,
-            string activityId,
-            int entrySequence,
             string playerActorId,
             string playerSlotId)
         {
             _controller = controller ?? throw new InvalidOperationException("PlayerMovementPermissionReceiver requires non-null PlayerMovementController.");
-            _pipelineId = Normalize(pipelineId);
-            _sessionStateId = Normalize(sessionStateId);
-            _activityId = Normalize(activityId);
-            _entrySequence = entrySequence < 0 ? 0 : entrySequence;
             _playerActorId = Normalize(playerActorId);
             _playerSlotId = Normalize(playerSlotId);
 
-            if (string.IsNullOrWhiteSpace(_pipelineId) ||
-                string.IsNullOrWhiteSpace(_sessionStateId) ||
-                string.IsNullOrWhiteSpace(_activityId) ||
-                _entrySequence <= 0 ||
-                string.IsNullOrWhiteSpace(_playerActorId))
+            if (string.IsNullOrWhiteSpace(_playerActorId))
             {
-                throw new InvalidOperationException("PlayerMovementPermissionReceiver requires valid identity and playerActorId.");
+                throw new InvalidOperationException("PlayerMovementPermissionReceiver requires valid playerActorId.");
             }
 
             _receiverId = Normalize(receiverId);
@@ -185,20 +177,15 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         public string ReceiverId => _receiverId;
 
         public static string CreateReceiverId(
-            string pipelineId,
-            string sessionStateId,
-            string activityId,
-            int entrySequence,
-            string playerActorId,
-            string playerSlotId)
+            ActivityCapabilityPermissionReceiverIdentity identity)
         {
-            string normalizedPipelineId = Normalize(pipelineId);
-            string normalizedSessionStateId = Normalize(sessionStateId);
-            string normalizedActivityId = Normalize(activityId);
-            string normalizedPlayerActorId = Normalize(playerActorId);
-            string normalizedPlayerSlotId = Normalize(playerSlotId);
+            string normalizedPipelineId = Normalize(identity.PipelineId);
+            string normalizedSessionStateId = Normalize(identity.SessionStateId);
+            string normalizedActivityId = Normalize(identity.ActivityId);
+            string normalizedPlayerActorId = Normalize(identity.PlayerActorId);
+            string normalizedPlayerSlotId = Normalize(identity.PlayerSlotId);
             string slotToken = string.IsNullOrWhiteSpace(normalizedPlayerSlotId) ? "slot.unbound" : normalizedPlayerSlotId;
-            return $"movement.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={entrySequence}|actor={normalizedPlayerActorId}|slot={slotToken}";
+            return $"movement.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actor={normalizedPlayerActorId}|slot={slotToken}";
         }
 
         public void OnPermissionChanged(ActivityCapabilityPermissionFact fact)
@@ -213,11 +200,6 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 return;
             }
 
-            if (!IsSameIdentity(fact.Command))
-            {
-                return;
-            }
-
             if (!TargetsCurrentActor(fact.Command.TargetId))
             {
                 return;
@@ -225,7 +207,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
 
             DebugUtility.Log(
                 typeof(PlayerMovementPermissionReceiver),
-                $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' pipelineId='{_pipelineId}' sessionStateId='{_sessionStateId}' activityId='{_activityId}' entrySequence='{_entrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                 DebugUtility.Colors.Info);
 
             switch (fact.Command.State)
@@ -234,7 +216,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     _controller.SetMovementEnabled(true);
                     DebugUtility.Log(
                         typeof(PlayerMovementPermissionReceiver),
-                        $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Allowed' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' pipelineId='{_pipelineId}' sessionStateId='{_sessionStateId}' activityId='{_activityId}' entrySequence='{_entrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                        $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Allowed' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                         DebugUtility.Colors.Success);
                     break;
 
@@ -243,7 +225,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     _controller.ClearMovementState();
                     DebugUtility.Log(
                         typeof(PlayerMovementPermissionReceiver),
-                        $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Blocked' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' pipelineId='{_pipelineId}' sessionStateId='{_sessionStateId}' activityId='{_activityId}' entrySequence='{_entrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                        $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Blocked' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                         DebugUtility.Colors.Warning);
                     break;
 
@@ -252,18 +234,10 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     _controller.ClearMovementState();
                     DebugUtility.Log(
                         typeof(PlayerMovementPermissionReceiver),
-                        $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Unbound' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' pipelineId='{_pipelineId}' sessionStateId='{_sessionStateId}' activityId='{_activityId}' entrySequence='{_entrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                        $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Unbound' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                         DebugUtility.Colors.Warning);
                     break;
             }
-        }
-
-        private bool IsSameIdentity(ActivityCapabilityPermissionCommand command)
-        {
-            return string.Equals(command.PipelineId, _pipelineId, StringComparison.Ordinal) &&
-                   string.Equals(command.SessionStateId, _sessionStateId, StringComparison.Ordinal) &&
-                   string.Equals(command.ActivityId, _activityId, StringComparison.Ordinal) &&
-                   command.EntrySequence == _entrySequence;
         }
 
         private bool TargetsCurrentActor(string targetId)

@@ -1,9 +1,3 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-1.2-0003 — Typed Identity e Authoring References
 
 - Estado: Aceito / direção normativa para Base 1.2
@@ -625,6 +619,32 @@ Campos string antigos em authoring não devem ficar como trilho paralelo permane
 | log ids | borda/debug | manter string derivada |
 
 ---
+
+## 16.1 Typed identity também separa escopo, não apenas formato
+
+Typed IDs não servem apenas para trocar `string` por `struct`. Eles impedem que escopos diferentes sejam comparados como se fossem equivalentes.
+
+Regras adicionais:
+
+```text
+Activity identity != Actor identity.
+Actor identity != ActivityObject identity.
+ActorCapability identity != endpoint runtime reference.
+Authoring reference != runtime instance identity.
+Display/correlation id != contrato funcional.
+```
+
+`routeOperationId`, `transitionId`, `CycleSignature`, `inventorySignature`, `capabilityId` e campos similares podem existir como display/correlação/log quando derivados de uma identidade tipada ou de authoring estável. Eles não devem ser parseados para recuperar lifecycle, stage, Actor, ActivityObject ou capability.
+
+Quando uma decisão depende de owner ou escopo, deve usar tipo explícito:
+
+| Decisão | Tipo esperado |
+|---|---|
+| mesma Activity entry | key tipada de Activity/ciclo |
+| mesmo Actor | `ActorId` / `ActorInstanceId` futuro ou equivalente tipado |
+| mesma capability | identity de capability, não path textual parseado |
+| endpoint executável | runtime reference tipada |
+| authoring | asset reference ou typed authoring id |
 
 ## 17. Invariantes
 

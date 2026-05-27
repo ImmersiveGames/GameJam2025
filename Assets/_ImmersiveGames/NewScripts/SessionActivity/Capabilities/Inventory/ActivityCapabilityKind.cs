@@ -4,8 +4,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     {
         Unknown = 0,
         PermissionTarget = 1,
-        MovementEndpoint = 2,
-        CameraEndpoint = 3,
         CameraTarget = 11,
         ResetEndpoint = 4,
         SnapshotProvider = 5,

@@ -1,9 +1,3 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-1.2-0001 — Actor Presentation System e migração do Legacy Skin System
 
 ## Status
@@ -1025,6 +1019,24 @@ Identifique:
 
 
 ---
+
+## 20.1 Escopo de ActorPresentation em relação a Activity e Actor
+
+`ActorPresentation` é `ActorCapability`. Ela não é propriedade da `Activity`, não é `ActivityObject` e não deve virar lógica interna permanente do `SessionActivityPipeline`.
+
+Separação normativa:
+
+| Decisão | Owner |
+|---|---|
+| Actor participa da Activity? | `ActivityEntryPipeline` / actor participation stage |
+| Presentation é exigida/opcional para este Actor? | actor capability stage / policy |
+| Quando materializar, reter ou liberar presentation? | pipeline/stage pelo lifecycle da Activity/ActorParticipation |
+| Como montar containers, visuals, skins, materials, audio/animation futuros? | `ActorPresentationEndpoint` / adapter/runtime local |
+| Variação visual local determinística/futura | endpoint/runtime de presentation, com seed/policy explícita quando necessário |
+
+A `Activity` pode exigir readiness de presentation antes de `ActivityRunning`, mas não deve conhecer detalhes de skin/material/variação. O pipeline comanda setup/release; a capability executa o comportamento local.
+
+Consequência: `ActorPresentation` não deve ser usada para inferir que o GameObject é `ActivityObject`, nem `ActivityObject` deve ganhar presentation por associação implícita. A relação precisa ser declarada por Actor identity, participation e capability.
 
 ## 21. Fechamento
 

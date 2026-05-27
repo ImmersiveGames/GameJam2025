@@ -1,9 +1,3 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-1.2-0006 — ActivityCapabilityPermission e Reação Local de Capabilities
 
 - **Estado:** Aceito / decisão normativa Base 1.2
@@ -386,6 +380,26 @@ se Unbound: liberar dependências e ignorar updates
 ```
 
 ---
+
+## 10.1 Escopo de permissão semântica vs reação local
+
+`ActivityCapabilityPermission` é o contrato para separar a decisão macro da Activity da aplicação local da capability.
+
+```text
+Pipeline/stage publica: ActivityGameplayControl = Blocked / Allowed / Unbound.
+Capability runtime valida identity e escopo.
+Receiver local decide como reagir na instância.
+```
+
+Isso não significa que o pipeline controla movement, attack, interaction ou AI. Significa apenas que o pipeline publica um estado semântico da Activity. A reação concreta é local:
+
+| Permission | Reação local possível |
+|---|---|
+| `Blocked` | zerar input, interromper tick local, ignorar execução, limpar estado transitório |
+| `Allowed` | aceitar execução local se a capability também estiver pronta |
+| `Unbound` | soltar referências e não receber novos eventos |
+
+Novas capabilities não devem criar `ControlStage` próprio se puderem reagir a uma permission semântica. Também não devem depender de parsing de `receiverId`; identity funcional deve ser tipada, e `receiverId` fica apenas para log/correlação.
 
 ## 11. Proibições normativas
 

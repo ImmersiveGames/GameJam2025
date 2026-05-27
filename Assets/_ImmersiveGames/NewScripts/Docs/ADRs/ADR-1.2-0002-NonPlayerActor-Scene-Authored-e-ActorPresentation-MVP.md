@@ -1,9 +1,3 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-1.2-0002 — NonPlayerActor Scene-Authored e ActorPresentation MVP
 
 - Estado: Aceito / atualizado com discovery unificado ActivityScoped + RouteScoped
@@ -516,6 +510,28 @@ NonPlayerActor unified discovery + ActivityScoped/RouteScoped policy — PASS
 ```
 
 ---
+
+## 12.1 Clarificação normativa — NonPlayerActor não é trilho paralelo permanente
+
+O MVP validou `NonPlayerActor` scene-authored, mas isso não congela um lifecycle separado para NPCs.
+
+Regra final:
+
+```text
+PlayerActor e NonPlayerActor são especializações/policies de Actor.
+O pipeline não deve possuir um trilho global de Player e outro trilho global de NonPlayer.
+O que varia é ActorDefinition, ActorInstance, ActorParticipation, ActorCapability e policy.
+```
+
+`NonPlayerActor` também não é sinônimo de `ActivityObject`:
+
+```text
+NonPlayerActor = Actor com identidade, participation e capabilities.
+ActivityObject = objeto/contributor da Activity com endpoints locais.
+Um GameObject pode expor as duas funções, mas somente de forma explícita.
+```
+
+A implementação MVP pode ter métodos/logs nominalmente `NonPlayerActor` enquanto a migração está em curso. Isso não autoriza criar novos rails paralelos para AI, combat, interaction ou attributes. Novas funções devem entrar como `ActorCapability`, `ActorEndpoint`, scanner/inventory e stages de capability quando forem lifecycle/setup/readiness, ou como relação local quando forem gameplay moment-to-moment.
 
 ## 13. Invariantes congeladas
 

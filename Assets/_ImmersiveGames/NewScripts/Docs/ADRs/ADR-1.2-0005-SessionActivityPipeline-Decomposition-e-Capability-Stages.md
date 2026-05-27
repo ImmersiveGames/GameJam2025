@@ -1,12 +1,6 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-1.2-0005 — SessionActivityPipeline Decomposition e Capability Stages
 
-- **Estado:** Aceito / congelamento normativo Base 1.2
+- **Estado:** Aceito / congelamento normativo Base 1.2 / checkpoint funcional congelado
 - **Base:** Base 1.2 — Actors Convergence / Convergência de Atores
 - **Fundação normativa:** Base 1.1 — Pipeline Convergence / Convergência para Pipelines Determinísticos
 - **Relacionado:**
@@ -14,6 +8,8 @@ Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-000
     - ADR-1.2-0001 — Actor Presentation System e Migração do Legacy Skin System
     - ADR-1.2-0002 — NonPlayerActor Scene-Authored e ActorPresentation MVP
     - ADR-1.2-0004 — ActorAttributes como ActorCapability
+    - ADR-1.2-0006 — ActivityCapabilityPermission e Reação Local de Capabilities
+    - ADR-1.2-0007 — Capability Discovery e Activity Capability Inventory
 - **Escopo:** fronteira normativa para decomposição incremental do `SessionActivityPipeline` sem criar Base 2.0 completa
 - **Fora do escopo:** alterações em `SessionOperationalPipeline`, framework genérico novo, compat paralelo, `partial` como solução principal
 
@@ -269,6 +265,36 @@ transition loading/fade
 
 ---
 
+## 5.7 Matriz de escopo — Activity vs Actor vs Object vs Local Gameplay
+
+A decomposição do `SessionActivityPipeline` não deve trocar um `God Pipeline` por trilhos paralelos de `Player`, `NonPlayerActor` e `ActivityObject`.
+
+A classificação normativa é:
+
+| Pergunta | Owner correto | Observação |
+|---|---|---|
+| A Activity entra, roda, reinicia, transiciona ou sai? | `SessionActivityPipeline core` | lifecycle macro |
+| Qual stage vem antes/depois? | `ActivityEntryPipeline` | ordem determinística |
+| Um requisito é obrigatório/opcional? | stage/policy/inventory | ausência obrigatória é fail-fast |
+| Um actor participa desta entry? | actor participation stage | Actor tem identidade própria |
+| Um objeto participa como contributor? | object discovery/inventory | ActivityObject não vira Actor implicitamente |
+| Quando resetar/restaurar/capturar/liberar? | pipeline/stage dono do ciclo | timing determinístico |
+| Como resetar/restaurar/capturar/liberar? | endpoint/capability local | execução local |
+| Uma capability pode aceitar gameplay agora? | permission/policy de Activity | o pipeline publica permissão semântica |
+| Como a capability reage ao permitido/bloqueado? | receiver/runtime local | reação local da instância |
+| Dano/heal/stamina/interação moment-to-moment | relação local entre endpoints/capabilities | não é lifecycle do pipeline |
+
+Regra de corte:
+
+```text
+Pipeline Scope = quando, ordem, policy, readiness, handoff, reset/snapshot/release timing e foreign/stale guard.
+Actor Scope = identidade, participation, lifecycle de ator e ActorCapabilities.
+Object Scope = estado próprio, endpoints locais e capabilities de objeto/contributor.
+Local Gameplay Scope = relações moment-to-moment entre instâncias.
+```
+
+`PlayerActor` e `NonPlayerActor` não devem virar lifecycles paralelos. Eles convergem como `Actor` com policies, endpoints e capabilities diferentes. O que varia é o inventário resolvido e as policies, não a existência de um pipeline separado para cada tipo de ator.
+
 ## 6. Matriz normativa
 
 | Responsabilidade atual | Owner correto | Ação |
@@ -385,3 +411,231 @@ SessionOperationalPipeline permanece intocado.
 ```
 
 A primeira aplicação prática deve ser `ActorAttributes`, porque foi a capability que revelou o risco de transformar mutation local em routing de pipeline.
+
+---
+
+## 11. Checkpoint funcional congelado — SessionActivityPipeline Decomposition
+
+Após a aplicação incremental deste ADR na Base 1.2 — Actors Convergence, fica congelado o seguinte checkpoint funcional:
+
+```text
+SessionActivityPipeline Decomposition — Functional Freeze
+Status: PASS funcional
+Escopo: Base 1.2 / Actors Convergence
+Fundação preservada: Base 1.1 / Pipeline Convergence
+```
+
+O checkpoint confirma que o `SessionActivityPipeline` permanece como owner do lifecycle macro, enquanto a execução detalhada de capabilities e participantes foi deslocada para boundaries/stages dedicados, ainda que vários desses boundaries permaneçam fisicamente internos ao arquivo `SessionActivityPipeline.cs` neste corte.
+
+Este congelamento não transforma a organização física atual em shape final. Ele congela apenas o comportamento, a fronteira de ownership e a evidência funcional validada.
+
+---
+
+## 12. Fases fechadas como PASS funcional
+
+As seguintes fases da decomposição foram concluídas e validadas por smoke de caminho feliz:
+
+| Fase | Frente | Resultado | Observação normativa |
+|---|---|---|---|
+| Fase 2B | `ActorAttributes` | PASS funcional | Setup/release em boundary/stage; mutation local permanece no `ActorAttributeEndpoint`/relação local. |
+| Fase 3B | `ActorPresentation` | PASS funcional | Setup/release/materialization details em boundary/stage; `UnityActorPresentationMaterializationAdapter` permanece executor de side-effect. |
+| Fase 4B | `NonPlayerActor` | PASS funcional | Discovery, participation enter/exit e readiness em stages dedicados; registry/runtime local preservados. |
+| Fase 5B | `PlayerActor` / input / movement / camera | PASS funcional | Readiness, input binding, movement binding/control e camera binding separados em boundaries/stages; checkpoints Base 1.1 preservados. |
+| Fase 5C1 | `ActivityObject` Entry | PASS funcional | Discovery, snapshot contract validation, reset e snapshot restore separados em boundary/stage. |
+| Fase 5C2 | `ActivityObject` Exit | PASS funcional | Snapshot capture, release e contributor unregister separados em boundary/stage. |
+
+### 12.1 Checkpoints preservados
+
+O freeze preserva os checkpoints funcionais já aceitos da Base 1.1 e os cortes da Base 1.2:
+
+```text
+SessionActivityEntryHandoffAccepted
+ActorPresentationReady / Retained / Released
+ActorAttributeReady / Changed / Released / SkippedNoContent
+NonPlayerActorDiscoveryCompleted
+NonPlayerActorParticipationEntered / Exited
+NonPlayerActorReady
+PlayerInputActionsReboundToCanonical
+MovementBindingCompleted
+MovementBindingRetained
+MovementControlEnabled / Disabled
+PlayerCameraEndpointResolved
+ActivityCameraTargetBound
+CameraBindingCompleted
+CameraBindingSkippedNoRequiredCamera
+ActivityObjectContributorDiscovery
+ActivityObjectSnapshotContractValidation
+ActivityObjectReset
+ActivityObjectSnapshotRestore
+ActivityObjectSnapshotCapture
+ActivityObjectRelease
+ActivityObjectContributorUnregister
+RestartCurrentActivity
+Activity01ToActivity02
+RouteExitBackToMenu
+```
+
+### 12.2 Semântica de skip preservada
+
+A decomposição preserva a regra normativa:
+
+```text
+subplano vazio ou requisito opcional ausente
+=> Skipped / zero-count explícito
+=> não vira failure
+```
+
+Exemplos congelados:
+
+```text
+activity_02 sem ActivityContent
+=> ActivityObject discovery/reset/release com contagens zero ou skipped explícito
+
+activity_02 sem camera requirement obrigatório
+=> CameraBindingSkippedNoRequiredCamera
+=> MovementControlEnabled
+=> ActivityRunning
+```
+
+---
+
+## 13. Dívida deliberada: separação física dos stages internos
+
+Fica registrada como dívida explícita:
+
+```text
+Vários stages/boundaries já existem logicamente,
+mas ainda permanecem fisicamente dentro de SessionActivityPipeline.cs.
+```
+
+Isso inclui, conforme o corte atual:
+
+```text
+ActorAttributeSetupStage / ActorAttributeReleaseStage
+ActorPresentationSetupStage / ActorPresentationReleaseStage
+NonPlayerActorDiscoveryStage / NonPlayerActorParticipationStage
+PlayerActorReadinessStage
+PlayerInputBindingStage
+PlayerMovementBindingStage
+PlayerMovementControlStage
+PlayerCameraBindingStage
+ActivityObjectEntryStage
+ActivityObjectExitStage
+```
+
+Essa dívida foi aceita deliberadamente para estabilizar comportamento antes de reorganizar arquivos. Ela não autoriza novas responsabilidades no core do pipeline.
+
+### 13.1 Regra de congelamento
+
+Até nova fase explícita de organização física:
+
+```text
+não mover stages para arquivos próprios
+não aplicar partial como solução arquitetural
+não criar context objects genéricos por conveniência
+não abrir campos privados do pipeline apenas para facilitar extração
+não alterar logs/facts/checkpoints
+não alterar comportamento runtime
+```
+
+A organização física futura deve ser feita em fase própria, com auditoria de dependências, plano de corte pequeno e smoke completo de não regressão.
+
+### 13.2 O que este checkpoint não congela
+
+Este checkpoint **não** congela o arquivo `SessionActivityPipeline.cs` como forma final.
+
+Congela apenas:
+
+```text
+ownership lógico
+ordem macro
+semântica de lifecycle
+semântica de skip/failure
+pontos de integração entre stages, endpoints e adapters
+evidência funcional validada
+```
+
+---
+
+## 14. Restrições para próximos cortes
+
+Enquanto este checkpoint estiver congelado, próximos trabalhos não devem reabrir as frentes abaixo sem necessidade concreta:
+
+```text
+ActorAttributes
+ActorPresentation
+NonPlayerActor
+PlayerActor readiness/input/movement/camera
+ActivityObject entry
+ActivityObject exit
+RestartCurrentActivity
+Activity01ToActivity02
+RouteExitBackToMenu
+```
+
+É permitido mexer nesses trilhos somente quando houver:
+
+```text
+bug real de caminho feliz
+novo requisito concreto de gameplay
+nova capability com ownership explícito
+fase dedicada de organização física sem mudança semântica
+```
+
+É proibido:
+
+```text
+limpeza estética antes de freeze
+refatoração física misturada com mudança funcional
+compat paralelo
+fallback silencioso
+framework genérico de stages
+service locator de gameplay local
+QA/debug como caminho obrigatório de produção
+```
+
+---
+
+## 15. Próximos passos recomendados
+
+Próximo passo imediato:
+
+```text
+não implementar nova decomposição agora
+não reorganizar fisicamente agora
+manter checkpoint congelado
+```
+
+Próximas reaberturas possíveis, apenas quando houver necessidade concreta:
+
+1. **Organização física dos stages internos**  
+   Fase própria, sem alterar comportamento, com auditoria de dependências e smoke completo.
+
+2. **Novas capabilities de atores**  
+   Devem entrar por `ActorCapability`, `ActorEndpoint`, stage/boundary ou adapter adequado, sem reabrir o core do lifecycle macro.
+
+3. **RuntimeSpawn / ObjectEntry real**  
+   Só quando houver objeto, prop, actor ou prefab realmente materializado pelo pipeline.
+
+4. **Pooling integrado a objetos concretos**  
+   Só quando houver policy explícita e caso real de `Rent`, `Prewarm` ou `ReturnToPool`.
+
+5. **Progression Save real**  
+   Só quando houver progressão real de actor, objeto, run ou activity para persistir.
+
+---
+
+## 16. Conclusão do freeze
+
+A Base 1.2 — Actors Convergence fecha este corte com a seguinte conclusão:
+
+```text
+O SessionActivityPipeline deixou de ser o owner lógico dos detalhes operacionais de capabilities e participantes.
+Ele permanece owner do lifecycle macro.
+Stages/boundaries especializados concentram a decomposição lógica.
+Endpoints e adapters preservam side-effects e comportamento local.
+A separação física ainda é dívida deliberada.
+```
+
+Este checkpoint deve ser tratado como contrato de estabilização antes de qualquer nova refatoração física.
+

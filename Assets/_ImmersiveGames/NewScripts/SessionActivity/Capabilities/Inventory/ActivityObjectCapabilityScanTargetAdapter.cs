@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 targets.Add(new ActivityObjectCapabilityScanTarget(
                     report,
                     targetObject,
-                    BuildTransformPath(targetObject.transform),
+                    ActivityCapabilityTransformPathUtility.BuildTransformPath(targetObject.transform),
                     contributor.IncludeChildrenForEndpointDiscovery));
             }
 
@@ -157,24 +157,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             }
 
             return string.Compare(left.RoleId, right.RoleId, StringComparison.Ordinal);
-        }
-
-        private static string BuildTransformPath(Transform target)
-        {
-            if (target == null)
-            {
-                return "<null>";
-            }
-
-            string path = target.name;
-            Transform current = target.parent;
-            while (current != null)
-            {
-                path = $"{current.name}/{path}";
-                current = current.parent;
-            }
-
-            return path;
         }
     }
 }

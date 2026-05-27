@@ -25,6 +25,151 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         Completed = 17,
     }
 
+    public readonly struct SessionOperationalRouteKey : IEquatable<SessionOperationalRouteKey>
+    {
+        public SessionOperationalRouteKey(
+            string pipelineId,
+            string routeIdentity,
+            string routeOperationId,
+            string routeId,
+            string routeProfileId,
+            int routeSequence)
+        {
+            PipelineId = Normalize(pipelineId);
+            RouteIdentity = Normalize(routeIdentity);
+            RouteOperationId = Normalize(routeOperationId);
+            RouteId = Normalize(routeId);
+            RouteProfileId = Normalize(routeProfileId);
+            RouteSequence = routeSequence < 0 ? 0 : routeSequence;
+        }
+
+        public string PipelineId { get; }
+        public string RouteIdentity { get; }
+        public string RouteOperationId { get; }
+        public string RouteId { get; }
+        public string RouteProfileId { get; }
+        public int RouteSequence { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(PipelineId) &&
+            !string.IsNullOrWhiteSpace(RouteIdentity) &&
+            !string.IsNullOrWhiteSpace(RouteOperationId) &&
+            !string.IsNullOrWhiteSpace(RouteId) &&
+            !string.IsNullOrWhiteSpace(RouteProfileId) &&
+            RouteSequence > 0;
+
+        public bool Equals(SessionOperationalRouteKey other)
+        {
+            return string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(RouteIdentity, other.RouteIdentity, StringComparison.Ordinal) &&
+                   string.Equals(RouteOperationId, other.RouteOperationId, StringComparison.Ordinal) &&
+                   string.Equals(RouteId, other.RouteId, StringComparison.Ordinal) &&
+                   string.Equals(RouteProfileId, other.RouteProfileId, StringComparison.Ordinal) &&
+                   RouteSequence == other.RouteSequence;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionOperationalRouteKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hashCode = StringComparer.Ordinal.GetHashCode(PipelineId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteIdentity ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteOperationId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(RouteProfileId ?? string.Empty);
+                hashCode = (hashCode * 397) ^ RouteSequence;
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => left.Equals(right);
+        public static bool operator !=(SessionOperationalRouteKey left, SessionOperationalRouteKey right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionOperationalTransitionKey : IEquatable<SessionOperationalTransitionKey>
+    {
+        public SessionOperationalTransitionKey(SessionOperationalRouteKey routeKey, string transitionId)
+        {
+            RouteKey = routeKey;
+            TransitionId = Normalize(transitionId);
+        }
+
+        public SessionOperationalRouteKey RouteKey { get; }
+        public string TransitionId { get; }
+        public bool IsValid => RouteKey.IsValid && !string.IsNullOrWhiteSpace(TransitionId);
+
+        public bool Equals(SessionOperationalTransitionKey other)
+        {
+            return RouteKey.Equals(other.RouteKey) &&
+                   string.Equals(TransitionId, other.TransitionId, StringComparison.Ordinal);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionOperationalTransitionKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (RouteKey.GetHashCode() * 397) ^ StringComparer.Ordinal.GetHashCode(TransitionId ?? string.Empty);
+            }
+        }
+
+        public static bool operator ==(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => left.Equals(right);
+        public static bool operator !=(SessionOperationalTransitionKey left, SessionOperationalTransitionKey right) => !left.Equals(right);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct SessionOperationalStageKey : IEquatable<SessionOperationalStageKey>
+    {
+        public SessionOperationalStageKey(SessionOperationalTransitionKey transitionKey, SessionOperationalStage stage)
+        {
+            TransitionKey = transitionKey;
+            Stage = stage;
+        }
+
+        public SessionOperationalTransitionKey TransitionKey { get; }
+        public SessionOperationalStage Stage { get; }
+        public bool IsValid => TransitionKey.IsValid && Stage != SessionOperationalStage.Unknown;
+
+        public bool Equals(SessionOperationalStageKey other)
+        {
+            return TransitionKey.Equals(other.TransitionKey) && Stage == other.Stage;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SessionOperationalStageKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (TransitionKey.GetHashCode() * 397) ^ (int)Stage;
+            }
+        }
+
+        public static bool operator ==(SessionOperationalStageKey left, SessionOperationalStageKey right) => left.Equals(right);
+        public static bool operator !=(SessionOperationalStageKey left, SessionOperationalStageKey right) => !left.Equals(right);
+    }
+
     public readonly struct SessionOperationalIdentity : IEquatable<SessionOperationalIdentity>
     {
         public SessionOperationalIdentity(
@@ -47,6 +192,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
             Source = Normalize(source);
             Reason = Normalize(reason);
             Stage = stage;
+            RouteKey = new SessionOperationalRouteKey(
+                SessionOperationalPipelineId,
+                RouteId,
+                RouteOperationId,
+                RouteId,
+                RouteProfileId,
+                TransitionSequence);
+            TransitionKey = new SessionOperationalTransitionKey(RouteKey, TransitionId);
+            StageKey = new SessionOperationalStageKey(TransitionKey, Stage);
             CycleSignature = BuildCycleSignature(
                 SessionOperationalPipelineId,
                 RouteOperationId,
@@ -68,23 +222,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         public string Source { get; }
         public string Reason { get; }
         public SessionOperationalStage Stage { get; }
+        public SessionOperationalRouteKey RouteKey { get; }
+        public SessionOperationalTransitionKey TransitionKey { get; }
+        public SessionOperationalStageKey StageKey { get; }
         public string CycleSignature { get; }
 
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(SessionOperationalPipelineId) &&
-            !string.IsNullOrWhiteSpace(RouteOperationId) &&
-            !string.IsNullOrWhiteSpace(TransitionId) &&
-            TransitionSequence > 0 &&
-            !string.IsNullOrWhiteSpace(RouteId) &&
-            !string.IsNullOrWhiteSpace(RouteProfileId) &&
+            RouteKey.IsValid &&
+            TransitionKey.IsValid &&
+            StageKey.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason) &&
-            Stage != SessionOperationalStage.Unknown &&
             !string.IsNullOrWhiteSpace(CycleSignature);
 
         public bool Equals(SessionOperationalIdentity other)
         {
-            return string.Equals(CycleSignature, other.CycleSignature, StringComparison.Ordinal);
+            return StageKey.Equals(other.StageKey);
         }
 
         public override bool Equals(object obj)
@@ -94,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 
         public override int GetHashCode()
         {
-            return StringComparer.Ordinal.GetHashCode(CycleSignature ?? string.Empty);
+            return StageKey.GetHashCode();
         }
 
         public override string ToString()

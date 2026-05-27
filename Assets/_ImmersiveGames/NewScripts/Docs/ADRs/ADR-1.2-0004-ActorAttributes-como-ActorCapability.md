@@ -1,9 +1,3 @@
-<!--
-STATUS: HISTÓRICO PARA CONSULTA.
-Este ADR foi reclassificado pelo ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory.
-Use como evidência, histórico e intenção funcional. Em conflito, ADR-2.0-0001 prevalece.
--->
-
 # ADR-1.2-0004 — ActorAttributes como ActorCapability
 
 - **Estado:** Aceito / congelado para `Setup/Release v0` e `Runtime Commands v0`
@@ -1088,6 +1082,38 @@ não crie event hub paralelo
 
 ---
 
+## 18.1 Escopo de gameplay local e limite dos commands runtime
+
+`ActorAttributes` é capability local do Actor. O pipeline pode participar de setup, release, readiness e validação de fronteira no MVP, mas não deve virar roteador universal de dano/heal/stamina.
+
+Regra normativa:
+
+| Caso | Owner correto |
+|---|---|
+| Preparar atributos no entry setup | `ActivityEntryPipeline` / `ActorAttributeSetupStage` |
+| Liberar atributos no exit/release | stage de capability |
+| Validar presença obrigatória de profile/definition | stage/policy/inventory |
+| Aplicar dano/heal/stamina entre instâncias durante gameplay | relação local entre endpoints/capabilities |
+| Reset/snapshot/save de atributos quando existir progressão real | pipeline dono do timing + endpoint/provider local |
+
+Os runtime commands validados no MVP são um trilho técnico/QA e um boundary de capability, não um padrão para todo combat. Para gameplay real, quando o causador e o alvo estão disponíveis localmente e a operação não decide lifecycle, a ação deve ser resolvida por relação local segura:
+
+```text
+hit source / interaction source -> ActorAttributeEndpoint do alvo
+```
+
+O pipeline só volta a participar quando a ação se torna:
+
+```text
+policy de Activity
+readiness obrigatório
+reset/restore/snapshot/release timing
+save/progression boundary
+foreign/stale guard de ciclo
+```
+
+Isso evita que `ActorAttributes` recrie um `StatsManager` global ou transforme `SessionActivityPipeline` em router de combat.
+
 ## 19. Riscos arquiteturais
 
 ### 19.1 Risco — virar StatsManager global
@@ -1315,7 +1341,7 @@ ActorAttribute é ActorCapability local.
 ActorAttribute não é sistema global.
 ActorAttributeProfileAsset referencia ActorAttributeDefinitionAsset.
 ActivityEntryPipeline é owner de setup/release/reset lifecycle.
-SessionActivityPipeline valida runtime command contra identity/readiness/target.
+SessionActivityPipeline valida runtime command contra identity/readiness/target apenas no boundary MVP/QA; gameplay local futuro não deve depender do pipeline como router universal.
 ActorAttributeEndpoint mantém estado e aplica comandos locais.
 SessionOperationalPipeline não altera ActorAttributes.
 UI, combat, save, snapshot e reset stage completo ficam fora do MVP.
@@ -1338,7 +1364,7 @@ Este ADR está aceito/congelado para `Setup/Release v0` e `Runtime Commands v0` 
 3. UI, combat, save/snapshot, regen/drain e reset stage completo ficam explicitamente futuros.
 4. Authoring usa `ActorAttributeDefinitionAsset`, não string manual no profile.
 5. `ActivityEntryPipeline` é o owner de setup/release/reset lifecycle.
-6. `SessionActivityPipeline` valida commands runtime.
+6. `SessionActivityPipeline` valida commands runtime no boundary MVP/QA, sem virar router universal de combat/gameplay local.
 7. `ActorAttributeEndpoint` aplica matemática local/clamp, mas não decide lifecycle.
 8. `ActorAttributeState` é o único estado mutável de valor runtime.
 9. `SessionOperationalPipeline` não participa diretamente de atributos.

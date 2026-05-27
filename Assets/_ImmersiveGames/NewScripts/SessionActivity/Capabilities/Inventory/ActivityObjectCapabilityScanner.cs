@@ -37,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityCapabilityOwnerKind ownerKind = ResolveOwnerKind(target.Contribution.ContributorKind);
                 string ownerPath = target.HasTargetObjectPath
                     ? target.TargetObjectPath
-                    : BuildTransformPath(target.TargetObject.transform);
+                    : ActivityCapabilityTransformPathUtility.BuildTransformPath(target.TargetObject.transform);
                 string ownerSource = target.Contribution.TargetId;
                 string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(inventoryId, ownerKind, ownerPath, ownerSource);
 
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         continue;
                     }
 
-                    string componentPath = BuildTransformPath(behaviour.transform);
+                    string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(behaviour.transform);
                     string componentType = behaviour.GetType().FullName ?? behaviour.GetType().Name;
                     bool required = target.Contribution.Requiredness == ActivitySetupRequirementRequiredness.Required;
                     IReadOnlyList<ActivityCapabilityPolicyEntry> metadata = BuildPolicyMetadata(target);
@@ -198,24 +198,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             }
 
             return metadata;
-        }
-
-        private static string BuildTransformPath(Transform target)
-        {
-            if (target == null)
-            {
-                return "<null>";
-            }
-
-            string path = target.name;
-            Transform current = target.parent;
-            while (current != null)
-            {
-                path = $"{current.name}/{path}";
-                current = current.parent;
-            }
-
-            return path;
         }
     }
 }

@@ -57,12 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly Dictionary<string, NonPlayerActorAttributeCapabilityState> _activeActorAttributeCapabilitiesByNonPlayerActorId = new(StringComparer.Ordinal);
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
-        private readonly ActivityObjectCapabilityScanTargetAdapter _activityObjectCapabilityScanTargetAdapter;
-        private readonly ActivityObjectCapabilityScanner _activityObjectCapabilityScanner;
-        private readonly ActivityCapabilityPermissionScanner _activityCapabilityPermissionScanner;
-        private readonly ActivityCapabilityCameraTargetScanner _activityCapabilityCameraTargetScanner;
-        private readonly ActivityCapabilityInventoryBuilder _activityCapabilityInventoryBuilder;
-        private readonly ActivityCapabilityInventoryValidator _activityCapabilityInventoryValidator;
+        private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
         private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
@@ -316,36 +311,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
 
-        internal readonly struct PlayerCameraBindingStageResult
-        {
-            public PlayerCameraBindingStageResult(
-                bool hasActivityCameraRequirement,
-                int requiredCameraCount,
-                bool resolved,
-                PlayerActorIdentityRecord selectedActor,
-                CameraBindingRequirement selectedRequirement,
-                PlayerCameraEndpoint selectedEndpoint,
-                string reasonCode)
-            {
-                HasActivityCameraRequirement = hasActivityCameraRequirement;
-                RequiredCameraCount = requiredCameraCount;
-                Resolved = resolved;
-                SelectedActor = selectedActor;
-                SelectedRequirement = selectedRequirement;
-                SelectedEndpoint = selectedEndpoint;
-                ReasonCode = Normalize(reasonCode);
-            }
-
-            public bool HasActivityCameraRequirement { get; }
-            public int RequiredCameraCount { get; }
-            public bool Resolved { get; }
-            public PlayerActorIdentityRecord SelectedActor { get; }
-            public CameraBindingRequirement SelectedRequirement { get; }
-            public PlayerCameraEndpoint SelectedEndpoint { get; }
-            public string ReasonCode { get; }
-        }
-
-
         private readonly struct PendingNavigationTransition
         {
             public PendingNavigationTransition(SessionActivityDefinition target, bool wrapped, int targetEntrySequence)
@@ -502,16 +467,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activityNonPlayerActorRegistry = new ActivityNonPlayerActorRegistry();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
-            _activityObjectCapabilityScanTargetAdapter = new ActivityObjectCapabilityScanTargetAdapter();
-            _activityObjectCapabilityScanner = new ActivityObjectCapabilityScanner();
-            _activityCapabilityPermissionScanner = new ActivityCapabilityPermissionScanner();
-            _activityCapabilityCameraTargetScanner = new ActivityCapabilityCameraTargetScanner();
-            ActivityCapabilityScannerRegistry previewScannerRegistry = new ActivityCapabilityScannerRegistry();
-            previewScannerRegistry.Register(_activityObjectCapabilityScanner);
-            previewScannerRegistry.Register(_activityCapabilityPermissionScanner);
-            previewScannerRegistry.Register(_activityCapabilityCameraTargetScanner);
-            _activityCapabilityInventoryBuilder = new ActivityCapabilityInventoryBuilder(previewScannerRegistry);
-            _activityCapabilityInventoryValidator = new ActivityCapabilityInventoryValidator();
+            _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -3806,7 +3762,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitObjectSnapshotRestoreStage(definition, command, facts, snapshots, entrySequence);
             ParticipantBindingStageResult participantBindingResult = EmitParticipantBindingStage(definition, command, facts, snapshots, entrySequence);
             EmitPlayerActorReadinessStage(definition, command, facts, snapshots, entrySequence, participantBindingResult);
-            EmitActivityCapabilityPermissionParticipantDiscoveryStage(definition, command, facts, snapshots, entrySequence);
             EmitActorPresentationSetupStage(definition, command, facts, snapshots, entrySequence, participantBindingResult);
             EmitNonPlayerActorDiscoveryStage(definition, command, facts, snapshots, entrySequence);
             EmitNonPlayerActorPresentationSetupStage(definition, command, facts, snapshots, entrySequence);
@@ -3845,7 +3800,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Reason,
                 $"'{definition.ActivityId}' participant binding stage started. routeSessionParticipantOwnership='external' activityOwnership='false'.");
 
-            if (!inventory.IsValid || !inventory.Identity.Equals(BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence)))
+            SessionActivityIdentity expectedInventoryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            if (!inventory.IsValid || inventory.Identity.CycleKey != expectedInventoryIdentity.CycleKey)
             {
                 SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
                 _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
@@ -3916,7 +3872,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 facts,
                 snapshots,
                 entrySequence);
-            HashSet<string> plannedRouteSessionParticipants = BuildPlannedRouteSessionParticipantSet(routeSessionPlayerPreparation.PlayerIds);
+            HashSet<string> plannedRouteSessionParticipants = BuildPlannedRouteSessionParticipantSet(routeSessionPlayerPreparation.ParticipantIds);
             Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId =
                 BuildTechnicalPlanMap(routeSessionPlayerPreparation.TechnicalPlanEntries);
             EmitFact(
@@ -4316,124 +4272,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 $"'{definition.ActivityId}' player actor readiness completed.");
         }
 
-        private void EmitActivityCapabilityPermissionParticipantDiscoveryStage(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            SessionActivityIdentity startedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityPermissionParticipantDiscoveryStarted,
-                startedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability permission participant discovery started.");
-            EmitSnapshot(
-                snapshots,
-                "activity_capability_permission_participant_discovery_started",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability permission participant discovery started.");
-
-            if (!_activityPlayerActorRegistry.TryGetActiveActorIdentities(startedIdentity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) ||
-                activeActors == null ||
-                activeActors.Count == 0)
-            {
-                _permissionRuntime.ReplaceReceivers(Array.Empty<IActivityCapabilityPermissionReceiver>());
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityCapabilityPermissionParticipantDiscoverySkippedNoParticipants,
-                    startedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity capability permission participant discovery skipped reasonCode='no_active_player_actors'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_capability_permission_participant_discovery_skipped_no_participants",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity capability permission participant discovery skipped because no active player actors were resolved.");
-                return;
-            }
-
-            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            ActivityObjectCapabilityScanTargetAdaptationResult objectAdaptationResult = _activityObjectCapabilityScanTargetAdapter.Adapt(
-                discoveryResult,
-                command.Source,
-                command.Reason);
-            IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> playerTargets = BuildPlayerActorCapabilityScanTargets(startedIdentity, activeActors, command.Source);
-
-            ActivityCapabilityScanContext scanContext = new(
-                startedIdentity,
-                objectAdaptationResult.Targets,
-                playerTargets,
-                command.Source,
-                command.Reason);
-
-            ActivityCapabilityInventory inventory = _activityCapabilityInventoryBuilder.Build(scanContext);
-            ActivityCapabilityInventoryValidationResult validationResult = _activityCapabilityInventoryValidator.Validate(inventory, command.Source, command.Reason);
-            _state.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
-
-            IReadOnlyList<IActivityCapabilityPermissionReceiver> receivers = ResolvePermissionReceiversFromInventory(inventory, startedIdentity);
-            _permissionRuntime.ReplaceReceivers(receivers);
-
-            int discoveredCount = receivers.Count;
-            int requiredCount = receivers.Count;
-            for (int participantIndex = 0; participantIndex < receivers.Count; participantIndex++)
-            {
-                IActivityCapabilityPermissionReceiver receiver = receivers[participantIndex];
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityCapabilityPermissionParticipantDiscovered,
-                    startedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity capability permission participant discovered permissionId='{ActivityCapabilityPermissionIds.ActivityGameplayControl}' participantId='{receiver.ReceiverId}' required='true' actorId='' playerActorId='' playerSlotId='' entrySequence='{entrySequence}'.");
-                DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][CapabilityPermissionParticipantDiscovery] event='ActivityCapabilityPermissionParticipantDiscovered' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' permissionId='{ActivityCapabilityPermissionIds.ActivityGameplayControl}' participantId='{receiver.ReceiverId}' required='true' actorId='' playerActorId='' playerSlotId='' source='{command.Source}' reason='{command.Reason}'.",
-                    DebugUtility.Colors.Info);
-            }
-
-            if (discoveredCount == 0)
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityCapabilityPermissionParticipantDiscoverySkippedNoParticipants,
-                    startedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity capability permission participant discovery skipped reasonCode='no_participants'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_capability_permission_participant_discovery_skipped_no_participants",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity capability permission participant discovery skipped because no participants were found in actor roots.");
-            }
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityPermissionParticipantDiscoveryCompleted,
-                startedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability permission participant discovery completed discovered='{discoveredCount}' required='{requiredCount}' actorCount='{activeActors.Count}' entrySequence='{entrySequence}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_capability_permission_participant_discovery_completed",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability permission participant discovery completed discovered='{discoveredCount}' required='{requiredCount}' actorCount='{activeActors.Count}'.");
-            DebugUtility.Log(
-                typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][CapabilityPermissionParticipantDiscovery] event='ActivityCapabilityPermissionParticipantDiscoveryCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' discovered='{discoveredCount}' required='{requiredCount}' actorCount='{activeActors.Count}' source='{command.Source}' reason='{command.Reason}'.",
-                DebugUtility.Colors.Info);
-        }
-
         private IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> BuildPlayerActorCapabilityScanTargets(
             SessionActivityIdentity identity,
             IReadOnlyList<PlayerActorIdentityRecord> activeActors,
@@ -4479,32 +4317,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return targets;
         }
 
-        private ActivityCapabilityInventory BuildAndStoreActivityCapabilityInventoryForPlayerTargets(
+        private ActivityCapabilityInventory BuildAndStoreActivityCapabilityInventoryForEntry(
             SessionActivityIdentity identity,
             IReadOnlyList<PlayerActorIdentityRecord> playerActorTargets,
             string source,
             string reason)
         {
-            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            IReadOnlyList<ActivityObjectCapabilityScanTarget> objectTargets = Array.Empty<ActivityObjectCapabilityScanTarget>();
-            if (discoveryResult.IsValid)
-            {
-                ActivityObjectCapabilityScanTargetAdaptationResult objectAdaptationResult = _activityObjectCapabilityScanTargetAdapter.Adapt(discoveryResult, source, reason);
-                objectTargets = objectAdaptationResult.Targets;
-            }
-
             IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> playerTargets = BuildPlayerActorCapabilityScanTargets(identity, playerActorTargets, source);
-            ActivityCapabilityScanContext scanContext = new(
+            ActivityCapabilityInventoryBuildResult buildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
                 identity,
-                objectTargets,
+                _state.CurrentActivityObjectContributorDiscoveryResult,
                 playerTargets,
                 source,
                 reason);
-
-            ActivityCapabilityInventory inventory = _activityCapabilityInventoryBuilder.Build(scanContext);
-            ActivityCapabilityInventoryValidationResult validation = _activityCapabilityInventoryValidator.Validate(inventory, source, reason);
-            _state.SetCurrentActivityCapabilityInventoryPreview(inventory, validation);
-            return inventory;
+            _state.SetCurrentActivityCapabilityInventoryPreview(buildResult.Inventory, buildResult.Validation);
+            return buildResult.Inventory;
         }
 
         private void SyncPermissionReceiversForMovementTargets(
@@ -4515,16 +4342,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             if (movementTargets == null || movementTargets.Count == 0)
             {
-                _permissionRuntime.ReplaceReceivers(Array.Empty<IActivityCapabilityPermissionReceiver>());
+                _permissionRuntime.ReplaceReceivers(Array.Empty<ActivityCapabilityPermissionReceiverReference>());
                 return;
             }
 
-            ActivityCapabilityInventory inventory = BuildAndStoreActivityCapabilityInventoryForPlayerTargets(
+            ActivityCapabilityInventory inventory = BuildAndStoreActivityCapabilityInventoryForEntry(
                 identity,
                 movementTargets,
                 source,
                 reason);
-            IReadOnlyList<IActivityCapabilityPermissionReceiver> receivers = ResolvePermissionReceiversFromInventory(inventory, identity);
+            IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers = ResolvePermissionReceiversFromInventory(inventory, identity);
+            for (int index = 0; index < receivers.Count; index++)
+            {
+                ActivityCapabilityPermissionReceiverReference receiver = receivers[index];
+                if (receiver == null || !receiver.IsValid || !IsSamePermissionScope(identity, receiver.Identity))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionActivityPipeline][MovementBinding] permission_receiver_identity_mismatch activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' receiverId='{receiver?.ReceiverId ?? "<null>"}' receiverIdentity='{receiver?.Identity.ToString() ?? "<null>"}'.");
+                }
+            }
+
             _permissionRuntime.ReplaceReceivers(receivers);
         }
 
@@ -5996,11 +5833,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             return left.IsValid &&
                 right.IsValid &&
-                string.Equals(left.PipelineId, right.PipelineId, StringComparison.Ordinal) &&
-                string.Equals(left.SessionId, right.SessionId, StringComparison.Ordinal) &&
-                string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
-                left.ActivityOrdinal == right.ActivityOrdinal &&
-                left.EntrySequence == right.EntrySequence;
+                left.CycleKey == right.CycleKey;
         }
 
         private void EmitMovementControlEnableAtRunning(
@@ -6169,6 +6002,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ParticipantBindingStageResult participantBindingResult)
         {
             SessionActivityIdentity startedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingStarted, entrySequence);
+            _permissionRuntime.BeginPermissionScope(
+                startedIdentity.PipelineId,
+                startedIdentity.SessionId,
+                startedIdentity.ActivityId,
+                startedIdentity.EntrySequence);
             _state.SetCurrentIdentity(startedIdentity, SessionActivityStage.MovementBindingStarted);
             EmitFact(
                 facts,
@@ -6312,7 +6150,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
                 _movementControlEnableAllowedForCurrentEntry = false;
-                _permissionRuntime.ReplaceReceivers(Array.Empty<IActivityCapabilityPermissionReceiver>());
+                _permissionRuntime.ReplaceReceivers(Array.Empty<ActivityCapabilityPermissionReceiverReference>());
 
                 SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.MovementBindingSkippedNoRequiredMovement, entrySequence);
                 _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.MovementBindingSkippedNoRequiredMovement);
@@ -6506,7 +6344,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 try
                 {
-                    BuildAndStoreActivityCapabilityInventoryForPlayerTargets(startedIdentity, cameraTargets, command.Source, command.Reason);
+                    BuildAndStoreActivityCapabilityInventoryForEntry(startedIdentity, cameraTargets, command.Source, command.Reason);
                 }
                 catch (Exception exception)
                 {
@@ -7676,11 +7514,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
             EmitPreviewObservationLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewStarted,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
 
             ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
             if (!discoveryResult.IsValid || !IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence))
@@ -7692,32 +7530,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     previewIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='discovery_result_missing_or_foreign' entrySequence='{entrySequence}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='discovery_result_missing_or_foreign' entrySequence='{entrySequence}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
                 EmitPreviewObservationLog(
                     SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
                     previewIdentity,
-                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='discovery_result_missing_or_foreign' entrySequence='{entrySequence}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='discovery_result_missing_or_foreign' entrySequence='{entrySequence}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
                 return;
             }
 
-            ActivityObjectCapabilityScanTargetAdaptationResult adaptationResult = _activityObjectCapabilityScanTargetAdapter.Adapt(
-                discoveryResult,
-                command.Source,
-                command.Reason);
-
-            ActivityCapabilityScanContext scanContext = new(
+            ActivityCapabilityInventoryBuildResult buildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
                 previewIdentity,
-                adaptationResult.Targets,
+                discoveryResult,
                 Array.Empty<ActivityCapabilityPlayerActorScanTarget>(),
                 command.Source,
                 command.Reason);
-
-            ActivityCapabilityInventory inventory = _activityCapabilityInventoryBuilder.Build(scanContext);
+            ActivityCapabilityInventory inventory = buildResult.Inventory;
+            ActivityCapabilityInventoryValidationResult validationResult = buildResult.Validation;
             string capabilityKindsSummary = FormatCapabilityKindsSummary(inventory.Capabilities);
-            ActivityCapabilityInventoryValidationResult validationResult = _activityCapabilityInventoryValidator.Validate(
-                inventory,
-                command.Source,
-                command.Reason);
             _state.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
             string validationIssueCodes = FormatValidationIssueCodes(validationResult.Issues);
 
@@ -7727,11 +7556,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
             EmitPreviewObservationLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
 
             SessionActivityFactKind validationOutcomeKind = validationResult.Status switch
             {
@@ -7742,7 +7571,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             };
 
             string validationOutcomeMessage =
-                $"'{definition.ActivityId}' activity capability inventory validation outcome status='{validationResult.Status}' entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.";
+                $"'{definition.ActivityId}' activity capability inventory validation outcome status='{validationResult.Status}' entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.";
 
             EmitFact(
                 facts,
@@ -7759,11 +7588,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
             EmitPreviewObservationLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
 
             EmitFact(
                 facts,
@@ -7771,17 +7600,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{adaptationResult.UnresolvedReports.Count}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
             EmitPreviewObservationLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{adaptationResult.UnresolvedReports.Count}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
             EmitSnapshot(
                 snapshots,
                 "activity_capability_inventory_preview_observed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{adaptationResult.UnresolvedReports.Count}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityObjectCapabilityScanner.ScannerId}'.");
+                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
         }
 
         private static void EmitPreviewObservationLog(
@@ -8969,11 +8798,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return endpoints.ToArray();
         }
 
-        private static IReadOnlyList<IActivityCapabilityPermissionReceiver> ResolvePermissionReceiversFromInventory(
+        private static IReadOnlyList<ActivityCapabilityPermissionReceiverReference> ResolvePermissionReceiversFromInventory(
             ActivityCapabilityInventory inventory,
             SessionActivityIdentity activeIdentity)
         {
-            List<IActivityCapabilityPermissionReceiver> receivers = new();
+            List<ActivityCapabilityPermissionReceiverReference> receivers = new();
             if (!inventory.IsValid)
             {
                 return receivers;
@@ -9000,7 +8829,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                receivers.Add(runtimeReference.Receiver);
+                receivers.Add(runtimeReference);
             }
 
             return receivers;
@@ -9148,6 +8977,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return false;
+        }
+
+        private static bool IsSamePermissionScope(
+            SessionActivityIdentity activityIdentity,
+            ActivityCapabilityPermissionReceiverIdentity receiverIdentity)
+        {
+            return activityIdentity.IsValid &&
+                   receiverIdentity.IsValid &&
+                   string.Equals(activityIdentity.PipelineId, receiverIdentity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(activityIdentity.SessionId, receiverIdentity.SessionStateId, StringComparison.Ordinal) &&
+                   string.Equals(activityIdentity.ActivityId, receiverIdentity.ActivityId, StringComparison.Ordinal) &&
+                   activityIdentity.EntrySequence == receiverIdentity.EntrySequence;
         }
 
         private static bool TryResolveSupportingSnapshotRestoreEndpoint(
@@ -9913,7 +9754,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"Operation '{expectedKind}' requires stage '{SessionActivityStage.ActivityRunning}', but current stage is '{_state.CurrentStage}'.");
             }
 
-            if (!command.Identity.IsValid || !_state.CurrentIdentity.IsValid || command.Identity != _state.CurrentIdentity)
+            if (!command.Identity.IsValid || !_state.CurrentIdentity.IsValid || command.Identity.StageKey != _state.CurrentIdentity.StageKey)
             {
                 return RejectPauseCommand(
                     command,
@@ -10264,7 +10105,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityIdentity expected,
             string operation)
         {
-            if (expected.IsValid && command.Identity == expected)
+            if (expected.IsValid && command.Identity.StageKey == expected.StageKey)
             {
                 return true;
             }
@@ -10556,7 +10397,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityIdentity expectedIdentity = ResolveExpectedCommandIdentity(command.Kind);
-            if (expectedIdentity.IsValid && command.Identity == expectedIdentity)
+            if (expectedIdentity.IsValid && command.Identity.StageKey == expectedIdentity.StageKey)
             {
                 return false;
             }
@@ -11626,19 +11467,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return handoff;
         }
 
-        private static HashSet<string> BuildPlannedRouteSessionParticipantSet(string playerIds)
+        private static HashSet<string> BuildPlannedRouteSessionParticipantSet(IReadOnlyList<SessionParticipantId> participantIds)
         {
             HashSet<string> participants = new(StringComparer.Ordinal);
-            string normalized = Normalize(playerIds);
-            if (string.IsNullOrWhiteSpace(normalized))
+            if (participantIds == null || participantIds.Count == 0)
             {
                 return participants;
             }
 
-            string[] split = normalized.Split(',', StringSplitOptions.RemoveEmptyEntries);
-            for (int index = 0; index < split.Length; index++)
+            for (int index = 0; index < participantIds.Count; index++)
             {
-                string participantId = Normalize(split[index]);
+                string participantId = Normalize(participantIds[index].Value);
                 if (!string.IsNullOrWhiteSpace(participantId))
                 {
                     participants.Add(participantId);
@@ -11731,8 +11570,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
     }
 }
-
-
-
-
-

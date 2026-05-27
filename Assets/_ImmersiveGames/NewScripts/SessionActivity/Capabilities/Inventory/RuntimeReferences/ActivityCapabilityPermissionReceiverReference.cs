@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             string targetId,
             string componentPath,
             string permissionId,
+            ActivityCapabilityPermissionReceiverIdentity identity,
             IActivityCapabilityPermissionReceiver receiver)
         {
             CapabilityId = Normalize(capabilityId);
@@ -18,7 +19,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
             TargetId = Normalize(targetId);
             ComponentPath = Normalize(componentPath);
             PermissionId = Normalize(permissionId);
+            Identity = identity;
             Receiver = receiver;
+            ReceiverId = receiver?.ReceiverId ?? string.Empty;
         }
 
         public string CapabilityId { get; }
@@ -26,11 +29,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public string TargetId { get; }
         public string ComponentPath { get; }
         public string PermissionId { get; }
+        public ActivityCapabilityPermissionReceiverIdentity Identity { get; }
+        public string ReceiverId { get; }
         public IActivityCapabilityPermissionReceiver Receiver { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(CapabilityId) &&
             !string.IsNullOrWhiteSpace(PermissionId) &&
+            Identity.IsValid &&
+            !string.IsNullOrWhiteSpace(ReceiverId) &&
             Receiver != null;
 
         private static string Normalize(string value)

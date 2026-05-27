@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
@@ -374,6 +373,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         CreateLoadingFact(
                             loadingCommand,
                             SessionOperationalLoadingStage.LoadingStarted,
+                            SessionOperationalLoadingOutcomeKind.Started,
                             0f,
                             "Loading started",
                             "LoadingStarted"));
@@ -396,6 +396,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         CreateLoadingFact(
                             loadingCommand,
                             SessionOperationalLoadingStage.RoutePlanReady,
+                            SessionOperationalLoadingOutcomeKind.ProgressApplied,
                             0.10f,
                             "Route plan ready",
                             "RoutePlanReady"));
@@ -421,6 +422,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                             CreateLoadingFact(
                                 loadingCommand,
                                 SessionOperationalLoadingStage.FadeInCompleted,
+                                SessionOperationalLoadingOutcomeKind.ProgressApplied,
                                 0.20f,
                                 "Fade in completed",
                                 "FadeInCompleted"));
@@ -441,6 +443,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         CreateLoadingFact(
                             loadingCommand,
                             SessionOperationalLoadingStage.TransitionSkipped,
+                            SessionOperationalLoadingOutcomeKind.ProgressApplied,
                             0.20f,
                             "Transition skipped",
                             "TransitionSkipped"));
@@ -478,6 +481,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         CreateLoadingFact(
                             loadingCommand,
                             SessionOperationalLoadingStage.SceneCompositionCompleted,
+                            SessionOperationalLoadingOutcomeKind.ProgressApplied,
                             0.60f,
                             "Scene composition completed",
                             "SceneCompositionCompleted"));
@@ -606,6 +610,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         CreateLoadingFact(
                             loadingCommand,
                             SessionOperationalLoadingStage.MaterializationCompleted,
+                            SessionOperationalLoadingOutcomeKind.ProgressApplied,
                             0.80f,
                             "Materialization completed",
                             "MaterializationCompleted"));
@@ -623,6 +628,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         CreateLoadingFact(
                             loadingCommand,
                             SessionOperationalLoadingStage.OperationalRouteCompleted,
+                            SessionOperationalLoadingOutcomeKind.Completed,
                             1.0f,
                             "Operational route completed",
                             "OperationalRouteCompleted"));
@@ -647,6 +653,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                             CreateLoadingFact(
                                 loadingCommand,
                                 SessionOperationalLoadingStage.LoadingHidden,
+                                SessionOperationalLoadingOutcomeKind.Hidden,
                                 1.0f,
                                 "Loading hidden",
                                 "LoadingHidden"));
@@ -757,7 +764,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         playerPreparationResult.Snapshot.MaterializedPlayersCount,
                         playerPreparationResult.Snapshot.SkippedPlayersCount,
                         playerPreparationResult.Snapshot.PendingRequiredPlayersCount,
-                        FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries),
+                        BuildParticipantIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries),
                         BuildPlayerTechnicalPlanEntriesForHandoff(route));
 
                     SessionActivityEntryHandoff handoff = new(
@@ -808,6 +815,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                             CreateLoadingFact(
                                 loadingCommand,
                                 SessionOperationalLoadingStage.LoadingHidden,
+                                loadingCompleted ? SessionOperationalLoadingOutcomeKind.Hidden : SessionOperationalLoadingOutcomeKind.Failed,
                                 loadingCompleted ? 1.0f : 0.95f,
                                 loadingCompleted ? "Loading hidden" : "Loading hidden after failure",
                                 loadingCompleted ? "LoadingHidden" : "LoadingHiddenAfterFailure"));
@@ -1383,15 +1391,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"Stage '{stage}' ignored because the identity payload is incomplete.");
             }
 
-            if (!CanAcceptStage(
-                    stage,
-                    normalizedRouteOperationId,
-                    normalizedTransitionId,
-                    transitionSequence,
-                    normalizedRouteId,
-                    normalizedRouteProfileId,
-                    normalizedSource,
-                    normalizedReason))
+            SessionOperationalTransitionKey incomingTransitionKey = BuildTransitionKey(
+                normalizedRouteOperationId,
+                normalizedTransitionId,
+                transitionSequence,
+                normalizedRouteId,
+                normalizedRouteProfileId);
+            SessionOperationalStageKey incomingStageKey = new(incomingTransitionKey, stage);
+
+            if (!CanAcceptStage(incomingStageKey))
             {
                 return Reject(
                     SessionOperationalFactKind.IgnoredForeignOrStale,
@@ -1463,29 +1471,27 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return true;
         }
 
-        private bool CanAcceptStage(
-            SessionOperationalStage stage,
-            string routeOperationId,
-            string transitionId,
-            int transitionSequence,
-            string routeId,
-            string routeProfileId,
-            string source,
-            string reason)
+        private bool CanAcceptStage(SessionOperationalStageKey stageKey)
         {
-            if (!string.Equals(_state.SessionOperationalPipelineId, _sessionOperationalPipelineId, StringComparison.Ordinal) ||
-                !string.Equals(_state.RouteOperationId, routeOperationId, StringComparison.Ordinal) ||
-                !string.Equals(_state.TransitionId, transitionId, StringComparison.Ordinal) ||
-                _state.TransitionSequence != transitionSequence ||
-                !string.Equals(_state.RouteId, routeId, StringComparison.Ordinal) ||
-                !string.Equals(_state.RouteProfileId, routeProfileId, StringComparison.Ordinal))
+            if (!stageKey.IsValid)
+            {
+                return false;
+            }
+
+            SessionOperationalTransitionKey activeTransitionKey = BuildTransitionKey(
+                _state.RouteOperationId,
+                _state.TransitionId,
+                _state.TransitionSequence,
+                _state.RouteId,
+                _state.RouteProfileId);
+            if (stageKey.TransitionKey != activeTransitionKey)
             {
                 return false;
             }
 
             if (!_state.HasStarted)
             {
-                return stage == SessionOperationalStage.RouteOperationStarted;
+                return stageKey.Stage == SessionOperationalStage.RouteOperationStarted;
             }
 
             if (_state.HasCompleted)
@@ -1496,7 +1502,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             // - mesma identity já validada acima
             // - não aceita retrocesso
             // - não aceita duplicata do stage atual
-            return (int)stage > (int)_state.CurrentStage;
+            return (int)stageKey.Stage > (int)_state.CurrentStage;
+        }
+
+        private SessionOperationalTransitionKey BuildTransitionKey(
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string routeId,
+            string routeProfileId)
+        {
+            SessionOperationalRouteKey routeKey = new(
+                _sessionOperationalPipelineId,
+                routeId,
+                routeOperationId,
+                routeId,
+                routeProfileId,
+                routeSequence);
+            return new SessionOperationalTransitionKey(routeKey, transitionId);
         }
 
         private bool Reject(
@@ -1580,12 +1603,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static string BuildRouteOperationId(string routeIdentity, string activeScene, int sequence)
         {
-            return $"{Normalize(routeIdentity)}|{Normalize(activeScene)}|{sequence}";
+            return SessionOperationalObservableIdFormatter.BuildRouteOperationId(routeIdentity, activeScene, sequence);
         }
 
         private static string BuildTransitionId(string routeIdentity, string activeScene, int sequence)
         {
-            return $"{Normalize(routeIdentity)}|{Normalize(activeScene)}|{sequence}|sandbox";
+            return SessionOperationalObservableIdFormatter.BuildTransitionId(routeIdentity, activeScene, sequence);
         }
 
         private static ISceneCompositionAdapter ResolveRouteExecutorOrFail()
@@ -2354,7 +2377,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    "no_previous_route",
+                    RouteActivitySaveSkipKind.NoPreviousRoute,
                     "previous completed route snapshot ausente.",
                     source,
                     reason);
@@ -2369,7 +2392,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    "disabled_by_previous_route",
+                    RouteActivitySaveSkipKind.DisabledByPreviousRoute,
                     "save-on-exit desabilitado na politica da rota anterior.",
                     source,
                     reason);
@@ -2385,7 +2408,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    "no_activity_identity",
+                    RouteActivitySaveSkipKind.Unknown,
                     "activity identity da rota anterior ausente.",
                     source,
                     reason);
@@ -2401,7 +2424,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    "no_save_key",
+                    RouteActivitySaveSkipKind.Unknown,
                     "activity save key da rota anterior ausente.",
                     source,
                     reason);
@@ -2410,8 +2433,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!TryResolvePreviousActivitySnapshotPayload(previousCompletedRoute, out string activitySnapshotPayload, out RouteActivitySnapshotPayloadResolution payloadResolution))
             {
-                bool isCaptureFailed = IsSnapshotCaptureFailedReason(payloadResolution.FailureReason);
-                string skipReason = ResolveSnapshotPayloadSkipReason(payloadResolution.FailureReason);
+                bool isCaptureFailed = payloadResolution.FailureKind == RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed;
+                RouteActivitySaveSkipKind skipKind = ResolveSnapshotPayloadSkipReason(payloadResolution.FailureKind);
                 string checkpointStatus = isCaptureFailed ? "Failed" : "Waiting";
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
                     $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='{checkpointStatus}' activityIdentity='{Normalize(previousActivityIdentity)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' payloadObjectCount='0' targetIds='<none>' payloadSize='0' failureReason='{Normalize(payloadResolution.FailureReason)}'.",
@@ -2424,7 +2447,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         currentRouteOperationId,
                         currentTransitionId,
                         currentRouteSequence,
-                        skipReason,
+                        skipKind,
                         Normalize(payloadResolution.FailureReason),
                         source,
                         reason);
@@ -2437,7 +2460,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         currentRouteOperationId,
                         currentTransitionId,
                         currentRouteSequence,
-                        skipReason,
+                        skipKind,
                         Normalize(payloadResolution.FailureReason),
                         source,
                         reason);
@@ -2460,7 +2483,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    "no_activity_snapshot",
+                    RouteActivitySaveSkipKind.NoSnapshotPayload,
                     "snapshot da activity da rota anterior ausente.",
                     source,
                     reason);
@@ -2494,7 +2517,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    saveResult.SkipReason,
+                    saveResult.SkipKind,
                     saveResult.Detail,
                     source,
                     reason);
@@ -2528,7 +2551,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!command.ActivitySavePolicy.LoadActivitySaveOnEnter)
             {
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipReason='disabled_by_route' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{RouteActivitySaveSkipKind.DisabledByRoute}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(RouteActivitySaveSkipKind.DisabledByRoute)}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -2541,7 +2564,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Waiting' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' payloadObjectCount='0' targetIds='<none>' payloadSize='0'.",
                     DebugUtility.Colors.Info);
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipReason='no_current_snapshot' detail='snapshotPointerReason={Normalize(snapshotFailureReason)}' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{RouteActivitySaveSkipKind.NoCurrentSnapshot}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(RouteActivitySaveSkipKind.NoCurrentSnapshot)}' detail='snapshotPointerReason={Normalize(snapshotFailureReason)}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -2571,8 +2594,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (result.IsSkipped)
             {
-                if (string.Equals(Normalize(result.SkipReason), "no_snapshot", StringComparison.Ordinal) ||
-                    string.Equals(Normalize(result.SkipReason), "no_activity_snapshot", StringComparison.Ordinal))
+                if (result.FailureKind == RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing)
                 {
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
                         $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Waiting' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' payloadObjectCount='0' targetIds='<none>' payloadSize='0'.",
@@ -2580,7 +2602,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipReason='{Normalize(result.SkipReason)}' detail='{Normalize(result.Detail)}' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{result.SkipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(result.SkipKind)}' detail='{Normalize(result.Detail)}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -2592,14 +2614,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException(message);
             }
 
-            if (!TryParseLoadedSnapshotPayload(result.ActivitySnapshotPayload, out LoadedSessionActivitySnapshotPayload loadedPayload, out string parseFailureReason))
+            LoadedSessionActivitySnapshotPayloadParseResult parseResult =
+                LoadedSessionActivitySnapshotPayloadParser.Parse(result.ActivitySnapshotPayload, RouteActivitySnapshotSchemaId);
+            if (!parseResult.Succeeded)
             {
                 DebugUtility.LogError(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' payloadObjectCount='0' targetIds='<none>' payloadSize='0' failureReason='{Normalize(parseFailureReason)}'.");
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' payloadObjectCount='0' targetIds='<none>' payloadSize='0' failureKind='{parseResult.FailureKind}' failureReason='{Normalize(parseResult.FailureReason)}' detail='{Normalize(parseResult.Detail)}'.");
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] payload invalido no load-on-enter routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' failureReason='{Normalize(parseFailureReason)}'.");
+                    $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] payload invalido no load-on-enter routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' failureKind='{parseResult.FailureKind}' failureReason='{Normalize(parseResult.FailureReason)}'.");
             }
 
+            LoadedSessionActivitySnapshotPayload loadedPayload = parseResult.Payload;
             _pendingLoadedRouteActivitySnapshotPayload = new LoadedRouteActivitySnapshotPayloadContext(
                 Normalize(activityIdentity),
                 loadedPayload,
@@ -2623,13 +2648,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string currentRouteOperationId,
             string currentTransitionId,
             int currentRouteSequence,
-            string skipReason,
+            RouteActivitySaveSkipKind skipKind,
             string detail,
             string source,
             string reason)
         {
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveSkipped previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousCompletedRoute.ActivityIdentity)}' previousActivitySaveKey='{BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity)}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' skipReason='{Normalize(skipReason)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveSkipped previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousCompletedRoute.ActivityIdentity)}' previousActivitySaveKey='{BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity)}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' skipKind='{skipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(skipKind)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -2639,14 +2664,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string currentRouteOperationId,
             string currentTransitionId,
             int currentRouteSequence,
-            string failureReason,
+            RouteActivitySaveSkipKind failureKind,
             string detail,
             string source,
             string reason)
         {
             // Semantic failure: snapshot capture failed - this is NOT a normal skip but a failure condition
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveCaptureFailed previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousCompletedRoute.ActivityIdentity)}' previousActivitySaveKey='{BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity)}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' failureReason='{Normalize(failureReason)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveCaptureFailed previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousRouteOperationId='{previousCompletedRoute.RouteOperationId}' previousRouteSequence='{previousCompletedRoute.RouteSequence}' previousActivityIdentity='{Normalize(previousCompletedRoute.ActivityIdentity)}' previousActivitySaveKey='{BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity)}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' failureKind='{failureKind}' failureReason='{RouteActivitySaveSkipKindMapper.ToCode(failureKind)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Warning);
         }
 
@@ -2673,6 +2698,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     payloadObjectCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
+                    failureKind: RouteActivitySaveSnapshotFailureKind.NoPreviousRoute,
                     failureReason: "previous_route_invalid");
                 return false;
             }
@@ -2687,6 +2713,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     payloadObjectCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
+                    failureKind: RouteActivitySaveSnapshotFailureKind.NoCurrentActivity,
                     failureReason: "session_state_id_missing");
                 return false;
             }
@@ -2700,6 +2727,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     payloadObjectCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
+                    failureKind: RouteActivitySaveSnapshotFailureKind.SnapshotProviderUnavailable,
                     failureReason: "no_snapshot_provider");
                 return false;
             }
@@ -2709,7 +2737,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 out SessionActivitySnapshotPayload payload,
                 out string failureReason);
 
-            if (!resolved || !payload.IsValid)
+            if (!resolved)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
                     schemaId: string.Empty,
@@ -2718,7 +2746,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     payloadObjectCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
+                    failureKind: RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing,
                     failureReason: string.IsNullOrWhiteSpace(failureReason) ? "no_snapshot_payload" : Normalize(failureReason));
+                return false;
+            }
+
+            if (!payload.IsValid)
+            {
+                resolution = new RouteActivitySnapshotPayloadResolution(
+                    schemaId: string.Empty,
+                    sourceActivityId: string.Empty,
+                    sourceEntrySequence: 0,
+                    payloadObjectCount: 0,
+                    targetIds: string.Empty,
+                    payloadSize: 0,
+                    failureKind: RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed,
+                    failureReason: string.IsNullOrWhiteSpace(failureReason) ? "snapshot_capture_failed" : Normalize(failureReason));
                 return false;
             }
 
@@ -2732,6 +2775,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     payload.Objects.Count,
                     BuildTargetIdsLabel(payload.Objects),
                     0,
+                    RouteActivitySaveSnapshotFailureKind.SnapshotPayloadInvalid,
                     "snapshot_payload_serialization_failed");
                 return false;
             }
@@ -2743,31 +2787,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 payload.Objects.Count,
                 BuildTargetIdsLabel(payload.Objects),
                 activitySnapshotPayload.Length,
+                RouteActivitySaveSnapshotFailureKind.None,
                 "resolved");
             return true;
         }
 
-        private static string ResolveSnapshotPayloadSkipReason(string failureReason)
+        private static RouteActivitySaveSkipKind ResolveSnapshotPayloadSkipReason(RouteActivitySaveSnapshotFailureKind failureKind)
         {
-            string normalized = Normalize(failureReason);
-            if (string.Equals(normalized, "no_snapshot_provider", StringComparison.Ordinal))
+            if (failureKind == RouteActivitySaveSnapshotFailureKind.SnapshotProviderUnavailable)
             {
-                return "no_snapshot_provider";
+                return RouteActivitySaveSkipKind.NoSnapshotProvider;
             }
 
-            if (IsSnapshotCaptureFailedReason(normalized))
+            if (failureKind == RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed)
             {
-                return "snapshot_capture_failed";
+                return RouteActivitySaveSkipKind.SnapshotCaptureFailed;
             }
 
-            return "no_snapshot_payload";
-        }
+            if (failureKind == RouteActivitySaveSnapshotFailureKind.SnapshotPayloadInvalid)
+            {
+                return RouteActivitySaveSkipKind.SnapshotPayloadInvalid;
+            }
 
-        private static bool IsSnapshotCaptureFailedReason(string failureReason)
-        {
-            string normalized = Normalize(failureReason);
-            return normalized.StartsWith("snapshot_capture_failed", StringComparison.Ordinal) ||
-                   normalized.Contains("target_transform_missing", StringComparison.Ordinal);
+            return RouteActivitySaveSkipKind.NoSnapshotPayload;
         }
 
         private static string SerializeSnapshotPayload(SessionActivitySnapshotPayload payload)
@@ -2874,103 +2916,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return string.Join(",", targetIds);
         }
 
-        private static bool TryParseLoadedSnapshotPayload(
-            string payload,
-            out LoadedSessionActivitySnapshotPayload loadedPayload,
-            out string failureReason)
-        {
-            loadedPayload = default;
-            string normalizedPayload = Normalize(payload);
-            if (string.IsNullOrWhiteSpace(normalizedPayload))
-            {
-                failureReason = "payload_empty";
-                return false;
-            }
-
-            string schemaId = ExtractJsonStringValue(normalizedPayload, "schemaId");
-            if (!string.Equals(schemaId, RouteActivitySnapshotSchemaId, StringComparison.Ordinal))
-            {
-                failureReason = $"schema_id_invalid:{Normalize(schemaId)}";
-                return false;
-            }
-
-            string sessionStateId = ExtractJsonStringValue(normalizedPayload, "sessionStateId");
-            string activityId = ExtractJsonStringValue(normalizedPayload, "activityId");
-            int sourceEntrySequence = ExtractJsonIntValue(normalizedPayload, "entrySequence");
-            if (string.IsNullOrWhiteSpace(sessionStateId) ||
-                string.IsNullOrWhiteSpace(activityId) ||
-                sourceEntrySequence <= 0)
-            {
-                failureReason = "payload_header_invalid";
-                return false;
-            }
-
-            MatchCollection objectMatches = Regex.Matches(
-                normalizedPayload,
-                "\\{\\s*\"targetId\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"position\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"y\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"z\"\\s*:\\s*([-0-9.]+)\\s*\\}\\s*,\\s*\"rotation\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"y\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"z\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"w\"\\s*:\\s*([-0-9.]+)\\s*\\}\\s*,\\s*\"scale\"\\s*:\\s*\\{\\s*\"x\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"y\"\\s*:\\s*([-0-9.]+)\\s*,\\s*\"z\"\\s*:\\s*([-0-9.]+)\\s*\\}\\s*\\}");
-            if (objectMatches.Count == 0)
-            {
-                failureReason = "payload_objects_missing";
-                return false;
-            }
-
-            List<LoadedSessionActivitySnapshotPayloadObject> objects = new(objectMatches.Count);
-            for (int index = 0; index < objectMatches.Count; index++)
-            {
-                Match objectMatch = objectMatches[index];
-                string targetId = Normalize(objectMatch.Groups[1].Value);
-                if (string.IsNullOrWhiteSpace(targetId))
-                {
-                    failureReason = "payload_target_id_invalid";
-                    return false;
-                }
-
-                if (!TryParseFloatInvariant(objectMatch.Groups[2].Value, out float positionX) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[3].Value, out float positionY) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[4].Value, out float positionZ) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[5].Value, out float rotationX) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[6].Value, out float rotationY) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[7].Value, out float rotationZ) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[8].Value, out float rotationW) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[9].Value, out float scaleX) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[10].Value, out float scaleY) ||
-                    !TryParseFloatInvariant(objectMatch.Groups[11].Value, out float scaleZ))
-                {
-                    failureReason = "payload_numeric_parse_failed";
-                    return false;
-                }
-
-                objects.Add(new LoadedSessionActivitySnapshotPayloadObject(
-                    targetId,
-                    positionX,
-                    positionY,
-                    positionZ,
-                    rotationX,
-                    rotationY,
-                    rotationZ,
-                    rotationW,
-                    scaleX,
-                    scaleY,
-                    scaleZ));
-            }
-
-            loadedPayload = new LoadedSessionActivitySnapshotPayload(
-                schemaId,
-                sessionStateId,
-                activityId,
-                sourceEntrySequence,
-                objects);
-            if (!loadedPayload.IsValid)
-            {
-                failureReason = "loaded_payload_invalid";
-                loadedPayload = default;
-                return false;
-            }
-
-            failureReason = "parsed";
-            return true;
-        }
-
         private static string BuildLoadedSnapshotTargetIds(IReadOnlyList<LoadedSessionActivitySnapshotPayloadObject> objects)
         {
             if (objects == null || objects.Count == 0)
@@ -2991,34 +2936,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return targetIds.Count == 0 ? "<none>" : string.Join(",", targetIds);
         }
 
-        private static string ExtractJsonStringValue(string payload, string key)
-        {
-            Match match = Regex.Match(payload, $"\"{Regex.Escape(key)}\"\\s*:\\s*\"([^\"]*)\"");
-            return match.Success ? Normalize(match.Groups[1].Value) : string.Empty;
-        }
-
-        private static int ExtractJsonIntValue(string payload, string key)
-        {
-            Match match = Regex.Match(payload, $"\"{Regex.Escape(key)}\"\\s*:\\s*(\\d+)");
-            if (!match.Success)
-            {
-                return 0;
-            }
-
-            return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsed)
-                ? parsed
-                : 0;
-        }
-
-        private static bool TryParseFloatInvariant(string value, out float parsed)
-        {
-            return float.TryParse(
-                value,
-                NumberStyles.Float | NumberStyles.AllowLeadingSign,
-                CultureInfo.InvariantCulture,
-                out parsed);
-        }
-
         private readonly struct RouteActivitySnapshotPayloadResolution
         {
             public RouteActivitySnapshotPayloadResolution(
@@ -3028,6 +2945,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 int payloadObjectCount,
                 string targetIds,
                 int payloadSize,
+                RouteActivitySaveSnapshotFailureKind failureKind,
                 string failureReason)
             {
                 SchemaId = Normalize(schemaId);
@@ -3036,6 +2954,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 PayloadObjectCount = payloadObjectCount < 0 ? 0 : payloadObjectCount;
                 TargetIds = Normalize(targetIds);
                 PayloadSize = payloadSize < 0 ? 0 : payloadSize;
+                FailureKind = failureKind;
                 FailureReason = Normalize(failureReason);
             }
 
@@ -3045,6 +2964,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             public int PayloadObjectCount { get; }
             public string TargetIds { get; }
             public int PayloadSize { get; }
+            public RouteActivitySaveSnapshotFailureKind FailureKind { get; }
             public string FailureReason { get; }
         }
 
@@ -3240,6 +3160,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return playerIds.Count == 0 ? "<none>" : string.Join(", ", playerIds);
         }
 
+        private static IReadOnlyList<SessionParticipantId> BuildParticipantIdsForHandoff(IReadOnlyList<PlayerPlannedEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return Array.Empty<SessionParticipantId>();
+            }
+
+            List<SessionParticipantId> participantIds = new(entries.Count);
+            HashSet<string> unique = new(StringComparer.Ordinal);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                SessionParticipantId participantId = new(entries[index].PlayerId);
+                if (!participantId.IsValid || !unique.Add(participantId.Value))
+                {
+                    continue;
+                }
+
+                participantIds.Add(participantId);
+            }
+
+            return participantIds;
+        }
+
         private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntriesForHandoff(OperationalRouteAsset route)
         {
             if (route == null || route.RouteParticipantSetDefinition == null)
@@ -3352,11 +3295,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private static SessionOperationalLoadingFact CreateLoadingFact(
             SessionOperationalLoadingCommand command,
             SessionOperationalLoadingStage stage,
+            SessionOperationalLoadingOutcomeKind outcomeKind,
             float normalizedProgress,
             string stepLabel,
             string message)
         {
-            return new SessionOperationalLoadingFact(command, stage, normalizedProgress, stepLabel, message);
+            return new SessionOperationalLoadingFact(command, stage, outcomeKind, normalizedProgress, stepLabel, message);
         }
 
         private static void LogLoadingProgress(

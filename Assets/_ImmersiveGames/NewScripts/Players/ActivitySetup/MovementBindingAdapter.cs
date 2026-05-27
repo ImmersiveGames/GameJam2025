@@ -114,7 +114,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                 ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
                 if (IsRejected(fact))
                 {
-                    throw new InvalidOperationException($"Movement binding permission publish rejected outcome='{fact.Outcome}' playerActorId='{requirement.PlayerActorId}'.");
+                    throw new InvalidOperationException($"Movement binding permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{requirement.PlayerActorId}'.");
                 }
 
                 records.Add(new MovementBindingRecord(requirement, bound: true,
@@ -127,8 +127,16 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         private static bool IsRejected(ActivityCapabilityPermissionFact fact)
         {
             return fact.IsValid &&
-                !string.IsNullOrWhiteSpace(fact.Outcome) &&
-                fact.Outcome.StartsWith("rejected", StringComparison.Ordinal);
+                IsRejected(fact.OutcomeKind);
+        }
+
+        private static bool IsRejected(PermissionOutcomeKind outcomeKind)
+        {
+            return outcomeKind == PermissionOutcomeKind.RejectedInvalidCommand ||
+                   outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
+                   outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
+                   outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
+                   outcomeKind == PermissionOutcomeKind.Failed;
         }
 
         private static PlayerInput ResolveBoundPlayerInputOrFail(GameObject actorInstance, MovementBindingRequirement requirement)

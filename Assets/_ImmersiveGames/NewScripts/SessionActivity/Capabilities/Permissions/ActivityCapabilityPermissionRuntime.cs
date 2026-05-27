@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -19,15 +20,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
         public ActivityCapabilityPermissionSnapshot Snapshot => _snapshot;
 
-        public void SetActiveIdentity(string pipelineId, string sessionStateId, string activityId, int entrySequence)
+        public void BeginPermissionScope(string pipelineId, string sessionStateId, string activityId, int entrySequence)
         {
-            _activePipelineId = Normalize(pipelineId);
-            _activeSessionStateId = Normalize(sessionStateId);
-            _activeActivityId = Normalize(activityId);
-            _activeEntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            SetActiveIdentity(pipelineId, sessionStateId, activityId, entrySequence);
         }
 
-        public void ReplaceReceivers(IReadOnlyList<IActivityCapabilityPermissionReceiver> receivers)
+        public void SetActiveIdentity(string pipelineId, string sessionStateId, string activityId, int entrySequence)
+        {
+            string nextPipelineId = Normalize(pipelineId);
+            string nextSessionStateId = Normalize(sessionStateId);
+            string nextActivityId = Normalize(activityId);
+            int nextEntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            bool identityChanged =
+                !string.Equals(_activePipelineId, nextPipelineId, StringComparison.Ordinal) ||
+                !string.Equals(_activeSessionStateId, nextSessionStateId, StringComparison.Ordinal) ||
+                !string.Equals(_activeActivityId, nextActivityId, StringComparison.Ordinal) ||
+                _activeEntrySequence != nextEntrySequence;
+
+            _activePipelineId = nextPipelineId;
+            _activeSessionStateId = nextSessionStateId;
+            _activeActivityId = nextActivityId;
+            _activeEntrySequence = nextEntrySequence;
+
+            if (identityChanged)
+            {
+                _bindingsByKey.Clear();
+                _receivers.Clear();
+            }
+        }
+
+        public void ReplaceReceivers(IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers)
         {
             _receivers.Clear();
             if (receivers == null || receivers.Count == 0)
@@ -37,19 +59,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             for (int index = 0; index < receivers.Count; index++)
             {
-                IActivityCapabilityPermissionReceiver receiver = receivers[index];
-                if (receiver == null)
+                ActivityCapabilityPermissionReceiverReference reference = receivers[index];
+                if (reference == null ||
+                    !reference.IsValid ||
+                    reference.Receiver == null)
                 {
                     continue;
                 }
 
-                string receiverId = Normalize(receiver.ReceiverId);
+                string receiverId = Normalize(reference.ReceiverId);
                 if (string.IsNullOrWhiteSpace(receiverId) || _receivers.ContainsKey(receiverId))
                 {
                     continue;
                 }
 
-                _receivers.Add(receiverId, receiver);
+                if (!MatchesActiveIdentity(reference.Identity))
+                {
+                    DebugUtility.Log(
+                        typeof(ActivityCapabilityPermissionRuntime),
+                        $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverRejectedForeignIdentity' receiverId='{receiverId}' receiverIdentity='{reference.Identity}' activePipelineId='{_activePipelineId}' activeSessionStateId='{_activeSessionStateId}' activeActivityId='{_activeActivityId}' activeEntrySequence='{_activeEntrySequence}'",
+                        DebugUtility.Colors.Warning);
+                    continue;
+                }
+
+                _receivers.Add(receiverId, reference.Receiver);
                 DebugUtility.Log(
                     typeof(ActivityCapabilityPermissionRuntime),
                     $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverRegistered' receiverId='{receiverId}'",
@@ -66,21 +99,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
             if (!command.IsValid)
             {
-                ActivityCapabilityPermissionFact rejectedInvalid = SetSnapshotAndReturnFact(command, "rejected_invalid_command", "Permission command is invalid.");
-                LogOutcome("ActivityCapabilityPermissionRejectedStaleOrForeign", rejectedInvalid);
+                ActivityCapabilityPermissionFact rejectedInvalid = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedInvalidCommand, "rejected_invalid_command", "Permission command is invalid.");
+                LogOutcome("ActivityCapabilityPermissionRejectedInvalidCommand", rejectedInvalid);
                 return rejectedInvalid;
             }
 
             if (!MatchesActiveIdentity(command))
             {
-                ActivityCapabilityPermissionFact rejectedStale = SetSnapshotAndReturnFact(command, "rejected_stale_or_foreign", "Permission command identity does not match active identity.");
+                ActivityCapabilityPermissionFact rejectedStale = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedStaleIdentity, "rejected_stale_or_foreign", "Permission command identity does not match active identity.");
                 LogOutcome("ActivityCapabilityPermissionRejectedStaleOrForeign", rejectedStale);
                 return rejectedStale;
             }
 
             if (RequiresReceiverForFunctionalSuccess(command) && _receivers.Count <= 0)
             {
-                ActivityCapabilityPermissionFact rejectedMissingReceiver = SetSnapshotAndReturnFact(command, "rejected_missing_required_receiver", "Permission command requires at least one registered receiver.");
+                ActivityCapabilityPermissionFact rejectedMissingReceiver = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.RejectedMissingRequiredReceiver, "rejected_missing_required_receiver", "Permission command requires at least one registered receiver.");
                 LogOutcome("ActivityCapabilityPermissionRejectedMissingReceiver", rejectedMissingReceiver);
                 return rejectedMissingReceiver;
             }
@@ -89,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             if (_bindingsByKey.TryGetValue(key, out ActivityCapabilityPermissionBinding current) &&
                 current.State == command.State)
             {
-                ActivityCapabilityPermissionFact idempotent = SetSnapshotAndReturnFact(command, "accepted_idempotent_noop", "Permission command is idempotent; no state change applied.");
+                ActivityCapabilityPermissionFact idempotent = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.AcceptedIdempotentNoop, "accepted_idempotent_noop", "Permission command is idempotent; no state change applied.");
                 LogOutcome("ActivityCapabilityPermissionSkippedIdempotent", idempotent);
                 return idempotent;
             }
@@ -98,16 +131,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 command.PermissionId,
                 command.Scope,
                 command.State,
-                command.PipelineId,
-                command.SessionStateId,
-                command.ActivityId,
-                command.EntrySequence,
                 receiverId: "runtime.unbound",
                 command.TargetId);
 
             _bindingsByKey[key] = updatedBinding;
 
-            ActivityCapabilityPermissionFact fact = SetSnapshotAndReturnFact(command, "accepted_state_changed", "Permission state updated.");
+            ActivityCapabilityPermissionFact fact = SetSnapshotAndReturnFact(command, PermissionOutcomeKind.AcceptedStateChanged, "accepted_state_changed", "Permission state updated.");
             LogOutcome("ActivityCapabilityPermissionApplied", fact);
             NotifyReceivers(fact);
             return fact;
@@ -125,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
                 DebugUtility.Log(
                     typeof(ActivityCapabilityPermissionRuntime),
-                    $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcome='{fact.Outcome}' receiverId='{pair.Key}' playerActorId='{fact.Command.TargetId}' playerSlotId='' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                    $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='{pair.Key}' playerActorId='{fact.Command.TargetId}' playerSlotId='' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                     DebugUtility.Colors.Info);
                 receiver.OnPermissionChanged(fact);
             }
@@ -135,16 +164,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             DebugUtility.Log(
                 typeof(ActivityCapabilityPermissionRuntime),
-                $"[OBS][ActivityCapabilityPermission] event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcome='{fact.Outcome}' receiverId='runtime.unbound' playerActorId='{fact.Command.TargetId}' playerSlotId='' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                $"[OBS][ActivityCapabilityPermission] event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='runtime.unbound' playerActorId='{fact.Command.TargetId}' playerSlotId='' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                 DebugUtility.Colors.Info);
         }
 
         private ActivityCapabilityPermissionFact SetSnapshotAndReturnFact(
             ActivityCapabilityPermissionCommand command,
-            string outcome,
+            PermissionOutcomeKind outcomeKind,
+            string outcomeCode,
             string message)
         {
-            ActivityCapabilityPermissionFact fact = new(command, outcome, message);
+            ActivityCapabilityPermissionFact fact = new(command, outcomeKind, outcomeCode, message);
             _snapshot = new ActivityCapabilityPermissionSnapshot(
                 fact,
                 BuildBindingsSnapshot());
@@ -186,32 +216,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                    command.PermissionId == ActivityCapabilityPermissionId.ActivityGameplayControl;
         }
 
+        private bool MatchesActiveIdentity(ActivityCapabilityPermissionReceiverIdentity identity)
+        {
+            return identity.IsValid &&
+                   string.Equals(identity.PipelineId, _activePipelineId, StringComparison.Ordinal) &&
+                   string.Equals(identity.SessionStateId, _activeSessionStateId, StringComparison.Ordinal) &&
+                   string.Equals(identity.ActivityId, _activeActivityId, StringComparison.Ordinal) &&
+                   identity.EntrySequence == _activeEntrySequence;
+        }
+
         private readonly struct PermissionKey : IEquatable<PermissionKey>
         {
             private PermissionKey(
                 ActivityCapabilityPermissionId permissionId,
                 ActivityCapabilityPermissionScope scope,
-                string pipelineId,
-                string sessionStateId,
-                string activityId,
-                int entrySequence,
                 string targetId)
             {
                 PermissionId = permissionId;
                 Scope = scope;
-                PipelineId = pipelineId;
-                SessionStateId = sessionStateId;
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
                 TargetId = targetId;
             }
 
             private ActivityCapabilityPermissionId PermissionId { get; }
             private ActivityCapabilityPermissionScope Scope { get; }
-            private string PipelineId { get; }
-            private string SessionStateId { get; }
-            private string ActivityId { get; }
-            private int EntrySequence { get; }
             private string TargetId { get; }
 
             public static PermissionKey From(ActivityCapabilityPermissionCommand command)
@@ -219,10 +246,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 return new PermissionKey(
                     command.PermissionId,
                     command.Scope,
-                    command.PipelineId,
-                    command.SessionStateId,
-                    command.ActivityId,
-                    command.EntrySequence,
                     command.TargetId);
             }
 
@@ -230,10 +253,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             {
                 return PermissionId == other.PermissionId &&
                        Scope == other.Scope &&
-                       string.Equals(PipelineId, other.PipelineId, StringComparison.Ordinal) &&
-                       string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
-                       string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
-                       EntrySequence == other.EntrySequence &&
                        string.Equals(TargetId, other.TargetId, StringComparison.Ordinal);
             }
 
@@ -247,10 +266,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 return HashCode.Combine(
                     PermissionId,
                     Scope,
-                    PipelineId ?? string.Empty,
-                    SessionStateId ?? string.Empty,
-                    ActivityId ?? string.Empty,
-                    EntrySequence,
                     TargetId ?? string.Empty);
             }
         }

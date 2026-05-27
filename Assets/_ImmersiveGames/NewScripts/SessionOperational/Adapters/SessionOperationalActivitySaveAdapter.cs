@@ -35,6 +35,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.NoCurrentActivity,
+                    RouteActivitySaveSkipKind.Unknown,
                     "no_activity_identity",
                     false,
                     "activity identity obrigatoria ausente para load-on-enter.");
@@ -45,6 +47,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.UnknownFailure,
+                    RouteActivitySaveSkipKind.Unknown,
                     "no_save_key",
                     false,
                     "activity save key obrigatoria ausente para load-on-enter.");
@@ -70,6 +74,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing,
+                    RouteActivitySaveSkipKind.NoSnapshotPayload,
                     "no_snapshot",
                     false,
                     $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' loadReason='{Normalize(loadReason)}'");
@@ -87,6 +93,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveLoadResult(
                     RouteActivitySaveLoadOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing,
+                    RouteActivitySaveSkipKind.NoSnapshotPayload,
                     "no_activity_snapshot",
                     false,
                     $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' detail='snapshot payload vazio para save key.'");
@@ -94,6 +102,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             return new RouteActivitySaveLoadResult(
                 RouteActivitySaveLoadOutcomeKind.Loaded,
+                RouteActivitySaveSnapshotFailureKind.None,
+                RouteActivitySaveSkipKind.None,
                 string.Empty,
                 true,
                 $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{loadResult.SchemaVersion}' revision='{loadResult.Revision}' entriesCount='{loadResult.Entries?.Count ?? 0}'",
@@ -113,6 +123,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.NoCurrentActivity,
+                    RouteActivitySaveSkipKind.Unknown,
                     "no_activity_identity",
                     false,
                     "activity identity obrigatoria ausente para save-on-exit.");
@@ -123,6 +135,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.UnknownFailure,
+                    RouteActivitySaveSkipKind.Unknown,
                     "no_save_key",
                     false,
                     "activity save key obrigatoria ausente para save-on-exit.");
@@ -133,6 +147,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
+                    RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing,
+                    RouteActivitySaveSkipKind.NoSnapshotPayload,
                     "no_activity_snapshot",
                     false,
                     "activity snapshot payload obrigatorio ausente para save-on-exit.");
@@ -166,6 +182,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             return new RouteActivitySaveSaveResult(
                 RouteActivitySaveSaveOutcomeKind.Saved,
+                RouteActivitySaveSnapshotFailureKind.None,
+                RouteActivitySaveSkipKind.None,
                 string.Empty,
                 true,
                 $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{saveResult.SchemaVersion}' revision='{saveResult.Revision}' entriesCount='{saveResult.Entries?.Count ?? 0}'");

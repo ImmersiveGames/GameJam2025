@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
-                string ownerPath = BuildTransformPath(target.ActorRoot.transform);
+                string ownerPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform);
                 string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(
                     inventoryId,
                     ActivityCapabilityOwnerKind.PlayerActor,
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         continue;
                     }
 
-                    string componentPath = BuildTransformPath(controller.transform);
+                    string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(controller.transform);
                     string componentType = controller.GetType().FullName ?? controller.GetType().Name;
                     string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
                         inventoryId,
@@ -78,21 +78,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     }
 
                     string permissionToken = ActivityCapabilityPermissionIds.ActivityGameplayControl;
-                    string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
+                    ActivityCapabilityPermissionReceiverIdentity receiverIdentity = new(
                         context.Identity.PipelineId,
                         context.Identity.SessionId,
                         context.Identity.ActivityId,
                         context.Identity.EntrySequence,
                         target.PlayerActorId,
                         target.PlayerSlotId);
+                    string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
+                        receiverIdentity);
 
                     PlayerMovementPermissionReceiver receiver = new(
                         controller,
                         receiverId,
-                        context.Identity.PipelineId,
-                        context.Identity.SessionId,
-                        context.Identity.ActivityId,
-                        context.Identity.EntrySequence,
                         target.PlayerActorId,
                         target.PlayerSlotId);
 
@@ -119,29 +117,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         target.PlayerActorId,
                         componentPath,
                         permissionToken,
+                        receiverIdentity,
                         receiver));
                 }
             }
 
             return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
-        }
-
-        private static string BuildTransformPath(UnityEngine.Transform target)
-        {
-            if (target == null)
-            {
-                return "<null>";
-            }
-
-            string path = target.name;
-            UnityEngine.Transform current = target.parent;
-            while (current != null)
-            {
-                path = $"{current.name}/{path}";
-                current = current.parent;
-            }
-
-            return path;
         }
     }
 

@@ -1,33 +1,10 @@
-# ADRs — Base 2.0
+# ADRs — Base 1.1 e Base 1.2
 
-Este diretório mantém a fonte normativa viva da arquitetura atual do projeto.
-
-A norma ativa atual é:
-
-1. **ADR-2.0-0001** — Capability Discovery e Activity Capability Inventory
-
-ADRs da Base 1.1 e Base 1.2 permanecem como histórico funcional e evidência de checkpoints, mas não são mais fonte normativa ativa quando conflitarem com o ADR-2.0-0001.
-
----
+Este diretório mantém a fonte normativa viva da Base 1.1 e os ADRs ativos da Base 1.2 — Actors Convergence.
 
 ## Fonte normativa atual
 
-### Base 2.0
-
-- **ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory**
-  - Define `ActivityCapabilityInventory` como direção normativa.
-  - Reclassifica Base 1.1 e Base 1.2 como histórico funcional.
-  - Congela a regra: descriptor descreve, runtime reference executa, inventory conecta por `capabilityId`.
-  - Congela `ActivityObject` consolidado via inventory.
-  - Congela `Permission/Movement` consolidado via inventory.
-
----
-
-## Histórico funcional preservado
-
-Os ADRs abaixo continuam úteis como evidência e intenção funcional, mas são históricos:
-
-### Base 1.1 — Pipeline Convergence / Convergência para Pipelines Determinísticos
+ADRs vivos:
 
 1. **ADR-0001** — Base 1.1: Pipeline Convergence, Identidade Explícita e Isolamento contra Foreign Events
 2. **ADR-0002** — Run Pipeline Canonical e Deactivation/Continuity
@@ -44,152 +21,196 @@ Os ADRs abaixo continuam úteis como evidência e intenção funcional, mas são
 13. **ADR-0013** — Camera Presentation Runtime e Activity Camera Director
 14. **ADR-0014** — ActivityContent, WindowTemplateLibrary e ActivityEntryPipeline
 
-### Base 1.2 — Actors Convergence / Convergência de Atores
+ADRs anteriores são histórico apenas. Em conflito, prevalece a Base 1.1.
+
+
+---
+
+## Base 1.2 — Actors Convergence / Convergência de Atores
+
+A Base 1.2 usa a Base 1.1 como fundação normativa congelada. As decisões da Base 1.2 evoluem atores, participantes e capabilities sem contradizer o contrato da Base 1.1.
+
+ADRs vivos da Base 1.2:
 
 1. **ADR-1.2-0001** — Actor Presentation System e Migração do Legacy Skin System
 2. **ADR-1.2-0002** — NonPlayerActor Scene-Authored e ActorPresentation MVP
 3. **ADR-1.2-0003** — Typed Identity e Authoring References
 4. **ADR-1.2-0004** — ActorAttributes como ActorCapability
 5. **ADR-1.2-0005** — SessionActivityPipeline Decomposition e Capability Stages
+6. **ADR-1.2-0006** — ActivityCapabilityPermission e Reação Local de Capabilities
+7. **ADR-1.2-0007** — Capability Discovery e Activity Capability Inventory
+
+### Checkpoint congelado da Base 1.2
+
+O corte atual da Base 1.2 registra:
+
+```text
+SessionActivityPipeline Decomposition — Functional Freeze
+Status: PASS funcional
+```
+
+Fases fechadas por smoke de caminho feliz:
+
+```text
+ActorAttributes — PASS
+ActorPresentation — PASS
+NonPlayerActor — PASS
+PlayerActor/Input/Movement/Camera — PASS
+ActivityObject Entry — PASS
+ActivityObject Exit — PASS
+ActivityCapabilityPermission local reaction — PASS
+ActivityCapabilityInventory functional consumers — PASS
+```
+
+Decisão explícita:
+
+```text
+não mover stages internos para arquivos próprios agora
+não arrumar a organização física antes do freeze
+não transformar organização provisória em shape final
+```
+
+A separação física dos stages internos fica como dívida deliberada para fase própria posterior, sem mudança semântica e com smoke completo de não regressão.
 
 ---
+
+
+### Nota de higiene documental
+
+O arquivo antigo `ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory` deve ser removido ou tratado como rascunho histórico, porque a decisão ativa foi reconduzida para:
+
+```text
+ADR-1.2-0007 — Capability Discovery e Activity Capability Inventory
+```
+
+A Base 1.2 não abre Base 2.0 neste corte.
+
 
 ## Precedência normativa
 
-Em conflito, prevalece:
-
-```text
-ADR-2.0-0001 — Capability Discovery e Activity Capability Inventory
-```
-
-Regras atuais:
-
-- Base 1.1 e Base 1.2 são baseline histórico funcional.
-- `SessionOperationalPipeline` e `SessionActivityPipeline` continuam importantes como evidência de lifecycle validado, mas não devem crescer como índice monolítico de capabilities.
-- O pipeline decide ordem macro, lifecycle, identity, policies e handoffs.
-- Módulos fornecem scanners/validators/adapters pequenos por domínio.
-- Componentes locais declaram capabilities por contrato/interface.
-- `ActivityCapabilityInventory` registra capabilities por `Pipeline Identity`.
-- `ActivityCapabilityDescriptor` descreve.
-- `RuntimeReference` tipada executa.
-- Componentes reagem localmente.
-- Não criar fallback silencioso.
-- Não manter dois owners ativos para a mesma capability.
+- ADR-0001 a ADR-0008: fundamentos estruturais da Base 1.1.
+- ADR-0009 a ADR-0014: checkpoints normativos aceitos/congelados/implementados.
+- Ownership não é decidido por conveniência operacional.
 - `foreign/stale events` não podem alterar pipeline ativo.
+- Config obrigatória quebrada deve falhar explicitamente.
+- Não criar fallback silencioso, compat paralelo ou trilho fantasma.
 
 ---
 
-## Modelo conceitual ativo
+## Conceitos chave
+
+### Pipelines
+
+- **Run Pipeline**: direção macro normativa para run, deactivation e continuity. No checkpoint atual do Base11Sandbox, não está materializado e não é pendência ativa. Reabrir somente quando houver run concreta com `RunResult`, `RunDecision`, `PostRun` ou decisão própria de continuidade/retry/exit/save de run.
+- **Session Operational Pipeline**: orquestra rota, transição operacional, setup operacional, save/load de rota/activity e handoff inicial de sessão.
+- **Session Activity Pipeline**: orquestra lifecycle local de Activity, activation, running, deactivation, restart, transition e route-exit.
+
+### Separação de responsabilidades
+
+### Matriz normativa de escopo — Activity, Actor, Object e Gameplay local
+
+A Base 1.2 congela a seguinte separação para evitar que `SessionActivityPipeline`, `ActivityEntryPipeline`, `Actor` e `ActivityObject` sejam tratados como o mesmo owner:
+
+| Escopo | Responsabilidade | Não decide |
+|---|---|---|
+| `Activity` | ciclo determinístico, entry, setup order, readiness, reset/restore/release timing, activation/deactivation, transition, restart e route-exit local | comportamento interno de actor/objeto |
+| `Actor` | identidade, participation, materialização/retention/release como participante e exposição de `ActorCapability`/`ActorEndpoint` | lifecycle global da Activity ou rota |
+| `ActivityObject` | participação como objeto/contributor da Activity, endpoints locais de reset/snapshot/restore/release e estado próprio | lifecycle da Activity ou identidade de Actor por padrão |
+| `ActorCapability` / `ObjectCapability` | comportamento local, runtime state local, facts locais e aplicação de comandos recebidos | ordem macro, handoff, route-exit ou save timing |
+| Gameplay local | relações moment-to-moment entre objetos/actors/capabilities, como dano, heal, stamina, interaction e reação local | pipeline lifecycle, salvo quando virar policy/readiness/reset/snapshot/release |
+
+Regra normativa:
 
 ```text
-Módulo declara o que sabe consumir.
-Componente declara o que oferece.
-Pipeline faz a triagem determinística.
-Inventory registra o resultado por identity.
-Stages consomem o inventory.
-Adapters executam side-effects comandados.
-Componentes reagem localmente.
+Pipeline decide quando e em qual ordem.
+Capability local decide como aplicar seu próprio comportamento.
+ActivityObject não é Actor automaticamente.
+Actor não é ActivityObject automaticamente.
+PlayerActor e NonPlayerActor convergem como Actors com policies/capabilities diferentes, não como lifecycles paralelos.
 ```
+
+Pergunta obrigatória antes de criar novo stage, command ou adapter:
+
+```text
+Qual pipeline é dono desta decisão?
+A decisão é lifecycle/policy/readiness ou é reação local da instância?
+```
+
+- **Módulos** produzem `Pipeline Facts` ou `Pipeline Commands`.
+- **Pipelines** decidem ordem, lifecycle, policy e handoffs.
+- **Adapters** executam side-effects comandados.
+
+### Identidade explícita
+
+Todo ciclo relevante carrega identidade canônica. Identidade não é inferida por nome de cena, timing, singleton ou classe.
 
 ---
 
-## Estado consolidado dos módulos migrados
+## Estado consolidado dos checkpoints
 
-### ActivityObject — consolidado no B10
+### Operational / Route
 
-`ActivityObject` usa `ActivityCapabilityInventory` como fonte funcional para:
+- `SessionOperationalPipeline` é owner de rota/transição operacional/handoff.
+- `SceneComposition` executa load/unload/set-active; não decide lifecycle.
+- Fade/loading/audio são adapters comandados pelo pipeline.
+- Route camera e Activity camera têm ownership separado.
 
-- `ResetEndpoint`;
-- `SnapshotProvider`;
-- `SnapshotRestoreEndpoint`;
-- `ReleaseEndpoint`.
+### Input / Player
 
-Estado validado:
+- `InputRuntimeRoot` em `UIGlobalScene` é runtime operacional persistente de input.
+- `PlayerInputManager`, `EventSystem` e `InputSystemUIInputModule` são executores técnicos, não owners de lifecycle.
+- `SessionOperationalPipeline` prepara intenção/payload de player para handoff.
+- `PlayerActor` jogável nasce no `SessionActivityPipeline/ActivitySetup`.
+- `PlayerInputBindingStage` usa o asset canônico validado em InputModes.
+- `MovementBindingStage` prepara/binda; `MovementControl` só libera em `ActivityRunning`.
 
-```text
-ActivityCapabilityInventoryValidationPassed
-ActivityCapabilityInventoryPreviewObserved
-ActivityObjectReset Passed
-ActivityObjectSnapshotCapture Passed
-ActivityObjectSnapshotRestore Skipped correto sem payload ou Passed quando aplicável
-ActivityObjectRelease Passed
-ActivityObjectContributorUnregister Passed
-RestartCurrentActivity Passed
-Activity01ToActivity02 Passed
-RouteExitBackToMenu Passed
-```
+### Camera
 
-Regras congeladas:
+- `OperationalCameraRuntime` é infraestrutura de composition/bootstrap.
+- `CameraPresentation` fornece directors/rigs/adapters de câmera.
+- `PlayerCameraEndpoint` expõe `CameraFollowTarget` e `CameraLookAtTarget` no `PlayerActor`.
+- `SessionActivityPipeline` decide o binding da `ActivityCamera` ao endpoint.
+- `PlayerInput.camera` fica reservado para split-screen futuro.
 
-- `ActivityCapabilityDescriptor` não carrega endpoint/provider concreto.
-- `RuntimeReferences` executáveis ficam em arquivos próprios.
-- `ActivityObjectContributorDiscovery` é fonte de contributors e scan targets, não owner funcional de reset/capture/restore/release.
-- `ActivityObjectContributorUnregister` permanece separado.
-- Rediscovery local só pode permanecer para diagnóstico/contract view, não como fonte funcional dos stages migrados.
+### Activity / ADR-0014
 
-### Permission/Movement — consolidado no B11
+Estado atual congelado:
 
-`Permission/Movement` usa `ActivityCapabilityInventory` como fonte funcional para `PermissionTarget` de `activity.gameplay.control`.
+- `ActivityEntryPipeline` único.
+- `ActivityContentProfile` como fonte de conteúdo da Activity.
+- `ActivitySetupInventory` como contrato de requisitos.
+- `ActivityCapabilityInventory` como materialização determinística de capabilities descobertas/autoradas por entry.
+- `PlayerActor readiness` — PASS.
+- `PlayerInputBindingStage` — PASS.
+- `MovementBindingStage + ActivityCapabilityPermission local reaction` — PASS.
+- `PlacementSetupStage v0` — fechado como implícito por `PlayerActorSetup + PlayerActorReset(Placement)`.
+- `Window AdditiveScene v0` — aceito para `ActivationWindow`/`DeactivationWindow`; `WindowTemplateLibrary route-scoped` fica como futuro explícito.
+- `CameraBindingSetupStage` mínimo — PASS.
+- `RouteActivitySave + ActivityObjectSnapshotRestore` para `test_object_01` — PASS funcional e semântico.
+- `RouteExitBackToMenu` checkpoint — PASS.
+- `RestartCurrentActivity` com content e no-content — PASS.
 
-Estado validado:
+Não são pendências ativas agora:
 
-```text
-ActivityCapabilityPermissionReceiverRegistered
-MovementBindingRetained
-MovementBindingCompleted status='RetainedExistingBinding'
-CameraBindingSkippedNoRequiredCamera
-ActivityCapabilityPermissionPublished state='Allowed'
-ActivityCapabilityPermissionApplied state='Allowed'
-ActivityCapabilityPermissionReceiverNotified state='Allowed'
-PlayerMovementPermissionApplied state='Allowed'
-MovementControlEnabled controlEnabled='true'
-Activity01ToActivity02 Passed
-RouteExitBackToMenu Passed
-```
-
-Regras congeladas:
-
-- `activity.gameplay.control` é a permission canônica de controle local de gameplay da Activity.
-- Pipeline decide quando publicar `Allowed`, `Blocked` e `Unbound`.
-- `ActivityCapabilityPermissionRuntime` valida identity, rejeita `foreign/stale events`, preserva idempotência e despacha para receivers resolvidos por inventory.
-- `PlayerMovementController` aplica a reação local.
-- `MovementBindingRetained` deve alimentar o inventory da nova entry quando a capability permanece válida.
-- `active player actors` da entry atual não é a única fonte válida para Permission/Movement.
-- Não reintroduzir `ActivityCapabilityPermissionBindings` como caminho funcional.
-- Não reintroduzir register/unregister hardcoded em adapters como owner paralelo.
-- Não usar Gate técnico ou InputMode como substituto de semantic permission.
-
----
-
-## Critério para registrar novos módulos como consolidados
-
-Um módulo só deve ser registrado neste README quando cumprir:
-
-```text
-1. Scanner ou fonte modular de discovery existente.
-2. ActivityCapabilityDescriptor puro.
-3. RuntimeReference tipada, se houver execução local.
-4. Consumo funcional via ActivityCapabilityInventory.
-5. Sem fallback silencioso para trilho antigo.
-6. Sem dois owners ativos.
-7. Smoke validando caminho feliz e skip/no-content relevante.
-```
-
-Até cumprir esses critérios, o módulo não deve ser registrado como consolidado na norma viva.
+- integração de pooling sem objeto concreto;
+- Progression Save real completo sem progressão real de jogo;
+- materialização do Run Pipeline sem ciclo de run concreto;
+- `CameraBindingRetained` explícito para Activity skip/no-content;
+- `PlacementSetupStage` nominal separado enquanto o v0 implícito for suficiente;
+- `WindowTemplateLibrary route-scoped` enquanto o v0 de `AdditiveScene` for suficiente e não houver necessidade de templates compartilhados/standby/payload bind-unbind.
 
 ---
 
 ## Gatilhos de reabertura
 
-Reabrir ou expandir a documentação normativa apenas quando houver implementação + smoke de um módulo completo.
+Reabrir temas somente com necessidade concreta:
 
-Candidatos futuros naturais:
-
-- Camera via inventory;
-- ActorPresentation via inventory;
-- ActorAttributes via inventory;
-- NonPlayerActor lifecycle/inventory;
-- SaveRuntime / RouteActivitySave depois que snapshot/inventory estiverem estáveis.
+- **Pooling**: quando objeto/prefab/policy exigir `Rent`, `Prewarm` ou `ReturnToPool`.
+- **Progression Save real**: quando houver inventário, objetivos persistentes, actors/world state, run continuity ou UI de slots.
+- **Run Pipeline**: quando houver run real com resultado, decisão, post-run, retry/continue/exit ou save de run.
+- **PlacementSetupStage nominal**: quando placement exigir stage independente de `PlayerActorSetup/Reset`.
+- **WindowTemplateLibrary route-scoped**: quando windows deixarem de ser QA simples/additive e precisarem de templates compartilhados, standby, payload bind/unbind ou reaproveitamento visual real entre Activities.
+- **ObjectEntry/RuntimeSpawn real**: quando houver objeto/NPC/prop materializado dinamicamente pelo pipeline.
 
 ---
 
@@ -199,9 +220,7 @@ Antes de criar componente/config/adapter novo:
 
 1. localizar o que já existe;
 2. confirmar ownership atual;
-3. classificar se o caso deve virar scanner, descriptor, runtime reference, adapter ou reação local;
-4. implementar em cortes pequenos;
-5. validar por smoke/log;
-6. só então atualizar ADR/README como módulo consolidado.
+3. classificar como déficit real, atraso documental, documentação sem congelamento ou fora de escopo ativo;
+4. só então implementar ou atualizar documentação.
 
-Prompts para Codex devem continuar curtos, começar por auditoria quando houver risco de reinventar infraestrutura e não devem pedir Unity build, Play Mode, batchmode ou validação funcional automatizada.
+Prompts para Codex devem ser curtos, começar por auditoria quando houver risco de reinventar infraestrutura e não pedir Unity build, smoke, Play Mode, batchmode ou validação funcional. Checagem estática de compilação/compatibilidade pode ser permitida quando for explicitamente útil e restrita.

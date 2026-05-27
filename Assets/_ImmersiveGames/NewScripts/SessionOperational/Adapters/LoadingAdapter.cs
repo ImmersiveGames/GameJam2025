@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             LoadingHudController controller = ResolveControllerOrFail(command);
             string signature = BuildSignature(command);
-            bool forceHide = string.Equals(fact.Message, "LoadingHiddenAfterFailure", StringComparison.OrdinalIgnoreCase);
+            bool forceHide = fact.OutcomeKind == SessionOperationalLoadingOutcomeKind.Failed;
 
             if (!command.HideAfterCompletion && !forceHide)
             {
