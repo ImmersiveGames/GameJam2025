@@ -1,3 +1,5 @@
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core
 {
     /// <summary>

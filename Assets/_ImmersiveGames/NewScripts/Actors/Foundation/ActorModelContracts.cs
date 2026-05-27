@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
@@ -125,6 +126,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ActorDefinitionRef definitionRef,
             string actorId,
             ActorKind actorKind,
+            Actor runtimeActor,
+            ActorCapabilitySurface capabilitySurface,
             ActorRole actorRole,
             ActorScope actorScope,
             ActorSourceKind actorSourceKind,
@@ -140,6 +143,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             DefinitionRef = definitionRef;
             ActorId = Normalize(actorId);
             Kind = actorKind;
+            RuntimeActor = runtimeActor;
+            CapabilitySurface = capabilitySurface;
             Role = actorRole;
             Scope = actorScope;
             SourceKind = actorSourceKind;
@@ -156,6 +161,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public ActorDefinitionRef DefinitionRef { get; }
         public string ActorId { get; }
         public ActorKind Kind { get; }
+        public Actor RuntimeActor { get; }
+        public ActorCapabilitySurface CapabilitySurface { get; }
         public ActorRole Role { get; }
         public ActorScope Scope { get; }
         public ActorSourceKind SourceKind { get; }
@@ -167,6 +174,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public string Reason { get; }
 
         public bool HasDefinitionRef => DefinitionRef.IsValid;
+        public bool HasConcreteActor => RuntimeActor != null;
+        public bool HasCapabilitySurface => CapabilitySurface != null;
         public bool IsValid =>
             Identity.IsValid &&
             ActorInstanceId.IsValid &&

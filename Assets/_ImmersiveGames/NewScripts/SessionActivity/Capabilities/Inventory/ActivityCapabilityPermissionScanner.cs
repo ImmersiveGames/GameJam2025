@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
+using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -28,11 +31,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             HashSet<string> ownerKeys = new(StringComparer.Ordinal);
             HashSet<string> capabilityKeys = new(StringComparer.Ordinal);
 
-            for (int index = 0; index < context.PlayerActorTargets.Count; index++)
+            for (int index = 0; index < context.ActorTargets.Count; index++)
             {
-                ActivityCapabilityPlayerActorScanTarget target = context.PlayerActorTargets[index];
+                ActorScanTarget target = context.ActorTargets[index];
                 if (!target.IsValid)
                 {
+                    continue;
+                }
+
+                ActorCapabilitySurface surface = target.CapabilitySurface;
+                if (surface == null)
+                {
+                    throw new InvalidOperationException(
+                        $"ActivityCapabilityPermissionScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
+                }
+
+                PlayerMovementController controller = surface.PlayerMovementEndpoint;
+                if (controller == null)
+                {
+                    continue;
+                }
+
+                if (!TryResolvePlayerIdentity(target, out string playerActorId, out string playerSlotId))
+                {
+                    string unresolvedComponentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(controller.transform);
+                    Debug.LogWarning(
+                        $"[OBS][ActivityCapabilityPermissionScanner] event='PermissionTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' capabilityKind='{ActivityCapabilityKind.PermissionTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 
@@ -41,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     inventoryId,
                     ActivityCapabilityOwnerKind.PlayerActor,
                     ownerPath,
-                    target.PlayerActorId);
+                    target.ActorId);
 
                 if (ownerKeys.Add(ownerId))
                 {
@@ -49,80 +73,96 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         ActivityCapabilityOwnerKind.PlayerActor,
                         ownerId,
                         ownerPath,
-                        target.SourceScene,
-                        target.SourceContent,
+                        target.SourceSceneName,
+                        target.Source,
                         context.Source));
                 }
 
-                PlayerMovementController[] controllers = target.ActorRoot.GetComponentsInChildren<PlayerMovementController>(true);
-                for (int controllerIndex = 0; controllerIndex < controllers.Length; controllerIndex++)
+                string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(controller.transform);
+                string componentType = controller.GetType().FullName ?? controller.GetType().Name;
+                string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+                    inventoryId,
+                    ownerId,
+                    ActivityCapabilityKind.PermissionTarget,
+                    ModuleId,
+                    componentPath);
+
+                if (!capabilityKeys.Add(capabilityId))
                 {
-                    PlayerMovementController controller = controllers[controllerIndex];
-                    if (controller == null)
-                    {
-                        continue;
-                    }
-
-                    string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(controller.transform);
-                    string componentType = controller.GetType().FullName ?? controller.GetType().Name;
-                    string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
-                        inventoryId,
-                        ownerId,
-                        ActivityCapabilityKind.PermissionTarget,
-                        ModuleId,
-                        componentPath);
-
-                    if (!capabilityKeys.Add(capabilityId))
-                    {
-                        continue;
-                    }
-
-                    string permissionToken = ActivityCapabilityPermissionIds.ActivityGameplayControl;
-                    ActivityCapabilityPermissionReceiverIdentity receiverIdentity = new(
-                        context.Identity.PipelineId,
-                        context.Identity.SessionId,
-                        context.Identity.ActivityId,
-                        context.Identity.EntrySequence,
-                        target.PlayerActorId,
-                        target.PlayerSlotId);
-                    string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
-                        receiverIdentity);
-
-                    PlayerMovementPermissionReceiver receiver = new(
-                        controller,
-                        receiverId,
-                        target.PlayerActorId,
-                        target.PlayerSlotId);
-
-                    capabilities.Add(new ActivityCapabilityDescriptor(
-                        capabilityId,
-                        ActivityCapabilityKind.PermissionTarget,
-                        ModuleId,
-                        ownerId,
-                        componentPath,
-                        componentType,
-                        required: true,
-                        priority: 100,
-                        policyMetadata: new[]
-                        {
-                            new ActivityCapabilityPolicyEntry("permissionId", permissionToken),
-                            new ActivityCapabilityPolicyEntry("playerActorId", target.PlayerActorId),
-                            new ActivityCapabilityPolicyEntry("playerSlotId", target.PlayerSlotId),
-                        },
-                        source: context.Source));
-
-                    runtimeReferences.Add(new ActivityCapabilityPermissionReceiverReference(
-                        capabilityId,
-                        ownerId,
-                        target.PlayerActorId,
-                        componentPath,
-                        permissionToken,
-                        receiverIdentity,
-                        receiver));
+                    continue;
                 }
+
+                string permissionToken = ActivityCapabilityPermissionIds.ActivityGameplayControl;
+                ActivityCapabilityPermissionReceiverIdentity receiverIdentity = new(
+                    context.Identity.PipelineId,
+                    context.Identity.SessionId,
+                    context.Identity.ActivityId,
+                    context.Identity.EntrySequence,
+                    playerActorId,
+                    playerSlotId);
+                string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
+                    receiverIdentity);
+
+                PlayerMovementPermissionReceiver receiver = new(
+                    controller,
+                    receiverId,
+                    playerActorId,
+                    playerSlotId);
+
+                capabilities.Add(new ActivityCapabilityDescriptor(
+                    capabilityId,
+                    ActivityCapabilityKind.PermissionTarget,
+                    ModuleId,
+                    ownerId,
+                    componentPath,
+                    componentType,
+                    required: true,
+                    priority: 100,
+                    policyMetadata: new[]
+                    {
+                        new ActivityCapabilityPolicyEntry("permissionId", permissionToken),
+                        new ActivityCapabilityPolicyEntry("playerActorId", playerActorId),
+                        new ActivityCapabilityPolicyEntry("playerSlotId", playerSlotId),
+                        new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
+                    },
+                    source: context.Source));
+
+                runtimeReferences.Add(new ActivityCapabilityPermissionReceiverReference(
+                    capabilityId,
+                    ownerId,
+                    playerActorId,
+                    componentPath,
+                    permissionToken,
+                    receiverIdentity,
+                    receiver));
             }
 
             return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
+        }
+
+        private static bool TryResolvePlayerIdentity(ActorScanTarget target, out string playerActorId, out string playerSlotId)
+        {
+            playerActorId = string.Empty;
+            playerSlotId = string.Empty;
+
+            PlayerActorIdentity identity = target.ActorRoot != null ? target.ActorRoot.GetComponent<PlayerActorIdentity>() : null;
+            if (identity == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(identity.PlayerActorId))
+            {
+                playerActorId = identity.PlayerActorId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(identity.PlayerSlotId))
+            {
+                playerSlotId = identity.PlayerSlotId.Trim();
+            }
+
+            return !string.IsNullOrWhiteSpace(playerActorId) &&
+                   !string.IsNullOrWhiteSpace(playerSlotId);
         }
     }
 

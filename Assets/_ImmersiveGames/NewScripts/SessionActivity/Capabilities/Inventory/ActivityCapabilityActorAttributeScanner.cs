@@ -1,20 +1,17 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
-    public sealed class ActivityCapabilityActorPresentationScanner : IActivityCapabilityScanner
+    public sealed class ActivityCapabilityActorAttributeScanner : IActivityCapabilityScanner
     {
-        private const string ModuleId = "Actors.Presentation";
+        private const string ModuleId = "Actors.Attributes";
 
-        public string ScannerId => "activity_capability_actor_presentation_scanner.v1";
-        public int Order => 310;
+        public string ScannerId => "activity_capability_actor_attribute_scanner.v1";
+        public int Order => 315;
 
         public ActivityCapabilityScanResult Scan(ActivityCapabilityScanContext context)
         {
@@ -38,6 +35,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
+                if (target.CapabilitySurface == null)
+                {
+                    throw new InvalidOperationException(
+                        $"ActivityCapabilityActorAttributeScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
+                }
+
+                ActorAttributeEndpoint endpoint = target.CapabilitySurface.AttributeEndpoint;
+                if (endpoint == null)
+                {
+                    continue;
+                }
+
                 string ownerPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform);
                 string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(
                     inventoryId,
@@ -56,23 +65,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         context.Source));
                 }
 
-                if (target.CapabilitySurface == null)
-                {
-                    throw new InvalidOperationException(
-                        $"ActivityCapabilityActorPresentationScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
-                }
-
-                ActorPresentationEndpoint endpoint = target.CapabilitySurface.PresentationEndpoint;
-                if (endpoint == null)
-                {
-                    continue;
-                }
-
                 string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(endpoint.transform);
                 string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
                     inventoryId,
                     ownerId,
-                    ActivityCapabilityKind.PresentationEndpoint,
+                    ActivityCapabilityKind.AttributeEndpoint,
                     ModuleId,
                     componentPath);
 
@@ -81,22 +78,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
-                ActorPresentationProfileAsset profile = endpoint.Profile;
-                bool required = profile != null && profile.IsRequired;
-
                 capabilities.Add(new ActivityCapabilityDescriptor(
                     capabilityId,
-                    ActivityCapabilityKind.PresentationEndpoint,
+                    ActivityCapabilityKind.AttributeEndpoint,
                     ModuleId,
                     ownerId,
                     componentPath,
                     endpoint.GetType().FullName ?? endpoint.GetType().Name,
-                    required,
-                    priority: 130,
-                    policyMetadata: BuildPolicyMetadata(target, endpoint, profile),
+                    required: true,
+                    priority: 125,
+                    policyMetadata: new[]
+                    {
+                        new ActivityCapabilityPolicyEntry("actorId", target.ActorId),
+                        new ActivityCapabilityPolicyEntry("actorKind", ResolveActorKindLabel(target)),
+                        new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
+                        new ActivityCapabilityPolicyEntry("actorScope", target.ActorScope.ToString()),
+                    },
                     source: context.Source));
 
-                runtimeReferences.Add(new ActorPresentationEndpointReference(
+                runtimeReferences.Add(new ActorAttributeEndpointReference(
                     capabilityId,
                     ownerId,
                     target.ActorInstanceId,
@@ -109,36 +109,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             }
 
             return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
-        }
-
-        private static IReadOnlyList<ActivityCapabilityPolicyEntry> BuildPolicyMetadata(
-            ActorScanTarget target,
-            ActorPresentationEndpoint endpoint,
-            ActorPresentationProfileAsset profile)
-        {
-            string profileId = profile != null ? profile.ProfileId : string.Empty;
-            string requiredness = profile != null
-                ? profile.Requiredness.ToString()
-                : ActorPresentationRequiredness.Unknown.ToString();
-            string releasePolicy = profile != null
-                ? profile.ReleasePolicy.ToString()
-                : ActorPresentationReleasePolicy.Unknown.ToString();
-            string endpointId = endpoint != null ? endpoint.EndpointId : string.Empty;
-
-            return new[]
-            {
-                new ActivityCapabilityPolicyEntry("actorId", target.ActorId),
-                new ActivityCapabilityPolicyEntry("actorInstanceId", target.ActorInstanceId.Value),
-                new ActivityCapabilityPolicyEntry("actorKind", ResolveActorKindLabel(target)),
-                new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
-                new ActivityCapabilityPolicyEntry("actorScope", target.ActorScope.ToString()),
-                new ActivityCapabilityPolicyEntry("actorSourceKind", target.ActorSourceKind.ToString()),
-                new ActivityCapabilityPolicyEntry("participationPolicy", target.ParticipationPolicy),
-                new ActivityCapabilityPolicyEntry("endpointId", endpointId),
-                new ActivityCapabilityPolicyEntry("profileId", profileId),
-                new ActivityCapabilityPolicyEntry("requiredness", requiredness),
-                new ActivityCapabilityPolicyEntry("releasePolicy", releasePolicy),
-            };
         }
 
         private static ActivityCapabilityOwnerKind ResolveOwnerKind(ActorScanTarget target)
@@ -156,16 +126,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             return ActivityCapabilityOwnerKind.Unsupported;
         }
 
-        private static Actor ResolveActor(ActorScanTarget target)
-        {
-            if (target.RuntimeActor != null)
-            {
-                return target.RuntimeActor;
-            }
-
-            return target.ActorRoot != null ? target.ActorRoot.GetComponent<Actor>() : null;
-        }
-
         private static string ResolveActorKindLabel(ActorScanTarget target)
         {
             if (target.ActorRole == ActorRole.PrimaryPlayer || target.ActorRole == ActorRole.SupportingPlayer)
@@ -178,9 +138,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return "NonPlayer";
             }
 
-            Actor actor = ResolveActor(target);
-            return actor != null ? actor.GetType().Name : target.ActorKind.ToString();
+            return target.RuntimeActor != null ? target.RuntimeActor.GetType().Name : target.ActorKind.ToString();
         }
-
     }
 }

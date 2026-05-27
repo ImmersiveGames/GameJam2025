@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -11,6 +12,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActorDefinitionRef actorDefinitionRef,
             string actorId,
             ActorKind actorKind,
+            Actor runtimeActor,
+            ActorCapabilitySurface capabilitySurface,
             ActorRole actorRole,
             ActorScope actorScope,
             ActorSourceKind actorSourceKind,
@@ -24,6 +27,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActorDefinitionRef = actorDefinitionRef;
             ActorId = Normalize(actorId);
             ActorKind = actorKind;
+            RuntimeActor = runtimeActor;
+            CapabilitySurface = capabilitySurface;
             ActorRole = actorRole;
             ActorScope = actorScope;
             ActorSourceKind = actorSourceKind;
@@ -38,6 +43,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public ActorDefinitionRef ActorDefinitionRef { get; }
         public string ActorId { get; }
         public ActorKind ActorKind { get; }
+        public Actor RuntimeActor { get; }
+        public ActorCapabilitySurface CapabilitySurface { get; }
         public ActorRole ActorRole { get; }
         public ActorScope ActorScope { get; }
         public ActorSourceKind ActorSourceKind { get; }
@@ -70,6 +77,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 instance.DefinitionRef,
                 instance.ActorId,
                 instance.Kind,
+                instance.RuntimeActor,
+                instance.CapabilitySurface,
                 instance.Role,
                 instance.Scope,
                 instance.SourceKind,

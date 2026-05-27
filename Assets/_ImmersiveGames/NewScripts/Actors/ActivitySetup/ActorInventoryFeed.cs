@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -107,14 +108,34 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 }
 
                 ActorInstanceId actorInstanceId = ActorInstanceId.FromIdentity(identity, ActorKind.Player, resolvedIdentity.PlayerActorId, actorScopeDiscriminator: "route");
+                Actor runtimeActor = actorRoot.GetComponent<Actor>();
+                if (runtimeActor == null)
+                {
+                    throw new InvalidOperationException($"ActorInventoryFeed requires Actor root for playerActorId='{resolvedIdentity.PlayerActorId}'.");
+                }
+
+                runtimeActor.ValidateLocalConfigurationOrThrow($"{nameof(ActorInventoryFeed)}:player:{resolvedIdentity.PlayerActorId}");
+                ActorCapabilitySurface capabilitySurface = runtimeActor.CapabilitySurface;
+                if (capabilitySurface == null)
+                {
+                    throw new InvalidOperationException($"ActorInventoryFeed requires ActorCapabilitySurface for playerActorId='{resolvedIdentity.PlayerActorId}'.");
+                }
+
+                ActorRole actorRole = runtimeActor != null ? runtimeActor.ActorRoleMetadata : ActorRole.PrimaryPlayer;
+                ActorScope actorScope = runtimeActor != null ? runtimeActor.ActorScopeMetadata : ActorScope.RouteScoped;
+                ActorDefinitionRef definitionRef = runtimeActor != null ? runtimeActor.ActorDefinitionRef : default;
                 ActorInstanceRecord instance = new(
                     identity,
                     actorInstanceId,
-                    definitionRef: default,
-                    actorId: resolvedIdentity.PlayerActorId,
+                    definitionRef: definitionRef,
+                    actorId: runtimeActor != null && !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
+                        ? runtimeActor.ActorId
+                        : resolvedIdentity.PlayerActorId,
                     actorKind: ActorKind.Player,
-                    actorRole: ActorRole.PrimaryPlayer,
-                    actorScope: ActorScope.RouteScoped,
+                    runtimeActor: runtimeActor,
+                    capabilitySurface: capabilitySurface,
+                    actorRole: actorRole,
+                    actorScope: actorScope,
                     actorSourceKind: ActorSourceKind.PlayerParticipation,
                     participationPolicy: "all_activities_in_route",
                     actorRoot: actorRoot,
@@ -172,8 +193,20 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     : ActorSourceKind.ActivityContent;
                 string policy = actorIdentity.ParticipationPolicy.ToString();
 
+                ActorInstanceId actorInstanceId = ActorInstanceId.FromIdentity(identity, ActorKind.NonPlayer, actorIdentity.NonPlayerActorId, actorScopeDiscriminator: scope.ToString());
+                Actor runtimeActor = entry.ActorInstance != null ? entry.ActorInstance.GetComponent<Actor>() : null;
+                if (runtimeActor == null)
+                {
+                    throw new InvalidOperationException($"ActorInventoryFeed requires Actor root for nonPlayerActorId='{actorIdentity.NonPlayerActorId}'.");
+                }
+
+                runtimeActor.ValidateLocalConfigurationOrThrow($"{nameof(ActorInventoryFeed)}:nonPlayer:{actorIdentity.NonPlayerActorId}");
                 ActorDefinitionRef definitionRef = default;
-                if (entry.Endpoint != null && entry.Endpoint.PresentationProfile != null)
+                if (runtimeActor != null)
+                {
+                    definitionRef = runtimeActor.ActorDefinitionRef;
+                }
+                else if (entry.Endpoint != null && entry.Endpoint.PresentationProfile != null)
                 {
                     definitionRef = new ActorDefinitionRef(
                         default,
@@ -181,15 +214,25 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         entry.Endpoint.PresentationProfile.name);
                 }
 
-                ActorInstanceId actorInstanceId = ActorInstanceId.FromIdentity(identity, ActorKind.NonPlayer, actorIdentity.NonPlayerActorId, actorScopeDiscriminator: scope.ToString());
+                ActorCapabilitySurface capabilitySurface = runtimeActor.CapabilitySurface;
+                if (capabilitySurface == null)
+                {
+                    throw new InvalidOperationException($"ActorInventoryFeed requires ActorCapabilitySurface for nonPlayerActorId='{actorIdentity.NonPlayerActorId}'.");
+                }
+                ActorRole actorRole = runtimeActor != null ? runtimeActor.ActorRoleMetadata : ActorRole.SceneAuthoredNonPlayer;
+                ActorScope runtimeScope = runtimeActor != null ? runtimeActor.ActorScopeMetadata : scope;
                 ActorInstanceRecord instance = new(
                     identity,
                     actorInstanceId,
                     definitionRef,
-                    actorIdentity.NonPlayerActorId,
+                    runtimeActor != null && !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
+                        ? runtimeActor.ActorId
+                        : actorIdentity.NonPlayerActorId,
                     ActorKind.NonPlayer,
-                    ActorRole.SceneAuthoredNonPlayer,
-                    scope,
+                    runtimeActor,
+                    capabilitySurface,
+                    actorRole,
+                    runtimeScope,
                     sourceKind,
                     policy,
                     entry.ActorInstance,

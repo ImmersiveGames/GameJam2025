@@ -55,6 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             scannerRegistry.Register(_objectScanner);
             scannerRegistry.Register(new ActivityCapabilityPermissionScanner());
             scannerRegistry.Register(new ActivityCapabilityActorPresentationScanner());
+            scannerRegistry.Register(new ActivityCapabilityActorAttributeScanner());
             scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner());
 
             _inventoryBuilder = new ActivityCapabilityInventoryBuilder(scannerRegistry);

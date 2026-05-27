@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Core;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater
@@ -25,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Eater
 
         public bool IsActive => isActiveAndEnabled;
 
-        public ActorKind Kind => ActorKind.Eater;
+        public ActorKind Kind => ActorKind.NonPlayer;
 
         public void Initialize(string newActorId)
         {

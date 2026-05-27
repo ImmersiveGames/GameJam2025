@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
@@ -9,7 +10,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class NonPlayerActorEndpoint : MonoBehaviour
+    public sealed class NonPlayerActorEndpoint : Actor
     {
         [SerializeField] private string nonPlayerActorId;
         [SerializeField] private string actorKind = "NonPlayerActor";
@@ -20,6 +21,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         [SerializeField] private ActorPresentationEndpoint presentationEndpoint;
 
         public string NonPlayerActorId => Normalize(nonPlayerActorId);
+        public override string ActorId => NonPlayerActorId;
+        public override ActorRole ActorRoleMetadata => ActorRole.SceneAuthoredNonPlayer;
+        public override ActorScope ActorScopeMetadata => actorScope == NonPlayerActorScope.RouteScoped
+            ? _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.RouteScoped
+            : _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.ActivityScoped;
         public string ActorKind => Normalize(actorKind);
         public NonPlayerActorScope ActorScope => actorScope;
         public NonPlayerActorParticipationPolicy ParticipationPolicy => participationPolicy;
@@ -80,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             presentationProfile != null &&
             presentationEndpoint != null;
 
-        public void ValidateOrThrow(string source)
+        public override void ValidateLocalConfigurationOrThrow(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
                 ? $"{nameof(NonPlayerActorEndpoint)}:{name}"
@@ -125,10 +131,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             {
                 throw new InvalidOperationException($"{origin} requires ActorPresentationEndpoint.");
             }
+
+            if (CapabilitySurface == null)
+            {
+                throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
+            }
+        }
+
+        public void ValidateOrThrow(string source)
+        {
+            ValidateLocalConfigurationOrThrow(source);
         }
 
         private void OnValidate()
         {
+            base.OnValidate();
             nonPlayerActorId = Normalize(nonPlayerActorId);
             actorKind = Normalize(actorKind);
             if (participatingActivities == null)

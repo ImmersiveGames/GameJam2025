@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -26,11 +29,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             HashSet<string> ownerKeys = new(StringComparer.Ordinal);
             HashSet<string> capabilityKeys = new(StringComparer.Ordinal);
 
-            for (int index = 0; index < context.PlayerActorTargets.Count; index++)
+            for (int index = 0; index < context.ActorTargets.Count; index++)
             {
-                ActivityCapabilityPlayerActorScanTarget target = context.PlayerActorTargets[index];
+                ActorScanTarget target = context.ActorTargets[index];
                 if (!target.IsValid)
                 {
+                    continue;
+                }
+
+                ActorCapabilitySurface surface = target.CapabilitySurface;
+                if (surface == null)
+                {
+                    throw new InvalidOperationException(
+                        $"ActivityCapabilityCameraTargetScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
+                }
+
+                PlayerCameraEndpoint endpoint = surface.PlayerCameraEndpoint;
+                if (endpoint == null || !endpoint.HasValidTargets)
+                {
+                    continue;
+                }
+
+                if (!TryResolvePlayerIdentity(target, out string playerActorId, out string playerSlotId))
+                {
+                    string unresolvedComponentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(endpoint.transform);
+                    Debug.LogWarning(
+                        $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' capabilityKind='{ActivityCapabilityKind.CameraTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 
@@ -39,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     inventoryId,
                     ActivityCapabilityOwnerKind.PlayerActor,
                     ownerPath,
-                    target.PlayerActorId);
+                    target.ActorId);
 
                 if (ownerKeys.Add(ownerId))
                 {
@@ -47,62 +71,77 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         ActivityCapabilityOwnerKind.PlayerActor,
                         ownerId,
                         ownerPath,
-                        target.SourceScene,
-                        target.SourceContent,
+                        target.SourceSceneName,
+                        target.Source,
                         context.Source));
                 }
 
-                PlayerCameraEndpoint[] endpoints = target.ActorRoot.GetComponentsInChildren<PlayerCameraEndpoint>(true);
-                for (int endpointIndex = 0; endpointIndex < endpoints.Length; endpointIndex++)
+                string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(endpoint.transform);
+                string componentType = endpoint.GetType().FullName ?? endpoint.GetType().Name;
+                string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+                    inventoryId,
+                    ownerId,
+                    ActivityCapabilityKind.CameraTarget,
+                    ModuleId,
+                    componentPath);
+
+                if (!capabilityKeys.Add(capabilityId))
                 {
-                    PlayerCameraEndpoint endpoint = endpoints[endpointIndex];
-                    if (endpoint == null || !endpoint.HasValidTargets)
-                    {
-                        continue;
-                    }
-
-                    string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(endpoint.transform);
-                    string componentType = endpoint.GetType().FullName ?? endpoint.GetType().Name;
-                    string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
-                        inventoryId,
-                        ownerId,
-                        ActivityCapabilityKind.CameraTarget,
-                        ModuleId,
-                        componentPath);
-
-                    if (!capabilityKeys.Add(capabilityId))
-                    {
-                        continue;
-                    }
-
-                    capabilities.Add(new ActivityCapabilityDescriptor(
-                        capabilityId,
-                        ActivityCapabilityKind.CameraTarget,
-                        ModuleId,
-                        ownerId,
-                        componentPath,
-                        componentType,
-                        required: true,
-                        priority: 120,
-                        policyMetadata: new[]
-                        {
-                            new ActivityCapabilityPolicyEntry("playerActorId", target.PlayerActorId),
-                            new ActivityCapabilityPolicyEntry("playerSlotId", target.PlayerSlotId),
-                        },
-                        source: context.Source));
-
-                    runtimeReferences.Add(new ActivityCameraTargetReference(
-                        capabilityId,
-                        ownerId,
-                        target.PlayerActorId,
-                        target.PlayerSlotId,
-                        componentPath,
-                        endpoint.FollowTarget,
-                        endpoint.LookAtTarget));
+                    continue;
                 }
+
+                capabilities.Add(new ActivityCapabilityDescriptor(
+                    capabilityId,
+                    ActivityCapabilityKind.CameraTarget,
+                    ModuleId,
+                    ownerId,
+                    componentPath,
+                    componentType,
+                    required: true,
+                    priority: 120,
+                    policyMetadata: new[]
+                    {
+                        new ActivityCapabilityPolicyEntry("playerActorId", playerActorId),
+                        new ActivityCapabilityPolicyEntry("playerSlotId", playerSlotId),
+                        new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
+                    },
+                    source: context.Source));
+
+                runtimeReferences.Add(new ActivityCameraTargetReference(
+                    capabilityId,
+                    ownerId,
+                    playerActorId,
+                    playerSlotId,
+                    componentPath,
+                    endpoint.FollowTarget,
+                    endpoint.LookAtTarget));
             }
 
             return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
+        }
+
+        private static bool TryResolvePlayerIdentity(ActorScanTarget target, out string playerActorId, out string playerSlotId)
+        {
+            playerActorId = string.Empty;
+            playerSlotId = string.Empty;
+            PlayerActorIdentity identity = target.ActorRoot != null ? target.ActorRoot.GetComponent<PlayerActorIdentity>() : null;
+            if (identity == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(identity.PlayerActorId))
+            {
+                playerActorId = identity.PlayerActorId.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(identity.PlayerSlotId))
+            {
+                playerSlotId = identity.PlayerSlotId.Trim();
+            }
+
+            return !string.IsNullOrWhiteSpace(playerActorId) &&
+                   !string.IsNullOrWhiteSpace(playerSlotId);
         }
     }
 }
