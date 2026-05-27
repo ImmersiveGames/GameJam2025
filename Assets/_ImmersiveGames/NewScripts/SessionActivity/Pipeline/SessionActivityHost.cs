@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Host")]
-    public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary
+    public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary, ISessionActivityPredefinedVisualReadinessBoundary
     {
         private const int DumpRecentFactsCount = 24;
         private const int DumpRecentSnapshotsCount = 12;
@@ -69,6 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
             RegisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
             RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
+            RegisterGlobal<ISessionActivityPredefinedVisualReadinessBoundary>(this);
             _globalsRegistered = true;
             Debug.Log(BuildHostBanner());
         }
@@ -371,6 +372,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return BuildRouteExitTeardownInProgress(
                 "route_exit_in_progress_not_completed_before_unload",
                 $"SessionActivity route-exit teardown has started and is not completed yet. stage='{stage}'.");
+        }
+
+        public SessionActivityPredefinedVisualReadinessResult ObservePredefinedVisualReadiness(
+            string sessionStateId,
+            string expectedRouteOperationId,
+            string source,
+            string reason)
+        {
+            EnsurePipeline();
+            return _pipeline.ObservePredefinedVisualReadiness(sessionStateId, expectedRouteOperationId, source, reason);
         }
 
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)
@@ -1143,6 +1154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             UnregisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
+            UnregisterGlobal<ISessionActivityPredefinedVisualReadinessBoundary>(this);
             _globalsRegistered = false;
         }
 

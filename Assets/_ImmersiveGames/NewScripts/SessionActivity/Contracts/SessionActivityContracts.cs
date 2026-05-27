@@ -835,6 +835,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityCapabilityInventoryValidationWarning = 250,
         ActivityCapabilityInventoryValidationFailedPassive = 251,
         ActivityCapabilityInventoryValidationCompleted = 252,
+        PredefinedVisualSetupReady = 253,
         ActivitySetupInventoryBuildStarted = 94,
         ActivitySetupInventoryBuilt = 95,
         ActivitySetupInventorySkippedNoRequirements = 96,

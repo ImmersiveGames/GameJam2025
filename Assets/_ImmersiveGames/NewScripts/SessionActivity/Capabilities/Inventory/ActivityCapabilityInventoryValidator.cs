@@ -149,6 +149,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                    capabilityKind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
                    capabilityKind == ActivityCapabilityKind.ReleaseEndpoint ||
                    capabilityKind == ActivityCapabilityKind.PermissionTarget ||
+                   capabilityKind == ActivityCapabilityKind.PresentationEndpoint ||
                    capabilityKind == ActivityCapabilityKind.CameraTarget;
         }
 
@@ -163,6 +164,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference permissionReference &&
                                                            permissionReference.Receiver != null &&
                                                            !string.IsNullOrWhiteSpace(permissionReference.PermissionId),
+                ActivityCapabilityKind.PresentationEndpoint => runtimeReference is ActorPresentationEndpointReference presentationReference &&
+                                                               presentationReference.Endpoint != null &&
+                                                               !string.IsNullOrWhiteSpace(presentationReference.ActorId),
                 ActivityCapabilityKind.CameraTarget => runtimeReference is ActivityCameraTargetReference cameraReference &&
                                                       cameraReference.TrackingTarget != null,
                 _ => true,

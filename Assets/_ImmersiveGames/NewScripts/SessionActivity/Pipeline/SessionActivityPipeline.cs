@@ -81,6 +81,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private IReadOnlyList<PlayerActorIdentityRecord> _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
         private bool _movementControlEnableAllowedForCurrentEntry;
         private string _lastMovementDisableEmissionKey;
+        private PredefinedVisualReadinessSignal _lastPredefinedVisualReadinessSignal;
 
         private sealed class PendingActivityContentLoadContext
         {
@@ -102,6 +103,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public List<ActivityContentLoadedSceneRecord> LoadedRecords { get; }
             public int NextSceneOrdinal { get; set; }
             public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(ContentProfileId) && Entries != null;
+        }
+
+        private readonly struct PredefinedVisualReadinessSignal
+        {
+            public PredefinedVisualReadinessSignal(
+                SessionActivityIdentity identity,
+                string routeOperationId,
+                string source,
+                string reason)
+            {
+                Identity = identity;
+                RouteOperationId = Normalize(routeOperationId);
+                Source = Normalize(source);
+                Reason = Normalize(reason);
+            }
+
+            public SessionActivityIdentity Identity { get; }
+            public string RouteOperationId { get; }
+            public string Source { get; }
+            public string Reason { get; }
+
+            public bool IsValid =>
+                Identity.IsValid &&
+                !string.IsNullOrWhiteSpace(RouteOperationId) &&
+                !string.IsNullOrWhiteSpace(Source);
         }
 
 
@@ -652,6 +678,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastSnapshotPayloadForSaveOnExit = default;
             _lastSnapshotCaptureFailedForSaveOnExit = false;
             _lastSnapshotCaptureFailureDetail = string.Empty;
+            _lastPredefinedVisualReadinessSignal = default;
             _lastRouteSessionPlayerPreparationHandoff = handoff.PlayerPreparation;
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
@@ -1992,6 +2019,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowReady, entrySequence);
                     _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActivationWindowReady);
                     EmitFact(facts, SessionActivityFactKind.ActivationWindowReady, readyIdentity, source, reason, $"'{definition.ActivityId}' activation window ready.");
+                    EmitPredefinedVisualSetupReadyFactIfApplicable(
+                        definition,
+                        facts,
+                        readyIdentity,
+                        source,
+                        reason,
+                        "activation_window_ready");
                     EmitSnapshot(snapshots, "activation_window_ready", source, reason, $"'{definition.ActivityId}' activation window ready.");
                     break;
                 }
@@ -3773,7 +3807,47 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityIdentity setupCompletedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
             _state.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
             EmitFact(facts, SessionActivityFactKind.ActivitySetupCompleted, setupCompletedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
+            if (definition.ActivationWindowMode == ActivityWindowMode.None)
+            {
+                EmitPredefinedVisualSetupReadyFactIfApplicable(
+                    definition,
+                    facts,
+                    setupCompletedIdentity,
+                    command.Source,
+                    command.Reason,
+                    "activity_setup_completed");
+            }
             EmitSnapshot(snapshots, "activity_setup_completed", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
+        }
+
+        private void EmitPredefinedVisualSetupReadyFactIfApplicable(
+            SessionActivityDefinition definition,
+            List<SessionActivityFact> facts,
+            SessionActivityIdentity readinessIdentity,
+            string source,
+            string reason,
+            string readinessPoint)
+        {
+            string routeOperationId = _lastRouteSessionPlayerPreparationHandoff.IsValid
+                ? _lastRouteSessionPlayerPreparationHandoff.RouteOperationId
+                : string.Empty;
+            if (string.IsNullOrWhiteSpace(routeOperationId))
+            {
+                return;
+            }
+
+            _lastPredefinedVisualReadinessSignal = new PredefinedVisualReadinessSignal(
+                readinessIdentity,
+                routeOperationId,
+                source,
+                reason);
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PredefinedVisualSetupReady,
+                readinessIdentity,
+                source,
+                reason,
+                $"'{definition.ActivityId}' predefined visual setup ready routeOperationId='{routeOperationId}' entrySequence='{readinessIdentity.EntrySequence}' readinessPoint='{readinessPoint}'.");
         }
 
         private ParticipantBindingStageResult EmitParticipantBindingStage(
@@ -7538,10 +7612,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
+            IReadOnlyList<PlayerActorIdentityRecord> previewActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(previewIdentity);
+            IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> previewPlayerTargets = BuildPlayerActorCapabilityScanTargets(previewIdentity, previewActorTargets, command.Source);
+
             ActivityCapabilityInventoryBuildResult buildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
                 previewIdentity,
                 discoveryResult,
-                Array.Empty<ActivityCapabilityPlayerActorScanTarget>(),
+                previewPlayerTargets,
                 command.Source,
                 command.Reason);
             ActivityCapabilityInventory inventory = buildResult.Inventory;
@@ -11541,6 +11618,140 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             payload = _lastSnapshotPayloadForSaveOnExit;
             failureReason = "resolved";
             return true;
+        }
+
+        public SessionActivityPredefinedVisualReadinessResult ObservePredefinedVisualReadiness(
+            string sessionStateId,
+            string expectedRouteOperationId,
+            string source,
+            string reason)
+        {
+            string normalizedSessionStateId = Normalize(sessionStateId);
+            string normalizedExpectedRouteOperationId = Normalize(expectedRouteOperationId);
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+
+            if (string.IsNullOrWhiteSpace(normalizedSessionStateId))
+            {
+                return new SessionActivityPredefinedVisualReadinessResult(
+                    SessionActivityPredefinedVisualReadinessKind.Failed,
+                    normalizedSessionStateId,
+                    normalizedExpectedRouteOperationId,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentEntrySequence,
+                    _state.CurrentStage,
+                    "session_state_id_missing",
+                    "SessionActivity visual readiness requires sessionStateId.");
+            }
+
+            if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                return new SessionActivityPredefinedVisualReadinessResult(
+                    SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
+                    normalizedSessionStateId,
+                    normalizedExpectedRouteOperationId,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentEntrySequence,
+                    _state.CurrentStage,
+                    "stale_or_foreign_session_state",
+                    $"Observed sessionStateId='{normalizedSessionStateId}' does not match pipeline sessionStateId='{_sessionId}'.");
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedExpectedRouteOperationId))
+            {
+                return new SessionActivityPredefinedVisualReadinessResult(
+                    SessionActivityPredefinedVisualReadinessKind.NotRequired,
+                    normalizedSessionStateId,
+                    normalizedExpectedRouteOperationId,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentEntrySequence,
+                    _state.CurrentStage,
+                    "route_operation_id_missing",
+                    "No expected routeOperationId was provided.");
+            }
+
+            if (!_state.HasStarted || !_state.CurrentIdentity.IsValid)
+            {
+                return new SessionActivityPredefinedVisualReadinessResult(
+                    SessionActivityPredefinedVisualReadinessKind.Waiting,
+                    normalizedSessionStateId,
+                    normalizedExpectedRouteOperationId,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentEntrySequence,
+                    _state.CurrentStage,
+                    "activity_not_started",
+                    "SessionActivity has not started with a valid identity.");
+            }
+
+            if (_lastPredefinedVisualReadinessSignal.IsValid)
+            {
+                if (!string.Equals(_lastPredefinedVisualReadinessSignal.RouteOperationId, normalizedExpectedRouteOperationId, StringComparison.Ordinal))
+                {
+                    return new SessionActivityPredefinedVisualReadinessResult(
+                        SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
+                        normalizedSessionStateId,
+                        normalizedExpectedRouteOperationId,
+                        _lastPredefinedVisualReadinessSignal.Identity.ActivityId,
+                        _lastPredefinedVisualReadinessSignal.Identity.EntrySequence,
+                        _state.CurrentStage,
+                        "stale_or_foreign_route_operation",
+                        $"Readiness routeOperationId='{_lastPredefinedVisualReadinessSignal.RouteOperationId}' does not match expectedRouteOperationId='{normalizedExpectedRouteOperationId}'.");
+                }
+
+                if (_state.CurrentIdentity.CycleKey != _lastPredefinedVisualReadinessSignal.Identity.CycleKey)
+                {
+                    return new SessionActivityPredefinedVisualReadinessResult(
+                        SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
+                        normalizedSessionStateId,
+                        normalizedExpectedRouteOperationId,
+                        _state.CurrentIdentity.ActivityId,
+                        _state.CurrentIdentity.EntrySequence,
+                        _state.CurrentStage,
+                        "stale_or_foreign_activity_cycle",
+                        $"Current cycle='{_state.CurrentIdentity.CycleSignature}' diverged from readiness cycle='{_lastPredefinedVisualReadinessSignal.Identity.CycleSignature}'.");
+                }
+
+                _state.AppendTrace(
+                    $"[OBS][SessionActivityPipeline] PredefinedVisualSetupReadyObserved routeOperationId='{normalizedExpectedRouteOperationId}' activityId='{_state.CurrentIdentity.ActivityId}' entrySequence='{_state.CurrentIdentity.EntrySequence}' source='{normalizedSource}' reason='{normalizedReason}'.");
+
+                return new SessionActivityPredefinedVisualReadinessResult(
+                    SessionActivityPredefinedVisualReadinessKind.Ready,
+                    normalizedSessionStateId,
+                    normalizedExpectedRouteOperationId,
+                    _lastPredefinedVisualReadinessSignal.Identity.ActivityId,
+                    _lastPredefinedVisualReadinessSignal.Identity.EntrySequence,
+                    _state.CurrentStage,
+                    "predefined_visual_setup_ready",
+                    "Predefined visual setup is ready for reveal.");
+            }
+
+            string observedRouteOperationId = _lastRouteSessionPlayerPreparationHandoff.IsValid
+                ? _lastRouteSessionPlayerPreparationHandoff.RouteOperationId
+                : string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(observedRouteOperationId) &&
+                !string.Equals(observedRouteOperationId, normalizedExpectedRouteOperationId, StringComparison.Ordinal))
+            {
+                return new SessionActivityPredefinedVisualReadinessResult(
+                    SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
+                    normalizedSessionStateId,
+                    normalizedExpectedRouteOperationId,
+                    _state.CurrentIdentity.ActivityId,
+                    _state.CurrentIdentity.EntrySequence,
+                    _state.CurrentStage,
+                    "stale_or_foreign_route_operation",
+                    $"Current handoff routeOperationId='{observedRouteOperationId}' does not match expectedRouteOperationId='{normalizedExpectedRouteOperationId}'.");
+            }
+
+            return new SessionActivityPredefinedVisualReadinessResult(
+                SessionActivityPredefinedVisualReadinessKind.Waiting,
+                normalizedSessionStateId,
+                normalizedExpectedRouteOperationId,
+                _state.CurrentIdentity.ActivityId,
+                _state.CurrentIdentity.EntrySequence,
+                _state.CurrentStage,
+                "predefined_visual_setup_pending",
+                $"Waiting predefined visual setup for activityId='{_state.CurrentIdentity.ActivityId}' entrySequence='{_state.CurrentIdentity.EntrySequence}'.");
         }
 
         private static string JoinValues(HashSet<string> values)
