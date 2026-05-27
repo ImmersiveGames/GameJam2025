@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences
@@ -8,31 +9,43 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public ActorPresentationEndpointReference(
             string capabilityId,
             string ownerId,
+            ActorInstanceId actorInstanceRuntimeId,
             string actorId,
-            int actorInstanceId,
+            ActorKind actorKind,
+            ActorRole actorRole,
+            ActorScope actorScope,
             string componentPath,
             ActorPresentationEndpoint endpoint)
         {
             CapabilityId = Normalize(capabilityId);
             OwnerId = Normalize(ownerId);
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorId = Normalize(actorId);
-            ActorInstanceId = actorInstanceId;
+            ActorKind = actorKind;
+            ActorRole = actorRole;
+            ActorScope = actorScope;
             ComponentPath = Normalize(componentPath);
             Endpoint = endpoint;
         }
 
         public string CapabilityId { get; }
         public string OwnerId { get; }
+        public ActorInstanceId ActorInstanceRuntimeId { get; }
         public string ActorId { get; }
-        public int ActorInstanceId { get; }
+        public ActorKind ActorKind { get; }
+        public ActorRole ActorRole { get; }
+        public ActorScope ActorScope { get; }
         public string ComponentPath { get; }
         public ActorPresentationEndpoint Endpoint { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(CapabilityId) &&
             !string.IsNullOrWhiteSpace(OwnerId) &&
+            ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(ActorId) &&
-            ActorInstanceId != 0 &&
+            ActorKind != ActorKind.Unknown &&
+            ActorRole != ActorRole.Unknown &&
+            ActorScope != ActorScope.Unknown &&
             Endpoint != null;
 
         private static string Normalize(string value)

@@ -67,6 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             SessionActivityIdentity identity,
             ActivityObjectContributorDiscoveryResult activityObjectDiscovery,
             IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> playerActorTargets,
+            IReadOnlyList<ActorScanTarget> actorTargets,
             string source,
             string reason)
         {
@@ -92,6 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 identity,
                 objectTargets,
                 normalizedPlayerTargets,
+                actorTargets ?? Array.Empty<ActorScanTarget>(),
                 source,
                 reason);
 

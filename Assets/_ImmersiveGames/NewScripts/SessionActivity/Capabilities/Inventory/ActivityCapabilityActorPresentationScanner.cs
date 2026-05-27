@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
@@ -28,9 +29,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             HashSet<string> ownerKeys = new(StringComparer.Ordinal);
             HashSet<string> capabilityKeys = new(StringComparer.Ordinal);
 
-            for (int index = 0; index < context.PlayerActorTargets.Count; index++)
+            for (int index = 0; index < context.ActorTargets.Count; index++)
             {
-                ActivityCapabilityPlayerActorScanTarget target = context.PlayerActorTargets[index];
+                ActorScanTarget target = context.ActorTargets[index];
                 if (!target.IsValid)
                 {
                     continue;
@@ -39,18 +40,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 string ownerPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(target.ActorRoot.transform);
                 string ownerId = ActivityCapabilityInventoryId.DeriveOwnerId(
                     inventoryId,
-                    ActivityCapabilityOwnerKind.PlayerActor,
+                    ResolveOwnerKind(target.ActorKind),
                     ownerPath,
-                    target.PlayerActorId);
+                    target.ActorId);
 
                 if (ownerKeys.Add(ownerId))
                 {
                     owners.Add(new ActivityCapabilityOwnerDescriptor(
-                        ActivityCapabilityOwnerKind.PlayerActor,
+                        ResolveOwnerKind(target.ActorKind),
                         ownerId,
                         ownerPath,
-                        target.SourceScene,
-                        target.SourceContent,
+                        target.SourceSceneName,
+                        target.Source,
                         context.Source));
                 }
 
@@ -94,8 +95,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     runtimeReferences.Add(new ActorPresentationEndpointReference(
                         capabilityId,
                         ownerId,
-                        target.PlayerActorId,
-                        target.ActorRoot.GetInstanceID(),
+                        target.ActorInstanceId,
+                        target.ActorId,
+                        target.ActorKind,
+                        target.ActorRole,
+                        target.ActorScope,
                         componentPath,
                         endpoint));
                 }
@@ -105,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         }
 
         private static IReadOnlyList<ActivityCapabilityPolicyEntry> BuildPolicyMetadata(
-            ActivityCapabilityPlayerActorScanTarget target,
+            ActorScanTarget target,
             ActorPresentationEndpoint endpoint,
             ActorPresentationProfileAsset profile)
         {
@@ -120,12 +124,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             return new[]
             {
-                new ActivityCapabilityPolicyEntry("playerActorId", target.PlayerActorId),
-                new ActivityCapabilityPolicyEntry("playerSlotId", target.PlayerSlotId),
+                new ActivityCapabilityPolicyEntry("actorId", target.ActorId),
+                new ActivityCapabilityPolicyEntry("actorInstanceId", target.ActorInstanceId.Value),
+                new ActivityCapabilityPolicyEntry("actorKind", target.ActorKind.ToString()),
+                new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
+                new ActivityCapabilityPolicyEntry("actorScope", target.ActorScope.ToString()),
+                new ActivityCapabilityPolicyEntry("actorSourceKind", target.ActorSourceKind.ToString()),
+                new ActivityCapabilityPolicyEntry("participationPolicy", target.ParticipationPolicy),
                 new ActivityCapabilityPolicyEntry("endpointId", endpointId),
                 new ActivityCapabilityPolicyEntry("profileId", profileId),
                 new ActivityCapabilityPolicyEntry("requiredness", requiredness),
                 new ActivityCapabilityPolicyEntry("releasePolicy", releasePolicy),
+            };
+        }
+
+        private static ActivityCapabilityOwnerKind ResolveOwnerKind(ActorKind actorKind)
+        {
+            return actorKind switch
+            {
+                ActorKind.Player => ActivityCapabilityOwnerKind.PlayerActor,
+                ActorKind.NonPlayer => ActivityCapabilityOwnerKind.NonPlayerActor,
+                _ => ActivityCapabilityOwnerKind.Unsupported,
             };
         }
     }
