@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
@@ -12,6 +11,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     public sealed class ActivityCapabilityPermissionScanner : IActivityCapabilityScanner
     {
         private const string ModuleId = "SessionActivity.PermissionMovement";
+        private readonly IPlayerActorCapabilityIdentityResolver _identityResolver;
+
+        public ActivityCapabilityPermissionScanner(IPlayerActorCapabilityIdentityResolver identityResolver)
+        {
+            _identityResolver = identityResolver ?? throw new InvalidOperationException("ActivityCapabilityPermissionScanner requires non-null identity resolver.");
+        }
 
         public string ScannerId => "activity_capability_permission_scanner.v1";
         public int Order => 300;
@@ -51,7 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
-                if (!TryResolvePlayerIdentity(target, out string playerActorId, out string playerSlotId))
+                if (!_identityResolver.TryResolve(target, out PlayerActorCapabilityIdentity playerIdentity))
                 {
                     Component movementComponent = movementEndpoint as Component;
                     string unresolvedComponentPath = movementComponent != null
@@ -103,8 +108,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     context.Identity.SessionId,
                     context.Identity.ActivityId,
                     context.Identity.EntrySequence,
-                    playerActorId,
-                    playerSlotId);
+                    playerIdentity.PlayerActorId,
+                    playerIdentity.PlayerSlotId);
                 string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
                     receiverIdentity);
 
@@ -114,8 +119,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     receiver = new PlayerMovementPermissionReceiver(
                         movementEndpoint,
                         receiverId,
-                        playerActorId,
-                        playerSlotId);
+                        playerIdentity.PlayerActorId,
+                        playerIdentity.PlayerSlotId);
                 }
 
                 capabilities.Add(new ActivityCapabilityDescriptor(
@@ -130,8 +135,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     policyMetadata: new[]
                     {
                         new ActivityCapabilityPolicyEntry("permissionId", permissionToken),
-                        new ActivityCapabilityPolicyEntry("playerActorId", playerActorId),
-                        new ActivityCapabilityPolicyEntry("playerSlotId", playerSlotId),
+                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId),
+                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId),
                         new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
                     },
                     source: context.Source));
@@ -139,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityCapabilityPermissionReceiverReference(
                     capabilityId,
                     ownerId,
-                    playerActorId,
+                    playerIdentity.PlayerActorId,
                     componentPath,
                     permissionToken,
                     receiverIdentity,
@@ -147,31 +152,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             }
 
             return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
-        }
-
-        private static bool TryResolvePlayerIdentity(ActorScanTarget target, out string playerActorId, out string playerSlotId)
-        {
-            playerActorId = string.Empty;
-            playerSlotId = string.Empty;
-
-            PlayerActorIdentity identity = target.ActorRoot != null ? target.ActorRoot.GetComponent<PlayerActorIdentity>() : null;
-            if (identity == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(identity.PlayerActorId))
-            {
-                playerActorId = identity.PlayerActorId.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(identity.PlayerSlotId))
-            {
-                playerSlotId = identity.PlayerSlotId.Trim();
-            }
-
-            return !string.IsNullOrWhiteSpace(playerActorId) &&
-                   !string.IsNullOrWhiteSpace(playerSlotId);
         }
     }
 

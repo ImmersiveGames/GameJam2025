@@ -2,7 +2,7 @@
 
 Status: Accepted / Base 1.2  
 Área: Permission / Movement / ActorCapability  
-Atualização: H4D-B2 — CLOSED / PASS
+Atualização: H4D-B2 + ActorReset-1B cross-check — CLOSED / PASS
 
 ---
 
@@ -11,6 +11,8 @@ Atualização: H4D-B2 — CLOSED / PASS
 `PermissionTarget` controla se uma capability local pode reagir ao estado de gameplay. No caso atual, a aplicação principal é movement control do PlayerActor.
 
 A migração para ActorCapabilitySurface removeu o uso de `PlayerActorTargets` como fonte primária do scanner, mas o contrato de runtime ainda contém `playerActorId/playerSlotId`.
+
+O checkpoint ActorReset-1B confirmou que reset individual QA pode rearmar placement/participation do PlayerActor sem assumir ownership de permission/movement. O controle de gameplay continua sendo reação local comandada por permission state.
 
 ---
 
@@ -52,15 +54,29 @@ O pipeline publica permission state:
 
 O receiver local aplica a reação concreta.
 
+### 5. Reset não substitui permission lifecycle
+
+`ActorReset` pode aplicar grupos como `Placement` e `ActivityParticipation`, mas não deve substituir o lifecycle de permission/movement.
+
+Após reset ou transição, o estado de controle segue sendo aplicado por:
+
+- `ActivityCapabilityPermissionRuntime`;
+- receiver local;
+- `MovementBinding`/`MovementControl` comandados pelo pipeline no momento correto.
+
+O QA reset individual não é owner de gameplay control.
+
 ---
 
 ## Resultado atual
 
-Checkpoint H4D-B2:
+Checkpoint H4D-B2 + ActorReset-1B:
 
 - `PermissionTarget:1` preservado nas entries esperadas;
 - `MovementBindingCompleted` preservado;
 - `MovementBindingRetained` preservado na `activity_02`;
+- `ActorResetQaApplied` não quebrou permission/movement;
+- `MovementControlEnabled` preservado após entrada em `ActivityRunning`;
 - sem `PermissionTargetIdentityUnresolved` em cenário válido;
 - sem fallback para `target.ActorId`.
 
@@ -70,3 +86,4 @@ Checkpoint H4D-B2:
 
 - Generalizar PermissionTarget para actors não-player quando houver receivers reais.
 - Reduzir `playerActorId/playerSlotId` quando movement/permission forem generalizados.
+- Separar completamente identity de receiver técnico e identity de Actor quando a policy genérica de ActorParticipation estiver pronta.

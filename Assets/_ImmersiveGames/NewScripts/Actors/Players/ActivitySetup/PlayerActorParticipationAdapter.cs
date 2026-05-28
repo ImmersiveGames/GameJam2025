@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -60,14 +62,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_actor_identity: actor identity does not match active identity.");
                 }
 
-                GameObject instance = registry.ResolveActiveInstanceOrFail(activeIdentity, actorIdentity.PlayerActorId);
+                if (!registry.TryResolveInstanceForControl(activeIdentity, actorIdentity.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
+                    instance == null ||
+                    !observedIdentity.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"player_participation_exit_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                }
+
                 PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerActor identity component is missing or invalid. playerActorId='{actorIdentity.PlayerActorId}'.");
                 }
 
-                EnsureIdentityMatches(boundIdentity, activeIdentity, actorIdentity);
+                EnsureIdentityMatches(instance, boundIdentity, activeIdentity, actorIdentity);
 
                 PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();
                 if (participation == null)
@@ -140,14 +149,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_actor_identity: actor identity does not match active identity.");
                 }
 
-                GameObject instance = registry.ResolveActiveInstanceOrFail(activeIdentity, actorIdentity.PlayerActorId);
+                if (!registry.TryResolveInstanceForControl(activeIdentity, actorIdentity.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
+                    instance == null ||
+                    !observedIdentity.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"player_participation_enter_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                }
+
                 PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
                 {
                     throw new InvalidOperationException($"PlayerActor identity component is missing or invalid. playerActorId='{actorIdentity.PlayerActorId}'.");
                 }
 
-                EnsureIdentityMatches(boundIdentity, activeIdentity, actorIdentity);
+                EnsureIdentityMatches(instance, boundIdentity, activeIdentity, actorIdentity);
 
                 PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();
                 if (participation == null)
@@ -178,20 +194,36 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         }
 
         private static void EnsureIdentityMatches(
+            GameObject actorInstance,
             PlayerActorIdentity identity,
             SessionActivityIdentity activeIdentity,
             PlayerActorIdentityRecord expected)
         {
+            if (actorInstance == null)
+            {
+                throw new InvalidOperationException(
+                    $"stale_or_foreign_player_actor_identity_binding: playerActorId='{expected.PlayerActorId}' reason='actor_instance_null'.");
+            }
+
+            Actor runtimeActor = actorInstance.GetComponent<Actor>();
+            bool isRouteScoped = runtimeActor != null && runtimeActor.ActorScopeMetadata == ActorScope.RouteScoped;
+
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal) ||
-                !string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
-                identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
-                identity.EntrySequence != activeIdentity.EntrySequence ||
                 !string.Equals(identity.PlayerSlotId, expected.PlayerSlotId, StringComparison.Ordinal) ||
                 !string.Equals(identity.PlayerActorId, expected.PlayerActorId, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     $"stale_or_foreign_player_actor_identity_binding: playerActorId='{expected.PlayerActorId}' does not match current pipeline identity.");
+            }
+
+            if (!isRouteScoped &&
+                (!string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
+                 identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
+                 identity.EntrySequence != activeIdentity.EntrySequence))
+            {
+                throw new InvalidOperationException(
+                    $"stale_or_foreign_player_actor_activity_context: playerActorId='{expected.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}' does not match bound identity context.");
             }
         }
 

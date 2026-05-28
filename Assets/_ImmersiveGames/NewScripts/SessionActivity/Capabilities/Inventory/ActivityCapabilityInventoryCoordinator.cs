@@ -47,13 +47,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             _objectTargetAdapter = new ActivityObjectCapabilityScanTargetAdapter();
             _objectScanner = new ActivityObjectCapabilityScanner();
+            IPlayerActorCapabilityIdentityResolver playerIdentityResolver = new PlayerActorCapabilityIdentityResolver();
 
             ActivityCapabilityScannerRegistry scannerRegistry = new ActivityCapabilityScannerRegistry();
             scannerRegistry.Register(_objectScanner);
-            scannerRegistry.Register(new ActivityCapabilityPermissionScanner());
+            scannerRegistry.Register(new ActivityCapabilityPermissionScanner(playerIdentityResolver));
             scannerRegistry.Register(new ActivityCapabilityActorPresentationScanner());
             scannerRegistry.Register(new ActivityCapabilityActorAttributeScanner());
-            scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner());
+            scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner(playerIdentityResolver));
 
             _inventoryBuilder = new ActivityCapabilityInventoryBuilder(scannerRegistry);
             _inventoryValidator = new ActivityCapabilityInventoryValidator();

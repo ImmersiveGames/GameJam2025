@@ -202,6 +202,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             DumpActivityContentReleaseEvidence();
         }
 
+        [ContextMenu("Reset Current Player Actor")]
+        public void ResetCurrentPlayerActor()
+        {
+            EnsureHost();
+            host.QaResetCurrentPlayerActor();
+        }
+
+        [ContextMenu("Reset Current Activity Objects")]
+        public void ResetCurrentActivityObjects()
+        {
+            EnsureHost();
+            host.QaResetCurrentActivityObjects();
+        }
+
         private void OnGUI()
         {
             if (!showOnGUI)
@@ -226,6 +240,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 EnsureStyles();
 
+                if (!TryEnsureHostOperational())
+                {
+                    GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
+                    areaBegun = true;
+                    GUILayout.Label("Session Activity", _titleStyle);
+                    GUILayout.Space(SectionSpacing);
+                    GUILayout.Label("SessionActivity host encontrado, pipeline indisponivel.", _labelStyle);
+                    GUILayout.Label("Estado parcial detectado; aguardando composicao/boot valido.", _labelStyle);
+                    return;
+                }
+
                 GUILayout.BeginArea(new Rect(20, 20, PanelWidth, PanelHeight), _windowStyle);
                 areaBegun = true;
                 GUILayout.Label("Session Activity", _titleStyle);
@@ -240,6 +265,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 bool canCompleteCurrentActivity = CanCompleteCurrentActivity();
                 bool canRestartCurrentActivity = CanRestartCurrentActivity();
                 bool canCompleteDeactivationWindow = CanCompleteDeactivationWindow();
+                bool canResetCurrentPlayerActor = CanResetCurrentPlayerActor();
 
                 GUI.enabled = canCompleteActivationWindow;
                 if (GUILayout.Button("CompleteActivationWindow", _buttonStyle))
@@ -263,6 +289,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (GUILayout.Button("RestartCurrentActivity (rail canonico de restart local)", _buttonStyle))
                 {
                     RestartCurrentActivity();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canResetCurrentPlayerActor;
+                if (GUILayout.Button("Reset Current Player Actor", _buttonStyle))
+                {
+                    ResetCurrentPlayerActor();
+                }
+                GUI.enabled = true;
+
+                GUILayout.Space(SectionSpacing);
+
+                GUI.enabled = canResetCurrentPlayerActor;
+                if (GUILayout.Button("Reset Current Activity Objects", _buttonStyle))
+                {
+                    ResetCurrentActivityObjects();
                 }
                 GUI.enabled = true;
 
@@ -357,6 +401,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             TryBindHostStateObservation();
             return host != null;
+        }
+
+        private bool TryEnsureHostOperational()
+        {
+            return host != null &&
+                host.Pipeline != null &&
+                host.State != null;
         }
 
         private string BuildDumpText()
@@ -1340,6 +1391,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"targetIds='{targetIds}' resetGroups='{resetGroups}' resetCompleted='{aggregation.ResetCompleted.ToString().ToLowerInvariant()}' " +
                     $"completionKind='{completionKind}' completionReason='{completionReason}'");
             }
+        }
+
+        private bool CanResetCurrentPlayerActor()
+        {
+            if (!IsHostStateAvailable())
+            {
+                return false;
+            }
+
+            return !host.State.CurrentPendingOperation.IsValid &&
+                   host.State.CurrentIdentity.IsValid &&
+                   host.State.CurrentStage == SessionActivityStage.ActivityRunning;
         }
 
         private static string ResolveActivityObjectResetCheckpointStatus(ActivityObjectResetCheckpointAggregation aggregation)

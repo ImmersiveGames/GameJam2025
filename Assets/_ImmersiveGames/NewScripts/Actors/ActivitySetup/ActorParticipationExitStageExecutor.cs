@@ -1,0 +1,347 @@
+using System;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+
+namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
+{
+    public readonly struct ActorParticipationExitCommand
+    {
+        public ActorParticipationExitCommand(
+            SessionActivityIdentity identity,
+            string activityId,
+            int entrySequence,
+            ActorInventoryFeedResult inventoryFeed,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            ActivityId = Normalize(activityId);
+            EntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            InventoryFeed = inventoryFeed;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public string ActivityId { get; }
+        public int EntrySequence { get; }
+        public ActorInventoryFeedResult InventoryFeed { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public bool IsValid =>
+            Identity.IsValid &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            EntrySequence > 0 &&
+            InventoryFeed.IsValid &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public enum ActorParticipationExitActorOutcome
+    {
+        Unknown = 0,
+        Exited = 1,
+        Skipped = 2,
+        Failed = 3,
+    }
+
+    public readonly struct ActorParticipationExitActorResult
+    {
+        public ActorParticipationExitActorResult(
+            ActorParticipationExitActorOutcome outcome,
+            ActorInstanceRecord instance,
+            ActorParticipationRecord participation,
+            string playerActorId,
+            string playerSlotId,
+            string reasonCode,
+            string skipOrFailureKind)
+        {
+            Outcome = outcome;
+            Instance = instance;
+            Participation = participation;
+            PlayerActorId = Normalize(playerActorId);
+            PlayerSlotId = Normalize(playerSlotId);
+            ReasonCode = Normalize(reasonCode);
+            SkipOrFailureKind = Normalize(skipOrFailureKind);
+        }
+
+        public ActorParticipationExitActorOutcome Outcome { get; }
+        public ActorInstanceRecord Instance { get; }
+        public ActorParticipationRecord Participation { get; }
+        public string PlayerActorId { get; }
+        public string PlayerSlotId { get; }
+        public string ReasonCode { get; }
+        public string SkipOrFailureKind { get; }
+        public bool IsExited => Outcome == ActorParticipationExitActorOutcome.Exited;
+        public bool IsSkipped => Outcome == ActorParticipationExitActorOutcome.Skipped;
+        public bool IsFailed => Outcome == ActorParticipationExitActorOutcome.Failed;
+        public bool HasResolvedPlayerIdentity => !string.IsNullOrWhiteSpace(PlayerActorId) && !string.IsNullOrWhiteSpace(PlayerSlotId);
+        public bool IsValid =>
+            Outcome != ActorParticipationExitActorOutcome.Unknown &&
+            Instance.IsValid &&
+            Participation.IsValid &&
+            (Instance.Kind != ActorKind.Player || HasResolvedPlayerIdentity || IsFailed) &&
+            !string.IsNullOrWhiteSpace(ReasonCode);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public readonly struct ActorParticipationExitResult
+    {
+        public ActorParticipationExitResult(
+            SessionActivityIdentity identity,
+            IReadOnlyList<ActorParticipationExitActorResult> actorResults,
+            int total,
+            int exited,
+            int skipped,
+            int failed,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            ActorResults = actorResults ?? Array.Empty<ActorParticipationExitActorResult>();
+            Total = total < 0 ? 0 : total;
+            Exited = exited < 0 ? 0 : exited;
+            Skipped = skipped < 0 ? 0 : skipped;
+            Failed = failed < 0 ? 0 : failed;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public IReadOnlyList<ActorParticipationExitActorResult> ActorResults { get; }
+        public int Total { get; }
+        public int Exited { get; }
+        public int Skipped { get; }
+        public int Failed { get; }
+        public string Source { get; }
+        public string Reason { get; }
+        public bool IsValid => Identity.IsValid && Total >= 0 && Exited >= 0 && Skipped >= 0 && Failed >= 0;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public sealed class ActorParticipationExitStageExecutor
+    {
+        public ActorParticipationExitResult Execute(
+            ActorParticipationExitCommand command,
+            IReadOnlyCollection<ActorInstanceId> activeParticipationActorIds)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActorParticipationExitCommand is invalid.");
+            }
+
+            Dictionary<ActorInstanceId, ActorInstanceRecord> instancesById = BuildActorInstanceIndex(command.InventoryFeed.ActorInstances);
+            List<ActorParticipationExitActorResult> actorResults = new();
+            int total = 0;
+            int exited = 0;
+            int skipped = 0;
+            int failed = 0;
+
+            IReadOnlyList<ActorParticipationRecord> participations = command.InventoryFeed.ActorParticipations;
+            for (int index = 0; index < participations.Count; index++)
+            {
+                ActorParticipationRecord participation = participations[index];
+                if (!participation.IsValid || !participation.ParticipatesInCurrentEntry)
+                {
+                    continue;
+                }
+
+                if (!instancesById.TryGetValue(participation.ActorInstanceId, out ActorInstanceRecord instance) || !instance.IsValid)
+                {
+                    continue;
+                }
+
+                total += 1;
+                if (!IsEligibleFromPolicy(command.ActivityId, participation, out string eligibilityReason))
+                {
+                    skipped += 1;
+                    actorResults.Add(new ActorParticipationExitActorResult(
+                        ActorParticipationExitActorOutcome.Skipped,
+                        instance,
+                        participation,
+                        string.Empty,
+                        string.Empty,
+                        eligibilityReason,
+                        "policy"));
+                    continue;
+                }
+
+                if (!ContainsActorInstanceId(activeParticipationActorIds, instance.ActorInstanceId))
+                {
+                    skipped += 1;
+                    actorResults.Add(new ActorParticipationExitActorResult(
+                        ActorParticipationExitActorOutcome.Skipped,
+                        instance,
+                        participation,
+                        string.Empty,
+                        string.Empty,
+                        "actor_participation_not_active",
+                        "not_active"));
+                    continue;
+                }
+
+                string playerActorId = string.Empty;
+                string playerSlotId = string.Empty;
+                if (instance.Kind == ActorKind.Player &&
+                    !TryResolvePlayerIdentityFromInstance(instance, out playerActorId, out playerSlotId, out string playerIdentityFailureReason))
+                {
+                    failed += 1;
+                    actorResults.Add(new ActorParticipationExitActorResult(
+                        ActorParticipationExitActorOutcome.Failed,
+                        instance,
+                        participation,
+                        string.Empty,
+                        string.Empty,
+                        playerIdentityFailureReason,
+                        "player_identity"));
+                    continue;
+                }
+
+                exited += 1;
+                actorResults.Add(new ActorParticipationExitActorResult(
+                    ActorParticipationExitActorOutcome.Exited,
+                    instance,
+                    participation,
+                    instance.Kind == ActorKind.Player ? playerActorId : string.Empty,
+                    instance.Kind == ActorKind.Player ? playerSlotId : string.Empty,
+                    "exited",
+                    string.Empty));
+            }
+
+            return new ActorParticipationExitResult(
+                command.Identity,
+                actorResults,
+                total,
+                exited,
+                skipped,
+                failed,
+                command.Source,
+                command.Reason);
+        }
+
+        private static bool TryResolvePlayerIdentityFromInstance(
+            ActorInstanceRecord instance,
+            out string playerActorId,
+            out string playerSlotId,
+            out string failureReason)
+        {
+            playerActorId = string.Empty;
+            playerSlotId = string.Empty;
+            failureReason = "player_identity_missing_in_actor_participation_record";
+
+            if (!instance.IsValid || instance.ActorRoot == null)
+            {
+                return false;
+            }
+
+            PlayerActorIdentity identity = instance.ActorRoot.GetComponent<PlayerActorIdentity>();
+            if (identity == null || !identity.IsValid)
+            {
+                return false;
+            }
+
+            playerActorId = Normalize(identity.PlayerActorId);
+            playerSlotId = Normalize(identity.PlayerSlotId);
+            if (string.IsNullOrWhiteSpace(playerActorId) || string.IsNullOrWhiteSpace(playerSlotId))
+            {
+                return false;
+            }
+
+            failureReason = string.Empty;
+            return true;
+        }
+
+        private static Dictionary<ActorInstanceId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
+        {
+            Dictionary<ActorInstanceId, ActorInstanceRecord> byId = new();
+            if (instances == null)
+            {
+                return byId;
+            }
+
+            for (int index = 0; index < instances.Count; index++)
+            {
+                ActorInstanceRecord instance = instances[index];
+                if (!instance.IsValid)
+                {
+                    continue;
+                }
+
+                byId[instance.ActorInstanceId] = instance;
+            }
+
+            return byId;
+        }
+
+        private static bool IsEligibleFromPolicy(
+            string activityId,
+            ActorParticipationRecord participation,
+            out string reasonCode)
+        {
+            if (!participation.IsValid)
+            {
+                reasonCode = "participation_record_invalid";
+                return false;
+            }
+
+            if (!participation.ParticipatesInCurrentEntry)
+            {
+                reasonCode = "entry_not_participating";
+                return false;
+            }
+
+            switch (participation.Policy)
+            {
+                case ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute:
+                    reasonCode = "eligible";
+                    return true;
+                case ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds:
+                    {
+                        IReadOnlyList<string> activityIds = participation.ExplicitActivityIds;
+                        for (int index = 0; index < activityIds.Count; index++)
+                        {
+                            if (string.Equals(Normalize(activityIds[index]), Normalize(activityId), StringComparison.Ordinal))
+                            {
+                                reasonCode = "eligible";
+                                return true;
+                            }
+                        }
+
+                        reasonCode = "activity_not_listed";
+                        return false;
+                    }
+                case ActorParticipationRecord.ActorParticipationPolicy.None:
+                default:
+                    reasonCode = "policy_disabled";
+                    return false;
+            }
+        }
+
+        private static bool ContainsActorInstanceId(
+            IReadOnlyCollection<ActorInstanceId> activeParticipationActorIds,
+            ActorInstanceId actorInstanceId)
+        {
+            if (activeParticipationActorIds == null || !actorInstanceId.IsValid)
+            {
+                return false;
+            }
+
+            foreach (ActorInstanceId current in activeParticipationActorIds)
+            {
+                if (current == actorInstanceId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+}

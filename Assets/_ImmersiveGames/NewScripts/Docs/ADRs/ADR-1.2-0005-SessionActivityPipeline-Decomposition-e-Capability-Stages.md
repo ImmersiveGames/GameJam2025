@@ -2,7 +2,7 @@
 
 Status: Accepted / Base 1.2  
 Área: SessionActivityPipeline / Pipeline Stages / Actor Capabilities  
-Atualização: 4D + H4D Hygiene
+Atualização: 4D + H4D Hygiene + ActorReset-1B — CLOSED / PASS funcional
 
 ---
 
@@ -12,7 +12,10 @@ Durante a Base 1.2, houve risco de o `SessionActivityPipeline` virar owner de co
 
 - pipeline decide lifecycle, ordem, readiness, setup/release e handoff;
 - endpoints/capabilities executam efeitos locais;
-- ações locais de gameplay não devem subir para o pipeline quando podem ser resolvidas localmente.
+- ações locais de gameplay não devem subir para o pipeline quando podem ser resolvidas localmente;
+- QA/debug pode solicitar comandos canônicos, mas não vira owner de lifecycle.
+
+A decomposição também reduziu trechos internos do `SessionActivityPipeline` sem alterar o owner do ciclo. O pipeline continua coordenando o fluxo, enquanto stages/adapters/endpoints executam partes específicas.
 
 ---
 
@@ -47,6 +50,12 @@ Caminhos migrados:
 - PermissionTarget scanner;
 - ActorParticipation enter/exit.
 
+Caminhos com boundary explícito:
+
+- `ActivityObjectReset` usa `ActivityResetStage` e pode construir snapshot local transitório de inventory para a entry corrente;
+- esse snapshot local de reset não substitui o preview canônico persistido em `_state.CurrentActivityCapabilityInventoryPreview`;
+- `ActivityCapabilityInventoryPreviewStage` continua dono do preview canônico observado por stages posteriores.
+
 ### 3. Participation é genérico no caminho nominal
 
 `NonPlayerActorParticipationStage` foi removido.
@@ -72,6 +81,41 @@ Exemplo aceito atualmente:
 
 - `transitional_non_registry_actor` para PlayerActor fora da registry formal de ActorParticipation.
 
+### 6. ActorReset é comando/capability neutro
+
+O contrato canônico de reset de Actor usa shape neutro:
+
+- `ActorResetCommand`;
+- `ActorResetResult`;
+- `ActorResetGroup`;
+- `ActorResetTargetRef`;
+- `ActorResetContext`;
+- `IActorResetEndpoint`;
+- `IActorResetAdapter`.
+
+`PlayerActorReset*` não é contrato canônico e não deve voltar como rail paralelo.
+
+`ActorResetAdapter` é executor neutro. Ele não cria endpoint via runtime, não injeta `AddComponent`, não conhece `PlayerReset`/`NonPlayerReset` e não decide lifecycle.
+
+O endpoint concreto atual do Player é:
+
+- `PlayerActorDefaultResetEndpoint`, implementando `IActorResetEndpoint`.
+
+### 7. QA probe de reset individual é permitido apenas como comando explícito
+
+`SessionActivityDebugPanel` pode expor botão QA para disparar reset individual do actor atual, desde que:
+
+- use `ActorResetCommand`;
+- valide `ActivityRunning`;
+- valide `Pipeline Identity`, `activityId` e `entrySequence` ativos;
+- execute pelo caminho canônico `IActorResetAdapter` + `IActorResetEndpoint`;
+- emita observabilidade explícita:
+  - `ActorResetQaRequested`;
+  - `ActorResetQaApplied`;
+  - `ActorResetQaRejected`.
+
+Esse caminho QA não é owner de lifecycle e não substitui `ActivityEntryPipeline`.
+
 ---
 
 ## Proibições
@@ -82,7 +126,32 @@ Não criar:
 - switch funcional por `ActorKind`;
 - fallback por string/path/scene;
 - compat paralelo;
-- novo core genérico fora do escopo Base 1.2.
+- novo core genérico fora do escopo Base 1.2;
+- `ResetManager`;
+- `EventBus`/broadcast global para reset;
+- `PlayerReset` ou `NonPlayerReset` como contratos paralelos;
+- `AddComponent<PlayerActorDefaultResetEndpoint>()` em runtime.
+
+---
+
+## Checkpoint ActorReset-1 + ActorReset-1B
+
+Congelado como PASS funcional:
+
+- `ActorReset*` é contrato canônico neutro;
+- `PlayerActorDefaultResetEndpoint` expõe `IActorResetEndpoint` no prefab `PlayerActor_v0`;
+- prefab obrigatório ausente falha explicitamente, sem fallback silencioso;
+- `ActorResetAdapter` permanece neutro;
+- reset individual QA executa `ActorResetCommand`;
+- `ActorResetQaApplied` observado em `ActivityRunning`;
+- smoke normal preservado após QA reset;
+- `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` preservados.
+
+Não congelado como shape final:
+
+- botão QA ainda é orientado ao `Current Player Actor`;
+- resolver concreto ainda depende de registry/player identity transitório;
+- policy/registry genérica de ActorParticipation incluindo PlayerActor fica para fase futura.
 
 ---
 
@@ -90,4 +159,5 @@ Não criar:
 
 - Migrar PlayerActor para policy/registry genérica de ActorParticipation.
 - Reduzir registries transitórios.
+- Generalizar resolver de ActorReset para `ActorInstanceId`/`ActorInstanceRecord` quando o contrato final existir.
 - Revisar tamanho do `SessionActivityPipeline` em fase própria sem mudar ownership.

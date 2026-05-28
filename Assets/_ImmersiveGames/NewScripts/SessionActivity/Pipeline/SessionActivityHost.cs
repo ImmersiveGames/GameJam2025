@@ -235,6 +235,59 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return QaApplyActorAttributeCommand("QaRestoreActorAttributeToMax", actorId, attributeId, ActorAttributeOperation.RestoreToMax, 0f, 0f);
         }
 
+        internal bool QaResetCurrentPlayerActor()
+        {
+            EnsurePipeline();
+            bool applied;
+            string outcomeReason;
+            try
+            {
+                applied = _pipeline.TryQaResetCurrentPlayerActor(
+                    State.CurrentIdentity,
+                    "player1",
+                    QaSource("QaResetCurrentPlayerActor"),
+                    QaReason("QaResetCurrentPlayerActor"),
+                    out outcomeReason);
+            }
+            catch (Exception exception)
+            {
+                applied = false;
+                outcomeReason = $"actor_reset_qa_failed_exception:{exception.GetType().Name}";
+                Debug.LogError(
+                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            }
+
+            Debug.Log(
+                $"[OBS][SessionActivityPipeline][Host] action='QaResetCurrentPlayerActor' outcomeKind='{(applied ? "Applied" : "Rejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            return applied;
+        }
+
+        internal bool QaResetCurrentActivityObjects()
+        {
+            EnsurePipeline();
+            bool applied;
+            string outcomeReason;
+            try
+            {
+                applied = _pipeline.TryQaResetCurrentActivityObjects(
+                    State.CurrentIdentity,
+                    QaSource("QaResetCurrentActivityObjects"),
+                    QaReason("QaResetCurrentActivityObjects"),
+                    out outcomeReason);
+            }
+            catch (Exception exception)
+            {
+                applied = false;
+                outcomeReason = $"activity_object_reset_qa_failed_exception:{exception.GetType().Name}";
+                Debug.LogError(
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            }
+
+            Debug.Log(
+                $"[OBS][SessionActivityPipeline][Host] action='QaResetCurrentActivityObjects' outcomeKind='{(applied ? "Applied" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            return applied;
+        }
+
         public SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(string requestedSessionStateId, string source, string reason)
         {
             EnsurePipeline();

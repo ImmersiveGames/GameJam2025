@@ -1,5 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -56,6 +58,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 actor.SetActorId(plan.ActorIdentity.PlayerSlotId);
+                ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedIdentity(
+                    activeIdentity,
+                    ActorKind.Player,
+                    actor.ActorId,
+                    actor.ActorScopeMetadata,
+                    actor.ActorScopeMetadata.ToString());
+                if (!runtimeActorInstanceId.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"player_actor_runtime_identity_missing_after_materialization: playerSlotId='{plan.ActorIdentity.PlayerSlotId}' playerActorId='{plan.ActorIdentity.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                }
+
+                actor.SetRuntimeActorInstanceId(runtimeActorInstanceId);
 
                 PlayerActorIdentity identity = instance.GetComponent<PlayerActorIdentity>();
                 if (identity == null)
@@ -79,6 +94,23 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 participation.MarkActiveInActivity(activeIdentity.ActivityId, activeIdentity.EntrySequence);
+
+                MonoBehaviour[] behaviours = instance.GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
+                bool hasResetEndpoint = false;
+                for (int behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
+                {
+                    if (behaviours[behaviourIndex] is IActorResetEndpoint)
+                    {
+                        hasResetEndpoint = true;
+                        break;
+                    }
+                }
+
+                if (!hasResetEndpoint)
+                {
+                    throw new InvalidOperationException(
+                        $"actor_reset_endpoint_missing_on_actor_prefab: prefab='{plan.Prefab.name}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}' playerActorId='{plan.ActorIdentity.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                }
 
                 records.Add(new PlayerActorMaterializationRecord(plan.ActorIdentity, instance));
             }

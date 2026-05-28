@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using UnityEngine;
@@ -10,6 +9,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     public sealed class ActivityCapabilityCameraTargetScanner : IActivityCapabilityScanner
     {
         private const string ModuleId = "SessionActivity.CameraTarget";
+        private readonly IPlayerActorCapabilityIdentityResolver _identityResolver;
+
+        public ActivityCapabilityCameraTargetScanner(IPlayerActorCapabilityIdentityResolver identityResolver)
+        {
+            _identityResolver = identityResolver ?? throw new InvalidOperationException("ActivityCapabilityCameraTargetScanner requires non-null identity resolver.");
+        }
 
         public string ScannerId => "activity_capability_camera_target_scanner.v1";
         public int Order => 320;
@@ -49,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     continue;
                 }
 
-                if (!TryResolvePlayerIdentity(target, out string playerActorId, out string playerSlotId))
+                if (!_identityResolver.TryResolve(target, out PlayerActorCapabilityIdentity playerIdentity))
                 {
                     Component endpointComponent = endpoint as Component;
                     string unresolvedComponentPath = endpointComponent != null
@@ -106,8 +111,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     priority: 120,
                     policyMetadata: new[]
                     {
-                        new ActivityCapabilityPolicyEntry("playerActorId", playerActorId),
-                        new ActivityCapabilityPolicyEntry("playerSlotId", playerSlotId),
+                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId),
+                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId),
                         new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
                     },
                     source: context.Source));
@@ -115,38 +120,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityCameraTargetReference(
                     capabilityId,
                     ownerId,
-                    playerActorId,
-                    playerSlotId,
+                    playerIdentity.PlayerActorId,
+                    playerIdentity.PlayerSlotId,
                     componentPath,
                     endpoint.FollowTarget,
                     endpoint.LookAtTarget));
             }
 
             return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
-        }
-
-        private static bool TryResolvePlayerIdentity(ActorScanTarget target, out string playerActorId, out string playerSlotId)
-        {
-            playerActorId = string.Empty;
-            playerSlotId = string.Empty;
-            PlayerActorIdentity identity = target.ActorRoot != null ? target.ActorRoot.GetComponent<PlayerActorIdentity>() : null;
-            if (identity == null)
-            {
-                return false;
-            }
-
-            if (!string.IsNullOrWhiteSpace(identity.PlayerActorId))
-            {
-                playerActorId = identity.PlayerActorId.Trim();
-            }
-
-            if (!string.IsNullOrWhiteSpace(identity.PlayerSlotId))
-            {
-                playerSlotId = identity.PlayerSlotId.Trim();
-            }
-
-            return !string.IsNullOrWhiteSpace(playerActorId) &&
-                   !string.IsNullOrWhiteSpace(playerSlotId);
         }
     }
 }

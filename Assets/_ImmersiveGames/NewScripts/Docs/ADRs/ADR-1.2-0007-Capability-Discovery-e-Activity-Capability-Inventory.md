@@ -2,7 +2,7 @@
 
 Status: Accepted / Base 1.2  
 Área: SessionActivity / Actor Capabilities / Activity Inventory  
-Atualização: pós 4B–4D + H4D Hygiene
+Atualização: pós 4B–4D + H4D Hygiene + ActorReset-1B
 
 ---
 
@@ -11,6 +11,11 @@ Atualização: pós 4B–4D + H4D Hygiene
 A Base 1.2 exige que capabilities de actors, activity objects e outros participantes sejam descobertas de forma determinística, sem scanners paralelos por tipo específico quando o domínio já possui uma superfície canônica.
 
 O inventory existe para consolidar a descoberta e validação antes de stages de setup, binding, readiness, participation e release.
+
+Durante a estabilização de reset, foi necessário distinguir duas coisas:
+
+- preview canônico persistido no state para a entry;
+- snapshot local transitório usado por `ActivityObjectReset` quando o reset precisa rodar antes do preview observado por stages posteriores.
 
 ---
 
@@ -58,18 +63,48 @@ Quando a capability é opcional, a ausência deve gerar skip explícito quando n
 
 `capability_kind_unsupported` não deve aparecer no caminho nominal validado.
 
+### 6. ObjectReset pode usar snapshot local transitório
+
+`ActivityObjectReset` pode construir um snapshot local de inventory para a entry corrente usando o mesmo coordinator/scanner.
+
+Esse snapshot local:
+
+- deve ser validado com a mesma identity de entry;
+- deve servir apenas ao contexto do reset;
+- não deve sobrescrever `_state.CurrentActivityCapabilityInventoryPreview`;
+- não deve virar preview canônico;
+- deve produzir reasons explícitos como `NoCommands`, `NoApplicableGroups`, `SkippedOptional` ou `InventoryInvalidOrStale`.
+
+O preview canônico completo continua pertencendo ao `ActivityCapabilityInventoryPreviewStage`.
+
+### 7. ActorReset não está totalmente modelado como inventory genérico final
+
+O checkpoint ActorReset-1B congelou contrato neutro de reset de Actor:
+
+- `ActorResetCommand`;
+- `IActorResetAdapter`;
+- `IActorResetEndpoint`.
+
+Mas o resolver concreto atual ainda é transitório para PlayerActor.
+
+Portanto, não congelar ainda como verdade final que todo `ActorReset` nasce do `ActivityCapabilityInventory`. A direção final é resolver por Actor/ActorInstance de forma genérica.
+
 ---
 
 ## Resultado atual
 
-Checkpoint H4D:
+Checkpoint H4D + ActorReset-1B:
 
 - inventory preview passa sem warnings/errors no caminho nominal;
 - `PresentationEndpoint` observado em 3/3/2;
 - `AttributeEndpoint` observado em 2/2/1;
 - `CameraTarget` observado em 1/1/1;
 - `PermissionTarget` observado em 1/1/1;
-- unresolved reports igual a 0 no smoke nominal.
+- unresolved reports igual a 0 no smoke nominal;
+- `ActivityObjectReset` em `activity_01` classificado como `PassedApplied`;
+- `ActivityObjectReset` em no-content classificado como `PassedNoCommands`;
+- `ActorResetQaApplied` observado sem quebrar preview/inventory;
+- preview canônico não é substituído pelo snapshot local de reset.
 
 ---
 
@@ -78,3 +113,4 @@ Checkpoint H4D:
 - Unificar discovery de actors para substituir `NonPlayerActorDiscovery` quando a fonte genérica estiver pronta.
 - Reduzir dependências transitórias de `PlayerActorTargets`.
 - Revisar validator para separar diagnostics não-capability de `ActivityCapabilityKind.Custom`, se o warning virar ruído real.
+- Generalizar resolução de `ActorReset` por `ActorInstanceId`/inventory quando a registry genérica estiver pronta.
