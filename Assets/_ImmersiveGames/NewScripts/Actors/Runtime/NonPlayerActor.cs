@@ -10,7 +10,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class NonPlayerActorEndpoint : Actor
+    public sealed class NonPlayerActor : Actor
     {
         [SerializeField] private string nonPlayerActorId;
         [SerializeField] private string actorKind = "NonPlayerActor";
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public IReadOnlyList<string> ResolveParticipatingActivityIdsOrFail(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
-                ? $"{nameof(NonPlayerActorEndpoint)}:{name}"
+                ? $"{nameof(NonPlayerActor)}:{name}"
                 : source.Trim();
 
             if (participationPolicy != NonPlayerActorParticipationPolicy.ExplicitActivityIds)
@@ -82,14 +82,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             actorScope != NonPlayerActorScope.Unknown &&
             actorScope != NonPlayerActorScope.GlobalScopedUnsupported &&
             participationPolicy != NonPlayerActorParticipationPolicy.Unknown &&
-            IsParticipatingActivitiesConfigValid($"{nameof(NonPlayerActorEndpoint)}:{nameof(IsValid)}:{name}") &&
+            IsParticipatingActivitiesConfigValid($"{nameof(NonPlayerActor)}:{nameof(IsValid)}:{name}") &&
             presentationProfile != null &&
             presentationEndpoint != null;
 
         public override void ValidateLocalConfigurationOrThrow(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
-                ? $"{nameof(NonPlayerActorEndpoint)}:{name}"
+                ? $"{nameof(NonPlayerActor)}:{name}"
                 : source.Trim();
 
             if (string.IsNullOrWhiteSpace(NonPlayerActorId))
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             ValidateLocalConfigurationOrThrow(source);
         }
 
-        private void OnValidate()
+        protected override void OnValidate()
         {
             base.OnValidate();
             nonPlayerActorId = Normalize(nonPlayerActorId);
@@ -213,7 +213,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             return true;
         }
 
-        private static string Normalize(string value)
+        private new static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }

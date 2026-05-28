@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
-using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.Players.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -44,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         $"ActivityCapabilityCameraTargetScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
                 }
 
-                PlayerCameraEndpoint endpoint = surface.PlayerCameraEndpoint;
+                IActorCameraTargetEndpoint endpoint = surface.ActorCameraTargetEndpoint;
                 if (endpoint == null || !endpoint.HasValidTargets)
                 {
                     continue;
@@ -52,7 +51,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
                 if (!TryResolvePlayerIdentity(target, out string playerActorId, out string playerSlotId))
                 {
-                    string unresolvedComponentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(endpoint.transform);
+                    Component endpointComponent = endpoint as Component;
+                    string unresolvedComponentPath = endpointComponent != null
+                        ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
+                        : string.Empty;
                     Debug.LogWarning(
                         $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' capabilityKind='{ActivityCapabilityKind.CameraTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
@@ -76,7 +78,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         context.Source));
                 }
 
-                string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(endpoint.transform);
+                Component cameraComponent = endpoint as Component;
+                string componentPath = cameraComponent != null
+                    ? ActivityCapabilityTransformPathUtility.BuildTransformPath(cameraComponent.transform)
+                    : string.Empty;
                 string componentType = endpoint.GetType().FullName ?? endpoint.GetType().Name;
                 string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
                     inventoryId,

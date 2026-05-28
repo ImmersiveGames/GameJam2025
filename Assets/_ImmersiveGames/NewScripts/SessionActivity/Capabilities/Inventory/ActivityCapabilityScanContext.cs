@@ -10,14 +10,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public ActivityCapabilityScanContext(
             SessionActivityIdentity identity,
             IReadOnlyList<ActivityObjectCapabilityScanTarget> activityObjectTargets,
-            IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> playerActorTargets,
             IReadOnlyList<ActorScanTarget> actorTargets,
             string source,
             string reason)
         {
             Identity = identity;
             ActivityObjectTargets = activityObjectTargets ?? Array.Empty<ActivityObjectCapabilityScanTarget>();
-            PlayerActorTargets = playerActorTargets ?? Array.Empty<ActivityCapabilityPlayerActorScanTarget>();
             ActorTargets = actorTargets ?? Array.Empty<ActorScanTarget>();
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -27,13 +25,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             SessionActivityIdentity identity,
             string source,
             string reason)
-            : this(identity, Array.Empty<ActivityObjectCapabilityScanTarget>(), Array.Empty<ActivityCapabilityPlayerActorScanTarget>(), Array.Empty<ActorScanTarget>(), source, reason)
+            : this(identity, Array.Empty<ActivityObjectCapabilityScanTarget>(), Array.Empty<ActorScanTarget>(), source, reason)
         {
         }
 
         public SessionActivityIdentity Identity { get; }
         public IReadOnlyList<ActivityObjectCapabilityScanTarget> ActivityObjectTargets { get; }
-        public IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> PlayerActorTargets { get; }
         public IReadOnlyList<ActorScanTarget> ActorTargets { get; }
         public string Source { get; }
         public string Reason { get; }

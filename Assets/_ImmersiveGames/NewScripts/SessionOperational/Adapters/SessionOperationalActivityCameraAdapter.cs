@@ -121,18 +121,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     out ActivityCameraPreparationResult preparationResult,
                     out reason))
             {
-                ActivityCameraFailureFact failureFact = preparationResult != null
-                    ? preparationResult.FailureFact
-                    : null;
+                ActivityCameraFailureFact failureFact = preparationResult?.FailureFact;
 
                 result = SessionOperationalActivityCameraPrepareResult.Failed(failureFact, reason);
                 LogFailed(command, failureFact, reason);
                 return false;
             }
 
-            ActivityCameraReadyFact readyFact = preparationResult != null
-                ? preparationResult.ReadyFact
-                : null;
+            ActivityCameraReadyFact readyFact = preparationResult?.ReadyFact;
 
             if (readyFact == null)
             {
@@ -204,9 +200,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     out ActivityCameraReleaseResult releaseResult,
                     out reason))
             {
-                ActivityCameraReleaseFailureFact failureFact = releaseResult != null
-                    ? releaseResult.FailureFact
-                    : null;
+                ActivityCameraReleaseFailureFact failureFact = releaseResult?.FailureFact;
 
                 result = SessionOperationalActivityCameraReleaseResult.Failed(failureFact, reason);
 
@@ -218,9 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            ActivityCameraReleasedFact releasedFact = releaseResult != null
-                ? releaseResult.ReleasedFact
-                : null;
+            ActivityCameraReleasedFact releasedFact = releaseResult?.ReleasedFact;
 
             activeReadyFact = null;
             result = SessionOperationalActivityCameraReleaseResult.Released(releasedFact, reason);

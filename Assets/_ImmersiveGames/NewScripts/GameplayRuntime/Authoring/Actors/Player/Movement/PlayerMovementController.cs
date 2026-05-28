@@ -1,9 +1,10 @@
 using UnityEngine;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     [DisallowMultipleComponent]
-    public sealed class PlayerMovementController : MonoBehaviour
+    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint
     {
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 5f;
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         private Rigidbody _rigidbody;
         private bool _movementEnabled;
 
+        public Transform Transform => transform;
         public bool IsMovementEnabled => _movementEnabled;
 
         private void Awake()

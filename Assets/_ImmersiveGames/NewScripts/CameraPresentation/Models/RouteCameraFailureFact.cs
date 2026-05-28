@@ -40,19 +40,15 @@
             string source,
             string reason)
         {
-            RouteCameraPresentationCommand command = result != null
-                ? result.Command
-                : null;
+            RouteCameraPresentationCommand command = result?.Command;
 
-            RouteCameraPresentationRequirement requirement = command != null
-                ? command.Requirement
-                : null;
+            RouteCameraPresentationRequirement requirement = command?.Requirement;
 
             return new RouteCameraFailureFact(
                 command != null ? command.RouteIdentity : string.Empty,
                 command != null ? command.RouteOperationId : string.Empty,
                 command != null ? command.TransitionId : string.Empty,
-                command != null ? command.RouteSequence : 0,
+                command?.RouteSequence ?? 0,
                 command != null ? command.SurfaceKind : string.Empty,
                 requirement != null ? requirement.RequirementId : string.Empty,
                 failureReason,

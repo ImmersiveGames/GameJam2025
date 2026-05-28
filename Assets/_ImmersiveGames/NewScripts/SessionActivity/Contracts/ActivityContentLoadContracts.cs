@@ -362,7 +362,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            int sceneCount = Scenes == null ? 0 : Scenes.Count;
+            int sceneCount = Scenes?.Count ?? 0;
             return $"identity='{Identity}', contentProfileId='{ContentProfileId}', scenes='{sceneCount}', source='{Source}', reason='{Reason}'";
         }
 

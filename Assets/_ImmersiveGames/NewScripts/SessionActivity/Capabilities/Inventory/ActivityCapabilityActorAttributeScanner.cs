@@ -113,17 +113,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         private static ActivityCapabilityOwnerKind ResolveOwnerKind(ActorScanTarget target)
         {
-            if (target.ActorRole == ActorRole.PrimaryPlayer || target.ActorRole == ActorRole.SupportingPlayer)
-            {
-                return ActivityCapabilityOwnerKind.PlayerActor;
-            }
-
-            if (target.ActorRole == ActorRole.SceneAuthoredNonPlayer)
-            {
-                return ActivityCapabilityOwnerKind.NonPlayerActor;
-            }
-
-            return ActivityCapabilityOwnerKind.Unsupported;
+            return target.IsValid
+                ? ActivityCapabilityOwnerKind.Actor
+                : ActivityCapabilityOwnerKind.Unsupported;
         }
 
         private static string ResolveActorKindLabel(ActorScanTarget target)

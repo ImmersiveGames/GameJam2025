@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
@@ -7,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
     /// Leitor canonico de movimento baseado em PlayerInput bound no ActivitySetup.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class PlayerMoveInputReader : MonoBehaviour
+    public sealed class PlayerMoveInputReader : MonoBehaviour, IActorIntentSource
     {
         private const string PlayerActionMapName = "Player";
         private const string MoveActionName = "Move";
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         public Vector2 MoveInput => _currentInput;
         public bool IsBound => _bound;
         public PlayerInput BoundPlayerInput => _boundPlayerInput;
+        public Transform Transform => transform;
 
         public void SetInputEnabled(bool enabled)
         {

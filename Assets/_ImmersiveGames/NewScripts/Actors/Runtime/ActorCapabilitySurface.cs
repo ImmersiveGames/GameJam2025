@@ -1,8 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
-using _ImmersiveGames.NewScripts.Players.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
@@ -12,8 +10,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     {
         private ActorPresentationEndpoint presentationEndpoint;
         private ActorAttributeEndpoint attributeEndpoint;
-        private PlayerCameraEndpoint playerCameraEndpoint;
-        private PlayerMovementController playerMovementEndpoint;
+        private IActorCameraTargetEndpoint actorCameraTargetEndpoint;
+        private IActorMovementEndpoint actorMovementEndpoint;
+        private IActorPermissionReceiver actorPermissionReceiver;
+        private IActorIntentSource actorIntentSource;
 
         public ActorPresentationEndpoint PresentationEndpoint
         {
@@ -41,29 +41,55 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
         }
 
-        public PlayerCameraEndpoint PlayerCameraEndpoint
+        public IActorCameraTargetEndpoint ActorCameraTargetEndpoint
         {
             get
             {
-                if (playerCameraEndpoint == null)
+                if (actorCameraTargetEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return playerCameraEndpoint;
+                return actorCameraTargetEndpoint;
             }
         }
 
-        public PlayerMovementController PlayerMovementEndpoint
+        public IActorMovementEndpoint ActorMovementEndpoint
         {
             get
             {
-                if (playerMovementEndpoint == null)
+                if (actorMovementEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return playerMovementEndpoint;
+                return actorMovementEndpoint;
+            }
+        }
+
+        public IActorPermissionReceiver ActorPermissionReceiver
+        {
+            get
+            {
+                if (actorPermissionReceiver == null)
+                {
+                    RefreshFromLocalActorRoot();
+                }
+
+                return actorPermissionReceiver;
+            }
+        }
+
+        public IActorIntentSource ActorIntentSource
+        {
+            get
+            {
+                if (actorIntentSource == null)
+                {
+                    RefreshFromLocalActorRoot();
+                }
+
+                return actorIntentSource;
             }
         }
 
@@ -71,8 +97,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             presentationEndpoint = ResolveSingleInActorRoot<ActorPresentationEndpoint>();
             attributeEndpoint = ResolveSingleInActorRoot<ActorAttributeEndpoint>();
-            playerCameraEndpoint = ResolveSingleInActorRoot<PlayerCameraEndpoint>();
-            playerMovementEndpoint = ResolveSingleInActorRoot<PlayerMovementController>();
+            actorCameraTargetEndpoint = ResolveSingleInterfaceInActorRoot<IActorCameraTargetEndpoint>();
+            actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>();
+            actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>();
+            actorIntentSource = ResolveSingleInterfaceInActorRoot<IActorIntentSource>();
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)
@@ -104,6 +132,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
 
             return endpoints[0];
+        }
+
+        private TEndpoint ResolveSingleInterfaceInActorRoot<TEndpoint>()
+            where TEndpoint : class
+        {
+            MonoBehaviour[] components = GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
+            for (int index = 0; index < components.Length; index++)
+            {
+                if (components[index] is TEndpoint endpoint)
+                {
+                    return endpoint;
+                }
+            }
+
+            return null;
         }
 
         private void OnValidate()

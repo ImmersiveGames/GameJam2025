@@ -10,7 +10,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
             int objectTargetCount,
-            int playerActorTargetCount,
             int unresolvedReportCount,
             string source,
             string reason)
@@ -18,7 +17,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Inventory = inventory;
             Validation = validation;
             ObjectTargetCount = objectTargetCount < 0 ? 0 : objectTargetCount;
-            PlayerActorTargetCount = playerActorTargetCount < 0 ? 0 : playerActorTargetCount;
             UnresolvedReportCount = unresolvedReportCount < 0 ? 0 : unresolvedReportCount;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -27,7 +25,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public ActivityCapabilityInventory Inventory { get; }
         public ActivityCapabilityInventoryValidationResult Validation { get; }
         public int ObjectTargetCount { get; }
-        public int PlayerActorTargetCount { get; }
         public int UnresolvedReportCount { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -67,7 +64,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public ActivityCapabilityInventoryBuildResult BuildForEntry(
             SessionActivityIdentity identity,
             ActivityObjectContributorDiscoveryResult activityObjectDiscovery,
-            IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> playerActorTargets,
             IReadOnlyList<ActorScanTarget> actorTargets,
             string source,
             string reason)
@@ -89,11 +85,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 unresolvedReportCount = objectAdaptation.UnresolvedReports.Count;
             }
 
-            IReadOnlyList<ActivityCapabilityPlayerActorScanTarget> normalizedPlayerTargets = playerActorTargets ?? Array.Empty<ActivityCapabilityPlayerActorScanTarget>();
             ActivityCapabilityScanContext scanContext = new(
                 identity,
                 objectTargets,
-                normalizedPlayerTargets,
                 actorTargets ?? Array.Empty<ActorScanTarget>(),
                 source,
                 reason);
@@ -104,7 +98,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 inventory,
                 validation,
                 objectTargets.Count,
-                normalizedPlayerTargets.Count,
                 unresolvedReportCount,
                 source,
                 reason);

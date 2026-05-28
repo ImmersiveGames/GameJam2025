@@ -30,8 +30,6 @@ Este pacote contém os contratos passivos iniciais de `ActorAttributes` e a Fase
 
 ## Não inclui
 
-- `ActorAttributeSetupStage`
-- `ActorAttributeReleaseStage` integrado ao pipeline
 - integração com `ActivityEntryPipeline`
 - `DebugUtility`
 - DI

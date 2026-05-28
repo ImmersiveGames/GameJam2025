@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -46,15 +45,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         $"ActivityCapabilityPermissionScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
                 }
 
-                PlayerMovementController controller = surface.PlayerMovementEndpoint;
-                if (controller == null)
+                IActorMovementEndpoint movementEndpoint = surface.ActorMovementEndpoint;
+                if (movementEndpoint == null)
                 {
                     continue;
                 }
 
                 if (!TryResolvePlayerIdentity(target, out string playerActorId, out string playerSlotId))
                 {
-                    string unresolvedComponentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(controller.transform);
+                    Component movementComponent = movementEndpoint as Component;
+                    string unresolvedComponentPath = movementComponent != null
+                        ? ActivityCapabilityTransformPathUtility.BuildTransformPath(movementComponent.transform)
+                        : string.Empty;
                     Debug.LogWarning(
                         $"[OBS][ActivityCapabilityPermissionScanner] event='PermissionTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' capabilityKind='{ActivityCapabilityKind.PermissionTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
@@ -78,8 +80,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         context.Source));
                 }
 
-                string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(controller.transform);
-                string componentType = controller.GetType().FullName ?? controller.GetType().Name;
+                Component endpointComponent = movementEndpoint as Component;
+                string componentPath = endpointComponent != null
+                    ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
+                    : string.Empty;
+                string componentType = movementEndpoint.GetType().FullName ?? movementEndpoint.GetType().Name;
                 string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
                     inventoryId,
                     ownerId,
@@ -103,11 +108,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
                     receiverIdentity);
 
-                PlayerMovementPermissionReceiver receiver = new(
-                    controller,
-                    receiverId,
-                    playerActorId,
-                    playerSlotId);
+                IActorPermissionReceiver receiver = surface.ActorPermissionReceiver;
+                if (receiver == null)
+                {
+                    receiver = new PlayerMovementPermissionReceiver(
+                        movementEndpoint,
+                        receiverId,
+                        playerActorId,
+                        playerSlotId);
+                }
 
                 capabilities.Add(new ActivityCapabilityDescriptor(
                     capabilityId,

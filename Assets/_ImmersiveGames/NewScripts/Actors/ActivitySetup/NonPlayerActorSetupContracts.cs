@@ -102,21 +102,21 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
     {
         public NonPlayerActorDiscoveryRecord(
             NonPlayerActorIdentityRecord actorIdentity,
-            NonPlayerActorEndpoint endpoint,
+            NonPlayerActor actor,
             GameObject actorInstance,
             string sceneName)
         {
             ActorIdentity = actorIdentity;
-            Endpoint = endpoint;
+            Actor = actor;
             ActorInstance = actorInstance;
             SceneName = Normalize(sceneName);
         }
 
         public NonPlayerActorIdentityRecord ActorIdentity { get; }
-        public NonPlayerActorEndpoint Endpoint { get; }
+        public NonPlayerActor Actor { get; }
         public GameObject ActorInstance { get; }
         public string SceneName { get; }
-        public bool IsValid => ActorIdentity.IsValid && Endpoint != null && ActorInstance != null && !string.IsNullOrWhiteSpace(SceneName);
+        public bool IsValid => ActorIdentity.IsValid && Actor != null && ActorInstance != null && !string.IsNullOrWhiteSpace(SceneName);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -125,21 +125,21 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
     {
         public NonPlayerActorRuntimeEntry(
             NonPlayerActorIdentityRecord actorIdentity,
-            NonPlayerActorEndpoint endpoint,
+            NonPlayerActor actor,
             GameObject actorInstance,
             ActorPresentationRuntimeHandle presentationHandle)
         {
             ActorIdentity = actorIdentity;
-            Endpoint = endpoint;
+            Actor = actor;
             ActorInstance = actorInstance;
             PresentationHandle = presentationHandle;
         }
 
         public NonPlayerActorIdentityRecord ActorIdentity { get; }
-        public NonPlayerActorEndpoint Endpoint { get; }
+        public NonPlayerActor Actor { get; }
         public GameObject ActorInstance { get; }
         public ActorPresentationRuntimeHandle PresentationHandle { get; }
         public bool HasPresentationHandle => PresentationHandle.IsValid;
-        public bool IsValid => ActorIdentity.IsValid && Endpoint != null && ActorInstance != null;
+        public bool IsValid => ActorIdentity.IsValid && Actor != null && ActorInstance != null;
     }
 }

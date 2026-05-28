@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.Players.Runtime;
@@ -145,20 +146,20 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
         }
     }
 
-    public sealed class PlayerMovementPermissionReceiver : IActivityCapabilityPermissionReceiver
+    public sealed class PlayerMovementPermissionReceiver : IActorPermissionReceiver
     {
-        private readonly PlayerMovementController _controller;
+        private readonly IActorMovementEndpoint _movementEndpoint;
         private readonly string _playerActorId;
         private readonly string _playerSlotId;
         private readonly string _receiverId;
 
         public PlayerMovementPermissionReceiver(
-            PlayerMovementController controller,
+            IActorMovementEndpoint movementEndpoint,
             string receiverId,
             string playerActorId,
             string playerSlotId)
         {
-            _controller = controller ?? throw new InvalidOperationException("PlayerMovementPermissionReceiver requires non-null PlayerMovementController.");
+            _movementEndpoint = movementEndpoint ?? throw new InvalidOperationException("PlayerMovementPermissionReceiver requires non-null IActorMovementEndpoint.");
             _playerActorId = Normalize(playerActorId);
             _playerSlotId = Normalize(playerSlotId);
 
@@ -213,7 +214,7 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
             switch (fact.Command.State)
             {
                 case ActivityCapabilityPermissionState.Allowed:
-                    _controller.SetMovementEnabled(true);
+                    _movementEndpoint.SetMovementEnabled(true);
                     DebugUtility.Log(
                         typeof(PlayerMovementPermissionReceiver),
                         $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Allowed' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
@@ -221,8 +222,8 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     break;
 
                 case ActivityCapabilityPermissionState.Blocked:
-                    _controller.SetMovementEnabled(false);
-                    _controller.ClearMovementState();
+                    _movementEndpoint.SetMovementEnabled(false);
+                    _movementEndpoint.ClearMovementState();
                     DebugUtility.Log(
                         typeof(PlayerMovementPermissionReceiver),
                         $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Blocked' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
@@ -230,8 +231,8 @@ namespace _ImmersiveGames.NewScripts.Players.ActivitySetup
                     break;
 
                 case ActivityCapabilityPermissionState.Unbound:
-                    _controller.SetMovementEnabled(false);
-                    _controller.ClearMovementState();
+                    _movementEndpoint.SetMovementEnabled(false);
+                    _movementEndpoint.ClearMovementState();
                     DebugUtility.Log(
                         typeof(PlayerMovementPermissionReceiver),
                         $"[OBS][ActivityCapabilityPermission] event='PlayerMovementPermissionApplied' permissionId='{fact.Command.PermissionId}' state='Unbound' outcome='{fact.Outcome}' receiverId='{_receiverId}' playerActorId='{_playerActorId}' playerSlotId='{_playerSlotId}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",

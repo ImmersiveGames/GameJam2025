@@ -11,7 +11,6 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
     {
         private readonly Dictionary<string, NonPlayerActorRuntimeEntry> _activeByActorId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, NonPlayerActorRuntimeEntry> _routeRetainedByActorId = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _activeParticipationByActorId = new(StringComparer.Ordinal);
         private SessionActivityIdentity _activeScopeIdentity;
 
         public void BeginActivityScope(SessionActivityIdentity scopeIdentity)
@@ -23,18 +22,17 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             _activeScopeIdentity = scopeIdentity;
             _activeByActorId.Clear();
-            _activeParticipationByActorId.Clear();
         }
 
-        public void RegisterDiscovered(NonPlayerActorIdentityRecord identity, NonPlayerActorEndpoint endpoint, GameObject actorInstance)
+        public void RegisterDiscovered(NonPlayerActorIdentityRecord identity, NonPlayerActor actor, GameObject actorInstance)
         {
             EnsureScopeOrFail(identity.Identity);
-            if (endpoint == null || actorInstance == null)
+            if (actor == null || actorInstance == null)
             {
-                throw new InvalidOperationException("NonPlayer actor registration requires endpoint and actor instance.");
+                throw new InvalidOperationException("NonPlayer actor registration requires actor and actor instance.");
             }
 
-            NonPlayerActorRuntimeEntry entry = new(identity, endpoint, actorInstance, default);
+            NonPlayerActorRuntimeEntry entry = new(identity, actor, actorInstance, default);
             if (!entry.IsValid)
             {
                 throw new InvalidOperationException("NonPlayer actor registration generated invalid runtime entry.");
@@ -98,43 +96,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 throw new InvalidOperationException($"Cannot set presentation handle for unknown nonPlayerActorId='{normalized}'.");
             }
 
-            NonPlayerActorRuntimeEntry updated = new(current.ActorIdentity, current.Endpoint, current.ActorInstance, handle);
+            NonPlayerActorRuntimeEntry updated = new(current.ActorIdentity, current.Actor, current.ActorInstance, handle);
             _activeByActorId[normalized] = updated;
             if (current.ActorIdentity.ActorScope == NonPlayerActorScope.RouteScoped)
             {
                 _routeRetainedByActorId[normalized] = updated;
             }
-        }
-
-        public void MarkParticipationEntered(SessionActivityIdentity expectedScopeIdentity, string nonPlayerActorId)
-        {
-            EnsureScopeOrFail(expectedScopeIdentity);
-            string normalized = Normalize(nonPlayerActorId);
-            if (!_activeByActorId.ContainsKey(normalized))
-            {
-                throw new InvalidOperationException($"Cannot mark participation for unknown nonPlayerActorId='{normalized}'.");
-            }
-
-            _activeParticipationByActorId.Add(normalized);
-        }
-
-        public void MarkParticipationExited(SessionActivityIdentity expectedScopeIdentity, string nonPlayerActorId)
-        {
-            EnsureScopeOrFail(expectedScopeIdentity);
-            string normalized = Normalize(nonPlayerActorId);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return;
-            }
-
-            _activeParticipationByActorId.Remove(normalized);
-        }
-
-        public bool IsParticipationActive(SessionActivityIdentity expectedScopeIdentity, string nonPlayerActorId)
-        {
-            EnsureScopeOrFail(expectedScopeIdentity);
-            string normalized = Normalize(nonPlayerActorId);
-            return !string.IsNullOrWhiteSpace(normalized) && _activeParticipationByActorId.Contains(normalized);
         }
 
         public void ClearPresentationHandle(SessionActivityIdentity expectedIdentity, string nonPlayerActorId)
@@ -149,14 +116,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 active.IsValid &&
                 IsSameSessionPipeline(active.ActorIdentity.Identity, expectedIdentity))
             {
-                _activeByActorId[normalized] = new NonPlayerActorRuntimeEntry(active.ActorIdentity, active.Endpoint, active.ActorInstance, default);
+                _activeByActorId[normalized] = new NonPlayerActorRuntimeEntry(active.ActorIdentity, active.Actor, active.ActorInstance, default);
             }
 
             if (_routeRetainedByActorId.TryGetValue(normalized, out NonPlayerActorRuntimeEntry retained) &&
                 retained.IsValid &&
                 IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
             {
-                _routeRetainedByActorId[normalized] = new NonPlayerActorRuntimeEntry(retained.ActorIdentity, retained.Endpoint, retained.ActorInstance, default);
+                _routeRetainedByActorId[normalized] = new NonPlayerActorRuntimeEntry(retained.ActorIdentity, retained.Actor, retained.ActorInstance, default);
             }
         }
 
@@ -182,14 +149,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             }
 
             _activeByActorId.Remove(normalized);
-            _activeParticipationByActorId.Remove(normalized);
         }
 
         public void ClearAllRouteRetained()
         {
             _activeByActorId.Clear();
             _routeRetainedByActorId.Clear();
-            _activeParticipationByActorId.Clear();
             _activeScopeIdentity = default;
         }
 

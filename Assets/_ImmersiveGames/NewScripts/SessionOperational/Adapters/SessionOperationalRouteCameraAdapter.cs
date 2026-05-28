@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (!routeCameraExecutor.TryPrepare(presentationCommand, out RouteCameraPresentationResult presentationResult, out reason))
             {
-                RouteCameraFailureFact failureFact = presentationResult != null ? presentationResult.FailureFact : null;
+                RouteCameraFailureFact failureFact = presentationResult?.FailureFact;
                 result = SessionOperationalRouteCameraPrepareResult.Failed(failureFact, reason);
                 LogFailed(command, failureFact, reason);
                 return false;
@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (!routeCameraExecutor.TryRelease(releaseCommand, out RouteCameraReleaseResult releaseResult, out reason))
             {
-                RouteCameraReleaseFailureFact failureFact = releaseResult != null ? releaseResult.FailureFact : null;
+                RouteCameraReleaseFailureFact failureFact = releaseResult?.FailureFact;
                 result = SessionOperationalRouteCameraReleaseResult.Failed(failureFact, reason);
 
                 DebugUtility.Log(typeof(SessionOperationalRouteCameraAdapter),

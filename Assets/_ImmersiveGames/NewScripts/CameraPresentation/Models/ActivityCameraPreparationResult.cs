@@ -5,7 +5,7 @@
         public bool Success { get; }
         public ActivityCameraReadyFact ReadyFact { get; }
         public ActivityCameraFailureFact FailureFact { get; }
-        public ActivityCameraBindingHandle Handle => ReadyFact != null ? ReadyFact.Handle : null;
+        public ActivityCameraBindingHandle Handle => ReadyFact?.Handle;
         public string Reason { get; }
 
         private ActivityCameraPreparationResult(

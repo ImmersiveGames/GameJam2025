@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Authoring
                     typeof(SurfaceCameraAnchorHost),
                     $"[OBS][CameraPresentation][SurfaceAnchorHost] ValidateSucceeded " +
                     $"host='{name}' " +
-                    $"anchorCount='{(anchors != null ? anchors.Length : 0)}' " +
+                    $"anchorCount='{anchors?.Length ?? 0}' " +
                     $"reason='{reason}'.",
                     DebugUtility.Colors.Info);
 

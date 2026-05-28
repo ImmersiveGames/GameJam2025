@@ -3,8 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
-
-namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
+namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal static class ActorPresentationSetupStage
     {

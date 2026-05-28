@@ -8,5 +8,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         ActivityObject = 3,
         SceneContributor = 4,
         Unsupported = 5,
+        Actor = 6,
     }
 }

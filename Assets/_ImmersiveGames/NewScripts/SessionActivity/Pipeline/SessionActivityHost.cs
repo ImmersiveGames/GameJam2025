@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityCatalog Catalog => _catalog;
         public SessionActivityPipeline Pipeline => _pipeline;
         public ActivityExecutionBlockingState GateState => _pipeline?.GateState;
-        public SessionActivityRailKind CurrentRailKind => _pipeline != null ? _pipeline.ActiveRailKind : SessionActivityRailKind.None;
+        public SessionActivityRailKind CurrentRailKind => _pipeline?.ActiveRailKind ?? SessionActivityRailKind.None;
         public SessionActivityStage CurrentStage => _pipeline != null ? _pipeline.State.CurrentStage : SessionActivityStage.Unknown;
         public bool HasPendingOperation => _pipeline != null && _pipeline.State.CurrentPendingOperation.IsValid;
 
@@ -735,11 +735,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ResolveCurrentContinuePolicy() == ActivityTransitionContinuePolicy.ManualContinue)
             {
                 return "ContinueToNextActivity";
-            }
-
-            if (stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
-            {
-                return "No local QA action";
             }
 
             return "No local QA action";

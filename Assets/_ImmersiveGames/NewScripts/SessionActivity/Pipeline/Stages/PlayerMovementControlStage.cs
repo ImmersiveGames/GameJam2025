@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-
-namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
+namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal static class PlayerMovementControlStage
     {

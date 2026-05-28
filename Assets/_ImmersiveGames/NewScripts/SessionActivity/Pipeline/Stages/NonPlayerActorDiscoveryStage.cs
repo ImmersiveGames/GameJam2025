@@ -5,8 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-
-namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
+namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal static class NonPlayerActorDiscoveryStage
     {
@@ -61,36 +60,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             GameObject[] roots = sourceScene.GetRootGameObjects();
             for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
             {
-                NonPlayerActorEndpoint[] endpoints = roots[rootIndex].GetComponentsInChildren<NonPlayerActorEndpoint>(true);
-                for (int endpointIndex = 0; endpointIndex < endpoints.Length; endpointIndex++)
+                NonPlayerActor[] actors = roots[rootIndex].GetComponentsInChildren<NonPlayerActor>(true);
+                for (int actorIndex = 0; actorIndex < actors.Length; actorIndex++)
                 {
-                    NonPlayerActorEndpoint endpoint = endpoints[endpointIndex];
-                    if (endpoint == null)
+                    NonPlayerActor actor = actors[actorIndex];
+                    if (actor == null)
                     {
                         continue;
                     }
 
-                    endpoint.ValidateOrThrow($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{endpointIndex}");
-                    if (endpoint.ActorScope == NonPlayerActorScope.GlobalScopedUnsupported)
+                    actor.ValidateOrThrow($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}");
+                    if (actor.ActorScope == NonPlayerActorScope.GlobalScopedUnsupported)
                     {
-                        throw new InvalidOperationException($"NonPlayerActorEndpoint '{endpoint.name}' uses unsupported actorScope='GlobalScopedUnsupported'.");
+                        throw new InvalidOperationException($"NonPlayerActor '{actor.name}' uses unsupported actorScope='GlobalScopedUnsupported'.");
                     }
 
-                    if (endpoint.ActorScope != expectedScope)
+                    if (actor.ActorScope != expectedScope)
                     {
                         continue;
                     }
 
                     NonPlayerActorIdentityRecord resolvedIdentity = new(
                         identity,
-                        endpoint.NonPlayerActorId,
-                        endpoint.ActorKind,
-                        endpoint.ActorScope,
-                        endpoint.ParticipationPolicy,
-                        endpoint.ResolveParticipatingActivityIdsOrFail($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{endpointIndex}"),
+                        actor.NonPlayerActorId,
+                        actor.ActorKind,
+                        actor.ActorScope,
+                        actor.ParticipationPolicy,
+                        actor.ResolveParticipatingActivityIdsOrFail($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}"),
                         originSource,
                         sourceScene.name);
-                    registry.RegisterDiscovered(resolvedIdentity, endpoint, endpoint.gameObject);
+                    registry.RegisterDiscovered(resolvedIdentity, actor, actor.gameObject);
                     discovered.Add(new SessionActivityPipeline.NonPlayerActorDiscoveredRecord(resolvedIdentity));
                 }
             }

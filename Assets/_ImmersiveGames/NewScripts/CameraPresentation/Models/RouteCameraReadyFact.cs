@@ -42,19 +42,15 @@
             string source,
             string reason)
         {
-            RouteCameraPresentationCommand command = result != null
-                ? result.Command
-                : null;
+            RouteCameraPresentationCommand command = result?.Command;
 
-            RouteCameraBindingHandle handle = result != null
-                ? result.Handle
-                : null;
+            RouteCameraBindingHandle handle = result?.Handle;
 
             return new RouteCameraReadyFact(
                 command != null ? command.RouteIdentity : string.Empty,
                 command != null ? command.RouteOperationId : string.Empty,
                 command != null ? command.TransitionId : string.Empty,
-                command != null ? command.RouteSequence : 0,
+                command?.RouteSequence ?? 0,
                 command != null ? command.SurfaceKind : string.Empty,
                 handle != null ? handle.RequirementId : string.Empty,
                 handle != null && handle.UnityCamera != null ? handle.UnityCamera.name : string.Empty,

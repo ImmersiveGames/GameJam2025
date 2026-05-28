@@ -222,12 +222,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 {
                     definitionRef = runtimeActor.ActorDefinitionRef;
                 }
-                else if (entry.Endpoint != null && entry.Endpoint.PresentationProfile != null)
+                else if (entry.Actor != null && entry.Actor.PresentationProfile != null)
                 {
                     definitionRef = new ActorDefinitionRef(
                         default,
-                        entry.Endpoint.PresentationProfile.name,
-                        entry.Endpoint.PresentationProfile.name);
+                        entry.Actor.PresentationProfile.name,
+                        entry.Actor.PresentationProfile.name);
                 }
 
                 ActorCapabilitySurface capabilitySurface = runtimeActor.CapabilitySurface;

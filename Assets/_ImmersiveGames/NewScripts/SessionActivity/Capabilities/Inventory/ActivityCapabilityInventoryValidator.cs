@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     issues.Add(Issue("capability_owner_missing", error: true, ownerId: capability.OwnerId, capabilityId: capability.CapabilityId, detail: "Capability ownerId does not resolve to any owner descriptor."));
                 }
 
-                if (capability.CapabilityKind == ActivityCapabilityKind.Unknown || capability.CapabilityKind == ActivityCapabilityKind.Custom)
+                if (capability.CapabilityKind == ActivityCapabilityKind.Unknown)
                 {
                     issues.Add(Issue("capability_kind_unsupported", error: false, ownerId: capability.OwnerId, capabilityId: capability.CapabilityId, detail: $"Capability kind '{capability.CapabilityKind}' is unsupported for passive validation."));
                 }
