@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
 {
-    public enum ActorKind
+    public enum ActorDefinitionKind
     {
         Unknown = 0,
         Player = 1,
@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         [SerializeField, Tooltip("Canonical auto-generated actorId. Do not edit manually.")]
         private string actorId;
         [SerializeField] private string displayName;
-        [SerializeField] private ActorKind actorKind = ActorKind.Unknown;
+        [SerializeField] private ActorDefinitionKind actorKind = ActorDefinitionKind.Unknown;
         [SerializeField] private GameObject prefabReference;
         [SerializeField] private ActorPlacementMode placementMode = ActorPlacementMode.None;
         [SerializeField] private string placementKey;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
 
         public string ActorId => Normalize(actorId);
         public string DisplayName => Normalize(displayName);
-        public ActorKind ActorKind => actorKind;
+        public ActorDefinitionKind ActorKind => actorKind;
         public GameObject PrefabReference => prefabReference;
         public ActorPlacementMode PlacementMode => placementMode;
         public string PlacementKey => Normalize(placementKey);
@@ -61,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                 return false;
             }
 
-            if (actorKind == ActorKind.Unknown)
+            if (actorKind == ActorDefinitionKind.Unknown)
             {
                 errorMessage = $"actorKind cannot be Unknown actorId='{ActorId}'.";
                 return false;

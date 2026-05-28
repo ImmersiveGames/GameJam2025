@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
-    public abstract class Actor : MonoBehaviour
+    public abstract class Actor : MonoBehaviour, IActor
     {
         [SerializeField] private string runtimeActorInstanceId = string.Empty;
         [SerializeField] private string actorDefinitionId = string.Empty;

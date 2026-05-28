@@ -1307,6 +1307,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 else if (fact.Kind == SessionActivityFactKind.ObjectResetCompleted)
                 {
                     aggregation.ResetCompleted = true;
+                    aggregation.CompletionKind = ExtractToken(fact.Message, "completionKind");
+                    aggregation.CompletionReason = ExtractToken(fact.Message, "completionReason");
                 }
 
                 byEntry[key] = aggregation;
@@ -1318,9 +1320,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 string targetIds = JoinValues(aggregation.TargetIds);
                 string resetGroups = JoinValues(aggregation.ResetGroups);
                 string checkpointStatus = ResolveActivityObjectResetCheckpointStatus(aggregation);
+                string completionKind = string.IsNullOrWhiteSpace(aggregation.CompletionKind) ? "<none>" : aggregation.CompletionKind;
+                string completionReason = string.IsNullOrWhiteSpace(aggregation.CompletionReason) ? "<none>" : aggregation.CompletionReason;
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ResetStarted}|{aggregation.CommandCount}|{aggregation.AppliedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{resetGroups}|{aggregation.ResetCompleted}|{checkpointStatus}";
+                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ResetStarted}|{aggregation.CommandCount}|{aggregation.AppliedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{resetGroups}|{aggregation.ResetCompleted}|{checkpointStatus}|{completionKind}|{completionReason}";
 
                 if (_lastActivityObjectResetCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -1333,7 +1337,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectReset' checkpointStatus='{checkpointStatus}' " +
                     $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' resetStarted='{aggregation.ResetStarted.ToString().ToLowerInvariant()}' " +
                     $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
-                    $"targetIds='{targetIds}' resetGroups='{resetGroups}' resetCompleted='{aggregation.ResetCompleted.ToString().ToLowerInvariant()}'");
+                    $"targetIds='{targetIds}' resetGroups='{resetGroups}' resetCompleted='{aggregation.ResetCompleted.ToString().ToLowerInvariant()}' " +
+                    $"completionKind='{completionKind}' completionReason='{completionReason}'");
             }
         }
 
@@ -1346,6 +1351,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (aggregation.ResetCompleted)
             {
+                if (aggregation.AppliedCount > 0)
+                {
+                    return "PassedApplied";
+                }
+
+                if (string.Equals(aggregation.CompletionKind, "SkippedOptional", StringComparison.Ordinal))
+                {
+                    return "SkippedOptional";
+                }
+
+                if (string.Equals(aggregation.CompletionKind, "InventoryInvalidOrStale", StringComparison.Ordinal))
+                {
+                    return "SkippedInventoryInvalidOrStale";
+                }
+
+                if (string.Equals(aggregation.CompletionKind, "NoCommands", StringComparison.Ordinal) &&
+                    aggregation.CommandCount == 0 &&
+                    aggregation.FailedCount == 0)
+                {
+                    return "PassedNoCommands";
+                }
+
+                if (string.Equals(aggregation.CompletionKind, "NoApplicableGroups", StringComparison.Ordinal))
+                {
+                    return "SkippedNoApplicableGroups";
+                }
+
                 return "Passed";
             }
 
@@ -2138,6 +2170,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 SkippedCount = 0;
                 FailedCount = 0;
                 ResetCompleted = false;
+                CompletionKind = string.Empty;
+                CompletionReason = string.Empty;
                 TargetIds = new HashSet<string>(StringComparer.Ordinal);
                 ResetGroups = new HashSet<string>(StringComparer.Ordinal);
             }
@@ -2150,6 +2184,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public int SkippedCount;
             public int FailedCount;
             public bool ResetCompleted;
+            public string CompletionKind;
+            public string CompletionReason;
             public HashSet<string> TargetIds;
             public HashSet<string> ResetGroups;
         }

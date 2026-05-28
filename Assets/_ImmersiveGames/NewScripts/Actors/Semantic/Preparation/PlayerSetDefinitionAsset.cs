@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                     return false;
                 }
 
-                if (actorDefinition.ActorKind != ActorKind.Player)
+                if (actorDefinition.ActorKind != ActorDefinitionKind.Player)
                 {
                     errorMessage = $"entries[{i}].actorDefinition.actorKind must be Player for PlayerPreparation rail. actorId='{actorDefinition.ActorId}' actorKind='{actorDefinition.ActorKind}'.";
                     return false;

@@ -9,6 +9,8 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
@@ -17,8 +19,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
-using _ImmersiveGames.NewScripts.Players.ActivitySetup;
-using _ImmersiveGames.NewScripts.Players.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
@@ -4601,10 +4601,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return activeActors;
             }
 
-            return ResolveRouteRetainedPlayerActorTargetsOrEmpty(identity);
+            return ResolveRouteRetainedPlayerActorIdentitiesOrEmpty(identity);
         }
 
-        private IReadOnlyList<PlayerActorIdentityRecord> ResolveRouteRetainedPlayerActorTargetsOrEmpty(SessionActivityIdentity identity)
+        private IReadOnlyList<PlayerActorIdentityRecord> ResolveRouteRetainedPlayerActorIdentitiesOrEmpty(SessionActivityIdentity identity)
         {
             IReadOnlyList<PlayerActorIdentityRecord> retained = _activityPlayerActorRegistry.GetRouteRetainedActorIdentitiesForSession(identity);
             if (retained == null || retained.Count == 0)
@@ -7581,7 +7581,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
             bool hasDiscoveryForCurrentEntry = discoveryResult.IsValid && IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence);
-            IReadOnlyList<PlayerActorIdentityRecord> previewActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(previewIdentity);            IReadOnlyList<ActorScanTarget> previewGenericActorTargets = BuildActorScanTargetsForCurrentEntry(previewIdentity, previewActorTargets, command.Source, command.Reason);
+            IReadOnlyList<PlayerActorIdentityRecord> previewActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(previewIdentity);
+            IReadOnlyList<ActorScanTarget> previewGenericActorTargets = BuildActorScanTargetsForCurrentEntry(previewIdentity, previewActorTargets, command.Source, command.Reason);
             bool hasActorTargets = previewGenericActorTargets != null && previewGenericActorTargets.Count > 0;
 
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
@@ -8014,218 +8015,56 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
             SessionActivityIdentity resetIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             _state.SetCurrentIdentity(resetIdentity, SessionActivityStage.ActivitySetupStarted);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ObjectResetStarted,
+            IReadOnlyList<PlayerActorIdentityRecord> resetActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(resetIdentity);
+            IReadOnlyList<ActorScanTarget> resetScanTargets = BuildActorScanTargetsForCurrentEntry(
                 resetIdentity,
+                resetActorTargets,
                 command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' object reset started.");
-            EmitSnapshot(
-                snapshots,
-                "object_reset_started",
+                command.Reason);
+            ActivityObjectContributorDiscoveryResult resetDiscoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
+            bool hasResetDiscoveryForCurrentEntry =
+                resetDiscoveryResult.IsValid &&
+                IsDiscoveryResultForCurrentEntry(resetDiscoveryResult, definition, entrySequence);
+            ActivityCapabilityInventoryBuildResult resetInventoryBuildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
+                resetIdentity,
+                hasResetDiscoveryForCurrentEntry ? resetDiscoveryResult : default,
+                resetScanTargets,
                 command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' object reset started.");
+                command.Reason);
+            ActivityResetCommand resetCommand = new(
+                resetIdentity,
+                definition,
+                command.Source,
+                command.Reason);
+            ActivityResetContext resetContext = new(
+                resetDiscoveryResult,
+                resetInventoryBuildResult.Inventory,
+                resetInventoryBuildResult.Validation);
 
-            if (!discoveryResult.IsValid ||
-                !IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence) ||
-                discoveryResult.Reports.Count == 0)
-            {
-                EmitFact(
+            ActivityResetStage.Execute(
+                resetCommand,
+                resetContext,
+                IsDiscoveryResultForCurrentEntry,
+                IsReportForCurrentEntry,
+                HasRequiredResetContributor,
+                ResolveObjectResetEndpointsFromInventory,
+                ExecuteObjectResetCommand,
+                IsObjectResetResultForCurrentEntry,
+                (kind, message) => EmitFact(
                     facts,
-                    SessionActivityFactKind.ObjectResetCompleted,
+                    kind,
                     resetIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed with no contributors for current entry.");
-                EmitSnapshot(
+                    message),
+                (snapshotKind, message) => EmitSnapshot(
                     snapshots,
-                    "object_reset_completed",
+                    snapshotKind,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed with no contributors for current entry.");
-                return;
-            }
-
-            int commandCount = 0;
-            int appliedCount = 0;
-            int skippedCount = 0;
-            int failedCount = 0;
-            ActivityCapabilityInventory resetInventory = _state.CurrentActivityCapabilityInventoryPreview;
-            ActivityCapabilityInventoryValidationResult resetInventoryValidation = _state.CurrentActivityCapabilityInventoryPreviewValidation;
-            bool hasRequiredResetContributor = HasRequiredResetContributor(discoveryResult, definition, entrySequence);
-            bool hasValidResetInventory =
-                resetInventory.IsValid &&
-                resetInventoryValidation.IsValid &&
-                string.Equals(resetInventory.Id.PipelineId, resetIdentity.PipelineId, StringComparison.Ordinal) &&
-                string.Equals(resetInventory.Id.SessionStateId, resetIdentity.SessionId, StringComparison.Ordinal) &&
-                string.Equals(resetInventory.Id.ActivityId, resetIdentity.ActivityId, StringComparison.Ordinal) &&
-                resetInventory.Id.EntrySequence == resetIdentity.EntrySequence;
-
-            if (!hasValidResetInventory)
-            {
-                if (hasRequiredResetContributor)
-                {
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ObjectResetFailed,
-                        resetIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{resetInventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{resetInventoryValidation.IsValid.ToString().ToLowerInvariant()}'.");
-                    throw new InvalidOperationException(
-                        $"required_reset_inventory_missing_or_invalid: activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
-                }
-
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ObjectResetCompleted,
-                    resetIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' reason='reset_inventory_missing_or_invalid_optional'.");
-                EmitSnapshot(
-                    snapshots,
-                    "object_reset_completed",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' reason='reset_inventory_missing_or_invalid_optional'.");
-                return;
-            }
-
-            for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
-            {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, definition, entrySequence))
-                {
-                    continue;
-                }
-
-                if (report.SupportedResetGroups == null || report.SupportedResetGroups.Count == 0)
-                {
-                    skippedCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ObjectResetSkippedOptional,
-                        resetIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' object reset skipped targetId='{report.TargetId}' reason='no_supported_reset_groups'.");
-                    continue;
-                }
-
-                IActivityObjectResetEndpoint[] endpoints = ResolveObjectResetEndpointsFromInventory(resetInventory, report);
-
-                for (int groupIndex = 0; groupIndex < report.SupportedResetGroups.Count; groupIndex++)
-                {
-                    ActivityStateResetGroup resetGroup = report.SupportedResetGroups[groupIndex];
-                    if (resetGroup == ActivityStateResetGroup.Unknown)
-                    {
-                        throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' reset group cannot be Unknown targetId='{report.TargetId}'.");
-                    }
-
-                    ActivityObjectResetCommand resetCommand = new(
-                        resetIdentity,
-                        report.TargetId,
-                        report.RoleId,
-                        report.ContributorKind,
-                        report.Requiredness,
-                        resetGroup,
-                        command.Source,
-                        command.Reason);
-                    if (!resetCommand.IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' produced invalid object reset command targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
-                    }
-
-                    commandCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ObjectResetCommandIssued,
-                        resetIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
-
-                    ActivityObjectResetResult result = ExecuteObjectResetCommand(resetCommand, endpoints);
-                    if (!result.IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' object reset returned invalid result targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
-                    }
-
-                    if (!IsObjectResetResultForCurrentEntry(result, definition, entrySequence))
-                    {
-                        failedCount += 1;
-                        EmitFact(
-                            facts,
-                            SessionActivityFactKind.ObjectResetFailed,
-                            resetIdentity,
-                            command.Source,
-                            command.Reason,
-                            $"'{definition.ActivityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='stale_or_foreign_reset_result'.");
-                        throw new InvalidOperationException(
-                            $"stale_or_foreign_reset_result: activityId='{definition.ActivityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
-                    }
-
-                    if (result.IsApplied)
-                    {
-                        appliedCount += 1;
-                        EmitFact(
-                            facts,
-                            SessionActivityFactKind.ObjectResetApplied,
-                            resetIdentity,
-                            command.Source,
-                            command.Reason,
-                            $"'{definition.ActivityId}' object reset applied targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
-                        continue;
-                    }
-
-                    if (result.IsSkippedOptional)
-                    {
-                        skippedCount += 1;
-                        EmitFact(
-                            facts,
-                            SessionActivityFactKind.ObjectResetSkippedOptional,
-                            resetIdentity,
-                            command.Source,
-                            command.Reason,
-                            $"'{definition.ActivityId}' object reset skipped optional targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
-                        continue;
-                    }
-
-                    failedCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ObjectResetFailed,
-                        resetIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
-                    throw new InvalidOperationException(
-                        $"object_reset_failed: activityId='{definition.ActivityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
-                }
-            }
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ObjectResetCompleted,
-                resetIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
-            EmitSnapshot(
-                snapshots,
-                "object_reset_completed",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
+                    message));
         }
 
         private void EmitObjectSnapshotRestoreStage(
@@ -11774,8 +11613,3 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
     }
 }
-
-
-
-
-
