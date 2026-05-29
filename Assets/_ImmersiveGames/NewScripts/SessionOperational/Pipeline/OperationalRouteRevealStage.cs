@@ -1,8 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -53,21 +51,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalRouteRevealCommand(
             SessionOperationalRouteCommand routeCommand,
-            IFadeAdapter fadeAdapter,
-            IAudioAdapter audioAdapter,
+            IOperationalFadePort fadePort,
+            IOperationalRouteAudioPort routeAudioPort,
             string source,
             string reason)
         {
             RouteCommand = routeCommand;
-            FadeAdapter = fadeAdapter;
-            AudioAdapter = audioAdapter;
+            FadePort = fadePort;
+            RouteAudioPort = routeAudioPort;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
-        public IFadeAdapter FadeAdapter { get; }
-        public IAudioAdapter AudioAdapter { get; }
+        public IOperationalFadePort FadePort { get; }
+        public IOperationalRouteAudioPort RouteAudioPort { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -75,13 +73,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             get
             {
-
-                if (RouteCommand.UsesTransition && FadeAdapter == null)
+                if (!RouteCommand.IsValid)
                 {
                     return false;
                 }
 
-                if (RouteCommand.Audio.RouteAudioMode != SessionOperationalRouteAudioMode.None && AudioAdapter == null)
+                if (RouteCommand.UsesTransition && FadePort == null)
+                {
+                    return false;
+                }
+
+                if (RouteCommand.Audio.RouteAudioMode != SessionOperationalRouteAudioMode.None && RouteAudioPort == null)
                 {
                     return false;
                 }
@@ -95,6 +97,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteRevealStage
     {
+        private readonly OperationalRouteAudioStage _routeAudioStage = new();
+        private readonly OperationalFadeStage _fadeStage = new();
+
         public async Task<OperationalRouteRevealResult> ExecuteAsync(OperationalRouteRevealCommand command)
         {
             if (command == null || !command.IsValid)
@@ -105,55 +110,30 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalRouteCommand routeCommand = command.RouteCommand;
 
             LogRevealStarted(command);
-            bool audioSubmitted = ExecuteRouteRevealAudio(command);
+            OperationalRouteAudioStageResult audioResult = _routeAudioStage.Execute(
+                new OperationalRouteAudioCommand(
+                    routeCommand,
+                    command.RouteAudioPort,
+                    command.Source,
+                    command.Reason));
+            bool audioSubmitted = audioResult.AudioSubmitted;
             bool fadeOutCompleted = false;
 
             if (routeCommand.UsesTransition)
             {
-                await command.FadeAdapter.FadeOutAsync(routeCommand);
-                fadeOutCompleted = true;
+                OperationalFadeStageResult fadeResult = await _fadeStage.ExecuteAsync(
+                    new OperationalFadeCommand(
+                        routeCommand,
+                        command.FadePort,
+                        OperationalFadeOperationKind.OpenCurtain,
+                        command.Source,
+                        command.Reason));
+                fadeOutCompleted = fadeResult.FadeCompleted;
             }
 
             LogRevealCompleted(command);
 
             return OperationalRouteRevealResult.Completed(audioSubmitted, fadeOutCompleted);
-        }
-
-        private static bool ExecuteRouteRevealAudio(OperationalRouteRevealCommand command)
-        {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
-
-            if (routeCommand.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
-            {
-                DebugUtility.Log(typeof(OperationalRouteRevealStage),
-                    BuildAudioPipelineLog(
-                        "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioSkipped",
-                        command,
-                        "skipReason='route_audio_disabled'"),
-                    DebugUtility.Colors.Info);
-
-                return false;
-            }
-
-            string cueType = ResolveRouteAudioCueTypeOrFail(routeCommand.Audio.RouteAudioCue);
-
-            DebugUtility.Log(typeof(OperationalRouteRevealStage),
-                BuildAudioPipelineLog(
-                    "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioStarted",
-                    command,
-                    $"cueType='{cueType}'"),
-                DebugUtility.Colors.Info);
-
-            command.AudioAdapter.PlayRouteRevealAudio(routeCommand);
-
-            DebugUtility.Log(typeof(OperationalRouteRevealStage),
-                BuildAudioPipelineLog(
-                    "[OBS][SessionOperationalPipeline][Audio] RouteRevealAudioSubmitted",
-                    command,
-                    $"cueType='{cueType}'"),
-                DebugUtility.Colors.Success);
-
-            return true;
         }
 
         private static void LogRevealStarted(OperationalRouteRevealCommand command)
@@ -172,34 +152,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             DebugUtility.Log(typeof(OperationalRouteRevealStage),
                 $"[OBS][SessionOperationalPipeline][Route] OperationalRouteRevealCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
-        }
-
-        private static string ResolveRouteAudioCueTypeOrFail(AudioCueAsset cue)
-        {
-            if (cue is AudioBgmCueAsset)
-            {
-                return nameof(AudioBgmCueAsset);
-            }
-
-            if (cue is AudioSfxCueAsset)
-            {
-                return nameof(AudioSfxCueAsset);
-            }
-
-            string cueType = cue == null ? "<null>" : cue.GetType().Name;
-            string message = $"[FATAL][Config][OperationalRouteRevealStage][Audio] unsupported routeAudioCue type='{cueType}'.";
-            DebugUtility.LogError<OperationalRouteRevealStage>(message);
-            throw new InvalidOperationException(message);
-        }
-
-        private static string BuildAudioPipelineLog(
-            string prefix,
-            OperationalRouteRevealCommand command,
-            string extra)
-        {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
-
-            return $"{prefix} routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' routeAudioMode='{routeCommand.Audio.RouteAudioMode}' routeAudioTiming='{routeCommand.Audio.RouteAudioTiming}' routeAudioCue='{routeCommand.Audio.RouteAudioCueName}' stopPreviousRouteAudio='{routeCommand.Audio.StopPreviousRouteAudio}' source='{command.Source}' reason='{command.Reason}' {extra}.";
         }
     }
 }

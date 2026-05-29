@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -17,18 +16,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalTransitionBlackoutCommand(
             SessionOperationalRouteCommand routeCommand,
-            IFadeAdapter fadeAdapter,
+            IOperationalFadePort fadePort,
             string source,
             string reason)
         {
             RouteCommand = routeCommand;
-            FadeAdapter = fadeAdapter;
+            FadePort = fadePort;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
-        public IFadeAdapter FadeAdapter { get; }
+        public IOperationalFadePort FadePort { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -81,6 +80,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalTransitionBlackoutStage
     {
+        private readonly OperationalFadeStage _fadeStage = new();
+
         public async Task<OperationalTransitionBlackoutResult> ExecuteAsync(OperationalTransitionBlackoutCommand command)
         {
             if (!command.IsValid)
@@ -94,16 +95,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.UsesTransition)
             {
-                if (command.FadeAdapter == null)
+                if (command.FadePort == null)
                 {
-                    throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Transition] IFadeAdapter is required for operational transition blackout.");
+                    throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Transition] IOperationalFadePort is required for operational transition blackout.");
                 }
 
                 DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
                     $"[OBS][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
 
-                await command.FadeAdapter.FadeInAsync(routeCommand);
+                OperationalFadeStageResult fadeResult = await _fadeStage.ExecuteAsync(
+                    new OperationalFadeCommand(
+                        routeCommand,
+                        command.FadePort,
+                        OperationalFadeOperationKind.CloseCurtain,
+                        source,
+                        reason));
 
                 DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
                     $"[OBS][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutCompleted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
@@ -115,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeCommand.RouteOperationId,
                     routeCommand.TransitionId,
                     routeCommand.RouteSequence,
-                    true,
+                    fadeResult.FadeCompleted,
                     "blackout_completed",
                     "Operational transition blackout completed.");
             }

@@ -9,21 +9,22 @@ using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SceneCompositionAdapter : ISceneCompositionAdapter
+    public sealed class SceneCompositionAdapter : IOperationalSceneCompositionPort
     {
         private readonly SceneCompositionExecutor _sceneCompositionExecutor = new();
         private bool _policySourceLogged;
 
-        public async Task<SessionOperationalRouteCompletedFact> ApplyOperationalRouteAsync(SessionOperationalRouteCommand command)
+        public async Task<OperationalSceneCompositionResult> ApplyAsync(OperationalSceneCompositionRequest request)
         {
-            if (!command.IsValid)
+            if (!request.IsValid)
             {
-                throw new InvalidOperationException("SessionOperationalRouteCommand is invalid.");
+                throw new InvalidOperationException("OperationalSceneCompositionRequest is invalid.");
             }
 
+            SessionOperationalRouteCommand command = request.RouteCommand;
             string routeIdentity = command.RouteIdentity;
-            string source = Normalize(command.Source);
-            string reason = Normalize(command.Reason);
+            string source = Normalize(request.Source);
+            string reason = Normalize(request.Reason);
             string activeSceneName = ResolveSceneName(command.ActiveSceneKey, nameof(command.ActiveSceneKey));
 
             ValidatePersistentScenesPolicyOrFail(command);
@@ -32,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 $"[OBS][SessionOperationalPipeline][Route] adapter='SceneCompositionAdapter' action='ApplyOperationalRoute' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{command.ActiveSceneKey.name}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' completionHandoff='{command.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            var compositionResult = await _sceneCompositionExecutor.ApplyAsync(
+            SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(
                 new SceneCompositionRequest(
                     SceneCompositionScope.Local,
                     reason,
@@ -46,10 +47,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException($"Operational scene composition failed. correlationId='{compositionResult.CorrelationId}' reason='{compositionResult.Reason}'.");
             }
 
-            return new SessionOperationalRouteCompletedFact(
-                command,
-                compositionResult.CorrelationId,
-                compositionResult.Reason);
+            return OperationalSceneCompositionResult.Completed(
+                new SessionOperationalRouteCompletedFact(
+                    command,
+                    compositionResult.CorrelationId,
+                    compositionResult.Reason),
+                compositionResult.Reason,
+                "scene_composition_applied");
         }
 
         private static string Normalize(string value)
@@ -94,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
         {
-            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(command);
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(command);
             HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrFail(persistentScenesPolicy);
 
             if (TryFindSceneConflict(command.FinalScenesToLoad, persistentSceneSet, nameof(command.FinalScenesToLoad), command.RouteIdentity, out string validationError) ||
@@ -149,9 +153,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
             {
-                var runtimePolicy = snapshot.RuntimePolicy;
+                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     HardFailFastH1.Trigger(
@@ -159,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                         "[FATAL][Config][SessionOperationalPipeline] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                var registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string policyValidationError = string.Empty;
                 bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
                 if (!registryPolicyValid)

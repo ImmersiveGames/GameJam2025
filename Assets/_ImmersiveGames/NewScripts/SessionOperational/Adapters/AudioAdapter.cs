@@ -9,7 +9,7 @@ using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class AudioAdapter : IAudioAdapter
+    public sealed class AudioAdapter : IOperationalRouteAudioPort
     {
         private enum PlaybackKind
         {
@@ -23,8 +23,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         private IAudioPlaybackHandle _previousSfxHandle;
         private bool _configSourceLogged;
 
-        public void PlayRouteRevealAudio(SessionOperationalRouteCommand command)
+        public OperationalRouteAudioResult SubmitRouteRevealAudio(OperationalRouteAudioRequest request)
         {
+            if (!request.IsValid)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalAudio] OperationalRouteAudioRequest invalido.");
+            }
+
+            SessionOperationalRouteCommand command = request.RouteCommand;
+
             ValidateCommandOrFail(command);
             EnsureAudioConfigSourceOrFail();
 
@@ -36,10 +43,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                         command,
                         extra: "skipReason='route_audio_disabled'"),
                     DebugUtility.Colors.Info);
-                return;
+                return OperationalRouteAudioResult.Skipped("route_audio_disabled", "route audio disabled by route policy");
             }
 
-            var cue = command.Audio.RouteAudioCue;
+            AudioCueAsset cue = command.Audio.RouteAudioCue;
             string cueName = cue != null ? cue.name : "<none>";
             string cueType = ResolveCueTypeOrFail(cue);
 
@@ -52,7 +59,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Info);
 
-            var playbackKind = DispatchCueOrFail(command, cue, cueType);
+            PlaybackKind playbackKind = DispatchCueOrFail(command, cue, cueType);
 
             lock (_sync)
             {
@@ -69,6 +76,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     command,
                     $"cueType='{cueType}' cue='{cueName}'"),
                 DebugUtility.Colors.Success);
+
+            return OperationalRouteAudioResult.Completed(cueType, cueName);
         }
 
         private PlaybackKind DispatchCueOrFail(
@@ -117,7 +126,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] IGlobalAudioService obrigatorio ausente para routeAudio cue do tipo SFX.");
             }
 
-            var handle = audioService.Play(cue, AudioPlaybackContext.Global(BuildReason(command, cueType)));
+            IAudioPlaybackHandle handle = audioService.Play(cue, AudioPlaybackContext.Global(BuildReason(command, cueType)));
             if (handle == null || !handle.IsValid)
             {
                 throw new InvalidOperationException($"[FATAL][Audio][SessionOperationalPipeline] SFX submission not confirmed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' cue='{cue.name}'.");
@@ -184,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                var registryAudioDefaults = snapshot.PreferencesRuntime.AudioDefaults;
+                AudioDefaultsAsset registryAudioDefaults = snapshot.PreferencesRuntime.AudioDefaults;
                 if (registryAudioDefaults == null)
                 {
                     throw new InvalidOperationException("[FATAL][Audio][SessionOperationalPipeline] RuntimeConfigRegistry contract broken: snapshot.PreferencesRuntime.AudioDefaults obrigatorio ausente.");

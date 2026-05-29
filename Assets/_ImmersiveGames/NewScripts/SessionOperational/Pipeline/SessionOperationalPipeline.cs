@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
-using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
@@ -75,6 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalRouteSetupStage _routeSetupStage = new();
         private readonly OperationalTransitionBlackoutStage _transitionBlackoutStage = new();
         private readonly OperationalPreviousRouteExitStage _previousRouteExitStage = new();
+        private readonly OperationalSceneCompositionStage _sceneCompositionStage = new();
         private readonly OperationalHandoffExitStage _handoffExitStage = new();
         private readonly OperationalRouteCameraPresentationStage _routeCameraPresentationStage = new();
         private readonly OperationalInputPreparationStage _inputPreparationStage = new();
@@ -84,8 +84,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage = new();
         private readonly OperationalRouteActivitySaveLoadOnEnterStage _routeActivitySaveLoadOnEnterStage = new();
         private readonly OperationalRouteActivitySaveSaveOnExitStage _routeActivitySaveSaveOnExitStage = new();
+        private readonly OperationalRouteMaterializationStage _routeMaterializationStage = new();
         private readonly OperationalLoadingStage _loadingStage = new();
         private readonly OperationalRouteRevealStage _routeRevealStage = new();
+        private readonly OperationalFadeStage _fadeStage = new();
         private readonly OperationalRouteCompletionStage _routeCompletionStage = new();
         private readonly SessionOperationalPipelineDependencies _dependencies;
         private readonly string _sessionOperationalPipelineId;
@@ -224,10 +226,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalRouteAsset is required.");
             }
 
-            ISceneCompositionAdapter routeExecutor = ResolveRouteExecutorOrFail();
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = _dependencies.PersistentScenesPolicy;
-            IFadeAdapter fadeAdapter = null;
+            IOperationalFadePort fadePort = null;
             ILoadingAdapter loadingAdapter = null;
 
             string sourceText = Normalize(source);
@@ -304,7 +305,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (command.UsesTransition)
             {
-                fadeAdapter = ResolveFadeAdapterOrFail();
+                fadePort = ResolveFadePortOrFail();
             }
 
             if (loadingCommand.IsEnabled)
@@ -365,7 +366,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalTransitionBlackoutResult blackoutResult = await _transitionBlackoutStage.ExecuteAsync(
                     new OperationalTransitionBlackoutCommand(
                         command,
-                        fadeAdapter,
+                        fadePort,
                         sourceText,
                         reasonText));
 
@@ -438,12 +439,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{previousRouteExitResult.Kind}' reason='{previousRouteExitResult.Reason}' detail='{previousRouteExitResult.Detail}'.");
                 }
 
-                OperationalRouteMaterializationStage materializationStage = new();
-                OperationalRouteMaterializationResult materializationResult = await materializationStage.ExecuteAsync(
+                OperationalRouteMaterializationResult materializationResult = await _routeMaterializationStage.ExecuteAsync(
                     BuildMaterializationCommand(
                         runtimeModeConfig,
                         command,
-                        routeExecutor,
                         loadingAdapter,
                         loadingCommand,
                         routeActivitySavePlan,
@@ -461,15 +460,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 loadingCompleted = materializationResult.LoadingCompleted;
                 loadingHidden = materializationResult.LoadingHidden;
 
-                IAudioAdapter audioAdapter = command.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None
+                IOperationalRouteAudioPort routeAudioPort = command.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None
                     ? null
-                    : ResolveAudioAdapterOrFail();
+                    : ResolveRouteAudioPortOrFail();
 
                 OperationalRouteRevealResult revealResult = await _routeRevealStage.ExecuteAsync(
                     new OperationalRouteRevealCommand(
                         command,
-                        fadeAdapter,
-                        audioAdapter,
+                        fadePort,
+                        routeAudioPort,
                         sourceText,
                         reasonText));
 
@@ -530,7 +529,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 {
                     try
                     {
-                        await fadeAdapter.FadeOutAsync(command);
+                        await _fadeStage.ExecuteAsync(
+                            new OperationalFadeCommand(
+                                command,
+                                fadePort,
+                                OperationalFadeOperationKind.CleanupOpenCurtain,
+                                sourceText,
+                                reasonText));
                     }
                     catch (Exception cleanupEx)
                     {
@@ -896,116 +901,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "Player preparation observed no-op.");
         }
 
-        public bool TryObserveInputCapabilityPrepared(
-            string routeOperationId,
-            string transitionId,
-            int transitionSequence,
-            string routeId,
-            string routeProfileId,
-            string routeClass,
-            SessionOperationalInputPolicy inputPolicy,
-            SessionOperationalInputModeKind initialInputMode,
-            string source,
-            string reason)
-        {
-            _state.SetInputModeContext(Normalize(routeClass), inputPolicy, initialInputMode);
-            return TryRecordStage(
-                SessionOperationalStage.InputCapabilityPrepared,
-                routeOperationId,
-                transitionId,
-                transitionSequence,
-                routeId,
-                routeProfileId,
-                source,
-                reason,
-                "Input capability prepared.");
-        }
-
-        public bool TryObserveInitialInputModePrepared(
-            string routeOperationId,
-            string transitionId,
-            int transitionSequence,
-            string routeId,
-            string routeProfileId,
-            string routeClass,
-            SessionOperationalInputPolicy inputPolicy,
-            SessionOperationalInputModeKind initialInputMode,
-            string source,
-            string reason)
-        {
-            _state.SetInputModeContext(Normalize(routeClass), inputPolicy, initialInputMode);
-            return TryRecordStage(
-                SessionOperationalStage.InitialInputModePrepared,
-                routeOperationId,
-                transitionId,
-                transitionSequence,
-                routeId,
-                routeProfileId,
-                source,
-                reason,
-                "Initial input mode prepared.");
-        }
-
-        private void DispatchInitialInputModeCommandOrFail(
-            string routeOperationId,
-            string transitionId,
-            int transitionSequence,
-            string routeId,
-            string routeProfileId,
-            string routeClass,
-            SessionOperationalInputPolicy inputPolicy,
-            SessionOperationalInputModeKind initialInputMode,
-            string source,
-            string reason)
-        {
-            string normalizedRouteOperationId = Normalize(routeOperationId);
-            string normalizedTransitionId = Normalize(transitionId);
-            string normalizedRouteId = Normalize(routeId);
-            string normalizedRouteProfileId = Normalize(routeProfileId);
-            string normalizedRouteClass = Normalize(routeClass);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
-
-            if (_state.CurrentStage != SessionOperationalStage.InitialInputModePrepared ||
-                _state.RouteOperationId != normalizedRouteOperationId ||
-                _state.TransitionId != normalizedTransitionId ||
-                _state.TransitionSequence != transitionSequence ||
-                _state.RouteId != normalizedRouteId ||
-                _state.RouteProfileId != normalizedRouteProfileId)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Cannot dispatch SessionOperationalInputModeCommand before matching InitialInputModePrepared fact routeIdentity='{normalizedRouteId}' routeOperationId='{normalizedRouteOperationId}' transitionId='{normalizedTransitionId}' routeSequence='{transitionSequence}' currentStage='{_state.CurrentStage}' currentRouteOperationId='{_state.RouteOperationId}' currentTransitionId='{_state.TransitionId}' currentRouteSequence='{_state.TransitionSequence}' source='{normalizedSource}' reason='{normalizedReason}'.");
-            }
-
-            _state.SetInputModeContext(normalizedRouteClass, inputPolicy, initialInputMode);
-
-            SessionOperationalIdentity identity = new(
-                _sessionOperationalPipelineId,
-                normalizedRouteOperationId,
-                normalizedTransitionId,
-                transitionSequence,
-                normalizedRouteId,
-                normalizedRouteProfileId,
-                normalizedSource,
-                normalizedReason,
-                SessionOperationalStage.InitialInputModePrepared);
-
-            SessionOperationalInputModeCommand inputModeCommand = new(
-                identity,
-                _state.CurrentInitialInputMode,
-                _state.RouteClass);
-
-            if (!inputModeCommand.IsValid)
-            {
-                throw new InvalidOperationException("Cannot emit invalid operational input mode command.");
-            }
-
-            _state.AppendTrace(
-                $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' contextSignature='{inputModeCommand.ContextSignature}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{inputModeCommand.InitialInputMode}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
-
-            EventBus<SessionOperationalInputModeCommand>.Raise(inputModeCommand);
-        }
-
         public bool TryObservePauseCapabilityPrepared(
             string routeOperationId,
             string transitionId,
@@ -1341,14 +1236,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return SessionOperationalObservableIdFormatter.BuildTransitionId(routeIdentity, activeScene, sequence);
         }
 
-        private ISceneCompositionAdapter ResolveRouteExecutorOrFail()
+        private IOperationalFadePort ResolveFadePortOrFail()
         {
-            return _dependencies.SceneCompositionAdapter;
-        }
+            IOperationalFadePort fadePort = _dependencies.ResolveFadePort();
+            if (fadePort == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IOperationalFadePort obrigatorio ausente para transicoes operacionais.");
+            }
 
-        private IFadeAdapter ResolveFadeAdapterOrFail()
-        {
-            return _dependencies.FadeAdapter;
+            return fadePort;
         }
 
         private ILoadingAdapter ResolveLoadingAdapterOrFail()
@@ -1356,9 +1252,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return _dependencies.LoadingAdapter;
         }
 
-        private IAudioAdapter ResolveAudioAdapterOrFail()
+        private IOperationalRouteAudioPort ResolveRouteAudioPortOrFail()
         {
-            return _dependencies.AudioAdapter;
+            IOperationalRouteAudioPort routeAudioPort = _dependencies.ResolveRouteAudioPort();
+            if (routeAudioPort == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IOperationalRouteAudioPort obrigatorio ausente para route audio.");
+            }
+
+            return routeAudioPort;
         }
 
         private static string BuildActivitySaveKey(string activityIdentity)
@@ -1396,7 +1298,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private OperationalRouteMaterializationCommand BuildMaterializationCommand(
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteCommand command,
-            ISceneCompositionAdapter routeExecutor,
             ILoadingAdapter loadingAdapter,
             SessionOperationalLoadingCommand loadingCommand,
             RouteActivitySavePlan routeActivitySavePlan,
@@ -1423,7 +1324,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 RouteSequence = routeSequence,
                 Source = sourceText,
                 Reason = reasonText,
-                ApplyOperationalRouteAsync = () => routeExecutor.ApplyOperationalRouteAsync(command),
+                SceneCompositionStage = _sceneCompositionStage,
+                SceneCompositionCommand = new OperationalSceneCompositionCommand(
+                    _dependencies.ResolveSceneCompositionPort(),
+                    command,
+                    activeSceneName,
+                    sourceText,
+                    reasonText),
                 RouteCameraPresentationStage = _routeCameraPresentationStage,
                 RouteCameraPresentationCommand = new OperationalRouteCameraPresentationCommand(
                     _dependencies.RouteCameraAdapter,
@@ -1456,6 +1363,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     reasonText),
                 InputPreparationStage = _inputPreparationStage,
                 InputPreparationCommand = new OperationalInputPreparationCommand(
+                    _sessionOperationalPipelineId,
+                    _state,
+                    _stageOrderPolicy,
                     runtimeModeConfig,
                     command.Plan,
                     inputPolicy,
@@ -1464,41 +1374,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     routeOperationId,
                     transitionId,
                     routeSequence,
-                    source,
-                    reason,
-                    initialInputMode => TryObserveInputCapabilityPrepared(
-                        routeOperationId,
-                        transitionId,
-                        routeSequence,
-                        routeIdentity,
-                        routeIdentity,
-                        routeClass,
-                        inputPolicy,
-                        initialInputMode,
-                        source,
-                        reason),
-                    initialInputMode => TryObserveInitialInputModePrepared(
-                        routeOperationId,
-                        transitionId,
-                        routeSequence,
-                        routeIdentity,
-                        routeIdentity,
-                        routeClass,
-                        inputPolicy,
-                        initialInputMode,
-                        source,
-                        reason),
-                    initialInputMode => DispatchInitialInputModeCommandOrFail(
-                        routeOperationId,
-                        transitionId,
-                        routeSequence,
-                        routeIdentity,
-                        routeIdentity,
-                        routeClass,
-                        inputPolicy,
-                        initialInputMode,
-                        source,
-                        reason)),
+                    sourceText,
+                    reasonText,
+                    _dependencies.ResolveInputModeRequestPort()),
                 PlayerPreparationStage = _playerPreparationStage,
                 PlayerPreparationCommand = new OperationalPlayerPreparationCommand(
                     _sessionOperationalPipelineId,

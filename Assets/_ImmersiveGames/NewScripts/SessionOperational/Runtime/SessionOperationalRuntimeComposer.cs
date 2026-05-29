@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static bool _runtimeComposed;
         private static StartupRouteEmitter _startupRouteEmitter;
         private static SessionOperationalPipeline _sessionOperationalPipeline;
-        private static SceneCompositionAdapter _routeTransitionAdapter;
+        private static SceneCompositionAdapter _sceneCompositionAdapter;
         private static FadeAdapter _fadeAdapter;
         private static LoadingAdapter _loadingAdapter;
         private static AudioAdapter _audioAdapter;
@@ -129,13 +129,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             return new SessionOperationalPipelineDependencies(
                 runtimeModeConfig,
                 persistentScenesPolicy,
-                _routeTransitionAdapter,
-                _fadeAdapter,
+                ResolveRequiredDependency<IOperationalSceneCompositionPort>,
+                ResolveRequiredDependency<IOperationalRouteAudioPort>,
+                ResolveRequiredDependency<IOperationalFadePort>,
                 _loadingAdapter,
-                _audioAdapter,
                 _routeCameraAdapter,
                 _activitySaveAdapter,
                 _progressionSlotContextResolver,
+                ResolveRequiredDependency<IOperationalInputModeRequestPort>,
                 ResolveOptionalDependency<IOperationalRouteConsumerEntryPort>,
                 ResolveOptionalDependency<IOperationalRouteConsumerReadinessPort>,
                 ResolveOptionalDependency<IOperationalRouteConsumerPresentationPort>,
@@ -188,6 +189,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] adapter='SessionActivityOperationalRouteConsumerReadinessAdapter' registered for operational route consumer readiness.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static T ResolveRequiredDependency<T>() where T : class
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<T>(out var dependency) &&
+                dependency != null)
+            {
+                return dependency;
+            }
+
+            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline] Required dependency missing type='{typeof(T).Name}'.");
         }
 
         private static T ResolveOptionalDependency<T>() where T : class
@@ -250,24 +263,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
 
         private static void EnsureSessionOperationalSceneCompositionAdapter()
         {
-            if (_routeTransitionAdapter != null)
+            if (_sceneCompositionAdapter != null)
             {
                 return;
             }
 
             if (DependencyManager.Provider.TryGetGlobal<SceneCompositionAdapter>(out var existingAdapter) && existingAdapter != null)
             {
-                _routeTransitionAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<ISceneCompositionAdapter>(_routeTransitionAdapter);
+                _sceneCompositionAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalSceneCompositionPort>(_sceneCompositionAdapter);
                 return;
             }
 
-            _routeTransitionAdapter = new SceneCompositionAdapter();
-            DependencyManager.Provider.RegisterGlobal(_routeTransitionAdapter);
-            DependencyManager.Provider.RegisterGlobal<ISceneCompositionAdapter>(_routeTransitionAdapter);
+            _sceneCompositionAdapter = new SceneCompositionAdapter();
+            DependencyManager.Provider.RegisterGlobal(_sceneCompositionAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalSceneCompositionPort>(_sceneCompositionAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='SceneCompositionAdapter' registered for canonical operational runtime.",
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SceneCompositionAdapter' registered as operational scene composition port.",
                 DebugUtility.Colors.Info);
         }
 
@@ -281,16 +294,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             if (DependencyManager.Provider.TryGetGlobal<AudioAdapter>(out var existingAdapter) && existingAdapter != null)
             {
                 _audioAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<IAudioAdapter>(_audioAdapter);
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteAudioPort>(_audioAdapter);
                 return;
             }
 
             _audioAdapter = new AudioAdapter();
             DependencyManager.Provider.RegisterGlobal(_audioAdapter);
-            DependencyManager.Provider.RegisterGlobal<IAudioAdapter>(_audioAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteAudioPort>(_audioAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='AudioAdapter' registered for canonical operational runtime.",
+                "[OBS][SessionOperationalPipeline][Composer] adapter='AudioAdapter' registered as operational route audio port.",
                 DebugUtility.Colors.Info);
         }
 
@@ -304,16 +317,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             if (DependencyManager.Provider.TryGetGlobal<FadeAdapter>(out var existingAdapter) && existingAdapter != null)
             {
                 _fadeAdapter = existingAdapter;
-                DependencyManager.Provider.RegisterGlobal<IFadeAdapter>(_fadeAdapter);
+                DependencyManager.Provider.RegisterGlobal<IOperationalFadePort>(_fadeAdapter);
                 return;
             }
 
             _fadeAdapter = new FadeAdapter();
             DependencyManager.Provider.RegisterGlobal(_fadeAdapter);
-            DependencyManager.Provider.RegisterGlobal<IFadeAdapter>(_fadeAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalFadePort>(_fadeAdapter);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
-                "[OBS][SessionOperationalPipeline][Composer] adapter='FadeAdapter' registered for canonical operational runtime.",
+                "[OBS][SessionOperationalPipeline][Composer] adapter='FadeAdapter' registered as operational fade port.",
                 DebugUtility.Colors.Info);
         }
 

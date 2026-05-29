@@ -1,26 +1,22 @@
 ﻿using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
+
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 {
     /// <summary>
-    /// Adapter tecnico do SessionOperationalPipeline.
-    /// Converte o command semantico do SessionOperationalPipeline em request canonico de InputMode.
+    /// Adapter tecnico do SessionOperational para o runtime canonico de InputModes.
+    /// Recebe request ja validado pelo stage operacional e converte para InputModeRequestEvent.
     /// </summary>
     [DebugLevel(DebugLevel.Verbose)]
-    public sealed class SessionOperationalInputModeAdapter : IDisposable
+    public sealed class SessionOperationalInputModeAdapter : IOperationalInputModeRequestPort, IDisposable
     {
-        private readonly EventBinding<SessionOperationalInputModeCommand> _binding;
         private bool _disposed;
 
         public SessionOperationalInputModeAdapter()
         {
-            _binding = new EventBinding<SessionOperationalInputModeCommand>(OnCommandReceived);
-            EventBus<SessionOperationalInputModeCommand>.Register(_binding);
-
             DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
                 "[OBS][InputModes][Adapter] registered source='SessionOperationalPipeline' target='InputModeRequestEvent'.",
                 DebugUtility.Colors.Info);
@@ -28,95 +24,67 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
 
         public void Dispose()
         {
-            if (_disposed)
-            {
-                return;
-            }
-
             _disposed = true;
-            EventBus<SessionOperationalInputModeCommand>.Unregister(_binding);
         }
 
-        private void OnCommandReceived(SessionOperationalInputModeCommand command)
+        public OperationalInputModeRequestResult SubmitInitialInputMode(OperationalInputModeRequest request)
         {
             if (_disposed)
             {
-                return;
+                return OperationalInputModeRequestResult.Failed("disposed", "SessionOperationalInputModeAdapter disposed.");
             }
 
-            if (!command.IsValid)
+            if (!request.IsValid)
             {
-                HardFailFastH1.Trigger(typeof(SessionOperationalInputModeAdapter),
-                    "[FATAL][H1][InputModes] Invalid SessionOperationalInputModeCommand received by SessionOperational adapter.");
-                return;
+                return OperationalInputModeRequestResult.Failed("invalid_request", "Invalid OperationalInputModeRequest received by InputModes adapter.");
             }
 
-            if (!DependencyManager.HasInstance || DependencyManager.Provider == null ||
-                !DependencyManager.Provider.TryGetGlobal<SessionOperationalPipeline>(out var pipeline) || pipeline == null)
+            try
             {
-                HardFailFastH1.Trigger(typeof(SessionOperationalInputModeAdapter),
-                    $"[FATAL][H1][InputModes] SessionOperationalPipeline missing for input mode adapter contextSignature='{command.ContextSignature}'.");
-                return;
+                PublishInputModeRequest(request);
+                return OperationalInputModeRequestResult.Submitted("submitted");
             }
-
-            if (!IsCurrentOperation(command, pipeline))
+            catch (Exception ex)
             {
-                DebugUtility.LogVerbose(typeof(SessionOperationalInputModeAdapter),
-                    $"[OBS][InputModes][Adapter] rejected reason='stale_or_foreign_event' contextSignature='{command.ContextSignature}' pipelineId='{command.Identity.SessionOperationalPipelineId}' routeOperationId='{command.Identity.RouteOperationId}' transitionId='{command.Identity.TransitionId}' transitionSequence='{command.Identity.TransitionSequence}' routeId='{command.Identity.RouteId}' routeProfileId='{command.Identity.RouteProfileId}' initialInputMode='{command.InitialInputMode}'.",
-                    DebugUtility.Colors.Info);
-                return;
+                return OperationalInputModeRequestResult.Failed("submit_failed", $"{ex.GetType().Name}:{ex.Message}");
             }
-            PublishInputModeRequest(command);
         }
 
-        private static bool IsCurrentOperation(SessionOperationalInputModeCommand command, SessionOperationalPipeline pipeline)
+        private static void PublishInputModeRequest(OperationalInputModeRequest request)
         {
-            SessionOperationalRuntimeState state = pipeline.State;
-
-            return state.HasStarted &&
-                   !state.HasCompleted &&
-                   string.Equals(state.SessionOperationalPipelineId, command.Identity.SessionOperationalPipelineId, StringComparison.Ordinal) &&
-                   string.Equals(state.RouteOperationId, command.Identity.RouteOperationId, StringComparison.Ordinal) &&
-                   string.Equals(state.TransitionId, command.Identity.TransitionId, StringComparison.Ordinal) &&
-                   state.TransitionSequence == command.Identity.TransitionSequence &&
-                   string.Equals(state.RouteId, command.Identity.RouteId, StringComparison.Ordinal) &&
-                   string.Equals(state.RouteProfileId, command.Identity.RouteProfileId, StringComparison.Ordinal) &&
-                   string.Equals(state.CurrentIdentity.CycleSignature, command.ContextSignature, StringComparison.Ordinal);
-        }
-
-        private static void PublishInputModeRequest(SessionOperationalInputModeCommand command)
-        {
-            InputModeRequestKind kind = MapInputModeKindOrFail(command);
+            InputModeRequestKind kind = MapInputModeKindOrFail(request.InitialInputMode, request.ContextSignature);
+            SessionOperationalIdentity identity = request.Identity;
 
             EventBus<InputModeRequestEvent>.Raise(
                 new InputModeRequestEvent(
                     kind,
-                    command.Reason,
+                    request.Reason,
                     "SessionOperationalPipeline",
-                    command.ContextSignature,
-                    command.Identity.RouteId,
-                    command.Identity.RouteOperationId,
-                    command.Identity.TransitionId,
-                    command.Identity.TransitionSequence,
-                    command.InitialInputMode.ToString()));
+                    request.ContextSignature,
+                    identity.RouteId,
+                    identity.RouteOperationId,
+                    identity.TransitionId,
+                    identity.TransitionSequence,
+                    request.InitialInputMode.ToString()));
 
             DebugUtility.Log(typeof(SessionOperationalInputModeAdapter),
-                $"[OBS][InputModes][Adapter] InputModeRequestSubmitted routeIdentity='{command.Identity.RouteId}' routeOperationId='{command.Identity.RouteOperationId}' transitionId='{command.Identity.TransitionId}' routeSequence='{command.Identity.TransitionSequence}' initialInputMode='{command.InitialInputMode}' inputMode='{kind}' source='SessionOperationalPipeline' contextSignature='{command.ContextSignature}' routeClass='{command.RouteClass}' reason='{command.Reason}'.",
+                $"[OBS][InputModes][Adapter] InputModeRequestSubmitted routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' initialInputMode='{request.InitialInputMode}' inputMode='{kind}' source='SessionOperationalPipeline' contextSignature='{request.ContextSignature}' routeClass='{request.RouteClass}' reason='{request.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static InputModeRequestKind MapInputModeKindOrFail(SessionOperationalInputModeCommand command)
+        private static InputModeRequestKind MapInputModeKindOrFail(
+            SessionOperationalInputModeKind initialInputMode,
+            string contextSignature)
         {
-            return command.InitialInputMode switch
+            return initialInputMode switch
             {
                 SessionOperationalInputModeKind.FrontendMenu => InputModeRequestKind.FrontendMenu,
                 SessionOperationalInputModeKind.ActivityDefault => InputModeRequestKind.Gameplay,
                 SessionOperationalInputModeKind.PauseOverlay => InputModeRequestKind.PauseOverlay,
                 SessionOperationalInputModeKind.InputLocked => InputModeRequestKind.InputLocked,
                 _ => throw new InvalidOperationException(
-                    $"[FATAL][H1][InputModes] Unsupported SessionOperationalInputModeKind '{command.InitialInputMode}' contextSignature='{command.ContextSignature}'."),
+                    $"[FATAL][H1][InputModes] Unsupported SessionOperationalInputModeKind '{initialInputMode}' contextSignature='{contextSignature}'."),
             };
         }
     }
 }
-

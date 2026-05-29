@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Foundation.Core.Events;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
     public enum SessionOperationalStage
@@ -319,31 +318,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         ActivityGameplay = 2,
         OverlayNavigation = 3,
         InputLocked = 4,
-    }
-
-    public readonly struct SessionOperationalInputModeCommand : IEvent
-    {
-        public SessionOperationalInputModeCommand(
-            SessionOperationalIdentity identity,
-            SessionOperationalInputModeKind initialInputMode,
-            string routeClass)
-        {
-            Identity = identity;
-            InitialInputMode = initialInputMode;
-            RouteClass = string.IsNullOrWhiteSpace(routeClass) ? string.Empty : routeClass.Trim();
-        }
-
-        public SessionOperationalIdentity Identity { get; }
-        public SessionOperationalInputModeKind InitialInputMode { get; }
-        public string RouteClass { get; }
-        public string Source => Identity.Source;
-        public string Reason => Identity.Reason;
-        public string ContextSignature => Identity.CycleSignature;
-
-        public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionOperationalStage.InitialInputModePrepared &&
-            InitialInputMode != SessionOperationalInputModeKind.Unknown;
     }
 
     public readonly struct SessionOperationalFact

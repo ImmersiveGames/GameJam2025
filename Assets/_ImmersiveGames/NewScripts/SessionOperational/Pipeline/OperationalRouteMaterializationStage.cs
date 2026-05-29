@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -41,7 +42,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public int RouteSequence { get; set; }
         public string Source { get; set; }
         public string Reason { get; set; }
-        public Func<Task<SessionOperationalRouteCompletedFact>> ApplyOperationalRouteAsync { get; set; }
+        public OperationalSceneCompositionStage SceneCompositionStage { get; set; }
+        public OperationalSceneCompositionCommand SceneCompositionCommand { get; set; }
         public OperationalRouteCameraPresentationStage RouteCameraPresentationStage { get; set; }
         public OperationalRouteCameraPresentationCommand RouteCameraPresentationCommand { get; set; }
         public OperationalLoadingStage LoadingStage { get; set; }
@@ -62,7 +64,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&
             RouteSequence > 0 &&
-            ApplyOperationalRouteAsync != null &&
+            SceneCompositionStage != null &&
+            SceneCompositionCommand.IsValid &&
             RouteCameraPresentationStage != null &&
             RouteCameraPresentationCommand.IsValid &&
             LoadingStage != null &&
@@ -118,11 +121,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static async Task<SessionOperationalRouteCompletedFact> ExecuteRouteCompositionAsync(OperationalRouteMaterializationCommand command)
         {
-            SessionOperationalRouteCompletedFact adapterFact = await command.ApplyOperationalRouteAsync();
-            if (!adapterFact.IsValid)
+            OperationalSceneCompositionStageResult sceneCompositionResult = await command.SceneCompositionStage.ExecuteAsync(command.SceneCompositionCommand);
+            if (!sceneCompositionResult.IsCompleted)
             {
-                throw new InvalidOperationException("Operational route executor returned an invalid completion fact.");
+                throw new InvalidOperationException($"Operational scene composition did not complete. reason='{sceneCompositionResult.Reason}' detail='{sceneCompositionResult.Detail}'.");
             }
+
+            SessionOperationalRouteCompletedFact adapterFact = sceneCompositionResult.CompletionFact;
 
             command.RouteCameraPresentationStage.Execute(command.RouteCameraPresentationCommand);
             OperationalLoadingResult sceneCompositionLoadingResult = await command.LoadingStage.ExecuteSceneCompositionCompletedAsync(command.LoadingCommand);

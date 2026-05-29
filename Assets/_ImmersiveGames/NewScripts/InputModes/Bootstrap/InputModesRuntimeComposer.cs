@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 {
     public static class InputModesRuntimeComposer
@@ -67,17 +68,20 @@ namespace _ImmersiveGames.NewScripts.InputModes.Bootstrap
 
             if (_sessionOperationalInputModeAdapter != null)
             {
+                DependencyManager.Provider.RegisterGlobal<IOperationalInputModeRequestPort>(_sessionOperationalInputModeAdapter);
                 return;
             }
 
             if (DependencyManager.Provider.TryGetGlobal<SessionOperationalInputModeAdapter>(out var existingAdapter) && existingAdapter != null)
             {
                 _sessionOperationalInputModeAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalInputModeRequestPort>(_sessionOperationalInputModeAdapter);
                 return;
             }
 
             _sessionOperationalInputModeAdapter = new SessionOperationalInputModeAdapter();
             DependencyManager.Provider.RegisterGlobal(_sessionOperationalInputModeAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalInputModeRequestPort>(_sessionOperationalInputModeAdapter);
 
             DebugUtility.Log(typeof(InputModesRuntimeComposer),
                 "[OBS][InputModes][Pipeline] adapter='SessionOperationalInputModeAdapter' registered for canonical input modes.",
