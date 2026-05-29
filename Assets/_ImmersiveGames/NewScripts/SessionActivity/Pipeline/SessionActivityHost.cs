@@ -293,140 +293,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(string requestedSessionStateId, string source, string reason)
         {
             EnsurePipeline();
-            string normalizedSessionStateId = Normalize(requestedSessionStateId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
-
-            if (string.IsNullOrWhiteSpace(normalizedSessionStateId))
-            {
-                throw new InvalidOperationException("RequestRouteExitTeardown requires sessionStateId.");
-            }
-
-            if (!string.Equals(normalizedSessionStateId, sessionStateId, StringComparison.Ordinal))
-            {
-                return BuildRouteExitTeardownFailed(
-                    "route_exit_failed_stale_or_foreign_session_activity_teardown_request",
-                    $"teardown request sessionStateId='{normalizedSessionStateId}' does not match host sessionStateId='{sessionStateId}'.");
-            }
-
-            SessionActivityStage stage = _pipeline.State.CurrentStage;
-            bool hasPendingHandoff = _pipeline.State.CurrentHandoff.IsValid;
-
-            if (!_pipeline.State.HasStarted)
-            {
-                return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.NotRequired,
-                    sessionStateId,
-                    stage,
-                    _pipeline.State.CurrentDefinition.ActivityId,
-                    hasPendingHandoff,
-                    "route_exit_not_required_no_active_session_activity",
-                    "Pipeline is not started.");
-            }
-
-            if (_pipeline.State.HasCompleted)
-            {
-                if ((stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit) && !hasPendingHandoff)
-                {
-                    return new SessionActivityRouteExitTeardownResult(
-                        SessionActivityRouteExitTeardownKind.Completed,
-                        sessionStateId,
-                        stage,
-                        _pipeline.State.CurrentDefinition.ActivityId,
-                        false,
-                        "route_exit_completed",
-                        "SessionActivity route-exit teardown is already completed.");
-                }
-
-                return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.NotRequired,
-                    sessionStateId,
-                    stage,
-                    _pipeline.State.CurrentDefinition.ActivityId,
-                    hasPendingHandoff,
-                    "route_exit_not_required_no_active_session_activity",
-                    "SessionActivity is already completed without an active route-exit rail.");
-            }
-
-            if (_pipeline.State.CurrentPendingOperation.IsValid)
-            {
-                return BuildRouteExitTeardownInProgress(
-                    "route_exit_in_progress_pending_operation_active",
-                    $"SessionActivity route-exit teardown is in progress while pending operation is active. pendingOperation='{_pipeline.State.CurrentPendingOperation}'.");
-            }
-
-            if (hasPendingHandoff)
-            {
-                return BuildRouteExitTeardownFailed(
-                    "route_exit_failed_pending_handoff_present",
-                    $"SessionActivity route-exit teardown cannot complete while handoff is pending. handoff='{_pipeline.State.CurrentHandoff}'.");
-            }
-
-            if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
-            {
-                return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.Completed,
-                    sessionStateId,
-                    stage,
-                    _pipeline.State.CurrentDefinition.ActivityId,
-                    false,
-                    "route_exit_completed_already_deactivated",
-                    "Activity is already deactivated.");
-            }
-
-            if (IsDeactivationTransitionStage(stage) && _pipeline.ActiveRailKind != SessionActivityRailKind.ActivityRouteExitRail)
-            {
-                return BuildRouteExitTeardownFailed(
-                    "deactivation_window_not_route_exit_owned",
-                    $"SessionActivity is progressing through local activity transition and route-exit is not owner. stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' entrySequence='{_pipeline.State.CurrentEntrySequence}'.");
-            }
-
-            if (IsRouteExitTransitStage(stage))
-            {
-                return BuildRouteExitTeardownInProgress(
-                    "route_exit_in_progress_transient_stage",
-                    $"SessionActivity route-exit teardown is in progress at stage '{stage}'.");
-            }
-
-            SessionActivityCommandResult closeForRouteExitResult = _pipeline.CloseForRouteExit(
-                normalizedSource,
-                $"{normalizedReason}/route_exit_teardown_close_for_route_exit");
-            if (!closeForRouteExitResult.IsValid || closeForRouteExitResult.IsRejected || closeForRouteExitResult.IsFailed)
-            {
-                return BuildRouteExitTeardownFailed(
-                    "route_exit_close_for_route_exit_rejected",
-                    $"CloseForRouteExit rejected during route exit teardown. resultKind='{closeForRouteExitResult.Kind}' reason='{closeForRouteExitResult.Reason}'.");
-            }
-
-            stage = _pipeline.State.CurrentStage;
-            hasPendingHandoff = _pipeline.State.CurrentHandoff.IsValid;
-            if ((stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit) && !hasPendingHandoff)
-            {
-                return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.Completed,
-                    sessionStateId,
-                    stage,
-                    _pipeline.State.CurrentDefinition.ActivityId,
-                    false,
-                    "route_exit_completed",
-                    "SessionActivity deactivated before route unload.");
-            }
-
-            if (closeForRouteExitResult.IsStarted)
-            {
-                return new SessionActivityRouteExitTeardownResult(
-                    SessionActivityRouteExitTeardownKind.Started,
-                    sessionStateId,
-                    stage,
-                    _pipeline.State.CurrentDefinition.ActivityId,
-                    hasPendingHandoff,
-                    "route_exit_started_close_for_route_exit_accepted",
-                    $"SessionActivity route-exit teardown started at stage '{stage}'.");
-            }
-
-            return BuildRouteExitTeardownInProgress(
-                "route_exit_in_progress_not_completed_before_unload",
-                $"SessionActivity route-exit teardown has started and is not completed yet. stage='{stage}'.");
+            return _pipeline.RequestRouteExitTeardown(requestedSessionStateId, source, reason);
         }
 
         public Task<SessionActivityRouteExitTeardownResult> AwaitRouteExitTeardownAsync(
@@ -835,41 +702,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return Application.isEditor || Debug.isDebugBuild;
         }
 
-        private static bool IsRouteExitTransitStage(SessionActivityStage stage)
-        {
-            return stage == SessionActivityStage.ActivityCompletionRequested ||
-                   stage == SessionActivityStage.ActivityCompleting ||
-                   stage == SessionActivityStage.PlayerActorParticipationExitStageStarted ||
-                   stage == SessionActivityStage.PlayerActorParticipationExitStageCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowStarted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
-                   stage == SessionActivityStage.DeactivationWindowReady ||
-                   stage == SessionActivityStage.DeactivationWindowCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
-                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
-        }
-
-        private static bool IsDeactivationTransitionStage(SessionActivityStage stage)
-        {
-            return stage == SessionActivityStage.ActivityCompletionRequested ||
-                   stage == SessionActivityStage.ActivityCompleting ||
-                   stage == SessionActivityStage.PlayerActorParticipationExitStageStarted ||
-                   stage == SessionActivityStage.PlayerActorParticipationExitStageCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowStarted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
-                   stage == SessionActivityStage.DeactivationWindowReady ||
-                   stage == SessionActivityStage.DeactivationWindowCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
-                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
-        }
 
         private static string ResolveSceneLoaded(string sceneName)
         {
@@ -1082,30 +914,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 set.Add(value);
             }
-        }
-
-        private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownInProgress(string reason, string detail)
-        {
-            return new SessionActivityRouteExitTeardownResult(
-                SessionActivityRouteExitTeardownKind.InProgress,
-                sessionStateId,
-                _pipeline.State.CurrentStage,
-                _pipeline.State.CurrentDefinition.ActivityId,
-                _pipeline.State.CurrentHandoff.IsValid,
-                reason,
-                detail);
-        }
-
-        private SessionActivityRouteExitTeardownResult BuildRouteExitTeardownFailed(string reason, string detail)
-        {
-            return new SessionActivityRouteExitTeardownResult(
-                SessionActivityRouteExitTeardownKind.Failed,
-                sessionStateId,
-                _pipeline.State.CurrentStage,
-                _pipeline.State.CurrentDefinition.ActivityId,
-                _pipeline.State.CurrentHandoff.IsValid,
-                reason,
-                detail);
         }
 
         private bool QaApplyActorAttributeCommand(
