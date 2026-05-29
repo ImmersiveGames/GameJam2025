@@ -33,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            SaveCurrentState currentState = saveStateService.CurrentState;
+            var currentState = saveStateService.CurrentState;
             if (currentState == null || !currentState.IsValid)
             {
                 failureReason = "current_state_invalid";
@@ -42,12 +42,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             try
             {
-                SaveSlotId slotId = new SaveSlotId(currentState.SlotId);
+                var slotId = new SaveSlotId(currentState.SlotId);
                 string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
                 string snapshotPointer = string.IsNullOrWhiteSpace(currentSnapshotId)
                     ? $"snapshot-rev-{currentState.Revision}"
                     : currentSnapshotId;
-                SaveSnapshotId snapshotId = new SaveSnapshotId(snapshotPointer);
+                var snapshotId = new SaveSnapshotId(snapshotPointer);
                 slotContext = new ProgressionSlotContext(
                     currentState.ProfileId,
                     slotId,

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.SaveRuntime.Authoring;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -54,8 +53,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "activity save key obrigatoria ausente para load-on-enter.");
             }
 
-            SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
-            SaveAddress address = new SaveAddress(
+            var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
+            var address = new SaveAddress(
                 SaveScope.Progression,
                 SaveGroup.RouteActivity,
                 ownerId: normalizedActivityIdentity,
@@ -63,13 +62,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 slotId: slotContext.SlotId.Value,
                 schemaId: "progression.route_activity",
                 schemaVersion: saveConfig.SchemaVersion);
-            SaveRequest request = new SaveRequest(
+            var request = new SaveRequest(
                 address,
                 new Dictionary<string, string>(StringComparer.Ordinal),
                 revision: 0,
                 savedAtUtc: DateTime.UtcNow.ToString("O"));
 
-            bool loaded = _saveService.TryLoad(address, out SaveResult loadResult, out string loadReason);
+            bool loaded = _saveService.TryLoad(address, out var loadResult, out string loadReason);
             if (!loaded || loadResult == null || !loadResult.IsSuccess)
             {
                 return new RouteActivitySaveLoadResult(
@@ -154,12 +153,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "activity snapshot payload obrigatorio ausente para save-on-exit.");
             }
 
-            SaveConfigAsset saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
+            var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
             Dictionary<string, string> entries = new(StringComparer.Ordinal)
             {
                 [activitySaveKey] = normalizedPayload,
             };
-            SaveAddress address = new SaveAddress(
+            var address = new SaveAddress(
                 SaveScope.Progression,
                 SaveGroup.RouteActivity,
                 ownerId: normalizedActivityIdentity,
@@ -167,13 +166,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 slotId: slotContext.SlotId.Value,
                 schemaId: "progression.route_activity",
                 schemaVersion: saveConfig.SchemaVersion);
-            SaveRequest request = new SaveRequest(
+            var request = new SaveRequest(
                 address,
                 entries,
                 revision: DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 savedAtUtc: DateTime.UtcNow.ToString("O"),
                 profileId: slotContext.ProfileId);
-            bool saved = _saveService.TrySave(request, out SaveResult saveResult, out string saveReason);
+            bool saved = _saveService.TrySave(request, out var saveResult, out string saveReason);
             if (!saved || saveResult == null || !saveResult.IsSuccess)
             {
                 string detail = $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' saveReason='{Normalize(saveReason)}'";

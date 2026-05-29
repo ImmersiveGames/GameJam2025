@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string source,
             string reason)
         {
-            InputModesRuntimeResolvedConfig config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
+            var config = InputModesRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
 
             DebugUtility.Log(typeof(SessionPlayerSlotsValidator),
                 BuildLog("SessionPlayerSlotsValidationStarted", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"PlayerInputManager duplicado detectado. count='{playerInputManagers.Length}'.");
             }
 
-            PlayerInputManager playerInputManager = playerInputManagers[0];
+            var playerInputManager = playerInputManagers[0];
 
             DebugUtility.Log(typeof(SessionPlayerSlotsValidator),
                 BuildLog("PlayerInputManagerObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"PlayerInputManager.maxPlayerCount mismatch. observed='{playerInputManager.maxPlayerCount}' expected='{config.MaxPlayerSlots}'.");
             }
 
-            Transform persistentRoot = ResolvePersistentRootOrFail(
+            var persistentRoot = ResolvePersistentRootOrFail(
                 playerInputManager,
                 routeIdentity,
                 routeOperationId,
@@ -99,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string source,
             string reason)
         {
-            PersistentRuntimeObject marker = playerInputManager.GetComponent<PersistentRuntimeObject>();
+            var marker = playerInputManager.GetComponent<PersistentRuntimeObject>();
             if (marker == null)
             {
                 marker = playerInputManager.GetComponentInParent<PersistentRuntimeObject>();
@@ -111,7 +111,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"PersistentRuntimeObject obrigatorio ausente no PlayerInputManager/root. playerInputManager='{playerInputManager.name}'.");
             }
 
-            Transform root = marker.transform.root;
+            var root = marker.transform.root;
             if (root == null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,

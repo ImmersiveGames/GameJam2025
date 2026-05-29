@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             ValidateCommandAndFactOrFail(command, fact, SessionOperationalLoadingStage.LoadingStarted);
 
-            LoadingHudController controller = ResolveControllerOrFail(command);
+            var controller = ResolveControllerOrFail(command);
             string signature = BuildSignature(command);
 
             DebugUtility.Log(typeof(LoadingAdapter),
@@ -51,9 +51,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             ValidateCommandAndFactOrFail(command, fact, fact.Stage);
 
-            LoadingHudController controller = ResolveControllerOrFail(command);
+            var controller = ResolveControllerOrFail(command);
             string signature = BuildSignature(command);
-            LoadingProgressSnapshot snapshot = BuildSnapshot(fact);
+            var snapshot = BuildSnapshot(fact);
 
             lock (_sync)
             {
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         {
             ValidateCommandAndFactOrFail(command, fact, fact.Stage);
 
-            LoadingHudController controller = ResolveControllerOrFail(command);
+            var controller = ResolveControllerOrFail(command);
             string signature = BuildSignature(command);
             bool forceHide = fact.OutcomeKind == SessionOperationalLoadingOutcomeKind.Failed;
 
@@ -156,13 +156,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return _cachedController;
             }
 
-            Scene scene = SceneManager.GetSceneByName(command.LoadingSceneName);
+            var scene = SceneManager.GetSceneByName(command.LoadingSceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalLoading] LoadingHudScene obrigatoria nao esta carregada. scene='{command.LoadingSceneName}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
             }
 
-            LoadingHudController controller = FindControllerInSceneOrFail(scene, command);
+            var controller = FindControllerInSceneOrFail(scene, command);
 
             lock (_sync)
             {
@@ -178,15 +178,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             GameObject[] roots = scene.GetRootGameObjects();
             LoadingHudController resolved = null;
 
-            for (int i = 0; i < roots.Length; i++)
+            foreach (var root in roots)
             {
-                GameObject root = roots[i];
                 if (root == null)
                 {
                     continue;
                 }
 
-                LoadingHudController candidate = root.GetComponentInChildren<LoadingHudController>(true);
+                var candidate = root.GetComponentInChildren<LoadingHudController>(true);
                 if (candidate == null)
                 {
                     continue;
@@ -229,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalLoading] LoadingHudController obrigatorio ausente.");
             }
 
-            LoadingProgressSnapshot snapshot = BuildSnapshot(fact);
+            var snapshot = BuildSnapshot(fact);
 
             if (showIfNeeded)
             {
@@ -334,7 +333,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 await Task.Yield();
             }
 
-            CanvasGroup rootGroup = controller.RootGroup;
+            var rootGroup = controller.RootGroup;
             if (rootGroup == null)
             {
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalLoading] LoadingHudController rootGroup ausente after hide. contextSignature='{signature}'.");

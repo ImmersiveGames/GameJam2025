@@ -10,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         private readonly Func<IOperationalRouteConsumerEntryPort> _routeConsumerEntryPortResolver;
         private readonly Func<IOperationalRouteConsumerReadinessPort> _routeConsumerReadinessPortResolver;
+        private readonly Func<IOperationalRouteConsumerPresentationPort> _routeConsumerPresentationPortResolver;
         private readonly Func<IOperationalRouteHandoffExitPort> _routeHandoffExitPortResolver;
         private readonly Func<ISessionActivitySnapshotPayloadProvider> _activitySnapshotPayloadProviderResolver;
         private readonly Func<ISaveStateService> _saveStateServiceResolver;
@@ -22,11 +23,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ILoadingAdapter loadingAdapter,
             IAudioAdapter audioAdapter,
             ISessionOperationalRouteCameraAdapter routeCameraAdapter,
-            ISessionOperationalActivityCameraAdapter activityCameraAdapter,
             ISessionOperationalActivitySaveAdapter activitySaveAdapter,
             IProgressionSlotContextResolver progressionSlotContextResolver,
             Func<IOperationalRouteConsumerEntryPort> routeConsumerEntryPortResolver,
             Func<IOperationalRouteConsumerReadinessPort> routeConsumerReadinessPortResolver,
+            Func<IOperationalRouteConsumerPresentationPort> routeConsumerPresentationPortResolver,
             Func<IOperationalRouteHandoffExitPort> routeHandoffExitPortResolver,
             Func<ISessionActivitySnapshotPayloadProvider> activitySnapshotPayloadProviderResolver,
             Func<ISaveStateService> saveStateServiceResolver)
@@ -38,11 +39,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             LoadingAdapter = loadingAdapter ?? throw new ArgumentNullException(nameof(loadingAdapter));
             AudioAdapter = audioAdapter ?? throw new ArgumentNullException(nameof(audioAdapter));
             RouteCameraAdapter = routeCameraAdapter ?? throw new ArgumentNullException(nameof(routeCameraAdapter));
-            ActivityCameraAdapter = activityCameraAdapter ?? throw new ArgumentNullException(nameof(activityCameraAdapter));
             ActivitySaveAdapter = activitySaveAdapter ?? throw new ArgumentNullException(nameof(activitySaveAdapter));
             ProgressionSlotContextResolver = progressionSlotContextResolver ?? throw new ArgumentNullException(nameof(progressionSlotContextResolver));
             _routeConsumerEntryPortResolver = routeConsumerEntryPortResolver ?? throw new ArgumentNullException(nameof(routeConsumerEntryPortResolver));
             _routeConsumerReadinessPortResolver = routeConsumerReadinessPortResolver ?? throw new ArgumentNullException(nameof(routeConsumerReadinessPortResolver));
+            _routeConsumerPresentationPortResolver = routeConsumerPresentationPortResolver ?? throw new ArgumentNullException(nameof(routeConsumerPresentationPortResolver));
             _routeHandoffExitPortResolver = routeHandoffExitPortResolver ?? throw new ArgumentNullException(nameof(routeHandoffExitPortResolver));
             _activitySnapshotPayloadProviderResolver = activitySnapshotPayloadProviderResolver ?? throw new ArgumentNullException(nameof(activitySnapshotPayloadProviderResolver));
             _saveStateServiceResolver = saveStateServiceResolver ?? throw new ArgumentNullException(nameof(saveStateServiceResolver));
@@ -55,7 +56,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public ILoadingAdapter LoadingAdapter { get; }
         public IAudioAdapter AudioAdapter { get; }
         public ISessionOperationalRouteCameraAdapter RouteCameraAdapter { get; }
-        public ISessionOperationalActivityCameraAdapter ActivityCameraAdapter { get; }
         public ISessionOperationalActivitySaveAdapter ActivitySaveAdapter { get; }
         public IProgressionSlotContextResolver ProgressionSlotContextResolver { get; }
 
@@ -67,6 +67,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public IOperationalRouteConsumerReadinessPort ResolveRouteConsumerReadinessPort()
         {
             return _routeConsumerReadinessPortResolver();
+        }
+
+        public IOperationalRouteConsumerPresentationPort ResolveRouteConsumerPresentationPort()
+        {
+            return _routeConsumerPresentationPortResolver();
         }
 
         public IOperationalRouteHandoffExitPort ResolveRouteHandoffExitPort()

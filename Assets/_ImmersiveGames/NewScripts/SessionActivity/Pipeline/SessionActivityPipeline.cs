@@ -74,6 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private PendingRestartTransition _pendingRestartTransition;
         private PendingActivityContentReleaseContext _pendingActivityContentReleaseContext;
         private bool _awaitingContinuationAfterActivityContentRelease;
+        private bool _pendingContinuationExitTeardownCompleted;
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
         private SessionActivityPlayerPreparationHandoff _lastRouteSessionPlayerPreparationHandoff;
@@ -754,6 +755,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingActivityContentLoadContext = null;
             _pendingActivityContentReleaseContext = null;
             _awaitingContinuationAfterActivityContentRelease = false;
+            _pendingContinuationExitTeardownCompleted = false;
             _lastSnapshotPayloadForSaveOnExit = default;
             _lastSnapshotCaptureFailedForSaveOnExit = false;
             _lastSnapshotCaptureFailureDetail = string.Empty;
@@ -783,7 +785,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             DebugUtility.Log(typeof(SessionActivityPipeline),
                 $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' playerPreparationOutcome='{handoff.PlayerPreparation.Outcome}' plannedPlayers='{handoff.PlayerPreparation.PlannedPlayers}' materializedPlayers='{handoff.PlayerPreparation.MaterializedPlayers}' pendingRequiredPlayers='{handoff.PlayerPreparation.PendingRequiredPlayers}'.",
                 DebugUtility.Colors.Success);
-
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "SessionActivityPipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
 
@@ -1240,6 +1241,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return true;
             }
 
+            SessionActivityIdentity dematerializationStartedIdentity = BuildIdentity(current, SessionActivityStage.ActivityContentReleaseStarted, currentEntrySequence);
+            LogPhaseBoundary("SessionActivityDematerializationStarted", dematerializationStartedIdentity, command.Source, command.Reason, detail: "phase='dematerialization'");
+
             EmitObjectSnapshotCaptureStage(current, command, facts, snapshots, currentEntrySequence);
             EmitObjectReleaseStage(current, command, facts, snapshots, currentEntrySequence);
 
@@ -1277,6 +1281,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Source,
                     command.Reason,
                     $"'{current.ActivityId}' activity content release completed scenes='0' status='SkippedNoContent'.");
+                LogPhaseBoundary("SessionActivityDematerializationCompleted", completedIdentity, command.Source, command.Reason, completed: true, detail: "phase='dematerialization' status='SkippedNoContent'");
                 EmitSnapshot(
                     snapshots,
                     "activity_content_release_completed",
@@ -1870,6 +1875,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"'{context.Definition.ActivityId}' activity content release completed scenes='{context.LoadedSet.Scenes.Count}'.");
+            LogPhaseBoundary("SessionActivityDematerializationCompleted", completedIdentity, command.Source, command.Reason, completed: true, detail: $"phase='dematerialization' scenes='{context.LoadedSet.Scenes.Count}'");
             EmitSnapshot(
                 snapshots,
                 "activity_content_release_completed",
@@ -2103,6 +2109,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     SessionActivityIdentity readyIdentity = BuildIdentity(definition, SessionActivityStage.ActivationWindowReady, entrySequence);
                     _state.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActivationWindowReady);
                     EmitFact(facts, SessionActivityFactKind.ActivationWindowReady, readyIdentity, source, reason, $"'{definition.ActivityId}' activation window ready.");
+                    LogPhaseBoundary("SessionActivityMaterializationCompleted", readyIdentity, source, reason, completed: true, detail: "phase='materialization' readiness='activation_window_ready'");
                     EmitPredefinedVisualSetupReadyFactIfApplicable(
                         definition,
                         facts,
@@ -2457,6 +2464,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingRestartCompletionEntrySequence = 0;
             _pendingActivityContentLoadContext = null;
             _pendingActivityContentReleaseContext = null;
+            _pendingContinuationExitTeardownCompleted = false;
             _lastSnapshotPayloadForSaveOnExit = default;
             _lastSnapshotCaptureFailedForSaveOnExit = false;
             _lastSnapshotCaptureFailureDetail = string.Empty;
@@ -2508,6 +2516,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             _activeRailKind = SessionActivityRailKind.ActivityCompletionRail;
             ClearPendingNavigationTransition();
+            _pendingContinuationExitTeardownCompleted = false;
 
             if (!EnsureExpectedStage(command, facts, SessionActivityStage.ActivityRunning, "complete_current_activity"))
             {
@@ -2531,9 +2540,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivityCompleting, completingIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completing.");
             EmitSnapshot(snapshots, "activity_completing", command.Source, command.Reason, $"'{current.ActivityId}' completing.");
             EmitMovementControlDisableForCurrentTargets(current, command, facts, snapshots, currentEntrySequence, reasonCode: "deactivation_window_started");
-            EmitActorPresentationReleaseGenericStage(current, command, facts, snapshots, currentEntrySequence, ActorPresentationReleaseRail.ActivityExit);
-            EmitActorAttributeReleaseFromInventoryStage(current, command, facts, snapshots, currentEntrySequence);
-            EmitActorParticipationExitFromInventoryStage(current, command, facts, snapshots, currentEntrySequence);
 
             SessionActivityIdentity deactivationWindowIdentity = BuildIdentity(current, SessionActivityStage.DeactivationWindowStarted, currentEntrySequence);
             _state.SetCurrentIdentity(deactivationWindowIdentity, SessionActivityStage.DeactivationWindowStarted);
@@ -2735,12 +2741,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivityDeactivated, deactivationIdentity, command.Source, command.Reason, $"'{current.ActivityId}' deactivated.");
             EmitSnapshot(snapshots, "deactivation", command.Source, command.Reason, $"'{current.ActivityId}' deactivated.");
 
-            if (TryStartActivityContentReleaseForContinuation(current, command, facts, snapshots, currentEntrySequence))
+            await ContinueAfterDeactivationAsync(current, command, facts, snapshots, currentEntrySequence, deactivationIdentity);
+        }
+
+        private bool EnsureContinuationExitTeardownAfterBlackoutOrStartRelease(
+            SessionActivityDefinition current,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int currentEntrySequence)
+        {
+            if (_pendingContinuationExitTeardownCompleted)
             {
-                return;
+                return true;
             }
 
-            await ContinueAfterDeactivationAsync(current, command, facts, snapshots, currentEntrySequence, deactivationIdentity);
+            if (_pendingTransitionResolution.Mode == ActivityTransitionMode.CutWithCurtain && !_pendingTransitionCurtainClosed)
+            {
+                throw new InvalidOperationException(
+                    $"Activity '{current.ActivityId}' cannot execute continuation teardown before transition blackout completed.");
+            }
+
+            EmitActorPresentationReleaseGenericStage(current, command, facts, snapshots, currentEntrySequence, ActorPresentationReleaseRail.ActivityExit);
+            EmitActorAttributeReleaseFromInventoryStage(current, command, facts, snapshots, currentEntrySequence);
+            EmitActorParticipationExitFromInventoryStage(current, command, facts, snapshots, currentEntrySequence);
+
+            _pendingContinuationExitTeardownCompleted = true;
+
+            if (TryStartActivityContentReleaseForContinuation(current, command, facts, snapshots, currentEntrySequence))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private async Task ContinueAfterDeactivationAsync(
@@ -2770,48 +2803,64 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!TryResolveNextActivityForContinuation(current, out SessionActivityDefinition next, out bool wrapped))
             {
+                if (!EnsureContinuationExitTeardownAfterBlackoutOrStartRelease(current, command, facts, snapshots, currentEntrySequence))
+                {
+                    return;
+                }
+
                 _state.SetCurrentIdentity(BuildIdentity(current, SessionActivityStage.Completed, currentEntrySequence), SessionActivityStage.Completed);
                 _state.MarkCompleted();
                 _activeRailKind = SessionActivityRailKind.None;
                 _pendingInternalActivityTransition = default;
+                _pendingContinuationExitTeardownCompleted = false;
                 EmitFact(facts, SessionActivityFactKind.PipelineCompleted, _state.CurrentIdentity, command.Source, command.Reason, $"'{current.ActivityId}' completed and no next activity is configured.");
                 EmitSnapshot(snapshots, "pipeline_completed", command.Source, command.Reason, $"'{current.ActivityId}' completed and no next activity is configured.");
                 return;
             }
 
-            SessionActivityTransitionResolution transitionResolution = ResolveNextActivityTransitionResolutionOrFail(current, next);
             int nextEntrySequence = ResolveNextEntrySequence();
             SessionActivityIdentity nextActivationIdentity = BuildIdentity(next, SessionActivityStage.ActivityActivationStarted, nextEntrySequence);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityTransitionProfileSelected,
-                _state.CurrentIdentity,
-                command.Source,
-                command.Reason,
-                $"Transition profile selected source='{current.NextActivityTransitionProfileSource}' mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{next.ActivityId}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_transition_profile_selected",
-                command.Source,
-                command.Reason,
-                $"Transition profile selected source='{current.NextActivityTransitionProfileSource}' mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{next.ActivityId}'.");
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityTransitionProfileResolved,
-                _state.CurrentIdentity,
-                command.Source,
-                command.Reason,
-                $"Transition profile resolved source='{current.NextActivityTransitionProfileSource}' resolvedMode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_transition_profile_resolved",
-                command.Source,
-                command.Reason,
-                $"Transition profile resolved source='{current.NextActivityTransitionProfileSource}' resolvedMode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
-            _pendingTransitionResolution = transitionResolution;
-            _pendingTransitionCurtainReveal = transitionResolution.Mode == ActivityTransitionMode.CutWithCurtain;
-            _pendingTransitionCurtainClosed = false;
-            await ApplyPendingTransitionFadeInBeforeNextSetupIfNeededAsync(current, command, facts, snapshots, currentEntrySequence);
+
+            if (!_pendingContinuationExitTeardownCompleted)
+            {
+                SessionActivityTransitionResolution transitionResolution = ResolveNextActivityTransitionResolutionOrFail(current, next);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityTransitionProfileSelected,
+                    _state.CurrentIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"Transition profile selected source='{current.NextActivityTransitionProfileSource}' mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{next.ActivityId}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_transition_profile_selected",
+                    command.Source,
+                    command.Reason,
+                    $"Transition profile selected source='{current.NextActivityTransitionProfileSource}' mode='{transitionResolution.Mode}' from '{current.ActivityId}' to '{next.ActivityId}'.");
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityTransitionProfileResolved,
+                    _state.CurrentIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"Transition profile resolved source='{current.NextActivityTransitionProfileSource}' resolvedMode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_transition_profile_resolved",
+                    command.Source,
+                    command.Reason,
+                    $"Transition profile resolved source='{current.NextActivityTransitionProfileSource}' resolvedMode='{transitionResolution.Mode}' resolvedFadeProfileSource='{transitionResolution.ResolvedFadeProfileSource}' resolvedLoadingProfileSource='{transitionResolution.ResolvedLoadingProfileSource}'.");
+                _pendingTransitionResolution = transitionResolution;
+                _pendingTransitionCurtainReveal = transitionResolution.Mode == ActivityTransitionMode.CutWithCurtain;
+                _pendingTransitionCurtainClosed = false;
+                await ApplyPendingTransitionFadeInBeforeNextSetupIfNeededAsync(current, command, facts, snapshots, currentEntrySequence);
+
+                if (!EnsureContinuationExitTeardownAfterBlackoutOrStartRelease(current, command, facts, snapshots, currentEntrySequence))
+                {
+                    return;
+                }
+            }
+
             EmitNominalNextActivitySetup(current, next, command, facts, snapshots, currentEntrySequence);
             await ReportPendingTransitionLoadingProgressIfVisibleAsync(
                 BuildIdentity(current, SessionActivityStage.NextActivitySetupCompleted, currentEntrySequence),
@@ -2866,6 +2915,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Reason,
                     $"Activity catalog looped from '{current.ActivityId}' to '{next.ActivityId}'. catalogLoopCount='{_state.CatalogLoopCount}'.");
             }
+            _pendingContinuationExitTeardownCompleted = false;
             await ApplyContinuePolicyAfterHandoffPreparedAsync(current, command, facts, snapshots);
         }
 
@@ -3390,6 +3440,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityDefinition is invalid.");
             }
 
+            SessionActivityIdentity setupBoundaryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            LogPhaseBoundary("SessionActivitySetupStarted", setupBoundaryIdentity, command.Source, command.Reason, detail: "phase='setup'");
+            LogPhaseBoundary("SessionActivityMaterializationStarted", setupBoundaryIdentity, command.Source, command.Reason, detail: "phase='materialization'");
+            LogPhaseBoundary("SessionActivityBindingStarted", setupBoundaryIdentity, command.Source, command.Reason, detail: "phase='binding'");
+
             _state.ClearCurrentActivityContentLoadedSet();
             _state.ClearCurrentActivityObjectContributorDiscoveryResult();
             _state.ClearCurrentActivitySetupInventory();
@@ -3881,6 +3936,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityIdentity setupCompletedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
             _state.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
             EmitFact(facts, SessionActivityFactKind.ActivitySetupCompleted, setupCompletedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup completed.");
+            LogPhaseBoundary("SessionActivitySetupCompleted", setupCompletedIdentity, command.Source, command.Reason, completed: true, detail: "phase='setup'");
+            LogPhaseBoundary("SessionActivityBindingCompleted", setupCompletedIdentity, command.Source, command.Reason, completed: true, detail: "phase='binding'");
             if (definition.ActivationWindowMode == ActivityWindowMode.None)
             {
                 EmitPredefinedVisualSetupReadyFactIfApplicable(
@@ -10065,6 +10122,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _state.SetCurrentIdentity(skipIdentity, SessionActivityStage.ActivityRunning);
                 _state.SetExecutionState(ActivityExecutionState.Running);
                 EmitFact(facts, SessionActivityFactKind.GameplayContentSkippedNoContent, skipIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' gameplay content skipped as no-content.");
+                if (definition.ActivationWindowMode == ActivityWindowMode.None)
+                {
+                    LogPhaseBoundary("SessionActivityMaterializationCompleted", skipIdentity, command.Source, command.Reason, completed: true, detail: "phase='materialization' readiness='activity_running_no_gameplay_content'");
+                }
                 EmitSnapshot(snapshots, "gameplay_content_skipped_no_content", command.Source, command.Reason, $"'{definition.ActivityId}' gameplay content skipped as no-content.");
                 EmitMovementControlEnableAtRunning(definition, command, facts, snapshots, entrySequence);
                 TryEmitRestartCompletedAtRunning(definition, command, facts, snapshots, entrySequence);
@@ -10075,6 +10136,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(runningIdentity, SessionActivityStage.ActivityRunning);
             _state.SetExecutionState(ActivityExecutionState.Running);
             EmitFact(facts, SessionActivityFactKind.ActivityRunningEntered, runningIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' running.");
+            if (definition.ActivationWindowMode == ActivityWindowMode.None)
+            {
+                LogPhaseBoundary("SessionActivityMaterializationCompleted", runningIdentity, command.Source, command.Reason, completed: true, detail: "phase='materialization' readiness='activity_running'");
+            }
             EmitSnapshot(snapshots, "activity_running_entered", command.Source, command.Reason, $"'{definition.ActivityId}' running.");
             EmitMovementControlEnableAtRunning(definition, command, facts, snapshots, entrySequence);
             TryEmitRestartCompletedAtRunning(definition, command, facts, snapshots, entrySequence);
@@ -10597,6 +10662,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingRestartTransition = default;
             _pendingRestartCompletionActivityId = string.Empty;
             _pendingRestartCompletionEntrySequence = 0;
+            _pendingContinuationExitTeardownCompleted = false;
             ClearPendingNavigationTransition();
         }
 
@@ -11375,6 +11441,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             if (_pendingTransitionResolution.Mode == ActivityTransitionMode.None)
             {
+                LogPhaseBoundary("SessionActivityRevealSkipped", _state.CurrentIdentity, command.Source, command.Reason, completed: true, detail: "transitionMode='None'");
                 TryEmitDryTransitionCompletedAtRevealSafePoint(next, command, facts, snapshots);
                 return;
             }
@@ -11456,6 +11523,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
 
+            LogPhaseBoundary("SessionActivityRevealStarted", _state.CurrentIdentity, command.Source, command.Reason, detail: $"transitionMode='{_pendingTransitionResolution.Mode}' nextActivity='{next.ActivityId}'");
             EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityTransitionFadeOutStarted,
@@ -11479,6 +11547,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"Transition fade-out completed for next activity '{next.ActivityId}'.");
+            LogPhaseBoundary("SessionActivityRevealCompleted", _state.CurrentIdentity, command.Source, command.Reason, completed: true, detail: $"transitionMode='{_pendingTransitionResolution.Mode}' nextActivity='{next.ActivityId}'");
             EmitSnapshot(
                 snapshots,
                 "activity_transition_fade_out_completed",
@@ -11588,10 +11657,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             if (_pendingTransitionResolution.Mode != ActivityTransitionMode.CutWithCurtain)
             {
+                SessionActivityIdentity skippedIdentity = BuildIdentity(current, SessionActivityStage.Deactivation, entrySequence);
+                LogPhaseBoundary("SessionActivityTransitionBlackoutSkipped", skippedIdentity, command.Source, command.Reason, completed: true, detail: $"transitionMode='{_pendingTransitionResolution.Mode}'");
                 return;
             }
 
             SessionActivityIdentity fadeInStartedIdentity = BuildIdentity(current, SessionActivityStage.Deactivation, entrySequence);
+            LogPhaseBoundary("SessionActivityTransitionBlackoutStarted", fadeInStartedIdentity, command.Source, command.Reason, detail: $"transitionMode='{_pendingTransitionResolution.Mode}'");
             _state.SetCurrentIdentity(fadeInStartedIdentity, SessionActivityStage.Deactivation);
             EmitFact(
                 facts,
@@ -11660,6 +11732,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Source,
                 command.Reason,
                 $"Transition fade-in completed currentActivity='{current.ActivityId}'.");
+            LogPhaseBoundary("SessionActivityTransitionBlackoutCompleted", fadeInCompletedIdentity, command.Source, command.Reason, completed: true, detail: $"transitionMode='{_pendingTransitionResolution.Mode}'");
             EmitSnapshot(
                 snapshots,
                 "activity_transition_fade_in_completed",
@@ -11826,6 +11899,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private int ResolveNextEntrySequence()
         {
             return _state.CurrentEntrySequence > 0 ? _state.CurrentEntrySequence + 1 : 1;
+        }
+
+        private void LogPhaseBoundary(
+            string phaseName,
+            SessionActivityIdentity identity,
+            string source,
+            string reason,
+            bool completed = false,
+            string detail = "")
+        {
+            string normalizedDetail = string.IsNullOrWhiteSpace(detail)
+                ? string.Empty
+                : $" {detail}";
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][Phase] {phaseName} pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' source='{source}' reason='{reason}'.{normalizedDetail}",
+                completed ? DebugUtility.Colors.Success : DebugUtility.Colors.Info);
         }
 
         private SessionActivityFact EmitFact(
@@ -12294,6 +12384,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 detail);
             _state.AppendTrace(
                 $"[OBS][SessionActivityPipeline][VisualReadiness] SessionActivityVisualReadinessCompleted result='{result}'.");
+            LogPhaseBoundary("SessionActivityReadinessCompleted", readinessIdentity, pending.Request.Source, pending.Request.Reason, completed: true, detail: "phase='readiness' readiness='visual_ready'");
             pending.Completion.TrySetResult(result);
         }
 

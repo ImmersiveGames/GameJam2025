@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "OperationalRouteConsumerReadinessRequest is invalid.");
             }
 
-            ISessionActivityVisualReadinessBoundary boundary = ResolveBoundaryOrFail();
+            var boundary = ResolveBoundaryOrFail();
             SessionActivityVisualReadinessRequest activityRequest = new(
                 request.ConsumerIdentity,
                 request.ExpectedRouteOperationId,
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 request.Source,
                 request.Reason);
 
-            SessionActivityVisualReadinessResult activityResult = await boundary.AwaitVisualReadinessAsync(
+            var activityResult = await boundary.AwaitVisualReadinessAsync(
                 activityRequest,
                 cancellationToken);
 
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private ISessionActivityVisualReadinessBoundary ResolveBoundaryOrFail()
         {
-            ISessionActivityVisualReadinessBoundary boundary = _boundaryResolver();
+            var boundary = _boundaryResolver();
             if (boundary == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] ISessionActivityVisualReadinessBoundary obrigatorio ausente para consumer readiness adapter operacional.");

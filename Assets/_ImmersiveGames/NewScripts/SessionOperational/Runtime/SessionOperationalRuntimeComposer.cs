@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
         private static SessionOperationalRouteCameraAdapter _routeCameraAdapter;
         private static SessionOperationalActivityCameraAdapter _activityCameraAdapter;
+        private static SessionActivityOperationalRouteConsumerPresentationAdapter _routeConsumerPresentationAdapter;
         private static SessionActivityOperationalRouteHandoffExitAdapter _routeHandoffExitAdapter;
         private static SessionActivityOperationalRouteConsumerEntryAdapter _routeConsumerEntryAdapter;
         private static SessionActivityOperationalRouteConsumerReadinessAdapter _routeConsumerReadinessAdapter;
@@ -60,6 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalSceneCompositionAdapter();
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
+            EnsureSessionOperationalRouteConsumerPresentationAdapter();
             EnsureSessionOperationalRouteHandoffExitAdapter();
             EnsureSessionOperationalRouteConsumerEntryAdapter();
             EnsureSessionOperationalRouteConsumerReadinessAdapter();
@@ -132,11 +134,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 _loadingAdapter,
                 _audioAdapter,
                 _routeCameraAdapter,
-                _activityCameraAdapter,
                 _activitySaveAdapter,
                 _progressionSlotContextResolver,
                 ResolveOptionalDependency<IOperationalRouteConsumerEntryPort>,
                 ResolveOptionalDependency<IOperationalRouteConsumerReadinessPort>,
+                ResolveOptionalDependency<IOperationalRouteConsumerPresentationPort>,
                 ResolveOptionalDependency<IOperationalRouteHandoffExitPort>,
                 ResolveOptionalDependency<ISessionActivitySnapshotPayloadProvider>,
                 ResolveOptionalDependency<ISaveStateService>);
@@ -198,6 +200,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             }
 
             return null;
+        }
+
+        private static void EnsureSessionOperationalRouteConsumerPresentationAdapter()
+        {
+            if (_routeConsumerPresentationAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteConsumerPresentationAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeConsumerPresentationAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerPresentationPort>(_routeConsumerPresentationAdapter);
+                return;
+            }
+
+            _routeConsumerPresentationAdapter = new SessionActivityOperationalRouteConsumerPresentationAdapter(ResolveOptionalDependency<ISessionOperationalActivityCameraAdapter>);
+            DependencyManager.Provider.RegisterGlobal(_routeConsumerPresentationAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerPresentationPort>(_routeConsumerPresentationAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionActivityOperationalRouteConsumerPresentationAdapter' registered for operational route consumer presentation.",
+                DebugUtility.Colors.Info);
         }
 
         private static void EnsureSessionOperationalRouteHandoffExitAdapter()

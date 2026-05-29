@@ -1,6 +1,5 @@
 ﻿using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using Unity.Cinemachine;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -10,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             out OperationalCameraHandle handle,
             out string reason)
         {
-            Camera unityCamera = UnityOperationalCameraRuntimeAdapter.CurrentOperationalCamera;
+            var unityCamera = UnityOperationalCameraRuntimeAdapter.CurrentOperationalCamera;
 
             if (unityCamera == null)
             {
@@ -19,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            CinemachineBrain cinemachineBrain = unityCamera.GetComponent<CinemachineBrain>();
+            var cinemachineBrain = unityCamera.GetComponent<CinemachineBrain>();
 
             handle = new OperationalCameraHandle(
                 unityCamera,

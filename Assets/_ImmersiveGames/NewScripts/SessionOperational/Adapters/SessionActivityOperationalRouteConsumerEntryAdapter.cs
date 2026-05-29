@@ -29,7 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "OperationalRouteConsumerEntryRequest is invalid."));
             }
 
-            ISessionActivityEntryHandoffReceiver receiver = ResolveReceiverOrFail();
+            var receiver = ResolveReceiverOrFail();
             if (!string.Equals(receiver.SessionId, request.SessionStateId, StringComparison.Ordinal))
             {
                 return Task.FromResult(new OperationalRouteConsumerEntryResult(
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"requestSessionStateId='{request.SessionStateId}' receiverSessionId='{receiver.SessionId}'."));
             }
 
-            SessionActivityPlayerPreparationHandoff playerPreparationHandoff = BuildPlayerPreparationHandoff(request.PlayerPreparation, request.PlayerTechnicalEntries);
+            var playerPreparationHandoff = BuildPlayerPreparationHandoff(request.PlayerPreparation, request.PlayerTechnicalEntries);
             SessionActivityEntryHandoff handoff = new(
                 string.Empty,
                 0,
@@ -53,7 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 request.Source,
                 request.Reason);
 
-            SessionActivityCommandResult activityResult = receiver.StartFromPreparedHandoff(handoff, request.Source, request.Reason);
+            var activityResult = receiver.StartFromPreparedHandoff(handoff, request.Source, request.Reason);
             if (!activityResult.IsValid)
             {
                 return Task.FromResult(new OperationalRouteConsumerEntryResult(
@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private ISessionActivityEntryHandoffReceiver ResolveReceiverOrFail()
         {
-            ISessionActivityEntryHandoffReceiver receiver = _receiverResolver();
+            var receiver = _receiverResolver();
             if (receiver == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] ISessionActivityEntryHandoffReceiver obrigatorio ausente para consumer entry adapter operacional.");
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             List<SessionActivityPlayerTechnicalPlanEntry> technicalEntries = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
-                PlayerSetDefinitionAsset.PlayerActorResolvedEntry entry = entries[index];
+                var entry = entries[index];
                 if (!entry.IsValid)
                 {
                     continue;

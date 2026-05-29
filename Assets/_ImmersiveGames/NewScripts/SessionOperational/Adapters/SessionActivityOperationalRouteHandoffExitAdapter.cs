@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "No active handoff identity was present on the previous route.");
             }
 
-            ISessionActivityRouteExitTeardownBoundary boundary = ResolveBoundaryOrFail();
+            var boundary = ResolveBoundaryOrFail();
             if (boundary.HasPendingOperation)
             {
                 LogPreflightDetail("handoff_exit_pending_operation_active", boundary);
@@ -70,8 +70,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "No active handoff identity was present on the previous route.");
             }
 
-            ISessionActivityRouteExitTeardownBoundary boundary = ResolveBoundaryOrFail();
-            SessionActivityRouteExitTeardownResult result = await boundary.AwaitRouteExitTeardownAsync(
+            var boundary = ResolveBoundaryOrFail();
+            var result = await boundary.AwaitRouteExitTeardownAsync(
                 request.HandoffIdentity,
                 request.Source,
                 request.Reason,
@@ -127,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private ISessionActivityRouteExitTeardownBoundary ResolveBoundaryOrFail()
         {
-            ISessionActivityRouteExitTeardownBoundary boundary = _boundaryResolver();
+            var boundary = _boundaryResolver();
             if (boundary == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] SessionActivity route-exit boundary ausente para adapter de handoff exit operacional.");

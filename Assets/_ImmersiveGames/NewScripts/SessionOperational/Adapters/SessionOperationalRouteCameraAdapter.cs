@@ -43,8 +43,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            SurfacePresentationProfileAsset profile = command.SurfacePresentationProfile;
-            ActivityPresentationProfileAsset activityProfile = command.ActivityPresentationProfile;
+            var profile = command.SurfacePresentationProfile;
+            var activityProfile = command.ActivityPresentationProfile;
 
             if (profile == null)
             {
@@ -97,21 +97,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (!TryResolveAnchorHost(command, out SurfaceCameraAnchorHost anchorHost, out reason))
+            if (!TryResolveAnchorHost(command, out var anchorHost, out reason))
             {
                 result = SessionOperationalRouteCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
                 return false;
             }
 
-            if (!requirementResolver.TryResolve(profile, anchorHost, out RouteCameraPresentationRequirement requirement, out reason))
+            if (!requirementResolver.TryResolve(profile, anchorHost, out var requirement, out reason))
             {
                 result = SessionOperationalRouteCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
                 return false;
             }
 
-            RouteCameraPresentationCommand presentationCommand = new RouteCameraPresentationCommand(
+            var presentationCommand = new RouteCameraPresentationCommand(
                 command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
@@ -125,15 +125,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationPrepareStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' surfaceKind='{command.SurfaceKind}' profileId='{profile.ProfileId}' requirementId='{requirement.RequirementId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            if (!routeCameraExecutor.TryPrepare(presentationCommand, out RouteCameraPresentationResult presentationResult, out reason))
+            if (!routeCameraExecutor.TryPrepare(presentationCommand, out var presentationResult, out reason))
             {
-                RouteCameraFailureFact failureFact = presentationResult?.FailureFact;
+                var failureFact = presentationResult?.FailureFact;
                 result = SessionOperationalRouteCameraPrepareResult.Failed(failureFact, reason);
                 LogFailed(command, failureFact, reason);
                 return false;
             }
 
-            RouteCameraReadyFact readyFact = presentationResult.ReadyFact;
+            var readyFact = presentationResult.ReadyFact;
             if (readyFact == null)
             {
                 reason = "route_camera_ready_fact_missing";
@@ -181,7 +181,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return true;
             }
 
-            RouteCameraReleaseCommand releaseCommand = new RouteCameraReleaseCommand(
+            var releaseCommand = new RouteCameraReleaseCommand(
                 activeReadyFact.RouteIdentity,
                 activeReadyFact.RouteOperationId,
                 activeReadyFact.TransitionId,
@@ -195,9 +195,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationReleaseStarted currentRouteIdentity='{command.CurrentRouteIdentity}' previousRouteIdentity='{command.PreviousRouteIdentity}' releaseRouteIdentity='{releaseCommand.RouteIdentity}' routeOperationId='{releaseCommand.RouteOperationId}' transitionId='{releaseCommand.TransitionId}' routeSequence='{releaseCommand.RouteSequence}' surfaceKind='{releaseCommand.SurfaceKind}' requirementId='{releaseCommand.RequirementId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            if (!routeCameraExecutor.TryRelease(releaseCommand, out RouteCameraReleaseResult releaseResult, out reason))
+            if (!routeCameraExecutor.TryRelease(releaseCommand, out var releaseResult, out reason))
             {
-                RouteCameraReleaseFailureFact failureFact = releaseResult?.FailureFact;
+                var failureFact = releaseResult?.FailureFact;
                 result = SessionOperationalRouteCameraReleaseResult.Failed(failureFact, reason);
 
                 DebugUtility.Log(typeof(SessionOperationalRouteCameraAdapter),
@@ -207,7 +207,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            RouteCameraReleasedFact releasedFact = releaseResult.ReleasedFact;
+            var releasedFact = releaseResult.ReleasedFact;
             activeReadyFact = null;
 
             result = SessionOperationalRouteCameraReleaseResult.Released(releasedFact, reason);
@@ -234,7 +234,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             if (dependencyProvider != null &&
-                dependencyProvider.TryGetForScene<SurfaceCameraAnchorHost>(sceneName, out SurfaceCameraAnchorHost registeredHost) &&
+                dependencyProvider.TryGetForScene<SurfaceCameraAnchorHost>(sceneName, out var registeredHost) &&
                 registeredHost != null)
             {
                 anchorHost = registeredHost;
@@ -242,18 +242,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return true;
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 reason = "surface_camera_scene_not_loaded";
                 return false;
             }
 
-            List<SurfaceCameraAnchorHost> hosts = new List<SurfaceCameraAnchorHost>(4);
+            var hosts = new List<SurfaceCameraAnchorHost>(4);
             GameObject[] roots = scene.GetRootGameObjects();
             for (int i = 0; i < roots.Length; i++)
             {
-                GameObject root = roots[i];
+                var root = roots[i];
                 if (root == null)
                 {
                     continue;

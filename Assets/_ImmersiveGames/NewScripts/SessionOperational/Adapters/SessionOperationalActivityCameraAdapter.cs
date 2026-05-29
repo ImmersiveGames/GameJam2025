@@ -49,7 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return true;
             }
 
-            ActivityPresentationProfileAsset profile = command.ActivityPresentationProfile;
+            var profile = command.ActivityPresentationProfile;
 
             if (profile == null)
             {
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (!TryResolveAnchorHost(command, out ActivityCameraAnchorHost anchorHost, out reason))
+            if (!TryResolveAnchorHost(command, out var anchorHost, out reason))
             {
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
@@ -85,7 +85,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             if (!requirementResolver.TryResolve(
                     profile,
                     anchorHost,
-                    out ActivityCameraRequirement requirement,
+                    out var requirement,
                     out reason))
             {
                 if (reason == "activity_presentation_camera_disabled")
@@ -100,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            ActivityCameraBindingCommand bindingCommand = new ActivityCameraBindingCommand(
+            var bindingCommand = new ActivityCameraBindingCommand(
                 command.RouteIdentity,
                 command.RouteOperationId,
                 command.TransitionId,
@@ -117,17 +117,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (!activityCameraExecutor.TryPrepare(
                     bindingCommand,
-                    out ActivityCameraPreparationResult preparationResult,
+                    out var preparationResult,
                     out reason))
             {
-                ActivityCameraFailureFact failureFact = preparationResult?.FailureFact;
+                var failureFact = preparationResult?.FailureFact;
 
                 result = SessionOperationalActivityCameraPrepareResult.Failed(failureFact, reason);
                 LogFailed(command, failureFact, reason);
                 return false;
             }
 
-            ActivityCameraReadyFact readyFact = preparationResult?.ReadyFact;
+            var readyFact = preparationResult?.ReadyFact;
 
             if (readyFact == null)
             {
@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return true;
             }
 
-            ActivityCameraReleaseCommand releaseCommand = new ActivityCameraReleaseCommand(
+            var releaseCommand = new ActivityCameraReleaseCommand(
                 activeReadyFact.RouteIdentity,
                 activeReadyFact.RouteOperationId,
                 activeReadyFact.TransitionId,
@@ -196,10 +196,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (!activityCameraExecutor.TryRelease(
                     releaseCommand,
-                    out ActivityCameraReleaseResult releaseResult,
+                    out var releaseResult,
                     out reason))
             {
-                ActivityCameraReleaseFailureFact failureFact = releaseResult?.FailureFact;
+                var failureFact = releaseResult?.FailureFact;
 
                 result = SessionOperationalActivityCameraReleaseResult.Failed(failureFact, reason);
 
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            ActivityCameraReleasedFact releasedFact = releaseResult?.ReleasedFact;
+            var releasedFact = releaseResult?.ReleasedFact;
 
             activeReadyFact = null;
             result = SessionOperationalActivityCameraReleaseResult.Released(releasedFact, reason);
@@ -241,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             if (dependencyProvider != null &&
                 dependencyProvider.TryGetForScene<ActivityCameraAnchorHost>(
                     sceneName,
-                    out ActivityCameraAnchorHost registeredHost) &&
+                    out var registeredHost) &&
                 registeredHost != null)
             {
                 anchorHost = registeredHost;
@@ -249,18 +249,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return true;
             }
 
-            Scene scene = SceneManager.GetSceneByName(sceneName);
+            var scene = SceneManager.GetSceneByName(sceneName);
             if (!scene.IsValid() || !scene.isLoaded)
             {
                 reason = "activity_camera_scene_not_loaded";
                 return false;
             }
 
-            List<ActivityCameraAnchorHost> hosts = new List<ActivityCameraAnchorHost>(4);
+            var hosts = new List<ActivityCameraAnchorHost>(4);
             GameObject[] roots = scene.GetRootGameObjects();
             for (int i = 0; i < roots.Length; i++)
             {
-                GameObject root = roots[i];
+                var root = roots[i];
                 if (root == null)
                 {
                     continue;

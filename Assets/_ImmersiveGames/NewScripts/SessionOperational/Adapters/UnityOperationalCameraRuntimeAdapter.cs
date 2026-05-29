@@ -40,8 +40,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "status='started'"),
                 DebugUtility.Colors.Info);
 
-            CameraRuntimeResolvedConfig config = CameraRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
-            GameObject prefab = config.OperationalCameraPrefab;
+            var config = CameraRuntimeConfigResolver.ResolveOrFail(runtimeModeConfig);
+            var prefab = config.OperationalCameraPrefab;
             if (prefab == null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -50,8 +50,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             Camera[] prefabCameras = prefab.GetComponentsInChildren<Camera>(true);
             int prefabCameraCount = prefabCameras?.Length ?? 0;
-            OperationalCameraRuntimeMarker prefabMarker = prefab.GetComponent<OperationalCameraRuntimeMarker>();
-            PersistentRuntimeObject prefabPersistentRoot = prefab.GetComponent<PersistentRuntimeObject>();
+            var prefabMarker = prefab.GetComponent<OperationalCameraRuntimeMarker>();
+            var prefabPersistentRoot = prefab.GetComponent<PersistentRuntimeObject>();
             DebugUtility.Log(typeof(UnityOperationalCameraRuntimeAdapter),
                 BuildLog("OperationalCameraPrefabObserved", routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"prefab='{prefab.name}' cameraCount='{prefabCameraCount}' markerOnRoot='{(prefabMarker != null)}' persistentRoot='{(prefabPersistentRoot != null)}'"),
@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 FindObjectsInactive.Include,
                 FindObjectsSortMode.None);
 
-            Camera observedCamera = ResolveActiveOperationalCameraOrFail(
+            var observedCamera = ResolveActiveOperationalCameraOrFail(
                 markers,
                 routeIdentity,
                 routeOperationId,
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (observedCamera == null)
             {
-                GameObject instance = UnityEngine.Object.Instantiate(prefab);
+                var instance = UnityEngine.Object.Instantiate(prefab);
                 instance.name = prefab.name;
 
                 ValidateOperationalRootPersistenceOrFail(
@@ -106,14 +106,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     reason,
                     "instancia criada");
 
-                OperationalCameraRuntimeMarker createdMarker = instance.GetComponent<OperationalCameraRuntimeMarker>();
+                var createdMarker = instance.GetComponent<OperationalCameraRuntimeMarker>();
                 if (createdMarker == null || !ReferenceEquals(createdMarker.transform, instance.transform))
                 {
                     throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                         "instancia criada sem OperationalCameraRuntimeMarker valido no root.");
                 }
 
-                Camera createdCamera = createdMarker.GetComponentInChildren<Camera>(true);
+                var createdCamera = createdMarker.GetComponentInChildren<Camera>(true);
                 if (createdCamera == null)
                 {
                     throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -178,13 +178,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 for (int i = 0; i < markers.Length; i++)
                 {
-                    OperationalCameraRuntimeMarker marker = markers[i];
+                    var marker = markers[i];
                     if (marker == null || !marker.gameObject.activeInHierarchy)
                     {
                         continue;
                     }
 
-                    Transform markerRoot = marker.transform.root;
+                    var markerRoot = marker.transform.root;
                     if (!ReferenceEquals(marker.transform, markerRoot))
                     {
                         throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
@@ -199,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                             $"OperationalCameraRuntimeMarker invalido. marker='{marker.name}' cameraCount='{markerCameraCount}' expected='1'.");
                     }
 
-                    Camera candidate = markerCameras[0];
+                    var candidate = markerCameras[0];
                     if (candidate == null || !candidate.gameObject.activeInHierarchy)
                     {
                         continue;
@@ -240,14 +240,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"{context} com root invalido.");
             }
 
-            OperationalCameraRuntimeMarker rootMarker = rootTransform.GetComponent<OperationalCameraRuntimeMarker>();
+            var rootMarker = rootTransform.GetComponent<OperationalCameraRuntimeMarker>();
             if (rootMarker == null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"{context} sem OperationalCameraRuntimeMarker no root.");
             }
 
-            PersistentRuntimeObject persistentRoot = rootTransform.GetComponent<PersistentRuntimeObject>();
+            var persistentRoot = rootTransform.GetComponent<PersistentRuntimeObject>();
             if (persistentRoot == null)
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,

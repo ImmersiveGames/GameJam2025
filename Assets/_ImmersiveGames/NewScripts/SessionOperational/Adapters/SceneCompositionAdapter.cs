@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 $"[OBS][SessionOperationalPipeline][Route] adapter='SceneCompositionAdapter' action='ApplyOperationalRoute' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{command.ActiveSceneKey.name}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' completionHandoff='{command.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            SceneCompositionResult compositionResult = await _sceneCompositionExecutor.ApplyAsync(
+            var compositionResult = await _sceneCompositionExecutor.ApplyAsync(
                 new SceneCompositionRequest(
                     SceneCompositionScope.Local,
                     reason,
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
         {
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(command);
+            var persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(command);
             HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrFail(persistentScenesPolicy);
 
             if (TryFindSceneConflict(command.FinalScenesToLoad, persistentSceneSet, nameof(command.FinalScenesToLoad), command.RouteIdentity, out string validationError) ||
@@ -149,9 +149,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
         {
-            if (RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) && snapshot != null)
+            if (RuntimeConfigRegistry.TryGetSnapshot(out var snapshot) && snapshot != null)
             {
-                IRuntimePolicyConfigGroupReadOnly runtimePolicy = snapshot.RuntimePolicy;
+                var runtimePolicy = snapshot.RuntimePolicy;
                 if (runtimePolicy == null)
                 {
                     HardFailFastH1.Trigger(
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                         "[FATAL][Config][SessionOperationalPipeline] RuntimeConfigRegistry invariant breach: snapshot.RuntimePolicy obrigatorio ausente.");
                 }
 
-                RuntimePersistentScenesPolicyAsset registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
+                var registryPolicy = runtimePolicy.RuntimePersistentScenesPolicy;
                 string policyValidationError = string.Empty;
                 bool registryPolicyValid = registryPolicy != null && registryPolicy.TryValidate(out policyValidationError);
                 if (!registryPolicyValid)
