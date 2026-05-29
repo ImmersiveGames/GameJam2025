@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 
@@ -109,6 +110,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private void PrepareRouteCameraOrFail(OperationalRouteCameraPresentationCommand command)
         {
             SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            if (ShouldSkipRouteCameraByPolicy(command, out string skipReason))
+            {
+                DebugUtility.Log(typeof(OperationalRouteCameraPresentationStage),
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' completionHandoff='{routeCommand.CompletionHandoff}' reason='{skipReason}' source='{command.Source}' reasonDetail='{command.Reason}'.",
+                    DebugUtility.Colors.Info);
+                return;
+            }
+
             SessionOperationalRouteCameraPrepareCommand prepareCommand = new(
                 command.RouteIdentity,
                 command.RouteOperationId,
@@ -153,6 +162,47 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationFailed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' profileRequired='{profileRequired}' reason='{Normalize(failureReason)}' source='{command.Source}' reasonDetail='{command.Reason}'.");
 
             throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' operationalSurfaceKind='{routeCommand.SurfaceKind}' required='{profileRequired}' reason='{Normalize(failureReason)}'.");
+        }
+
+        private static bool ShouldSkipRouteCameraByPolicy(
+            OperationalRouteCameraPresentationCommand command,
+            out string skipReason)
+        {
+            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
+            var profile = routeCommand.SurfacePresentationProfile;
+            var activityProfile = routeCommand.ActivityPresentationProfile;
+            bool isSessionActivityEntry =
+                routeCommand.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry;
+
+            if (profile == null)
+            {
+                if (isSessionActivityEntry &&
+                    activityProfile != null &&
+                    activityProfile.TryValidate(out _))
+                {
+                    skipReason = "activity_camera_has_priority";
+                    return true;
+                }
+
+                skipReason = "surface_presentation_profile_missing";
+                return true;
+            }
+
+            if (profile.RouteCameraPresentationMode == RouteCameraPresentationMode.None)
+            {
+                skipReason = "surface_camera_presentation_mode_none";
+                return true;
+            }
+
+            if (isSessionActivityEntry &&
+                profile.RouteCameraPresentationMode == RouteCameraPresentationMode.SkipWhenActivityHandoff)
+            {
+                skipReason = "activity_camera_has_priority";
+                return true;
+            }
+
+            skipReason = string.Empty;
+            return false;
         }
 
         private static void LogStageStarted(OperationalRouteCameraPresentationCommand command)

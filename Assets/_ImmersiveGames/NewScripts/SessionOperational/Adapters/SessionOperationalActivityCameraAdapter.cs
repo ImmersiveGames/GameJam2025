@@ -41,23 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
-            if (command.CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
-            {
-                reason = "not_session_activity_entry_handoff";
-                result = SessionOperationalActivityCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
-
             var profile = command.ActivityPresentationProfile;
-
-            if (profile == null)
-            {
-                reason = "activity_presentation_profile_missing";
-                result = SessionOperationalActivityCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
 
             if (activityCameraExecutor == null)
             {
@@ -88,13 +72,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     out var requirement,
                     out reason))
             {
-                if (reason == "activity_presentation_camera_disabled")
-                {
-                    result = SessionOperationalActivityCameraPrepareResult.Skipped(reason);
-                    LogSkipped(command, reason);
-                    return true;
-                }
-
                 result = SessionOperationalActivityCameraPrepareResult.Failed(null, reason);
                 LogFailed(command, null, reason);
                 return false;
@@ -314,16 +291,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             return string.Empty;
-        }
-
-        private static void LogSkipped(
-            SessionOperationalActivityCameraPrepareCommand command,
-            string skipReason)
-        {
-            DebugUtility.Log(
-                typeof(SessionOperationalActivityCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' activityIdentity='{command.ActivityIdentity}' completionHandoff='{command.CompletionHandoff}' reason='{skipReason}' source='{command.Source}'.",
-                DebugUtility.Colors.Info);
         }
 
         private static void LogFailed(

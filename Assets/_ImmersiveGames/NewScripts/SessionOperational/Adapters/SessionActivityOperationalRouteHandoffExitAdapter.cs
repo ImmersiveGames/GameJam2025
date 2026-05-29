@@ -1,7 +1,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 
@@ -26,30 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "No active handoff identity was present on the previous route.");
             }
 
-            var boundary = ResolveBoundaryOrFail();
-            if (boundary.HasPendingOperation)
-            {
-                LogPreflightDetail("handoff_exit_pending_operation_active", boundary);
-                return Rejected(
-                    "handoff_exit_pending_operation_active",
-                    "pending_operation_active");
-            }
-
-            if (IsActivationWindowStage(boundary.CurrentStage))
-            {
-                LogPreflightDetail("handoff_exit_activation_not_completed", boundary);
-                return Rejected(
-                    "handoff_exit_activation_not_completed",
-                    "activation_window_not_completed");
-            }
-
-            if (IsDeactivationWindowStage(boundary.CurrentStage) && boundary.CurrentRailKind != SessionActivityRailKind.ActivityRouteExitRail)
-            {
-                LogPreflightDetail("handoff_exit_target_transition_in_progress", boundary);
-                return Rejected(
-                    "handoff_exit_target_transition_in_progress",
-                    "target_transition_in_progress");
-            }
+            ResolveBoundaryOrFail();
 
             return new OperationalRouteHandoffExitPreflightResult(
                 OperationalRouteHandoffExitPreflightKind.Accepted,
@@ -79,7 +55,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (!result.IsValid)
             {
-                LogExitDetail("handoff_exit_invalid_result", result);
                 return new OperationalRouteHandoffExitResult(
                     OperationalRouteHandoffExitKind.Failed,
                     request.HandoffIdentity,
@@ -89,7 +64,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (result.Kind == SessionActivityRouteExitTeardownKind.NotRequired)
             {
-                LogExitDetail("handoff_exit_not_required", result);
                 return new OperationalRouteHandoffExitResult(
                     OperationalRouteHandoffExitKind.NotRequired,
                     request.HandoffIdentity,
@@ -99,7 +73,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (result.Kind == SessionActivityRouteExitTeardownKind.Completed)
             {
-                LogExitDetail("handoff_exit_completed", result);
                 return new OperationalRouteHandoffExitResult(
                     OperationalRouteHandoffExitKind.Completed,
                     request.HandoffIdentity,
@@ -109,7 +82,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
             if (result.Kind == SessionActivityRouteExitTeardownKind.Failed)
             {
-                LogExitDetail("handoff_exit_failed", result);
                 return new OperationalRouteHandoffExitResult(
                     OperationalRouteHandoffExitKind.Failed,
                     request.HandoffIdentity,
@@ -117,7 +89,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "consumer_exit_failed");
             }
 
-            LogExitDetail("handoff_exit_unexpected_in_progress_result", result);
             return new OperationalRouteHandoffExitResult(
                 OperationalRouteHandoffExitKind.RejectedByPolicy,
                 request.HandoffIdentity,
@@ -136,49 +107,5 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             return boundary;
         }
 
-        private static OperationalRouteHandoffExitPreflightResult Rejected(string reason, string detail)
-        {
-            return new OperationalRouteHandoffExitPreflightResult(
-                OperationalRouteHandoffExitPreflightKind.RejectedByPolicy,
-                reason,
-                detail);
-        }
-
-        private static void LogPreflightDetail(string reason, ISessionActivityRouteExitTeardownBoundary boundary)
-        {
-            DebugUtility.Log(typeof(SessionActivityOperationalRouteHandoffExitAdapter),
-                $"[OBS][SessionOperationalPipeline][OperationalHandoffExitAdapter] PreflightRejected reason='{reason}' stage='{boundary.CurrentStage}' railKind='{boundary.CurrentRailKind}' pendingOperation='{boundary.HasPendingOperation}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static void LogExitDetail(string reason, SessionActivityRouteExitTeardownResult result)
-        {
-            DebugUtility.Log(typeof(SessionActivityOperationalRouteHandoffExitAdapter),
-                $"[OBS][SessionOperationalPipeline][OperationalHandoffExitAdapter] ExitResult reason='{reason}' result='{result}'.",
-                DebugUtility.Colors.Info);
-        }
-
-        private static bool IsActivationWindowStage(SessionActivityStage stage)
-        {
-            return stage == SessionActivityStage.ActivationWindowStarted ||
-                   stage == SessionActivityStage.ActivationWindowSceneLoading ||
-                   stage == SessionActivityStage.ActivationWindowAdditiveSceneLoadStarted ||
-                   stage == SessionActivityStage.ActivationWindowAdditiveSceneLoaded ||
-                   stage == SessionActivityStage.ActivationWindowReady;
-        }
-
-        private static bool IsDeactivationWindowStage(SessionActivityStage stage)
-        {
-            return stage == SessionActivityStage.DeactivationWindowStarted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneLoading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneLoaded ||
-                   stage == SessionActivityStage.DeactivationWindowReady ||
-                   stage == SessionActivityStage.DeactivationWindowCompleted ||
-                   stage == SessionActivityStage.DeactivationWindowSceneUnloading ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloadStarted ||
-                   stage == SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded ||
-                   stage == SessionActivityStage.DeactivationWindowSkippedNoContent;
-        }
     }
 }

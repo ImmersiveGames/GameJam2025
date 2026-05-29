@@ -44,42 +44,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             var profile = command.SurfacePresentationProfile;
-            var activityProfile = command.ActivityPresentationProfile;
-
-            if (profile == null)
-            {
-                if (command.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry &&
-                    activityProfile != null &&
-                    activityProfile.TryValidate(out _))
-                {
-                    reason = "activity_camera_has_priority";
-                    result = SessionOperationalRouteCameraPrepareResult.Skipped(reason);
-                    LogSkipped(command, reason);
-                    return true;
-                }
-
-                reason = "surface_presentation_profile_missing";
-                result = SessionOperationalRouteCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
-
-            if (profile.RouteCameraPresentationMode == RouteCameraPresentationMode.None)
-            {
-                reason = "surface_camera_presentation_mode_none";
-                result = SessionOperationalRouteCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
-
-            if (profile.RouteCameraPresentationMode == RouteCameraPresentationMode.SkipWhenActivityHandoff &&
-                command.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
-            {
-                reason = "activity_camera_has_priority";
-                result = SessionOperationalRouteCameraPrepareResult.Skipped(reason);
-                LogSkipped(command, reason);
-                return true;
-            }
 
             if (routeCameraExecutor == null)
             {
@@ -304,13 +268,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             return string.Empty;
-        }
-
-        private static void LogSkipped(SessionOperationalRouteCameraPrepareCommand command, string skipReason)
-        {
-            DebugUtility.Log(typeof(SessionOperationalRouteCameraAdapter),
-                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationSkipped routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' surfaceKind='{command.SurfaceKind}' completionHandoff='{command.CompletionHandoff}' reason='{skipReason}' source='{command.Source}'.",
-                DebugUtility.Colors.Info);
         }
 
         private static void LogFailed(

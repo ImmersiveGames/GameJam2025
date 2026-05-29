@@ -35,17 +35,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             ValidateCommandOrFail(command);
             EnsureAudioConfigSourceOrFail();
 
-            if (command.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None)
-            {
-                DebugUtility.Log(typeof(AudioAdapter),
-                    BuildAudioLog(
-                        "[OBS][SessionOperationalAudio][AudioAdapter] playSkipped",
-                        command,
-                        extra: "skipReason='route_audio_disabled'"),
-                    DebugUtility.Colors.Info);
-                return OperationalRouteAudioResult.Skipped("route_audio_disabled", "route audio disabled by route policy");
-            }
-
             AudioCueAsset cue = command.Audio.RouteAudioCue;
             string cueName = cue != null ? cue.name : "<none>";
             string cueType = ResolveCueTypeOrFail(cue);
@@ -262,4 +251,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         }
     }
 }
-

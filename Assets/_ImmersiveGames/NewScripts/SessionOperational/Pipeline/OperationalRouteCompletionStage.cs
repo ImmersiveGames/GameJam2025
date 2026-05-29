@@ -78,11 +78,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     internal sealed class OperationalRouteCompletionStage
     {
-        private readonly SessionOperationalRuntimeState _runtimeState;
+        private readonly OperationalFactRecorder _factRecorder;
 
-        public OperationalRouteCompletionStage(SessionOperationalRuntimeState runtimeState)
+        public OperationalRouteCompletionStage(OperationalFactRecorder factRecorder)
         {
-            _runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
         }
 
         public OperationalRouteCompletionResult ExecuteTransitionPlanReady(OperationalRouteCompletionCommand command)
@@ -127,36 +127,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private SessionOperationalResult ApplyCompletedState(OperationalRouteCompletionCommand command)
         {
-            SessionOperationalRouteCommand routeCommand = command.RouteCommand;
-            SessionOperationalIdentity identity = new(
-                command.PipelineId,
-                routeCommand.RouteOperationId,
-                routeCommand.TransitionId,
-                routeCommand.RouteSequence,
-                routeCommand.RouteIdentity,
-                routeCommand.RouteIdentity,
-                command.Source,
-                command.Reason,
-                SessionOperationalStage.Completed);
-
-            SessionOperationalFact fact = new(
-                SessionOperationalFactKind.Completed,
-                identity,
-                command.Source,
-                command.Reason,
-                "Operational route completed.");
-
-            _runtimeState.SetCurrentIdentity(identity);
-            _runtimeState.MarkStarted();
-            _runtimeState.MarkCompleted();
-            _runtimeState.AppendFact(fact);
-            _runtimeState.AppendTrace(
-                $"[OBS][SessionOperationalPipeline] fact='OperationalRouteCompleted' stage='{identity.Stage}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' routeId='{identity.RouteId}' routeProfileId='{identity.RouteProfileId}' source='{command.Source}' reason='{command.Reason}' message='Operational route completed.'");
+            if (_factRecorder.CurrentIdentity.Stage != SessionOperationalStage.Completed)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][H1][SessionOperationalPipeline][Transition] Completed fact must be recorded before building operational result routeIdentity='{command.RouteCommand.RouteIdentity}' routeOperationId='{command.RouteCommand.RouteOperationId}' transitionId='{command.RouteCommand.TransitionId}' routeSequence='{command.RouteCommand.RouteSequence}' source='{command.Source}' reason='{command.Reason}'.");
+            }
 
             return new SessionOperationalResult(
                 SessionOperationalResultKind.Completed,
-                identity,
-                _runtimeState.Facts,
+                _factRecorder.CurrentIdentity,
+                _factRecorder.Facts,
                 "Operational route completed.");
         }
 

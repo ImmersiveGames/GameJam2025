@@ -65,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private readonly SessionOperationalRuntimeState _state = new();
         private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy = new();
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly SessionOperationalRoutePlanResolver _routePlanResolver = new();
         private readonly OperationalRouteSetupStage _routeSetupStage = new();
         private readonly OperationalTransitionBlackoutStage _transitionBlackoutStage;
@@ -75,8 +76,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalRouteCameraPresentationStage _routeCameraPresentationStage;
         private readonly OperationalInputPreparationStage _inputPreparationStage;
         private readonly OperationalPlayerPreparationStage _playerPreparationStage = new();
-        private readonly OperationalConsumerPresentationPreparationStage _consumerPresentationPreparationStage;
-        private readonly OperationalConsumerPresentationReleaseStage _consumerPresentationReleaseStage;
+        private readonly OperationalActivityCameraPresentationStage _activityCameraPresentationStage;
+        private readonly OperationalActivityCameraReleasePreviousStage _activityCameraReleasePreviousStage;
         private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage;
         private readonly OperationalRouteActivitySaveLoadOnEnterStage _routeActivitySaveLoadOnEnterStage;
         private readonly OperationalRouteActivitySaveSaveOnExitStage _routeActivitySaveSaveOnExitStage;
@@ -110,16 +111,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new ArgumentException("sessionOperationalPipelineId is required.", nameof(sessionOperationalPipelineId));
             }
 
+            _factRecorder = new OperationalFactRecorder(
+                _state,
+                _sessionOperationalPipelineId);
+
             _fadeStage = new OperationalFadeStage(_dependencies.ResolveFadePort);
-            _transitionBlackoutStage = new OperationalTransitionBlackoutStage(_fadeStage);
+            _transitionBlackoutStage = new OperationalTransitionBlackoutStage();
             _sceneCompositionStage = new OperationalSceneCompositionStage(_dependencies.ResolveSceneCompositionPort);
-            _handoffExitStage = new OperationalHandoffExitStage(_dependencies.ResolveRouteHandoffExitPort);
+            _handoffExitStage = new OperationalHandoffExitStage(
+                _dependencies.ResolveRouteHandoffExitPort,
+                _dependencies.ResolveSessionActivityRouteExitTeardownBoundary);
             _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_dependencies.RouteCameraAdapter);
             _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_dependencies.RouteCameraAdapter);
-            _inputPreparationStage = new OperationalInputPreparationStage(_state, _stageOrderPolicy, _dependencies.ResolveInputModeRequestPort);
-            _routeCompletionStage = new OperationalRouteCompletionStage(_state);
-            _consumerPresentationPreparationStage = new OperationalConsumerPresentationPreparationStage(_dependencies.ResolveRouteConsumerPresentationPort);
-            _consumerPresentationReleaseStage = new OperationalConsumerPresentationReleaseStage(_dependencies.ResolveRouteConsumerPresentationPort);
+            _inputPreparationStage = new OperationalInputPreparationStage(_factRecorder, _dependencies.ResolveInputModeRequestPort);
+            _routeCompletionStage = new OperationalRouteCompletionStage(_factRecorder);
+            _activityCameraPresentationStage = new OperationalActivityCameraPresentationStage(_dependencies.ActivityCameraAdapter);
+            _activityCameraReleasePreviousStage = new OperationalActivityCameraReleasePreviousStage(_dependencies.ActivityCameraAdapter);
             _consumerEntryAndReadinessStage = new OperationalConsumerEntryAndReadinessStage(_dependencies.ResolveRouteConsumerEntryPort, _dependencies.ResolveRouteConsumerReadinessPort);
             _routeActivitySaveLoadOnEnterStage = new OperationalRouteActivitySaveLoadOnEnterStage(
                 _dependencies.ActivitySaveAdapter,
@@ -134,7 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 RouteActivitySnapshotSchemaId);
             _loadingStage = new OperationalLoadingStage(_dependencies.LoadingAdapter);
             _routeAudioStage = new OperationalRouteAudioStage(_dependencies.ResolveRouteAudioPort);
-            _routeRevealStage = new OperationalRouteRevealStage(_routeAudioStage, _fadeStage);
+            _routeRevealStage = new OperationalRouteRevealStage();
         }
 
         public SessionOperationalRuntimeState State => _state;
@@ -371,11 +378,27 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 loadingStarted = loadingStartResult.LoadingStarted;
 
-                OperationalTransitionBlackoutResult blackoutResult = await _transitionBlackoutStage.ExecuteAsync(
-                    new OperationalTransitionBlackoutCommand(
-                        command,
-                        sourceText,
-                        reasonText));
+                OperationalTransitionBlackoutCommand blackoutCommand = new OperationalTransitionBlackoutCommand(
+                    command,
+                    sourceText,
+                    reasonText);
+                _transitionBlackoutStage.Begin(blackoutCommand);
+
+                bool blackoutFadeInCompleted = false;
+                if (command.UsesTransition)
+                {
+                    OperationalFadeStageResult fadeResult = await _fadeStage.ExecuteAsync(
+                        new OperationalFadeCommand(
+                            command,
+                            OperationalFadeOperationKind.CloseCurtain,
+                            sourceText,
+                            reasonText));
+                    blackoutFadeInCompleted = fadeResult.FadeCompleted;
+                }
+
+                OperationalTransitionBlackoutResult blackoutResult = _transitionBlackoutStage.Complete(
+                    blackoutCommand,
+                    blackoutFadeInCompleted);
 
                 if (!blackoutResult.IsCompleted && !blackoutResult.IsSkipped)
                 {
@@ -428,19 +451,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalHandoffExitStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{handoffExitResult.Kind}' reason='{handoffExitResult.Reason}' detail='{handoffExitResult.Detail}'.");
                 }
 
-                OperationalConsumerPresentationReleaseResult consumerPresentationReleaseResult =
-                    _consumerPresentationReleaseStage.Execute(
-                        new OperationalConsumerPresentationReleaseCommand(
+                OperationalActivityCameraReleasePreviousResult activityCameraReleasePreviousResult =
+                    _activityCameraReleasePreviousStage.Execute(
+                        new OperationalActivityCameraReleasePreviousCommand(
                             command,
-                            activeSceneName,
                             previousCompletedRoute.RouteIdentity,
                             previousCompletedRoute.ActivityIdentity,
                             sourceText,
                             reasonText));
-                if (!consumerPresentationReleaseResult.IsAccepted)
+                if (!activityCameraReleasePreviousResult.IsAccepted)
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalConsumerPresentationReleaseStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{consumerPresentationReleaseResult.Kind}' reason='{consumerPresentationReleaseResult.Reason}' detail='{consumerPresentationReleaseResult.Detail}'.");
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalActivityCameraReleasePreviousStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{activityCameraReleasePreviousResult.Kind}' reason='{activityCameraReleasePreviousResult.Reason}' detail='{activityCameraReleasePreviousResult.Detail}'.");
                 }
 
                 OperationalRouteCameraReleasePreviousResult routeCameraReleasePreviousResult =
@@ -575,8 +597,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 PlayerPreparationResult playerPreparationResult = playerPreparationStageResult.PlayerPreparationResult;
                 if (playerPreparationStageResult.IsCompleted)
                 {
-                    OperationalConsumerPresentationPreparationResult consumerPresentationResult = _consumerPresentationPreparationStage.Execute(
-                        BuildConsumerPresentationPreparationCommand(
+                    OperationalActivityCameraPresentationResult activityCameraPresentationResult = _activityCameraPresentationStage.Execute(
+                        BuildActivityCameraPresentationCommand(
                             command,
                             activeSceneName,
                             routeIdentity,
@@ -585,10 +607,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                             routeSequence,
                             sourceText,
                             reasonText));
-                    if (!consumerPresentationResult.IsAccepted)
+                    if (!activityCameraPresentationResult.IsAccepted)
                     {
                         throw new InvalidOperationException(
-                            $"[FATAL][SessionOperationalPipeline][ConsumerPresentation] OperationalConsumerPresentationPreparationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{consumerPresentationResult.Kind}' reason='{consumerPresentationResult.Reason}' detail='{consumerPresentationResult.Detail}'.");
+                            $"[FATAL][SessionOperationalPipeline][ActivityCamera] OperationalActivityCameraPresentationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{activityCameraPresentationResult.Kind}' reason='{activityCameraPresentationResult.Reason}' detail='{activityCameraPresentationResult.Detail}'.");
                     }
                 }
 
@@ -618,11 +640,34 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 loadingCompleted = materializationResult.LoadingCompleted;
                 loadingHidden = materializationResult.LoadingHidden;
 
-                OperationalRouteRevealResult revealResult = await _routeRevealStage.ExecuteAsync(
-                    new OperationalRouteRevealCommand(
+                OperationalRouteRevealCommand revealCommand = new OperationalRouteRevealCommand(
+                    command,
+                    sourceText,
+                    reasonText);
+                _routeRevealStage.Begin(revealCommand);
+
+                OperationalRouteAudioStageResult routeAudioResult = _routeAudioStage.Execute(
+                    new OperationalRouteAudioCommand(
                         command,
                         sourceText,
                         reasonText));
+
+                bool revealFadeOutCompleted = false;
+                if (command.UsesTransition)
+                {
+                    OperationalFadeStageResult fadeResult = await _fadeStage.ExecuteAsync(
+                        new OperationalFadeCommand(
+                            command,
+                            OperationalFadeOperationKind.OpenCurtain,
+                            sourceText,
+                            reasonText));
+                    revealFadeOutCompleted = fadeResult.FadeCompleted;
+                }
+
+                OperationalRouteRevealResult revealResult = _routeRevealStage.Complete(
+                    revealCommand,
+                    routeAudioResult.AudioSubmitted,
+                    revealFadeOutCompleted);
 
                 if (!revealResult.IsCompleted)
                 {
@@ -631,6 +676,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 fadeOutCompleted = revealResult.FadeOutCompleted;
+
+                if (!TryCompleteRouteOperation(
+                        routeOperationId,
+                        transitionId,
+                        routeSequence,
+                        routeIdentity,
+                        routeIdentity,
+                        sourceText,
+                        reasonText))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][H1][SessionOperationalPipeline][Transition] Failed to record OperationalRouteCompleted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}'.");
+                }
 
                 OperationalRouteCompletionResult completionResult = _routeCompletionStage.ExecuteCompleted(
                     new OperationalRouteCompletionCommand(
@@ -811,7 +869,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 string.IsNullOrWhiteSpace(normalizedSource) ||
                 string.IsNullOrWhiteSpace(normalizedReason))
             {
-                return Reject(
+                return _factRecorder.Reject(
                     SessionOperationalFactKind.IgnoredForeignOrStale,
                     SessionOperationalStage.Unknown,
                     normalizedSource,
@@ -1135,13 +1193,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            _state.MarkCompleted();
             return true;
-        }
-
-        public string DumpState()
-        {
-            return $"[OBS][SessionOperationalPipeline] pipelineId='{_state.SessionOperationalPipelineId}' routeOperationId='{_state.RouteOperationId}' transitionId='{_state.TransitionId}' transitionSequence='{_state.TransitionSequence}' routeId='{_state.RouteId}' routeProfileId='{_state.RouteProfileId}' routeClass='{_state.RouteClass}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{_state.CurrentInitialInputMode}' stage='{_state.CurrentStage}' started='{_state.HasStarted}' completed='{_state.HasCompleted}' factsCount='{_state.Facts.Count}'";
         }
 
         private bool TryRecordStage(
@@ -1172,7 +1224,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 string.IsNullOrWhiteSpace(normalizedSource) ||
                 string.IsNullOrWhiteSpace(normalizedReason))
             {
-                return Reject(
+                return _factRecorder.Reject(
                     SessionOperationalFactKind.IgnoredForeignOrStale,
                     stage,
                     normalizedSource,
@@ -1190,7 +1242,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!CanAcceptStage(incomingStageKey))
             {
-                return Reject(
+                return _factRecorder.Reject(
                     SessionOperationalFactKind.IgnoredForeignOrStale,
                     stage,
                     normalizedSource,
@@ -1198,8 +1250,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"Stage '{stage}' ignored because it is foreign, stale, or out of order.");
             }
 
-            SessionOperationalIdentity identity = new(
-                _sessionOperationalPipelineId,
+            return _factRecorder.TryRecordStage(
+                stage,
                 normalizedRouteOperationId,
                 normalizedTransitionId,
                 transitionSequence,
@@ -1207,39 +1259,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 normalizedRouteProfileId,
                 normalizedSource,
                 normalizedReason,
-                stage);
-
-            SessionOperationalFact fact = new(
-                MapFactKind(stage),
-                identity,
-                normalizedSource,
-                normalizedReason,
                 normalizedMessage);
-
-            if (!fact.IsValid)
-            {
-                throw new InvalidOperationException($"Cannot emit invalid operational fact for stage '{stage}'.");
-            }
-
-            _state.SetCurrentIdentity(identity);
-            _state.MarkStarted();
-            _state.AppendFact(fact);
-            _state.AppendTrace(
-                $"[OBS][SessionOperationalPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeOperationId='{fact.Identity.RouteOperationId}' transitionId='{fact.Identity.TransitionId}' transitionSequence='{fact.Identity.TransitionSequence}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
-
-            if (stage == SessionOperationalStage.InputCapabilityPrepared ||
-                stage == SessionOperationalStage.InitialInputModePrepared)
-            {
-                _state.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline][InputMode] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
-            }
-
-            if (stage == SessionOperationalStage.Completed)
-            {
-                _state.MarkCompleted();
-            }
-
-            return true;
         }
 
         private bool CanAcceptStage(SessionOperationalStageKey stageKey)
@@ -1270,11 +1290,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            // Aceita progresso monotônico/sparse:
-            // - mesma identity já validada acima
-            // - não aceita retrocesso
-            // - não aceita duplicata do stage atual
-            // - não depende do valor numérico do enum
             return _stageOrderPolicy.CanAdvance(_state.CurrentStage, stageKey.Stage);
         }
 
@@ -1295,61 +1310,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return new SessionOperationalTransitionKey(routeKey, transitionId);
         }
 
-        private bool Reject(
-            SessionOperationalFactKind factKind,
-            SessionOperationalStage stage,
-            string source,
-            string reason,
-            string message)
+        public string DumpState()
         {
-            SessionOperationalIdentity identity = new(
-                _sessionOperationalPipelineId,
-                _state.RouteOperationId,
-                _state.TransitionId,
-                _state.TransitionSequence,
-                _state.RouteId,
-                _state.RouteProfileId,
-                source,
-                reason,
-                stage);
-
-            if (!identity.IsValid)
-            {
-                _state.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline] rejected_stage='{stage}' source='{source}' reason='{reason}' message='{message}'");
-                return false;
-            }
-
-            SessionOperationalFact fact = new(factKind, identity, source, reason, message);
-            _state.AppendFact(fact);
-            _state.AppendTrace(
-                $"[OBS][SessionOperationalPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
-            return false;
-        }
-
-        private static SessionOperationalFactKind MapFactKind(SessionOperationalStage stage)
-        {
-            return stage switch
-            {
-                SessionOperationalStage.RouteOperationStarted => SessionOperationalFactKind.RouteOperationStarted,
-                SessionOperationalStage.NavigationIntentObserved => SessionOperationalFactKind.NavigationIntentObserved,
-                SessionOperationalStage.RouteResolved => SessionOperationalFactKind.RouteResolved,
-                SessionOperationalStage.TransitionRequested => SessionOperationalFactKind.TransitionRequested,
-                SessionOperationalStage.TransitionStarted => SessionOperationalFactKind.TransitionStarted,
-                SessionOperationalStage.CurtainClosed => SessionOperationalFactKind.CurtainClosed,
-                SessionOperationalStage.PreviousRouteTeardownSkipped => SessionOperationalFactKind.PreviousRouteTeardownSkipped,
-                SessionOperationalStage.RoutePhysicalApplyObserved => SessionOperationalFactKind.RoutePhysicalApplyObserved,
-                SessionOperationalStage.ScenesReadyObserved => SessionOperationalFactKind.ScenesReadyObserved,
-                SessionOperationalStage.SessionOperationalSetupNoOp => SessionOperationalFactKind.SessionOperationalSetupNoOp,
-                SessionOperationalStage.PlayerPreparationObserved => SessionOperationalFactKind.PlayerPreparationObserved,
-                SessionOperationalStage.InputCapabilityPrepared => SessionOperationalFactKind.InputCapabilityPrepared,
-                SessionOperationalStage.InitialInputModePrepared => SessionOperationalFactKind.InitialInputModePrepared,
-                SessionOperationalStage.PauseCapabilityPrepared => SessionOperationalFactKind.PauseCapabilityPrepared,
-                SessionOperationalStage.ReadyToOpenCurtain => SessionOperationalFactKind.ReadyToOpenCurtain,
-                SessionOperationalStage.TransitionCompletedObserved => SessionOperationalFactKind.TransitionCompletedObserved,
-                SessionOperationalStage.Completed => SessionOperationalFactKind.Completed,
-                _ => SessionOperationalFactKind.Unknown
-            };
+            return _factRecorder.DumpState();
         }
 
         private static string Normalize(string value)
@@ -1512,7 +1475,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reasonText);
         }
 
-        private OperationalConsumerPresentationPreparationCommand BuildConsumerPresentationPreparationCommand(
+        private OperationalActivityCameraPresentationCommand BuildActivityCameraPresentationCommand(
             SessionOperationalRouteCommand command,
             string activeSceneName,
             string routeIdentity,
@@ -1522,7 +1485,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string sourceText,
             string reasonText)
         {
-            return new OperationalConsumerPresentationPreparationCommand(
+            return new OperationalActivityCameraPresentationCommand(
                 command,
                 activeSceneName,
                 routeIdentity,

@@ -89,17 +89,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalInputPreparationStage
     {
-        private readonly SessionOperationalRuntimeState _runtimeState;
-        private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy;
+        private readonly OperationalFactRecorder _factRecorder;
         private readonly Func<IOperationalInputModeRequestPort> _inputModeRequestPortResolver;
 
         public OperationalInputPreparationStage(
-            SessionOperationalRuntimeState runtimeState,
-            SessionOperationalStageOrderPolicy stageOrderPolicy,
+            OperationalFactRecorder factRecorder,
             Func<IOperationalInputModeRequestPort> inputModeRequestPortResolver)
         {
-            _runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
-            _stageOrderPolicy = stageOrderPolicy ?? throw new ArgumentNullException(nameof(stageOrderPolicy));
+            _factRecorder = factRecorder ?? throw new ArgumentNullException(nameof(factRecorder));
             _inputModeRequestPortResolver = inputModeRequestPortResolver ?? throw new ArgumentNullException(nameof(inputModeRequestPortResolver));
         }
 
@@ -167,77 +164,60 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionOperationalInputModeKind initialInputMode,
             string message)
         {
-            _runtimeState.SetInputModeContext(command.RouteClass, command.InputPolicy, initialInputMode);
-
-            SessionOperationalTransitionKey incomingTransitionKey = BuildTransitionKey(
-                command.PipelineId,
-                command.RouteOperationId,
-                command.TransitionId,
-                command.RouteSequence,
-                command.RouteIdentity,
-                command.RouteIdentity);
-            SessionOperationalStageKey incomingStageKey = new(incomingTransitionKey, stage);
-
-            if (!CanAcceptStage(command, incomingStageKey))
-            {
-                return Reject(
-                    command,
-                    SessionOperationalFactKind.IgnoredForeignOrStale,
-                    stage,
-                    $"Stage '{stage}' ignored because it is foreign, stale, or out of order.");
-            }
-
-            SessionOperationalIdentity identity = new(
-                command.PipelineId,
+            return _factRecorder.TryRecordInputStage(
+                stage,
                 command.RouteOperationId,
                 command.TransitionId,
                 command.RouteSequence,
                 command.RouteIdentity,
                 command.RouteIdentity,
-                command.Source,
-                command.Reason,
-                stage);
-
-            SessionOperationalFact fact = new(
-                MapFactKind(stage),
-                identity,
+                command.RouteClass,
+                command.InputPolicy,
+                initialInputMode,
                 command.Source,
                 command.Reason,
                 message);
-
-            if (!fact.IsValid)
-            {
-                throw new InvalidOperationException($"Cannot emit invalid operational fact for stage '{stage}'.");
-            }
-
-            _runtimeState.SetCurrentIdentity(identity);
-            _runtimeState.MarkStarted();
-            _runtimeState.AppendFact(fact);
-            _runtimeState.AppendTrace(
-                $"[OBS][SessionOperationalPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeOperationId='{fact.Identity.RouteOperationId}' transitionId='{fact.Identity.TransitionId}' transitionSequence='{fact.Identity.TransitionSequence}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
-            _runtimeState.AppendTrace(
-                $"[OBS][SessionOperationalPipeline][InputMode] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{command.RouteClass}' inputPolicy='{command.InputPolicy}' inputMode='{initialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
-
-            return true;
         }
 
         private void SubmitInitialInputModeOrFail(
             OperationalInputPreparationCommand command,
             SessionOperationalInputModeKind initialInputMode)
         {
-            if (_runtimeState.CurrentStage != SessionOperationalStage.InitialInputModePrepared ||
-                _runtimeState.RouteOperationId != command.RouteOperationId ||
-                _runtimeState.TransitionId != command.TransitionId ||
-                _runtimeState.TransitionSequence != command.RouteSequence ||
-                _runtimeState.RouteId != command.RouteIdentity ||
-                _runtimeState.RouteProfileId != command.RouteIdentity)
+            EnsureInitialInputModePreparedFactOrFail(command);
+            OperationalInputModeRequest request = BuildInitialInputModeRequest(command, initialInputMode);
+
+            IOperationalInputModeRequestPort inputModeRequestPort = ResolveInputModeRequestPortOrFail(command);
+            OperationalInputModeRequestResult result = inputModeRequestPort.SubmitInitialInputMode(request);
+            if (!result.IsSubmitted)
             {
                 throw new InvalidOperationException(
-                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Cannot submit initial input mode before matching InitialInputModePrepared fact routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' currentStage='{_runtimeState.CurrentStage}' currentRouteOperationId='{_runtimeState.RouteOperationId}' currentTransitionId='{_runtimeState.TransitionId}' currentRouteSequence='{_runtimeState.TransitionSequence}' source='{command.Source}' reason='{command.Reason}'.");
+                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Input mode request rejected routeIdentity='{request.Identity.RouteId}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' resultKind='{result.Kind}' resultReason='{result.Reason}' detail='{result.Detail}' source='{request.Source}' reason='{request.Reason}'.");
             }
 
-            _runtimeState.SetInputModeContext(command.RouteClass, command.InputPolicy, initialInputMode);
+            DebugUtility.Log(typeof(OperationalInputPreparationStage),
+                $"[OBS][SessionOperationalPipeline][InputMode] command='OperationalInputModeRequest' routeIdentity='{request.Identity.RouteId}' routeOperationId='{request.Identity.RouteOperationId}' transitionId='{request.Identity.TransitionId}' routeSequence='{request.Identity.TransitionSequence}' contextSignature='{request.ContextSignature}' operationalSurfaceKind='{request.RouteClass}' inputPolicy='{request.InputPolicy}' initialInputMode='{request.InitialInputMode}' source='{request.Source}' reason='{request.Reason}'.",
+                DebugUtility.Colors.Success);
+        }
 
+        private void EnsureInitialInputModePreparedFactOrFail(OperationalInputPreparationCommand command)
+        {
+            SessionOperationalIdentity currentIdentity = _factRecorder.CurrentIdentity;
+            if (currentIdentity.Stage != SessionOperationalStage.InitialInputModePrepared ||
+                !string.Equals(currentIdentity.RouteOperationId, command.RouteOperationId, StringComparison.Ordinal) ||
+                !string.Equals(currentIdentity.TransitionId, command.TransitionId, StringComparison.Ordinal) ||
+                currentIdentity.TransitionSequence != command.RouteSequence ||
+                !string.Equals(currentIdentity.RouteId, command.RouteIdentity, StringComparison.Ordinal) ||
+                !string.Equals(currentIdentity.RouteProfileId, command.RouteIdentity, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Cannot submit initial input mode before matching InitialInputModePrepared fact routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' currentStage='{currentIdentity.Stage}' currentRouteOperationId='{currentIdentity.RouteOperationId}' currentTransitionId='{currentIdentity.TransitionId}' currentRouteSequence='{currentIdentity.TransitionSequence}' source='{command.Source}' reason='{command.Reason}'.");
+            }
+        }
+
+        private OperationalInputModeRequest BuildInitialInputModeRequest(
+            OperationalInputPreparationCommand command,
+            SessionOperationalInputModeKind initialInputMode)
+        {
             SessionOperationalIdentity identity = new(
                 command.PipelineId,
                 command.RouteOperationId,
@@ -251,59 +231,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             OperationalInputModeRequest request = new(
                 identity,
-                _runtimeState.CurrentInitialInputMode,
-                _runtimeState.CurrentInputPolicy,
-                _runtimeState.RouteClass);
+                initialInputMode,
+                command.InputPolicy,
+                command.RouteClass);
 
             if (!request.IsValid)
             {
                 throw new InvalidOperationException("Cannot submit invalid operational input mode request.");
             }
 
-            _runtimeState.AppendTrace(
-                $"[OBS][SessionOperationalPipeline][InputMode] command='OperationalInputModeRequest' routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' contextSignature='{request.ContextSignature}' operationalSurfaceKind='{_runtimeState.RouteClass}' inputPolicy='{_runtimeState.CurrentInputPolicy}' initialInputMode='{request.InitialInputMode}' source='{request.Source}' reason='{request.Reason}'.");
-
-            IOperationalInputModeRequestPort inputModeRequestPort = ResolveInputModeRequestPortOrFail(command);
-            OperationalInputModeRequestResult result = inputModeRequestPort.SubmitInitialInputMode(request);
-            if (!result.IsSubmitted)
-            {
-                throw new InvalidOperationException(
-                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Input mode request rejected routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' resultKind='{result.Kind}' resultReason='{result.Reason}' detail='{result.Detail}' source='{request.Source}' reason='{request.Reason}'.");
-            }
-        }
-
-        private bool CanAcceptStage(
-            OperationalInputPreparationCommand command,
-            SessionOperationalStageKey stageKey)
-        {
-            if (!stageKey.IsValid)
-            {
-                return false;
-            }
-
-            SessionOperationalTransitionKey activeTransitionKey = BuildTransitionKey(
-                command.PipelineId,
-                _runtimeState.RouteOperationId,
-                _runtimeState.TransitionId,
-                _runtimeState.TransitionSequence,
-                _runtimeState.RouteId,
-                _runtimeState.RouteProfileId);
-            if (stageKey.TransitionKey != activeTransitionKey)
-            {
-                return false;
-            }
-
-            if (!_runtimeState.HasStarted)
-            {
-                return _stageOrderPolicy.CanStart(stageKey.Stage);
-            }
-
-            if (_runtimeState.HasCompleted)
-            {
-                return false;
-            }
-
-            return _stageOrderPolicy.CanAdvance(_runtimeState.CurrentStage, stageKey.Stage);
+            return request;
         }
 
         private IOperationalInputModeRequestPort ResolveInputModeRequestPortOrFail(OperationalInputPreparationCommand command)
@@ -315,65 +252,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             return inputModeRequestPort;
-        }
-
-        private static SessionOperationalTransitionKey BuildTransitionKey(
-            string pipelineId,
-            string routeOperationId,
-            string transitionId,
-            int routeSequence,
-            string routeId,
-            string routeProfileId)
-        {
-            SessionOperationalRouteKey routeKey = new(
-                pipelineId,
-                routeId,
-                routeOperationId,
-                routeId,
-                routeProfileId,
-                routeSequence);
-            return new SessionOperationalTransitionKey(routeKey, transitionId);
-        }
-
-        private bool Reject(
-            OperationalInputPreparationCommand command,
-            SessionOperationalFactKind factKind,
-            SessionOperationalStage stage,
-            string message)
-        {
-            SessionOperationalIdentity identity = new(
-                command.PipelineId,
-                _runtimeState.RouteOperationId,
-                _runtimeState.TransitionId,
-                _runtimeState.TransitionSequence,
-                _runtimeState.RouteId,
-                _runtimeState.RouteProfileId,
-                command.Source,
-                command.Reason,
-                stage);
-
-            if (!identity.IsValid)
-            {
-                _runtimeState.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline] rejected_stage='{stage}' source='{command.Source}' reason='{command.Reason}' message='{message}'");
-                return false;
-            }
-
-            SessionOperationalFact fact = new(factKind, identity, command.Source, command.Reason, message);
-            _runtimeState.AppendFact(fact);
-            _runtimeState.AppendTrace(
-                $"[OBS][SessionOperationalPipeline] fact='{fact.Kind}' stage='{fact.Identity.Stage}' source='{fact.Source}' reason='{fact.Reason}' message='{fact.Message}'");
-            return false;
-        }
-
-        private static SessionOperationalFactKind MapFactKind(SessionOperationalStage stage)
-        {
-            return stage switch
-            {
-                SessionOperationalStage.InputCapabilityPrepared => SessionOperationalFactKind.InputCapabilityPrepared,
-                SessionOperationalStage.InitialInputModePrepared => SessionOperationalFactKind.InitialInputModePrepared,
-                _ => SessionOperationalFactKind.Unknown,
-            };
         }
 
         private static void LogInputCapabilityPrepared(

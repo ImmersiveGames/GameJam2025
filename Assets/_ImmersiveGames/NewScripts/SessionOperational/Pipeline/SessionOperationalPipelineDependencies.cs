@@ -14,8 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly Func<IOperationalInputModeRequestPort> _inputModeRequestPortResolver;
         private readonly Func<IOperationalRouteConsumerEntryPort> _routeConsumerEntryPortResolver;
         private readonly Func<IOperationalRouteConsumerReadinessPort> _routeConsumerReadinessPortResolver;
-        private readonly Func<IOperationalRouteConsumerPresentationPort> _routeConsumerPresentationPortResolver;
         private readonly Func<IOperationalRouteHandoffExitPort> _routeHandoffExitPortResolver;
+        private readonly Func<ISessionActivityRouteExitTeardownBoundary> _sessionActivityRouteExitBoundaryResolver;
         private readonly Func<ISessionActivitySnapshotPayloadProvider> _activitySnapshotPayloadProviderResolver;
         private readonly Func<ISaveStateService> _saveStateServiceResolver;
 
@@ -32,8 +32,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Func<IOperationalInputModeRequestPort> inputModeRequestPortResolver,
             Func<IOperationalRouteConsumerEntryPort> routeConsumerEntryPortResolver,
             Func<IOperationalRouteConsumerReadinessPort> routeConsumerReadinessPortResolver,
-            Func<IOperationalRouteConsumerPresentationPort> routeConsumerPresentationPortResolver,
+            ISessionOperationalActivityCameraAdapter activityCameraAdapter,
             Func<IOperationalRouteHandoffExitPort> routeHandoffExitPortResolver,
+            Func<ISessionActivityRouteExitTeardownBoundary> sessionActivityRouteExitBoundaryResolver,
             Func<ISessionActivitySnapshotPayloadProvider> activitySnapshotPayloadProviderResolver,
             Func<ISaveStateService> saveStateServiceResolver)
         {
@@ -49,8 +50,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _inputModeRequestPortResolver = inputModeRequestPortResolver ?? throw new ArgumentNullException(nameof(inputModeRequestPortResolver));
             _routeConsumerEntryPortResolver = routeConsumerEntryPortResolver ?? throw new ArgumentNullException(nameof(routeConsumerEntryPortResolver));
             _routeConsumerReadinessPortResolver = routeConsumerReadinessPortResolver ?? throw new ArgumentNullException(nameof(routeConsumerReadinessPortResolver));
-            _routeConsumerPresentationPortResolver = routeConsumerPresentationPortResolver ?? throw new ArgumentNullException(nameof(routeConsumerPresentationPortResolver));
+            ActivityCameraAdapter = activityCameraAdapter ?? throw new ArgumentNullException(nameof(activityCameraAdapter));
             _routeHandoffExitPortResolver = routeHandoffExitPortResolver ?? throw new ArgumentNullException(nameof(routeHandoffExitPortResolver));
+            _sessionActivityRouteExitBoundaryResolver = sessionActivityRouteExitBoundaryResolver ?? throw new ArgumentNullException(nameof(sessionActivityRouteExitBoundaryResolver));
             _activitySnapshotPayloadProviderResolver = activitySnapshotPayloadProviderResolver ?? throw new ArgumentNullException(nameof(activitySnapshotPayloadProviderResolver));
             _saveStateServiceResolver = saveStateServiceResolver ?? throw new ArgumentNullException(nameof(saveStateServiceResolver));
         }
@@ -59,6 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public RuntimePersistentScenesPolicyAsset PersistentScenesPolicy { get; }
         public ILoadingAdapter LoadingAdapter { get; }
         public ISessionOperationalRouteCameraAdapter RouteCameraAdapter { get; }
+        public ISessionOperationalActivityCameraAdapter ActivityCameraAdapter { get; }
         public ISessionOperationalActivitySaveAdapter ActivitySaveAdapter { get; }
         public IProgressionSlotContextResolver ProgressionSlotContextResolver { get; }
 
@@ -92,14 +95,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return _routeConsumerReadinessPortResolver();
         }
 
-        public IOperationalRouteConsumerPresentationPort ResolveRouteConsumerPresentationPort()
-        {
-            return _routeConsumerPresentationPortResolver();
-        }
-
         public IOperationalRouteHandoffExitPort ResolveRouteHandoffExitPort()
         {
             return _routeHandoffExitPortResolver();
+        }
+
+        public ISessionActivityRouteExitTeardownBoundary ResolveSessionActivityRouteExitTeardownBoundary()
+        {
+            return _sessionActivityRouteExitBoundaryResolver();
         }
 
         public bool TryResolveActivitySnapshotPayloadProvider(out ISessionActivitySnapshotPayloadProvider provider)
