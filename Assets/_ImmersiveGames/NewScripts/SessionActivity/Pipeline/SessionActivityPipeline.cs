@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
@@ -84,7 +85,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private IReadOnlyList<PlayerActorIdentityRecord> _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
         private bool _movementControlEnableAllowedForCurrentEntry;
         private string _lastMovementDisableEmissionKey;
-        private PredefinedVisualReadinessSignal _lastPredefinedVisualReadinessSignal;
+        private VisualReadinessSignal _lastVisualReadinessSignal;
+        private PendingVisualReadinessCompletion _pendingVisualReadinessCompletion;
+        private PendingRouteExitTeardownCompletion _pendingRouteExitTeardownCompletion;
 
         private sealed class PendingActivityContentLoadContext
         {
@@ -108,9 +111,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(ContentProfileId) && Entries != null;
         }
 
-        private readonly struct PredefinedVisualReadinessSignal
+        private readonly struct VisualReadinessSignal
         {
-            public PredefinedVisualReadinessSignal(
+            public VisualReadinessSignal(
                 SessionActivityIdentity identity,
                 string routeOperationId,
                 string source,
@@ -133,6 +136,44 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 !string.IsNullOrWhiteSpace(Source);
         }
 
+        private sealed class PendingVisualReadinessCompletion
+        {
+            public PendingVisualReadinessCompletion(
+                SessionActivityVisualReadinessRequest request,
+                TaskCompletionSource<SessionActivityVisualReadinessResult> completion)
+            {
+                Request = request;
+                Completion = completion;
+            }
+
+            public SessionActivityVisualReadinessRequest Request { get; }
+            public TaskCompletionSource<SessionActivityVisualReadinessResult> Completion { get; }
+
+            public bool IsValid => Request.IsValid && Completion != null;
+        }
+
+
+
+        private sealed class PendingRouteExitTeardownCompletion
+        {
+            public PendingRouteExitTeardownCompletion(
+                string sessionStateId,
+                string source,
+                string reason,
+                TaskCompletionSource<SessionActivityRouteExitTeardownResult> completion)
+            {
+                SessionStateId = Normalize(sessionStateId);
+                Source = Normalize(source);
+                Reason = Normalize(reason);
+                Completion = completion;
+            }
+
+            public string SessionStateId { get; }
+            public string Source { get; }
+            public string Reason { get; }
+            public TaskCompletionSource<SessionActivityRouteExitTeardownResult> Completion { get; }
+            public bool IsValid => !string.IsNullOrWhiteSpace(SessionStateId) && Completion != null;
+        }
 
         internal enum ActorPresentationReleaseRail
         {
@@ -716,7 +757,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastSnapshotPayloadForSaveOnExit = default;
             _lastSnapshotCaptureFailedForSaveOnExit = false;
             _lastSnapshotCaptureFailureDetail = string.Empty;
-            _lastPredefinedVisualReadinessSignal = default;
+            FailPendingVisualReadinessCompletion(
+                "pipeline_reset_for_new_handoff",
+                "SessionActivity started a new prepared handoff before the previous visual readiness request completed.");
+            FailPendingRouteExitTeardownCompletion(
+                "pipeline_reset_for_new_handoff",
+                "SessionActivity started a new prepared handoff before the previous route-exit teardown request completed.");
+            _lastVisualReadinessSignal = default;
             _lastRouteSessionPlayerPreparationHandoff = handoff.PlayerPreparation;
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
@@ -2876,6 +2923,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.MarkCompleted();
             EmitFact(facts, SessionActivityFactKind.ActivityRouteExitCompleted, routeExitClosedIdentity, command.Source, command.Reason, $"'{current.ActivityId}' route-exit closed.");
             EmitSnapshot(snapshots, "activity_route_exit_completed", command.Source, command.Reason, $"'{current.ActivityId}' route-exit closed.");
+            CompletePendingRouteExitTeardownIfAny(routeExitClosedIdentity, command.Source, command.Reason);
             _activeRailKind = SessionActivityRailKind.None;
         }
 
@@ -3862,7 +3910,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            _lastPredefinedVisualReadinessSignal = new PredefinedVisualReadinessSignal(
+            _lastVisualReadinessSignal = new VisualReadinessSignal(
                 readinessIdentity,
                 routeOperationId,
                 source,
@@ -3874,6 +3922,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 source,
                 reason,
                 $"'{definition.ActivityId}' predefined visual setup ready routeOperationId='{routeOperationId}' entrySequence='{readinessIdentity.EntrySequence}' readinessPoint='{readinessPoint}'.");
+
+            CompletePendingVisualReadinessIfMatching(
+                routeOperationId,
+                readinessIdentity,
+                "visual_readiness_completed",
+                $"SessionActivity visual readiness completed at readinessPoint='{readinessPoint}'.");
         }
 
         private ParticipantBindingStageResult EmitParticipantBindingStage(
@@ -11929,109 +11983,261 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return true;
         }
 
-        public SessionActivityPredefinedVisualReadinessResult ObservePredefinedVisualReadiness(
-            string sessionStateId,
-            string expectedRouteOperationId,
+        public Task<SessionActivityRouteExitTeardownResult> AwaitRouteExitTeardownAsync(
+            string requestedSessionStateId,
+            string source,
+            string reason,
+            CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<SessionActivityRouteExitTeardownResult>(cancellationToken);
+            }
+
+            string normalizedSessionStateId = Normalize(requestedSessionStateId);
+            if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                return Task.FromResult(new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.Failed,
+                    _sessionId,
+                    _state.CurrentStage,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentHandoff.IsValid,
+                    "route_exit_failed_stale_or_foreign_session_activity_teardown_request",
+                    $"teardown request sessionStateId='{normalizedSessionStateId}' does not match pipeline sessionStateId='{_sessionId}'."));
+            }
+
+            if (TryBuildImmediateRouteExitTeardownResult(out SessionActivityRouteExitTeardownResult immediateResult))
+            {
+                return Task.FromResult(immediateResult);
+            }
+
+            SessionActivityCommandResult closeResult = CloseForRouteExit(source, reason);
+            if (!closeResult.IsValid || closeResult.IsRejected || closeResult.IsFailed)
+            {
+                return Task.FromResult(new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.Failed,
+                    _sessionId,
+                    _state.CurrentStage,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentHandoff.IsValid,
+                    "route_exit_close_for_route_exit_rejected",
+                    $"CloseForRouteExit rejected. resultKind='{closeResult.Kind}' reason='{closeResult.Reason}'."));
+            }
+
+            if (TryBuildImmediateRouteExitTeardownResult(out immediateResult))
+            {
+                return Task.FromResult(immediateResult);
+            }
+
+            TaskCompletionSource<SessionActivityRouteExitTeardownResult> completion =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingRouteExitTeardownCompletion = new PendingRouteExitTeardownCompletion(
+                normalizedSessionStateId,
+                source,
+                reason,
+                completion);
+
+            if (cancellationToken.CanBeCanceled)
+            {
+                cancellationToken.Register(() =>
+                {
+                    PendingRouteExitTeardownCompletion pending = _pendingRouteExitTeardownCompletion;
+                    if (pending != null && ReferenceEquals(pending.Completion, completion))
+                    {
+                        _pendingRouteExitTeardownCompletion = null;
+                    }
+
+                    completion.TrySetCanceled(cancellationToken);
+                });
+            }
+
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][RouteExit] SessionActivityRouteExitAwaitRegistered sessionStateId='{normalizedSessionStateId}' source='{Normalize(source)}' reason='{Normalize(reason)}' stage='{_state.CurrentStage}' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}'.");
+            return completion.Task;
+        }
+
+        private bool TryBuildImmediateRouteExitTeardownResult(out SessionActivityRouteExitTeardownResult result)
+        {
+            SessionActivityStage stage = _state.CurrentStage;
+            bool hasPendingHandoff = _state.CurrentHandoff.IsValid;
+
+            if (!_state.HasStarted)
+            {
+                result = new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.NotRequired,
+                    _sessionId,
+                    stage,
+                    _state.CurrentDefinition.ActivityId,
+                    hasPendingHandoff,
+                    "route_exit_not_required_no_active_session_activity",
+                    "Pipeline is not started.");
+                return true;
+            }
+
+            if ((stage == SessionActivityStage.Deactivation ||
+                 stage == SessionActivityStage.Completed ||
+                 stage == SessionActivityStage.ClosedForRouteExit) &&
+                !hasPendingHandoff)
+            {
+                result = new SessionActivityRouteExitTeardownResult(
+                    SessionActivityRouteExitTeardownKind.Completed,
+                    _sessionId,
+                    stage,
+                    _state.CurrentDefinition.ActivityId,
+                    false,
+                    "route_exit_completed",
+                    "SessionActivity route-exit teardown is already completed.");
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+
+        private void CompletePendingRouteExitTeardownIfAny(
+            SessionActivityIdentity identity,
             string source,
             string reason)
         {
-            string normalizedSessionStateId = Normalize(sessionStateId);
-            string normalizedExpectedRouteOperationId = Normalize(expectedRouteOperationId);
-            string normalizedSource = Normalize(source);
-            string normalizedReason = Normalize(reason);
-
-            if (string.IsNullOrWhiteSpace(normalizedSessionStateId))
+            if (_pendingRouteExitTeardownCompletion == null || !_pendingRouteExitTeardownCompletion.IsValid)
             {
-                return new SessionActivityPredefinedVisualReadinessResult(
-                    SessionActivityPredefinedVisualReadinessKind.Failed,
-                    normalizedSessionStateId,
-                    normalizedExpectedRouteOperationId,
-                    _state.CurrentDefinition.ActivityId,
-                    _state.CurrentEntrySequence,
-                    _state.CurrentStage,
-                    "session_state_id_missing",
-                    "SessionActivity visual readiness requires sessionStateId.");
+                _pendingRouteExitTeardownCompletion = null;
+                return;
             }
 
-            if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
+            PendingRouteExitTeardownCompletion pending = _pendingRouteExitTeardownCompletion;
+            _pendingRouteExitTeardownCompletion = null;
+            SessionActivityRouteExitTeardownResult result = new(
+                SessionActivityRouteExitTeardownKind.Completed,
+                _sessionId,
+                SessionActivityStage.ClosedForRouteExit,
+                identity.ActivityId,
+                _state.CurrentHandoff.IsValid,
+                "route_exit_completed",
+                "SessionActivity route-exit teardown completed by pipeline closure.");
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][RouteExit] SessionActivityRouteExitAwaitCompleted result='{result}' source='{Normalize(source)}' reason='{Normalize(reason)}'.");
+            pending.Completion.TrySetResult(result);
+        }
+
+        private void FailPendingRouteExitTeardownCompletion(string reason, string detail)
+        {
+            if (_pendingRouteExitTeardownCompletion == null || !_pendingRouteExitTeardownCompletion.IsValid)
             {
-                return new SessionActivityPredefinedVisualReadinessResult(
-                    SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
-                    normalizedSessionStateId,
-                    normalizedExpectedRouteOperationId,
+                _pendingRouteExitTeardownCompletion = null;
+                return;
+            }
+
+            PendingRouteExitTeardownCompletion pending = _pendingRouteExitTeardownCompletion;
+            _pendingRouteExitTeardownCompletion = null;
+            SessionActivityRouteExitTeardownResult result = new(
+                SessionActivityRouteExitTeardownKind.Failed,
+                _sessionId,
+                _state.CurrentStage,
+                _state.CurrentDefinition.ActivityId,
+                _state.CurrentHandoff.IsValid,
+                reason,
+                detail);
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][RouteExit] SessionActivityRouteExitAwaitFailed result='{result}'.");
+            pending.Completion.TrySetResult(result);
+        }
+
+        public Task<SessionActivityVisualReadinessResult> AwaitVisualReadinessAsync(
+            SessionActivityVisualReadinessRequest request,
+            CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled<SessionActivityVisualReadinessResult>(cancellationToken);
+            }
+
+            if (TryBuildImmediateVisualReadinessResult(request, out SessionActivityVisualReadinessResult immediateResult))
+            {
+                return Task.FromResult(immediateResult);
+            }
+
+            TaskCompletionSource<SessionActivityVisualReadinessResult> completion =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingVisualReadinessCompletion = new PendingVisualReadinessCompletion(request, completion);
+            _state.AppendTrace(
+                $"[OBS][SessionActivityPipeline][VisualReadiness] SessionActivityVisualReadinessAwaitRegistered request='{request}'.");
+            return completion.Task;
+        }
+
+        private bool TryBuildImmediateVisualReadinessResult(
+            SessionActivityVisualReadinessRequest request,
+            out SessionActivityVisualReadinessResult result)
+        {
+            result = default;
+
+            if (!request.IsValid)
+            {
+                result = new SessionActivityVisualReadinessResult(
+                    SessionActivityVisualReadinessResultKind.Failed,
+                    request.SessionStateId,
+                    request.ExpectedRouteOperationId,
                     _state.CurrentDefinition.ActivityId,
                     _state.CurrentEntrySequence,
-                    _state.CurrentStage,
+                    "visual_readiness_request_invalid",
+                    $"SessionActivity visual readiness request is invalid. request='{request}'.");
+                return true;
+            }
+
+            if (!string.Equals(request.SessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                result = new SessionActivityVisualReadinessResult(
+                    SessionActivityVisualReadinessResultKind.RejectedForeignOrStale,
+                    request.SessionStateId,
+                    request.ExpectedRouteOperationId,
+                    _state.CurrentDefinition.ActivityId,
+                    _state.CurrentEntrySequence,
                     "stale_or_foreign_session_state",
-                    $"Observed sessionStateId='{normalizedSessionStateId}' does not match pipeline sessionStateId='{_sessionId}'.");
+                    $"Requested sessionStateId='{request.SessionStateId}' does not match pipeline sessionStateId='{_sessionId}'.");
+                return true;
             }
 
-            if (string.IsNullOrWhiteSpace(normalizedExpectedRouteOperationId))
+            if (_lastVisualReadinessSignal.IsValid)
             {
-                return new SessionActivityPredefinedVisualReadinessResult(
-                    SessionActivityPredefinedVisualReadinessKind.NotRequired,
-                    normalizedSessionStateId,
-                    normalizedExpectedRouteOperationId,
-                    _state.CurrentDefinition.ActivityId,
-                    _state.CurrentEntrySequence,
-                    _state.CurrentStage,
-                    "route_operation_id_missing",
-                    "No expected routeOperationId was provided.");
-            }
-
-            if (!_state.HasStarted || !_state.CurrentIdentity.IsValid)
-            {
-                return new SessionActivityPredefinedVisualReadinessResult(
-                    SessionActivityPredefinedVisualReadinessKind.Waiting,
-                    normalizedSessionStateId,
-                    normalizedExpectedRouteOperationId,
-                    _state.CurrentDefinition.ActivityId,
-                    _state.CurrentEntrySequence,
-                    _state.CurrentStage,
-                    "activity_not_started",
-                    "SessionActivity has not started with a valid identity.");
-            }
-
-            if (_lastPredefinedVisualReadinessSignal.IsValid)
-            {
-                if (!string.Equals(_lastPredefinedVisualReadinessSignal.RouteOperationId, normalizedExpectedRouteOperationId, StringComparison.Ordinal))
+                if (!string.Equals(_lastVisualReadinessSignal.RouteOperationId, request.ExpectedRouteOperationId, StringComparison.Ordinal))
                 {
-                    return new SessionActivityPredefinedVisualReadinessResult(
-                        SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
-                        normalizedSessionStateId,
-                        normalizedExpectedRouteOperationId,
-                        _lastPredefinedVisualReadinessSignal.Identity.ActivityId,
-                        _lastPredefinedVisualReadinessSignal.Identity.EntrySequence,
-                        _state.CurrentStage,
+                    result = new SessionActivityVisualReadinessResult(
+                        SessionActivityVisualReadinessResultKind.RejectedForeignOrStale,
+                        request.SessionStateId,
+                        request.ExpectedRouteOperationId,
+                        _lastVisualReadinessSignal.Identity.ActivityId,
+                        _lastVisualReadinessSignal.Identity.EntrySequence,
                         "stale_or_foreign_route_operation",
-                        $"Readiness routeOperationId='{_lastPredefinedVisualReadinessSignal.RouteOperationId}' does not match expectedRouteOperationId='{normalizedExpectedRouteOperationId}'.");
+                        $"Readiness routeOperationId='{_lastVisualReadinessSignal.RouteOperationId}' does not match expectedRouteOperationId='{request.ExpectedRouteOperationId}'.");
+                    return true;
                 }
 
-                if (_state.CurrentIdentity.CycleKey != _lastPredefinedVisualReadinessSignal.Identity.CycleKey)
+                if (_state.CurrentIdentity.CycleKey != _lastVisualReadinessSignal.Identity.CycleKey)
                 {
-                    return new SessionActivityPredefinedVisualReadinessResult(
-                        SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
-                        normalizedSessionStateId,
-                        normalizedExpectedRouteOperationId,
+                    result = new SessionActivityVisualReadinessResult(
+                        SessionActivityVisualReadinessResultKind.RejectedForeignOrStale,
+                        request.SessionStateId,
+                        request.ExpectedRouteOperationId,
                         _state.CurrentIdentity.ActivityId,
                         _state.CurrentIdentity.EntrySequence,
-                        _state.CurrentStage,
                         "stale_or_foreign_activity_cycle",
-                        $"Current cycle='{_state.CurrentIdentity.CycleSignature}' diverged from readiness cycle='{_lastPredefinedVisualReadinessSignal.Identity.CycleSignature}'.");
+                        $"Current cycle='{_state.CurrentIdentity.CycleSignature}' diverged from readiness cycle='{_lastVisualReadinessSignal.Identity.CycleSignature}'.");
+                    return true;
                 }
 
                 _state.AppendTrace(
-                    $"[OBS][SessionActivityPipeline] PredefinedVisualSetupReadyObserved routeOperationId='{normalizedExpectedRouteOperationId}' activityId='{_state.CurrentIdentity.ActivityId}' entrySequence='{_state.CurrentIdentity.EntrySequence}' source='{normalizedSource}' reason='{normalizedReason}'.");
+                    $"[OBS][SessionActivityPipeline][VisualReadiness] SessionActivityVisualReadinessAlreadyCompleted routeOperationId='{request.ExpectedRouteOperationId}' activityId='{_lastVisualReadinessSignal.Identity.ActivityId}' entrySequence='{_lastVisualReadinessSignal.Identity.EntrySequence}' source='{request.Source}' reason='{request.Reason}'.");
 
-                return new SessionActivityPredefinedVisualReadinessResult(
-                    SessionActivityPredefinedVisualReadinessKind.Ready,
-                    normalizedSessionStateId,
-                    normalizedExpectedRouteOperationId,
-                    _lastPredefinedVisualReadinessSignal.Identity.ActivityId,
-                    _lastPredefinedVisualReadinessSignal.Identity.EntrySequence,
-                    _state.CurrentStage,
-                    "predefined_visual_setup_ready",
-                    "Predefined visual setup is ready for reveal.");
+                result = new SessionActivityVisualReadinessResult(
+                    SessionActivityVisualReadinessResultKind.Ready,
+                    request.SessionStateId,
+                    request.ExpectedRouteOperationId,
+                    _lastVisualReadinessSignal.Identity.ActivityId,
+                    _lastVisualReadinessSignal.Identity.EntrySequence,
+                    "visual_readiness_already_completed",
+                    "SessionActivity visual readiness had already completed for this route operation.");
+                return true;
             }
 
             string observedRouteOperationId = _lastRouteSessionPlayerPreparationHandoff.IsValid
@@ -12039,28 +12245,79 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 : string.Empty;
 
             if (!string.IsNullOrWhiteSpace(observedRouteOperationId) &&
-                !string.Equals(observedRouteOperationId, normalizedExpectedRouteOperationId, StringComparison.Ordinal))
+                !string.Equals(observedRouteOperationId, request.ExpectedRouteOperationId, StringComparison.Ordinal))
             {
-                return new SessionActivityPredefinedVisualReadinessResult(
-                    SessionActivityPredefinedVisualReadinessKind.RejectedForeignOrStale,
-                    normalizedSessionStateId,
-                    normalizedExpectedRouteOperationId,
+                result = new SessionActivityVisualReadinessResult(
+                    SessionActivityVisualReadinessResultKind.RejectedForeignOrStale,
+                    request.SessionStateId,
+                    request.ExpectedRouteOperationId,
                     _state.CurrentIdentity.ActivityId,
                     _state.CurrentIdentity.EntrySequence,
-                    _state.CurrentStage,
                     "stale_or_foreign_route_operation",
-                    $"Current handoff routeOperationId='{observedRouteOperationId}' does not match expectedRouteOperationId='{normalizedExpectedRouteOperationId}'.");
+                    $"Current handoff routeOperationId='{observedRouteOperationId}' does not match expectedRouteOperationId='{request.ExpectedRouteOperationId}'.");
+                return true;
             }
 
-            return new SessionActivityPredefinedVisualReadinessResult(
-                SessionActivityPredefinedVisualReadinessKind.Waiting,
-                normalizedSessionStateId,
-                normalizedExpectedRouteOperationId,
-                _state.CurrentIdentity.ActivityId,
-                _state.CurrentIdentity.EntrySequence,
-                _state.CurrentStage,
-                "predefined_visual_setup_pending",
-                $"Waiting predefined visual setup for activityId='{_state.CurrentIdentity.ActivityId}' entrySequence='{_state.CurrentIdentity.EntrySequence}'.");
+            return false;
+        }
+
+        private void CompletePendingVisualReadinessIfMatching(
+            string routeOperationId,
+            SessionActivityIdentity readinessIdentity,
+            string reason,
+            string detail)
+        {
+            if (_pendingVisualReadinessCompletion == null || !_pendingVisualReadinessCompletion.IsValid)
+            {
+                return;
+            }
+
+            PendingVisualReadinessCompletion pending = _pendingVisualReadinessCompletion;
+            if (!string.Equals(pending.Request.ExpectedRouteOperationId, Normalize(routeOperationId), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            if (!string.Equals(pending.Request.SessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _pendingVisualReadinessCompletion = null;
+            SessionActivityVisualReadinessResult result = new(
+                SessionActivityVisualReadinessResultKind.Ready,
+                pending.Request.SessionStateId,
+                pending.Request.ExpectedRouteOperationId,
+                readinessIdentity.ActivityId,
+                readinessIdentity.EntrySequence,
+                reason,
+                detail);
+            _state.AppendTrace(
+                $"[OBS][SessionActivityPipeline][VisualReadiness] SessionActivityVisualReadinessCompleted result='{result}'.");
+            pending.Completion.TrySetResult(result);
+        }
+
+        private void FailPendingVisualReadinessCompletion(string reason, string detail)
+        {
+            if (_pendingVisualReadinessCompletion == null || !_pendingVisualReadinessCompletion.IsValid)
+            {
+                _pendingVisualReadinessCompletion = null;
+                return;
+            }
+
+            PendingVisualReadinessCompletion pending = _pendingVisualReadinessCompletion;
+            _pendingVisualReadinessCompletion = null;
+            SessionActivityVisualReadinessResult result = new(
+                SessionActivityVisualReadinessResultKind.Failed,
+                pending.Request.SessionStateId,
+                pending.Request.ExpectedRouteOperationId,
+                _state.CurrentDefinition.ActivityId,
+                _state.CurrentEntrySequence,
+                reason,
+                detail);
+            _state.AppendTrace(
+                $"[OBS][SessionActivityPipeline][VisualReadiness] SessionActivityVisualReadinessFailed result='{result}'.");
+            pending.Completion.TrySetResult(result);
         }
 
         private static string JoinValues(HashSet<string> values)

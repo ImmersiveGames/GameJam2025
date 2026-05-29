@@ -24,6 +24,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
         private static SessionOperationalRouteCameraAdapter _routeCameraAdapter;
         private static SessionOperationalActivityCameraAdapter _activityCameraAdapter;
+        private static SessionActivityOperationalRouteHandoffExitAdapter _routeHandoffExitAdapter;
+        private static SessionActivityOperationalRouteConsumerEntryAdapter _routeConsumerEntryAdapter;
+        private static SessionActivityOperationalRouteConsumerReadinessAdapter _routeConsumerReadinessAdapter;
 
         public static void Install(RuntimeModeConfig runtimeModeConfig)
         {
@@ -57,6 +60,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalSceneCompositionAdapter();
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
+            EnsureSessionOperationalRouteHandoffExitAdapter();
+            EnsureSessionOperationalRouteConsumerEntryAdapter();
+            EnsureSessionOperationalRouteConsumerReadinessAdapter();
             EnsureSessionOperationalPipeline(runtimeModeConfig);
 
             _runtimeComposed = true;
@@ -129,11 +135,57 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 _activityCameraAdapter,
                 _activitySaveAdapter,
                 _progressionSlotContextResolver,
-                ResolveOptionalDependency<ISessionActivityEntryHandoffReceiver>,
-                ResolveOptionalDependency<ISessionActivityPredefinedVisualReadinessBoundary>,
-                ResolveOptionalDependency<ISessionActivityRouteExitTeardownBoundary>,
+                ResolveOptionalDependency<IOperationalRouteConsumerEntryPort>,
+                ResolveOptionalDependency<IOperationalRouteConsumerReadinessPort>,
+                ResolveOptionalDependency<IOperationalRouteHandoffExitPort>,
                 ResolveOptionalDependency<ISessionActivitySnapshotPayloadProvider>,
                 ResolveOptionalDependency<ISaveStateService>);
+        }
+
+        private static void EnsureSessionOperationalRouteConsumerEntryAdapter()
+        {
+            if (_routeConsumerEntryAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteConsumerEntryAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeConsumerEntryAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerEntryPort>(_routeConsumerEntryAdapter);
+                return;
+            }
+
+            _routeConsumerEntryAdapter = new SessionActivityOperationalRouteConsumerEntryAdapter(ResolveOptionalDependency<ISessionActivityEntryHandoffReceiver>);
+            DependencyManager.Provider.RegisterGlobal(_routeConsumerEntryAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerEntryPort>(_routeConsumerEntryAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionActivityOperationalRouteConsumerEntryAdapter' registered for operational route consumer entry.",
+                DebugUtility.Colors.Info);
+        }
+
+        private static void EnsureSessionOperationalRouteConsumerReadinessAdapter()
+        {
+            if (_routeConsumerReadinessAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteConsumerReadinessAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeConsumerReadinessAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerReadinessPort>(_routeConsumerReadinessAdapter);
+                return;
+            }
+
+            _routeConsumerReadinessAdapter = new SessionActivityOperationalRouteConsumerReadinessAdapter(ResolveOptionalDependency<ISessionActivityVisualReadinessBoundary>);
+            DependencyManager.Provider.RegisterGlobal(_routeConsumerReadinessAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteConsumerReadinessPort>(_routeConsumerReadinessAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionActivityOperationalRouteConsumerReadinessAdapter' registered for operational route consumer readiness.",
+                DebugUtility.Colors.Info);
         }
 
         private static T ResolveOptionalDependency<T>() where T : class
@@ -146,6 +198,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             }
 
             return null;
+        }
+
+        private static void EnsureSessionOperationalRouteHandoffExitAdapter()
+        {
+            if (_routeHandoffExitAdapter != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<SessionActivityOperationalRouteHandoffExitAdapter>(out var existingAdapter) && existingAdapter != null)
+            {
+                _routeHandoffExitAdapter = existingAdapter;
+                DependencyManager.Provider.RegisterGlobal<IOperationalRouteHandoffExitPort>(_routeHandoffExitAdapter);
+                return;
+            }
+
+            _routeHandoffExitAdapter = new SessionActivityOperationalRouteHandoffExitAdapter(ResolveOptionalDependency<ISessionActivityRouteExitTeardownBoundary>);
+            DependencyManager.Provider.RegisterGlobal(_routeHandoffExitAdapter);
+            DependencyManager.Provider.RegisterGlobal<IOperationalRouteHandoffExitPort>(_routeHandoffExitAdapter);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] adapter='SessionActivityOperationalRouteHandoffExitAdapter' registered for operational route handoff exit.",
+                DebugUtility.Colors.Info);
         }
 
         private static void EnsureSessionOperationalSceneCompositionAdapter()

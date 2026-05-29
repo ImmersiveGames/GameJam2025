@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
@@ -13,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
     [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Host")]
-    public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary, ISessionActivityPredefinedVisualReadinessBoundary
+    public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary, ISessionActivityVisualReadinessBoundary
     {
         private const int DumpRecentFactsCount = 24;
         private const int DumpRecentSnapshotsCount = 12;
@@ -69,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
             RegisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
             RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
-            RegisterGlobal<ISessionActivityPredefinedVisualReadinessBoundary>(this);
+            RegisterGlobal<ISessionActivityVisualReadinessBoundary>(this);
             _globalsRegistered = true;
             Debug.Log(BuildHostBanner());
         }
@@ -427,14 +429,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 $"SessionActivity route-exit teardown has started and is not completed yet. stage='{stage}'.");
         }
 
-        public SessionActivityPredefinedVisualReadinessResult ObservePredefinedVisualReadiness(
-            string sessionStateId,
-            string expectedRouteOperationId,
+        public Task<SessionActivityRouteExitTeardownResult> AwaitRouteExitTeardownAsync(
+            string requestedSessionStateId,
             string source,
-            string reason)
+            string reason,
+            CancellationToken cancellationToken)
         {
             EnsurePipeline();
-            return _pipeline.ObservePredefinedVisualReadiness(sessionStateId, expectedRouteOperationId, source, reason);
+            return _pipeline.AwaitRouteExitTeardownAsync(requestedSessionStateId, source, reason, cancellationToken);
+        }
+
+        public Task<SessionActivityVisualReadinessResult> AwaitVisualReadinessAsync(
+            SessionActivityVisualReadinessRequest request,
+            CancellationToken cancellationToken)
+        {
+            EnsurePipeline();
+            return _pipeline.AwaitVisualReadinessAsync(request, cancellationToken);
         }
 
         public SessionActivityCommandResult ExecuteCommand(SessionActivityCommand command, string actionLabel)
@@ -1202,7 +1212,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             UnregisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
-            UnregisterGlobal<ISessionActivityPredefinedVisualReadinessBoundary>(this);
+            UnregisterGlobal<ISessionActivityVisualReadinessBoundary>(this);
             _globalsRegistered = false;
         }
 

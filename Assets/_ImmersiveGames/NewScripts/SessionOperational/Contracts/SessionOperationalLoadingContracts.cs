@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         FadeInCompleted = 3,
         TransitionSkipped = 4,
         SceneCompositionCompleted = 5,
-        MaterializationCompleted = 6,
+        ConsumerEntryPreparationCompleted = 6,
         FadeOutCompleted = 7,
         OperationalRouteCompleted = 8,
         LoadingCompleted = 9,

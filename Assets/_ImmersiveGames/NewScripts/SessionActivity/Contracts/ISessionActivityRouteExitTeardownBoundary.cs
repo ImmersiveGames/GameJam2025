@@ -1,3 +1,6 @@
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
     public enum SessionActivityRouteExitTeardownKind
@@ -67,5 +70,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string sessionStateId,
             string source,
             string reason);
+
+        Task<SessionActivityRouteExitTeardownResult> AwaitRouteExitTeardownAsync(
+            string sessionStateId,
+            string source,
+            string reason,
+            CancellationToken cancellationToken);
     }
 }
