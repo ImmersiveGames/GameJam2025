@@ -79,8 +79,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public readonly struct OperationalConsumerEntryAndReadinessCommand
     {
         public OperationalConsumerEntryAndReadinessCommand(
-            IOperationalRouteConsumerEntryPort entryPort,
-            IOperationalRouteConsumerReadinessPort readinessPort,
             SessionOperationalRouteCommand routeCommand,
             SessionOperationalLoadingCommand loadingCommand,
             string routeIdentity,
@@ -90,8 +88,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            EntryPort = entryPort;
-            ReadinessPort = readinessPort;
             RouteCommand = routeCommand;
             LoadingCommand = loadingCommand;
             RouteIdentity = Normalize(routeIdentity);
@@ -102,8 +98,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Reason = Normalize(reason);
         }
 
-        public IOperationalRouteConsumerEntryPort EntryPort { get; }
-        public IOperationalRouteConsumerReadinessPort ReadinessPort { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public SessionOperationalLoadingCommand LoadingCommand { get; }
         public string RouteIdentity { get; }
@@ -131,6 +125,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalConsumerEntryAndReadinessStage
     {
+        private readonly Func<IOperationalRouteConsumerEntryPort> _entryPortResolver;
+        private readonly Func<IOperationalRouteConsumerReadinessPort> _readinessPortResolver;
+
+        public OperationalConsumerEntryAndReadinessStage(
+            Func<IOperationalRouteConsumerEntryPort> entryPortResolver,
+            Func<IOperationalRouteConsumerReadinessPort> readinessPortResolver)
+        {
+            _entryPortResolver = entryPortResolver ?? throw new ArgumentNullException(nameof(entryPortResolver));
+            _readinessPortResolver = readinessPortResolver ?? throw new ArgumentNullException(nameof(readinessPortResolver));
+        }
+
         public async Task<OperationalConsumerEntryAndReadinessResult> ExecuteAsync(
             OperationalConsumerEntryAndReadinessCommand command,
             PlayerPreparationResult playerPreparationResult)
@@ -159,16 +164,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerPreparation] Missing valid PlayerPreparationResult for operational consumer entry routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
             }
 
-            if (command.EntryPort == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerEntry] IOperationalRouteConsumerEntryPort obrigatorio ausente para o trilho operacional routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
-            }
-
-            if (command.ReadinessPort == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
-            }
-
             LogEntryStarted(command, playerPreparationResult);
 
             OperationalRouteConsumerEntryRequest consumerEntryRequest = new(
@@ -182,7 +177,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            OperationalRouteConsumerEntryResult consumerEntryResult = await command.EntryPort
+            IOperationalRouteConsumerEntryPort entryPort = ResolveEntryPortOrFail(command);
+            OperationalRouteConsumerEntryResult consumerEntryResult = await entryPort
                 .RequestEntryAsync(consumerEntryRequest, CancellationToken.None);
             if (!consumerEntryResult.IsValid || !consumerEntryResult.IsCompleted)
             {
@@ -202,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "consumer_entry_and_readiness_completed");
         }
 
-        private static async Task AwaitReadinessOrFailAsync(
+        private async Task AwaitReadinessOrFailAsync(
             OperationalConsumerEntryAndReadinessCommand command,
             string expectedRouteOperationId)
         {
@@ -234,7 +230,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][ConsumerReadiness] OperationalRouteConsumerReadinessAwaitStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{normalizedConsumerIdentity}' expectedRouteOperationId='{normalizedExpectedRouteOperationId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            OperationalRouteConsumerReadinessResult readinessResult = await command.ReadinessPort.AwaitReadinessAsync(
+            IOperationalRouteConsumerReadinessPort readinessPort = ResolveReadinessPortOrFail(command);
+            OperationalRouteConsumerReadinessResult readinessResult = await readinessPort.AwaitReadinessAsync(
                 request,
                 CancellationToken.None);
 
@@ -266,6 +263,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             throw new InvalidOperationException(
                 $"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] readiness_unhandled_kind routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{normalizedConsumerIdentity}' expectedRouteOperationId='{normalizedExpectedRouteOperationId}' readinessResult='{readinessResult}'.");
+        }
+
+        private IOperationalRouteConsumerEntryPort ResolveEntryPortOrFail(OperationalConsumerEntryAndReadinessCommand command)
+        {
+            IOperationalRouteConsumerEntryPort entryPort = _entryPortResolver();
+            if (entryPort == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerEntry] IOperationalRouteConsumerEntryPort obrigatorio ausente para o trilho operacional routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
+            }
+
+            return entryPort;
+        }
+
+        private IOperationalRouteConsumerReadinessPort ResolveReadinessPortOrFail(OperationalConsumerEntryAndReadinessCommand command)
+        {
+            IOperationalRouteConsumerReadinessPort readinessPort = _readinessPortResolver();
+            if (readinessPort == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerReadiness] IOperationalRouteConsumerReadinessPort obrigatorio ausente para readiness visual do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.RouteCommand.HandoffSessionStateId)}'.");
+            }
+
+            return readinessPort;
         }
 
         private static void LogEntryStarted(

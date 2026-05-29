@@ -16,18 +16,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalTransitionBlackoutCommand(
             SessionOperationalRouteCommand routeCommand,
-            IOperationalFadePort fadePort,
             string source,
             string reason)
         {
             RouteCommand = routeCommand;
-            FadePort = fadePort;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
-        public IOperationalFadePort FadePort { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -80,7 +77,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalTransitionBlackoutStage
     {
-        private readonly OperationalFadeStage _fadeStage = new();
+        private readonly OperationalFadeStage _fadeStage;
+
+        public OperationalTransitionBlackoutStage(OperationalFadeStage fadeStage)
+        {
+            _fadeStage = fadeStage ?? throw new ArgumentNullException(nameof(fadeStage));
+        }
 
         public async Task<OperationalTransitionBlackoutResult> ExecuteAsync(OperationalTransitionBlackoutCommand command)
         {
@@ -95,11 +97,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (routeCommand.UsesTransition)
             {
-                if (command.FadePort == null)
-                {
-                    throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Transition] IOperationalFadePort is required for operational transition blackout.");
-                }
-
                 DebugUtility.Log(typeof(OperationalTransitionBlackoutStage),
                     $"[OBS][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
@@ -107,7 +104,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalFadeStageResult fadeResult = await _fadeStage.ExecuteAsync(
                     new OperationalFadeCommand(
                         routeCommand,
-                        command.FadePort,
                         OperationalFadeOperationKind.CloseCurtain,
                         source,
                         reason));

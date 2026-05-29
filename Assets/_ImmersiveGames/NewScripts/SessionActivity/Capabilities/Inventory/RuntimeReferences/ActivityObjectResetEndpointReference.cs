@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences

@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences

@@ -51,18 +51,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public readonly struct OperationalLoadingCommand
     {
         public OperationalLoadingCommand(
-            ILoadingAdapter loadingAdapter,
             SessionOperationalLoadingCommand loadingCommand,
             string source,
             string reason)
         {
-            LoadingAdapter = loadingAdapter;
             LoadingCommand = loadingCommand;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
-        public ILoadingAdapter LoadingAdapter { get; }
         public SessionOperationalLoadingCommand LoadingCommand { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -70,8 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsValid =>
             LoadingCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
-            !string.IsNullOrWhiteSpace(Reason) &&
-            (!LoadingCommand.IsEnabled || LoadingAdapter != null);
+            !string.IsNullOrWhiteSpace(Reason);
 
         private static string Normalize(string value)
         {
@@ -79,8 +75,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 
+
+    public readonly struct OperationalLoadingCompletionState
+    {
+        public OperationalLoadingCompletionState(bool loadingCompleted, bool loadingHidden)
+        {
+            LoadingCompleted = loadingCompleted;
+            LoadingHidden = loadingHidden;
+        }
+
+        public bool LoadingCompleted { get; }
+        public bool LoadingHidden { get; }
+    }
+
     public sealed class OperationalLoadingStage
     {
+        private readonly ILoadingAdapter _loadingAdapter;
+
+        public OperationalLoadingStage(ILoadingAdapter loadingAdapter)
+        {
+            _loadingAdapter = loadingAdapter ?? throw new ArgumentNullException(nameof(loadingAdapter));
+        }
+
         public async Task<OperationalLoadingResult> ExecuteStartAsync(OperationalLoadingCommand command)
         {
             ValidateCommand(command);
@@ -96,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "Route loading is disabled by route policy.");
             }
 
-            await command.LoadingAdapter.ShowLoadingAsync(
+            await _loadingAdapter.ShowLoadingAsync(
                 loadingCommand,
                 CreateLoadingFact(
                     loadingCommand,
@@ -118,7 +134,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            await command.LoadingAdapter.UpdateLoadingAsync(
+            await _loadingAdapter.UpdateLoadingAsync(
                 loadingCommand,
                 CreateLoadingFact(
                     loadingCommand,
@@ -184,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ? "FadeInCompleted"
                 : "TransitionSkipped";
 
-            await command.LoadingAdapter.UpdateLoadingAsync(
+            await _loadingAdapter.UpdateLoadingAsync(
                 loadingCommand,
                 CreateLoadingFact(
                     loadingCommand,
@@ -226,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "Route loading is disabled by route policy.");
             }
 
-            await command.LoadingAdapter.UpdateLoadingAsync(
+            await _loadingAdapter.UpdateLoadingAsync(
                 loadingCommand,
                 CreateLoadingFact(
                     loadingCommand,
@@ -253,7 +269,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "Scene composition loading progress applied.");
         }
 
-        public async Task<OperationalRouteMaterializationLoadingState> ExecuteClosedWindowCompletionAsync(OperationalLoadingCommand command)
+        public async Task<OperationalLoadingCompletionState> ExecuteClosedWindowCompletionAsync(OperationalLoadingCommand command)
         {
             ValidateCommand(command);
             SessionOperationalLoadingCommand loadingCommand = command.LoadingCommand;
@@ -261,10 +277,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             bool loadingHidden = false;
             if (!loadingCommand.IsEnabled)
             {
-                return new OperationalRouteMaterializationLoadingState(loadingCompleted, loadingHidden);
+                return new OperationalLoadingCompletionState(loadingCompleted, loadingHidden);
             }
 
-            await command.LoadingAdapter.UpdateLoadingAsync(
+            await _loadingAdapter.UpdateLoadingAsync(
                 loadingCommand,
                 CreateLoadingFact(
                     loadingCommand,
@@ -282,7 +298,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            await command.LoadingAdapter.UpdateLoadingAsync(
+            await _loadingAdapter.UpdateLoadingAsync(
                 loadingCommand,
                 CreateLoadingFact(
                     loadingCommand,
@@ -307,7 +323,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (loadingCommand.HideAfterCompletion)
             {
-                await command.LoadingAdapter.HideLoadingAsync(
+                await _loadingAdapter.HideLoadingAsync(
                     loadingCommand,
                     CreateLoadingFact(
                         loadingCommand,
@@ -329,7 +345,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     DebugUtility.Colors.Info);
             }
 
-            return new OperationalRouteMaterializationLoadingState(loadingCompleted, loadingHidden);
+            return new OperationalLoadingCompletionState(loadingCompleted, loadingHidden);
         }
 
         public async Task<OperationalLoadingResult> ExecuteFailureCleanupAsync(
@@ -351,7 +367,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             try
             {
-                await command.LoadingAdapter.HideLoadingAsync(
+                await _loadingAdapter.HideLoadingAsync(
                     loadingCommand,
                     CreateLoadingFact(
                         loadingCommand,
@@ -384,11 +400,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
         }
 
-        private static void ValidateCommand(OperationalLoadingCommand command)
+        private void ValidateCommand(OperationalLoadingCommand command)
         {
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("OperationalLoadingCommand is invalid.");
+            }
+
+            if (command.LoadingCommand.IsEnabled && _loadingAdapter == null)
+            {
+                throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Loading] ILoadingAdapter is required for operational loading.");
             }
         }
 

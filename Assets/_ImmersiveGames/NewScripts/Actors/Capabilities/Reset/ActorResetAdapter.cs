@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;

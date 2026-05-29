@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
@@ -19,27 +18,23 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalRouteCompletionCommand(
             string pipelineId,
-            SessionOperationalRuntimeState runtimeState,
             SessionOperationalRouteCommand routeCommand,
             string source,
             string reason)
         {
             PipelineId = Normalize(pipelineId);
-            RuntimeState = runtimeState;
             RouteCommand = routeCommand;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public string PipelineId { get; }
-        public SessionOperationalRuntimeState RuntimeState { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PipelineId) &&
-            RuntimeState != null &&
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
@@ -83,6 +78,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     internal sealed class OperationalRouteCompletionStage
     {
+        private readonly SessionOperationalRuntimeState _runtimeState;
+
+        public OperationalRouteCompletionStage(SessionOperationalRuntimeState runtimeState)
+        {
+            _runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
+        }
+
         public OperationalRouteCompletionResult ExecuteTransitionPlanReady(OperationalRouteCompletionCommand command)
         {
             if (!command.IsValid)
@@ -123,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 operationalResult);
         }
 
-        private static SessionOperationalResult ApplyCompletedState(OperationalRouteCompletionCommand command)
+        private SessionOperationalResult ApplyCompletedState(OperationalRouteCompletionCommand command)
         {
             SessionOperationalRouteCommand routeCommand = command.RouteCommand;
             SessionOperationalIdentity identity = new(
@@ -144,17 +146,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Reason,
                 "Operational route completed.");
 
-            command.RuntimeState.SetCurrentIdentity(identity);
-            command.RuntimeState.MarkStarted();
-            command.RuntimeState.MarkCompleted();
-            command.RuntimeState.AppendFact(fact);
-            command.RuntimeState.AppendTrace(
+            _runtimeState.SetCurrentIdentity(identity);
+            _runtimeState.MarkStarted();
+            _runtimeState.MarkCompleted();
+            _runtimeState.AppendFact(fact);
+            _runtimeState.AppendTrace(
                 $"[OBS][SessionOperationalPipeline] fact='OperationalRouteCompleted' stage='{identity.Stage}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' routeId='{identity.RouteId}' routeProfileId='{identity.RouteProfileId}' source='{command.Source}' reason='{command.Reason}' message='Operational route completed.'");
 
             return new SessionOperationalResult(
                 SessionOperationalResultKind.Completed,
                 identity,
-                command.RuntimeState.Facts,
+                _runtimeState.Facts,
                 "Operational route completed.");
         }
 

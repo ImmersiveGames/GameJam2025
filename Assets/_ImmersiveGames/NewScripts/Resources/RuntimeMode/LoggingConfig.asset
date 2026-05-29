@@ -42,3 +42,7 @@ MonoBehaviour:
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Presentation
     level: 4
+  - ruleId: logger.camera
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.CameraPresentation
+    level: 4

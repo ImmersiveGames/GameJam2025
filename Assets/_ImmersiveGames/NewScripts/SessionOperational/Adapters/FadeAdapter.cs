@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.Presentation.Fade.Bindings;

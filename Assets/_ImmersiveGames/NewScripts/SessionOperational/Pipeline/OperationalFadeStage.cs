@@ -16,20 +16,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalFadeCommand(
             SessionOperationalRouteCommand routeCommand,
-            IOperationalFadePort fadePort,
             OperationalFadeOperationKind operationKind,
             string source,
             string reason)
         {
             RouteCommand = routeCommand;
-            FadePort = fadePort;
             OperationKind = operationKind;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
-        public IOperationalFadePort FadePort { get; }
         public OperationalFadeOperationKind OperationKind { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -44,11 +41,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 if (OperationKind == OperationalFadeOperationKind.Unknown)
-                {
-                    return false;
-                }
-
-                if (RouteCommand.UsesTransition && FadePort == null)
                 {
                     return false;
                 }
@@ -82,6 +74,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalFadeStage
     {
+        private readonly Func<IOperationalFadePort> _fadePortResolver;
+
+        public OperationalFadeStage(Func<IOperationalFadePort> fadePortResolver)
+        {
+            _fadePortResolver = fadePortResolver ?? throw new ArgumentNullException(nameof(fadePortResolver));
+        }
+
         public async Task<OperationalFadeStageResult> ExecuteAsync(OperationalFadeCommand command)
         {
             if (!command.IsValid)
@@ -112,16 +111,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     false);
             }
 
-            if (command.FadePort == null)
-            {
-                throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Transition] IOperationalFadePort is required for operational fade.");
-            }
-
             LogStarted(routeCommand, command, direction, operationKindLabel);
 
             try
             {
-                OperationalFadeResult result = await command.FadePort.ExecuteAsync(
+                IOperationalFadePort fadePort = ResolveFadePortOrFail(routeCommand);
+                OperationalFadeResult result = await fadePort.ExecuteAsync(
                     new OperationalFadeRequest(
                         routeCommand,
                         direction,
@@ -198,6 +193,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             DebugUtility.LogError<OperationalFadeStage>(
                 $"[OBS][SessionOperationalPipeline][Transition] OperationalFadeStageFailed routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' operationKind='{operationKindLabel}' fadeOperationKind='{command.OperationKind}' fadeDirection='{direction}' failureReason='{failureReason}' detail='{detail}' source='{command.Source}' reason='{command.Reason}'.");
+        }
+
+        private IOperationalFadePort ResolveFadePortOrFail(SessionOperationalRouteCommand routeCommand)
+        {
+            IOperationalFadePort fadePort = _fadePortResolver();
+            if (fadePort == null)
+            {
+                throw new InvalidOperationException($"[FATAL][SessionOperationalPipeline][Transition] IOperationalFadePort is required for operational fade routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}'.");
+            }
+
+            return fadePort;
         }
 
         private static OperationalFadeDirection ResolveDirection(OperationalFadeOperationKind operationKind)

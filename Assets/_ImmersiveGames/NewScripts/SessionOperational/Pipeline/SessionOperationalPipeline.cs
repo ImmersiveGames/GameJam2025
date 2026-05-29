@@ -1,15 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
-using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
-using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
@@ -72,23 +67,25 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy = new();
         private readonly SessionOperationalRoutePlanResolver _routePlanResolver = new();
         private readonly OperationalRouteSetupStage _routeSetupStage = new();
-        private readonly OperationalTransitionBlackoutStage _transitionBlackoutStage = new();
-        private readonly OperationalPreviousRouteExitStage _previousRouteExitStage = new();
-        private readonly OperationalSceneCompositionStage _sceneCompositionStage = new();
-        private readonly OperationalHandoffExitStage _handoffExitStage = new();
-        private readonly OperationalRouteCameraPresentationStage _routeCameraPresentationStage = new();
-        private readonly OperationalInputPreparationStage _inputPreparationStage = new();
+        private readonly OperationalTransitionBlackoutStage _transitionBlackoutStage;
+        private readonly OperationalPreviousRouteExitBoundary _previousRouteExitBoundary = new();
+        private readonly OperationalSceneCompositionStage _sceneCompositionStage;
+        private readonly OperationalHandoffExitStage _handoffExitStage;
+        private readonly OperationalRouteCameraReleasePreviousStage _routeCameraReleasePreviousStage;
+        private readonly OperationalRouteCameraPresentationStage _routeCameraPresentationStage;
+        private readonly OperationalInputPreparationStage _inputPreparationStage;
         private readonly OperationalPlayerPreparationStage _playerPreparationStage = new();
-        private readonly OperationalConsumerPresentationPreparationStage _consumerPresentationPreparationStage = new();
-        private readonly OperationalConsumerPresentationReleaseStage _consumerPresentationReleaseStage = new();
-        private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage = new();
-        private readonly OperationalRouteActivitySaveLoadOnEnterStage _routeActivitySaveLoadOnEnterStage = new();
-        private readonly OperationalRouteActivitySaveSaveOnExitStage _routeActivitySaveSaveOnExitStage = new();
-        private readonly OperationalRouteMaterializationStage _routeMaterializationStage = new();
-        private readonly OperationalLoadingStage _loadingStage = new();
-        private readonly OperationalRouteRevealStage _routeRevealStage = new();
-        private readonly OperationalFadeStage _fadeStage = new();
-        private readonly OperationalRouteCompletionStage _routeCompletionStage = new();
+        private readonly OperationalConsumerPresentationPreparationStage _consumerPresentationPreparationStage;
+        private readonly OperationalConsumerPresentationReleaseStage _consumerPresentationReleaseStage;
+        private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage;
+        private readonly OperationalRouteActivitySaveLoadOnEnterStage _routeActivitySaveLoadOnEnterStage;
+        private readonly OperationalRouteActivitySaveSaveOnExitStage _routeActivitySaveSaveOnExitStage;
+        private readonly OperationalRouteMaterializationBoundary _routeMaterializationBoundary = new();
+        private readonly OperationalLoadingStage _loadingStage;
+        private readonly OperationalRouteAudioStage _routeAudioStage;
+        private readonly OperationalRouteRevealStage _routeRevealStage;
+        private readonly OperationalFadeStage _fadeStage;
+        private readonly OperationalRouteCompletionStage _routeCompletionStage;
         private readonly SessionOperationalPipelineDependencies _dependencies;
         private readonly string _sessionOperationalPipelineId;
         private readonly object _operationalRouteSync = new();
@@ -112,6 +109,32 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 throw new ArgumentException("sessionOperationalPipelineId is required.", nameof(sessionOperationalPipelineId));
             }
+
+            _fadeStage = new OperationalFadeStage(_dependencies.ResolveFadePort);
+            _transitionBlackoutStage = new OperationalTransitionBlackoutStage(_fadeStage);
+            _sceneCompositionStage = new OperationalSceneCompositionStage(_dependencies.ResolveSceneCompositionPort);
+            _handoffExitStage = new OperationalHandoffExitStage(_dependencies.ResolveRouteHandoffExitPort);
+            _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_dependencies.RouteCameraAdapter);
+            _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_dependencies.RouteCameraAdapter);
+            _inputPreparationStage = new OperationalInputPreparationStage(_state, _stageOrderPolicy, _dependencies.ResolveInputModeRequestPort);
+            _routeCompletionStage = new OperationalRouteCompletionStage(_state);
+            _consumerPresentationPreparationStage = new OperationalConsumerPresentationPreparationStage(_dependencies.ResolveRouteConsumerPresentationPort);
+            _consumerPresentationReleaseStage = new OperationalConsumerPresentationReleaseStage(_dependencies.ResolveRouteConsumerPresentationPort);
+            _consumerEntryAndReadinessStage = new OperationalConsumerEntryAndReadinessStage(_dependencies.ResolveRouteConsumerEntryPort, _dependencies.ResolveRouteConsumerReadinessPort);
+            _routeActivitySaveLoadOnEnterStage = new OperationalRouteActivitySaveLoadOnEnterStage(
+                _dependencies.ActivitySaveAdapter,
+                _dependencies.ProgressionSlotContextResolver,
+                ResolveSaveStateServiceOrNull,
+                this,
+                RouteActivitySnapshotSchemaId);
+            _routeActivitySaveSaveOnExitStage = new OperationalRouteActivitySaveSaveOnExitStage(
+                _dependencies.ActivitySaveAdapter,
+                _dependencies.ProgressionSlotContextResolver,
+                ResolveActivitySnapshotPayloadProviderOrNull,
+                RouteActivitySnapshotSchemaId);
+            _loadingStage = new OperationalLoadingStage(_dependencies.LoadingAdapter);
+            _routeAudioStage = new OperationalRouteAudioStage(_dependencies.ResolveRouteAudioPort);
+            _routeRevealStage = new OperationalRouteRevealStage(_routeAudioStage, _fadeStage);
         }
 
         public SessionOperationalRuntimeState State => _state;
@@ -228,9 +251,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = _dependencies.PersistentScenesPolicy;
-            IOperationalFadePort fadePort = null;
-            ILoadingAdapter loadingAdapter = null;
-
             string sourceText = Normalize(source);
             string reasonText = Normalize(reason);
             string routeIdentity = Normalize(route.RouteIdentity);
@@ -303,16 +323,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             routeIdentity = setupResult.RouteIdentity;
             activeSceneName = setupResult.ActiveSceneName;
 
-            if (command.UsesTransition)
-            {
-                fadePort = ResolveFadePortOrFail();
-            }
-
-            if (loadingCommand.IsEnabled)
-            {
-                loadingAdapter = ResolveLoadingAdapterOrFail();
-            }
-
             bool fadeInCompleted = false;
             bool fadeOutCompleted = false;
             bool loadingStarted = false;
@@ -339,7 +349,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalRouteCompletionResult transitionPlanReadyResult = _routeCompletionStage.ExecuteTransitionPlanReady(
                     new OperationalRouteCompletionCommand(
                         _sessionOperationalPipelineId,
-                        _state,
                         command,
                         sourceText,
                         reasonText));
@@ -351,7 +360,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 OperationalLoadingResult loadingStartResult = await _loadingStage.ExecuteStartAsync(
                     new OperationalLoadingCommand(
-                        loadingAdapter,
                         loadingCommand,
                         sourceText,
                         reasonText));
@@ -366,7 +374,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalTransitionBlackoutResult blackoutResult = await _transitionBlackoutStage.ExecuteAsync(
                     new OperationalTransitionBlackoutCommand(
                         command,
-                        fadePort,
                         sourceText,
                         reasonText));
 
@@ -380,7 +387,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
                 OperationalLoadingResult blackoutLoadingResult = await _loadingStage.ExecuteTransitionBlackoutProgressAsync(
                     new OperationalLoadingCommand(
-                        loadingAdapter,
                         loadingCommand,
                         sourceText,
                         reasonText),
@@ -391,84 +397,230 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[FATAL][SessionOperationalPipeline][Loading] OperationalLoadingStage blackout progress failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{blackoutLoadingResult.Kind}' reason='{blackoutLoadingResult.Reason}' detail='{blackoutLoadingResult.Detail}'.");
                 }
 
-                _dependencies.TryResolveActivitySnapshotPayloadProvider(out ISessionActivitySnapshotPayloadProvider activitySnapshotPayloadProvider);
+                OperationalPreviousRouteExitBoundaryCommand previousRouteExitBoundaryCommand = new OperationalPreviousRouteExitBoundaryCommand(
+                    command,
+                    previousCompletedRoute.RouteIdentity,
+                    previousCompletedRoute.ActivityIdentity,
+                    sourceText,
+                    reasonText);
 
-                OperationalPreviousRouteExitResult previousRouteExitResult = await _previousRouteExitStage.ExecuteAsync(
-                    new OperationalPreviousRouteExitCommand(
+                OperationalPreviousRouteExitBoundaryResult previousRouteExitBeginResult =
+                    _previousRouteExitBoundary.Begin(previousRouteExitBoundaryCommand);
+                if (!previousRouteExitBeginResult.IsCompleted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitBoundary begin failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{previousRouteExitBeginResult.Kind}' reason='{previousRouteExitBeginResult.Reason}' detail='{previousRouteExitBeginResult.Detail}'.");
+                }
+
+                OperationalHandoffExitResult handoffExitResult = await _handoffExitStage.ExecuteAsync(
+                    new OperationalHandoffExitCommand(
                         command,
                         previousCompletedRoute.RouteIdentity,
                         previousCompletedRoute.ActivityIdentity,
-                        routeActivitySavePlan,
+                        previousCompletedRoute.ActiveSceneKey,
+                        previousCompletedRoute.RouteOwnedLoadedSceneKeys,
+                        command.FinalScenesToUnload,
                         sourceText,
-                        reasonText,
-                        _handoffExitStage,
-                        new OperationalHandoffExitCommand(
-                            _dependencies.ResolveRouteHandoffExitPort(),
-                            command,
-                            previousCompletedRoute.RouteIdentity,
-                            previousCompletedRoute.ActivityIdentity,
-                            previousCompletedRoute.ActiveSceneKey,
-                            previousCompletedRoute.RouteOwnedLoadedSceneKeys,
-                            command.FinalScenesToUnload,
-                            sourceText,
-                            reasonText),
-                        _consumerPresentationReleaseStage,
+                        reasonText));
+                if (!handoffExitResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalHandoffExitStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{handoffExitResult.Kind}' reason='{handoffExitResult.Reason}' detail='{handoffExitResult.Detail}'.");
+                }
+
+                OperationalConsumerPresentationReleaseResult consumerPresentationReleaseResult =
+                    _consumerPresentationReleaseStage.Execute(
                         new OperationalConsumerPresentationReleaseCommand(
-                            _dependencies.ResolveRouteConsumerPresentationPort(),
                             command,
                             activeSceneName,
                             previousCompletedRoute.RouteIdentity,
                             previousCompletedRoute.ActivityIdentity,
                             sourceText,
-                            reasonText),
-                        _routeActivitySaveSaveOnExitStage,
+                            reasonText));
+                if (!consumerPresentationReleaseResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalConsumerPresentationReleaseStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{consumerPresentationReleaseResult.Kind}' reason='{consumerPresentationReleaseResult.Reason}' detail='{consumerPresentationReleaseResult.Detail}'.");
+                }
+
+                OperationalRouteCameraReleasePreviousResult routeCameraReleasePreviousResult =
+                    _routeCameraReleasePreviousStage.Execute(
+                        new OperationalRouteCameraReleasePreviousCommand(
+                            command,
+                            previousCompletedRoute.RouteIdentity,
+                            sourceText,
+                            reasonText));
+                if (!routeCameraReleasePreviousResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalRouteCameraReleasePreviousStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{routeCameraReleasePreviousResult.Kind}' reason='{routeCameraReleasePreviousResult.Reason}' detail='{routeCameraReleasePreviousResult.Detail}'.");
+                }
+
+                OperationalRouteActivitySaveSaveOnExitResult saveOnExitResult =
+                    _routeActivitySaveSaveOnExitStage.Execute(
                         new OperationalRouteActivitySaveSaveOnExitCommand(
                             runtimeModeConfig,
                             command,
                             routeActivitySavePlan,
-                            _dependencies.ActivitySaveAdapter,
-                            _dependencies.ProgressionSlotContextResolver,
-                            activitySnapshotPayloadProvider,
-                            RouteActivitySnapshotSchemaId,
                             sourceText,
-                            reasonText)));
-
-                if (!previousRouteExitResult.IsCompleted)
+                            reasonText));
+                if (!saveOnExitResult.IsCompleted)
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{previousRouteExitResult.Kind}' reason='{previousRouteExitResult.Reason}' detail='{previousRouteExitResult.Detail}'.");
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalRouteActivitySaveSaveOnExitStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{saveOnExitResult.Kind}' reason='{saveOnExitResult.Reason}' detail='{saveOnExitResult.Detail}'.");
                 }
 
-                OperationalRouteMaterializationResult materializationResult = await _routeMaterializationStage.ExecuteAsync(
-                    BuildMaterializationCommand(
-                        runtimeModeConfig,
+                OperationalPreviousRouteExitBoundaryResult previousRouteExitCompleteResult =
+                    _previousRouteExitBoundary.Complete(previousRouteExitBoundaryCommand);
+                if (!previousRouteExitCompleteResult.IsCompleted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalPreviousRouteExitBoundary complete failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{previousRouteExitCompleteResult.Kind}' reason='{previousRouteExitCompleteResult.Reason}' detail='{previousRouteExitCompleteResult.Detail}'.");
+                }
+
+                OperationalRouteMaterializationBoundaryCommand materializationBoundaryCommand = BuildMaterializationBoundaryCommand(
+                    routeIdentity,
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    sourceText,
+                    reasonText);
+                _routeMaterializationBoundary.Begin(materializationBoundaryCommand);
+
+                OperationalSceneCompositionStageResult sceneCompositionResult = await _sceneCompositionStage.ExecuteAsync(
+                    BuildSceneCompositionCommand(
                         command,
-                        loadingAdapter,
-                        loadingCommand,
-                        routeActivitySavePlan,
-                        previousCompletedRoute,
+                        activeSceneName,
+                        sourceText,
+                        reasonText));
+                if (!sceneCompositionResult.IsCompleted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][SceneComposition] OperationalSceneCompositionStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{sceneCompositionResult.Kind}' reason='{sceneCompositionResult.Reason}' detail='{sceneCompositionResult.Detail}'.");
+                }
+
+                SessionOperationalRouteCompletedFact adapterFact = sceneCompositionResult.CompletionFact;
+                OperationalLoadingCommand materializationLoadingCommand = BuildOperationalLoadingCommand(
+                    loadingCommand,
+                    sourceText,
+                    reasonText);
+
+                OperationalRouteCameraPresentationResult routeCameraPresentationResult = _routeCameraPresentationStage.Execute(
+                    BuildRouteCameraPresentationCommand(
+                        command,
                         activeSceneName,
                         routeIdentity,
                         routeOperationId,
                         transitionId,
                         routeSequence,
-                        source,
-                        reason,
                         sourceText,
                         reasonText));
-                SessionOperationalRouteCompletedFact adapterFact = materializationResult.CompletionFact;
+                if (!routeCameraPresentationResult.IsCompleted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][RouteCamera] OperationalRouteCameraPresentationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{routeCameraPresentationResult.Kind}' reason='{routeCameraPresentationResult.Reason}'.");
+                }
+
+                OperationalLoadingResult sceneCompositionLoadingResult = await _loadingStage.ExecuteSceneCompositionCompletedAsync(materializationLoadingCommand);
+                if (!sceneCompositionLoadingResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][Loading] OperationalLoadingStage scene composition progress failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{sceneCompositionLoadingResult.Kind}' reason='{sceneCompositionLoadingResult.Reason}' detail='{sceneCompositionLoadingResult.Detail}'.");
+                }
+
+                OperationalRouteActivitySaveLoadOnEnterResult loadOnEnterResult = _routeActivitySaveLoadOnEnterStage.Execute(
+                    BuildRouteActivitySaveLoadOnEnterCommand(
+                        runtimeModeConfig,
+                        command,
+                        routeActivitySavePlan,
+                        sourceText,
+                        reasonText));
+                if (!loadOnEnterResult.IsCompleted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][RouteActivitySave] OperationalRouteActivitySaveLoadOnEnterStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{loadOnEnterResult.Kind}' reason='{loadOnEnterResult.Reason}' detail='{loadOnEnterResult.Detail}'.");
+                }
+
+                OperationalInputPreparationResult inputPreparationResult = _inputPreparationStage.Execute(
+                    BuildInputPreparationCommand(
+                        runtimeModeConfig,
+                        command,
+                        routeIdentity,
+                        routeOperationId,
+                        transitionId,
+                        routeSequence,
+                        sourceText,
+                        reasonText));
+                if (!inputPreparationResult.IsCompleted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][InputCapability] OperationalInputPreparationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+                }
+
+                OperationalPlayerPreparationResult playerPreparationStageResult = _playerPreparationStage.Execute(
+                    BuildPlayerPreparationCommand(
+                        command,
+                        routeIdentity,
+                        routeOperationId,
+                        transitionId,
+                        routeSequence,
+                        sourceText,
+                        reasonText));
+                if (!playerPreparationStageResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PlayerPreparation] OperationalPlayerPreparationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+                }
+
+                PlayerPreparationResult playerPreparationResult = playerPreparationStageResult.PlayerPreparationResult;
+                if (playerPreparationStageResult.IsCompleted)
+                {
+                    OperationalConsumerPresentationPreparationResult consumerPresentationResult = _consumerPresentationPreparationStage.Execute(
+                        BuildConsumerPresentationPreparationCommand(
+                            command,
+                            activeSceneName,
+                            routeIdentity,
+                            routeOperationId,
+                            transitionId,
+                            routeSequence,
+                            sourceText,
+                            reasonText));
+                    if (!consumerPresentationResult.IsAccepted)
+                    {
+                        throw new InvalidOperationException(
+                            $"[FATAL][SessionOperationalPipeline][ConsumerPresentation] OperationalConsumerPresentationPreparationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{consumerPresentationResult.Kind}' reason='{consumerPresentationResult.Reason}' detail='{consumerPresentationResult.Detail}'.");
+                    }
+                }
+
+                OperationalLoadingCompletionState loadingState = await _loadingStage.ExecuteClosedWindowCompletionAsync(materializationLoadingCommand);
+
+                OperationalConsumerEntryAndReadinessResult consumerEntryAndReadinessResult = await _consumerEntryAndReadinessStage.ExecuteAsync(
+                    BuildConsumerEntryAndReadinessCommand(
+                        command,
+                        loadingCommand,
+                        routeIdentity,
+                        routeOperationId,
+                        transitionId,
+                        routeSequence,
+                        sourceText,
+                        reasonText),
+                    playerPreparationResult);
+                if (!consumerEntryAndReadinessResult.IsAccepted)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][ConsumerEntry] OperationalConsumerEntryAndReadinessStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{consumerEntryAndReadinessResult.Kind}' reason='{consumerEntryAndReadinessResult.Reason}' detail='{consumerEntryAndReadinessResult.Detail}'.");
+                }
+
+                OperationalRouteMaterializationBoundaryResult materializationResult = _routeMaterializationBoundary.Complete(
+                    materializationBoundaryCommand,
+                    adapterFact,
+                    loadingState);
                 loadingCompleted = materializationResult.LoadingCompleted;
                 loadingHidden = materializationResult.LoadingHidden;
-
-                IOperationalRouteAudioPort routeAudioPort = command.Audio.RouteAudioMode == SessionOperationalRouteAudioMode.None
-                    ? null
-                    : ResolveRouteAudioPortOrFail();
 
                 OperationalRouteRevealResult revealResult = await _routeRevealStage.ExecuteAsync(
                     new OperationalRouteRevealCommand(
                         command,
-                        fadePort,
-                        routeAudioPort,
                         sourceText,
                         reasonText));
 
@@ -483,7 +635,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalRouteCompletionResult completionResult = _routeCompletionStage.ExecuteCompleted(
                     new OperationalRouteCompletionCommand(
                         _sessionOperationalPipelineId,
-                        _state,
                         command,
                         sourceText,
                         reasonText),
@@ -518,7 +669,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 {
                     await _loadingStage.ExecuteFailureCleanupAsync(
                         new OperationalLoadingCommand(
-                            loadingAdapter,
                             loadingCommand,
                             sourceText,
                             reasonText),
@@ -532,7 +682,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         await _fadeStage.ExecuteAsync(
                             new OperationalFadeCommand(
                                 command,
-                                fadePort,
                                 OperationalFadeOperationKind.CleanupOpenCurtain,
                                 sourceText,
                                 reasonText));
@@ -590,7 +739,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             OperationalRouteHandoffExitPreflightResult preflightResult = _handoffExitStage.EvaluatePreflight(
-                _dependencies.ResolveRouteHandoffExitPort(),
                 routeIdentity,
                 _lastCompletedRouteSnapshot.RouteIdentity,
                 _lastCompletedRouteSnapshot.ActivityIdentity,
@@ -1236,31 +1384,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return SessionOperationalObservableIdFormatter.BuildTransitionId(routeIdentity, activeScene, sequence);
         }
 
-        private IOperationalFadePort ResolveFadePortOrFail()
+        private ISaveStateService ResolveSaveStateServiceOrNull()
         {
-            IOperationalFadePort fadePort = _dependencies.ResolveFadePort();
-            if (fadePort == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IOperationalFadePort obrigatorio ausente para transicoes operacionais.");
-            }
-
-            return fadePort;
+            return _dependencies.TryResolveSaveStateService(out ISaveStateService saveStateService)
+                ? saveStateService
+                : null;
         }
 
-        private ILoadingAdapter ResolveLoadingAdapterOrFail()
+        private ISessionActivitySnapshotPayloadProvider ResolveActivitySnapshotPayloadProviderOrNull()
         {
-            return _dependencies.LoadingAdapter;
-        }
-
-        private IOperationalRouteAudioPort ResolveRouteAudioPortOrFail()
-        {
-            IOperationalRouteAudioPort routeAudioPort = _dependencies.ResolveRouteAudioPort();
-            if (routeAudioPort == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] IOperationalRouteAudioPort obrigatorio ausente para route audio.");
-            }
-
-            return routeAudioPort;
+            return _dependencies.TryResolveActivitySnapshotPayloadProvider(out ISessionActivitySnapshotPayloadProvider provider)
+                ? provider
+                : null;
         }
 
         private static string BuildActivitySaveKey(string activityIdentity)
@@ -1295,125 +1430,172 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return _dependencies.RuntimeModeConfig;
         }
 
-        private OperationalRouteMaterializationCommand BuildMaterializationCommand(
-            RuntimeModeConfig runtimeModeConfig,
+        private OperationalRouteCameraPresentationCommand BuildRouteCameraPresentationCommand(
             SessionOperationalRouteCommand command,
-            ILoadingAdapter loadingAdapter,
-            SessionOperationalLoadingCommand loadingCommand,
-            RouteActivitySavePlan routeActivitySavePlan,
-            SessionOperationalRouteSnapshot previousCompletedRoute,
             string activeSceneName,
             string routeIdentity,
             string routeOperationId,
             string transitionId,
             int routeSequence,
-            string source,
-            string reason,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalRouteCameraPresentationCommand(
+                command,
+                activeSceneName,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+        }
+
+        private OperationalRouteActivitySaveLoadOnEnterCommand BuildRouteActivitySaveLoadOnEnterCommand(
+            RuntimeModeConfig runtimeModeConfig,
+            SessionOperationalRouteCommand command,
+            RouteActivitySavePlan routeActivitySavePlan,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalRouteActivitySaveLoadOnEnterCommand(
+                runtimeModeConfig,
+                command,
+                routeActivitySavePlan,
+                sourceText,
+                reasonText);
+        }
+
+        private OperationalInputPreparationCommand BuildInputPreparationCommand(
+            RuntimeModeConfig runtimeModeConfig,
+            SessionOperationalRouteCommand command,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
             string sourceText,
             string reasonText)
         {
             SessionOperationalInputPolicy inputPolicy = command.InputPolicy;
             string routeClass = command.SurfaceKind.ToString();
-            _dependencies.TryResolveSaveStateService(out ISaveStateService saveStateService);
-
-            return new OperationalRouteMaterializationCommand
-            {
-                RouteIdentity = routeIdentity,
-                RouteOperationId = routeOperationId,
-                TransitionId = transitionId,
-                RouteSequence = routeSequence,
-                Source = sourceText,
-                Reason = reasonText,
-                SceneCompositionStage = _sceneCompositionStage,
-                SceneCompositionCommand = new OperationalSceneCompositionCommand(
-                    _dependencies.ResolveSceneCompositionPort(),
-                    command,
-                    activeSceneName,
-                    sourceText,
-                    reasonText),
-                RouteCameraPresentationStage = _routeCameraPresentationStage,
-                RouteCameraPresentationCommand = new OperationalRouteCameraPresentationCommand(
-                    _dependencies.RouteCameraAdapter,
-                    command,
-                    previousCompletedRoute.RouteIdentity,
-                    activeSceneName,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    sourceText,
-                    reasonText),
-                LoadingStage = _loadingStage,
-                LoadingCommand = new OperationalLoadingCommand(
-                    loadingAdapter,
-                    loadingCommand,
-                    sourceText,
-                    reasonText),
-                RouteActivitySaveLoadOnEnterStage = _routeActivitySaveLoadOnEnterStage,
-                RouteActivitySaveLoadOnEnterCommand = new OperationalRouteActivitySaveLoadOnEnterCommand(
-                    runtimeModeConfig,
-                    command,
-                    routeActivitySavePlan,
-                    _dependencies.ActivitySaveAdapter,
-                    _dependencies.ProgressionSlotContextResolver,
-                    saveStateService,
-                    this,
-                    RouteActivitySnapshotSchemaId,
-                    sourceText,
-                    reasonText),
-                InputPreparationStage = _inputPreparationStage,
-                InputPreparationCommand = new OperationalInputPreparationCommand(
-                    _sessionOperationalPipelineId,
-                    _state,
-                    _stageOrderPolicy,
-                    runtimeModeConfig,
-                    command.Plan,
-                    inputPolicy,
-                    routeClass,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    sourceText,
-                    reasonText,
-                    _dependencies.ResolveInputModeRequestPort()),
-                PlayerPreparationStage = _playerPreparationStage,
-                PlayerPreparationCommand = new OperationalPlayerPreparationCommand(
-                    _sessionOperationalPipelineId,
-                    command,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    sourceText,
-                    reasonText),
-                ConsumerPresentationPreparationStage = _consumerPresentationPreparationStage,
-                ConsumerPresentationPreparationCommand = new OperationalConsumerPresentationPreparationCommand(
-                    _dependencies.ResolveRouteConsumerPresentationPort(),
-                    command,
-                    activeSceneName,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    command.HandoffSessionStateId,
-                    sourceText,
-                    reasonText),
-
-                ConsumerEntryAndReadinessStage = _consumerEntryAndReadinessStage,
-                ConsumerEntryAndReadinessCommand = new OperationalConsumerEntryAndReadinessCommand(
-                    _dependencies.ResolveRouteConsumerEntryPort(),
-                    _dependencies.ResolveRouteConsumerReadinessPort(),
-                    command,
-                    loadingCommand,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
-                    sourceText,
-                    reasonText),
-            };
+            return new OperationalInputPreparationCommand(
+                _sessionOperationalPipelineId,
+                runtimeModeConfig,
+                command.Plan,
+                inputPolicy,
+                routeClass,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
         }
+
+        private OperationalPlayerPreparationCommand BuildPlayerPreparationCommand(
+            SessionOperationalRouteCommand command,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalPlayerPreparationCommand(
+                _sessionOperationalPipelineId,
+                command,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+        }
+
+        private OperationalConsumerPresentationPreparationCommand BuildConsumerPresentationPreparationCommand(
+            SessionOperationalRouteCommand command,
+            string activeSceneName,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalConsumerPresentationPreparationCommand(
+                command,
+                activeSceneName,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                command.HandoffSessionStateId,
+                sourceText,
+                reasonText);
+        }
+
+        private OperationalConsumerEntryAndReadinessCommand BuildConsumerEntryAndReadinessCommand(
+            SessionOperationalRouteCommand command,
+            SessionOperationalLoadingCommand loadingCommand,
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalConsumerEntryAndReadinessCommand(
+                command,
+                loadingCommand,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+        }
+
+        private OperationalSceneCompositionCommand BuildSceneCompositionCommand(
+            SessionOperationalRouteCommand command,
+            string activeSceneName,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalSceneCompositionCommand(
+                command,
+                activeSceneName,
+                sourceText,
+                reasonText);
+        }
+
+        private static OperationalLoadingCommand BuildOperationalLoadingCommand(
+            SessionOperationalLoadingCommand loadingCommand,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalLoadingCommand(
+                loadingCommand,
+                sourceText,
+                reasonText);
+        }
+
+        private static OperationalRouteMaterializationBoundaryCommand BuildMaterializationBoundaryCommand(
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string sourceText,
+            string reasonText)
+        {
+            return new OperationalRouteMaterializationBoundaryCommand(
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+        }
+
 
 
     }

@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using UnityEngine;
 

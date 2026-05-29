@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
@@ -13,7 +14,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public readonly struct OperationalConsumerPresentationReleaseCommand
     {
         public OperationalConsumerPresentationReleaseCommand(
-            IOperationalRouteConsumerPresentationPort presentationPort,
             SessionOperationalRouteCommand routeCommand,
             string activeSceneName,
             string previousRouteIdentity,
@@ -21,7 +21,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            PresentationPort = presentationPort;
             RouteCommand = routeCommand;
             ActiveSceneName = Normalize(activeSceneName);
             PreviousRouteIdentity = Normalize(previousRouteIdentity);
@@ -30,7 +29,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Reason = Normalize(reason);
         }
 
-        public IOperationalRouteConsumerPresentationPort PresentationPort { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string ActiveSceneName { get; }
         public string PreviousRouteIdentity { get; }
@@ -39,7 +37,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string Reason { get; }
 
         public bool IsValid =>
-            PresentationPort != null &&
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
@@ -96,6 +93,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalConsumerPresentationReleaseStage
     {
+        private readonly Func<IOperationalRouteConsumerPresentationPort> _presentationPortResolver;
+
+        public OperationalConsumerPresentationReleaseStage(Func<IOperationalRouteConsumerPresentationPort> presentationPortResolver)
+        {
+            _presentationPortResolver = presentationPortResolver ?? throw new ArgumentNullException(nameof(presentationPortResolver));
+        }
+
         public OperationalConsumerPresentationReleaseResult Execute(OperationalConsumerPresentationReleaseCommand command)
         {
             if (!command.IsValid)
@@ -122,7 +126,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            if (!command.PresentationPort.TryReleasePrevious(
+            IOperationalRouteConsumerPresentationPort presentationPort = ResolvePresentationPortOrFail(command);
+            if (!presentationPort.TryReleasePrevious(
                     request,
                     out OperationalRouteConsumerPresentationResult result,
                     out string releaseReason))
@@ -181,6 +186,24 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.PreviousActivityIdentity,
                 result.Reason,
                 result.Detail);
+        }
+
+        private IOperationalRouteConsumerPresentationPort ResolvePresentationPortOrFail(OperationalConsumerPresentationReleaseCommand command)
+        {
+            IOperationalRouteConsumerPresentationPort presentationPort = _presentationPortResolver();
+            if (presentationPort == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerPresentation] IOperationalRouteConsumerPresentationPort obrigatorio ausente para release do route consumer routeIdentity='{command.RouteCommand.RouteIdentity}' routeOperationId='{command.RouteCommand.RouteOperationId}' transitionId='{command.RouteCommand.TransitionId}' routeSequence='{command.RouteCommand.RouteSequence}' consumerIdentity='{Normalize(command.PreviousActivityIdentity)}'.");
+            }
+
+            return presentationPort;
+        }
+
+
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private static OperationalConsumerPresentationReleaseResult Failed(

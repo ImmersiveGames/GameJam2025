@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 

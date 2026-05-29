@@ -1,33 +1,28 @@
 using System;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
     public readonly struct OperationalSceneCompositionCommand
     {
         public OperationalSceneCompositionCommand(
-            IOperationalSceneCompositionPort sceneCompositionPort,
             SessionOperationalRouteCommand routeCommand,
             string activeSceneName,
             string source,
             string reason)
         {
-            SceneCompositionPort = sceneCompositionPort;
             RouteCommand = routeCommand;
             ActiveSceneName = Normalize(activeSceneName);
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
-        public IOperationalSceneCompositionPort SceneCompositionPort { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string ActiveSceneName { get; }
         public string Source { get; }
         public string Reason { get; }
         public bool IsValid =>
-            SceneCompositionPort != null &&
             RouteCommand.IsValid &&
             !string.IsNullOrWhiteSpace(ActiveSceneName);
 
@@ -65,6 +60,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalSceneCompositionStage
     {
+        private readonly Func<IOperationalSceneCompositionPort> _sceneCompositionPortResolver;
+
+        public OperationalSceneCompositionStage(Func<IOperationalSceneCompositionPort> sceneCompositionPortResolver)
+        {
+            _sceneCompositionPortResolver = sceneCompositionPortResolver ?? throw new ArgumentNullException(nameof(sceneCompositionPortResolver));
+        }
+
         public async Task<OperationalSceneCompositionStageResult> ExecuteAsync(OperationalSceneCompositionCommand command)
         {
             if (!command.IsValid)
@@ -80,7 +82,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][SceneComposition] OperationalSceneCompositionStarted routeIdentity='{routeCommand.RouteIdentity}' activeScene='{command.ActiveSceneName}' activeSceneKey='{routeCommand.ActiveSceneKey.name}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' completionHandoff='{routeCommand.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
-            OperationalSceneCompositionResult result = await command.SceneCompositionPort.ApplyAsync(
+            IOperationalSceneCompositionPort sceneCompositionPort = ResolveSceneCompositionPortOrFail(routeCommand);
+            OperationalSceneCompositionResult result = await sceneCompositionPort.ApplyAsync(
                 new OperationalSceneCompositionRequest(
                     routeCommand,
                     source,
@@ -107,6 +110,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 result.CompletionFact,
                 result.Reason,
                 result.Detail);
+        }
+
+        private IOperationalSceneCompositionPort ResolveSceneCompositionPortOrFail(SessionOperationalRouteCommand routeCommand)
+        {
+            IOperationalSceneCompositionPort sceneCompositionPort = _sceneCompositionPortResolver();
+            if (sceneCompositionPort == null)
+            {
+                throw new InvalidOperationException($"[FATAL][SessionOperationalPipeline][SceneComposition] IOperationalSceneCompositionPort is required routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}'.");
+            }
+
+            return sceneCompositionPort;
         }
 
         private static string Normalize(string value)

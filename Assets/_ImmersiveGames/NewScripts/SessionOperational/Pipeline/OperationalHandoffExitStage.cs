@@ -18,7 +18,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public readonly struct OperationalHandoffExitCommand
     {
         public OperationalHandoffExitCommand(
-            IOperationalRouteHandoffExitPort handoffExitPort,
             SessionOperationalRouteCommand routeCommand,
             string previousRouteIdentity,
             string previousActivityIdentity,
@@ -28,7 +27,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            HandoffExitPort = handoffExitPort;
             RouteCommand = routeCommand;
             PreviousRouteIdentity = Normalize(previousRouteIdentity);
             PreviousActivityIdentity = Normalize(previousActivityIdentity);
@@ -39,7 +37,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Reason = Normalize(reason);
         }
 
-        public IOperationalRouteHandoffExitPort HandoffExitPort { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string PreviousRouteIdentity { get; }
         public string PreviousActivityIdentity { get; }
@@ -124,8 +121,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalHandoffExitStage
     {
+        private readonly Func<IOperationalRouteHandoffExitPort> _handoffExitPortResolver;
+
+        public OperationalHandoffExitStage(Func<IOperationalRouteHandoffExitPort> handoffExitPortResolver)
+        {
+            _handoffExitPortResolver = handoffExitPortResolver ?? throw new ArgumentNullException(nameof(handoffExitPortResolver));
+        }
+
         public OperationalRouteHandoffExitPreflightResult EvaluatePreflight(
-            IOperationalRouteHandoffExitPort handoffExitPort,
             string routeIdentity,
             string previousRouteIdentity,
             string handoffIdentity,
@@ -140,14 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "handoff_identity_missing");
             }
 
-            if (handoffExitPort == null)
-            {
-                return new OperationalRouteHandoffExitPreflightResult(
-                    OperationalRouteHandoffExitPreflightKind.Failed,
-                    "missing_handoff_exit_port",
-                    "IOperationalRouteHandoffExitPort obrigatorio ausente para handoff exit preflight.");
-            }
-
+            IOperationalRouteHandoffExitPort handoffExitPort = ResolveHandoffExitPortOrFail();
             return handoffExitPort.EvaluatePreflight(
                 new OperationalRouteHandoffExitPreflightRequest(
                     routeIdentity,
@@ -183,11 +179,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     "handoff_exit_not_required");
             }
 
-            if (command.HandoffExitPort == null)
-            {
-                return Failed(command, "missing_handoff_exit_port", "IOperationalRouteHandoffExitPort obrigatorio ausente para handoff exit pre-unload.");
-            }
-
             OperationalRouteHandoffExitRequest request = new(
                 routeCommand.RouteIdentity,
                 routeCommand.RouteOperationId,
@@ -205,7 +196,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][Route] OperationalHandoffExitStarted routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' transitionId='{routeCommand.TransitionId}' routeSequence='{routeCommand.RouteSequence}' previousRouteIdentity='{command.PreviousRouteIdentity}' handoffIdentity='{command.PreviousActivityIdentity}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            OperationalRouteHandoffExitResult exitResult = await command.HandoffExitPort.RequestExitAsync(
+            IOperationalRouteHandoffExitPort handoffExitPort = ResolveHandoffExitPortOrFail();
+            OperationalRouteHandoffExitResult exitResult = await handoffExitPort.RequestExitAsync(
                 request,
                 CancellationToken.None);
 
@@ -243,6 +235,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 exitResult);
 
             return Failed(command, "handoff_exit_failed", "unreachable_after_handoff_exit_failure");
+        }
+
+        private IOperationalRouteHandoffExitPort ResolveHandoffExitPortOrFail()
+        {
+            IOperationalRouteHandoffExitPort handoffExitPort = _handoffExitPortResolver();
+            if (handoffExitPort == null)
+            {
+                throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][Route] IOperationalRouteHandoffExitPort obrigatorio ausente para handoff exit.");
+            }
+
+            return handoffExitPort;
         }
 
         private static void FailOperationalRouteHandoffExitOrThrow(

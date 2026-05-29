@@ -88,7 +88,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     public readonly struct OperationalConsumerPresentationPreparationCommand
     {
         public OperationalConsumerPresentationPreparationCommand(
-            IOperationalRouteConsumerPresentationPort presentationPort,
             SessionOperationalRouteCommand routeCommand,
             string activeSceneName,
             string routeIdentity,
@@ -99,7 +98,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            PresentationPort = presentationPort;
             RouteCommand = routeCommand;
             ActiveSceneName = Normalize(activeSceneName);
             RouteIdentity = Normalize(routeIdentity);
@@ -111,7 +109,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             Reason = Normalize(reason);
         }
 
-        public IOperationalRouteConsumerPresentationPort PresentationPort { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public string ActiveSceneName { get; }
         public string RouteIdentity { get; }
@@ -139,16 +136,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalConsumerPresentationPreparationStage
     {
+        private readonly Func<IOperationalRouteConsumerPresentationPort> _presentationPortResolver;
+
+        public OperationalConsumerPresentationPreparationStage(Func<IOperationalRouteConsumerPresentationPort> presentationPortResolver)
+        {
+            _presentationPortResolver = presentationPortResolver ?? throw new ArgumentNullException(nameof(presentationPortResolver));
+        }
+
         public OperationalConsumerPresentationPreparationResult Execute(OperationalConsumerPresentationPreparationCommand command)
         {
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("OperationalConsumerPresentationPreparationCommand is invalid.");
-            }
-
-            if (command.PresentationPort == null)
-            {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerPresentation] IOperationalRouteConsumerPresentationPort obrigatorio ausente para presentation do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.ConsumerIdentity)}'.");
             }
 
             DebugUtility.Log(typeof(OperationalConsumerPresentationPreparationStage),
@@ -168,7 +167,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Source,
                 command.Reason);
 
-            if (!command.PresentationPort.TryPrepare(request, out OperationalRouteConsumerPresentationResult result, out string prepareReason))
+            IOperationalRouteConsumerPresentationPort presentationPort = ResolvePresentationPortOrFail(command);
+            if (!presentationPort.TryPrepare(request, out OperationalRouteConsumerPresentationResult result, out string prepareReason))
             {
                 string failureReason = string.IsNullOrWhiteSpace(prepareReason)
                     ? result.Reason
@@ -207,6 +207,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.RouteOperationId,
                 result.Reason,
                 result.Detail);
+        }
+
+        private IOperationalRouteConsumerPresentationPort ResolvePresentationPortOrFail(OperationalConsumerPresentationPreparationCommand command)
+        {
+            IOperationalRouteConsumerPresentationPort presentationPort = _presentationPortResolver();
+            if (presentationPort == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ConsumerPresentation] IOperationalRouteConsumerPresentationPort obrigatorio ausente para presentation do route consumer routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' consumerIdentity='{Normalize(command.ConsumerIdentity)}'.");
+            }
+
+            return presentationPort;
         }
 
         private static void LogFailure(

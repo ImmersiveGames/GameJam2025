@@ -51,21 +51,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalRouteRevealCommand(
             SessionOperationalRouteCommand routeCommand,
-            IOperationalFadePort fadePort,
-            IOperationalRouteAudioPort routeAudioPort,
             string source,
             string reason)
         {
             RouteCommand = routeCommand;
-            FadePort = fadePort;
-            RouteAudioPort = routeAudioPort;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionOperationalRouteCommand RouteCommand { get; }
-        public IOperationalFadePort FadePort { get; }
-        public IOperationalRouteAudioPort RouteAudioPort { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -74,16 +68,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             get
             {
                 if (!RouteCommand.IsValid)
-                {
-                    return false;
-                }
-
-                if (RouteCommand.UsesTransition && FadePort == null)
-                {
-                    return false;
-                }
-
-                if (RouteCommand.Audio.RouteAudioMode != SessionOperationalRouteAudioMode.None && RouteAudioPort == null)
                 {
                     return false;
                 }
@@ -97,8 +81,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteRevealStage
     {
-        private readonly OperationalRouteAudioStage _routeAudioStage = new();
-        private readonly OperationalFadeStage _fadeStage = new();
+        private readonly OperationalRouteAudioStage _routeAudioStage;
+        private readonly OperationalFadeStage _fadeStage;
+
+        public OperationalRouteRevealStage(OperationalRouteAudioStage routeAudioStage, OperationalFadeStage fadeStage)
+        {
+            _routeAudioStage = routeAudioStage ?? throw new ArgumentNullException(nameof(routeAudioStage));
+            _fadeStage = fadeStage ?? throw new ArgumentNullException(nameof(fadeStage));
+        }
 
         public async Task<OperationalRouteRevealResult> ExecuteAsync(OperationalRouteRevealCommand command)
         {
@@ -113,7 +103,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalRouteAudioStageResult audioResult = _routeAudioStage.Execute(
                 new OperationalRouteAudioCommand(
                     routeCommand,
-                    command.RouteAudioPort,
                     command.Source,
                     command.Reason));
             bool audioSubmitted = audioResult.AudioSubmitted;
@@ -124,7 +113,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 OperationalFadeStageResult fadeResult = await _fadeStage.ExecuteAsync(
                     new OperationalFadeCommand(
                         routeCommand,
-                        command.FadePort,
                         OperationalFadeOperationKind.OpenCurtain,
                         command.Source,
                         command.Reason));

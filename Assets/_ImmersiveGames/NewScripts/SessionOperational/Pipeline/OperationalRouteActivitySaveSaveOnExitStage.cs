@@ -4,11 +4,9 @@ using System.Globalization;
 using System.Text;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
-using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
-using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -25,20 +23,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteCommand routeCommand,
             RouteActivitySavePlan routeActivitySavePlan,
-            ISessionOperationalActivitySaveAdapter activitySaveAdapter,
-            IProgressionSlotContextResolver progressionSlotContextResolver,
-            ISessionActivitySnapshotPayloadProvider activitySnapshotPayloadProvider,
-            string routeActivitySnapshotSchemaId,
             string source,
             string reason)
         {
             RuntimeModeConfig = runtimeModeConfig;
             RouteCommand = routeCommand;
             RouteActivitySavePlan = routeActivitySavePlan;
-            ActivitySaveAdapter = activitySaveAdapter;
-            ProgressionSlotContextResolver = progressionSlotContextResolver;
-            ActivitySnapshotPayloadProvider = activitySnapshotPayloadProvider;
-            RouteActivitySnapshotSchemaId = Normalize(routeActivitySnapshotSchemaId);
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -46,10 +36,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public RuntimeModeConfig RuntimeModeConfig { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public RouteActivitySavePlan RouteActivitySavePlan { get; }
-        public ISessionOperationalActivitySaveAdapter ActivitySaveAdapter { get; }
-        public IProgressionSlotContextResolver ProgressionSlotContextResolver { get; }
-        public ISessionActivitySnapshotPayloadProvider ActivitySnapshotPayloadProvider { get; }
-        public string RouteActivitySnapshotSchemaId { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -59,10 +45,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public bool IsValid =>
             RuntimeModeConfig != null &&
             RouteCommand.IsValid &&
-            RouteActivitySavePlan.IsValid &&
-            ActivitySaveAdapter != null &&
-            ProgressionSlotContextResolver != null &&
-            !string.IsNullOrWhiteSpace(RouteActivitySnapshotSchemaId);
+            RouteActivitySavePlan.IsValid;
 
         private static string Normalize(string value)
         {
@@ -95,6 +78,25 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteActivitySaveSaveOnExitStage
     {
+        private readonly ISessionOperationalActivitySaveAdapter _activitySaveAdapter;
+        private readonly IProgressionSlotContextResolver _progressionSlotContextResolver;
+        private readonly Func<ISessionActivitySnapshotPayloadProvider> _activitySnapshotPayloadProviderResolver;
+        private readonly string _routeActivitySnapshotSchemaId;
+
+        public OperationalRouteActivitySaveSaveOnExitStage(
+            ISessionOperationalActivitySaveAdapter activitySaveAdapter,
+            IProgressionSlotContextResolver progressionSlotContextResolver,
+            Func<ISessionActivitySnapshotPayloadProvider> activitySnapshotPayloadProviderResolver,
+            string routeActivitySnapshotSchemaId)
+        {
+            _activitySaveAdapter = activitySaveAdapter ?? throw new ArgumentNullException(nameof(activitySaveAdapter));
+            _progressionSlotContextResolver = progressionSlotContextResolver ?? throw new ArgumentNullException(nameof(progressionSlotContextResolver));
+            _activitySnapshotPayloadProviderResolver = activitySnapshotPayloadProviderResolver ?? throw new ArgumentNullException(nameof(activitySnapshotPayloadProviderResolver));
+            _routeActivitySnapshotSchemaId = string.IsNullOrWhiteSpace(routeActivitySnapshotSchemaId)
+                ? throw new ArgumentException("routeActivitySnapshotSchemaId is required.", nameof(routeActivitySnapshotSchemaId))
+                : routeActivitySnapshotSchemaId.Trim();
+        }
+
         public OperationalRouteActivitySaveSaveOnExitResult Execute(OperationalRouteActivitySaveSaveOnExitCommand command)
         {
             if (!command.IsValid)
@@ -122,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "route_activity_save_save_on_exit_completed");
         }
 
-        private static void ExecuteSaveOnExitOrFail(OperationalRouteActivitySaveSaveOnExitCommand command)
+        private void ExecuteSaveOnExitOrFail(OperationalRouteActivitySaveSaveOnExitCommand command)
         {
             RouteActivitySaveOnExitPlan saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
             string currentRouteIdentity = saveOnExitPlan.CurrentRouteIdentity;
@@ -192,7 +194,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
-                command.ProgressionSlotContextResolver,
+                _progressionSlotContextResolver,
                 currentRouteIdentity,
                 currentRouteOperationId,
                 currentTransitionId,
@@ -204,7 +206,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveStarted previousRouteIdentity='{saveOnExitPlan.PreviousRouteIdentity}' previousRouteOperationId='{saveOnExitPlan.PreviousRouteOperationId}' previousRouteSequence='{saveOnExitPlan.PreviousRouteSequence}' previousActivityIdentity='{Normalize(previousActivityIdentity)}' previousActivitySaveKey='{previousActivitySaveKey}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            RouteActivitySaveSaveResult saveResult = command.ActivitySaveAdapter.SaveActivityOnExit(
+            RouteActivitySaveSaveResult saveResult = _activitySaveAdapter.SaveActivityOnExit(
                 command.RuntimeModeConfig,
                 slotContext,
                 previousActivityIdentity,
@@ -257,7 +259,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveFailed previousRouteIdentity='{saveOnExitPlan.PreviousRouteIdentity}' previousRouteOperationId='{saveOnExitPlan.PreviousRouteOperationId}' previousRouteSequence='{saveOnExitPlan.PreviousRouteSequence}' previousActivityIdentity='{Normalize(saveOnExitPlan.PreviousActivityIdentity)}' previousActivitySaveKey='{Normalize(saveOnExitPlan.PreviousActivitySaveKey)}' currentRouteIdentity='{Normalize(saveOnExitPlan.CurrentRouteIdentity)}' currentRouteOperationId='{Normalize(saveOnExitPlan.CurrentRouteOperationId)}' currentTransitionId='{Normalize(saveOnExitPlan.CurrentTransitionId)}' routeSequence='{saveOnExitPlan.CurrentRouteSequence}' failureKind='{failureKind}' failureReason='{RouteActivitySaveSkipKindMapper.ToCode(failureKind)}' detail='{Normalize(detail)}' source='{source}' reason='{reason}'.");
         }
 
-        private static bool TryResolvePreviousActivitySnapshotPayload(
+        private bool TryResolvePreviousActivitySnapshotPayload(
             OperationalRouteActivitySaveSaveOnExitCommand command,
             out string activitySnapshotPayload,
             out RouteActivitySnapshotPayloadResolution resolution)
@@ -295,7 +297,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            ISessionActivitySnapshotPayloadProvider provider = command.ActivitySnapshotPayloadProvider;
+            ISessionActivitySnapshotPayloadProvider provider = _activitySnapshotPayloadProviderResolver();
             if (provider == null)
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(

@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SaveRuntime.Models;
-using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
@@ -29,22 +28,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteCommand routeCommand,
             RouteActivitySavePlan routeActivitySavePlan,
-            ISessionOperationalActivitySaveAdapter activitySaveAdapter,
-            IProgressionSlotContextResolver progressionSlotContextResolver,
-            ISaveStateService saveStateService,
-            IRouteActivityLoadedSnapshotPayloadStore loadedSnapshotStore,
-            string routeActivitySnapshotSchemaId,
             string source,
             string reason)
         {
             RuntimeModeConfig = runtimeModeConfig;
             RouteCommand = routeCommand;
             RouteActivitySavePlan = routeActivitySavePlan;
-            ActivitySaveAdapter = activitySaveAdapter;
-            ProgressionSlotContextResolver = progressionSlotContextResolver;
-            SaveStateService = saveStateService;
-            LoadedSnapshotStore = loadedSnapshotStore;
-            RouteActivitySnapshotSchemaId = Normalize(routeActivitySnapshotSchemaId);
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -52,22 +41,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public RuntimeModeConfig RuntimeModeConfig { get; }
         public SessionOperationalRouteCommand RouteCommand { get; }
         public RouteActivitySavePlan RouteActivitySavePlan { get; }
-        public ISessionOperationalActivitySaveAdapter ActivitySaveAdapter { get; }
-        public IProgressionSlotContextResolver ProgressionSlotContextResolver { get; }
-        public ISaveStateService SaveStateService { get; }
-        public IRouteActivityLoadedSnapshotPayloadStore LoadedSnapshotStore { get; }
-        public string RouteActivitySnapshotSchemaId { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             RuntimeModeConfig != null &&
             RouteCommand.IsValid &&
-            RouteActivitySavePlan.IsValid &&
-            ActivitySaveAdapter != null &&
-            ProgressionSlotContextResolver != null &&
-            LoadedSnapshotStore != null &&
-            !string.IsNullOrWhiteSpace(RouteActivitySnapshotSchemaId);
+            RouteActivitySavePlan.IsValid;
 
         private static string Normalize(string value)
         {
@@ -100,6 +80,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalRouteActivitySaveLoadOnEnterStage
     {
+        private readonly ISessionOperationalActivitySaveAdapter _activitySaveAdapter;
+        private readonly IProgressionSlotContextResolver _progressionSlotContextResolver;
+        private readonly Func<ISaveStateService> _saveStateServiceResolver;
+        private readonly IRouteActivityLoadedSnapshotPayloadStore _loadedSnapshotStore;
+        private readonly string _routeActivitySnapshotSchemaId;
+
+        public OperationalRouteActivitySaveLoadOnEnterStage(
+            ISessionOperationalActivitySaveAdapter activitySaveAdapter,
+            IProgressionSlotContextResolver progressionSlotContextResolver,
+            Func<ISaveStateService> saveStateServiceResolver,
+            IRouteActivityLoadedSnapshotPayloadStore loadedSnapshotStore,
+            string routeActivitySnapshotSchemaId)
+        {
+            _activitySaveAdapter = activitySaveAdapter ?? throw new ArgumentNullException(nameof(activitySaveAdapter));
+            _progressionSlotContextResolver = progressionSlotContextResolver ?? throw new ArgumentNullException(nameof(progressionSlotContextResolver));
+            _saveStateServiceResolver = saveStateServiceResolver ?? throw new ArgumentNullException(nameof(saveStateServiceResolver));
+            _loadedSnapshotStore = loadedSnapshotStore ?? throw new ArgumentNullException(nameof(loadedSnapshotStore));
+            _routeActivitySnapshotSchemaId = string.IsNullOrWhiteSpace(routeActivitySnapshotSchemaId)
+                ? throw new ArgumentException("routeActivitySnapshotSchemaId is required.", nameof(routeActivitySnapshotSchemaId))
+                : routeActivitySnapshotSchemaId.Trim();
+        }
+
         public OperationalRouteActivitySaveLoadOnEnterResult Execute(OperationalRouteActivitySaveLoadOnEnterCommand command)
         {
             if (!command.IsValid)
@@ -127,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "route_activity_save_load_on_enter_completed");
         }
 
-        private static void ExecuteLoadOnEnterOrFail(OperationalRouteActivitySaveLoadOnEnterCommand command)
+        private void ExecuteLoadOnEnterOrFail(OperationalRouteActivitySaveLoadOnEnterCommand command)
         {
             RouteActivitySaveLoadPlan loadOnEnterPlan = command.RouteActivitySavePlan.LoadOnEnter;
             string activityIdentity = loadOnEnterPlan.ActivityIdentity;
@@ -144,8 +146,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return;
             }
 
-            command.LoadedSnapshotStore.ClearPendingLoadedSnapshotPayload();
-            if (!TryResolveCurrentSnapshotIdForRouteActivityLoad(command.SaveStateService, out string currentSnapshotId, out string snapshotFailureReason))
+            _loadedSnapshotStore.ClearPendingLoadedSnapshotPayload();
+            if (!TryResolveCurrentSnapshotIdForRouteActivityLoad(_saveStateServiceResolver(), out string currentSnapshotId, out string snapshotFailureReason))
             {
                 DebugUtility.Log(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
                     $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotLoad' checkpointStatus='Waiting' activityIdentity='{Normalize(activityIdentity)}' payloadLoaded='false' sourceActivityId='<none>' sourceEntrySequence='0' payloadObjectCount='0' targetIds='<none>' payloadSize='0'.",
@@ -157,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
-                command.ProgressionSlotContextResolver,
+                _progressionSlotContextResolver,
                 routeIdentity,
                 routeOperationId,
                 transitionId,
@@ -174,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            RouteActivitySaveLoadResult result = command.ActivitySaveAdapter.LoadActivitySaveOnEnter(
+            RouteActivitySaveLoadResult result = _activitySaveAdapter.LoadActivitySaveOnEnter(
                 command.RuntimeModeConfig,
                 command.RouteCommand,
                 slotContext,
@@ -203,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             LoadedSessionActivitySnapshotPayloadParseResult parseResult =
-                LoadedSessionActivitySnapshotPayloadParser.Parse(result.ActivitySnapshotPayload, command.RouteActivitySnapshotSchemaId);
+                LoadedSessionActivitySnapshotPayloadParser.Parse(result.ActivitySnapshotPayload, _routeActivitySnapshotSchemaId);
             if (!parseResult.Succeeded)
             {
                 DebugUtility.LogError(typeof(OperationalRouteActivitySaveLoadOnEnterStage),
@@ -213,7 +215,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             LoadedSessionActivitySnapshotPayload loadedPayload = parseResult.Payload;
-            command.LoadedSnapshotStore.SetPendingLoadedSnapshotPayload(
+            _loadedSnapshotStore.SetPendingLoadedSnapshotPayload(
                 Normalize(activityIdentity),
                 loadedPayload,
                 result.ActivitySnapshotPayload.Length);

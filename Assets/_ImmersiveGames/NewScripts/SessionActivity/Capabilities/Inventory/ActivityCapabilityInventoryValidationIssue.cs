@@ -1,5 +1,3 @@
-using System;
-
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
     public readonly struct ActivityCapabilityInventoryValidationIssue
