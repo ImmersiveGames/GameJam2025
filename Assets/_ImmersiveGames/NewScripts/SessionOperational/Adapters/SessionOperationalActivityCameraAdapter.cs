@@ -49,8 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return true;
             }
 
-            OperationalRouteAsset route = command.Route;
-            ActivityPresentationProfileAsset profile = route.ActivityPresentationProfile;
+            ActivityPresentationProfileAsset profile = command.ActivityPresentationProfile;
 
             if (profile == null)
             {
@@ -312,13 +311,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             if (!string.IsNullOrWhiteSpace(command.ActiveSceneName))
             {
                 return command.ActiveSceneName;
-            }
-
-            if (command.Route != null &&
-                command.Route.ActiveSceneKey != null &&
-                !string.IsNullOrWhiteSpace(command.Route.ActiveSceneKey.SceneName))
-            {
-                return command.Route.ActiveSceneKey.SceneName.Trim();
             }
 
             return string.Empty;

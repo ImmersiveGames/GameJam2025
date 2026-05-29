@@ -94,21 +94,57 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 
         private void ValidatePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)
         {
-            if (command.Route == null)
-            {
-                HardFailFastH1.Trigger(
-                    typeof(SceneCompositionAdapter),
-                    "[FATAL][Config][SessionOperationalPipeline] SessionOperationalRouteCommand.Route is required.");
-            }
-
             RuntimePersistentScenesPolicyAsset persistentScenesPolicy = ResolvePersistentScenesPolicyOrFail(command);
+            HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrFail(persistentScenesPolicy);
 
-            if (!command.Route.TryValidateAgainstPersistentScenesPolicy(persistentScenesPolicy, out string validationError))
+            if (TryFindSceneConflict(command.FinalScenesToLoad, persistentSceneSet, nameof(command.FinalScenesToLoad), command.RouteIdentity, out string validationError) ||
+                TryFindSceneConflict(command.FinalScenesToUnload, persistentSceneSet, nameof(command.FinalScenesToUnload), command.RouteIdentity, out validationError))
             {
                 HardFailFastH1.Trigger(
                     typeof(SceneCompositionAdapter),
                     $"[FATAL][Config][SessionOperationalPipeline] {validationError}");
             }
+
+            string activeSceneName = ResolveSceneName(command.ActiveSceneKey, nameof(command.ActiveSceneKey));
+            if (persistentSceneSet.Contains(activeSceneName))
+            {
+                HardFailFastH1.Trigger(
+                    typeof(SceneCompositionAdapter),
+                    $"[FATAL][Config][SessionOperationalPipeline] activeSceneKey cannot reference runtime persistent scene='{activeSceneName}'. routeIdentity='{command.RouteIdentity}'.");
+            }
+        }
+
+        private static HashSet<string> BuildPersistentSceneSetOrFail(RuntimePersistentScenesPolicyAsset persistentScenesPolicy)
+        {
+            IReadOnlyList<string> persistentSceneNames = persistentScenesPolicy.ResolveSceneNamesOrFail(nameof(SceneCompositionAdapter));
+            return new HashSet<string>(persistentSceneNames, StringComparer.Ordinal);
+        }
+
+        private static bool TryFindSceneConflict(
+            IReadOnlyList<SceneKeyAsset> scenes,
+            HashSet<string> persistentSceneSet,
+            string fieldName,
+            string routeIdentity,
+            out string errorMessage)
+        {
+            errorMessage = string.Empty;
+
+            if (scenes == null || persistentSceneSet == null || persistentSceneSet.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < scenes.Count; i++)
+            {
+                string normalizedSceneName = ResolveSceneName(scenes[i], $"{fieldName}[{i}]");
+                if (persistentSceneSet.Contains(normalizedSceneName))
+                {
+                    errorMessage = $"{fieldName} cannot contain runtime persistent scene='{normalizedSceneName}'. routeIdentity='{routeIdentity}'.";
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private RuntimePersistentScenesPolicyAsset ResolvePersistentScenesPolicyOrFail(SessionOperationalRouteCommand command)

@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 
@@ -13,7 +14,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
     public readonly struct SessionOperationalActivityCameraPrepareCommand
     {
         public SessionOperationalActivityCameraPrepareCommand(
-            OperationalRouteAsset route,
             string routeIdentity,
             string routeOperationId,
             string transitionId,
@@ -21,10 +21,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             string activityIdentity,
             SessionOperationalRouteCompletionHandoffKind completionHandoff,
             string activeSceneName,
+            ActivityPresentationProfileAsset activityPresentationProfile,
             string source,
             string reason)
         {
-            Route = route;
             RouteIdentity = Normalize(routeIdentity);
             RouteOperationId = Normalize(routeOperationId);
             TransitionId = Normalize(transitionId);
@@ -32,11 +32,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             ActivityIdentity = Normalize(activityIdentity);
             CompletionHandoff = completionHandoff;
             ActiveSceneName = Normalize(activeSceneName);
+            ActivityPresentationProfile = activityPresentationProfile;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
-        public OperationalRouteAsset Route { get; }
         public string RouteIdentity { get; }
         public string RouteOperationId { get; }
         public string TransitionId { get; }
@@ -44,11 +44,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         public string ActivityIdentity { get; }
         public SessionOperationalRouteCompletionHandoffKind CompletionHandoff { get; }
         public string ActiveSceneName { get; }
+        public ActivityPresentationProfileAsset ActivityPresentationProfile { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
-            Route != null &&
             !string.IsNullOrWhiteSpace(RouteIdentity) &&
             !string.IsNullOrWhiteSpace(RouteOperationId) &&
             !string.IsNullOrWhiteSpace(TransitionId) &&

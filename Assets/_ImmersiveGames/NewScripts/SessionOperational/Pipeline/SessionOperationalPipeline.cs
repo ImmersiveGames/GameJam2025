@@ -72,6 +72,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private const string RouteActivitySnapshotSchemaId = "progression.route_activity.object_snapshot.v1";
 
         private readonly SessionOperationalRuntimeState _state = new();
+        private readonly SessionOperationalStageOrderPolicy _stageOrderPolicy = new();
+        private readonly SessionOperationalRoutePlanResolver _routePlanResolver = new();
+        private readonly SessionOperationalPipelineDependencies _dependencies;
         private readonly string _sessionOperationalPipelineId;
         private readonly object _operationalRouteSync = new();
         private int _operationalRouteSequence;
@@ -83,8 +86,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private LoadedRouteActivitySnapshotPayloadContext _pendingLoadedRouteActivitySnapshotPayload;
         public event Action<RouteOperationCompletionSignal> RouteOperationCompleted;
 
-        public SessionOperationalPipeline(string sessionOperationalPipelineId = DefaultPipelineId)
+        public SessionOperationalPipeline(
+            SessionOperationalPipelineDependencies dependencies,
+            string sessionOperationalPipelineId = DefaultPipelineId)
         {
+            _dependencies = dependencies ?? throw new ArgumentNullException(nameof(dependencies));
             _sessionOperationalPipelineId = Normalize(sessionOperationalPipelineId);
 
             if (string.IsNullOrWhiteSpace(_sessionOperationalPipelineId))
@@ -122,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     Normalize(routeValidationError));
             }
 
-            RouteRequestSubmissionResult preflight = TryPreflightRouteRequest(route, sourceText, reasonText);
+            RouteRequestSubmissionResult preflight = TryPreflightRouteRequest(routeIdentity, sourceText, reasonText);
             if (!preflight.IsAccepted)
             {
                 return preflight;
@@ -130,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             try
             {
-                ValidatePersistentScenesPolicyOrFail(route);
+                _routePlanResolver.ValidateAuthoringOrFail(route, _dependencies.PersistentScenesPolicy);
             }
             catch (Exception ex)
             {
@@ -189,36 +195,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("OperationalRouteAsset is required.");
             }
 
-            if (!route.TryValidate(out string routeValidationError))
-            {
-                string message = $"[FATAL][Config][SessionOperationalRoute] {routeValidationError}";
-                DebugUtility.LogError<SessionOperationalPipeline>(message);
-                throw new InvalidOperationException(message);
-            }
-
-            ValidatePersistentScenesPolicyOrFail(route);
             ISceneCompositionAdapter routeExecutor = ResolveRouteExecutorOrFail();
             RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = _dependencies.PersistentScenesPolicy;
             IFadeAdapter fadeAdapter = null;
             ILoadingAdapter loadingAdapter = null;
-            if (route.UsesTransition)
-            {
-                fadeAdapter = ResolveFadeAdapterOrFail();
-            }
 
-            string routeIdentity = route.RouteIdentity;
             string sourceText = Normalize(source);
             string reasonText = Normalize(reason);
-            string activeSceneName = ResolveSceneName(route.ActiveSceneKey, nameof(route.ActiveSceneKey));
-            SessionOperationalRouteLoadPlan loadPlan = default;
+            string routeIdentity = Normalize(route.RouteIdentity);
+            string activeSceneName = string.Empty;
             SessionOperationalRouteSnapshot previousCompletedRoute = default;
-            SessionOperationalRouteUnloadPlan unloadPlan = default;
+            SessionOperationalRoutePlanResolution planResolution = default;
 
             string routeOperationId;
             string transitionId;
             int routeSequence;
-            SessionOperationalLoadingCommand loadingCommand;
 
             lock (_operationalRouteSync)
             {
@@ -229,27 +221,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     throw new InvalidOperationException("Operational route operation is already in flight.");
                 }
 
+                previousCompletedRoute = _lastCompletedRouteSnapshot;
+                planResolution = _routePlanResolver.ResolveOrFail(
+                    route,
+                    persistentScenesPolicy,
+                    previousCompletedRoute.IsValid,
+                    previousCompletedRoute.RouteOwnedLoadedSceneKeys);
+
+                routeIdentity = planResolution.Plan.RouteIdentity;
+                activeSceneName = ResolveSceneName(planResolution.Plan.ActiveSceneKey, nameof(planResolution.Plan.ActiveSceneKey));
                 _operationalRouteSequence += 1;
                 routeSequence = _operationalRouteSequence;
                 routeOperationId = BuildRouteOperationId(routeIdentity, activeSceneName, routeSequence);
                 transitionId = BuildTransitionId(routeIdentity, activeSceneName, routeSequence);
-                loadPlan = ResolveRouteLoadPlanOrFail(route, persistentScenesPolicy, activeSceneName);
-                previousCompletedRoute = _lastCompletedRouteSnapshot;
-                unloadPlan = ResolveRouteUnloadPlanOrFail(
-                    route,
-                    previousCompletedRoute,
-                    persistentScenesPolicy,
-                    loadPlan.FinalScenesToLoad,
-                    activeSceneName);
 
-                if (route.UnloadPreviousRouteOwnedScenes)
+                if (planResolution.UnloadPreviousRouteOwnedScenes)
                 {
                     LogPreviousRouteUnloadPlan(
                         previousCompletedRoute,
                         routeIdentity,
-                        unloadPlan.ExplicitScenesToUnload,
-                        unloadPlan.AutoScenesToUnload,
-                        unloadPlan.FinalScenesToUnload);
+                        planResolution.ExplicitScenesToUnload,
+                        planResolution.Plan.AutoScenesToUnload,
+                        planResolution.Plan.FinalScenesToUnload);
                 }
 
                 _hasActiveOperationalRouteOperation = true;
@@ -258,8 +251,42 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 _activeOperationalRouteIdentity = routeIdentity;
             }
 
-            loadingCommand = ResolveLoadingCommandOrFail(
-                route,
+            SessionOperationalRouteCommand command = new(
+                planResolution.Plan,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                sourceText,
+                reasonText);
+
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalRoute] runtime command invalid routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+            }
+
+            RouteActivitySavePlan routeActivitySavePlan = RouteActivitySavePlanResolver.Resolve(
+                command,
+                previousCompletedRoute.IsValid,
+                previousCompletedRoute.RouteIdentity,
+                previousCompletedRoute.RouteOperationId,
+                previousCompletedRoute.RouteSequence,
+                previousCompletedRoute.SaveActivityOnExit,
+                previousCompletedRoute.ActivityIdentity,
+                BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity));
+            if (!routeActivitySavePlan.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlan invalido routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+            }
+
+            if (command.UsesTransition)
+            {
+                fadeAdapter = ResolveFadeAdapterOrFail();
+            }
+
+            SessionOperationalLoadingCommand loadingCommand = ResolveLoadingCommandOrFail(
+                command.Plan,
                 runtimeModeConfig,
                 routeOperationId,
                 transitionId,
@@ -276,36 +303,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     DebugUtility.Colors.Info);
             }
 
-            SessionOperationalRouteAudioCommand audioCommand = BuildRouteAudioCommandOrFail(
-                route,
-                routeIdentity,
-                routeOperationId,
-                transitionId,
-                routeSequence,
-                sourceText,
-                reasonText);
-            RouteActivitySavePolicy routeActivitySavePolicy = route.ActivitySavePolicy;
-
-            SessionOperationalRouteCommand command = route.CreateCommand(
-                routeOperationId,
-                transitionId,
-                routeSequence,
-                sourceText,
-                reasonText,
-                route.TransitionMode,
-                route.TransitionProfile,
-                audioCommand,
-                routeActivitySavePolicy,
-                loadPlan.FinalScenesToLoad,
-                unloadPlan.AutoScenesToUnload,
-                unloadPlan.FinalScenesToUnload);
-
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{route.ActiveSceneKey?.name ?? string.Empty}' activeSceneImplicitLoad='{loadPlan.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(loadPlan.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(unloadPlan.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(unloadPlan.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(unloadPlan.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
+                $"[OBS][SessionOperationalPipeline][Audio] RouteAudioPlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioMode='{command.Audio.RouteAudioMode}' routeAudioTiming='{command.Audio.RouteAudioTiming}' routeAudioCue='{command.Audio.RouteAudioCueName}' stopPreviousRouteAudio='{command.Audio.StopPreviousRouteAudio}' source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' routeSequence='{routeSequence}' loadActivitySaveOnEnter='{routeActivitySavePolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePolicy.SaveActivityOnExit}' source='{sourceText}' reason='{reasonText}'.",
+                $"[OBS][SessionOperationalPipeline][Route] command='OperationalRouteCommand' routeIdentity='{routeIdentity}' activeScene='{activeSceneName}' activeSceneKey='{command.ActiveSceneKey?.name ?? string.Empty}' activeSceneImplicitLoad='{planResolution.ActiveSceneImplicitLoad}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{command.CompletionHandoff}' finalScenesToLoad=[{FormatSceneNames(command.FinalScenesToLoad)}] autoScenesToUnload=[{FormatSceneNames(command.AutoScenesToUnload)}] explicitScenesToUnload=[{FormatSceneNames(planResolution.ExplicitScenesToUnload)}] finalScenesToUnload=[{FormatSceneNames(command.FinalScenesToUnload)}] source='{sourceText}' reason='{reasonText}'.",
+                DebugUtility.Colors.Info);
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' routeSequence='{routeSequence}' loadActivitySaveOnEnter='{routeActivitySavePlan.CurrentPolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePlan.CurrentPolicy.SaveActivityOnExit}' loadShouldRun='{routeActivitySavePlan.LoadOnEnter.ShouldLoad}' saveOnExitShouldRun='{routeActivitySavePlan.SaveOnExit.ShouldSave}' saveOnExitSkipKind='{routeActivitySavePlan.SaveOnExit.SkipKind}' source='{sourceText}' reason='{reasonText}'.",
                 DebugUtility.Colors.Info);
 
             bool fadeInCompleted = false;
@@ -322,7 +329,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 await EnsureSessionActivityRouteExitTeardownOrFailAsync(
                     previousCompletedRoute,
-                    unloadPlan,
+                    command.FinalScenesToUnload,
                     routeIdentity,
                     routeOperationId,
                     transitionId,
@@ -355,10 +362,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ExecuteRouteActivitySaveSaveOnExitOrFail(
                     runtimeModeConfig,
                     previousCompletedRoute,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
+                    routeActivitySavePlan,
                     source,
                     reason);
 
@@ -464,7 +468,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 ExecuteRouteCameraPresentationStageOrFail(
-                    route,
+                    command,
                     previousCompletedRoute,
                     activeSceneName,
                     routeIdentity,
@@ -499,18 +503,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ExecuteRouteActivitySaveLoadOnEnterOrFail(
                     runtimeModeConfig,
                     command,
-                    route.HandoffSessionStateId,
-                    routeIdentity,
-                    routeOperationId,
-                    transitionId,
-                    routeSequence,
+                    routeActivitySavePlan,
                     source,
                     reason);
 
-                SessionOperationalInputPolicy inputPolicy = route.InputPolicy;
+                SessionOperationalInputPolicy inputPolicy = command.InputPolicy;
                 SessionOperationalInputModeKind initialInputMode = PrepareInputCapabilityOrFail(
                     runtimeModeConfig,
-                    route,
+                    command.Plan,
                     inputPolicy,
                     routeIdentity,
                     routeOperationId,
@@ -519,7 +519,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     source,
                     reason);
 
-                string routeClass = route.OperationalSurfaceKind.ToString();
+                string routeClass = command.SurfaceKind.ToString();
                 if (!TryObserveInputCapabilityPrepared(
                         routeOperationId,
                         transitionId,
@@ -533,7 +533,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         reason))
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
+                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
                 }
 
                 if (!TryObserveInitialInputModePrepared(
@@ -549,31 +549,43 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         reason))
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
+                        $"[FATAL][H1][SessionOperationalPipeline][InputMode] Failed to record InitialInputModePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' inputPolicy='{inputPolicy}' resolvedInputMode='{initialInputMode}' source='{sourceText}' reason='{reasonText}'.");
                 }
 
-                if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
+                DispatchInitialInputModeCommandOrFail(
+                    routeOperationId,
+                    transitionId,
+                    routeSequence,
+                    routeIdentity,
+                    routeIdentity,
+                    routeClass,
+                    inputPolicy,
+                    initialInputMode,
+                    source,
+                    reason);
+
+                if (command.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
                 {
-                    if (string.IsNullOrWhiteSpace(route.HandoffSessionStateId))
+                    if (string.IsNullOrWhiteSpace(command.HandoffSessionStateId))
                     {
                         throw new InvalidOperationException("handoffSessionStateId is required when completionHandoff=SessionActivityEntry.");
                     }
 
                     PlayerPreparationIdentity playerPreparationIdentity = new(
                         _sessionOperationalPipelineId,
-                        route.HandoffSessionStateId,
+                        command.HandoffSessionStateId,
                         routeIdentity,
                         routeOperationId,
                         routeSequence,
                         transitionId);
                     PlayerPreparationPlan playerPreparationPlan = new(
                         playerPreparationIdentity,
-                        route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry,
-                        new PlayerSet(ResolvePlayerSetFromRoute(route)),
+                        command.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry,
+                        new PlayerSet(ResolvePlayerSetFromPlan(command.Plan)),
                         sourceText,
                         reasonText);
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationStarted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' source='{sourceText}' reason='{reasonText}'.",
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationStarted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.Plan)}' source='{sourceText}' reason='{reasonText}'.",
                         DebugUtility.Colors.Info);
 
                     playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan);
@@ -584,21 +596,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     hasPlayerPreparationResult = true;
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationIntentPrepared' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' source='{sourceText}' reason='{reasonText}' playerIds='{FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries)}'.",
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationIntentPrepared' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.Plan)}' source='{sourceText}' reason='{reasonText}' playerIds='{FormatPlayerIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries)}'.",
                         DebugUtility.Colors.Info);
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationCompleted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' source='{sourceText}' reason='{reasonText}' outcome='{(playerPreparationResult.IsObservedNoOp ? "observed_noop" : (playerPreparationResult.IsPlannedOnly ? "planned_only" : "materialized"))}'.",
+                        $"[OBS][SessionOperationalPipeline][PlayerPreparation] event='PlayerPreparationCompleted' pipelineId='{playerPreparationIdentity.PipelineId}' sessionId='{playerPreparationIdentity.SessionId}' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.Plan)}' source='{sourceText}' reason='{reasonText}' outcome='{(playerPreparationResult.IsObservedNoOp ? "observed_noop" : (playerPreparationResult.IsPlannedOnly ? "planned_only" : "materialized"))}'.",
                         DebugUtility.Colors.Info);
 
                     ExecuteActivityCameraPreparationStageOrFail(
-                        route,
+                        command,
                         activeSceneName,
                         routeIdentity,
                         routeOperationId,
                         transitionId,
                         routeSequence,
-                        route.HandoffSessionStateId,
+                        command.HandoffSessionStateId,
                         source,
                         reason);
                 }
@@ -671,17 +683,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     }
                 }
 
-                if (route.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
+                if (command.CompletionHandoff == SessionOperationalRouteCompletionHandoffKind.SessionActivityEntry)
                 {
-                    if (string.IsNullOrWhiteSpace(route.HandoffSessionStateId))
+                    if (string.IsNullOrWhiteSpace(command.HandoffSessionStateId))
                     {
                         throw new InvalidOperationException("handoffSessionStateId is required when completionHandoff=SessionActivityEntry.");
                     }
 
                     ISessionActivityEntryHandoffReceiver activityReceiver = ResolveActivityReceiverOrFail();
-                    if (!string.Equals(activityReceiver.SessionId, route.HandoffSessionStateId, StringComparison.Ordinal))
+                    if (!string.Equals(activityReceiver.SessionId, command.HandoffSessionStateId, StringComparison.Ordinal))
                     {
-                        throw new InvalidOperationException($"handoffSessionStateId '{route.HandoffSessionStateId}' does not match the active SessionActivityPipeline session '{activityReceiver.SessionId}'.");
+                        throw new InvalidOperationException($"handoffSessionStateId '{command.HandoffSessionStateId}' does not match the active SessionActivityPipeline session '{activityReceiver.SessionId}'.");
                     }
 
                     if (!hasPlayerPreparationResult || !playerPreparationResult.IsValid)
@@ -690,7 +702,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     }
 
                     DebugUtility.Log(typeof(SessionOperationalPipeline),
-                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmittedPreReveal' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(route)}' playerPreparationOutcome='{FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome)}' plannedPlayers='{playerPreparationResult.Snapshot.PlannedPlayersCount}' materializedPlayers='{playerPreparationResult.Snapshot.MaterializedPlayersCount}' pendingRequiredPlayers='{playerPreparationResult.Snapshot.PendingRequiredPlayersCount}'.",
+                        $"[OBS][SessionOperationalPipeline][Route] handoff='SessionActivityEntryHandoffEmittedPreReveal' routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{sourceText}' reason='{reasonText}' pendingHandoff='SessionActivityEntry' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.Plan)}' playerPreparationOutcome='{FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome)}' plannedPlayers='{playerPreparationResult.Snapshot.PlannedPlayersCount}' materializedPlayers='{playerPreparationResult.Snapshot.MaterializedPlayersCount}' pendingRequiredPlayers='{playerPreparationResult.Snapshot.PendingRequiredPlayersCount}'.",
                         DebugUtility.Colors.Info);
 
                     SessionActivityPlayerPreparationHandoff playerPreparationHandoff = new(
@@ -709,17 +721,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         playerPreparationResult.Snapshot.SkippedPlayersCount,
                         playerPreparationResult.Snapshot.PendingRequiredPlayersCount,
                         BuildParticipantIdsForHandoff(playerPreparationResult.Snapshot.PlannedEntries),
-                        BuildPlayerTechnicalPlanEntriesForHandoff(route));
+                        BuildPlayerTechnicalPlanEntriesForHandoff(command.Plan));
 
                     SessionActivityEntryHandoff handoff = new(
                         string.Empty,
                         0,
                         0,
-                        route.HandoffSessionStateId,
+                        command.HandoffSessionStateId,
                         playerPreparationHandoff,
                         new SessionActivityRouteTransitionContext(
-                            route.UsesTransition && route.TransitionProfile != null,
-                            route.TransitionProfile,
+                            command.UsesTransition && command.TransitionProfile != null,
+                            command.TransitionProfile,
                             loadingCommand.LoadingMode == SessionOperationalRouteLoadingMode.Profile && loadingCommand.LoadingProfile != null,
                             loadingCommand.LoadingProfile),
                         sourceText,
@@ -732,7 +744,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     }
 
                     await WaitForSessionActivityPredefinedVisualReadinessOrFailAsync(
-                        route.HandoffSessionStateId,
+                        command.HandoffSessionStateId,
                         playerPreparationResult.Snapshot.Identity.RouteOperationId,
                         routeIdentity,
                         routeOperationId,
@@ -792,7 +804,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 CompleteOperationalRouteOperation(routeOperationId, transitionId, routeSequence, routeIdentity, sourceText, reasonText);
-                RecordLastCompletedRouteSnapshot(route, routeOperationId, routeSequence, loadPlan.FinalScenesToLoad);
+                RecordLastCompletedRouteSnapshot(command);
 
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
                     $"[OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='{adapterFact.RouteIdentity}' routeOperationId='{adapterFact.RouteOperationId}' transitionId='{adapterFact.TransitionId}' routeSequence='{adapterFact.RouteSequence}' correlationId='{adapterFact.CorrelationId}' message='{adapterFact.Message}' transitionMode='{command.TransitionMode}' transitionProfile='{command.TransitionProfileLabel}' source='{sourceText}' reason='{reasonText}'.",
@@ -872,11 +884,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private RouteRequestSubmissionResult TryPreflightRouteRequest(
-            OperationalRouteAsset route,
+            string routeIdentity,
             string source,
             string reason)
         {
-            string routeIdentity = Normalize(route.RouteIdentity);
+            routeIdentity = Normalize(routeIdentity);
             lock (_operationalRouteSync)
             {
                 if (_hasActiveOperationalRouteOperation)
@@ -1270,6 +1282,66 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "Initial input mode prepared.");
         }
 
+        private void DispatchInitialInputModeCommandOrFail(
+            string routeOperationId,
+            string transitionId,
+            int transitionSequence,
+            string routeId,
+            string routeProfileId,
+            string routeClass,
+            SessionOperationalInputPolicy inputPolicy,
+            SessionOperationalInputModeKind initialInputMode,
+            string source,
+            string reason)
+        {
+            string normalizedRouteOperationId = Normalize(routeOperationId);
+            string normalizedTransitionId = Normalize(transitionId);
+            string normalizedRouteId = Normalize(routeId);
+            string normalizedRouteProfileId = Normalize(routeProfileId);
+            string normalizedRouteClass = Normalize(routeClass);
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+
+            if (_state.CurrentStage != SessionOperationalStage.InitialInputModePrepared ||
+                _state.RouteOperationId != normalizedRouteOperationId ||
+                _state.TransitionId != normalizedTransitionId ||
+                _state.TransitionSequence != transitionSequence ||
+                _state.RouteId != normalizedRouteId ||
+                _state.RouteProfileId != normalizedRouteProfileId)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][H1][SessionOperationalPipeline][InputMode] Cannot dispatch SessionOperationalInputModeCommand before matching InitialInputModePrepared fact routeIdentity='{normalizedRouteId}' routeOperationId='{normalizedRouteOperationId}' transitionId='{normalizedTransitionId}' routeSequence='{transitionSequence}' currentStage='{_state.CurrentStage}' currentRouteOperationId='{_state.RouteOperationId}' currentTransitionId='{_state.TransitionId}' currentRouteSequence='{_state.TransitionSequence}' source='{normalizedSource}' reason='{normalizedReason}'.");
+            }
+
+            _state.SetInputModeContext(normalizedRouteClass, inputPolicy, initialInputMode);
+
+            SessionOperationalIdentity identity = new(
+                _sessionOperationalPipelineId,
+                normalizedRouteOperationId,
+                normalizedTransitionId,
+                transitionSequence,
+                normalizedRouteId,
+                normalizedRouteProfileId,
+                normalizedSource,
+                normalizedReason,
+                SessionOperationalStage.InitialInputModePrepared);
+
+            SessionOperationalInputModeCommand inputModeCommand = new(
+                identity,
+                _state.CurrentInitialInputMode,
+                _state.RouteClass);
+
+            if (!inputModeCommand.IsValid)
+            {
+                throw new InvalidOperationException("Cannot emit invalid operational input mode command.");
+            }
+
+            _state.AppendTrace(
+                $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' contextSignature='{inputModeCommand.ContextSignature}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{inputModeCommand.InitialInputMode}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
+
+            EventBus<SessionOperationalInputModeCommand>.Raise(inputModeCommand);
+        }
+
         public bool TryObservePauseCapabilityPrepared(
             string routeOperationId,
             string transitionId,
@@ -1455,24 +1527,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     $"[OBS][SessionOperationalPipeline][InputMode] fact='{fact.Kind}' stage='{fact.Identity.Stage}' routeId='{fact.Identity.RouteId}' routeProfileId='{fact.Identity.RouteProfileId}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' inputMode='{_state.CurrentInitialInputMode}' source='{fact.Source}' reason='{fact.Reason}'");
             }
 
-            if (stage == SessionOperationalStage.InitialInputModePrepared)
-            {
-                SessionOperationalInputModeCommand inputModeCommand = new(
-                    identity,
-                    _state.CurrentInitialInputMode,
-                    _state.RouteClass);
-
-                if (!inputModeCommand.IsValid)
-                {
-                    throw new InvalidOperationException("Cannot emit invalid operational input mode command.");
-                }
-
-                _state.AppendTrace(
-                    $"[OBS][SessionOperationalPipeline][InputMode] command='SessionOperationalInputModeCommand' routeIdentity='{identity.RouteId}' routeOperationId='{identity.RouteOperationId}' transitionId='{identity.TransitionId}' routeSequence='{identity.TransitionSequence}' contextSignature='{inputModeCommand.ContextSignature}' operationalSurfaceKind='{Normalize(_state.RouteClass)}' inputPolicy='{_state.CurrentInputPolicy}' initialInputMode='{inputModeCommand.InitialInputMode}' source='{inputModeCommand.Source}' reason='{inputModeCommand.Reason}'.");
-
-                EventBus<SessionOperationalInputModeCommand>.Raise(inputModeCommand);
-            }
-
             if (stage == SessionOperationalStage.Completed)
             {
                 _state.MarkCompleted();
@@ -1501,18 +1555,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!_state.HasStarted)
             {
-                return stageKey.Stage == SessionOperationalStage.RouteOperationStarted;
+                return _stageOrderPolicy.CanStart(stageKey.Stage);
             }
 
             if (_state.HasCompleted)
             {
                 return false;
             }
+
             // Aceita progresso monotônico/sparse:
             // - mesma identity já validada acima
             // - não aceita retrocesso
             // - não aceita duplicata do stage atual
-            return (int)stageKey.Stage > (int)_state.CurrentStage;
+            // - não depende do valor numérico do enum
+            return _stageOrderPolicy.CanAdvance(_state.CurrentStage, stageKey.Stage);
         }
 
         private SessionOperationalTransitionKey BuildTransitionKey(
@@ -1621,69 +1677,35 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return SessionOperationalObservableIdFormatter.BuildTransitionId(routeIdentity, activeScene, sequence);
         }
 
-        private static ISceneCompositionAdapter ResolveRouteExecutorOrFail()
+        private ISceneCompositionAdapter ResolveRouteExecutorOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISceneCompositionAdapter>(out var executor) && executor != null)
-            {
-                return executor;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline] ISceneCompositionAdapter obrigatorio ausente para o trilho operacional.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.SceneCompositionAdapter;
         }
 
-        private static IFadeAdapter ResolveFadeAdapterOrFail()
+        private IFadeAdapter ResolveFadeAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IFadeAdapter>(out var fadeAdapter) && fadeAdapter != null)
-            {
-                return fadeAdapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline] IFadeAdapter obrigatorio ausente para transitionMode=Profile.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.FadeAdapter;
         }
 
-        private static ILoadingAdapter ResolveLoadingAdapterOrFail()
+        private ILoadingAdapter ResolveLoadingAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ILoadingAdapter>(out var loadingAdapter) && loadingAdapter != null)
-            {
-                return loadingAdapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline] ILoadingAdapter obrigatorio ausente para o rail canonico de loading.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.LoadingAdapter;
         }
 
-        private static ISessionOperationalRouteCameraAdapter ResolveSessionOperationalRouteCameraAdapterOrFail()
+        private ISessionOperationalRouteCameraAdapter ResolveSessionOperationalRouteCameraAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalRouteCameraAdapter>(out var routeCameraAdapter) && routeCameraAdapter != null)
-            {
-                return routeCameraAdapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline][RouteCamera] ISessionOperationalRouteCameraAdapter obrigatorio ausente para route/surface camera presentation stage.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.RouteCameraAdapter;
         }
 
-        private static ISessionOperationalActivityCameraAdapter ResolveSessionOperationalActivityCameraAdapterOrFail()
+        private ISessionOperationalActivityCameraAdapter ResolveSessionOperationalActivityCameraAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalActivityCameraAdapter>(out var activityCameraAdapter) && activityCameraAdapter != null)
-            {
-                return activityCameraAdapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline][ActivityCamera] ISessionOperationalActivityCameraAdapter obrigatorio ausente para activity camera presentation stage.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.ActivityCameraAdapter;
         }
 
-        private static ISessionActivityEntryHandoffReceiver ResolveActivityReceiverOrFail()
+        private ISessionActivityEntryHandoffReceiver ResolveActivityReceiverOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionActivityEntryHandoffReceiver>(out var receiver) && receiver != null)
+            ISessionActivityEntryHandoffReceiver receiver = _dependencies.ResolveActivityReceiver();
+            if (receiver != null)
             {
                 return receiver;
             }
@@ -1693,9 +1715,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             throw new InvalidOperationException(message);
         }
 
-        private static ISessionActivityPredefinedVisualReadinessBoundary ResolveActivityPredefinedVisualReadinessBoundaryOrFail()
+        private ISessionActivityPredefinedVisualReadinessBoundary ResolveActivityPredefinedVisualReadinessBoundaryOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionActivityPredefinedVisualReadinessBoundary>(out var boundary) && boundary != null)
+            ISessionActivityPredefinedVisualReadinessBoundary boundary = _dependencies.ResolveActivityVisualReadinessBoundary();
+            if (boundary != null)
             {
                 return boundary;
             }
@@ -1705,9 +1728,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             throw new InvalidOperationException(message);
         }
 
-        private static ISessionActivityRouteExitTeardownBoundary ResolveActivityRouteExitTeardownBoundaryOrFail()
+        private ISessionActivityRouteExitTeardownBoundary ResolveActivityRouteExitTeardownBoundaryOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionActivityRouteExitTeardownBoundary>(out var boundary) && boundary != null)
+            ISessionActivityRouteExitTeardownBoundary boundary = _dependencies.ResolveActivityRouteExitTeardownBoundary();
+            if (boundary != null)
             {
                 return boundary;
             }
@@ -1717,7 +1741,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             throw new InvalidOperationException(message);
         }
 
-        private static async Task WaitForSessionActivityPredefinedVisualReadinessOrFailAsync(
+        private async Task WaitForSessionActivityPredefinedVisualReadinessOrFailAsync(
             string sessionStateId,
             string expectedRouteOperationId,
             string routeIdentity,
@@ -1795,7 +1819,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private async Task EnsureSessionActivityRouteExitTeardownOrFailAsync(
             SessionOperationalRouteSnapshot previousCompletedRoute,
-            SessionOperationalRouteUnloadPlan unloadPlan,
+            IReadOnlyList<SceneKeyAsset> finalScenesToUnload,
             string routeIdentity,
             string routeOperationId,
             string transitionId,
@@ -1803,7 +1827,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            if (!ShouldRequireSessionActivityRouteExitTeardown(previousCompletedRoute, unloadPlan))
+            if (!ShouldRequireSessionActivityRouteExitTeardown(previousCompletedRoute, finalScenesToUnload))
             {
                 return;
             }
@@ -2051,7 +2075,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static bool ShouldRequireSessionActivityRouteExitTeardown(
             SessionOperationalRouteSnapshot previousCompletedRoute,
-            SessionOperationalRouteUnloadPlan unloadPlan)
+            IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
         {
             if (!previousCompletedRoute.IsValid)
             {
@@ -2063,14 +2087,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            if (unloadPlan.FinalScenesToUnload == null || unloadPlan.FinalScenesToUnload.Count == 0)
+            if (finalScenesToUnload == null || finalScenesToUnload.Count == 0)
             {
                 return false;
             }
 
-            for (int i = 0; i < unloadPlan.FinalScenesToUnload.Count; i++)
+            for (int i = 0; i < finalScenesToUnload.Count; i++)
             {
-                SceneKeyAsset candidate = unloadPlan.FinalScenesToUnload[i];
+                SceneKeyAsset candidate = finalScenesToUnload[i];
                 if (candidate == null)
                 {
                     continue;
@@ -2109,7 +2133,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         private static SessionOperationalLoadingCommand ResolveLoadingCommandOrFail(
-            OperationalRouteAsset route,
+            SessionOperationalRoutePlan plan,
             RuntimeModeConfig runtimeModeConfig,
             string routeOperationId,
             string transitionId,
@@ -2117,9 +2141,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            if (route == null)
+            if (!plan.IsValid)
             {
-                throw new ArgumentNullException(nameof(route));
+                throw new ArgumentException("SessionOperationalRoutePlan is invalid.", nameof(plan));
             }
 
             if (runtimeModeConfig == null)
@@ -2127,8 +2151,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline] RuntimeModeConfig obrigatorio ausente para resolver loading.");
             }
 
-            SessionOperationalRouteLoadingMode effectiveLoadingMode = route.LoadingMode;
-            RuntimeLoadingProfileAsset effectiveLoadingProfile = route.LoadingProfile;
+            SessionOperationalRouteLoadingMode effectiveLoadingMode = plan.LoadingMode;
+            RuntimeLoadingProfileAsset effectiveLoadingProfile = plan.LoadingProfile;
 
             if (effectiveLoadingMode == SessionOperationalRouteLoadingMode.RuntimeDefault)
             {
@@ -2143,14 +2167,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             {
                 if (effectiveLoadingProfile == null)
                 {
-                    string message = $"[FATAL][Config][SessionOperationalRoute] loadingProfile is required when loadingMode=Profile routeIdentity='{route.RouteIdentity}'.";
+                    string message = $"[FATAL][Config][SessionOperationalRoute] loadingProfile is required when loadingMode=Profile routeIdentity='{plan.RouteIdentity}'.";
                     DebugUtility.LogError<SessionOperationalPipeline>(message);
                     throw new InvalidOperationException(message);
                 }
 
                 if (!effectiveLoadingProfile.TryValidate(out string profileValidationError))
                 {
-                    string message = $"[FATAL][Config][SessionOperationalRoute] loadingProfile is invalid routeIdentity='{route.RouteIdentity}' profile='{effectiveLoadingProfile.ProfileId}' detail='{profileValidationError}'.";
+                    string message = $"[FATAL][Config][SessionOperationalRoute] loadingProfile is invalid routeIdentity='{plan.RouteIdentity}' profile='{effectiveLoadingProfile.ProfileId}' detail='{profileValidationError}'.";
                     DebugUtility.LogError<SessionOperationalPipeline>(message);
                     throw new InvalidOperationException(message);
                 }
@@ -2166,7 +2190,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
                 if (persistentScenesPolicy == null)
                 {
-                    string message = $"[FATAL][Config][SessionOperationalPipeline] RuntimePersistentScenesPolicyAsset obrigatorio ausente para loading efetivo routeIdentity='{route.RouteIdentity}'.";
+                    string message = $"[FATAL][Config][SessionOperationalPipeline] RuntimePersistentScenesPolicyAsset obrigatorio ausente para loading efetivo routeIdentity='{plan.RouteIdentity}'.";
                     DebugUtility.LogError<SessionOperationalPipeline>(message);
                     throw new InvalidOperationException(message);
                 }
@@ -2177,7 +2201,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             SessionOperationalLoadingCommand loadingCommand = new(
-                route.RouteIdentity,
+                plan.RouteIdentity,
                 routeOperationId,
                 transitionId,
                 routeSequence,
@@ -2190,7 +2214,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             if (!loadingCommand.IsValid)
             {
-                string message = $"[FATAL][Config][SessionOperationalPipeline] loading command invalid routeIdentity='{route.RouteIdentity}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' loadingSceneName='{loadingCommand.LoadingSceneName}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.";
+                string message = $"[FATAL][Config][SessionOperationalPipeline] loading command invalid routeIdentity='{plan.RouteIdentity}' loadingMode='{loadingCommand.LoadingMode}' loadingProfile='{loadingCommand.LoadingProfileId}' loadingSceneName='{loadingCommand.LoadingSceneName}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.";
                 DebugUtility.LogError<SessionOperationalPipeline>(message);
                 throw new InvalidOperationException(message);
             }
@@ -2198,16 +2222,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return loadingCommand;
         }
 
-        private static IAudioAdapter ResolveAudioAdapterOrFail()
+        private IAudioAdapter ResolveAudioAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<IAudioAdapter>(out var audioAdapter) && audioAdapter != null)
-            {
-                return audioAdapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline][Audio] IAudioAdapter obrigatorio ausente para routeAudio cue.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.AudioAdapter;
         }
 
         private static string ResolveRouteAudioCueTypeOrFail(AudioCueAsset cue)
@@ -2238,20 +2255,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return $"{prefix} routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeAudioMode='{command.Audio.RouteAudioMode}' routeAudioTiming='{command.Audio.RouteAudioTiming}' routeAudioCue='{command.Audio.RouteAudioCueName}' stopPreviousRouteAudio='{command.Audio.StopPreviousRouteAudio}' source='{source}' reason='{reason}' {extra}.";
         }
 
-        private static ISessionOperationalActivitySaveAdapter ResolveSessionOperationalActivitySaveAdapterOrFail()
+        private ISessionOperationalActivitySaveAdapter ResolveSessionOperationalActivitySaveAdapterOrFail()
         {
-            if (DependencyManager.Provider.TryGetGlobal<ISessionOperationalActivitySaveAdapter>(out var adapter) && adapter != null)
-            {
-                return adapter;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] ISessionOperationalActivitySaveAdapter obrigatorio ausente para RouteActivitySave.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
+            return _dependencies.ActivitySaveAdapter;
         }
 
-        private static void ExecuteRouteCameraPresentationStageOrFail(
-            OperationalRouteAsset route,
+        private void ExecuteRouteCameraPresentationStageOrFail(
+            SessionOperationalRouteCommand command,
             SessionOperationalRouteSnapshot previousCompletedRoute,
             string activeSceneName,
             string routeIdentity,
@@ -2264,7 +2274,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ISessionOperationalRouteCameraAdapter routeCameraAdapter = ResolveSessionOperationalRouteCameraAdapterOrFail();
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationStageStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activeScene='{Normalize(activeSceneName)}' operationalSurfaceKind='{route.OperationalSurfaceKind}' completionHandoff='{route.CompletionHandoff}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationStageStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activeScene='{Normalize(activeSceneName)}' operationalSurfaceKind='{command.SurfaceKind}' completionHandoff='{command.CompletionHandoff}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             SessionOperationalRouteCameraReleaseCommand releaseCommand = new(
@@ -2300,27 +2310,28 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             SessionOperationalRouteCameraPrepareCommand prepareCommand = new(
-                route,
                 routeIdentity,
                 routeOperationId,
                 transitionId,
                 routeSequence,
-                route.OperationalSurfaceKind.ToString(),
-                route.CompletionHandoff,
+                command.SurfaceKind.ToString(),
+                command.CompletionHandoff,
                 activeSceneName,
+                command.SurfacePresentationProfile,
+                command.ActivityPresentationProfile,
                 source,
                 reason);
 
             if (!routeCameraAdapter.TryPrepareRouteCamera(prepareCommand, out SessionOperationalRouteCameraPrepareResult prepareResult, out string prepareReason))
             {
-                bool required = route.SurfacePresentationProfile != null && route.SurfacePresentationProfile.Required;
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' required='{required}' reason='{prepareReason}'.");
+                bool required = command.SurfacePresentationProfile != null && command.SurfacePresentationProfile.Required;
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' required='{required}' reason='{prepareReason}'.");
             }
 
             if (prepareResult.IsSkipped)
             {
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' completionHandoff='{route.CompletionHandoff}' reason='{prepareResult.SkipReason}' source='{source}' reasonDetail='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' completionHandoff='{command.CompletionHandoff}' reason='{prepareResult.SkipReason}' source='{source}' reasonDetail='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -2328,7 +2339,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (prepareResult.IsPrepared)
             {
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationStagePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' requirementId='{prepareResult.ReadyFact.RequirementId}' outputCamera='{prepareResult.ReadyFact.OutputCameraName}' presentationRig='{prepareResult.ReadyFact.PresentationRigName}' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationStagePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' requirementId='{prepareResult.ReadyFact.RequirementId}' outputCamera='{prepareResult.ReadyFact.OutputCameraName}' presentationRig='{prepareResult.ReadyFact.PresentationRigName}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Success);
                 return;
             }
@@ -2336,16 +2347,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string failureReason = prepareResult.FailureFact != null
                 ? prepareResult.FailureFact.FailureReason
                 : prepareReason;
-            bool profileRequired = route.SurfacePresentationProfile != null && route.SurfacePresentationProfile.Required;
+            bool profileRequired = command.SurfacePresentationProfile != null && command.SurfacePresentationProfile.Required;
 
             DebugUtility.LogError(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationFailed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' profileRequired='{profileRequired}' reason='{failureReason}' source='{source}' reasonDetail='{reason}'.");
+                $"[OBS][SessionOperationalPipeline][RouteCamera] RouteCameraPresentationFailed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' profileRequired='{profileRequired}' reason='{failureReason}' source='{source}' reasonDetail='{reason}'.");
 
-            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' required='{profileRequired}' reason='{failureReason}'.");
+            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][RouteCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{command.SurfaceKind}' required='{profileRequired}' reason='{failureReason}'.");
         }
 
-        private static void ExecuteActivityCameraPreparationStageOrFail(
-            OperationalRouteAsset route,
+        private void ExecuteActivityCameraPreparationStageOrFail(
+            SessionOperationalRouteCommand command,
             string activeSceneName,
             string routeIdentity,
             string routeOperationId,
@@ -2358,31 +2369,31 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ISessionOperationalActivityCameraAdapter activityCameraAdapter = ResolveSessionOperationalActivityCameraAdapterOrFail();
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPreparationStageStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activeScene='{Normalize(activeSceneName)}' completionHandoff='{route.CompletionHandoff}' activityIdentity='{Normalize(activityIdentity)}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPreparationStageStarted routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activeScene='{Normalize(activeSceneName)}' completionHandoff='{command.CompletionHandoff}' activityIdentity='{Normalize(activityIdentity)}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             SessionOperationalActivityCameraPrepareCommand prepareCommand = new(
-                route,
                 routeIdentity,
                 routeOperationId,
                 transitionId,
                 routeSequence,
                 activityIdentity,
-                route.CompletionHandoff,
+                command.CompletionHandoff,
                 activeSceneName,
+                command.ActivityPresentationProfile,
                 source,
                 reason);
 
             if (!activityCameraAdapter.TryPrepareActivityCamera(prepareCommand, out SessionOperationalActivityCameraPrepareResult prepareResult, out string prepareReason))
             {
-                bool required = route.ActivityPresentationProfile != null && route.ActivityPresentationProfile.Required;
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ActivityCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' required='{required}' reason='{prepareReason}'.");
+                bool required = command.ActivityPresentationProfile != null && command.ActivityPresentationProfile.Required;
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ActivityCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{command.CompletionHandoff}' required='{required}' reason='{prepareReason}'.");
             }
 
             if (prepareResult.IsSkipped)
             {
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' activityIdentity='{Normalize(activityIdentity)}' reason='{prepareResult.SkipReason}' source='{source}' reasonDetail='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{command.CompletionHandoff}' activityIdentity='{Normalize(activityIdentity)}' reason='{prepareResult.SkipReason}' source='{source}' reasonDetail='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -2390,7 +2401,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (prepareResult.IsPrepared)
             {
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPreparationStagePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' activityIdentity='{prepareResult.ReadyFact.ActivityIdentity}' requirementId='{prepareResult.ReadyFact.RequirementId}' outputCamera='{prepareResult.ReadyFact.Handle?.UnityCamera?.name}' presentationRig='{prepareResult.ReadyFact.Handle?.CameraRigInstance?.name}' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPreparationStagePrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{command.CompletionHandoff}' activityIdentity='{prepareResult.ReadyFact.ActivityIdentity}' requirementId='{prepareResult.ReadyFact.RequirementId}' outputCamera='{prepareResult.ReadyFact.Handle?.UnityCamera?.name}' presentationRig='{prepareResult.ReadyFact.Handle?.CameraRigInstance?.name}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Success);
                 return;
             }
@@ -2398,15 +2409,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string failureReason = prepareResult.FailureFact != null
                 ? prepareResult.FailureFact.FailureReason
                 : prepareReason;
-            bool profileRequired = route.ActivityPresentationProfile != null && route.ActivityPresentationProfile.Required;
+            bool profileRequired = command.ActivityPresentationProfile != null && command.ActivityPresentationProfile.Required;
 
             DebugUtility.LogError(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationFailed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' profileRequired='{profileRequired}' activityIdentity='{Normalize(activityIdentity)}' reason='{failureReason}' source='{source}' reasonDetail='{reason}'.");
+                $"[OBS][SessionOperationalPipeline][ActivityCamera] ActivityCameraPresentationFailed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{command.CompletionHandoff}' profileRequired='{profileRequired}' activityIdentity='{Normalize(activityIdentity)}' reason='{failureReason}' source='{source}' reasonDetail='{reason}'.");
 
-            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ActivityCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{route.CompletionHandoff}' required='{profileRequired}' reason='{failureReason}'.");
+            throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ActivityCamera] prepare_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' completionHandoff='{command.CompletionHandoff}' required='{profileRequired}' reason='{failureReason}'.");
         }
 
-        private static void ExecuteReleasePreviousActivityCameraStageOrFail(
+        private void ExecuteReleasePreviousActivityCameraStageOrFail(
             SessionOperationalRouteSnapshot previousCompletedRoute,
             string routeIdentity,
             string routeOperationId,
@@ -2457,17 +2468,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][ActivityCamera] release_previous_failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' reason='{releaseReason}'.");
         }
 
-        private static void ExecuteRouteActivitySaveSaveOnExitOrFail(
+        private void ExecuteRouteActivitySaveSaveOnExitOrFail(
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteSnapshot previousCompletedRoute,
-            string currentRouteIdentity,
-            string currentRouteOperationId,
-            string currentTransitionId,
-            int currentRouteSequence,
+            RouteActivitySavePlan routeActivitySavePlan,
             string source,
             string reason)
         {
-            if (!previousCompletedRoute.IsValid)
+            RouteActivitySaveOnExitPlan saveOnExitPlan = routeActivitySavePlan.SaveOnExit;
+            string currentRouteIdentity = saveOnExitPlan.CurrentRouteIdentity;
+            string currentRouteOperationId = saveOnExitPlan.CurrentRouteOperationId;
+            string currentTransitionId = saveOnExitPlan.CurrentTransitionId;
+            int currentRouteSequence = saveOnExitPlan.CurrentRouteSequence;
+
+            if (!saveOnExitPlan.ShouldSave)
             {
                 LogRouteActivitySaveSaveSkipped(
                     previousCompletedRoute,
@@ -2475,59 +2489,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     currentRouteOperationId,
                     currentTransitionId,
                     currentRouteSequence,
-                    RouteActivitySaveSkipKind.NoPreviousRoute,
-                    "previous completed route snapshot ausente.",
+                    saveOnExitPlan.SkipKind,
+                    saveOnExitPlan.SkipDetail,
                     source,
                     reason);
                 return;
             }
 
-            if (!previousCompletedRoute.SaveActivityOnExit)
-            {
-                LogRouteActivitySaveSaveSkipped(
-                    previousCompletedRoute,
-                    currentRouteIdentity,
-                    currentRouteOperationId,
-                    currentTransitionId,
-                    currentRouteSequence,
-                    RouteActivitySaveSkipKind.DisabledByPreviousRoute,
-                    "save-on-exit desabilitado na politica da rota anterior.",
-                    source,
-                    reason);
-                return;
-            }
-
-            string previousActivityIdentity = previousCompletedRoute.ActivityIdentity;
-            if (string.IsNullOrWhiteSpace(previousActivityIdentity))
-            {
-                LogRouteActivitySaveSaveSkipped(
-                    previousCompletedRoute,
-                    currentRouteIdentity,
-                    currentRouteOperationId,
-                    currentTransitionId,
-                    currentRouteSequence,
-                    RouteActivitySaveSkipKind.Unknown,
-                    "activity identity da rota anterior ausente.",
-                    source,
-                    reason);
-                return;
-            }
-
-            string previousActivitySaveKey = BuildActivitySaveKey(previousActivityIdentity);
-            if (string.IsNullOrWhiteSpace(previousActivitySaveKey))
-            {
-                LogRouteActivitySaveSaveSkipped(
-                    previousCompletedRoute,
-                    currentRouteIdentity,
-                    currentRouteOperationId,
-                    currentTransitionId,
-                    currentRouteSequence,
-                    RouteActivitySaveSkipKind.Unknown,
-                    "activity save key da rota anterior ausente.",
-                    source,
-                    reason);
-                return;
-            }
+            string previousActivityIdentity = saveOnExitPlan.PreviousActivityIdentity;
+            string previousActivitySaveKey = saveOnExitPlan.PreviousActivitySaveKey;
 
             if (!TryResolvePreviousActivitySnapshotPayload(previousCompletedRoute, out string activitySnapshotPayload, out RouteActivitySnapshotPayloadResolution payloadResolution))
             {
@@ -2638,18 +2608,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private void ExecuteRouteActivitySaveLoadOnEnterOrFail(
             RuntimeModeConfig runtimeModeConfig,
             SessionOperationalRouteCommand command,
-            string activityIdentity,
-            string routeIdentity,
-            string routeOperationId,
-            string transitionId,
-            int routeSequence,
+            RouteActivitySavePlan routeActivitySavePlan,
             string source,
             string reason)
         {
-            if (!command.ActivitySavePolicy.LoadActivitySaveOnEnter)
+            RouteActivitySaveLoadPlan loadOnEnterPlan = routeActivitySavePlan.LoadOnEnter;
+            string activityIdentity = loadOnEnterPlan.ActivityIdentity;
+            string routeIdentity = loadOnEnterPlan.RouteIdentity;
+            string routeOperationId = loadOnEnterPlan.RouteOperationId;
+            string transitionId = loadOnEnterPlan.TransitionId;
+            int routeSequence = loadOnEnterPlan.RouteSequence;
+
+            if (!loadOnEnterPlan.ShouldLoad)
             {
                 DebugUtility.Log(typeof(SessionOperationalPipeline),
-                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{RouteActivitySaveSkipKind.DisabledByRoute}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(RouteActivitySaveSkipKind.DisabledByRoute)}' source='{source}' reason='{reason}'.",
+                    $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveLoadSkipped routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' activityIdentity='{Normalize(activityIdentity)}' skipKind='{loadOnEnterPlan.SkipKind}' skipReason='{RouteActivitySaveSkipKindMapper.ToCode(loadOnEnterPlan.SkipKind)}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -2779,7 +2752,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return string.IsNullOrWhiteSpace(normalized) ? string.Empty : $"activity:{normalized}";
         }
 
-        private static bool TryResolvePreviousActivitySnapshotPayload(
+        private bool TryResolvePreviousActivitySnapshotPayload(
             SessionOperationalRouteSnapshot previousCompletedRoute,
             out string activitySnapshotPayload,
             out RouteActivitySnapshotPayloadResolution resolution)
@@ -2816,7 +2789,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<ISessionActivitySnapshotPayloadProvider>(out var provider) || provider == null)
+            if (!_dependencies.TryResolveActivitySnapshotPayloadProvider(out ISessionActivitySnapshotPayloadProvider provider))
             {
                 resolution = new RouteActivitySnapshotPayloadResolution(
                     schemaId: string.Empty,
@@ -3087,7 +3060,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 PayloadSize > 0;
         }
 
-        private static ProgressionSlotContext ResolveProgressionSlotContextOrFail(
+        private ProgressionSlotContext ResolveProgressionSlotContextOrFail(
             string routeIdentity,
             string routeOperationId,
             string transitionId,
@@ -3095,11 +3068,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            if (!DependencyManager.Provider.TryGetGlobal<IProgressionSlotContextResolver>(out var resolver) ||
-                resolver == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][RouteActivitySave] IProgressionSlotContextResolver obrigatorio ausente para resolver ProgressionSlotContext.");
-            }
+            IProgressionSlotContextResolver resolver = _dependencies.ProgressionSlotContextResolver;
 
             bool resolved = resolver.TryResolveForRouteActivitySave(
                 routeIdentity,
@@ -3120,13 +3089,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return slotContext;
         }
 
-        private static bool TryResolveCurrentSnapshotIdForRouteActivityLoad(
+        private bool TryResolveCurrentSnapshotIdForRouteActivityLoad(
             out string currentSnapshotId,
             out string failureReason)
         {
             currentSnapshotId = string.Empty;
-            if (!DependencyManager.Provider.TryGetGlobal<ISaveStateService>(out var saveStateService) ||
-                saveStateService == null)
+            if (!_dependencies.TryResolveSaveStateService(out ISaveStateService saveStateService))
             {
                 failureReason = "save_state_service_missing";
                 return false;
@@ -3159,7 +3127,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static SessionOperationalInputModeKind PrepareInputCapabilityOrFail(
             RuntimeModeConfig runtimeModeConfig,
-            OperationalRouteAsset route,
+            SessionOperationalRoutePlan plan,
             SessionOperationalInputPolicy inputPolicy,
             string routeIdentity,
             string routeOperationId,
@@ -3168,9 +3136,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string source,
             string reason)
         {
-            if (route == null)
+            if (!plan.IsValid)
             {
-                throw new ArgumentNullException(nameof(route));
+                throw new ArgumentException("SessionOperationalRoutePlan is invalid.", nameof(plan));
             }
 
             SessionOperationalInputModeKind initialInputMode = ResolveInitialInputModeFromPolicyOrFail(
@@ -3192,7 +3160,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reason);
 
             DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{route.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' inputMode='{initialInputMode}' source='{source}' reason='{reason}'.",
+                $"[OBS][SessionOperationalPipeline][InputCapability] InputCapabilityPrepared routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' operationalSurfaceKind='{plan.OperationalSurfaceKind}' inputPolicy='{inputPolicy}' inputMode='{initialInputMode}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Info);
 
             return initialInputMode;
@@ -3218,14 +3186,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             };
         }
 
-        private static IReadOnlyList<PlayerSetEntry> ResolvePlayerSetFromRoute(OperationalRouteAsset route)
+        private static IReadOnlyList<PlayerSetEntry> ResolvePlayerSetFromPlan(SessionOperationalRoutePlan plan)
         {
-            if (route == null || route.RouteParticipantSetDefinition == null)
+            if (plan.RouteParticipantSetDefinition == null)
             {
                 return Array.Empty<PlayerSetEntry>();
             }
 
-            return route.RouteParticipantSetDefinition.ResolveEntriesOrFail(nameof(SessionOperationalPipeline));
+            return plan.RouteParticipantSetDefinition.ResolveEntriesOrFail(nameof(SessionOperationalPipeline));
         }
 
         private static string FormatPlayerPreparationOutcome(PlayerPreparationOutcome outcome)
@@ -3281,15 +3249,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return participantIds;
         }
 
-        private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntriesForHandoff(OperationalRouteAsset route)
+        private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntriesForHandoff(SessionOperationalRoutePlan plan)
         {
-            if (route == null || route.RouteParticipantSetDefinition == null)
+            if (plan.RouteParticipantSetDefinition == null)
             {
                 return Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
             }
 
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> entries =
-                route.RouteParticipantSetDefinition.ResolvePlayerActorEntriesOrFail(nameof(SessionOperationalPipeline));
+                plan.RouteParticipantSetDefinition.ResolvePlayerActorEntriesOrFail(nameof(SessionOperationalPipeline));
             if (entries == null || entries.Count == 0)
             {
                 return Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
@@ -3317,77 +3285,16 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return technicalEntries;
         }
 
-        private static string ResolveRouteParticipantSetDefinitionLabel(OperationalRouteAsset route)
+        private static string ResolveRouteParticipantSetDefinitionLabel(SessionOperationalRoutePlan plan)
         {
-            if (route == null || route.RouteParticipantSetDefinition == null)
+            if (plan.RouteParticipantSetDefinition == null)
             {
                 return "<none>";
             }
 
-            return string.IsNullOrWhiteSpace(route.RouteParticipantSetDefinition.name)
+            return string.IsNullOrWhiteSpace(plan.RouteParticipantSetDefinition.name)
                 ? "<unnamed>"
-                : route.RouteParticipantSetDefinition.name.Trim();
-        }
-
-        private static SessionOperationalRouteAudioCommand BuildRouteAudioCommandOrFail(
-            OperationalRouteAsset route,
-            string routeIdentity,
-            string routeOperationId,
-            string transitionId,
-            int routeSequence,
-            string source,
-            string reason)
-        {
-            if (route == null)
-            {
-                throw new ArgumentNullException(nameof(route));
-            }
-
-            SessionOperationalRouteAudioMode routeAudioMode = route.RouteAudioMode;
-            AudioCueAsset routeAudioCue = routeAudioMode == SessionOperationalRouteAudioMode.Cue
-                ? route.RouteAudioCue
-                : null;
-            SessionOperationalRouteAudioTiming routeAudioTiming = route.RouteAudioTiming;
-            bool stopPreviousRouteAudio = route.StopPreviousRouteAudio;
-
-            if (routeAudioTiming != SessionOperationalRouteAudioTiming.BeforeFadeOut)
-            {
-                string message =
-                    $"[FATAL][Config][SessionOperationalPipeline][Audio] routeAudioTiming must be BeforeFadeOut routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioTiming='{routeAudioTiming}' source='{source}' reason='{reason}'.";
-
-                DebugUtility.LogError<SessionOperationalPipeline>(message);
-                throw new InvalidOperationException(message);
-            }
-
-            if (routeAudioMode == SessionOperationalRouteAudioMode.Cue && routeAudioCue == null)
-            {
-                string message =
-                    $"[FATAL][Config][SessionOperationalPipeline][Audio] routeAudioCue is required when routeAudioMode=Cue routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' source='{source}' reason='{reason}'.";
-
-                DebugUtility.LogError<SessionOperationalPipeline>(message);
-                throw new InvalidOperationException(message);
-            }
-
-            SessionOperationalRouteAudioCommand audioCommand = new(
-                routeAudioMode,
-                routeAudioCue,
-                routeAudioTiming,
-                stopPreviousRouteAudio);
-
-            if (!audioCommand.IsValid)
-            {
-                string message =
-                    $"[FATAL][Config][SessionOperationalPipeline][Audio] invalid audio payload routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioMode='{routeAudioMode}' routeAudioTiming='{routeAudioTiming}' routeAudioCue='{audioCommand.RouteAudioCueName}' stopPreviousRouteAudio='{stopPreviousRouteAudio}' source='{source}' reason='{reason}'.";
-
-                DebugUtility.LogError<SessionOperationalPipeline>(message);
-                throw new InvalidOperationException(message);
-            }
-
-            DebugUtility.Log(typeof(SessionOperationalPipeline),
-                $"[OBS][SessionOperationalPipeline][Audio] RouteAudioPlanReady routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' routeAudioMode='{routeAudioMode}' routeAudioTiming='{routeAudioTiming}' routeAudioCue='{audioCommand.RouteAudioCueName}' stopPreviousRouteAudio='{stopPreviousRouteAudio}' source='{source}' reason='{reason}'.",
-                DebugUtility.Colors.Info);
-
-            return audioCommand;
+                : plan.RouteParticipantSetDefinition.name.Trim();
         }
 
         private static SessionOperationalLoadingFact CreateLoadingFact(
@@ -3414,366 +3321,34 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 DebugUtility.Colors.Info);
         }
 
-        private static void ValidatePersistentScenesPolicyOrFail(OperationalRouteAsset route)
+        private RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
         {
-            RuntimeModeConfig runtimeModeConfig = ResolveRuntimeModeConfigOrFail();
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy = RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
-
-            if (persistentScenesPolicy == null)
-            {
-                return;
-            }
-
-            if (!route.TryValidateAgainstPersistentScenesPolicy(persistentScenesPolicy, out string validationError))
-            {
-                string message = $"[FATAL][Config][SessionOperationalRoute] {validationError}";
-                DebugUtility.LogError<SessionOperationalPipeline>(message);
-                throw new InvalidOperationException(message);
-            }
+            return _dependencies.RuntimeModeConfig;
         }
 
-        private static RuntimeModeConfig ResolveRuntimeModeConfigOrFail()
+        private void RecordLastCompletedRouteSnapshot(SessionOperationalRouteCommand command)
         {
-            if (DependencyManager.Provider.TryGetGlobal<RuntimeModeConfig>(out var runtimeModeConfig) && runtimeModeConfig != null)
-            {
-                return runtimeModeConfig;
-            }
-
-            string message = "[FATAL][Config][SessionOperationalRoute] RuntimeModeConfig obrigatorio ausente para validar persistent scenes.";
-            DebugUtility.LogError<SessionOperationalPipeline>(message);
-            throw new InvalidOperationException(message);
-        }
-
-        private static SessionOperationalRouteLoadPlan ResolveRouteLoadPlanOrFail(
-            OperationalRouteAsset route,
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
-            string activeSceneName)
-        {
-            if (route == null)
-            {
-                throw new ArgumentNullException(nameof(route));
-            }
-
-            IReadOnlyList<SceneKeyAsset> explicitScenesToLoad = route.ScenesToLoad ?? Array.Empty<SceneKeyAsset>();
-            HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrEmpty(persistentScenesPolicy);
-            string normalizedActiveSceneName = Normalize(activeSceneName);
-            bool activeSceneImplicitLoad = !ContainsScene(explicitScenesToLoad, normalizedActiveSceneName);
-            List<SceneKeyAsset> finalScenesToLoad = new();
-            HashSet<string> dedupe = new(StringComparer.Ordinal);
-
-            AppendActiveSceneKeyToLoadPlan(route.ActiveSceneKey, finalScenesToLoad, dedupe);
-            AppendAdditionalSceneKeysToLoadPlan(
-                explicitScenesToLoad,
-                finalScenesToLoad,
-                dedupe,
-                persistentSceneSet,
-                normalizedActiveSceneName);
-
-            if (finalScenesToLoad.Count == 0)
-            {
-                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
-                    $"[FATAL][Config][SessionOperationalPipeline] finalScenesToLoad cannot be empty routeIdentity='{route.RouteIdentity}'.");
-            }
-
-            return new SessionOperationalRouteLoadPlan(
-                activeSceneImplicitLoad,
-                finalScenesToLoad);
-        }
-
-        private static SessionOperationalRouteUnloadPlan ResolveRouteUnloadPlanOrFail(
-            OperationalRouteAsset route,
-            SessionOperationalRouteSnapshot previousCompletedRoute,
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
-            IReadOnlyList<SceneKeyAsset> currentRouteLoadedSceneKeys,
-            string currentActiveSceneName)
-        {
-            IReadOnlyList<SceneKeyAsset> explicitScenesToUnload = route.ScenesToUnload ?? Array.Empty<SceneKeyAsset>();
-            HashSet<string> currentRouteLoadSceneSet = BuildSceneSetOrEmpty(currentRouteLoadedSceneKeys);
-            string normalizedCurrentActiveSceneName = Normalize(currentActiveSceneName);
-
-            IReadOnlyList<SceneKeyAsset> autoScenesToUnload = ResolveAutoScenesToUnloadOrFail(
-                route,
-                previousCompletedRoute,
-                persistentScenesPolicy,
-                currentRouteLoadSceneSet,
-                normalizedCurrentActiveSceneName);
-
-            IReadOnlyList<SceneKeyAsset> finalScenesToUnload = BuildFinalScenesToUnload(
-                explicitScenesToUnload,
-                autoScenesToUnload,
-                currentRouteLoadSceneSet,
-                normalizedCurrentActiveSceneName);
-
-            return new SessionOperationalRouteUnloadPlan(
-                previousCompletedRoute.RouteIdentity,
-                explicitScenesToUnload,
-                autoScenesToUnload,
-                finalScenesToUnload);
-        }
-
-        private static IReadOnlyList<SceneKeyAsset> ResolveAutoScenesToUnloadOrFail(
-            OperationalRouteAsset route,
-            SessionOperationalRouteSnapshot previousCompletedRoute,
-            RuntimePersistentScenesPolicyAsset persistentScenesPolicy,
-            HashSet<string> currentRouteLoadSceneSet,
-            string currentActiveSceneName)
-        {
-            if (route == null || !route.UnloadPreviousRouteOwnedScenes || !previousCompletedRoute.IsValid)
-            {
-                return Array.Empty<SceneKeyAsset>();
-            }
-
-            HashSet<string> persistentSceneSet = BuildPersistentSceneSetOrEmpty(persistentScenesPolicy);
-            IReadOnlyList<SceneKeyAsset> previousSceneKeys = previousCompletedRoute.RouteOwnedLoadedSceneKeys ?? Array.Empty<SceneKeyAsset>();
-            List<SceneKeyAsset> autoScenesToUnload = new(previousSceneKeys.Count);
-            HashSet<string> dedupe = new(StringComparer.Ordinal);
-
-            for (int i = 0; i < previousSceneKeys.Count; i++)
-            {
-                SceneKeyAsset sceneKey = previousSceneKeys[i];
-                string sceneName = ResolveSceneName(sceneKey, $"previousCompletedRoute.routeOwnedLoadedSceneKeys[{i}]");
-
-                if (persistentSceneSet.Contains(sceneName))
-                {
-                    HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
-                        $"[FATAL][Config][SessionOperationalPipeline] previous completed route snapshot contains runtime persistent scene. routeIdentity='{previousCompletedRoute.RouteIdentity}' scene='{sceneName}'.");
-                }
-
-                if ((currentRouteLoadSceneSet != null && currentRouteLoadSceneSet.Contains(sceneName)) ||
-                    (!string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal)))
-                {
-                    continue;
-                }
-
-                if (!dedupe.Add(sceneName))
-                {
-                    continue;
-                }
-
-                autoScenesToUnload.Add(sceneKey);
-            }
-
-            return autoScenesToUnload.Count == 0 ? Array.Empty<SceneKeyAsset>() : autoScenesToUnload;
-        }
-
-        private static IReadOnlyList<SceneKeyAsset> BuildFinalScenesToUnload(
-            IReadOnlyList<SceneKeyAsset> explicitScenesToUnload,
-            IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
-            HashSet<string> currentRouteLoadSceneSet,
-            string currentActiveSceneName)
-        {
-            List<SceneKeyAsset> finalScenesToUnload = new();
-            HashSet<string> dedupe = new(StringComparer.Ordinal);
-
-            AppendSceneKeysToFinalUnload(finalScenesToUnload, dedupe, explicitScenesToUnload, currentRouteLoadSceneSet, currentActiveSceneName);
-            AppendSceneKeysToFinalUnload(finalScenesToUnload, dedupe, autoScenesToUnload, currentRouteLoadSceneSet, currentActiveSceneName);
-
-            return finalScenesToUnload.Count == 0 ? Array.Empty<SceneKeyAsset>() : finalScenesToUnload;
-        }
-
-        private static void AppendSceneKeysToFinalUnload(
-            List<SceneKeyAsset> finalScenesToUnload,
-            HashSet<string> dedupe,
-            IReadOnlyList<SceneKeyAsset> sceneKeys,
-            HashSet<string> currentRouteLoadSceneSet,
-            string currentActiveSceneName)
-        {
-            if (sceneKeys == null || sceneKeys.Count == 0)
-            {
-                return;
-            }
-
-            for (int i = 0; i < sceneKeys.Count; i++)
-            {
-                SceneKeyAsset sceneKey = sceneKeys[i];
-                string sceneName = ResolveSceneName(sceneKey, $"scenesToUnload[{i}]");
-
-                if ((currentRouteLoadSceneSet != null && currentRouteLoadSceneSet.Contains(sceneName)) ||
-                    (!string.IsNullOrWhiteSpace(currentActiveSceneName) && string.Equals(sceneName, currentActiveSceneName, StringComparison.Ordinal)))
-                {
-                    continue;
-                }
-
-                if (!dedupe.Add(sceneName))
-                {
-                    continue;
-                }
-
-                finalScenesToUnload.Add(sceneKey);
-            }
-        }
-
-        private static HashSet<string> BuildSceneSetOrEmpty(IReadOnlyList<SceneKeyAsset> sceneKeys)
-        {
-            HashSet<string> sceneSet = new(StringComparer.Ordinal);
-
-            if (sceneKeys == null)
-            {
-                return sceneSet;
-            }
-
-            for (int i = 0; i < sceneKeys.Count; i++)
-            {
-                string sceneName = ResolveSceneName(sceneKeys[i], $"sceneKeys[{i}]");
-                sceneSet.Add(sceneName);
-            }
-
-            return sceneSet;
-        }
-
-        private static bool ContainsScene(IReadOnlyList<SceneKeyAsset> scenes, string sceneName)
-        {
-            if (scenes == null || string.IsNullOrWhiteSpace(sceneName))
-            {
-                return false;
-            }
-
-            string normalizedSceneName = Normalize(sceneName);
-            for (int i = 0; i < scenes.Count; i++)
-            {
-                string currentSceneName = ResolveSceneName(scenes[i], $"scenes[{i}]");
-                if (string.Equals(currentSceneName, normalizedSceneName, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void AppendActiveSceneKeyToLoadPlan(
-            SceneKeyAsset activeSceneKey,
-            List<SceneKeyAsset> finalScenesToLoad,
-            HashSet<string> dedupe)
-        {
-            string activeSceneName = ResolveSceneName(activeSceneKey, nameof(activeSceneKey));
-            if (!dedupe.Add(activeSceneName))
-            {
-                return;
-            }
-
-            finalScenesToLoad.Add(activeSceneKey);
-        }
-
-        private static void AppendAdditionalSceneKeysToLoadPlan(
-            IReadOnlyList<SceneKeyAsset> scenesToLoad,
-            List<SceneKeyAsset> finalScenesToLoad,
-            HashSet<string> dedupe,
-            HashSet<string> persistentSceneSet,
-            string activeSceneName)
-        {
-            if (scenesToLoad == null || scenesToLoad.Count == 0)
-            {
-                return;
-            }
-
-            for (int i = 0; i < scenesToLoad.Count; i++)
-            {
-                SceneKeyAsset sceneKey = scenesToLoad[i];
-                string sceneName = ResolveSceneName(sceneKey, $"scenesToLoad[{i}]");
-
-                if (persistentSceneSet.Contains(sceneName))
-                {
-                    HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
-                        $"[FATAL][Config][SessionOperationalPipeline] scenesToLoad cannot contain runtime persistent scene='{sceneName}'.");
-                }
-
-                if (!string.IsNullOrWhiteSpace(activeSceneName) && string.Equals(sceneName, activeSceneName, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!dedupe.Add(sceneName))
-                {
-                    continue;
-                }
-
-                finalScenesToLoad.Add(sceneKey);
-            }
-        }
-
-        private static HashSet<string> BuildPersistentSceneSetOrEmpty(RuntimePersistentScenesPolicyAsset persistentScenesPolicy)
-        {
-            if (persistentScenesPolicy == null)
-            {
-                return new HashSet<string>(StringComparer.Ordinal);
-            }
-
-            IReadOnlyList<string> persistentSceneNames = persistentScenesPolicy.ResolveSceneNamesOrFail(nameof(SessionOperationalPipeline));
-            return new HashSet<string>(persistentSceneNames, StringComparer.Ordinal);
-        }
-
-        private static IReadOnlyList<string> ResolveSceneNames(IReadOnlyList<SceneKeyAsset> sceneKeys, string fieldName)
-        {
-            if (sceneKeys == null)
-            {
-                HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
-                    $"[FATAL][Config][SessionOperationalPipeline] {fieldName} is required.");
-            }
-
-            if (sceneKeys.Count == 0)
-            {
-                return Array.Empty<string>();
-            }
-
-            List<string> sceneNames = new(sceneKeys.Count);
-            HashSet<string> dedupe = new(StringComparer.Ordinal);
-
-            for (int i = 0; i < sceneKeys.Count; i++)
-            {
-                string sceneName = ResolveSceneName(sceneKeys[i], $"{fieldName}[{i}]");
-                if (!dedupe.Add(sceneName))
-                {
-                    continue;
-                }
-
-                sceneNames.Add(sceneName);
-            }
-
-            return sceneNames.Count == 0 ? Array.Empty<string>() : sceneNames;
-        }
-
-        private void RecordLastCompletedRouteSnapshot(
-            OperationalRouteAsset route,
-            string routeOperationId,
-            int routeSequence,
-            IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
-        {
-            if (route == null)
+            if (!command.IsValid)
             {
                 return;
             }
 
             SessionOperationalRouteSnapshot snapshot = new(
-                route.RouteIdentity,
-                routeOperationId,
-                routeSequence,
-                route.ActiveSceneKey,
-                route.ActivitySavePolicy.SaveActivityOnExit,
-                route.HandoffSessionStateId,
-                finalScenesToLoad);
+                command.RouteIdentity,
+                command.RouteOperationId,
+                command.RouteSequence,
+                command.ActiveSceneKey,
+                command.ActivitySavePolicy.SaveActivityOnExit,
+                command.HandoffSessionStateId,
+                command.FinalScenesToLoad);
 
             if (!snapshot.IsValid)
             {
                 HardFailFastH1.Trigger(typeof(SessionOperationalPipeline),
-                    $"[FATAL][Config][SessionOperationalPipeline] failed to record last completed route snapshot routeIdentity='{route.RouteIdentity}' routeSequence='{routeSequence}'.");
+                    $"[FATAL][Config][SessionOperationalPipeline] failed to record last completed route snapshot routeIdentity='{command.RouteIdentity}' routeSequence='{command.RouteSequence}'.");
             }
 
             _lastCompletedRouteSnapshot = snapshot;
-        }
-
-        private readonly struct SessionOperationalRouteLoadPlan
-        {
-            public SessionOperationalRouteLoadPlan(
-                bool activeSceneImplicitLoad,
-                IReadOnlyList<SceneKeyAsset> finalScenesToLoad)
-            {
-                ActiveSceneImplicitLoad = activeSceneImplicitLoad;
-                FinalScenesToLoad = finalScenesToLoad ?? throw new ArgumentNullException(nameof(finalScenesToLoad));
-            }
-
-            public bool ActiveSceneImplicitLoad { get; }
-            public IReadOnlyList<SceneKeyAsset> FinalScenesToLoad { get; }
         }
 
         private static string FormatSceneNames(IReadOnlyList<SceneKeyAsset> sceneKeys)
@@ -3840,25 +3415,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 RouteOwnedLoadedSceneKeys != null;
         }
 
-        private readonly struct SessionOperationalRouteUnloadPlan
-        {
-            public SessionOperationalRouteUnloadPlan(
-                string previousRouteIdentity,
-                IReadOnlyList<SceneKeyAsset> explicitScenesToUnload,
-                IReadOnlyList<SceneKeyAsset> autoScenesToUnload,
-                IReadOnlyList<SceneKeyAsset> finalScenesToUnload)
-            {
-                PreviousRouteIdentity = Normalize(previousRouteIdentity);
-                ExplicitScenesToUnload = explicitScenesToUnload ?? throw new ArgumentNullException(nameof(explicitScenesToUnload));
-                AutoScenesToUnload = autoScenesToUnload ?? throw new ArgumentNullException(nameof(autoScenesToUnload));
-                FinalScenesToUnload = finalScenesToUnload ?? throw new ArgumentNullException(nameof(finalScenesToUnload));
-            }
-
-            public string PreviousRouteIdentity { get; }
-            public IReadOnlyList<SceneKeyAsset> ExplicitScenesToUnload { get; }
-            public IReadOnlyList<SceneKeyAsset> AutoScenesToUnload { get; }
-            public IReadOnlyList<SceneKeyAsset> FinalScenesToUnload { get; }
-        }
 
         private SessionOperationalResult CompleteOperationalRouteOperation(
             string routeOperationId,

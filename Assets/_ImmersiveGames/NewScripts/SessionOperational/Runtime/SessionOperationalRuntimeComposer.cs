@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
@@ -48,7 +49,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureStartupRequestEmitter();
             EnsureStartupRouteEmitter();
 
-            EnsureSessionOperationalPipeline();
             EnsureSessionOperationalAudioAdapter();
             EnsureSessionOperationalFadeAdapter();
             EnsureSessionOperationalLoadingAdapter();
@@ -57,6 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalSceneCompositionAdapter();
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
+            EnsureSessionOperationalPipeline(runtimeModeConfig);
 
             _runtimeComposed = true;
 
@@ -88,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             }
         }
 
-        private static void EnsureSessionOperationalPipeline()
+        private static void EnsureSessionOperationalPipeline(RuntimeModeConfig runtimeModeConfig)
         {
             if (_sessionOperationalPipeline != null)
             {
@@ -102,13 +103,49 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 return;
             }
 
-            _sessionOperationalPipeline = new SessionOperationalPipeline();
+            SessionOperationalPipelineDependencies dependencies = CreatePipelineDependencies(runtimeModeConfig);
+            _sessionOperationalPipeline = new SessionOperationalPipeline(dependencies);
             DependencyManager.Provider.RegisterGlobal(_sessionOperationalPipeline);
             DependencyManager.Provider.RegisterGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(_sessionOperationalPipeline);
 
             DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
                 "[OBS][SessionOperationalPipeline][Composer] SessionOperationalPipeline registered for canonical operational runtime.",
                 DebugUtility.Colors.Info);
+        }
+
+        private static SessionOperationalPipelineDependencies CreatePipelineDependencies(RuntimeModeConfig runtimeModeConfig)
+        {
+            RuntimePersistentScenesPolicyAsset persistentScenesPolicy =
+                RuntimePolicyConfigResolver.ResolvePersistentScenesPolicyOrFail(runtimeModeConfig);
+
+            return new SessionOperationalPipelineDependencies(
+                runtimeModeConfig,
+                persistentScenesPolicy,
+                _routeTransitionAdapter,
+                _fadeAdapter,
+                _loadingAdapter,
+                _audioAdapter,
+                _routeCameraAdapter,
+                _activityCameraAdapter,
+                _activitySaveAdapter,
+                _progressionSlotContextResolver,
+                ResolveOptionalDependency<ISessionActivityEntryHandoffReceiver>,
+                ResolveOptionalDependency<ISessionActivityPredefinedVisualReadinessBoundary>,
+                ResolveOptionalDependency<ISessionActivityRouteExitTeardownBoundary>,
+                ResolveOptionalDependency<ISessionActivitySnapshotPayloadProvider>,
+                ResolveOptionalDependency<ISaveStateService>);
+        }
+
+        private static T ResolveOptionalDependency<T>() where T : class
+        {
+            if (DependencyManager.Provider != null &&
+                DependencyManager.Provider.TryGetGlobal<T>(out var dependency) &&
+                dependency != null)
+            {
+                return dependency;
+            }
+
+            return null;
         }
 
         private static void EnsureSessionOperationalSceneCompositionAdapter()
