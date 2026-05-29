@@ -9,6 +9,9 @@ Checkpoints congelados:
 ```text
 SessionOperational pós-13C Normalization — PASS arquitetural parcial
 SessionOperational Camera Presentation Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational Audio + HandoffExit Ownership Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational PlayerPreparation Endpoint Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational suspicious ownership normalization — CLOSED with no known blocking ownership debt
 ```
 
 Escopo do congelamento:
@@ -16,10 +19,12 @@ Escopo do congelamento:
 ```text
 SessionOperationalPipeline ownership stabilization
 pós-cortes 11A–13C normalizados
-Camera Presentation normalizada no SessionOperational
+Camera Presentation normalizada
+Audio + HandoffExit normalizados
+PlayerPreparation Endpoint Normalization concluída
+auditoria geral de suspeitos fechada
 anti-deslocamento de responsabilidades
 não fechamento completo da Base 2.0
-próximas frentes ainda exigem auditoria de ownership antes de patch
 ```
 
 ## Contexto
@@ -54,21 +59,38 @@ Reveal e Blackout foram achatados: a ordem áudio/fade voltou a ficar explícita
 Boundaries permanecem begin/complete puros.
 ```
 
-A frente de Camera Presentation foi retomada e normalizada depois deste checkpoint. O caminho genérico `ConsumerPresentation` foi removido do fluxo ativo de camera no `SessionOperational`, separando explicitamente `RouteCamera` e `ActivityCamera`.
-
-A normalização de Camera Presentation congelou as seguintes decisões:
+A normalização de Camera Presentation removeu o bridge genérico `ConsumerPresentation` do caminho ativo do `SessionOperational` e tornou RouteCamera/ActivityCamera explícitas:
 
 ```text
-RouteCamera e ActivityCamera são passos explícitos do SessionOperational.
-A ordem de release/prepare de camera permanece visível no SessionOperationalPipeline.
-A arbitragem RouteCamera vs ActivityCamera fica no path pipeline/stage, não nos adapters.
+SessionOperationalPipeline mantém a ordem de camera release/prepare.
+OperationalRouteCameraPresentationStage decide skip local de RouteCamera.
+OperationalActivityCameraPresentationStage decide skip local de ActivityCamera.
 SessionOperationalRouteCameraAdapter executa side-effect técnico comandado.
 SessionOperationalActivityCameraAdapter executa side-effect técnico comandado.
-Adapters de camera não decidem lifecycle/policy por handoff/profile/mode.
-RouteCamera pula em SessionActivityEntry por activity_camera_has_priority.
-ActivityCamera prepara em SessionActivityEntry quando há profile válido.
-RouteCamera prepara em rota frontend/no handoff quando há profile válido.
-ActivityCamera pula/not required em rota frontend/no handoff.
+Adapters de camera não decidem lifecycle/policy/handoff/profile como owner final.
+```
+
+A normalização de Audio + HandoffExit fechou os achados `High` restantes da auditoria geral de suspeitos:
+
+```text
+AudioAdapter deixou de decidir policy por RouteAudioMode.None.
+OperationalRouteAudioStage mantém o skip route_audio_disabled / RouteAudioMode.None.
+SessionActivityOperationalRouteHandoffExitAdapter deixou de decidir preflight por CurrentStage, CurrentRailKind ou HasPendingOperation.
+OperationalHandoffExitStage passou a classificar o preflight de handoff exit no caminho stage/pipeline.
+Adapters permanecem restritos à execução técnica comandada e falhas técnicas reais.
+```
+
+A normalização de PlayerPreparation fechou o débito Medium restante da auditoria geral de suspeitos:
+
+```text
+OperationalPlayerPreparationStage deixou de chamar PlayerPreparationStage.Execute diretamente.
+OperationalPlayerPreparationStage agora chama IRoutePlayerPreparationEndpoint.
+RoutePlayerPreparationEndpoint pertence ao domínio Actors.Semantic.Preparation.
+PlayerPreparationStage.Execute permanece encapsulado como detalhe interno do endpoint.
+SessionOperational continua owner do quando/ordem/lifecycle.
+Actors.Semantic.Preparation fica owner da execução semântica por capability/endpoint explícito.
+Não foi criado manager/coordinator/processor novo.
+Não há fallback silencioso; o endpoint é dependência obrigatória.
 ```
 
 ## Decisão
@@ -89,18 +111,7 @@ command carrega payload runtime resolvido, sem infraestrutura;
 adapter executa side-effect comandado.
 ```
 
-Este ADR não declara o `SessionOperationalPipeline` finalizado. Ele congela a fronteira mínima para impedir novo ciclo de deslocamento de responsabilidade.
-
-A normalização de Camera Presentation também é aceita como **PASS funcional + PASS arquitetural parcial** porque:
-
-```text
-ConsumerPresentation saiu do caminho ativo de camera;
-RouteCamera e ActivityCamera ficaram explícitas;
-prioridade/skip/fail de camera presentation saiu dos adapters;
-adapters ficaram restritos a side-effect técnico;
-pipeline/stage path manteve a arbitragem visível;
-smoke confirmou comportamento sem regressão.
-```
+Este ADR não declara o `SessionOperationalPipeline` finalizado. Ele congela a fronteira mínima para impedir novo ciclo de deslocamento de responsabilidade. Camera Presentation, Audio e HandoffExit ficam aceitos como normalizações parciais; PlayerPreparation Endpoint Normalization fica aceita como normalização parcial: a chamada cross-boundary stage-to-stage foi removida do `SessionOperational` e substituída por endpoint explícito do domínio `Actors.Semantic.Preparation`.
 
 ## Fonte normativa local
 
@@ -177,9 +188,38 @@ OperationalRouteAudioStage executa áudio de reveal comandado.
 OperationalSceneCompositionStage aplica composição de cena via adapter.
 OperationalInputPreparationStage prepara input e submete input mode via adapter.
 OperationalRouteCompletionStage monta resultado após fact de completion já aceito pelo pipeline.
+OperationalRouteCameraPresentationStage classifica/solicita RouteCamera de forma determinística.
+OperationalActivityCameraPresentationStage classifica/solicita ActivityCamera de forma determinística.
+OperationalRouteAudioStage classifica/solicita RouteAudio de forma determinística.
+OperationalHandoffExitStage classifica/solicita handoff exit de forma determinística.
 ```
 
 Stage não pode virar mini-pipeline. Se um stage começa a chamar outros stages para representar uma sequência macro, a ordem deve voltar ao `SessionOperationalPipeline`.
+
+### Adapters
+
+Adapters executam side-effects comandados. Podem falhar por erro técnico real, por exemplo dependency ausente, executor indisponível, retorno inválido ou falha concreta do runtime chamado.
+
+Adapters não podem decidir:
+
+```text
+lifecycle de route operation
+policy de rota
+skip/fail funcional por handoff/profile/mode
+prioridade entre RouteCamera e ActivityCamera
+preflight de SessionActivity baseado em estágio/current rail/pending operation
+stage-order
+fallback silencioso para config obrigatória ausente
+```
+
+Casos normalizados e congelados:
+
+```text
+SessionOperationalRouteCameraAdapter não decide activity_camera_has_priority / SkipWhenActivityHandoff / RouteCameraPresentationMode como owner final.
+SessionOperationalActivityCameraAdapter não decide not_session_activity_entry_handoff / profile missing/disabled como owner final.
+AudioAdapter não decide RouteAudioMode.None.
+SessionActivityOperationalRouteHandoffExitAdapter não decide CurrentStage / CurrentRailKind / HasPendingOperation como policy de preflight.
+```
 
 ### `OperationalFactRecorder`
 
@@ -211,6 +251,44 @@ classificar skip/failure funcional
 
 A existência de métodos de registro chamados por stages é permitida quando o stage está registrando fato local da própria execução e não transferindo lifecycle/policy para o recorder.
 
+### PlayerPreparation Endpoint Normalization — resolvido
+
+A antiga chamada direta `OperationalPlayerPreparationStage -> PlayerPreparationStage.Execute` foi removida do caminho operacional.
+
+Shape aceito:
+
+```text
+SessionOperationalPipeline
+-> OperationalPlayerPreparationStage
+-> IRoutePlayerPreparationEndpoint
+-> RoutePlayerPreparationEndpoint
+-> PlayerPreparationStage.Execute encapsulado no domínio Actors.Semantic.Preparation
+```
+
+Classificação:
+
+```text
+problema_anterior='cross-boundary stage-to-stage bridge'
+severidade_anterior='Medium'
+status='resolved'
+owner_decisão='SessionOperationalPipeline'
+owner_execução='Actors.Semantic.Preparation via endpoint explícito'
+endpoint='IRoutePlayerPreparationEndpoint'
+implementação='RoutePlayerPreparationEndpoint'
+fallback_silencioso='proibido'
+novo_layer_genérico='não criado'
+```
+
+Regras:
+
+```text
+não reintroduzir chamada direta stage-to-stage;
+não usar PlayerPreparation como precedente para outros domínios;
+não criar manager/coordinator/processor para esconder a fronteira;
+não mover lifecycle operacional para Actors.Semantic.Preparation;
+manter o endpoint como fronteira explícita e obrigatória.
+```
+
 ## Regra anti-deslocamento
 
 Antes de qualquer novo patch, responder obrigatoriamente:
@@ -240,13 +318,20 @@ Se a resposta for ambígua, a ação permitida é **auditoria**, não implementa
 | 13B | Aceito somente após normalização. O recorder pode persistir facts/traces, mas não pode possuir lifecycle/policy. |
 | 13C | Aceito após normalização como PASS arquitetural parcial. `InputPreparation` e `RouteCompletion` usam recorder sem transformá-lo em owner de lifecycle/policy/result building. |
 | 13D | Rejeitado. Não aplicar. O conteúdo válido foi substituído pela normalização que devolveu begin/reset/gate ao pipeline. |
+| Camera Presentation | Aceito após normalização como PASS funcional + PASS arquitetural parcial. `ConsumerPresentation` saiu do caminho ativo; RouteCamera/ActivityCamera ficaram explícitas; arbitragem ficou no pipeline/stage path; adapters ficaram técnicos. |
+| Audio + HandoffExit | Aceito após normalização como PASS funcional + PASS arquitetural parcial. `AudioAdapter` e `SessionActivityOperationalRouteHandoffExitAdapter` deixaram de decidir policy/lifecycle funcional. |
+| PlayerPreparation | Aceito após normalização como PASS funcional + PASS arquitetural parcial. Chamada stage-to-stage removida; `OperationalPlayerPreparationStage` usa `IRoutePlayerPreparationEndpoint`; `PlayerPreparationStage.Execute` fica encapsulado em `RoutePlayerPreparationEndpoint`. |
 
-## Checkpoint congelado
+## Checkpoints congelados
 
-### Nome
+### Nomes
 
 ```text
 SessionOperational pós-13C Normalization — PASS arquitetural parcial
+SessionOperational Camera Presentation Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational Audio + HandoffExit Ownership Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational PlayerPreparation Endpoint Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational suspicious ownership normalization — CLOSED with no known blocking ownership debt
 ```
 
 ### Evidência funcional exigida
@@ -268,6 +353,10 @@ OperationalRouteCompleted
 OperationalPreviousRouteExitBoundary ativo
 OperationalRouteMaterializationBoundary ativo
 RouteCameraReleased antes do unload da rota anterior quando houver route camera ativa
+RouteCameraPresentationSkipped reason='activity_camera_has_priority' quando ActivityCamera tiver prioridade
+ActivityCameraPresentationPrepared quando rota for SessionActivityEntry com profile válido
+RouteRevealAudioSubmitted ou RouteRevealAudioSkipped preservado conforme policy da rota
+OperationalHandoffExitSkipped/Completed preservado conforme cenário
 ```
 
 ### Evidência arquitetural exigida
@@ -288,60 +377,19 @@ Boundaries sem sub-stage interno
 Stages sem mini-pipeline novo
 Commands sem infraestrutura
 sem novo manager/coordinator/processor
-```
-
-## Checkpoint de Camera Presentation
-
-### Nome
-
-```text
-SessionOperational Camera Presentation Normalization — PASS funcional + PASS arquitetural parcial
-```
-
-### Evidência funcional exigida
-
-O smoke de aceite deve confirmar:
-
-```text
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem foreign/stale indevido
-sem error CS
-RouteCameraPresentationSkipped reason='activity_camera_has_priority'
-ActivityCameraPresentationPrepared
-ActivityCameraPresentationStagePrepared
-RouteCameraReleased antes do unload da rota anterior quando houver route camera ativa
-RestartCurrentActivity Passed
-Activity01ToActivity02 Passed
-RouteExitBackToMenu Passed
-```
-
-### Evidência arquitetural exigida
-
-A auditoria de ownership deve confirmar:
-
-```text
-ConsumerPresentation ausente do caminho ativo de camera no SessionOperational
-OperationalRouteCameraPresentationStage não chama sub-stage
-OperationalActivityCameraPresentationStage não chama sub-stage
-OperationalRouteCameraReleasePreviousStage não chama sub-stage
-OperationalActivityCameraReleasePreviousStage não chama sub-stage
-SessionOperationalRouteCameraAdapter sem decisão de policy/handoff/profile/mode
-SessionOperationalActivityCameraAdapter sem decisão de policy/handoff/profile/mode
-adapters de camera restritos a side-effect técnico e falha técnica real
-pipeline/stage path decide RouteCamera vs ActivityCamera
-commands sem infraestrutura
-sem novo manager/coordinator/processor
+SessionOperationalRouteCameraAdapter sem policy de handoff/profile/mode como owner final
+SessionOperationalActivityCameraAdapter sem policy de handoff/profile/missing profile como owner final
+AudioAdapter sem RouteAudioMode.None como policy
+SessionActivityOperationalRouteHandoffExitAdapter sem CurrentStage/CurrentRailKind/HasPendingOperation como policy
+OperationalPlayerPreparationStage sem chamada direta a PlayerPreparationStage.Execute; execução encapsulada em RoutePlayerPreparationEndpoint
 ```
 
 ## Último checkpoint recomendado
 
-### Arquiteturais parciais
+### Arquitetural parcial
 
 ```text
-SessionOperational pós-13C Normalization — PASS arquitetural parcial
-SessionOperational Camera Presentation Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational suspicious ownership normalization — CLOSED with no known blocking ownership debt
 ```
 
 ### Último ponto rejeitado
@@ -350,14 +398,29 @@ SessionOperational Camera Presentation Normalization — PASS funcional + PASS a
 Corte 13D — rejeitado / não aplicar
 ```
 
+### Débitos restantes conhecidos
+
+```text
+nenhum débito bloqueante conhecido no SessionOperational após PlayerPreparation Endpoint Normalization
+```
+
+### PlayerPreparation resolvido
+
+```text
+OperationalPlayerPreparationStage -> IRoutePlayerPreparationEndpoint -> RoutePlayerPreparationEndpoint
+status='resolved / endpoint boundary accepted'
+PlayerPreparationStage.Execute encapsulado no domínio Actors.Semantic.Preparation
+```
+
 ### Próximas frentes permitidas
 
 ```text
-Auditar/normalizar Audio no SessionOperational
-Auditar/normalizar Save no SessionOperational
+seguir decomposição do SessionOperational apenas com auditoria/matriz quando houver mudança de fronteira;
+não reabrir PlayerPreparation sem regressão factual ou nova evidência arquitetural;
+não reabrir Camera/Audio/HandoffExit sem regressão factual ou nova evidência arquitetural.
 ```
 
-Condição: qualquer nova frente deve obedecer este ADR antes de patch. Se houver dúvida de owner, fazer auditoria/matriz primeiro. Camera Presentation está congelada como PASS parcial e não deve ser reaberta sem regressão comprovada por smoke/log ou auditoria de ownership.
+Condição: qualquer frente nova deve obedecer este ADR antes de patch. Se houver dúvida de owner, fazer auditoria/matriz primeiro.
 
 ## Consequências
 
@@ -367,12 +430,11 @@ Condição: qualquer nova frente deve obedecer este ADR antes de patch. Se houve
 - `SessionOperationalPipeline` pode continuar chamando stages explicitamente; isso é esperado.
 - `SessionOperationalPipeline` deve manter begin/reset/gate de route operation.
 - `SessionOperationalStageOrderPolicy` classifica stage-order; não executa side-effect.
+- Adapters de Camera, Audio e HandoffExit ficam restritos a side-effect técnico comandado.
+- A antiga bridge `OperationalPlayerPreparationStage -> PlayerPreparationStage.Execute` está resolvida e não pode ser reintroduzida.
 - Se uma classe nova começar a precisar de outro layer para ficar aceitável, o patch anterior deve ser reavaliado, não empilhado.
 - Smoke continua obrigatório, mas não substitui aceite arquitetural.
 - PASS funcional não implica PASS arquitetural.
-- `ConsumerPresentation` não deve voltar como bridge genérico de camera no `SessionOperational`.
-- Adapters de camera não podem voltar a decidir policy por handoff/profile/mode.
-- A arbitragem RouteCamera vs ActivityCamera deve permanecer visível no pipeline/stage path.
 
 ## Critério de aceite arquitetural
 
@@ -391,7 +453,6 @@ sem stage virando mini-pipeline
 sem recorder decidindo lifecycle/policy
 sem recorder construindo command/result
 sem adapter decidindo lifecycle/policy
-sem adapter de camera decidindo skip/fail por handoff/profile/mode
 sem owner duplicado para mesmo lifecycle
 pipeline mantém ordem/lifecycle/handoff
 policy classifica decisão/skip/failure/stage-order
@@ -412,7 +473,8 @@ correção de regressão factual comprovada por smoke/log
 documentação/auditoria
 extração com owner/categoria final explícitos
 normalização que remove owner duplicado sem criar novo layer
-continuação de Audio/Save/Camera apenas com matriz de ownership prévia quando necessário
+manutenção da fronteira PlayerPreparation via capability/port/endpoint explícito
+continuação de outras frentes com matriz de ownership prévia quando necessário
 ```
 
 Não é permitido:
@@ -424,6 +486,8 @@ mover ordem macro para stage composite
 criar compat/trilho paralelo sem justificativa explícita
 preservar compatibilidade só para evitar quebrar código transitório
 aceitar smoke como prova suficiente de ownership
+reintroduzir a bridge PlayerPreparation stage-to-stage
+usar PlayerPreparation como precedente para chamadas stage-to-stage cross-boundary
 ```
 
 ## Fechamento
@@ -433,6 +497,9 @@ Checkpoints aceitos:
 ```text
 SessionOperational pós-13C Normalization — PASS arquitetural parcial
 SessionOperational Camera Presentation Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational Audio + HandoffExit Ownership Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational PlayerPreparation Endpoint Normalization — PASS funcional + PASS arquitetural parcial
+SessionOperational suspicious ownership normalization — CLOSED with no known blocking ownership debt
 ```
 
 Decisão congelada:
@@ -444,6 +511,8 @@ OperationalFactRecorder permanece recorder factual, sem lifecycle/policy/command
 Boundaries permanecem begin/complete puros.
 Stages não podem virar mini-pipelines.
 Commands não carregam infraestrutura.
+Adapters não decidem lifecycle/policy.
+PlayerPreparation stage-to-stage foi removido do caminho operacional; o shape aceito é endpoint explícito de `Actors.Semantic.Preparation`.
 ```
 
-Este ADR é a trava normativa para continuar a decomposição do `SessionOperationalPipeline`, especialmente nas próximas frentes de Audio, Save e demais normalizações de adapters/stages.
+Este ADR é a trava normativa para retomar a decomposição do `SessionOperationalPipeline` sem reintroduzir seams, bridges genéricas ou deslocamento de responsabilidade. Camera Presentation, Audio, HandoffExit e PlayerPreparation ficam congelados como normalizações aceitas em nível arquitetural parcial.

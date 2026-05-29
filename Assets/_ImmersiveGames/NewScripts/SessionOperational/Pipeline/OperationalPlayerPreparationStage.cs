@@ -79,6 +79,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
     public sealed class OperationalPlayerPreparationStage
     {
+        private readonly Func<IRoutePlayerPreparationEndpoint> _routePlayerPreparationEndpointResolver;
+
+        public OperationalPlayerPreparationStage(Func<IRoutePlayerPreparationEndpoint> routePlayerPreparationEndpointResolver)
+        {
+            _routePlayerPreparationEndpointResolver = routePlayerPreparationEndpointResolver ?? throw new ArgumentNullException(nameof(routePlayerPreparationEndpointResolver));
+        }
+
         public OperationalPlayerPreparationResult Execute(OperationalPlayerPreparationCommand command)
         {
             if (!command.IsValid)
@@ -115,7 +122,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
             LogPlayerPreparationStarted(command, playerPreparationIdentity);
 
-            PlayerPreparationResult playerPreparationResult = PlayerPreparationStage.Execute(playerPreparationPlan);
+            IRoutePlayerPreparationEndpoint routePlayerPreparationEndpoint = ResolveRoutePlayerPreparationEndpointOrFail(command);
+            PlayerPreparationResult playerPreparationResult = routePlayerPreparationEndpoint.Execute(playerPreparationPlan);
             if (!playerPreparationResult.IsValid)
             {
                 throw new InvalidOperationException("PlayerPreparationStage returned an invalid result.");
@@ -127,6 +135,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return new OperationalPlayerPreparationResult(
                 OperationalPlayerPreparationResultKind.Completed,
                 playerPreparationResult);
+        }
+
+        private IRoutePlayerPreparationEndpoint ResolveRoutePlayerPreparationEndpointOrFail(OperationalPlayerPreparationCommand command)
+        {
+            IRoutePlayerPreparationEndpoint routePlayerPreparationEndpoint = _routePlayerPreparationEndpointResolver();
+            if (routePlayerPreparationEndpoint == null)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][PlayerPreparation] IRoutePlayerPreparationEndpoint obrigatorio ausente routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
+            }
+
+            return routePlayerPreparationEndpoint;
         }
 
         private static IReadOnlyList<PlayerSetEntry> ResolvePlayerSetFromPlan(SessionOperationalRoutePlan plan)

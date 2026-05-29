@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
@@ -24,6 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
         private static DefaultProgressionSlotContextResolver _progressionSlotContextResolver;
         private static SessionOperationalRouteCameraAdapter _routeCameraAdapter;
         private static SessionOperationalActivityCameraAdapter _activityCameraAdapter;
+        private static RoutePlayerPreparationEndpoint _routePlayerPreparationEndpoint;
         private static SessionActivityOperationalRouteHandoffExitAdapter _routeHandoffExitAdapter;
         private static SessionActivityOperationalRouteConsumerEntryAdapter _routeConsumerEntryAdapter;
         private static SessionActivityOperationalRouteConsumerReadinessAdapter _routeConsumerReadinessAdapter;
@@ -60,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalSceneCompositionAdapter();
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
+            EnsureRoutePlayerPreparationEndpoint();
             EnsureSessionOperationalRouteHandoffExitAdapter();
             EnsureSessionOperationalRouteConsumerEntryAdapter();
             EnsureSessionOperationalRouteConsumerReadinessAdapter();
@@ -140,8 +143,33 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 _activityCameraAdapter,
                 ResolveOptionalDependency<IOperationalRouteHandoffExitPort>,
                 ResolveOptionalDependency<ISessionActivityRouteExitTeardownBoundary>,
+                ResolveRequiredDependency<IRoutePlayerPreparationEndpoint>,
                 ResolveOptionalDependency<ISessionActivitySnapshotPayloadProvider>,
                 ResolveOptionalDependency<ISaveStateService>);
+        }
+
+        private static void EnsureRoutePlayerPreparationEndpoint()
+        {
+            if (_routePlayerPreparationEndpoint != null)
+            {
+                return;
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<RoutePlayerPreparationEndpoint>(out var existingEndpoint) &&
+                existingEndpoint != null)
+            {
+                _routePlayerPreparationEndpoint = existingEndpoint;
+                DependencyManager.Provider.RegisterGlobal<IRoutePlayerPreparationEndpoint>(_routePlayerPreparationEndpoint);
+                return;
+            }
+
+            _routePlayerPreparationEndpoint = new RoutePlayerPreparationEndpoint();
+            DependencyManager.Provider.RegisterGlobal(_routePlayerPreparationEndpoint);
+            DependencyManager.Provider.RegisterGlobal<IRoutePlayerPreparationEndpoint>(_routePlayerPreparationEndpoint);
+
+            DebugUtility.Log(typeof(SessionOperationalRuntimeComposer),
+                "[OBS][SessionOperationalPipeline][Composer] endpoint='RoutePlayerPreparationEndpoint' registered for operational route player preparation.",
+                DebugUtility.Colors.Info);
         }
 
         private static void EnsureSessionOperationalRouteConsumerEntryAdapter()

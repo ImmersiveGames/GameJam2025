@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalRouteCameraReleasePreviousStage _routeCameraReleasePreviousStage;
         private readonly OperationalRouteCameraPresentationStage _routeCameraPresentationStage;
         private readonly OperationalInputPreparationStage _inputPreparationStage;
-        private readonly OperationalPlayerPreparationStage _playerPreparationStage = new();
+        private readonly OperationalPlayerPreparationStage _playerPreparationStage;
         private readonly OperationalActivityCameraPresentationStage _activityCameraPresentationStage;
         private readonly OperationalActivityCameraReleasePreviousStage _activityCameraReleasePreviousStage;
         private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage;
@@ -124,6 +124,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_dependencies.RouteCameraAdapter);
             _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_dependencies.RouteCameraAdapter);
             _inputPreparationStage = new OperationalInputPreparationStage(_factRecorder, _dependencies.ResolveInputModeRequestPort);
+            _playerPreparationStage = new OperationalPlayerPreparationStage(_dependencies.ResolveRoutePlayerPreparationEndpoint);
             _routeCompletionStage = new OperationalRouteCompletionStage(_factRecorder);
             _activityCameraPresentationStage = new OperationalActivityCameraPresentationStage(_dependencies.ActivityCameraAdapter);
             _activityCameraReleasePreviousStage = new OperationalActivityCameraReleasePreviousStage(_dependencies.ActivityCameraAdapter);
