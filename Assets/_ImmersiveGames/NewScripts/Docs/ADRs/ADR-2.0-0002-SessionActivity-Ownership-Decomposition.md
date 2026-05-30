@@ -376,14 +376,599 @@ A normalização deve ser feita antes de migrar o próximo bloco dependente.
 | Composition/global registry | Composition root/installer | Não no Host como lifecycle owner |
 | QA probes | Endpoints QA isolados | Nunca owner final de lifecycle |
 
-## Sequência normativa de refatoração
+## Plano normativo consolidado de refatoração
 
-1. Congelar este ADR.
-2. Unificar owner de `RouteExit teardown`.
-3. Criar `ActivityEntryPipeline` concreto sem trilho paralelo.
-4. Migrar blocos de entry em cortes pequenos, removendo o caminho antigo a cada corte.
-5. Só depois reduzir state mutável e limpar Host/composition.
-6. Tratar identity de permission como débito próprio, sem misturar com o corte inicial de entry.
+Este plano substitui a sequência inicial genérica. Ele é parte normativa deste ADR e deve guiar a implementação de `SessionActivity` Base 2.0.
+
+A regra principal é:
+
+```text
+SessionActivityPipeline mantém lifecycle macro, transition, restart, route-exit e handoffs.
+ActivityEntryPipeline vira owner real do lifecycle determinístico da entry.
+Stages executam passos determinísticos.
+Policies classificam skip/failure/required/optional/stale/foreign.
+Commands carregam payload runtime resolvido.
+Facts registram o que ocorreu.
+Adapters executam side-effects.
+Endpoints reagem localmente.
+```
+
+Nenhum corte deve ser aceito apenas por reduzir tamanho de arquivo. Um corte só é válido se remover responsabilidade concreta do owner errado, atribuir owner correto, remover ou tornar inacessível o caminho antigo equivalente, não criar fallback e preservar smoke/log.
+
+### Estado já fechado
+
+| Corte | Status normativo | Resultado |
+|---|---|---|
+| `SA-0` | Fechado | ADR/plano inicial criados. |
+| `SA-1` | Fechado | `RouteExit teardown` com owner único no `SessionActivityPipeline`; Host delega. |
+| `SA-2` | Fechado | `ActivityEntryPipeline` concreto criado. |
+| `SA-2B` | Fechado | Owner `ActivityEntryPipeline` visível nos logs. |
+| `SA-3A` | Fechado | `ActivityContent load/prepare/readiness` movido para `ActivityEntryPipeline`. |
+| `SA-3A-H1` | Fechado | Corrigida observabilidade prematura de `ActivityEntryPipelineCompleted`; `ActivityEntryPreparationAccepted` substitui conclusão falsa. |
+
+### Estado ainda problemático
+
+Mesmo após `SA-3A-H1`, o código ainda não atende ao desenho final do ADR porque:
+
+```text
+ActivityEntryPipeline ainda não é owner real de setup/readiness completo.
+EmitNominalActivitySetup ainda concentra setup real no SessionActivityPipeline.
+ObjectReset/ObjectRestore ainda pertencem ao miolo de entry e dependem de ordem correta com Inventory.
+ActivityObjectEntryStage interno ainda é wrapper/fachada se apenas chamar métodos Core do SessionActivityPipeline.
+IActivityEntryRuntimeEndpoint ainda é bridge transitória e não pode crescer como fachada permanente.
+```
+
+### Regra de replanejamento
+
+O plano original `SA-3 = ActivityContent + Inventory` foi refinado pela auditoria consolidada. O próximo passo não é mover apenas `ActivityCapabilityInventory` isoladamente. Antes, deve-se corrigir a ordem e o ownership do subfluxo mínimo que torna o inventory canônico útil para os consumidores.
+
+---
+
+## Roadmap normativo por fases
+
+### Fase A — Consolidar entry lifecycle real
+
+#### `SA-3B0 — Entry Setup Pre-Inventory Ownership / Ordering Correction`
+
+Objetivo: mover para `ActivityEntryPipeline` o primeiro bloco real de setup que hoje impede o inventory canônico de nascer na ordem correta.
+
+Escopo permitido:
+
+```text
+ActivitySetupInventory
+ObjectSnapshotContractValidation
+ObjectReset
+ObjectRestore
+ActivityCapabilityInventoryPreview
+QA reset ligado a esse caminho canônico
+```
+
+Escopo proibido neste corte:
+
+```text
+ActorPresentation
+ActorAttributes
+ActorParticipation
+PlayerInput
+Movement
+Camera
+Permission identity cleanup
+Release / Deactivation / RouteExit
+```
+
+Critério arquitetural:
+
+```text
+ActivityEntryPipeline owna o subfluxo.
+SessionActivityPipeline não executa diretamente esse bloco.
+ObjectReset não reconstrói inventory local.
+ObjectRestore não depende de preview vazio/antigo.
+QA reset chama caminho canônico, não trilho paralelo.
+Inventory canônico nasce antes dos consumidores desse bloco.
+ActivityObjectEntryStage interno não é expandido como fachada.
+IActivityEntryRuntimeEndpoint não cresce como owner remoto do god pipeline.
+```
+
+#### `SA-3B1 — ActivityCapabilityInventory ownership final`
+
+Objetivo: completar a migração do `ActivityCapabilityInventory` para owner real no `ActivityEntryPipeline` ou em stage canônico chamado por ele.
+
+Escopo:
+
+```text
+ActivityCapabilityInventoryPreviewStarted
+ActivityCapabilityInventoryValidationStarted
+ActivityCapabilityInventoryValidationPassed/Failed
+ActivityCapabilityInventoryValidationCompleted
+ActivityCapabilityInventoryPreviewObserved
+CurrentActivityCapabilityInventoryPreview write/clear/read contract
+```
+
+Regras:
+
+```text
+ActivityCapabilityInventory é snapshot/índice runtime passivo.
+Ele não decide lifecycle.
+Ele tem writer único por lifecycle.
+Consumidores não podem reconstruí-lo para corrigir falta local.
+Não confundir ActivityCapabilityInventory com ActivitySetupInventory.
+```
+
+---
+
+### Fase B — Transformar setup de objetos em entry stages reais
+
+#### `SA-4A — ActivityObjectEntryStage real`
+
+Objetivo: substituir o `ActivityObjectEntryStage` interno/wrapper por stage concreto de entry.
+
+Escopo:
+
+```text
+Scene contract observation
+Activity object contributor discovery
+Snapshot contract validation
+Object reset
+Object restore
+Object entry result/facts
+```
+
+Critério:
+
+```text
+Stage recebe command/context explícito.
+Stage retorna result explícito.
+Stage não acessa SessionActivityPipeline como owner.
+Stage não usa Func/Action/delegate para esconder execução.
+Stage não é só wrapper para métodos Core do pipeline macro.
+```
+
+#### `SA-4B — ActivityObjectSnapshot/Reset/Restore cleanup`
+
+Objetivo: separar snapshot/reset/restore em commands/facts/adapters claros.
+
+Critério:
+
+```text
+Reset obrigatório ausente = fail-fast.
+Reset opcional ausente = skip explícito.
+ResetAll cego proibido.
+Snapshot restore não decide lifecycle.
+Facts não executam side-effects.
+Adapters/endpoints executam aplicação local.
+```
+
+---
+
+### Fase C — Actor setup por entry
+
+#### `SA-5A — Actor discovery/readiness ownership`
+
+Objetivo: mover discovery/readiness de actor para stages de `ActivityEntryPipeline`.
+
+Escopo:
+
+```text
+PlayerActor readiness
+NonPlayerActor discovery
+ActorScanTarget
+ActorCapabilitySurface
+ActorInventoryFeed
+ActorParticipationContext
+```
+
+Critério:
+
+```text
+Sem rail global player/nonplayer permanente.
+Sem comparar ActorId, PlayerActorId, ActorInstanceRuntimeId e PlayerSlotId como equivalentes.
+Variação concreta de actor aparece como typed policy/capability/endpoint.
+```
+
+#### `SA-5B — ActorPresentation setup stage`
+
+Objetivo: mover `ActorPresentation` setup para stage real de entry.
+
+Critério:
+
+```text
+Retention policy explícita.
+Materialization em adapter.
+Stage não decide next activity.
+Presentation obrigatória ausente falha explicitamente.
+Sem fallback silencioso.
+```
+
+#### `SA-5C — ActorAttributes setup stage`
+
+Objetivo: mover setup de attributes para stage real de entry.
+
+Critério:
+
+```text
+Attributes são capability local.
+Pipeline/stage prepara/descobre.
+Reação local não vira command global quando for ação local.
+```
+
+#### `SA-5D — ActorParticipation enter stage`
+
+Objetivo: mover participation enter/readiness para stage real.
+
+Critério:
+
+```text
+Participation context explícito.
+Ausência obrigatória fail-fast.
+Ausência opcional skip explícito.
+Sem branch global player/nonplayer.
+```
+
+---
+
+### Fase D — Input, Permission, Movement e Camera
+
+#### `SA-6A — PlayerInput binding stage`
+
+Objetivo: mover `PlayerInputBinding` para stage real de entry.
+
+Critério:
+
+```text
+Usa asset canônico já resolvido.
+Não cria configuração duplicada no prefab.
+Não mexe no OperationalInputRuntime.
+Binding é preparation; enable/disable pertence a permission/lifecycle apropriado.
+```
+
+#### `SA-6B — Permission target preparation stage`
+
+Objetivo: preparar permission targets como entry stage, sem redesenhar toda identity no mesmo corte.
+
+Critério:
+
+```text
+PermissionTarget discovery explícito.
+Receiver registration explícito.
+Initial state Blocked/Unbound explícito.
+Não misturar PlayerActorId, PlayerSlotId, ReceiverId e PermissionTargetId.
+Não mudar reaction local.
+```
+
+#### `SA-6C — Movement binding stage`
+
+Objetivo: mover movement binding para stage real.
+
+Critério:
+
+```text
+Binding prepara.
+Permission/runtime habilita ou bloqueia.
+Receiver aplica localmente.
+Pipeline não chama controller diretamente para lifecycle fino.
+```
+
+#### `SA-6D — Camera binding stage`
+
+Objetivo: mover camera target binding para stage real.
+
+Critério:
+
+```text
+Camera consome capability inventory canônico.
+Camera não reconstrói inventory.
+Activity camera identity correta.
+Skip/no-content preservado em activity_02.
+```
+
+---
+
+### Fase E — Entry readiness boundary final
+
+#### `SA-7 — EntryReadinessResult e handoff limpo para macro pipeline`
+
+Objetivo: fazer `ActivityEntryPipeline` retornar resultado final de readiness completo para `SessionActivityPipeline`.
+
+Resultados esperados:
+
+```text
+ActivityEntryResult.Completed
+ActivityEntryResult.SkippedNoContent
+ActivityEntryResult.Failed
+ActivityEntryResult.RejectedStaleOrForeign
+ActivityEntryResult.BlockedByRequiredCapability
+```
+
+Critério:
+
+```text
+ActivityEntryPipeline decide readiness da entry.
+SessionActivityPipeline decide apenas o próximo macro passo: ActivationWindow ou fail/abort.
+SessionActivityPipeline não executa setup residual.
+ActivityEntryPipeline tem início/fim semanticamente corretos.
+ActivityEntryPipelineCompleted só aparece quando a entry realmente terminou.
+ActivationWindow continua fora do ActivityEntryPipeline.
+```
+
+---
+
+### Fase F — Exit, release e dematerialization
+
+#### `SA-8A — Exit/Release ownership audit`
+
+Objetivo: decidir se precisa de `ActivityExitPipeline` ou se stages de exit chamados pelo `SessionActivityPipeline` bastam.
+
+Auditar:
+
+```text
+ActorParticipation exit
+ActorPresentation release
+ActorAttributes release
+ActivityObject snapshot capture
+ActivityObject release
+ActivityContent unload
+ActivityObjectContributor unregister
+DeactivationWindow ordering
+RouteExit ordering
+```
+
+Decisão possível A:
+
+```text
+SessionActivityPipeline mantém macro exit lifecycle.
+Exit stages executam release/dematerialization.
+```
+
+Decisão possível B:
+
+```text
+Criar ActivityExitPipeline somente se houver lifecycle determinístico próprio suficientemente grande.
+Não criar pipeline por simetria estética.
+```
+
+#### `SA-8B — ActivityObjectRelease / SnapshotCapture stage cleanup`
+
+Critério:
+
+```text
+Snapshot capture antes de release.
+Release command explícito.
+Unregister depois do release aplicável.
+No-content = skip explícito.
+```
+
+#### `SA-8C — Actor release/participation exit cleanup`
+
+Critério:
+
+```text
+RouteScoped pode reter por policy.
+ActivityScoped libera por ActivityExit.
+RouteExit libera o que é route-scoped quando aplicável.
+Sem rail player/nonplayer paralelo.
+```
+
+---
+
+### Fase G — Host, composition e boundaries
+
+#### `SA-9A — SessionActivityHost boundary cleanup`
+
+Objetivo: reduzir `SessionActivityHost` para boundary/endpoint externo, não lifecycle owner.
+
+Critério:
+
+```text
+Host não classifica lifecycle.
+Host não executa side-effects de teardown.
+Host não vira registry tardio.
+QA chama comandos/stages canônicos.
+```
+
+#### `SA-9B — Composition / service locator cleanup`
+
+Critério:
+
+```text
+Composition root registra dependências.
+Pipeline não usa DependencyManager.Provider para lifecycle ativo.
+Host não registra lifecycle como fonte de verdade.
+```
+
+---
+
+### Fase H — Permission identity final
+
+#### `SA-10 — Permission identity separation`
+
+Objetivo: resolver o débito de identidade sem misturar domínios.
+
+Escopo:
+
+```text
+PermissionTargetId
+ReceiverId
+PlayerActorId
+PlayerSlotId
+ActorInstanceRuntimeId
+ActorId
+ActivityParticipationContext
+```
+
+Critério:
+
+```text
+Nenhum fallback comparando domínios diferentes.
+Receiver técnico não vira ActorId.
+PlayerSlotId não vira PlayerActorId.
+PermissionTarget tem identidade própria.
+Logs expõem os domínios separados.
+```
+
+---
+
+### Fase I — State/fact hygiene
+
+#### `SA-11A — ActivityEntry state/context extraction`
+
+Objetivo: reduzir o uso de `SessionActivityRuntimeState` como saco global para entry.
+
+Escopo:
+
+```text
+ActivityEntryContext
+ActivityEntrySnapshot
+ActivityEntryRuntimeState
+Entry-local loaded content
+Entry-local inventory
+Entry-local setup result
+```
+
+Critério:
+
+```text
+State da entry não vaza como global mutável sem owner.
+Foreign/stale continua protegido.
+Restart cria novo entry context.
+```
+
+#### `SA-11B — Fact recorder hygiene`
+
+Critério:
+
+```text
+Fact recorder não decide policy.
+Fact recorder não executa side-effect.
+Logs mantêm owner correto.
+Facts não alteram lifecycle.
+```
+
+---
+
+### Fase J — Contract/command hygiene
+
+#### `SA-12 — Commands e contracts finais`
+
+Auditar e limpar:
+
+```text
+ActivityEntryCommand
+ActivityEntryContentLoadCommand
+Activity setup commands
+Object reset/restore commands
+Actor setup commands
+Permission commands
+Camera/movement/input commands
+```
+
+Regra:
+
+```text
+Commands não carregam Stage, Boundary, Adapter, Func<T>, Action, executor genérico, state mutável compartilhado ou ScriptableObject autoral inteiro quando só é necessário payload resolvido.
+Commands carregam payload runtime resolvido e identity tipada.
+```
+
+---
+
+## Ordem normativa atualizada
+
+```text
+DONE  SA-0    ADR/plano
+DONE  SA-1    RouteExit teardown owner unification
+DONE  SA-2    ActivityEntryPipeline shell
+DONE  SA-2B   ActivityEntry observability
+DONE  SA-3A   ActivityContent load/readiness
+DONE  SA-3A-H1 lifecycle log semantics + inventory writer hygiene
+
+NEXT  SA-3B0  Entry Setup Pre-Inventory Ownership / Ordering Correction
+      SA-3B1  ActivityCapabilityInventory ownership final
+
+      SA-4A   ActivityObjectEntryStage real
+      SA-4B   Object snapshot/reset/restore cleanup
+
+      SA-5A   Actor discovery/readiness ownership
+      SA-5B   ActorPresentation setup stage
+      SA-5C   ActorAttributes setup stage
+      SA-5D   ActorParticipation enter stage
+
+      SA-6A   PlayerInput binding stage
+      SA-6B   Permission target preparation stage
+      SA-6C   Movement binding stage
+      SA-6D   Camera binding stage
+
+      SA-7    EntryReadinessResult final
+
+      SA-8A   Exit/Release ownership audit
+      SA-8B   ObjectRelease/SnapshotCapture cleanup
+      SA-8C   Actor release/participation exit cleanup
+
+      SA-9A   Host boundary cleanup
+      SA-9B   Composition/service locator cleanup
+
+      SA-10   Permission identity separation
+
+      SA-11A  Entry state/context extraction
+      SA-11B  Fact recorder hygiene
+
+      SA-12   Command/contract hygiene
+```
+
+## Critério global de viabilidade Base 2.0
+
+A refatoração de `SessionActivity` só pode ser considerada viável para Base 2.0 quando:
+
+```text
+SessionActivityPipeline mantém apenas lifecycle macro, transition, restart, route-exit e handoffs.
+ActivityEntryPipeline é owner real de entry lifecycle.
+ActivityEntryPipeline não é fachada do SessionActivityPipeline.
+ActivityContent, Inventory, Object setup, Actor setup, Input, Movement e Camera têm stages/owners explícitos.
+Release/Exit têm owner claro, com ou sem ActivityExitPipeline.
+Host é boundary/delegador, não owner de lifecycle.
+QA chama caminhos canônicos.
+Commands não carregam infraestrutura.
+Facts não executam side-effects.
+Adapters não decidem lifecycle/policy.
+Snapshots/índices runtime têm writer único por lifecycle.
+Identidades de domínios diferentes não são comparadas como equivalentes.
+Sem fallback silencioso.
+Sem trilho paralelo novo.
+Sem compat desnecessária.
+Smoke completo PASS.
+```
+
+## Smoke global mínimo
+
+```text
+Boot -> Menu
+Menu -> Sandbox
+Activity 01 entry com content scene
+CompleteActivationWindow
+ActivityRunning
+RestartCurrentActivity
+CompleteActivationWindow novamente
+CompleteCurrentActivity
+Activity 01 -> Activity 02 no-content/skip
+Activity 02 ActivityRunning
+BackToMenu / RouteExit
+```
+
+Com checkpoints:
+
+```text
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActivityObjectSnapshotCapture PASS quando aplicável
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+CameraBindingCompleted preservado
+MovementBindingCompleted preservado
+MovementControlEnabled/Disabled preservado
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+```
 
 ## Critérios de aceite arquitetural
 

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
@@ -33,11 +35,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
         private readonly IActivityEntryRuntimeEndpoint _endpoint;
+        private readonly IActivityEntryObjectSetupRuntimeBridge _objectSetupBridge;
+        private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
+        private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
+        private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
         private PendingContentLoadContext _pendingContentLoadContext;
 
-        public ActivityEntryPipeline(IActivityEntryRuntimeEndpoint endpoint)
+        public ActivityEntryPipeline(
+            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryObjectSetupRuntimeBridge objectSetupBridge)
         {
             _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            _objectSetupBridge = objectSetupBridge ?? throw new ArgumentNullException(nameof(objectSetupBridge));
+            _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
+            _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
+            _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
         }
 
         public Task<ActivityEntryResult> ExecuteAsync(ActivityEntryCommand command, CancellationToken cancellationToken = default)
@@ -298,6 +310,141 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Reason,
                 $"operationId='{command.Operation.OperationId}'");
             _pendingContentLoadContext = null;
+        }
+
+        public ActivityEntryObjectSetupResult ExecuteSetupInfrastructure(
+            ActivityEntryObjectSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntrySetupInfrastructureStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='setup_inventory_snapshot_contract'");
+
+            try
+            {
+                ActivityContentLoadedSet loadedSet = _objectSetupBridge.GetCurrentActivityContentLoadedSet();
+                ActivityEntrySetupInventoryStage.Execute(
+                    command,
+                    loadedSet,
+                    _activitySetupInventoryBuilder,
+                    _activitySetupInventoryValidator,
+                    _endpoint,
+                    _objectSetupBridge,
+                    facts,
+                    snapshots);
+
+                ActivityEntryObjectSnapshotContractValidationStage.Execute(
+                    command,
+                    loadedSet,
+                    _objectSetupBridge.GetCurrentActivityObjectContributorDiscoveryResult(),
+                    _endpoint,
+                    facts);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntrySetupInfrastructureCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    "owner='ActivityEntryPipeline' block='setup_inventory_snapshot_contract'");
+                return new ActivityEntryObjectSetupResult(
+                    completed: true,
+                    command.Identity,
+                    "setup_infrastructure_applied");
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntrySetupInfrastructureFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='setup_inventory_snapshot_contract' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        public ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
+            ActivityEntryObjectSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryCapabilityObjectSetupStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='capability_inventory_object_state'");
+
+            try
+            {
+                ActivityObjectContributorDiscoveryResult discoveryResult = _objectSetupBridge.GetCurrentActivityObjectContributorDiscoveryResult();
+                IReadOnlyList<ActorScanTarget> actorTargets = _objectSetupBridge.BuildActorScanTargetsForCurrentEntry(
+                    command.Identity,
+                    command.Source,
+                    command.Reason);
+
+                ActivityCapabilityInventoryBuildResult buildResult = ActivityEntryCapabilityInventoryPreviewStage.Execute(
+                    command,
+                    discoveryResult,
+                    actorTargets,
+                    _activityCapabilityInventoryCoordinator,
+                    _endpoint,
+                    _objectSetupBridge,
+                    facts,
+                    snapshots);
+
+                ActivityEntryObjectResetStage.Execute(
+                    command,
+                    discoveryResult,
+                    buildResult.Inventory,
+                    buildResult.Validation,
+                    _endpoint,
+                    facts,
+                    snapshots);
+
+                ActivityEntryObjectSnapshotRestoreStage.Execute(
+                    command,
+                    discoveryResult,
+                    buildResult.Inventory,
+                    buildResult.Validation,
+                    _endpoint,
+                    facts);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryCapabilityObjectSetupCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    "owner='ActivityEntryPipeline' block='capability_inventory_object_state'");
+                return new ActivityEntryObjectSetupResult(
+                    completed: true,
+                    command.Identity,
+                    "capability_object_setup_applied");
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryCapabilityObjectSetupFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='capability_inventory_object_state' error='{exception.Message}'");
+                throw;
+            }
         }
 
         public void ResetState()

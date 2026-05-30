@@ -33,7 +33,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
-    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeEndpoint
+    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeEndpoint, IActivityEntryObjectSetupRuntimeBridge
     {
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private const string RouteActivitySnapshotSchemaId = "progression.route_activity.object_snapshot.v1";
@@ -59,9 +59,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly HashSet<ActorInstanceId> _activeActorParticipationsByActorInstanceId = new();
         private readonly Dictionary<ActorInstanceId, ActorPresentationCapabilityState> _activeActorPresentationByActorInstanceId = new();
         private readonly Dictionary<ActorInstanceId, ActorAttributeCapabilityState> _activeActorAttributeCapabilitiesByActorInstanceId = new();
-        private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
-        private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
-        private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
         private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
         private readonly IActivityEntryPipeline _activityEntryPipeline;
         private readonly string _sessionId;
@@ -549,10 +546,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _playerMovementControlAdapter = new PlayerMovementControlAdapter(_permissionRuntime);
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
-            _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
-            _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
-            _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
-            _activityEntryPipeline = new ActivityEntryPipeline(this);
+            _activityEntryPipeline = new ActivityEntryPipeline(this, this);
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -3538,15 +3532,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivitySetupStarted, setupStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             EmitSnapshot(snapshots, "activity_setup_started", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             ObserveActivitySceneContractOrSkip(definition, command, facts, snapshots, entrySequence);
-            DiscoverActivityObjectContributorsOrSkip(definition, command, facts, snapshots, entrySequence);
+            DiscoverActivityObjectContributorsOrSkipCore(definition, command, facts, snapshots, entrySequence);
             EmitNonPlayerActorDiscoveryStage(definition, command, facts, snapshots, entrySequence);
-            BuildAndValidateActivitySetupInventory(definition, command, facts, snapshots, entrySequence);
-            EmitObjectSnapshotContractValidationStage(definition, command, facts, snapshots, entrySequence);
-            EmitObjectResetStage(definition, command, facts, snapshots, entrySequence);
-            EmitObjectSnapshotRestoreStage(definition, command, facts, snapshots, entrySequence);
+            ActivityEntryObjectSetupCommand objectSetupCommand = new(
+                setupStartedIdentity,
+                definition,
+                command.Source,
+                command.Reason);
+            ActivityEntryObjectSetupResult setupInfrastructureResult = _activityEntryPipeline.ExecuteSetupInfrastructure(
+                objectSetupCommand,
+                facts,
+                snapshots);
+            if (!setupInfrastructureResult.Completed || !setupInfrastructureResult.IsValid)
+            {
+                throw new InvalidOperationException($"ActivityEntryPipeline setup infrastructure failed. reason='{setupInfrastructureResult.Reason}' identity='{setupInfrastructureResult.Identity}'.");
+            }
             ParticipantBindingStageResult participantBindingResult = EmitParticipantBindingStage(definition, command, facts, snapshots, entrySequence);
             EmitPlayerActorReadinessStage(definition, command, facts, snapshots, entrySequence, participantBindingResult);
-            EmitActivityCapabilityInventoryPreviewStage(definition, command, facts, snapshots, entrySequence);
+            ActivityEntryObjectSetupResult capabilityObjectSetupResult = _activityEntryPipeline.ExecuteCapabilityObjectSetup(
+                objectSetupCommand,
+                facts,
+                snapshots);
+            if (!capabilityObjectSetupResult.Completed || !capabilityObjectSetupResult.IsValid)
+            {
+                throw new InvalidOperationException($"ActivityEntryPipeline capability object setup failed. reason='{capabilityObjectSetupResult.Reason}' identity='{capabilityObjectSetupResult.Identity}'.");
+            }
             EmitActorPresentationSetupFromInventoryStage(definition, command, facts, snapshots, entrySequence);
             EmitActorAttributeSetupFromInventoryStage(definition, command, facts, snapshots, entrySequence);
             EmitActorParticipationEnterFromInventoryStage(definition, command, facts, snapshots, entrySequence);
@@ -6898,137 +6908,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return string.Join(",", resetGroups);
         }
 
-        private void BuildAndValidateActivitySetupInventory(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            SessionActivityIdentity setupIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            SessionActivityIdentity buildStartedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryBuildStarted, entrySequence);
-            _state.SetCurrentIdentity(buildStartedIdentity, SessionActivityStage.ActivitySetupInventoryBuildStarted);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivitySetupInventoryBuildStarted,
-                buildStartedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory build started.");
-            EmitSnapshot(
-                snapshots,
-                "activity_setup_inventory_build_started",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory build started.");
-
-            ActivitySetupInventoryBuildContext buildContext = new(
-                definition,
-                setupIdentity,
-                _state.CurrentActivityContentLoadedSet,
-                command.Source,
-                command.Reason);
-
-            ActivitySetupInventoryBuildResult buildResult = _activitySetupInventoryBuilder.Build(buildContext);
-            if (buildResult.IsFailed || !buildResult.IsValid)
-            {
-                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidationFailed, entrySequence);
-                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivitySetupInventoryValidationFailed,
-                    failedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_setup_inventory_build_failed",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionActivityPipeline][ActivitySetupInventory] Build failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' message='{buildResult.Message}'.");
-            }
-
-            _state.SetCurrentActivitySetupInventory(buildResult.Inventory);
-
-            if (buildResult.IsSkipped)
-            {
-                SessionActivityIdentity skippedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements, entrySequence);
-                _state.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements);
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivitySetupInventorySkippedNoRequirements,
-                    skippedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory skipped because no requirements were declared. inventoryId='{buildResult.Inventory.InventoryId}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_setup_inventory_skipped_no_requirements",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory skipped because no requirements were declared.");
-            }
-            else
-            {
-                SessionActivityIdentity builtIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryBuilt, entrySequence);
-                _state.SetCurrentIdentity(builtIdentity, SessionActivityStage.ActivitySetupInventoryBuilt);
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivitySetupInventoryBuilt,
-                    builtIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory built inventoryId='{buildResult.Inventory.InventoryId}' totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_setup_inventory_built",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory built totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
-            }
-
-            ActivitySetupInventoryValidationResult validationResult = _activitySetupInventoryValidator.Validate(buildResult.Inventory, command.Source, command.Reason);
-            if (validationResult.IsFailed || !validationResult.IsValid)
-            {
-                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidationFailed, entrySequence);
-                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivitySetupInventoryValidationFailed,
-                    failedIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}' message='{validationResult.Message}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_setup_inventory_validation_failed",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}'.");
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionActivityPipeline][ActivitySetupInventory] Validation failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' errors='{string.Join(" | ", validationResult.Errors)}'.");
-            }
-
-            SessionActivityIdentity validatedIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidated, entrySequence);
-            _state.SetCurrentIdentity(validatedIdentity, SessionActivityStage.ActivitySetupInventoryValidated);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivitySetupInventoryValidated,
-                validatedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory validated inventoryId='{validationResult.Inventory.InventoryId}' totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_setup_inventory_validated",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory validated totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
-        }
-
         private void ObserveActivitySceneContractOrSkip(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
@@ -7277,81 +7156,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public int ContentSceneOrdinal { get; }
         }
 
-        private sealed class ActivityObjectEntryStage
-        {
-            private readonly SessionActivityPipeline _owner;
-
-            public ActivityObjectEntryStage(SessionActivityPipeline owner)
-            {
-                _owner = owner ?? throw new ArgumentNullException(nameof(owner));
-            }
-
-            public void Discover(
-                SessionActivityDefinition definition,
-                SessionActivityCommand command,
-                List<SessionActivityFact> facts,
-                List<SessionActivitySnapshot> snapshots,
-                int entrySequence)
-            {
-                _owner.DiscoverActivityObjectContributorsOrSkipCore(definition, command, facts, snapshots, entrySequence);
-            }
-
-            public void EmitCapabilityInventoryPreview(
-                SessionActivityDefinition definition,
-                SessionActivityCommand command,
-                List<SessionActivityFact> facts,
-                List<SessionActivitySnapshot> snapshots,
-                int entrySequence)
-            {
-                _owner.EmitActivityCapabilityInventoryPreviewStageCore(definition, command, facts, snapshots, entrySequence);
-            }
-
-            public void ValidateSnapshotContract(
-                SessionActivityDefinition definition,
-                SessionActivityCommand command,
-                List<SessionActivityFact> facts,
-                List<SessionActivitySnapshot> snapshots,
-                int entrySequence)
-            {
-                _owner.EmitObjectSnapshotContractValidationStageCore(definition, command, facts, snapshots, entrySequence);
-            }
-
-            public void Reset(
-                SessionActivityDefinition definition,
-                SessionActivityCommand command,
-                List<SessionActivityFact> facts,
-                List<SessionActivitySnapshot> snapshots,
-                int entrySequence)
-            {
-                _owner.EmitObjectResetStageCore(definition, command, facts, snapshots, entrySequence);
-            }
-
-            public void RestoreSnapshot(
-                SessionActivityDefinition definition,
-                SessionActivityCommand command,
-                List<SessionActivityFact> facts,
-                List<SessionActivitySnapshot> snapshots,
-                int entrySequence)
-            {
-                _owner.EmitObjectSnapshotRestoreStageCore(definition, command, facts, snapshots, entrySequence);
-            }
-        }
-
-        private ActivityObjectEntryStage BuildActivityObjectEntryStage()
-        {
-            return new ActivityObjectEntryStage(this);
-        }
-
-        private void DiscoverActivityObjectContributorsOrSkip(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            BuildActivityObjectEntryStage().Discover(definition, command, facts, snapshots, entrySequence);
-        }
-
         private void EmitNonPlayerActorDiscoveryStage(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
@@ -7396,144 +7200,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 EmitSnapshot(snapshots, "non_player_actor_discovery_failed", command.Source, command.Reason, $"'{definition.ActivityId}' non-player actor discovery failed reason='{ex.Message}'.");
                 throw;
             }
-        }
-
-        private void EmitActivityCapabilityInventoryPreviewStage(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            BuildActivityObjectEntryStage().EmitCapabilityInventoryPreview(definition, command, facts, snapshots, entrySequence);
-        }
-
-        private void EmitActivityCapabilityInventoryPreviewStageCore(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            SessionActivityIdentity previewIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            _state.SetCurrentIdentity(previewIdentity, SessionActivityStage.ActivitySetupStarted);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityInventoryPreviewStarted,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryPreviewStarted,
-                previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-
-            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            bool hasDiscoveryForCurrentEntry = discoveryResult.IsValid && IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence);
-            IReadOnlyList<PlayerActorIdentityRecord> previewActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(previewIdentity);
-            IReadOnlyList<ActorScanTarget> previewGenericActorTargets = BuildActorScanTargetsForCurrentEntry(previewIdentity, previewActorTargets, command.Source, command.Reason);
-            bool hasActorTargets = previewGenericActorTargets != null && previewGenericActorTargets.Count > 0;
-
-            if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
-            {
-                _state.ClearCurrentActivityCapabilityInventoryPreview();
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
-                    previewIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-                EmitPreviewObservationLog(
-                    SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
-                    previewIdentity,
-                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-                return;
-            }
-
-            ActivityCapabilityInventoryBuildResult buildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
-                previewIdentity,
-                hasDiscoveryForCurrentEntry ? discoveryResult : default,
-                previewGenericActorTargets,
-                command.Source,
-                command.Reason);
-            ActivityCapabilityInventory inventory = buildResult.Inventory;
-            ActivityCapabilityInventoryValidationResult validationResult = buildResult.Validation;
-            string capabilityKindsSummary = FormatCapabilityKindsSummary(inventory.Capabilities);
-            _state.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
-            string validationIssueCodes = FormatValidationIssueCodes(validationResult.Issues);
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
-                previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-
-            SessionActivityFactKind validationOutcomeKind = validationResult.Status switch
-            {
-                ActivityCapabilityInventoryValidationStatus.Passed => SessionActivityFactKind.ActivityCapabilityInventoryValidationPassed,
-                ActivityCapabilityInventoryValidationStatus.PassedWithWarnings => SessionActivityFactKind.ActivityCapabilityInventoryValidationWarning,
-                ActivityCapabilityInventoryValidationStatus.FailedPassive => SessionActivityFactKind.ActivityCapabilityInventoryValidationFailedPassive,
-                _ => SessionActivityFactKind.ActivityCapabilityInventoryValidationWarning,
-            };
-
-            string validationOutcomeMessage =
-                $"'{definition.ActivityId}' activity capability inventory validation outcome status='{validationResult.Status}' entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.";
-
-            EmitFact(
-                facts,
-                validationOutcomeKind,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                validationOutcomeMessage);
-            EmitPreviewObservationLog(validationOutcomeKind, previewIdentity, validationOutcomeMessage);
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
-                previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
-                previewIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
-                SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
-                previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-            EmitSnapshot(
-                snapshots,
-                "activity_capability_inventory_preview_observed",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{_activityCapabilityInventoryCoordinator.ActivityObjectScannerId}'.");
-        }
-
-        private static void EmitPreviewObservationLog(
-            SessionActivityFactKind kind,
-            SessionActivityIdentity identity,
-            string message)
-        {
-            Debug.Log(
-                $"[OBS][SessionActivityPipeline][CapabilityInventoryPreview] fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' message=\"{message}\"");
         }
 
         private void DiscoverActivityObjectContributorsOrSkipCore(
@@ -7669,572 +7335,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
-        private void EmitObjectSnapshotContractValidationStage(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            BuildActivityObjectEntryStage().ValidateSnapshotContract(definition, command, facts, snapshots, entrySequence);
-        }
-
-        private void EmitObjectSnapshotContractValidationStageCore(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            SessionActivityIdentity validationIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            _state.SetCurrentIdentity(validationIdentity, SessionActivityStage.ActivitySetupStarted);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectSnapshotContractValidationStarted,
-                validationIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot contract validation started.");
-
-            if (!discoveryResult.IsValid || !IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence) || discoveryResult.Reports.Count == 0)
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted,
-                    validationIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='0' skippedCount='0' failedCount='0' targetIds='<none>' providerPaths='<none>' restoreEndpointPaths='<none>' targetTransformPaths='<none>' mismatchReason='<none>'.");
-                return;
-            }
-
-            int validatedCount = 0;
-            int skippedCount = 0;
-            int failedCount = 0;
-            string mismatchReason = "<none>";
-            HashSet<string> targetIds = new(StringComparer.Ordinal);
-            HashSet<string> providerPaths = new(StringComparer.Ordinal);
-            HashSet<string> restoreEndpointPaths = new(StringComparer.Ordinal);
-            HashSet<string> targetTransformPaths = new(StringComparer.Ordinal);
-
-            for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
-            {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, definition, entrySequence))
-                {
-                    continue;
-                }
-
-                targetIds.Add(report.TargetId);
-                bool required = report.Requiredness == ActivitySetupRequirementRequiredness.Required;
-                GameObject targetObject = ResolveContributorObjectOrFail(definition, report);
-                IActivityObjectSnapshotProvider[] providers = ResolveObjectSnapshotProviders(targetObject);
-                IActivityObjectSnapshotRestoreEndpoint[] restoreEndpoints = ResolveObjectSnapshotRestoreEndpoints(targetObject, report);
-
-                bool providerFound = TryResolveSupportingSnapshotProvider(report.TargetId, providers, out IActivityObjectSnapshotProvider provider);
-                bool restoreFound = TryResolveSupportingSnapshotRestoreEndpoint(report.TargetId, restoreEndpoints, out IActivityObjectSnapshotRestoreEndpoint restoreEndpoint);
-
-                string providerPath = "<none>";
-                string providerTargetTransformPath = "<none>";
-                string providerFailureReason = providerFound ? "<none>" : "snapshot_provider_missing";
-                if (providerFound && provider is IActivityObjectSnapshotProviderContractView providerView)
-                {
-                    bool providerValid = providerView.TryDescribeContract(report.TargetId, out providerPath, out providerTargetTransformPath, out providerFailureReason);
-                    if (!providerValid && string.IsNullOrWhiteSpace(providerFailureReason))
-                    {
-                        providerFailureReason = "snapshot_provider_contract_invalid";
-                    }
-                }
-                else if (providerFound)
-                {
-                    providerFailureReason = "snapshot_provider_contract_view_missing";
-                }
-
-                string restorePath = "<none>";
-                string restoreTargetTransformPath = "<none>";
-                string restoreFailureReason = restoreFound ? "<none>" : "snapshot_restore_endpoint_missing";
-                if (restoreFound && restoreEndpoint is IActivityObjectSnapshotRestoreEndpointContractView restoreView)
-                {
-                    bool restoreValid = restoreView.TryDescribeContract(report.TargetId, out restorePath, out restoreTargetTransformPath, out restoreFailureReason);
-                    if (!restoreValid && string.IsNullOrWhiteSpace(restoreFailureReason))
-                    {
-                        restoreFailureReason = "snapshot_restore_contract_invalid";
-                    }
-                }
-                else if (restoreFound)
-                {
-                    restoreFailureReason = "snapshot_restore_contract_view_missing";
-                }
-
-                providerPaths.Add(string.IsNullOrWhiteSpace(providerPath) ? "<none>" : providerPath);
-                restoreEndpointPaths.Add(string.IsNullOrWhiteSpace(restorePath) ? "<none>" : restorePath);
-                if (!string.IsNullOrWhiteSpace(providerTargetTransformPath) && !string.Equals(providerTargetTransformPath, "<none>", StringComparison.Ordinal))
-                {
-                    targetTransformPaths.Add(providerTargetTransformPath);
-                }
-
-                if (!string.IsNullOrWhiteSpace(restoreTargetTransformPath) && !string.Equals(restoreTargetTransformPath, "<none>", StringComparison.Ordinal))
-                {
-                    targetTransformPaths.Add(restoreTargetTransformPath);
-                }
-
-                bool providerContractValid = providerFound && string.Equals(providerFailureReason, "resolved", StringComparison.Ordinal);
-                bool restoreContractValid = restoreFound && string.Equals(restoreFailureReason, "resolved", StringComparison.Ordinal);
-                bool transformMismatch = providerContractValid &&
-                                         restoreContractValid &&
-                                         !string.Equals(providerTargetTransformPath, restoreTargetTransformPath, StringComparison.Ordinal);
-                string failureReason = transformMismatch
-                    ? "snapshot_restore_target_transform_mismatch"
-                    : ResolveSnapshotContractFailureReason(providerFailureReason, restoreFailureReason, providerFound, restoreFound);
-
-                bool hasDeclaredSnapshotCapability = providerFound || restoreFound;
-                bool hasNoSnapshotCapability = !providerFound && !restoreFound;
-                bool contractValid = providerContractValid && restoreContractValid && !transformMismatch;
-
-                if (hasDeclaredSnapshotCapability && contractValid)
-                {
-                    validatedCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotContractValidated,
-                        validationIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot contract validated targetId='{report.TargetId}' requiredness='{report.Requiredness}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='{providerTargetTransformPath}'.");
-                    continue;
-                }
-
-                if (hasNoSnapshotCapability && !required)
-                {
-                    skippedCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotContractSkippedOptional,
-                        validationIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot contract skipped optional targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='snapshot_capability_not_declared_optional' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='<none>'.");
-                    continue;
-                }
-
-                failedCount += 1;
-                if (transformMismatch)
-                {
-                    mismatchReason = "snapshot_restore_target_transform_mismatch";
-                }
-                else if (!string.Equals(failureReason, "<none>", StringComparison.Ordinal))
-                {
-                    mismatchReason = failureReason;
-                }
-
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotContractFailed,
-                    validationIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot contract failed targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
-                throw new InvalidOperationException(
-                    $"snapshot_contract_validation_failed: activityId='{definition.ActivityId}' targetId='{report.TargetId}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
-            }
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted,
-                validationIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='{validatedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' targetIds='{JoinValues(targetIds)}' providerPaths='{JoinValues(providerPaths)}' restoreEndpointPaths='{JoinValues(restoreEndpointPaths)}' targetTransformPaths='{JoinValues(targetTransformPaths)}' mismatchReason='{mismatchReason}'.");
-        }
-
-        private void EmitObjectResetStage(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            BuildActivityObjectEntryStage().Reset(definition, command, facts, snapshots, entrySequence);
-        }
-
-        private void EmitObjectResetStageCore(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            SessionActivityIdentity resetIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            _state.SetCurrentIdentity(resetIdentity, SessionActivityStage.ActivitySetupStarted);
-            IReadOnlyList<PlayerActorIdentityRecord> resetActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(resetIdentity);
-            IReadOnlyList<ActorScanTarget> resetScanTargets = BuildActorScanTargetsForCurrentEntry(
-                resetIdentity,
-                resetActorTargets,
-                command.Source,
-                command.Reason);
-            ActivityObjectContributorDiscoveryResult resetDiscoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            bool hasResetDiscoveryForCurrentEntry =
-                resetDiscoveryResult.IsValid &&
-                IsDiscoveryResultForCurrentEntry(resetDiscoveryResult, definition, entrySequence);
-            ActivityCapabilityInventoryBuildResult resetInventoryBuildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
-                resetIdentity,
-                hasResetDiscoveryForCurrentEntry ? resetDiscoveryResult : default,
-                resetScanTargets,
-                command.Source,
-                command.Reason);
-            ActivityResetCommand resetCommand = new(
-                resetIdentity,
-                definition,
-                command.Source,
-                command.Reason);
-            ActivityResetContext resetContext = new(
-                resetDiscoveryResult,
-                resetInventoryBuildResult.Inventory,
-                resetInventoryBuildResult.Validation);
-
-            ActivityResetStage.Execute(
-                resetCommand,
-                resetContext,
-                IsDiscoveryResultForCurrentEntry,
-                IsReportForCurrentEntry,
-                HasRequiredResetContributor,
-                ResolveObjectResetEndpointsFromInventory,
-                ExecuteObjectResetCommand,
-                IsObjectResetResultForCurrentEntry,
-                (kind, message) => EmitFact(
-                    facts,
-                    kind,
-                    resetIdentity,
-                    command.Source,
-                    command.Reason,
-                    message),
-                (snapshotKind, message) => EmitSnapshot(
-                    snapshots,
-                    snapshotKind,
-                    command.Source,
-                    command.Reason,
-                    message));
-        }
-
-        private void EmitObjectSnapshotRestoreStage(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            BuildActivityObjectEntryStage().RestoreSnapshot(definition, command, facts, snapshots, entrySequence);
-        }
-
-        private void EmitObjectSnapshotRestoreStageCore(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            SessionActivityIdentity restoreIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            _state.SetCurrentIdentity(restoreIdentity, SessionActivityStage.ActivitySetupStarted);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectSnapshotRestoreStarted,
-                restoreIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot restore started.");
-
-            if (!TryResolveRouteLoadedSnapshotPayload(out LoadedSessionActivitySnapshotPayload loadedPayload, out string payloadFailureReason))
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoPayload,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='no_loaded_payload' failureReason='{payloadFailureReason}'.");
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='false' payloadObjectCount='0' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
-                return;
-            }
-
-            if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, definition))
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='payload_foreign_or_stale' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
-                throw new InvalidOperationException(
-                    $"payload_foreign_or_stale: activityId='{definition.ActivityId}' entrySequence='{entrySequence}' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
-            }
-
-            if (!discoveryResult.IsValid || !IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence) || discoveryResult.Reports.Count == 0)
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoMatchingTarget,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
-                return;
-            }
-
-            Dictionary<string, LoadedSessionActivitySnapshotPayloadObject> payloadByTargetId = BuildLoadedSnapshotPayloadByTargetId(loadedPayload.Objects);
-            int matchedTargetCount = 0;
-            int restoredCount = 0;
-            bool restoreFailed = false;
-            HashSet<string> matchedTargetIds = new(StringComparer.Ordinal);
-            ActivityCapabilityInventory restoreInventory = _state.CurrentActivityCapabilityInventoryPreview;
-            ActivityCapabilityInventoryValidationResult restoreInventoryValidation = _state.CurrentActivityCapabilityInventoryPreviewValidation;
-            bool hasValidRestoreInventory =
-                restoreInventory.IsValid &&
-                restoreInventoryValidation.IsValid &&
-                string.Equals(restoreInventory.Id.PipelineId, restoreIdentity.PipelineId, StringComparison.Ordinal) &&
-                string.Equals(restoreInventory.Id.SessionStateId, restoreIdentity.SessionId, StringComparison.Ordinal) &&
-                string.Equals(restoreInventory.Id.ActivityId, restoreIdentity.ActivityId, StringComparison.Ordinal) &&
-                restoreInventory.Id.EntrySequence == restoreIdentity.EntrySequence;
-
-            if (!hasValidRestoreInventory)
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{restoreInventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{restoreInventoryValidation.IsValid.ToString().ToLowerInvariant()}'.");
-                throw new InvalidOperationException(
-                    $"restore_inventory_missing_or_invalid: activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
-            }
-
-            for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
-            {
-                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, definition, entrySequence))
-                {
-                    continue;
-                }
-
-                if (!payloadByTargetId.TryGetValue(report.TargetId, out LoadedSessionActivitySnapshotPayloadObject payloadObject) || !payloadObject.IsValid)
-                {
-                    continue;
-                }
-
-                matchedTargetCount += 1;
-                matchedTargetIds.Add(report.TargetId);
-                IActivityObjectSnapshotRestoreEndpoint[] endpoints = ResolveObjectSnapshotRestoreEndpointsFromInventory(restoreInventory, report);
-                ActivityObjectSnapshotRestoreCommand restoreCommand = new(
-                    restoreIdentity,
-                    PipelineId,
-                    _sessionId,
-                    definition.ActivityId,
-                    definition.ActivityOrdinal,
-                    entrySequence,
-                    report.TargetId,
-                    ActivityObjectSnapshotCoordinateSpace.WorldTransform,
-                    payloadObject.PositionX,
-                    payloadObject.PositionY,
-                    payloadObject.PositionZ,
-                    payloadObject.RotationX,
-                    payloadObject.RotationY,
-                    payloadObject.RotationZ,
-                    payloadObject.RotationW,
-                    payloadObject.ScaleX,
-                    payloadObject.ScaleY,
-                    payloadObject.ScaleZ,
-                    command.Source,
-                    command.Reason);
-
-                ActivityObjectSnapshotRestoreResult result = ExecuteObjectSnapshotRestoreCommand(restoreCommand, endpoints, report);
-                if (!IsObjectSnapshotRestoreResultForCurrentEntry(result, definition, entrySequence))
-                {
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
-                        restoreIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_result_invalid_or_failed_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
-                    throw new InvalidOperationException(
-                        $"restore_result_invalid_or_failed_required: activityId='{definition.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
-                }
-
-                if (result.IsRestored)
-                {
-                    restoredCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotRestoreApplied,
-                        restoreIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot restore applied targetId='{report.TargetId}' coordinateSpace='{ToCoordinateSpaceToken(restoreCommand.CoordinateSpace)}' payloadPosition='({payloadObject.PositionX:0.###},{payloadObject.PositionY:0.###},{payloadObject.PositionZ:0.###})' beforePosition='({result.BeforePositionX:0.###},{result.BeforePositionY:0.###},{result.BeforePositionZ:0.###})' afterPosition='({result.AfterPositionX:0.###},{result.AfterPositionY:0.###},{result.AfterPositionZ:0.###})' restoreVerified='{result.RestoreVerified.ToString().ToLowerInvariant()}' hasTransformPayload='true' detail='{result.Detail}'.");
-                    continue;
-                }
-
-                if (result.IsSkippedOptional)
-                {
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoEndpointOptional,
-                        restoreIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot restore skipped optional targetId='{report.TargetId}' reason='{result.Detail}'.");
-                    continue;
-                }
-
-                restoreFailed = true;
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_endpoint_missing_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
-                throw new InvalidOperationException(
-                    $"restore_endpoint_missing_required: activityId='{definition.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
-            }
-
-            if (matchedTargetCount == 0)
-            {
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectSnapshotRestoreSkippedNoMatchingTarget,
-                    restoreIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
-            }
-
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
-                restoreIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='{matchedTargetCount}' restoredCount='{restoredCount}' targetIds='{JoinValues(matchedTargetIds)}' appliedTargetIds='{JoinValues(matchedTargetIds)}' failedTargetIds='<none>' coordinateSpace='world_transform' restoreVerified='{(!restoreFailed && restoredCount == matchedTargetCount).ToString().ToLowerInvariant()}' restoreFailed='{restoreFailed.ToString().ToLowerInvariant()}'.");
-        }
-
-        private static Dictionary<string, LoadedSessionActivitySnapshotPayloadObject> BuildLoadedSnapshotPayloadByTargetId(IReadOnlyList<LoadedSessionActivitySnapshotPayloadObject> objects)
-        {
-            Dictionary<string, LoadedSessionActivitySnapshotPayloadObject> byTargetId = new(StringComparer.Ordinal);
-            if (objects == null)
-            {
-                return byTargetId;
-            }
-
-            for (int index = 0; index < objects.Count; index++)
-            {
-                LoadedSessionActivitySnapshotPayloadObject current = objects[index];
-                if (!current.IsValid || string.IsNullOrWhiteSpace(current.TargetId))
-                {
-                    continue;
-                }
-
-                byTargetId[current.TargetId] = current;
-            }
-
-            return byTargetId;
-        }
-
-        private static IActivityObjectResetEndpoint[] ResolveObjectResetEndpointsFromInventory(
-            ActivityCapabilityInventory inventory,
-            ActivityObjectContributionReport report)
-        {
-            if (!inventory.IsValid || !report.IsValid)
-            {
-                return Array.Empty<IActivityObjectResetEndpoint>();
-            }
-
-            List<IActivityObjectResetEndpoint> endpoints = new();
-            HashSet<IActivityObjectResetEndpoint> unique = new();
-            for (int index = 0; index < inventory.Capabilities.Count; index++)
-            {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
-                if (capability.CapabilityKind != ActivityCapabilityKind.ResetEndpoint)
-                {
-                    continue;
-                }
-
-                if (!TryGetPolicyValue(capability.PolicyMetadata, "targetId", out string targetId) ||
-                    !string.Equals(targetId, report.TargetId, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!inventory.TryGetRuntimeReference<ActivityObjectResetEndpointReference>(capability.CapabilityId, out ActivityObjectResetEndpointReference runtimeReference) ||
-                    runtimeReference.Endpoint == null)
-                {
-                    continue;
-                }
-
-                if (unique.Add(runtimeReference.Endpoint))
-                {
-                    endpoints.Add(runtimeReference.Endpoint);
-                }
-            }
-
-            return endpoints.ToArray();
-        }
-
-        private static IActivityObjectSnapshotRestoreEndpoint[] ResolveObjectSnapshotRestoreEndpointsFromInventory(
-            ActivityCapabilityInventory inventory,
-            ActivityObjectContributionReport report)
-        {
-            if (!inventory.IsValid || !report.IsValid)
-            {
-                return Array.Empty<IActivityObjectSnapshotRestoreEndpoint>();
-            }
-
-            List<IActivityObjectSnapshotRestoreEndpoint> endpoints = new();
-            HashSet<IActivityObjectSnapshotRestoreEndpoint> unique = new();
-            for (int index = 0; index < inventory.Capabilities.Count; index++)
-            {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
-                if (capability.CapabilityKind != ActivityCapabilityKind.SnapshotRestoreEndpoint)
-                {
-                    continue;
-                }
-
-                if (!TryGetPolicyValue(capability.PolicyMetadata, "targetId", out string targetId) ||
-                    !string.Equals(targetId, report.TargetId, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (!inventory.TryGetRuntimeReference<ActivityObjectSnapshotRestoreEndpointReference>(capability.CapabilityId, out ActivityObjectSnapshotRestoreEndpointReference runtimeReference) ||
-                    runtimeReference.Endpoint == null)
-                {
-                    continue;
-                }
-
-                if (unique.Add(runtimeReference.Endpoint))
-                {
-                    endpoints.Add(runtimeReference.Endpoint);
-                }
-            }
-
-            return endpoints.ToArray();
-        }
-
         private static IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProvidersFromInventory(
             ActivityCapabilityInventory inventory,
             ActivityObjectContributionReport report)
@@ -8275,42 +7375,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return providers.ToArray();
         }
 
-        private static bool HasRequiredResetContributor(
-            ActivityObjectContributorDiscoveryResult discoveryResult,
-            SessionActivityDefinition definition,
-            int entrySequence)
-        {
-            if (!discoveryResult.IsValid || discoveryResult.Reports == null)
-            {
-                return false;
-            }
-
-            for (int index = 0; index < discoveryResult.Reports.Count; index++)
-            {
-                ActivityObjectContributionReport report = discoveryResult.Reports[index];
-                if (!report.IsValid)
-                {
-                    continue;
-                }
-
-                if (!string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) ||
-                    report.Identity.ActivityOrdinal != definition.ActivityOrdinal ||
-                    report.Identity.EntrySequence != entrySequence)
-                {
-                    continue;
-                }
-
-                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required &&
-                    report.SupportedResetGroups != null &&
-                    report.SupportedResetGroups.Count > 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private static bool TryGetPolicyValue(IReadOnlyList<ActivityCapabilityPolicyEntry> metadata, string key, out string value)
         {
             value = string.Empty;
@@ -8330,72 +7394,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return false;
-        }
-
-        private ActivityObjectResetResult ExecuteObjectResetCommand(
-            ActivityObjectResetCommand command,
-            IActivityObjectResetEndpoint[] endpoints)
-        {
-            if (endpoints == null || endpoints.Length == 0)
-            {
-                if (command.IsRequired)
-                {
-                    return new ActivityObjectResetResult(
-                        ActivityObjectResetResultKind.Failed,
-                        command,
-                        command.Source,
-                        command.Reason,
-                        "required_reset_endpoint_missing");
-                }
-
-                return new ActivityObjectResetResult(
-                    ActivityObjectResetResultKind.SkippedOptional,
-                    command,
-                    command.Source,
-                    command.Reason,
-                    "optional_reset_endpoint_missing");
-            }
-
-            bool hasSupportingEndpoint = false;
-            for (int index = 0; index < endpoints.Length; index++)
-            {
-                IActivityObjectResetEndpoint endpoint = endpoints[index];
-                if (endpoint == null || !endpoint.Supports(command.ResetGroup))
-                {
-                    continue;
-                }
-
-                hasSupportingEndpoint = true;
-                ActivityObjectResetResult result = endpoint.ApplyReset(command);
-                if (!result.IsValid)
-                {
-                    return new ActivityObjectResetResult(
-                        ActivityObjectResetResultKind.Failed,
-                        command,
-                        command.Source,
-                        command.Reason,
-                        "invalid_reset_result");
-                }
-
-                return result;
-            }
-
-            if (command.IsRequired)
-            {
-                return new ActivityObjectResetResult(
-                    ActivityObjectResetResultKind.Failed,
-                    command,
-                    command.Source,
-                    command.Reason,
-                    hasSupportingEndpoint ? "required_reset_not_applied" : "required_reset_group_not_supported");
-            }
-
-            return new ActivityObjectResetResult(
-                ActivityObjectResetResultKind.SkippedOptional,
-                command,
-                command.Source,
-                command.Reason,
-                hasSupportingEndpoint ? "optional_reset_not_applied" : "optional_reset_group_not_supported");
         }
 
         public bool TryApplyActorAttributeCommand(
@@ -8700,26 +7698,37 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityDefinition definition = _state.CurrentDefinition;
             ActivityObjectContributorDiscoveryResult discoveryResult = _state.CurrentActivityObjectContributorDiscoveryResult;
-            IReadOnlyList<PlayerActorIdentityRecord> playerActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(commandIdentity);
-            IReadOnlyList<ActorScanTarget> actorTargets = BuildActorScanTargetsForCurrentEntry(commandIdentity, playerActorTargets, normalizedSource, normalizedReason);
-            ActivityCapabilityInventoryBuildResult inventoryBuildResult = _activityCapabilityInventoryCoordinator.BuildForEntry(
-                commandIdentity,
-                discoveryResult,
-                actorTargets,
-                normalizedSource,
-                normalizedReason);
+            ActivityCapabilityInventory inventory = _state.CurrentActivityCapabilityInventoryPreview;
+            ActivityCapabilityInventoryValidationResult validation = _state.CurrentActivityCapabilityInventoryPreviewValidation;
+            bool hasCanonicalInventoryForCurrentEntry =
+                inventory.IsValid &&
+                validation.IsValid &&
+                string.Equals(inventory.Id.PipelineId, commandIdentity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(inventory.Id.SessionStateId, commandIdentity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(inventory.Id.ActivityId, commandIdentity.ActivityId, StringComparison.Ordinal) &&
+                inventory.Id.EntrySequence == commandIdentity.EntrySequence;
+
+            if (!hasCanonicalInventoryForCurrentEntry)
+            {
+                outcomeReason = "activity_object_reset_qa_inventory_missing_or_invalid";
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivityObjectResetQaRejected' reason='{outcomeReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
 
             ActivityResetResult resetResult;
             try
             {
                 resetResult = ActivityResetStage.Execute(
                     new ActivityResetCommand(commandIdentity, definition, normalizedSource, normalizedReason),
-                    new ActivityResetContext(discoveryResult, inventoryBuildResult.Inventory, inventoryBuildResult.Validation),
+                    new ActivityResetContext(discoveryResult, inventory, validation),
                     IsDiscoveryResultForCurrentEntry,
                     IsReportForCurrentEntry,
-                    HasRequiredResetContributor,
-                    ResolveObjectResetEndpointsFromInventory,
-                    ExecuteObjectResetCommand,
+                    Stages.ActivityEntryObjectSetupStageUtility.HasRequiredResetContributor,
+                    Stages.ActivityEntryObjectSetupStageUtility.ResolveObjectResetEndpointsFromInventory,
+                    Stages.ActivityEntryObjectSetupStageUtility.ExecuteObjectResetCommand,
                     IsObjectResetResultForCurrentEntry,
                     (kind, message) => DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][QA][ObjectResetStage] fact='{kind}' detail='{message}' source='{normalizedSource}' reason='{normalizedReason}'.", DebugUtility.Colors.Info),
                     (snapshotKind, message) => DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][QA][ObjectResetStage] snapshot='{snapshotKind}' detail='{message}' source='{normalizedSource}' reason='{normalizedReason}'.", DebugUtility.Colors.Info));
@@ -9164,75 +8173,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return "<none>";
         }
 
-        private ActivityObjectSnapshotRestoreResult ExecuteObjectSnapshotRestoreCommand(
-            ActivityObjectSnapshotRestoreCommand command,
-            IActivityObjectSnapshotRestoreEndpoint[] endpoints,
-            ActivityObjectContributionReport report)
-        {
-            bool isRequired = report.Requiredness == ActivitySetupRequirementRequiredness.Required;
-            if (endpoints == null || endpoints.Length == 0)
-            {
-                return new ActivityObjectSnapshotRestoreResult(
-                    isRequired ? ActivityObjectSnapshotRestoreResultKind.Failed : ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
-                    command,
-                    restoreVerified: false,
-                    beforePositionX: 0f,
-                    beforePositionY: 0f,
-                    beforePositionZ: 0f,
-                    afterPositionX: 0f,
-                    afterPositionY: 0f,
-                    afterPositionZ: 0f,
-                    command.Source,
-                    command.Reason,
-                    isRequired ? "restore_endpoint_missing_required" : "target_has_no_restore_endpoint_optional");
-            }
-
-            bool hasSupportingEndpoint = false;
-            for (int index = 0; index < endpoints.Length; index++)
-            {
-                IActivityObjectSnapshotRestoreEndpoint endpoint = endpoints[index];
-                if (endpoint == null || !endpoint.Supports(command.TargetId))
-                {
-                    continue;
-                }
-
-                hasSupportingEndpoint = true;
-                ActivityObjectSnapshotRestoreResult result = endpoint.ApplyRestore(command);
-                if (!result.IsValid)
-                {
-                    return new ActivityObjectSnapshotRestoreResult(
-                        ActivityObjectSnapshotRestoreResultKind.Failed,
-                        command,
-                        restoreVerified: false,
-                        beforePositionX: 0f,
-                        beforePositionY: 0f,
-                        beforePositionZ: 0f,
-                        afterPositionX: 0f,
-                        afterPositionY: 0f,
-                        afterPositionZ: 0f,
-                        command.Source,
-                        command.Reason,
-                        "restore_result_invalid_or_failed_required");
-                }
-
-                return result;
-            }
-
-            return new ActivityObjectSnapshotRestoreResult(
-                isRequired ? ActivityObjectSnapshotRestoreResultKind.Failed : ActivityObjectSnapshotRestoreResultKind.SkippedOptional,
-                command,
-                restoreVerified: false,
-                beforePositionX: 0f,
-                beforePositionY: 0f,
-                beforePositionZ: 0f,
-                afterPositionX: 0f,
-                afterPositionY: 0f,
-                afterPositionZ: 0f,
-                command.Source,
-                command.Reason,
-                (isRequired ? "restore_endpoint_missing_required" : "target_has_no_restore_endpoint_optional"));
-        }
-
         private static string ToCoordinateSpaceToken(ActivityObjectSnapshotCoordinateSpace coordinateSpace)
         {
             return coordinateSpace == ActivityObjectSnapshotCoordinateSpace.LocalTransform
@@ -9260,40 +8200,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                    command.ActivityOrdinal == definition.ActivityOrdinal &&
                    command.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(command.TargetId);
-        }
-
-        private bool TryResolveRouteLoadedSnapshotPayload(
-            out LoadedSessionActivitySnapshotPayload loadedPayload,
-            out string failureReason)
-        {
-            loadedPayload = default;
-            if (!DependencyManager.Provider.TryGetGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(out var payloadProvider) ||
-                payloadProvider == null)
-            {
-                failureReason = "no_loaded_payload_provider";
-                return false;
-            }
-
-            bool resolved = payloadProvider.TryGetPendingLoadedSnapshotPayload(_sessionId, out loadedPayload, out failureReason);
-            if (!resolved || !loadedPayload.IsValid)
-            {
-                loadedPayload = default;
-                return false;
-            }
-
-            failureReason = "resolved";
-            return true;
-        }
-
-        private bool IsLoadedSnapshotPayloadForCurrentActivity(
-            LoadedSessionActivitySnapshotPayload loadedPayload,
-            SessionActivityDefinition definition)
-        {
-            return loadedPayload.IsValid &&
-                   string.Equals(loadedPayload.SchemaId, RouteActivitySnapshotSchemaId, StringComparison.Ordinal) &&
-                   string.Equals(loadedPayload.SessionStateId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedPayload.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   loadedPayload.SourceEntrySequence > 0;
         }
 
         private ActivityObjectSnapshotCaptureResult ExecuteObjectSnapshotCaptureCommand(
@@ -12184,6 +11090,42 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         void IActivityEntryRuntimeEndpoint.ClearCurrentActivitySetupInventory()
         {
             _state.ClearCurrentActivitySetupInventory();
+        }
+
+        ActivityContentLoadedSet IActivityEntryObjectSetupRuntimeBridge.GetCurrentActivityContentLoadedSet()
+        {
+            return _state.CurrentActivityContentLoadedSet;
+        }
+
+        ActivityObjectContributorDiscoveryResult IActivityEntryObjectSetupRuntimeBridge.GetCurrentActivityObjectContributorDiscoveryResult()
+        {
+            return _state.CurrentActivityObjectContributorDiscoveryResult;
+        }
+
+        void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivitySetupInventory(ActivitySetupInventory inventory)
+        {
+            _state.SetCurrentActivitySetupInventory(inventory);
+        }
+
+        void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivityCapabilityInventoryPreview(
+            ActivityCapabilityInventory inventory,
+            ActivityCapabilityInventoryValidationResult validation)
+        {
+            _state.SetCurrentActivityCapabilityInventoryPreview(inventory, validation);
+        }
+
+        void IActivityEntryObjectSetupRuntimeBridge.ClearCurrentActivityCapabilityInventoryPreview()
+        {
+            _state.ClearCurrentActivityCapabilityInventoryPreview();
+        }
+
+        IReadOnlyList<ActorScanTarget> IActivityEntryObjectSetupRuntimeBridge.BuildActorScanTargetsForCurrentEntry(
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            IReadOnlyList<PlayerActorIdentityRecord> playerActorTargets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(identity);
+            return BuildActorScanTargetsForCurrentEntry(identity, playerActorTargets, source, reason);
         }
 
     }
