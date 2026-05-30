@@ -284,6 +284,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         ActivityContentLoadedSet GetCurrentActivityContentLoadedSet();
         ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult();
+        void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result);
         void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory);
         void SetCurrentActivityCapabilityInventoryPreview(
             ActivityCapabilityInventory inventory,

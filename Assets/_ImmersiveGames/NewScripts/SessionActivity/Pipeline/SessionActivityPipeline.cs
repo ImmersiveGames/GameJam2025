@@ -3532,7 +3532,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.ActivitySetupStarted, setupStartedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             EmitSnapshot(snapshots, "activity_setup_started", command.Source, command.Reason, $"'{definition.ActivityId}' activity setup started.");
             ObserveActivitySceneContractOrSkip(definition, command, facts, snapshots, entrySequence);
-            DiscoverActivityObjectContributorsOrSkipCore(definition, command, facts, snapshots, entrySequence);
             EmitNonPlayerActorDiscoveryStage(definition, command, facts, snapshots, entrySequence);
             ActivityEntryObjectSetupCommand objectSetupCommand = new(
                 setupStartedIdentity,
@@ -7202,139 +7201,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
-        private void DiscoverActivityObjectContributorsOrSkipCore(
-            SessionActivityDefinition definition,
-            SessionActivityCommand command,
-            List<SessionActivityFact> facts,
-            List<SessionActivitySnapshot> snapshots,
-            int entrySequence)
-        {
-            SessionActivityIdentity discoveryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            _state.SetCurrentIdentity(discoveryIdentity, SessionActivityStage.ActivitySetupStarted);
-            EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted,
-                discoveryIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity object contributor discovery started.");
-            EmitSnapshot(
-                snapshots,
-                "activity_object_contributor_discovery_started",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity object contributor discovery started.");
-
-            ActivityContentLoadedSet loadedSet = _state.CurrentActivityContentLoadedSet;
-            if (!HasLoadedSetForCurrentEntry(loadedSet, definition, entrySequence) || !loadedSet.HasScenes)
-            {
-                _state.ClearCurrentActivityObjectContributorDiscoveryResult();
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent,
-                    discoveryIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery skipped as no-content for current entry.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_object_contributor_discovery_skipped_no_content",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery skipped as no-content for current entry.");
-                return;
-            }
-
-            try
-            {
-                List<ActivityObjectContributionReport> reports = new();
-                for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
-                {
-                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
-                    if (!record.IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' has invalid loaded scene record at index '{sceneIndex}' for object contributor discovery.");
-                    }
-
-                    Scene contentScene = SceneManager.GetSceneByName(record.SceneName);
-                    if (!contentScene.IsValid() || !contentScene.isLoaded)
-                    {
-                        throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' contributor discovery requires loaded content scene '{record.SceneName}' for current entry.");
-                    }
-
-                    AppendContributorsFromSceneOrFail(
-                        reports,
-                        contentScene,
-                        loadedSet,
-                        record,
-                        command.Source,
-                        command.Reason);
-                }
-
-                ActivityObjectContributorDiscoveryResult result = new(
-                    discoveryIdentity,
-                    loadedSet.ContentProfileId,
-                    reports,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}'.");
-
-                if (!result.IsValid)
-                {
-                    throw new InvalidOperationException(
-                        $"Activity '{definition.ActivityId}' produced invalid object contributor discovery result.");
-                }
-
-                _state.SetCurrentActivityObjectContributorDiscoveryResult(result);
-
-                for (int reportIndex = 0; reportIndex < reports.Count; reportIndex++)
-                {
-                    ActivityObjectContributionReport report = reports[reportIndex];
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityObjectContributorDiscovered,
-                        discoveryIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' contributor discovered contentProfileId='{report.ContentProfileId}' sceneName='{report.SceneName}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroups='{FormatActivityStateResetGroups(report.SupportedResetGroups)}' releaseKinds='{FormatReleaseKinds(report.SupportedReleaseKinds)}'.");
-                }
-
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectContributorDiscoveryCompleted,
-                    discoveryIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_object_contributor_discovery_completed",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
-            }
-            catch (Exception exception)
-            {
-                _state.ClearCurrentActivityObjectContributorDiscoveryResult();
-                EmitFact(
-                    facts,
-                    SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed,
-                    discoveryIdentity,
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_object_contributor_discovery_failed",
-                    command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
-                throw;
-            }
-        }
-
         private static IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProvidersFromInventory(
             ActivityCapabilityInventory inventory,
             ActivityObjectContributionReport report)
@@ -8447,54 +8313,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 $"Activity '{definition.ActivityId}' could not resolve contributor object for targetId='{report.TargetId}' scene='{report.SceneName}'.");
         }
 
-        private void AppendContributorsFromSceneOrFail(
-            List<ActivityObjectContributionReport> reports,
-            Scene contentScene,
-            ActivityContentLoadedSet loadedSet,
-            ActivityContentLoadedSceneRecord record,
-            string source,
-            string reason)
-        {
-            GameObject[] roots = contentScene.GetRootGameObjects();
-            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
-            {
-                ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
-                for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
-                {
-                    ActivityObjectContributor contributor = contributors[contributorIndex];
-                    if (contributor == null)
-                    {
-                        continue;
-                    }
-
-                    contributor.ValidateOrThrow(
-                        $"ActivityObjectContributorDiscovery:{contentScene.name}:{rootIndex}:{contributorIndex}");
-
-                    ActivityObjectContributionReport report = new(
-                        loadedSet.Identity,
-                        loadedSet.ContentProfileId,
-                        record.SceneKey,
-                        contentScene.name,
-                        contributor.TargetId,
-                        contributor.RoleId,
-                        contributor.ContributorKind,
-                        contributor.DefaultRequiredness,
-                        contributor.SupportedResetGroups,
-                        contributor.SupportedReleaseKinds,
-                        source,
-                        reason);
-
-                    if (!report.IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            $"Invalid ActivityObjectContributionReport targetId='{contributor.TargetId}' scene='{contentScene.name}'.");
-                    }
-
-                    reports.Add(report);
-                }
-            }
-        }
-
         private bool HasLoadedSetForCurrentEntry(
             ActivityContentLoadedSet loadedSet,
             SessionActivityDefinition definition,
@@ -8507,16 +8325,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                    string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    loadedSet.Identity.EntrySequence == entrySequence;
-        }
-
-        private static string FormatReleaseKinds(IReadOnlyList<ActivityReleaseRequirementKind> releaseKinds)
-        {
-            if (releaseKinds == null || releaseKinds.Count == 0)
-            {
-                return "<none>";
-            }
-
-            return string.Join(",", releaseKinds);
         }
 
         private static string FormatCapabilityKindsSummary(IReadOnlyList<ActivityCapabilityDescriptor> capabilities)
@@ -11100,6 +10908,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         ActivityObjectContributorDiscoveryResult IActivityEntryObjectSetupRuntimeBridge.GetCurrentActivityObjectContributorDiscoveryResult()
         {
             return _state.CurrentActivityObjectContributorDiscoveryResult;
+        }
+
+        void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result)
+        {
+            _state.SetCurrentActivityObjectContributorDiscoveryResult(result);
         }
 
         void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivitySetupInventory(ActivitySetupInventory inventory)

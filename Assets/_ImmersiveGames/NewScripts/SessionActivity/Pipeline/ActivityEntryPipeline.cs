@@ -332,6 +332,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             try
             {
                 ActivityContentLoadedSet loadedSet = _objectSetupBridge.GetCurrentActivityContentLoadedSet();
+                ActivityEntryObjectContributorDiscoveryStage.Execute(
+                    command,
+                    loadedSet,
+                    _endpoint,
+                    _objectSetupBridge,
+                    facts,
+                    snapshots);
+
                 ActivityEntrySetupInventoryStage.Execute(
                     command,
                     loadedSet,

@@ -170,22 +170,23 @@ Mover setup/readiness de actors, objects e capabilities para `ActivityEntryPipel
 
 ### Ação
 
-Migrar em subcortes, não em bloco único:
+Migrar em subcortes, não em bloco único, mas sem transformar especializações concretas em trilhos arquiteturais:
 
-1. PlayerActor readiness.
-2. Actor scan/capability discovery.
+1. ActorDiscovery / ActorInventoryFeed audit.
+2. ActorReadiness genérico por `ActorScanTarget` / `ActorCapabilitySurface`.
 3. ActorPresentation setup.
 4. ActorAttributes setup.
 5. ActorParticipation enter readiness.
 6. ActivityObject reset/restore.
-7. PlayerInput binding.
-8. Movement binding.
-9. Camera binding.
-10. Permission target preparation.
+7. Input binding quando for capacidade de actor/participante, não rail de player.
+8. Movement binding quando for capacidade/endpoints do actor, não branch global de player.
+9. Camera binding por capability target, não por tipo concreto de actor.
+10. Permission target preparation com identidades separadas.
 
 ### Não fazer
 
 - Não recriar rails `PlayerActor` vs `NonPlayerActor` como lifecycle global.
+- Não criar subcorte/stage canônico nomeado por especialização concreta (`PlayerActorReadiness`, `NonPlayerActorDiscovery`) quando o domínio correto é `Actor`.
 - Não alterar reaction local de permission.
 - Não mover Deactivation/Release neste corte.
 - Não misturar `ActorId`, `PlayerActorId`, `PlayerSlotId`, `ActorInstanceRuntimeId` e receiver técnico.

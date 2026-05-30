@@ -96,7 +96,7 @@ ActivityCapabilityInventory preview/resolution
 Actor scan targets e capability discovery por entry
 Actor/object setup readiness
 Object reset/restore de entry
-PlayerActor readiness dentro da Activity
+Actor readiness dentro da Activity
 Input/Movement/Camera binding readiness
 Permission target discovery/preparation
 Entry readiness antes de ActivationWindow/ActivityRunning
@@ -244,6 +244,20 @@ ActorReset contract
 ```
 
 Variação concreta de actor deve aparecer como typed policy/capability/endpoint, não como branch global `player/nonplayer` no pipeline.
+
+#### Guarda corretiva pós-auditoria SA-5
+
+A tentativa de criar um corte específico de `NonPlayerActorDiscovery` como owner de entry foi classificada como premissa arquitetural errada.
+
+Regra normativa:
+
+```text
+Actor é a única entrada arquitetural para discovery/readiness/setup de actors.
+PlayerActor, NonPlayerActor e outros tipos concretos podem existir como especializações, metadata, endpoint, authoring ou fonte transitória.
+Essas especializações não podem definir cortes, stages ou lifecycle rails próprios no ActivityEntryPipeline.
+```
+
+Nomes transitórios existentes no código, como `NonPlayerActorDiscovery`, só podem permanecer enquanto forem fontes/adapters para um contrato canônico de `ActorDiscovery`/`ActorInventoryFeed`. Eles não podem ser promovidos a owner final nem usados como precedente para novos cortes.
 
 ### 10. Sem compatibility rails novos
 
@@ -498,30 +512,74 @@ Não confundir ActivityCapabilityInventory com ActivitySetupInventory.
 
 ### Fase B — Transformar setup de objetos em entry stages reais
 
-#### `SA-4A — ActivityObjectEntryStage real`
+#### `SA-4A — ActivityObjectEntryStage real / auditoria`
 
-Objetivo: substituir o `ActivityObjectEntryStage` interno/wrapper por stage concreto de entry.
+Resultado da auditoria pós `SA-3B0` + `SA-3B1`:
+
+```text
+SA-3B0 já transferiu para ActivityEntryPipeline o subfluxo:
+- ActivitySetupInventory;
+- ObjectSnapshotContractValidation;
+- ActivityCapabilityInventoryPreview;
+- ObjectReset;
+- ObjectRestore.
+
+Portanto, SA-4A não deve recriar ActivityObjectEntryStage do zero.
+O débito real restante é ActivityObjectContributorDiscovery ainda nascer no SessionActivityPipeline.
+```
+
+Decisão normativa:
+
+```text
+SA-4A deve ser reinterpretado como sequência pequena de cleanup, começando por SA-4A0.
+Não reabrir reset/restore/inventory sem evidência de regressão.
+Não criar stage paralelo para o que SA-3B0 já moveu.
+```
+
+#### `SA-4A0 — ActivityObjectContributorDiscoveryStage real`
+
+Objetivo: mover `ActivityObjectContributorDiscovery` para stage real chamado pelo `ActivityEntryPipeline`, removendo execução concreta do `SessionActivityPipeline`.
 
 Escopo:
 
 ```text
-Scene contract observation
-Activity object contributor discovery
-Snapshot contract validation
-Object reset
-Object restore
-Object entry result/facts
+ActivityObjectContributorDiscoveryStarted
+ActivityObjectContributorDiscovered
+ActivityObjectContributorDiscoverySkippedNoContent
+ActivityObjectContributorDiscoveryCompleted
+ActivityObjectContributorDiscoveryFailed
+CurrentActivityObjectContributorDiscoveryResult write/clear/read contract
 ```
 
-Critério:
+Owner correto:
 
 ```text
-Stage recebe command/context explícito.
-Stage retorna result explícito.
-Stage não acessa SessionActivityPipeline como owner.
-Stage não usa Func/Action/delegate para esconder execução.
-Stage não é só wrapper para métodos Core do pipeline macro.
+ActivityEntryPipeline -> ActivityEntryObjectContributorDiscoveryStage
 ```
+
+Regras:
+
+```text
+SessionActivityPipeline não chama DiscoverActivityObjectContributorsOrSkipCore.
+ActivityEntryPipeline chama ActivityEntryObjectContributorDiscoveryStage antes de ActivitySetupInventory.
+Discovery result tem writer único por entry.
+ActivitySetupInventory e SnapshotContractValidation consomem discovery result produzido no mesmo owner.
+Sem fallback para discovery antigo.
+Sem bridge grande nova.
+A bridge transitória só pode expor setter técnico de CurrentActivityObjectContributorDiscoveryResult.
+```
+
+Critério de aceite:
+
+```text
+ActivityObjectContributorDiscovery facts preservados.
+ActivityObjectContributorDiscovery checkpoint preservado.
+SessionActivityPipeline perde execução direta de discovery.
+ActivityEntryPipeline é owner do stage.
+Sem alteração de ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, Movement, Camera, Release, Deactivation ou RouteExit.
+```
+
+---
 
 #### `SA-4B — ActivityObjectSnapshot/Reset/Restore cleanup`
 
@@ -542,27 +600,47 @@ Adapters/endpoints executam aplicação local.
 
 ### Fase C — Actor setup por entry
 
-#### `SA-5A — Actor discovery/readiness ownership`
+#### `SA-5A — ActorDiscovery / ActorReadiness ownership audit`
 
-Objetivo: mover discovery/readiness de actor para stages de `ActivityEntryPipeline`.
+Objetivo: auditar e redesenhar o setup de actors para garantir que `Actor` seja a única entrada arquitetural de lifecycle/readiness no `ActivityEntryPipeline`.
 
-Escopo:
+Escopo canônico:
 
 ```text
-PlayerActor readiness
-NonPlayerActor discovery
+ActorDiscovery
+ActorReadiness
 ActorScanTarget
 ActorCapabilitySurface
 ActorInventoryFeed
 ActorParticipationContext
+ActorInstanceRuntimeId
+Actor capability endpoints
+```
+
+Fora do escopo como trilho arquitetural:
+
+```text
+PlayerActor readiness como subcorte separado
+NonPlayerActor discovery como subcorte separado
+branch global player/nonplayer
+stage de lifecycle nomeado por especialização concreta de Actor
 ```
 
 Critério:
 
 ```text
-Sem rail global player/nonplayer permanente.
+Actor é a única raiz de entrada para discovery/readiness.
+PlayerActor, NonPlayerActor e especializações futuras são tipos/metadata/endpoints locais, não owners de lifecycle.
+Fontes transitórias com nomes antigos podem alimentar ActorInventoryFeed, mas não definir stage/corte/owner canônico.
 Sem comparar ActorId, PlayerActorId, ActorInstanceRuntimeId e PlayerSlotId como equivalentes.
-Variação concreta de actor aparece como typed policy/capability/endpoint.
+Variação concreta de actor aparece como typed policy/capability/endpoint, nunca como branch global player/nonplayer no pipeline.
+```
+
+Decisão corretiva:
+
+```text
+Qualquer corte chamado NonPlayerActorDiscovery, PlayerActorReadiness ou equivalente deve ser rejeitado antes de implementação.
+O próximo corte autorizado nesta área é auditoria/correção de ActorDiscovery genérico.
 ```
 
 #### `SA-5B — ActorPresentation setup stage`
@@ -879,11 +957,11 @@ DONE  SA-2    ActivityEntryPipeline shell
 DONE  SA-2B   ActivityEntry observability
 DONE  SA-3A   ActivityContent load/readiness
 DONE  SA-3A-H1 lifecycle log semantics + inventory writer hygiene
+DONE  SA-3B0  Entry Setup Pre-Inventory Ownership / Ordering Correction
+DONE  SA-3B1  ActivityCapabilityInventory ownership final
 
-NEXT  SA-3B0  Entry Setup Pre-Inventory Ownership / Ordering Correction
-      SA-3B1  ActivityCapabilityInventory ownership final
-
-      SA-4A   ActivityObjectEntryStage real
+NEXT  SA-4A0  ActivityObjectContributorDiscoveryStage real
+      SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pós-smoke ainda encontrar wrapper/debt
       SA-4B   Object snapshot/reset/restore cleanup
 
       SA-5A   Actor discovery/readiness ownership

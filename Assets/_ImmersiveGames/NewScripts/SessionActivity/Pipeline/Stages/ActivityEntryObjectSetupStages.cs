@@ -13,6 +13,249 @@ using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.Activity
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
+    internal static class ActivityEntryObjectContributorDiscoveryStage
+    {
+        public static ActivityObjectContributorDiscoveryResult Execute(
+            ActivityEntryObjectSetupCommand command,
+            ActivityContentLoadedSet loadedSet,
+            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryObjectSetupRuntimeBridge bridge,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
+            }
+
+            SessionActivityDefinition definition = command.Definition;
+            int entrySequence = command.Identity.EntrySequence;
+            SessionActivityIdentity discoveryIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            endpoint.SetCurrentIdentity(discoveryIdentity, SessionActivityStage.ActivitySetupStarted);
+            endpoint.EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted,
+                discoveryIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity object contributor discovery started.");
+            endpoint.EmitSnapshot(
+                snapshots,
+                "activity_object_contributor_discovery_started",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity object contributor discovery started.");
+            endpoint.LogEntryOwnerEvent(
+                "ActivityEntryObjectContributorDiscoveryStarted",
+                discoveryIdentity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='object_contributor_discovery'");
+
+            if (!HasLoadedSetForCurrentEntry(loadedSet, definition, entrySequence, command.Identity) || !loadedSet.HasScenes)
+            {
+                endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
+                endpoint.EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent,
+                    discoveryIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
+                endpoint.EmitSnapshot(
+                    snapshots,
+                    "activity_object_contributor_discovery_skipped_no_content",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
+                endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryObjectContributorDiscoverySkipped",
+                    discoveryIdentity,
+                    command.Source,
+                    command.Reason,
+                    "owner='ActivityEntryPipeline' block='object_contributor_discovery' reason='no_content_loaded_set'");
+                return default;
+            }
+
+            try
+            {
+                List<ActivityObjectContributionReport> reports = new();
+                for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
+                {
+                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
+                    if (!record.IsValid)
+                    {
+                        continue;
+                    }
+
+                    Scene scene = SceneManager.GetSceneByName(record.SceneName);
+                    if (!scene.IsValid() || !scene.isLoaded)
+                    {
+                        throw new InvalidOperationException(
+                            $"Activity '{definition.ActivityId}' content scene '{record.SceneName}' is not loaded for object contributor discovery.");
+                    }
+
+                    AppendContributorsFromSceneOrFail(reports, scene, loadedSet, record, command.Source, command.Reason);
+                }
+
+                ActivityObjectContributorDiscoveryResult result = new(
+                    discoveryIdentity,
+                    loadedSet.ContentProfileId,
+                    reports,
+                    command.Source,
+                    command.Reason,
+                    $"discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'");
+                if (!result.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"Activity '{definition.ActivityId}' produced invalid ActivityObjectContributorDiscoveryResult.");
+                }
+
+                bridge.SetCurrentActivityObjectContributorDiscoveryResult(result);
+
+                for (int reportIndex = 0; reportIndex < reports.Count; reportIndex++)
+                {
+                    ActivityObjectContributionReport report = reports[reportIndex];
+                    endpoint.EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityObjectContributorDiscovered,
+                        discoveryIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' contributor discovered contentProfileId='{report.ContentProfileId}' sceneName='{report.SceneName}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroups='{FormatActivityStateResetGroups(report.SupportedResetGroups)}' releaseKinds='{FormatReleaseKinds(report.SupportedReleaseKinds)}'.");
+                }
+
+                endpoint.EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectContributorDiscoveryCompleted,
+                    discoveryIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
+                endpoint.EmitSnapshot(
+                    snapshots,
+                    "activity_object_contributor_discovery_completed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
+                endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryObjectContributorDiscoveryCompleted",
+                    discoveryIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='object_contributor_discovery' discovered='{reports.Count}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
+                endpoint.EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed,
+                    discoveryIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
+                endpoint.EmitSnapshot(
+                    snapshots,
+                    "activity_object_contributor_discovery_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
+                endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryObjectContributorDiscoveryFailed",
+                    discoveryIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='object_contributor_discovery' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        private static void AppendContributorsFromSceneOrFail(
+            List<ActivityObjectContributionReport> reports,
+            Scene contentScene,
+            ActivityContentLoadedSet loadedSet,
+            ActivityContentLoadedSceneRecord record,
+            string source,
+            string reason)
+        {
+            GameObject[] roots = contentScene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
+                for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
+                {
+                    ActivityObjectContributor contributor = contributors[contributorIndex];
+                    if (contributor == null)
+                    {
+                        continue;
+                    }
+
+                    contributor.ValidateOrThrow(
+                        $"ActivityObjectContributorDiscovery:{contentScene.name}:{rootIndex}:{contributorIndex}");
+
+                    ActivityObjectContributionReport report = new(
+                        loadedSet.Identity,
+                        loadedSet.ContentProfileId,
+                        record.SceneKey,
+                        contentScene.name,
+                        contributor.TargetId,
+                        contributor.RoleId,
+                        contributor.ContributorKind,
+                        contributor.DefaultRequiredness,
+                        contributor.SupportedResetGroups,
+                        contributor.SupportedReleaseKinds,
+                        source,
+                        reason);
+
+                    if (!report.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"Invalid ActivityObjectContributionReport targetId='{contributor.TargetId}' scene='{contentScene.name}'.");
+                    }
+
+                    reports.Add(report);
+                }
+            }
+        }
+
+        private static bool HasLoadedSetForCurrentEntry(
+            ActivityContentLoadedSet loadedSet,
+            SessionActivityDefinition definition,
+            int entrySequence,
+            SessionActivityIdentity identity)
+        {
+            return loadedSet.IsValid &&
+                   loadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
+                   string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   loadedSet.Identity.EntrySequence == entrySequence;
+        }
+
+        private static string FormatActivityStateResetGroups(IReadOnlyList<ActivityStateResetGroup> resetGroups)
+        {
+            if (resetGroups == null || resetGroups.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(",", resetGroups);
+        }
+
+        private static string FormatReleaseKinds(IReadOnlyList<ActivityReleaseRequirementKind> releaseKinds)
+        {
+            if (releaseKinds == null || releaseKinds.Count == 0)
+            {
+                return "<none>";
+            }
+
+            return string.Join(",", releaseKinds);
+        }
+    }
+
     internal static class ActivityEntrySetupInventoryStage
     {
         public static void Execute(
@@ -364,7 +607,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
+            EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewStarted,
                 previewIdentity,
                 $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
@@ -381,7 +624,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-                EmitPreviewObservationLog(
+                EmitEntryCapabilityInventoryLog(
                     SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
                     previewIdentity,
                     $"'{definition.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{coordinator.ActivityObjectScannerId}'.");
@@ -407,7 +650,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
+            EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
                 previewIdentity,
                 $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
@@ -429,7 +672,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 validationOutcomeMessage);
-            EmitPreviewObservationLog(validationOutcomeKind, previewIdentity, validationOutcomeMessage);
+            EmitEntryCapabilityInventoryLog(validationOutcomeKind, previewIdentity, validationOutcomeMessage);
 
             endpoint.EmitFact(
                 facts,
@@ -438,7 +681,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
+            EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
                 previewIdentity,
                 $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
@@ -450,7 +693,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
-            EmitPreviewObservationLog(
+            EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
                 previewIdentity,
                 $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
@@ -464,13 +707,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return buildResult;
         }
 
-        private static void EmitPreviewObservationLog(
+        private static void EmitEntryCapabilityInventoryLog(
             SessionActivityFactKind kind,
             SessionActivityIdentity identity,
             string message)
         {
             Debug.Log(
-                $"[OBS][SessionActivityPipeline][CapabilityInventoryPreview] fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' message=\"{message}\"");
+                $"[OBS][ActivityEntryPipeline][CapabilityInventoryPreview] fact='{kind}' stage='{identity.Stage}' entrySequence='{identity.EntrySequence}' activity='{identity.ActivityId}' owner='ActivityEntryPipeline' block='capability_inventory_preview' message=\"{message}\"");
         }
     }
 
