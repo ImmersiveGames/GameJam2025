@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActor prefab missing PlayerActor component. prefab='{plan.Prefab.name}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}'.");
                 }
 
-                actor.SetActorId(plan.ActorIdentity.PlayerSlotId);
+                actor.SetActorId(plan.ActorIdentity.ActorId.ToString());
                 ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedIdentity(
                     activeIdentity,
                     ActorKind.Player,
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                         $"actor_reset_endpoint_missing_on_actor_prefab: prefab='{plan.Prefab.name}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}' playerActorId='{plan.ActorIdentity.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
-                records.Add(new PlayerActorMaterializationRecord(plan.ActorIdentity, instance));
+                records.Add(new PlayerActorMaterializationRecord(new PlayerActorRuntimeHandle(plan.ActorIdentity, instance, actor)));
             }
 
             return records;

@@ -135,8 +135,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     policyMetadata: new[]
                     {
                         new ActivityCapabilityPolicyEntry("permissionId", permissionToken),
-                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId),
-                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId),
+                        new ActivityCapabilityPolicyEntry("actorId", playerIdentity.ActorId.Value),
+                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId.Value),
+                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId.Value),
                         new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
                     },
                     source: context.Source));
@@ -144,9 +145,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityCapabilityPermissionReceiverReference(
                     capabilityId,
                     ownerId,
+                    playerIdentity.ActorId,
                     playerIdentity.PlayerActorId,
+                    playerIdentity.PlayerSlotId,
                     componentPath,
-                    permissionToken,
+                    ActivityCapabilityPermissionId.ActivityGameplayControl,
                     receiverIdentity,
                     receiver));
             }

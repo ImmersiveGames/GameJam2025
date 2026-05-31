@@ -21,10 +21,12 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipantRequirementId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantRequirementId;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 using PlayerSessionParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantBinding;
+using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
 using PlayerSessionParticipantRole = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantRole;
 using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
@@ -84,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private PlayerSessionParticipationContext _lastSessionParticipationContext;
         private IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> _lastPlayerActorTechnicalPlanEntries = Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
         private PlayerActivityParticipationContext _lastActivityParticipationContext;
-        private readonly Dictionary<string, PlayerActivityParticipantBinding> _activePlayerParticipantBindingsBySlotId = new(StringComparer.Ordinal);
+        private readonly Dictionary<PlayerActorId, PlayerActivityParticipantBinding> _activePlayerParticipantBindingsByPlayerActorId = new();
         private SessionActivityRailKind _activeRailKind;
         private SessionActivitySnapshotPayload _lastSnapshotPayloadForSaveOnExit;
         private bool _lastSnapshotCaptureFailedForSaveOnExit;
@@ -753,7 +755,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastSessionParticipationContext = handoff.SessionParticipationContext;
             _lastPlayerActorTechnicalPlanEntries = handoff.PlayerActorTechnicalPlanEntries ?? Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
             _lastActivityParticipationContext = null;
-            _activePlayerParticipantBindingsBySlotId.Clear();
+            _activePlayerParticipantBindingsByPlayerActorId.Clear();
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activityNonPlayerActorRegistry.ClearAllRouteRetained();
@@ -2472,7 +2474,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastSessionParticipationContext = null;
             _lastPlayerActorTechnicalPlanEntries = Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
             _lastActivityParticipationContext = null;
-            _activePlayerParticipantBindingsBySlotId.Clear();
+            _activePlayerParticipantBindingsByPlayerActorId.Clear();
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activityNonPlayerActorRegistry.ClearAllRouteRetained();
             _activeActorParticipationsByActorInstanceId.Clear();
@@ -3736,7 +3738,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 facts,
                 snapshots,
                 entrySequence);
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId =
+            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId =
                 BuildTechnicalPlanMap(_lastPlayerActorTechnicalPlanEntries);
 
             EmitFact(
@@ -4425,21 +4427,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (!_activityPlayerActorRegistry.TryResolveInstanceForControl(identity, candidate.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
-                    instance == null ||
-                    !observedIdentity.IsValid)
+                if (!_activityPlayerActorRegistry.TryResolveHandleForControl(identity, candidate.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }
 
-                if (!string.Equals(observedIdentity.PlayerSlotId, candidate.PlayerSlotId, StringComparison.Ordinal))
+                if (handle.PlayerSlotId != candidate.PlayerSlotId || handle.ParticipantId != candidate.ParticipantId)
                 {
                     continue;
                 }
 
                 resolved.Add(new PlayerActorIdentityRecord(
                     identity,
-                    candidate.PlayerSlotId,
+                    candidate.ParticipantBinding,
                     candidate.PlayerActorId));
             }
 
@@ -5228,7 +5228,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                     PlayerActorIdentityRecord resolvedIdentity = new(
                         startedIdentity,
-                        participantBinding.PlayerSlotId.Value,
+                        participantBinding,
                         actorResult.PlayerActorId);
                     exitedPlayerActors.Add(resolvedIdentity);
                     exitedPlayerActorDetails.Add(
@@ -6125,7 +6125,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 MovementBindingRecord record = records[index];
                 boundTargets.Add(new PlayerActorIdentityRecord(
                     startedIdentity,
-                    record.Requirement.PlayerSlotId,
+                    record.Requirement.ParticipantBinding,
                     record.Requirement.PlayerActorId));
             }
             _movementControlTargetsForCurrentEntry = boundTargets;
@@ -6239,7 +6239,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            if (!TryResolveCameraTargetReferenceFromInventory(cameraInventory, cameraRequirements, out ActivityCameraTargetReference selectedCameraTarget))
+            if (!TryResolveCameraTargetReferenceFromInventory(cameraInventory, cameraRequirements, startedIdentity, out ActivityCameraTargetReference selectedCameraTarget))
             {
                 if (requiredCameraCount > 0)
                 {
@@ -6306,18 +6306,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (!_activityPlayerActorRegistry.TryResolveInstanceForControl(identity, candidate.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
-                    instance == null ||
-                    !observedIdentity.IsValid)
+                if (!_activityPlayerActorRegistry.TryResolveHandleForControl(identity, candidate.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }
 
-                if (!string.Equals(observedIdentity.PlayerSlotId, candidate.PlayerSlotId, StringComparison.Ordinal))
+                if (handle.PlayerSlotId != candidate.PlayerSlotId || handle.ParticipantId != candidate.ParticipantId)
                 {
                     continue;
                 }
 
+                GameObject instance = handle.Instance;
                 PlayerActorMovementBindingState movementState = instance.GetComponent<PlayerActorMovementBindingState>();
                 if (movementState == null || !movementState.IsValid)
                 {
@@ -6330,15 +6329,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (!string.Equals(inputState.PlayerSlotId, candidate.PlayerSlotId, StringComparison.Ordinal) ||
-                    !string.Equals(inputState.PlayerActorId, candidate.PlayerActorId, StringComparison.Ordinal))
+                if (inputState.PlayerSlotId != candidate.PlayerSlotId ||
+                    inputState.PlayerActorId != candidate.PlayerActorId)
                 {
                     continue;
                 }
 
                 resolved.Add(new PlayerActorIdentityRecord(
                     identity,
-                    candidate.PlayerSlotId,
+                    candidate.ParticipantBinding,
                     candidate.PlayerActorId));
             }
 
@@ -6352,7 +6351,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
             SessionActivityIdentity identity,
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
             IReadOnlyList<ActivityParticipantBindCommand> bindCommands,
             IReadOnlyList<ActivityParticipantMaterializationCommand> materializationCommands,
             IReadOnlyList<ActivityParticipantPlacementCommand> placementCommands,
@@ -6452,18 +6451,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             SessionActivityIdentity identity,
             ActivityParticipantCommandPlan plan,
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId)
+            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId)
         {
             try
             {
                 _activityPlayerActorRegistry.BeginActivityScope(identity);
-                Dictionary<string, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant = new(StringComparer.Ordinal);
-                Dictionary<string, ActivityParticipantPlacementCommand> placementByParticipant = new(StringComparer.Ordinal);
+                Dictionary<PlayerSessionParticipantId, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant = new();
+                Dictionary<PlayerSessionParticipantId, ActivityParticipantPlacementCommand> placementByParticipant = new();
 
                 for (int index = 0; index < plan.PlacementCommands.Count; index++)
                 {
                     ActivityParticipantPlacementCommand placementCommand = plan.PlacementCommands[index];
-                    placementByParticipant[placementCommand.ParticipantBinding.ParticipantId.Value] = placementCommand;
+                    placementByParticipant[placementCommand.ParticipantBinding.ParticipantId] = placementCommand;
                 }
 
                 for (int index = 0; index < plan.MaterializationCommands.Count; index++)
@@ -6478,7 +6477,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         command.Reason);
                     if (materializationCommand.ParticipantBinding.ParticipantId.IsValid)
                     {
-                        ensuredActorsByActivityParticipant[materializationCommand.ParticipantBinding.ParticipantId.Value] = actorIdentity;
+                        ensuredActorsByActivityParticipant[materializationCommand.ParticipantBinding.ParticipantId] = actorIdentity;
                     }
                     EmitFact(
                         facts,
@@ -6636,9 +6635,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             };
         }
 
-        private static Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> BuildTechnicalPlanMap(IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> technicalPlanEntries)
+        private static Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> BuildTechnicalPlanMap(IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> technicalPlanEntries)
         {
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> map = new(StringComparer.Ordinal);
+            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> map = new();
             if (technicalPlanEntries == null || technicalPlanEntries.Count == 0)
             {
                 return map;
@@ -6660,7 +6659,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             SessionActivityIdentity identity,
             ActivityParticipantMaterializationCommand command,
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
             string source,
             string reason)
         {
@@ -6681,8 +6680,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"activity_participant_materialization_identity_invalid: activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}'.");
             }
 
-            if (_activityPlayerActorRegistry.TryGetRetainedForPlayerSlot(identity, playerSlotId, out GameObject retainedInstance, out PlayerActorIdentityRecord retainedIdentity))
+            if (_activityPlayerActorRegistry.TryGetRetainedForParticipant(identity, participant.ParticipantId, out PlayerActorRuntimeHandle retainedHandle))
             {
+                GameObject retainedInstance = retainedHandle.Instance;
                 if (retainedInstance == null)
                 {
                     throw new InvalidOperationException($"Retained participant instance is null participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}'.");
@@ -6703,8 +6703,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     identity.EntrySequence,
                     reboundIdentity.PlayerSlotId,
                     reboundIdentity.PlayerActorId);
-                EnsurePlayerRuntimeActorIdentityBoundOrFail(retainedInstance, identity, sessionParticipantId, "retained_rebind");
-                _activityPlayerActorRegistry.RegisterRetainedParticipation(identity, reboundIdentity, retainedInstance);
+                EnsurePlayerRuntimeActorIdentityBoundOrFail(retainedInstance, identity, participant.ParticipantId, "retained_rebind");
+                Actor retainedActor = retainedInstance.GetComponent<Actor>();
+                if (retainedActor == null)
+                {
+                    throw new InvalidOperationException($"Retained participant is missing Actor component participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}'.");
+                }
+
+                PlayerActorRuntimeHandle reboundHandle = new(reboundIdentity, retainedInstance, retainedActor);
+                _activityPlayerActorRegistry.RegisterRetainedParticipation(identity, reboundHandle);
                 DebugUtility.Log(typeof(SessionActivityPipeline),
                     $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantActorMaterializationRetained' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' role='{participant.Role}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}' playerActorId='{reboundIdentity.PlayerActorId}' materializationPolicy='{participant.MaterializationPolicy}' source='{source}' reason='{reason}'.",
                     DebugUtility.Colors.Success);
@@ -6735,8 +6742,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"Materialization adapter returned invalid record participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' requirementId='{command.RequirementId}'.");
             }
 
-            EnsurePlayerRuntimeActorIdentityBoundOrFail(records[0].Instance, identity, sessionParticipantId, "materialization");
-            _activityPlayerActorRegistry.RegisterMaterialized(records[0].ActorIdentity, records[0].Instance);
+            EnsurePlayerRuntimeActorIdentityBoundOrFail(records[0].Instance, identity, participant.ParticipantId, "materialization");
+            _activityPlayerActorRegistry.RegisterMaterialized(records[0].RuntimeHandle);
             DebugUtility.Log(typeof(SessionActivityPipeline),
                 $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantActorMaterialized' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' role='{participant.Role}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}' playerActorId='{records[0].ActorIdentity.PlayerActorId}' materializationPolicy='{participant.MaterializationPolicy}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Success);
@@ -6746,7 +6753,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private static void EnsurePlayerRuntimeActorIdentityBoundOrFail(
             GameObject actorInstance,
             SessionActivityIdentity identity,
-            string participantId,
+            PlayerSessionParticipantId participantId,
             string operation)
         {
             if (actorInstance == null)
@@ -6785,20 +6792,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, PlayerActivityParticipantBinding participant)
         {
-            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
-            string actorId = participant.ActorId.IsValid ? Normalize(participant.ActorId.Value) : string.Empty;
-            if (!identity.IsValid || string.IsNullOrWhiteSpace(playerSlotId) || string.IsNullOrWhiteSpace(actorId))
+            PlayerActorId playerActorId = PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId);
+            if (!identity.IsValid || !participant.IsValid || !playerActorId.IsValid)
             {
                 throw new InvalidOperationException("Cannot build participant actor identity with invalid ActivityParticipantBinding.");
             }
 
-            return new PlayerActorIdentityRecord(identity, playerSlotId, $"{identity.SessionId}|{actorId}");
+            return new PlayerActorIdentityRecord(identity, participant, playerActorId);
         }
 
         private static SessionActivityPlayerTechnicalPlanEntry ResolveTechnicalPlanEntryForActivityParticipantOrFail(
             SessionActivityDefinition definition,
             PlayerActivityParticipantBinding participant,
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
             string operation)
         {
             if (!participant.IsValid || !participant.ParticipantId.IsValid)
@@ -6807,7 +6813,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' operation='{operation}' reason='participant_binding_invalid'.");
             }
 
-            string sessionParticipantId = Normalize(participant.ParticipantId.Value);
+            PlayerSessionParticipantId sessionParticipantId = participant.ParticipantId;
             if (technicalPlanByParticipantId != null &&
                 technicalPlanByParticipantId.TryGetValue(sessionParticipantId, out SessionActivityPlayerTechnicalPlanEntry byParticipant) &&
                 byParticipant.IsValid)
@@ -6895,7 +6901,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static PlayerActorIdentityRecord EnsureResolvedActorIdentityForActivityParticipantOrFail(
             PlayerActivityParticipantBinding participantBinding,
-            Dictionary<string, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant,
+            Dictionary<PlayerSessionParticipantId, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant,
             SessionActivityDefinition definition,
             string operation)
         {
@@ -6905,7 +6911,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"Activity participant binding is invalid for operation='{operation}' activityId='{definition.ActivityId}'.");
             }
 
-            string participantId = Normalize(participantBinding.ParticipantId.Value);
+            PlayerSessionParticipantId participantId = participantBinding.ParticipantId;
             if (ensuredActorsByActivityParticipant == null || !ensuredActorsByActivityParticipant.TryGetValue(participantId, out PlayerActorIdentityRecord identity) || !identity.IsValid)
             {
                 throw new InvalidOperationException(
@@ -6926,14 +6932,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid PlayerActorIdentityRecord.");
             }
 
-            if (!_activityPlayerActorRegistry.TryResolveInstanceForControl(identity, actorIdentity.PlayerActorId, out GameObject actorInstance, out PlayerActorIdentityRecord observedIdentity) ||
-                actorInstance == null ||
-                !observedIdentity.IsValid)
+            if (!_activityPlayerActorRegistry.TryResolveHandleForControl(identity, actorIdentity.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
             {
                 throw new InvalidOperationException(
                     $"Actor reset {operation} requires active player actor instance. activityId='{definition.ActivityId}' playerSlotId='{actorIdentity.PlayerSlotId}' playerActorId='{actorIdentity.PlayerActorId}'.");
             }
 
+            GameObject actorInstance = handle.Instance;
+            PlayerActorIdentityRecord observedIdentity = handle.ActorIdentity;
             Actor runtimeActor = actorInstance.GetComponent<Actor>();
             if (runtimeActor == null || !runtimeActor.RuntimeActorInstanceId.IsValid || string.IsNullOrWhiteSpace(runtimeActor.ActorId))
             {
@@ -6943,8 +6949,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             return new ActorResetActorRef(
                 identity,
-                runtimeActor.ActorId,
-                runtimeActor.RuntimeActorInstanceId.Value,
+                new ActorId(runtimeActor.ActorId),
+                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value),
                 ActorKind.Player,
                 observedIdentity.PlayerActorId,
                 observedIdentity.PlayerSlotId);
@@ -6967,14 +6973,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid ActivityParticipantBinding.");
             }
 
-            if (!_activityPlayerActorRegistry.TryResolveInstanceForControl(identity, actorIdentity.PlayerActorId, out GameObject actorInstance, out PlayerActorIdentityRecord observedIdentity) ||
-                actorInstance == null ||
-                !observedIdentity.IsValid)
+            if (!_activityPlayerActorRegistry.TryResolveHandleForControl(identity, actorIdentity.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
             {
                 throw new InvalidOperationException(
                     $"Actor reset {operation} requires active player actor instance. activityId='{definition.ActivityId}' participantId='{participantBinding.ParticipantId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}' playerActorId='{actorIdentity.PlayerActorId}'.");
             }
 
+            GameObject actorInstance = handle.Instance;
+            PlayerActorIdentityRecord observedIdentity = handle.ActorIdentity;
             Actor runtimeActor = actorInstance.GetComponent<Actor>();
             if (runtimeActor == null || !runtimeActor.RuntimeActorInstanceId.IsValid || string.IsNullOrWhiteSpace(runtimeActor.ActorId))
             {
@@ -6984,8 +6990,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             return new ActorResetActorRef(
                 identity,
-                runtimeActor.ActorId,
-                runtimeActor.RuntimeActorInstanceId.Value,
+                new ActorId(runtimeActor.ActorId),
+                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value),
                 ActorKind.Player,
                 observedIdentity.PlayerActorId,
                 observedIdentity.PlayerSlotId);
@@ -7549,7 +7555,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < targets.Count; index++)
             {
                 PlayerActorIdentityRecord candidate = targets[index];
-                if (!candidate.IsValid || !string.Equals(candidate.PlayerSlotId, normalizedPlayerSlotId, StringComparison.Ordinal))
+                if (!candidate.IsValid || !string.Equals(candidate.PlayerSlotId.Value, normalizedPlayerSlotId, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -7571,8 +7577,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         continue;
                     }
 
-                    availablePlayerSlots.Add(candidate.PlayerSlotId);
-                    availableActorIds.Add(candidate.PlayerActorId);
+                    availablePlayerSlots.Add(candidate.PlayerSlotId.ToString());
+                    availableActorIds.Add(candidate.PlayerActorId.ToString());
                 }
 
                 string targetResolutionDetail = $"requestedPlayerSlotId='{normalizedPlayerSlotId}' requestedPlayerActorId='<unresolved>' availableActorIds='{(availableActorIds.Count == 0 ? "<none>" : string.Join(",", availableActorIds))}' availablePlayerSlots='{(availablePlayerSlots.Count == 0 ? "<none>" : string.Join(",", availablePlayerSlots))}'";
@@ -7606,8 +7612,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ActorResetTargetRef target = new(
                 new ActorResetActorRef(
                     commandIdentity,
-                    selectedPlayerInstance.ActorId,
-                    selectedPlayerInstance.ActorInstanceId.Value,
+                    new ActorId(selectedPlayerInstance.ActorId),
+                    new ActorInstanceRuntimeId(selectedPlayerInstance.ActorInstanceId.Value),
                     selectedPlayerInstance.Kind,
                     observedIdentity.PlayerActorId,
                     observedIdentity.PlayerSlotId),
@@ -7801,8 +7807,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                availablePlayerSlots.Add(identity.PlayerSlotId);
-                if (!string.Equals(identity.PlayerSlotId, selected.PlayerSlotId, StringComparison.Ordinal))
+                availablePlayerSlots.Add(identity.PlayerSlotId.ToString());
+                if (identity.PlayerSlotId != selected.PlayerSlotId)
                 {
                     continue;
                 }
@@ -7844,8 +7850,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             IReadOnlyList<string> availableActorIds,
             IReadOnlyList<string> availablePlayerSlots)
         {
-            string requestedPlayerSlotId = requestedIdentity.IsValid ? requestedIdentity.PlayerSlotId : string.Empty;
-            string requestedPlayerActorId = requestedIdentity.IsValid ? requestedIdentity.PlayerActorId : string.Empty;
+            string requestedPlayerSlotId = requestedIdentity.IsValid ? requestedIdentity.PlayerSlotId.ToString() : string.Empty;
+            string requestedPlayerActorId = requestedIdentity.IsValid ? requestedIdentity.PlayerActorId.ToString() : string.Empty;
             string joinedActorIds = availableActorIds == null || availableActorIds.Count == 0 ? "<none>" : string.Join(",", availableActorIds);
             string joinedPlayerSlots = availablePlayerSlots == null || availablePlayerSlots.Count == 0 ? "<none>" : string.Join(",", availablePlayerSlots);
             return $"requestedPlayerSlotId='{requestedPlayerSlotId}' requestedPlayerActorId='{requestedPlayerActorId}' availableActorIds='{joinedActorIds}' availablePlayerSlots='{joinedPlayerSlots}'";
@@ -7950,13 +7956,65 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return receivers;
         }
 
-        private static bool TryResolveCameraTargetReferenceFromInventory(
+        private bool TryResolveCameraTargetReferenceFromInventory(
             ActivityCapabilityInventory inventory,
             IReadOnlyList<CameraBindingRequirement> cameraRequirements,
+            SessionActivityIdentity activeIdentity,
             out ActivityCameraTargetReference selectedCameraTarget)
         {
             selectedCameraTarget = null;
-            if (!inventory.IsValid)
+            if (!inventory.IsValid || !activeIdentity.IsValid || !HasActivityCameraRequirement(cameraRequirements))
+            {
+                return false;
+            }
+
+            if (_lastActivityParticipationContext == null ||
+                !_lastActivityParticipationContext.IsValid ||
+                _lastActivityParticipationContext.Participants == null ||
+                _lastActivityParticipationContext.Participants.Count == 0)
+            {
+                return false;
+            }
+
+            for (int participantIndex = 0; participantIndex < _lastActivityParticipationContext.Participants.Count; participantIndex++)
+            {
+                PlayerActivityParticipantBinding binding = _lastActivityParticipationContext.Participants[participantIndex];
+                if (!binding.IsValid || !binding.RequiresPlayerActor)
+                {
+                    continue;
+                }
+
+                PlayerActorRuntimeHandle handle;
+                try
+                {
+                    handle = _activityPlayerActorRegistry.ResolveActiveHandleOrFail(activeIdentity, binding.ParticipantId);
+                }
+                catch (InvalidOperationException)
+                {
+                    continue;
+                }
+
+                if (!handle.IsValid)
+                {
+                    continue;
+                }
+
+                if (TryResolveCameraTargetReferenceForHandle(inventory, handle, out selectedCameraTarget))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveCameraTargetReferenceForHandle(
+            ActivityCapabilityInventory inventory,
+            PlayerActorRuntimeHandle handle,
+            out ActivityCameraTargetReference selectedCameraTarget)
+        {
+            selectedCameraTarget = null;
+            if (!inventory.IsValid || !handle.IsValid)
             {
                 return false;
             }
@@ -7971,12 +8029,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (!inventory.TryGetRuntimeReference<ActivityCameraTargetReference>(capability.CapabilityId, out ActivityCameraTargetReference reference) ||
                     reference == null ||
-                    !reference.IsValid)
-                {
-                    continue;
-                }
-
-                if (!MatchesAnyCameraRequirement(cameraRequirements, reference.PlayerActorId, reference.PlayerSlotId))
+                    !reference.IsValid ||
+                    !reference.Matches(handle))
                 {
                     continue;
                 }
@@ -7988,34 +8042,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return false;
         }
 
-        private static bool MatchesAnyCameraRequirement(
-            IReadOnlyList<CameraBindingRequirement> cameraRequirements,
-            string playerActorId,
-            string playerSlotId)
+        private static bool HasActivityCameraRequirement(IReadOnlyList<CameraBindingRequirement> cameraRequirements)
         {
-            bool foundActivityCameraRequirement = false;
+            if (cameraRequirements == null || cameraRequirements.Count == 0)
+            {
+                return false;
+            }
+
             for (int index = 0; index < cameraRequirements.Count; index++)
             {
                 CameraBindingRequirement requirement = cameraRequirements[index];
-                if (!requirement.IsValid || requirement.CameraBindingKind != ActivityCameraBindingRequirementKind.ActivityCamera)
-                {
-                    continue;
-                }
-
-                foundActivityCameraRequirement = true;
-                if (string.IsNullOrWhiteSpace(requirement.TargetId))
-                {
-                    return true;
-                }
-
-                if (string.Equals(requirement.TargetId, playerActorId, StringComparison.Ordinal) ||
-                    string.Equals(requirement.TargetId, playerSlotId, StringComparison.Ordinal))
+                if (requirement.IsValid && requirement.CameraBindingKind == ActivityCameraBindingRequirementKind.ActivityCamera)
                 {
                     return true;
                 }
             }
 
-            return !foundActivityCameraRequirement;
+            return false;
         }
 
         private IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProviders(GameObject targetObject)
@@ -10517,12 +10560,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < context.Participants.Count; index++)
             {
                 PlayerActivityParticipantBinding binding = context.Participants[index];
-                if (!binding.IsValid || !binding.RequiresPlayerActor || !binding.PlayerSlotId.IsValid)
+                if (!binding.IsValid || !binding.RequiresPlayerActor || !binding.ActorId.IsValid)
                 {
                     continue;
                 }
 
-                _activePlayerParticipantBindingsBySlotId[binding.PlayerSlotId.Value] = binding;
+                PlayerActorId playerActorId = PlayerActorIdentityRecord.BuildPlayerActorId(context.SessionActivityIdentity, binding.ActorId);
+                if (!playerActorId.IsValid)
+                {
+                    continue;
+                }
+
+                _activePlayerParticipantBindingsByPlayerActorId[playerActorId] = binding;
             }
         }
 
@@ -10547,14 +10596,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            string playerSlotId = Normalize(actorResult.PlayerSlotId);
-            if (string.IsNullOrWhiteSpace(playerSlotId))
+            PlayerActorId playerActorId = actorResult.PlayerActorId;
+            if (!playerActorId.IsValid)
             {
-                failureReason = "player_slot_id_missing";
+                failureReason = "player_actor_id_missing";
                 return false;
             }
 
-            if (_activePlayerParticipantBindingsBySlotId.TryGetValue(playerSlotId, out PlayerActivityParticipantBinding activeBinding) &&
+            if (_activePlayerParticipantBindingsByPlayerActorId.TryGetValue(playerActorId, out PlayerActivityParticipantBinding activeBinding) &&
                 activeBinding.IsValid)
             {
                 binding = activeBinding;
@@ -10567,12 +10616,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 for (int index = 0; index < _lastActivityParticipationContext.Participants.Count; index++)
                 {
                     PlayerActivityParticipantBinding candidate = _lastActivityParticipationContext.Participants[index];
-                    if (!candidate.IsValid || !candidate.RequiresPlayerActor || !candidate.PlayerSlotId.IsValid)
+                    if (!candidate.IsValid || !candidate.RequiresPlayerActor || !candidate.ActorId.IsValid)
                     {
                         continue;
                     }
 
-                    if (string.Equals(candidate.PlayerSlotId.Value, playerSlotId, StringComparison.Ordinal))
+                    PlayerActorId candidatePlayerActorId = PlayerActorIdentityRecord.BuildPlayerActorId(_lastActivityParticipationContext.SessionActivityIdentity, candidate.ActorId);
+                    if (candidatePlayerActorId == playerActorId)
                     {
                         binding = candidate;
                         failureReason = string.Empty;
@@ -10581,7 +10631,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
 
-            failureReason = "activity_participant_binding_missing_for_player_slot";
+            failureReason = "activity_participant_binding_missing_for_player_actor_id";
             return false;
         }
 

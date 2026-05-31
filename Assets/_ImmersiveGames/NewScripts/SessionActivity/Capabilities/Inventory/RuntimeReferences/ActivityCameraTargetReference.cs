@@ -1,3 +1,6 @@
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences
@@ -7,16 +10,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public ActivityCameraTargetReference(
             string capabilityId,
             string ownerId,
-            string playerActorId,
-            string playerSlotId,
+            ActorId actorId,
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId,
             string componentPath,
             Transform trackingTarget,
             Transform lookAtTarget)
         {
             CapabilityId = Normalize(capabilityId);
             OwnerId = Normalize(ownerId);
-            PlayerActorId = Normalize(playerActorId);
-            PlayerSlotId = Normalize(playerSlotId);
+            ActorId = actorId;
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
             ComponentPath = Normalize(componentPath);
             TrackingTarget = trackingTarget;
             LookAtTarget = lookAtTarget;
@@ -24,12 +29,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
 
         public string CapabilityId { get; }
         public string OwnerId { get; }
-        public string PlayerActorId { get; }
-        public string PlayerSlotId { get; }
+        public ActorId ActorId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
         public string ComponentPath { get; }
         public Transform TrackingTarget { get; }
         public Transform LookAtTarget { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && TrackingTarget != null;
+        public bool IsValid => !string.IsNullOrWhiteSpace(CapabilityId) && ActorId.IsValid && PlayerActorId.IsValid && TrackingTarget != null;
+
+        public bool Matches(PlayerActorRuntimeHandle handle)
+        {
+            return IsValid &&
+                   handle.IsValid &&
+                   PlayerActorId == handle.PlayerActorId &&
+                   ActorId == handle.ActorId;
+        }
 
         private static string Normalize(string value)
         {

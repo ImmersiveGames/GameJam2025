@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public readonly struct SessionActivityPlayerTechnicalPlanEntry : IEquatable<SessionActivityPlayerTechnicalPlanEntry>
     {
         public SessionActivityPlayerTechnicalPlanEntry(
-            string participantId,
+            SessionParticipantId participantId,
             bool required,
             GameObject prefab,
             ActorPlacementMode placementMode,
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Vector3 localPosition,
             Vector3 localEulerAngles)
         {
-            ParticipantId = Normalize(participantId);
+            ParticipantId = participantId;
             Required = required;
             Prefab = prefab;
             PlacementMode = placementMode;
@@ -27,7 +27,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             LocalEulerAngles = localEulerAngles;
         }
 
-        public string ParticipantId { get; }
+        public SessionParticipantId ParticipantId { get; }
         public bool Required { get; }
         public GameObject Prefab { get; }
         public ActorPlacementMode PlacementMode { get; }
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public Vector3 LocalPosition { get; }
         public Vector3 LocalEulerAngles { get; }
         public bool IsValid =>
-            !string.IsNullOrWhiteSpace(ParticipantId) &&
+            ParticipantId.IsValid &&
             (PlacementMode == ActorPlacementMode.None ||
              PlacementMode == ActorPlacementMode.SceneMarker ||
              PlacementMode == ActorPlacementMode.FixedTransform);
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool Equals(SessionActivityPlayerTechnicalPlanEntry other)
         {
-            return string.Equals(ParticipantId, other.ParticipantId, StringComparison.Ordinal) &&
+            return ParticipantId.Equals(other.ParticipantId) &&
                    Required == other.Required &&
                    Equals(Prefab, other.Prefab) &&
                    PlacementMode == other.PlacementMode &&
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             unchecked
             {
-                int hashCode = StringComparer.Ordinal.GetHashCode(ParticipantId ?? string.Empty);
+                int hashCode = ParticipantId.GetHashCode();
                 hashCode = (hashCode * 397) ^ (Required ? 1 : 0);
                 hashCode = (hashCode * 397) ^ (Prefab != null ? Prefab.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (int)PlacementMode;

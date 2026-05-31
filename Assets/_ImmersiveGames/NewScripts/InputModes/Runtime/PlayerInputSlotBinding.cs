@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.InputModes.Runtime
@@ -10,35 +11,33 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         [SerializeField] private string initializedBySource;
         [SerializeField] private string initializedByReason;
 
-        public string PlayerSlotId => Normalize(playerSlotId);
-        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerSlotId);
+        public PlayerSlotId PlayerSlotId => new(Normalize(playerSlotId));
+        public bool IsValid => PlayerSlotId.IsValid;
         public bool IsInitialized => initialized;
         public string InitializedBySource => Normalize(initializedBySource);
         public string InitializedByReason => Normalize(initializedByReason);
 
-        public void Initialize(string slotId, string source, string reason)
+        public void Initialize(PlayerSlotId slotId, string source, string reason)
         {
-            string normalizedSlotId = Normalize(slotId);
-            if (string.IsNullOrWhiteSpace(normalizedSlotId))
+            if (!slotId.IsValid)
             {
-                throw new System.InvalidOperationException("PlayerInputSlotBinding.Initialize requer slotId explicito e nao-vazio.");
+                throw new System.InvalidOperationException("PlayerInputSlotBinding.Initialize requires explicit valid PlayerSlotId.");
             }
 
-            string currentSlotId = PlayerSlotId;
-            if (!string.IsNullOrWhiteSpace(currentSlotId) &&
-                !string.Equals(currentSlotId, normalizedSlotId, System.StringComparison.Ordinal))
+            PlayerSlotId currentSlotId = PlayerSlotId;
+            if (currentSlotId.IsValid && currentSlotId != slotId)
             {
                 throw new System.InvalidOperationException(
-                    $"PlayerInputSlotBinding ja configurado com slotId='{currentSlotId}' e nao pode ser reinicializado para slotId='{normalizedSlotId}'.");
+                    $"PlayerInputSlotBinding already configured with slotId='{currentSlotId}' and cannot be reinitialized to slotId='{slotId}'.");
             }
 
-            if (initialized && !string.Equals(currentSlotId, normalizedSlotId, System.StringComparison.Ordinal))
+            if (initialized && currentSlotId != slotId)
             {
                 throw new System.InvalidOperationException(
-                    $"PlayerInputSlotBinding reinicializacao invalida: currentSlotId='{currentSlotId}' requestedSlotId='{normalizedSlotId}'.");
+                    $"PlayerInputSlotBinding invalid reinitialization: currentSlotId='{currentSlotId}' requestedSlotId='{slotId}'.");
             }
 
-            playerSlotId = normalizedSlotId;
+            playerSlotId = slotId.Value;
             initialized = true;
             initializedBySource = Normalize(source);
             initializedByReason = Normalize(reason);

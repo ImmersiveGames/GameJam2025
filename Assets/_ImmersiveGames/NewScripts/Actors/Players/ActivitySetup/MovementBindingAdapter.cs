@@ -62,16 +62,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_movement_binding_requirement: requirement identity does not match active identity.");
                 }
 
-                GameObject actorInstance = registry.ResolveActiveInstanceOrFail(activeIdentity, requirement.PlayerActorId);
-                PlayerActorIdentity actorIdentity = actorInstance.GetComponent<PlayerActorIdentity>();
-                if (actorIdentity == null || !actorIdentity.IsValid)
+                PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantId);
+                GameObject actorInstance = actorHandle.Instance;
+                if (actorHandle.PlayerActorId != requirement.PlayerActorId || actorHandle.PlayerSlotId != requirement.PlayerSlotId)
                 {
-                    throw new InvalidOperationException($"PlayerActorIdentity missing/invalid for playerActorId='{requirement.PlayerActorId}'.");
-                }
-
-                if (!string.Equals(actorIdentity.PlayerSlotId, requirement.PlayerSlotId, StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException($"stale_or_foreign_movement_binding_requirement: slot mismatch playerActorId='{requirement.PlayerActorId}' expectedSlotId='{requirement.PlayerSlotId}' observedSlotId='{actorIdentity.PlayerSlotId}'.");
+                    throw new InvalidOperationException($"stale_or_foreign_movement_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' playerActorId='{requirement.PlayerActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
                 }
 
                 PlayerInput input = ResolveBoundPlayerInputOrFail(actorInstance, requirement);
@@ -107,6 +102,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
                     requirement.PlayerActorId,
+                    requirement.PlayerSlotId,
                     command.Source,
                     command.Reason);
 

@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 requirements.Add(new MovementBindingRequirement(
                     startedIdentity,
                     resolved.RequirementId,
-                    actorIdentity.PlayerSlotId,
+                    resolved.ParticipantBinding,
                     actorIdentity.PlayerActorId,
                     resolved.Required,
                     source,
@@ -73,19 +73,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, ActivityParticipantBinding participantBinding)
         {
-            string playerSlotId = participantBinding.PlayerSlotId.IsValid ? Normalize(participantBinding.PlayerSlotId.Value) : string.Empty;
-            string actorId = participantBinding.ActorId.IsValid ? Normalize(participantBinding.ActorId.Value) : string.Empty;
-            if (!identity.IsValid || string.IsNullOrWhiteSpace(playerSlotId) || string.IsNullOrWhiteSpace(actorId))
+            PlayerActorId playerActorId = PlayerActorIdentityRecord.BuildPlayerActorId(identity, participantBinding.ActorId);
+            if (!identity.IsValid || !participantBinding.IsValid || !playerActorId.IsValid)
             {
                 throw new InvalidOperationException("Cannot build participant actor identity with invalid ActivityParticipantBinding.");
             }
 
-            return new PlayerActorIdentityRecord(identity, playerSlotId, $"{identity.SessionId}|{actorId}");
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            return new PlayerActorIdentityRecord(identity, participantBinding, playerActorId);
         }
     }
 }

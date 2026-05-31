@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -10,26 +11,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             ActivityCapabilityPermissionScope scope,
             ActivityCapabilityPermissionState state,
             string receiverId,
-            string targetId)
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId)
         {
             PermissionId = permissionId;
             Scope = scope;
             State = state;
             ReceiverId = Normalize(receiverId);
-            TargetId = Normalize(targetId);
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
         }
 
         public ActivityCapabilityPermissionId PermissionId { get; }
         public ActivityCapabilityPermissionScope Scope { get; }
         public ActivityCapabilityPermissionState State { get; }
         public string ReceiverId { get; }
-        public string TargetId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
 
         public bool IsValid =>
             PermissionId != ActivityCapabilityPermissionId.Unknown &&
             Scope != ActivityCapabilityPermissionScope.Unknown &&
             State != ActivityCapabilityPermissionState.Unknown &&
-            !string.IsNullOrWhiteSpace(ReceiverId);
+            !string.IsNullOrWhiteSpace(ReceiverId) &&
+            PlayerActorId.IsValid;
 
         private static string Normalize(string value)
         {

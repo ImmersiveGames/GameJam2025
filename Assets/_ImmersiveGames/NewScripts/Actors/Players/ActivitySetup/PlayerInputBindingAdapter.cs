@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -50,16 +51,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_input_binding_requirement: requirement identity does not match active identity.");
                 }
 
-                GameObject actorInstance = registry.ResolveActiveInstanceOrFail(activeIdentity, requirement.PlayerActorId);
-                PlayerActorIdentity actorIdentity = actorInstance.GetComponent<PlayerActorIdentity>();
-                if (actorIdentity == null || !actorIdentity.IsValid)
+                PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantId);
+                GameObject actorInstance = actorHandle.Instance;
+                if (actorHandle.PlayerActorId != requirement.PlayerActorId || actorHandle.PlayerSlotId != requirement.PlayerSlotId)
                 {
-                    throw new InvalidOperationException($"PlayerActorIdentity missing/invalid for playerActorId='{requirement.PlayerActorId}'.");
-                }
-
-                if (!string.Equals(actorIdentity.PlayerSlotId, requirement.PlayerSlotId, StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException($"stale_or_foreign_player_input_binding_requirement: slot mismatch playerActorId='{requirement.PlayerActorId}' expectedSlotId='{requirement.PlayerSlotId}' observedSlotId='{actorIdentity.PlayerSlotId}'.");
+                    throw new InvalidOperationException($"stale_or_foreign_player_input_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' playerActorId='{requirement.PlayerActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
                 }
 
                 InputActionAsset canonicalActionsAsset = ResolveCanonicalActionsAssetOrFail();
@@ -168,16 +164,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 slotBinding = resolved.gameObject.AddComponent<PlayerInputSlotBinding>();
             }
 
-            string authoredSlotId = slotBinding.PlayerSlotId;
-            if (!string.IsNullOrWhiteSpace(authoredSlotId) &&
-                !string.Equals(authoredSlotId, requirement.PlayerSlotId, StringComparison.Ordinal))
+            PlayerSlotId authoredSlotId = slotBinding.PlayerSlotId;
+            if (authoredSlotId.IsValid && authoredSlotId != requirement.PlayerSlotId)
             {
                 throw new InvalidOperationException($"PlayerInput binding failed: slot binding conflita playerActorId='{requirement.PlayerActorId}' expectedSlotId='{requirement.PlayerSlotId}' authoredSlotId='{authoredSlotId}'.");
             }
 
             slotBinding.Initialize(requirement.PlayerSlotId, requirement.Source, requirement.Reason);
 
-            if (!slotBinding.IsValid || !string.Equals(slotBinding.PlayerSlotId, requirement.PlayerSlotId, StringComparison.Ordinal))
+            if (!slotBinding.IsValid || slotBinding.PlayerSlotId != requirement.PlayerSlotId)
             {
                 throw new InvalidOperationException($"PlayerInput binding failed: PlayerInputSlotBinding invalido para playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}'.");
             }

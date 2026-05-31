@@ -42,13 +42,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                if (!_playerRegistry.TryResolveInstanceForControl(identity, player.PlayerActorId, out GameObject actorRoot, out PlayerActorIdentityRecord resolvedIdentity) ||
-                    actorRoot == null ||
-                    !resolvedIdentity.IsValid)
+                if (!_playerRegistry.TryResolveHandleForControl(identity, player.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }
 
+                GameObject actorRoot = handle.Instance;
+                PlayerActorIdentityRecord resolvedIdentity = handle.ActorIdentity;
                 Actor runtimeActor = actorRoot.GetComponent<Actor>();
                 if (runtimeActor == null)
                 {
@@ -68,9 +68,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActorInstanceSource requires known ActorScope for playerActorId='{resolvedIdentity.PlayerActorId}'.");
                 }
 
-                string stableActorId = !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
-                    ? runtimeActor.ActorId
-                    : resolvedIdentity.PlayerActorId;
+                string stableActorId = resolvedIdentity.ActorId.ToString();
                 ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedIdentity(
                     identity,
                     ActorKind.Player,

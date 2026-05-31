@@ -111,8 +111,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     priority: 120,
                     policyMetadata: new[]
                     {
-                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId),
-                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId),
+                        new ActivityCapabilityPolicyEntry("actorId", playerIdentity.ActorId.Value),
+                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId.Value),
+                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId.Value),
                         new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
                     },
                     source: context.Source));
@@ -120,6 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 runtimeReferences.Add(new ActivityCameraTargetReference(
                     capabilityId,
                     ownerId,
+                    playerIdentity.ActorId,
                     playerIdentity.PlayerActorId,
                     playerIdentity.PlayerSlotId,
                     componentPath,

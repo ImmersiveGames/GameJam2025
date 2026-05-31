@@ -65,6 +65,27 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
+    public readonly struct PlayerActorId : IEquatable<PlayerActorId>
+    {
+        public PlayerActorId(string value)
+        {
+            Value = Normalize(value);
+        }
+
+        public string Value { get; }
+        public bool IsValid => !string.IsNullOrWhiteSpace(Value);
+
+        public bool Equals(PlayerActorId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
+        public override bool Equals(object obj) => obj is PlayerActorId other && Equals(other);
+        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        public override string ToString() => Value;
+
+        public static bool operator ==(PlayerActorId left, PlayerActorId right) => left.Equals(right);
+        public static bool operator !=(PlayerActorId left, PlayerActorId right) => !left.Equals(right);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public readonly struct ActivityParticipantRequirementId : IEquatable<ActivityParticipantRequirementId>
     {
         public ActivityParticipantRequirementId(string value)

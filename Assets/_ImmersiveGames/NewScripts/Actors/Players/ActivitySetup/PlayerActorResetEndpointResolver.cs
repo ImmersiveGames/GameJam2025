@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
-    // Debito transitório da Base 1.2: resolução concreta ainda usa registry de PlayerActor.
     public sealed class PlayerActorResetEndpointResolver : IActorResetEndpointResolver
     {
         private readonly ActivityPlayerActorRegistry _registry;
@@ -47,17 +48,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("actor_reset_identity_mismatch: actor identity does not match active identity.");
             }
 
-            if (string.IsNullOrWhiteSpace(actor.PlayerActorId))
+            if (!actor.PlayerActorId.IsValid)
             {
                 throw new InvalidOperationException(
                     $"actor_reset_player_identity_missing: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
             }
 
-            if (_registry.TryResolveInstanceForControl(activeIdentity, actor.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) &&
-                instance != null &&
-                observedIdentity.IsValid)
+            if (_registry.TryResolveHandleForControl(activeIdentity, actor.PlayerActorId, out PlayerActorRuntimeHandle handle) &&
+                handle.IsValid &&
+                handle.Instance != null)
             {
-                return instance;
+                return handle.Instance;
             }
 
             throw new InvalidOperationException(
@@ -86,8 +87,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal) ||
-                !string.Equals(identity.PlayerSlotId, actor.PlayerSlotId, StringComparison.Ordinal) ||
-                !string.Equals(identity.PlayerActorId, actor.PlayerActorId, StringComparison.Ordinal))
+                identity.PlayerSlotId != actor.PlayerSlotId ||
+                identity.PlayerActorId != actor.PlayerActorId)
             {
                 throw new InvalidOperationException(
                     $"actor_reset_player_identity_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' playerActorId='{actor.PlayerActorId}' playerSlotId='{actor.PlayerSlotId}' does not match endpoint identity.");
@@ -104,8 +105,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             if (!runtimeActor.RuntimeActorInstanceId.IsValid ||
-                !string.Equals(runtimeActor.RuntimeActorInstanceId.Value, actor.ActorInstanceRuntimeId, StringComparison.Ordinal) ||
-                !string.Equals(runtimeActor.ActorId, actor.ActorId, StringComparison.Ordinal))
+                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value) != actor.ActorInstanceRuntimeId ||
+                new ActorId(runtimeActor.ActorId) != actor.ActorId)
             {
                 throw new InvalidOperationException(
                     $"actor_reset_actor_target_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' does not match resolved actor target.");

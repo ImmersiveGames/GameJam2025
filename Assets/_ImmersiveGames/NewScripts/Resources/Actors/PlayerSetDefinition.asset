@@ -13,7 +13,11 @@ MonoBehaviour:
   m_Name: PlayerSetDefinition
   m_EditorClassIdentifier: 
   entries:
-  - actorDefinition: {fileID: 11400000, guid: 7292c1ea08b65d54eb20a8a2559655d9, type: 2}
+  - playerSlotId: player.slot.1
+    playerSelectionId: selection.player.slot.1.default
+    actorDefinition: {fileID: 11400000, guid: 7292c1ea08b65d54eb20a8a2559655d9, type: 2}
     required: 1
-  - actorDefinition: {fileID: 11400000, guid: 2f8647a3ec8a89445a0b9253caa657fb, type: 2}
+  - playerSlotId: player.slot.2
+    playerSelectionId: selection.player.slot.2.default
+    actorDefinition: {fileID: 11400000, guid: 2f8647a3ec8a89445a0b9253caa657fb, type: 2}
     required: 0

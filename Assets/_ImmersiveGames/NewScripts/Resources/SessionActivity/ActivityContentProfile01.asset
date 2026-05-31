@@ -24,7 +24,7 @@ MonoBehaviour:
     - requirementId: participant.player.primary
       requiredness: 2
       participantKind: 1
-      participantId: player1
+      participantId: participant.primary_player
       roleId: primary_player
       placementRequirementId: 
     objectEntryRequirements: []
@@ -35,7 +35,7 @@ MonoBehaviour:
       requiredness: 2
       cameraBindingKind: 1
       bindingId: activity.camera.primary
-      targetId: player1
+      targetId: actor.player.primary
       profileId: activity.presentation.sandbox
     interactionBindingRequirements: []
     hudBindingRequirements: []

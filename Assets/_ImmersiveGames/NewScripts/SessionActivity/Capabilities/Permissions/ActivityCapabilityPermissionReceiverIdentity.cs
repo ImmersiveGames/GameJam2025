@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -10,30 +11,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             string sessionStateId,
             string activityId,
             int entrySequence,
-            string playerActorId,
-            string playerSlotId)
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId)
         {
             PipelineId = Normalize(pipelineId);
             SessionStateId = Normalize(sessionStateId);
             ActivityId = Normalize(activityId);
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            PlayerActorId = Normalize(playerActorId);
-            PlayerSlotId = Normalize(playerSlotId);
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
         }
 
         public string PipelineId { get; }
         public string SessionStateId { get; }
         public string ActivityId { get; }
         public int EntrySequence { get; }
-        public string PlayerActorId { get; }
-        public string PlayerSlotId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PipelineId) &&
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             EntrySequence > 0 &&
-            !string.IsNullOrWhiteSpace(PlayerActorId);
+            PlayerActorId.IsValid;
 
         public bool Equals(ActivityCapabilityPermissionReceiverIdentity other)
         {
@@ -41,8 +42,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                    string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
                    string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
                    EntrySequence == other.EntrySequence &&
-                   string.Equals(PlayerActorId, other.PlayerActorId, StringComparison.Ordinal) &&
-                   string.Equals(PlayerSlotId, other.PlayerSlotId, StringComparison.Ordinal);
+                   PlayerActorId == other.PlayerActorId &&
+                   PlayerSlotId == other.PlayerSlotId;
         }
 
         public override bool Equals(object obj)
@@ -57,8 +58,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 SessionStateId ?? string.Empty,
                 ActivityId ?? string.Empty,
                 EntrySequence,
-                PlayerActorId ?? string.Empty,
-                PlayerSlotId ?? string.Empty);
+                PlayerActorId,
+                PlayerSlotId);
         }
 
         public override string ToString()

@@ -1,23 +1,32 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
     public readonly struct PlayerActorCapabilityIdentity : IEquatable<PlayerActorCapabilityIdentity>
     {
-        public PlayerActorCapabilityIdentity(string playerActorId, string playerSlotId)
+        public PlayerActorCapabilityIdentity(
+            ActorId actorId,
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId)
         {
-            PlayerActorId = Normalize(playerActorId);
-            PlayerSlotId = Normalize(playerSlotId);
+            ActorId = actorId;
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
         }
 
-        public string PlayerActorId { get; }
-        public string PlayerSlotId { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerActorId) && !string.IsNullOrWhiteSpace(PlayerSlotId);
+        public ActorId ActorId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
+
+        public bool IsValid => ActorId.IsValid && PlayerActorId.IsValid && PlayerSlotId.IsValid;
 
         public bool Equals(PlayerActorCapabilityIdentity other)
         {
-            return string.Equals(PlayerActorId, other.PlayerActorId, StringComparison.Ordinal) &&
-                   string.Equals(PlayerSlotId, other.PlayerSlotId, StringComparison.Ordinal);
+            return ActorId == other.ActorId &&
+                   PlayerActorId == other.PlayerActorId &&
+                   PlayerSlotId == other.PlayerSlotId;
         }
 
         public override bool Equals(object obj)
@@ -27,12 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(PlayerActorId ?? string.Empty, PlayerSlotId ?? string.Empty);
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            return HashCode.Combine(ActorId, PlayerActorId, PlayerSlotId);
         }
     }
 }

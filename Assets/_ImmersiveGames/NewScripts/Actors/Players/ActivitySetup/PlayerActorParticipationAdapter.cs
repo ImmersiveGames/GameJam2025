@@ -62,14 +62,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_actor_identity: actor identity does not match active identity.");
                 }
 
-                if (!registry.TryResolveInstanceForControl(activeIdentity, actorIdentity.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
-                    instance == null ||
-                    !observedIdentity.IsValid)
+                if (!registry.TryResolveHandleForControl(activeIdentity, actorIdentity.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
                         $"player_participation_exit_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
+                GameObject instance = handle.Instance;
                 PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
                 {
@@ -95,6 +94,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
                     actorIdentity.PlayerActorId,
+                    actorIdentity.PlayerSlotId,
                     command.Source,
                     command.Reason);
 
@@ -149,14 +149,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_actor_identity: actor identity does not match active identity.");
                 }
 
-                if (!registry.TryResolveInstanceForControl(activeIdentity, actorIdentity.PlayerActorId, out GameObject instance, out PlayerActorIdentityRecord observedIdentity) ||
-                    instance == null ||
-                    !observedIdentity.IsValid)
+                if (!registry.TryResolveHandleForControl(activeIdentity, actorIdentity.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
                         $"player_participation_enter_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
+                GameObject instance = handle.Instance;
                 PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
                 {
@@ -210,8 +209,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal) ||
-                !string.Equals(identity.PlayerSlotId, expected.PlayerSlotId, StringComparison.Ordinal) ||
-                !string.Equals(identity.PlayerActorId, expected.PlayerActorId, StringComparison.Ordinal))
+                identity.PlayerSlotId != expected.PlayerSlotId ||
+                identity.PlayerActorId != expected.PlayerActorId)
             {
                 throw new InvalidOperationException(
                     $"stale_or_foreign_player_actor_identity_binding: playerActorId='{expected.PlayerActorId}' does not match current pipeline identity.");

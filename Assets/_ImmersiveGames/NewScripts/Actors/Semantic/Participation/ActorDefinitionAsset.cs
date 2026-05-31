@@ -25,7 +25,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
     {
         private static readonly IUniqueIdFactory IdFactory = new UniqueIdFactory();
 
-        [SerializeField, Tooltip("Canonical auto-generated actorId. Do not edit manually.")]
+        [SerializeField, Tooltip("Canonical authoring definition id. This identifies the ActorDefinition asset/domain, not the runtime actor.")]
+        private string actorDefinitionId;
+        [SerializeField, Tooltip("Canonical actor id produced by this definition when used as the default actor seed.")]
         private string actorId;
         [SerializeField] private string displayName;
         [SerializeField] private ActorDefinitionKind actorKind = ActorDefinitionKind.Unknown;
@@ -35,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         [SerializeField] private Vector3 localPosition;
         [SerializeField] private Vector3 localRotation;
 
+        public string ActorDefinitionId => Normalize(actorDefinitionId);
         public string ActorId => Normalize(actorId);
         public string DisplayName => Normalize(displayName);
         public ActorDefinitionKind ActorKind => actorKind;
@@ -48,27 +51,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            EnsureActorIdGenerated();
+            EnsureActorIdentityGenerated();
         }
 #endif
 
         public bool TryValidate(out string errorMessage)
         {
+            if (string.IsNullOrWhiteSpace(ActorDefinitionId))
+            {
+                errorMessage = "actorDefinitionId is required.";
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(ActorId))
             {
-                errorMessage = "actorId is required.";
+                errorMessage = $"actorId is required actorDefinitionId='{ActorDefinitionId}'.";
+                return false;
+            }
+
+            if (string.Equals(ActorDefinitionId, ActorId, System.StringComparison.Ordinal))
+            {
+                errorMessage = $"actorDefinitionId and actorId must be distinct actorDefinitionId='{ActorDefinitionId}' actorId='{ActorId}'.";
                 return false;
             }
 
             if (actorKind == ActorDefinitionKind.Unknown)
             {
-                errorMessage = $"actorKind cannot be Unknown actorId='{ActorId}'.";
+                errorMessage = $"actorKind cannot be Unknown actorDefinitionId='{ActorDefinitionId}' actorId='{ActorId}'.";
                 return false;
             }
 
             if (!IsValidPlacementMode(placementMode))
             {
-                errorMessage = $"placementMode is invalid actorId='{ActorId}' placementMode='{placementMode}'.";
+                errorMessage = $"placementMode is invalid actorDefinitionId='{ActorDefinitionId}' actorId='{ActorId}' placementMode='{placementMode}'.";
                 return false;
             }
 
@@ -76,17 +91,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             return true;
         }
 
-        private void EnsureActorIdGenerated()
+        private void EnsureActorIdentityGenerated()
         {
-            if (!string.IsNullOrWhiteSpace(actorId))
+            if (string.IsNullOrWhiteSpace(actorDefinitionId))
             {
-                return;
+                string generatedDefinitionId = IdFactory.GenerateId(null, "ActorDefinition");
+                if (!string.IsNullOrWhiteSpace(generatedDefinitionId))
+                {
+                    actorDefinitionId = generatedDefinitionId.Trim();
+                }
             }
 
-            string generated = IdFactory.GenerateId(null, "ActorDefinition");
-            if (!string.IsNullOrWhiteSpace(generated))
+            if (string.IsNullOrWhiteSpace(actorId))
             {
-                actorId = generated.Trim();
+                string generatedActorId = IdFactory.GenerateId(null, "Actor");
+                if (!string.IsNullOrWhiteSpace(generatedActorId))
+                {
+                    actorId = generatedActorId.Trim();
+                }
             }
         }
 

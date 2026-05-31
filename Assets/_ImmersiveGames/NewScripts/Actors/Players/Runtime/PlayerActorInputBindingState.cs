@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
@@ -18,8 +19,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         public string SessionId => sessionId;
         public string ActivityId => activityId;
         public int EntrySequence => entrySequence;
-        public string PlayerSlotId => playerSlotId;
-        public string PlayerActorId => playerActorId;
+        public PlayerSlotId PlayerSlotId => new(playerSlotId);
+        public PlayerActorId PlayerActorId => new(playerActorId);
         public int PlayerInputInstanceId => playerInputInstanceId;
         public int PlayerInputIndex => playerInputIndex;
         public string PlayerInputName => playerInputName;
@@ -29,8 +30,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             !string.IsNullOrWhiteSpace(sessionId) &&
             !string.IsNullOrWhiteSpace(activityId) &&
             entrySequence > 0 &&
-            !string.IsNullOrWhiteSpace(playerSlotId) &&
-            !string.IsNullOrWhiteSpace(playerActorId) &&
+            PlayerSlotId.IsValid &&
+            PlayerActorId.IsValid &&
             playerInputInstanceId != 0 &&
             playerInputIndex >= 0 &&
             !string.IsNullOrWhiteSpace(playerInputName);
@@ -40,8 +41,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             string bindSessionId,
             string bindActivityId,
             int bindEntrySequence,
-            string bindPlayerSlotId,
-            string bindPlayerActorId,
+            PlayerSlotId bindPlayerSlotId,
+            PlayerActorId bindPlayerActorId,
             int bindPlayerInputInstanceId,
             int bindPlayerInputIndex,
             string bindPlayerInputName)
@@ -50,8 +51,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             sessionId = Normalize(bindSessionId);
             activityId = Normalize(bindActivityId);
             entrySequence = bindEntrySequence < 0 ? 0 : bindEntrySequence;
-            playerSlotId = Normalize(bindPlayerSlotId);
-            playerActorId = Normalize(bindPlayerActorId);
+            playerSlotId = bindPlayerSlotId.IsValid ? bindPlayerSlotId.Value : string.Empty;
+            playerActorId = bindPlayerActorId.IsValid ? bindPlayerActorId.Value : string.Empty;
             playerInputInstanceId = bindPlayerInputInstanceId;
             playerInputIndex = bindPlayerInputIndex < 0 ? 0 : bindPlayerInputIndex;
             playerInputName = Normalize(bindPlayerInputName);
@@ -63,4 +64,3 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         }
     }
 }
-

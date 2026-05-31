@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 {
@@ -13,7 +14,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             string sessionStateId,
             string activityId,
             int entrySequence,
-            string targetId,
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId,
             string source,
             string reason)
         {
@@ -24,7 +26,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             SessionStateId = Normalize(sessionStateId);
             ActivityId = Normalize(activityId);
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            TargetId = Normalize(targetId);
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -36,7 +39,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public string SessionStateId { get; }
         public string ActivityId { get; }
         public int EntrySequence { get; }
-        public string TargetId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -51,6 +55,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             Scope != ActivityCapabilityPermissionScope.Unknown &&
             State != ActivityCapabilityPermissionState.Unknown &&
             HasIdentity &&
+            PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)

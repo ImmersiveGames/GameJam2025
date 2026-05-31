@@ -1,28 +1,91 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public readonly struct PlayerActorIdentityRecord
     {
         public PlayerActorIdentityRecord(
             SessionActivityIdentity identity,
-            string playerSlotId,
-            string playerActorId)
+            ActivityParticipantBinding participantBinding,
+            PlayerActorId playerActorId)
         {
             Identity = identity;
-            PlayerSlotId = Normalize(playerSlotId);
-            PlayerActorId = Normalize(playerActorId);
+            ParticipantBinding = participantBinding;
+            PlayerActorId = playerActorId;
         }
 
         public SessionActivityIdentity Identity { get; }
-        public string PlayerSlotId { get; }
-        public string PlayerActorId { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
+        public ActivityParticipantRequirementId RequirementId => ParticipantBinding.RequirementId;
+        public SessionParticipantId ParticipantId => ParticipantBinding.ParticipantId;
+        public PlayerSlotId PlayerSlotId => ParticipantBinding.PlayerSlotId;
+        public PlayerSelectionId PlayerSelectionId => ParticipantBinding.PlayerSelectionId;
+        public ActorDefinitionId ActorDefinitionId => ParticipantBinding.ActorDefinitionId;
+        public ActorId ActorId => ParticipantBinding.ActorId;
+        public PlayerActorId PlayerActorId { get; }
 
-        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(PlayerSlotId) && !string.IsNullOrWhiteSpace(PlayerActorId);
+        public bool IsValid =>
+            Identity.IsValid &&
+            ParticipantBinding.IsValid &&
+            PlayerActorId.IsValid;
 
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        public static PlayerActorId BuildPlayerActorId(SessionActivityIdentity identity, ActorId actorId)
+        {
+            if (!identity.IsValid || !actorId.IsValid)
+            {
+                return default;
+            }
+
+            return new PlayerActorId($"{identity.SessionId}|{actorId}");
+        }
+    }
+
+    public readonly struct PlayerActorRuntimeHandle
+    {
+        public PlayerActorRuntimeHandle(
+            PlayerActorIdentityRecord actorIdentity,
+            GameObject instance,
+            IActor actor)
+        {
+            ActorIdentity = actorIdentity;
+            Instance = instance;
+            Actor = actor;
+        }
+
+        public PlayerActorIdentityRecord ActorIdentity { get; }
+        public GameObject Instance { get; }
+        public IActor Actor { get; }
+
+        public ActivityParticipantBinding ParticipantBinding => ActorIdentity.ParticipantBinding;
+        public ActivityParticipantRequirementId RequirementId => ActorIdentity.RequirementId;
+        public SessionParticipantId ParticipantId => ActorIdentity.ParticipantId;
+        public PlayerSlotId PlayerSlotId => ActorIdentity.PlayerSlotId;
+        public PlayerSelectionId PlayerSelectionId => ActorIdentity.PlayerSelectionId;
+        public ActorDefinitionId ActorDefinitionId => ActorIdentity.ActorDefinitionId;
+        public ActorId ActorId => ActorIdentity.ActorId;
+        public PlayerActorId PlayerActorId => ActorIdentity.PlayerActorId;
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId
+        {
+            get
+            {
+                if (Actor == null || !Actor.RuntimeActorInstanceId.IsValid)
+                {
+                    return default;
+                }
+
+                return new ActorInstanceRuntimeId(Actor.RuntimeActorInstanceId.Value);
+            }
+        }
+        public ActorCapabilitySurface CapabilitySurface => Actor?.CapabilitySurface;
+
+        public bool IsValid => ActorIdentity.IsValid && Instance != null && Actor != null;
     }
 
     public readonly struct PlayerActorEntryPlan
@@ -45,7 +108,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public Vector3 LocalEulerAngles { get; }
         public bool IsValid => ActorIdentity.IsValid && Prefab != null;
     }
-
 
     public readonly struct PlayerActorActivityParticipationPlan
     {
@@ -84,17 +146,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
     public readonly struct PlayerActorMaterializationRecord
     {
-        public PlayerActorMaterializationRecord(
-            PlayerActorIdentityRecord actorIdentity,
-            GameObject instance)
+        public PlayerActorMaterializationRecord(PlayerActorRuntimeHandle runtimeHandle)
         {
-            ActorIdentity = actorIdentity;
-            Instance = instance;
+            RuntimeHandle = runtimeHandle;
         }
 
-        public PlayerActorIdentityRecord ActorIdentity { get; }
-        public GameObject Instance { get; }
-        public bool IsValid => ActorIdentity.IsValid && Instance != null;
+        public PlayerActorRuntimeHandle RuntimeHandle { get; }
+        public PlayerActorIdentityRecord ActorIdentity => RuntimeHandle.ActorIdentity;
+        public GameObject Instance => RuntimeHandle.Instance;
+        public IActor Actor => RuntimeHandle.Actor;
+        public bool IsValid => RuntimeHandle.IsValid;
     }
 
     public interface IPlayerActorMaterializationAdapter
@@ -202,18 +263,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public PlayerInputBindingRequirement(
             SessionActivityIdentity identity,
             string requirementId,
-            string playerSlotId,
-            string playerActorId,
-            string playerDefinitionId,
+            ActivityParticipantBinding participantBinding,
+            PlayerActorId playerActorId,
             bool required,
             string source,
             string reason)
         {
             Identity = identity;
             RequirementId = Normalize(requirementId);
-            PlayerSlotId = Normalize(playerSlotId);
-            PlayerActorId = Normalize(playerActorId);
-            PlayerDefinitionId = Normalize(playerDefinitionId);
+            ParticipantBinding = participantBinding;
+            PlayerActorId = playerActorId;
             Required = required;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -221,9 +280,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
-        public string PlayerSlotId { get; }
-        public string PlayerActorId { get; }
-        public string PlayerDefinitionId { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
+        public SessionParticipantId ParticipantId => ParticipantBinding.ParticipantId;
+        public PlayerSlotId PlayerSlotId => ParticipantBinding.PlayerSlotId;
+        public PlayerSelectionId PlayerSelectionId => ParticipantBinding.PlayerSelectionId;
+        public ActorDefinitionId ActorDefinitionId => ParticipantBinding.ActorDefinitionId;
+        public ActorId ActorId => ParticipantBinding.ActorId;
+        public PlayerActorId PlayerActorId { get; }
         public bool Required { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -231,8 +294,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
-            !string.IsNullOrWhiteSpace(PlayerSlotId) &&
-            !string.IsNullOrWhiteSpace(PlayerActorId) &&
+            ParticipantBinding.IsValid &&
+            PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -295,16 +358,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public MovementBindingRequirement(
             SessionActivityIdentity identity,
             string requirementId,
-            string playerSlotId,
-            string playerActorId,
+            ActivityParticipantBinding participantBinding,
+            PlayerActorId playerActorId,
             bool required,
             string source,
             string reason)
         {
             Identity = identity;
             RequirementId = Normalize(requirementId);
-            PlayerSlotId = Normalize(playerSlotId);
-            PlayerActorId = Normalize(playerActorId);
+            ParticipantBinding = participantBinding;
+            PlayerActorId = playerActorId;
             Required = required;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -312,8 +375,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
-        public string PlayerSlotId { get; }
-        public string PlayerActorId { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
+        public SessionParticipantId ParticipantId => ParticipantBinding.ParticipantId;
+        public PlayerSlotId PlayerSlotId => ParticipantBinding.PlayerSlotId;
+        public PlayerSelectionId PlayerSelectionId => ParticipantBinding.PlayerSelectionId;
+        public ActorDefinitionId ActorDefinitionId => ParticipantBinding.ActorDefinitionId;
+        public ActorId ActorId => ParticipantBinding.ActorId;
+        public PlayerActorId PlayerActorId { get; }
         public bool Required { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -321,8 +389,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
-            !string.IsNullOrWhiteSpace(PlayerSlotId) &&
-            !string.IsNullOrWhiteSpace(PlayerActorId) &&
+            ParticipantBinding.IsValid &&
+            PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();

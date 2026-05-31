@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
     [DisallowMultipleComponent]
@@ -17,8 +18,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         public string ActivityId => activityId;
         public int ActivityOrdinal => activityOrdinal;
         public int EntrySequence => entrySequence;
-        public string PlayerSlotId => playerSlotId;
-        public string PlayerActorId => playerActorId;
+        public PlayerSlotId PlayerSlotId => new(playerSlotId);
+        public PlayerActorId PlayerActorId => new(playerActorId);
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(pipelineId) &&
@@ -26,8 +27,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             !string.IsNullOrWhiteSpace(activityId) &&
             activityOrdinal > 0 &&
             entrySequence > 0 &&
-            !string.IsNullOrWhiteSpace(playerSlotId) &&
-            !string.IsNullOrWhiteSpace(playerActorId);
+            PlayerSlotId.IsValid &&
+            PlayerActorId.IsValid;
 
         public void Bind(
             string bindPipelineId,
@@ -35,16 +36,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             string bindActivityId,
             int bindActivityOrdinal,
             int bindEntrySequence,
-            string bindPlayerSlotId,
-            string bindPlayerActorId)
+            PlayerSlotId bindPlayerSlotId,
+            PlayerActorId bindPlayerActorId)
         {
             pipelineId = Normalize(bindPipelineId);
             sessionId = Normalize(bindSessionId);
             activityId = Normalize(bindActivityId);
             activityOrdinal = bindActivityOrdinal < 0 ? 0 : bindActivityOrdinal;
             entrySequence = bindEntrySequence < 0 ? 0 : bindEntrySequence;
-            playerSlotId = Normalize(bindPlayerSlotId);
-            playerActorId = Normalize(bindPlayerActorId);
+            playerSlotId = bindPlayerSlotId.IsValid ? bindPlayerSlotId.Value : string.Empty;
+            playerActorId = bindPlayerActorId.IsValid ? bindPlayerActorId.Value : string.Empty;
         }
 
         private static string Normalize(string value)

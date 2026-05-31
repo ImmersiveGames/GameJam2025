@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
@@ -54,16 +55,16 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             ActorParticipationExitActorOutcome outcome,
             ActorInstanceRecord instance,
             ActorParticipationRecord participation,
-            string playerActorId,
-            string playerSlotId,
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId,
             string reasonCode,
             string skipOrFailureKind)
         {
             Outcome = outcome;
             Instance = instance;
             Participation = participation;
-            PlayerActorId = Normalize(playerActorId);
-            PlayerSlotId = Normalize(playerSlotId);
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
             ReasonCode = Normalize(reasonCode);
             SkipOrFailureKind = Normalize(skipOrFailureKind);
         }
@@ -71,14 +72,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public ActorParticipationExitActorOutcome Outcome { get; }
         public ActorInstanceRecord Instance { get; }
         public ActorParticipationRecord Participation { get; }
-        public string PlayerActorId { get; }
-        public string PlayerSlotId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
         public string ReasonCode { get; }
         public string SkipOrFailureKind { get; }
         public bool IsExited => Outcome == ActorParticipationExitActorOutcome.Exited;
         public bool IsSkipped => Outcome == ActorParticipationExitActorOutcome.Skipped;
         public bool IsFailed => Outcome == ActorParticipationExitActorOutcome.Failed;
-        public bool HasResolvedPlayerIdentity => !string.IsNullOrWhiteSpace(PlayerActorId) && !string.IsNullOrWhiteSpace(PlayerSlotId);
+        public bool HasResolvedPlayerIdentity => PlayerActorId.IsValid && PlayerSlotId.IsValid;
         public bool IsValid =>
             Outcome != ActorParticipationExitActorOutcome.Unknown &&
             Instance.IsValid &&
@@ -164,8 +165,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         ActorParticipationExitActorOutcome.Skipped,
                         instance,
                         participation,
-                        string.Empty,
-                        string.Empty,
+                        default,
+                        default,
                         eligibilityReason,
                         "policy"));
                     continue;
@@ -178,15 +179,15 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         ActorParticipationExitActorOutcome.Skipped,
                         instance,
                         participation,
-                        string.Empty,
-                        string.Empty,
+                        default,
+                        default,
                         "actor_participation_not_active",
                         "not_active"));
                     continue;
                 }
 
-                string playerActorId = string.Empty;
-                string playerSlotId = string.Empty;
+                PlayerActorId playerActorId = default;
+                PlayerSlotId playerSlotId = default;
                 if (instance.Kind == ActorKind.Player &&
                     !TryResolvePlayerIdentityFromInstance(instance, out playerActorId, out playerSlotId, out string playerIdentityFailureReason))
                 {
@@ -195,8 +196,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                         ActorParticipationExitActorOutcome.Failed,
                         instance,
                         participation,
-                        string.Empty,
-                        string.Empty,
+                        default,
+                        default,
                         playerIdentityFailureReason,
                         "player_identity"));
                     continue;
@@ -207,8 +208,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     ActorParticipationExitActorOutcome.Exited,
                     instance,
                     participation,
-                    instance.Kind == ActorKind.Player ? playerActorId : string.Empty,
-                    instance.Kind == ActorKind.Player ? playerSlotId : string.Empty,
+                    instance.Kind == ActorKind.Player ? playerActorId : default,
+                    instance.Kind == ActorKind.Player ? playerSlotId : default,
                     "exited",
                     string.Empty));
             }
@@ -226,12 +227,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
         private static bool TryResolvePlayerIdentityFromInstance(
             ActorInstanceRecord instance,
-            out string playerActorId,
-            out string playerSlotId,
+            out PlayerActorId playerActorId,
+            out PlayerSlotId playerSlotId,
             out string failureReason)
         {
-            playerActorId = string.Empty;
-            playerSlotId = string.Empty;
+            playerActorId = default;
+            playerSlotId = default;
             failureReason = "player_identity_missing_in_actor_participation_record";
 
             if (!instance.IsValid || instance.ActorRoot == null)
@@ -245,9 +246,9 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 return false;
             }
 
-            playerActorId = Normalize(identity.PlayerActorId);
-            playerSlotId = Normalize(identity.PlayerSlotId);
-            if (string.IsNullOrWhiteSpace(playerActorId) || string.IsNullOrWhiteSpace(playerSlotId))
+            playerActorId = identity.PlayerActorId;
+            playerSlotId = identity.PlayerSlotId;
+            if (!playerActorId.IsValid || !playerSlotId.IsValid)
             {
                 return false;
             }

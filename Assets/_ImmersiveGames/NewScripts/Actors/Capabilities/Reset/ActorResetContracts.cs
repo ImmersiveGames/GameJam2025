@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
@@ -10,35 +11,33 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
     {
         public ActorResetActorRef(
             SessionActivityIdentity identity,
-            string actorId,
-            string actorInstanceRuntimeId,
+            ActorId actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorKind actorKind,
-            string playerActorId,
-            string playerSlotId)
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId)
         {
             Identity = identity;
-            ActorId = Normalize(actorId);
-            ActorInstanceRuntimeId = Normalize(actorInstanceRuntimeId);
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorKind = actorKind;
-            PlayerActorId = Normalize(playerActorId);
-            PlayerSlotId = Normalize(playerSlotId);
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
         }
 
         public SessionActivityIdentity Identity { get; }
-        public string ActorId { get; }
-        public string ActorInstanceRuntimeId { get; }
+        public ActorId ActorId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorKind ActorKind { get; }
-        public string PlayerActorId { get; }
-        public string PlayerSlotId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
         public bool IsPlayer => ActorKind == ActorKind.Player;
         public bool IsValid =>
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(ActorId) &&
-            !string.IsNullOrWhiteSpace(ActorInstanceRuntimeId) &&
+            ActorId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
             ActorKind != ActorKind.Unknown &&
-            (!IsPlayer || (!string.IsNullOrWhiteSpace(PlayerActorId) && !string.IsNullOrWhiteSpace(PlayerSlotId)));
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            (!IsPlayer || (PlayerActorId.IsValid && PlayerSlotId.IsValid));
     }
 
     public enum ActorResetGroup

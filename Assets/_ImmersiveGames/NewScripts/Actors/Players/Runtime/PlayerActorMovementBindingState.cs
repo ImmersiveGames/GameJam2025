@@ -1,3 +1,4 @@
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
@@ -16,8 +17,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         public string SessionId => sessionId;
         public string ActivityId => activityId;
         public int EntrySequence => entrySequence;
-        public string PlayerSlotId => playerSlotId;
-        public string PlayerActorId => playerActorId;
+        public PlayerSlotId PlayerSlotId => new(playerSlotId);
+        public PlayerActorId PlayerActorId => new(playerActorId);
         public string EndpointType => endpointType;
 
         public bool IsValid =>
@@ -25,8 +26,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             !string.IsNullOrWhiteSpace(sessionId) &&
             !string.IsNullOrWhiteSpace(activityId) &&
             entrySequence > 0 &&
-            !string.IsNullOrWhiteSpace(playerSlotId) &&
-            !string.IsNullOrWhiteSpace(playerActorId) &&
+            PlayerSlotId.IsValid &&
+            PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(endpointType);
 
         public void Bind(
@@ -34,16 +35,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             string bindSessionId,
             string bindActivityId,
             int bindEntrySequence,
-            string bindPlayerSlotId,
-            string bindPlayerActorId,
+            PlayerSlotId bindPlayerSlotId,
+            PlayerActorId bindPlayerActorId,
             string bindEndpointType)
         {
             pipelineId = Normalize(bindPipelineId);
             sessionId = Normalize(bindSessionId);
             activityId = Normalize(bindActivityId);
             entrySequence = bindEntrySequence < 0 ? 0 : bindEntrySequence;
-            playerSlotId = Normalize(bindPlayerSlotId);
-            playerActorId = Normalize(bindPlayerActorId);
+            playerSlotId = bindPlayerSlotId.IsValid ? bindPlayerSlotId.Value : string.Empty;
+            playerActorId = bindPlayerActorId.IsValid ? bindPlayerActorId.Value : string.Empty;
             endpointType = Normalize(bindEndpointType);
         }
 

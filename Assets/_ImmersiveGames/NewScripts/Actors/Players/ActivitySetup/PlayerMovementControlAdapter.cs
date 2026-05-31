@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -57,17 +58,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement control actor identity invalid at index '{index}'.");
                 }
 
-                if (!registry.TryResolveInstanceForControl(activeIdentity, actor.PlayerActorId, out GameObject actorInstance, out PlayerActorIdentityRecord resolvedIdentity) ||
-                    actorInstance == null ||
-                    !resolvedIdentity.IsValid)
+                if (!registry.TryResolveHandleForControl(activeIdentity, actor.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException($"Movement control failed: actor not found for playerActorId='{actor.PlayerActorId}'.");
                 }
 
-                if (!string.Equals(resolvedIdentity.PlayerSlotId, actor.PlayerSlotId, StringComparison.Ordinal))
+                if (handle.PlayerSlotId != actor.PlayerSlotId || handle.ParticipantId != actor.ParticipantId)
                 {
-                    throw new InvalidOperationException($"Movement control failed: slot mismatch playerActorId='{actor.PlayerActorId}' expectedSlotId='{actor.PlayerSlotId}' observedSlotId='{resolvedIdentity.PlayerSlotId}'.");
+                    throw new InvalidOperationException($"Movement control failed: handle mismatch participantId='{actor.ParticipantId}' playerActorId='{actor.PlayerActorId}' playerSlotId='{actor.PlayerSlotId}'.");
                 }
+
+                GameObject actorInstance = handle.Instance;
 
                 PlayerMoveInputReader reader = ResolveSingleComponentOrFail<PlayerMoveInputReader>(actorInstance, actor, "PlayerMoveInputReader");
                 PlayerMovementController controller = ResolveSingleComponentOrFail<PlayerMovementController>(actorInstance, actor, "PlayerMovementController");
@@ -85,6 +86,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
                     actor.PlayerActorId,
+                    actor.PlayerSlotId,
                     command.Source,
                     command.Reason);
 
@@ -147,23 +149,23 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     public sealed class PlayerMovementPermissionReceiver : IActorPermissionReceiver
     {
         private readonly IActorMovementEndpoint _movementEndpoint;
-        private readonly string _playerActorId;
-        private readonly string _playerSlotId;
+        private readonly PlayerActorId _playerActorId;
+        private readonly PlayerSlotId _playerSlotId;
         private readonly string _receiverId;
 
         public PlayerMovementPermissionReceiver(
             IActorMovementEndpoint movementEndpoint,
             string receiverId,
-            string playerActorId,
-            string playerSlotId)
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId)
         {
             _movementEndpoint = movementEndpoint ?? throw new InvalidOperationException("PlayerMovementPermissionReceiver requires non-null IActorMovementEndpoint.");
-            _playerActorId = Normalize(playerActorId);
-            _playerSlotId = Normalize(playerSlotId);
+            _playerActorId = playerActorId;
+            _playerSlotId = playerSlotId;
 
-            if (string.IsNullOrWhiteSpace(_playerActorId))
+            if (!_playerActorId.IsValid)
             {
-                throw new InvalidOperationException("PlayerMovementPermissionReceiver requires valid playerActorId.");
+                throw new InvalidOperationException("PlayerMovementPermissionReceiver requires valid PlayerActorId.");
             }
 
             _receiverId = Normalize(receiverId);
@@ -181,8 +183,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             string normalizedPipelineId = Normalize(identity.PipelineId);
             string normalizedSessionStateId = Normalize(identity.SessionStateId);
             string normalizedActivityId = Normalize(identity.ActivityId);
-            string normalizedPlayerActorId = Normalize(identity.PlayerActorId);
-            string normalizedPlayerSlotId = Normalize(identity.PlayerSlotId);
+            string normalizedPlayerActorId = identity.PlayerActorId.IsValid ? identity.PlayerActorId.Value : string.Empty;
+            string normalizedPlayerSlotId = identity.PlayerSlotId.IsValid ? identity.PlayerSlotId.Value : string.Empty;
             string slotToken = string.IsNullOrWhiteSpace(normalizedPlayerSlotId) ? "slot.unbound" : normalizedPlayerSlotId;
             return $"movement.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actor={normalizedPlayerActorId}|slot={slotToken}";
         }
@@ -199,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 return;
             }
 
-            if (!TargetsCurrentActor(fact.Command.TargetId))
+            if (!TargetsCurrentActor(fact.Command.PlayerActorId))
             {
                 return;
             }
@@ -239,18 +241,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
         }
 
-        private bool TargetsCurrentActor(string targetId)
+        private bool TargetsCurrentActor(PlayerActorId playerActorId)
         {
-            string normalized = Normalize(targetId);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return true;
-            }
-
-            return string.Equals(normalized, _playerActorId, StringComparison.Ordinal) ||
-                   (!string.IsNullOrWhiteSpace(_playerSlotId) &&
-                    string.Equals(normalized, _playerSlotId, StringComparison.Ordinal)) ||
-                   string.Equals(normalized, _receiverId, StringComparison.Ordinal);
+            return playerActorId.IsValid && playerActorId == _playerActorId;
         }
 
         private static bool IsGameplayControlPermission(ActivityCapabilityPermissionId permissionId)

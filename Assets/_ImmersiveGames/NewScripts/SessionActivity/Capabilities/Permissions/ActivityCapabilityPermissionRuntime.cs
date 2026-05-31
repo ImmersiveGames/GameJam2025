@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
@@ -85,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 _receivers.Add(receiverId, reference.Receiver);
                 DebugUtility.Log(
                     typeof(ActivityCapabilityPermissionRuntime),
-                    $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverRegistered' receiverId='{receiverId}'",
+                    $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverRegistered' receiverId='{receiverId}' playerActorId='{reference.PlayerActorId}' playerSlotId='{reference.PlayerSlotId}'",
                     DebugUtility.Colors.Info);
             }
         }
@@ -94,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             DebugUtility.Log(
                 typeof(ActivityCapabilityPermissionRuntime),
-                $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionPublished' permissionId='{command.PermissionId}' state='{command.State}' receiverId='runtime.unbound' playerActorId='{command.TargetId}' playerSlotId='' pipelineId='{command.PipelineId}' sessionStateId='{command.SessionStateId}' activityId='{command.ActivityId}' entrySequence='{command.EntrySequence}' source='{command.Source}' reason='{command.Reason}'",
+                $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionPublished' permissionId='{command.PermissionId}' state='{command.State}' receiverId='runtime.unbound' playerActorId='{command.PlayerActorId}' playerSlotId='{command.PlayerSlotId}' pipelineId='{command.PipelineId}' sessionStateId='{command.SessionStateId}' activityId='{command.ActivityId}' entrySequence='{command.EntrySequence}' source='{command.Source}' reason='{command.Reason}'",
                 DebugUtility.Colors.Info);
 
             if (!command.IsValid)
@@ -132,7 +133,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 command.Scope,
                 command.State,
                 receiverId: "runtime.unbound",
-                command.TargetId);
+                command.PlayerActorId,
+                command.PlayerSlotId);
 
             _bindingsByKey[key] = updatedBinding;
 
@@ -154,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
                 DebugUtility.Log(
                     typeof(ActivityCapabilityPermissionRuntime),
-                    $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='{pair.Key}' playerActorId='{fact.Command.TargetId}' playerSlotId='' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                    $"[OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionReceiverNotified' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='{pair.Key}' playerActorId='{fact.Command.PlayerActorId}' playerSlotId='{fact.Command.PlayerSlotId}' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                     DebugUtility.Colors.Info);
                 receiver.OnPermissionChanged(fact);
             }
@@ -164,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         {
             DebugUtility.Log(
                 typeof(ActivityCapabilityPermissionRuntime),
-                $"[OBS][ActivityCapabilityPermission] event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='runtime.unbound' playerActorId='{fact.Command.TargetId}' playerSlotId='' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
+                $"[OBS][ActivityCapabilityPermission] event='{eventName}' permissionId='{fact.Command.PermissionId}' state='{fact.Command.State}' outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' receiverId='runtime.unbound' playerActorId='{fact.Command.PlayerActorId}' playerSlotId='{fact.Command.PlayerSlotId}' pipelineId='{fact.Command.PipelineId}' sessionStateId='{fact.Command.SessionStateId}' activityId='{fact.Command.ActivityId}' entrySequence='{fact.Command.EntrySequence}' source='{fact.Command.Source}' reason='{fact.Command.Reason}'",
                 DebugUtility.Colors.Info);
         }
 
@@ -230,30 +232,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             private PermissionKey(
                 ActivityCapabilityPermissionId permissionId,
                 ActivityCapabilityPermissionScope scope,
-                string targetId)
+                PlayerActorId playerActorId)
             {
                 PermissionId = permissionId;
                 Scope = scope;
-                TargetId = targetId;
+                PlayerActorId = playerActorId;
             }
 
             private ActivityCapabilityPermissionId PermissionId { get; }
             private ActivityCapabilityPermissionScope Scope { get; }
-            private string TargetId { get; }
+            private PlayerActorId PlayerActorId { get; }
 
             public static PermissionKey From(ActivityCapabilityPermissionCommand command)
             {
                 return new PermissionKey(
                     command.PermissionId,
                     command.Scope,
-                    command.TargetId);
+                    command.PlayerActorId);
             }
 
             public bool Equals(PermissionKey other)
             {
                 return PermissionId == other.PermissionId &&
                        Scope == other.Scope &&
-                       string.Equals(TargetId, other.TargetId, StringComparison.Ordinal);
+                       PlayerActorId == other.PlayerActorId;
             }
 
             public override bool Equals(object obj)
@@ -266,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 return HashCode.Combine(
                     PermissionId,
                     Scope,
-                    TargetId ?? string.Empty);
+                    PlayerActorId);
             }
         }
     }

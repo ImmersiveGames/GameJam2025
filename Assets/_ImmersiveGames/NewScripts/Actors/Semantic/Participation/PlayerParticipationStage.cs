@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             }
 
             DebugUtility.Log(typeof(PlayerParticipationStage),
-                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredSeedEntriesCount}' optionalSeedEntries='{snapshot.OptionalSeedEntriesCount}' unmaterializedSeedEntries='{snapshot.UnmaterializedSeedEntriesCount}' requiredMaterializationPending='{snapshot.PendingRequiredSeedEntriesCount}' optionalMaterializationPending='{snapshot.PendingOptionalSeedEntriesCount}' entriesWithPrefab='{snapshot.EntriesWithPrefabCount}' entriesWithoutPrefab='{snapshot.EntriesWithoutPrefabCount}' entriesWithPlacement='{snapshot.EntriesWithPlacementCount}' entriesWithoutPlacement='{snapshot.EntriesWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
+                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
                 DebugUtility.Colors.Info);
 
             return result;
@@ -88,7 +88,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             {
                 PlayerSetEntry sourceEntry = playerSet.Entries[i];
                 seedEntries.Add(new PlayerParticipationSeedEntry(
-                    sourceEntry.PlayerId,
+                    sourceEntry.PlayerSlotId,
+                    sourceEntry.PlayerSelectionId,
+                    sourceEntry.ActorDefinitionId,
+                    sourceEntry.ActorId,
                     sourceEntry.Required,
                     sourceEntry.HasPrefabReference,
                     sourceEntry.PlacementMode,
@@ -114,7 +117,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 bool isMaterialized = record.MaterializationStatus == PlayerMaterializationStatus.Materialized;
                 bool isSkipped = record.MaterializationStatus == PlayerMaterializationStatus.Skipped;
                 materializationEntries.Add(new PlayerMaterializationEntry(
-                    seedEntry.PlayerId,
+                    seedEntry.PlayerSlotId,
+                    seedEntry.PlayerSelectionId,
+                    seedEntry.ActorDefinitionId,
+                    seedEntry.ActorId,
                     seedEntry.Required,
                     seedEntry.HasPrefabReference,
                     seedEntry.PlacementMode,
@@ -153,7 +159,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 }
 
                 readinessEntries.Add(new PlayerReadinessEntry(
-                    materializationEntry.PlayerId,
+                    materializationEntry.PlayerSlotId,
+                    materializationEntry.PlayerSelectionId,
+                    materializationEntry.ActorDefinitionId,
+                    materializationEntry.ActorId,
                     materializationEntry.Required,
                     materializationEntry.HasPrefabReference,
                     materializationEntry.PlacementMode,
@@ -177,7 +186,51 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             List<string> ids = new(max + 1);
             for (int i = 0; i < max; i++)
             {
-                ids.Add(entries[i].PlayerId);
+                ids.Add(entries[i].PlayerSlotId.ToString());
+            }
+
+            if (entries.Count > max)
+            {
+                ids.Add($"+{entries.Count - max} more");
+            }
+
+            return string.Join(", ", ids);
+        }
+
+        private static string FormatSeedActorDefinitionIds(IReadOnlyList<PlayerParticipationSeedEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return "<none>";
+            }
+
+            int max = entries.Count > 6 ? 6 : entries.Count;
+            List<string> ids = new(max + 1);
+            for (int i = 0; i < max; i++)
+            {
+                ids.Add(entries[i].ActorDefinitionId.ToString());
+            }
+
+            if (entries.Count > max)
+            {
+                ids.Add($"+{entries.Count - max} more");
+            }
+
+            return string.Join(", ", ids);
+        }
+
+        private static string FormatSeedActorIds(IReadOnlyList<PlayerParticipationSeedEntry> entries)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return "<none>";
+            }
+
+            int max = entries.Count > 6 ? 6 : entries.Count;
+            List<string> ids = new(max + 1);
+            for (int i = 0; i < max; i++)
+            {
+                ids.Add(entries[i].ActorId.ToString());
             }
 
             if (entries.Count > max)
@@ -223,7 +276,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     continue;
                 }
 
-                if (candidate.PlayerId == seedEntry.PlayerId)
+                if (candidate.ActorId == seedEntry.ActorId)
                 {
                     return candidate;
                 }

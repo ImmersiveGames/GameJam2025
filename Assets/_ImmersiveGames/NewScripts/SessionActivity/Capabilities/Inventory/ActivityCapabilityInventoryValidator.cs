@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -164,7 +165,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityCapabilityKind.ReleaseEndpoint => runtimeReference is ActivityObjectReleaseEndpointReference releaseReference && releaseReference.Endpoint != null,
                 ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference permissionReference &&
                                                            permissionReference.Receiver != null &&
-                                                           !string.IsNullOrWhiteSpace(permissionReference.PermissionId),
+                                                           permissionReference.PermissionId != ActivityCapabilityPermissionId.Unknown,
                 ActivityCapabilityKind.AttributeEndpoint => runtimeReference is ActorAttributeEndpointReference attributeReference &&
                                                             attributeReference.Endpoint != null &&
                                                             !string.IsNullOrWhiteSpace(attributeReference.ActorId),

@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class ActivityPlayerActorRegistry
     {
-        private readonly Dictionary<string, GameObject> _routeInstancesByPlayerSlotId = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, PlayerActorIdentityRecord> _routeIdentityByPlayerSlotId = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, GameObject> _activeInstancesByPlayerActorId = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, PlayerActorIdentityRecord> _activeIdentityByPlayerActorId = new(StringComparer.Ordinal);
+        private readonly Dictionary<SessionParticipantId, PlayerActorRuntimeHandle> _routeHandlesByParticipantId = new();
+        private readonly Dictionary<SessionParticipantId, PlayerActorRuntimeHandle> _activeHandlesByParticipantId = new();
+        private readonly Dictionary<PlayerActorId, PlayerActorRuntimeHandle> _activeHandlesByPlayerActorId = new();
         private SessionActivityIdentity _activeScopeIdentity;
 
         public SessionActivityIdentity ActiveScopeIdentity => _activeScopeIdentity;
@@ -22,87 +22,91 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             _activeScopeIdentity = scopeIdentity;
-            _activeInstancesByPlayerActorId.Clear();
-            _activeIdentityByPlayerActorId.Clear();
+            _activeHandlesByParticipantId.Clear();
+            _activeHandlesByPlayerActorId.Clear();
         }
 
-        public void RegisterMaterialized(PlayerActorIdentityRecord actorIdentity, GameObject instance)
+        public void RegisterMaterialized(PlayerActorRuntimeHandle handle)
         {
             EnsureActiveScopeOrFail();
-            EnsureIdentityMatchesActiveScopeOrFail(actorIdentity.Identity, "stale_or_foreign_player_actor_registration");
-
-            if (instance == null)
+            if (!handle.IsValid)
             {
-                throw new InvalidOperationException("Cannot register null player actor instance.");
+                throw new InvalidOperationException("Cannot register invalid player actor runtime handle.");
             }
 
-            if (_activeInstancesByPlayerActorId.ContainsKey(actorIdentity.PlayerActorId))
+            PlayerActorIdentityRecord actorIdentity = handle.ActorIdentity;
+            EnsureIdentityMatchesActiveScopeOrFail(actorIdentity.Identity, "stale_or_foreign_player_actor_registration");
+
+            if (_activeHandlesByParticipantId.ContainsKey(actorIdentity.ParticipantId))
+            {
+                throw new InvalidOperationException($"Duplicate player participant registration detected. participantId='{actorIdentity.ParticipantId}'.");
+            }
+
+            if (_activeHandlesByPlayerActorId.ContainsKey(actorIdentity.PlayerActorId))
             {
                 throw new InvalidOperationException($"Duplicate playerActorId registration detected. playerActorId='{actorIdentity.PlayerActorId}'.");
             }
 
-            _activeInstancesByPlayerActorId.Add(actorIdentity.PlayerActorId, instance);
-            _activeIdentityByPlayerActorId.Add(actorIdentity.PlayerActorId, actorIdentity);
-
-            if (_routeInstancesByPlayerSlotId.TryGetValue(actorIdentity.PlayerSlotId, out GameObject existing) && existing != null && existing != instance)
+            if (_routeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out PlayerActorRuntimeHandle existing) &&
+                existing.IsValid &&
+                existing.Instance != handle.Instance)
             {
-                throw new InvalidOperationException($"Incompatible retained player actor for playerSlotId='{actorIdentity.PlayerSlotId}'.");
+                throw new InvalidOperationException($"Incompatible retained player actor for participantId='{actorIdentity.ParticipantId}'.");
             }
 
-            _routeInstancesByPlayerSlotId[actorIdentity.PlayerSlotId] = instance;
-            _routeIdentityByPlayerSlotId[actorIdentity.PlayerSlotId] = actorIdentity;
+            _activeHandlesByParticipantId.Add(actorIdentity.ParticipantId, handle);
+            _activeHandlesByPlayerActorId.Add(actorIdentity.PlayerActorId, handle);
+            _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
         }
 
-        public bool TryGetRetainedForPlayerSlot(SessionActivityIdentity scopeIdentity, string playerSlotId, out GameObject instance, out PlayerActorIdentityRecord retainedIdentity)
+        public bool TryGetRetainedForParticipant(SessionActivityIdentity scopeIdentity, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
         {
             EnsureScopeMatchesOrFail(scopeIdentity);
-            string normalizedPlayerSlotId = Normalize(playerSlotId);
-            if (string.IsNullOrWhiteSpace(normalizedPlayerSlotId))
+            handle = default;
+            if (!participantId.IsValid)
             {
-                throw new InvalidOperationException("playerSlotId is required.");
+                throw new InvalidOperationException("participantId is required.");
             }
 
-            if (!_routeInstancesByPlayerSlotId.TryGetValue(normalizedPlayerSlotId, out instance) || instance == null)
+            if (!_routeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle retained) || !retained.IsValid)
             {
-                retainedIdentity = default;
                 return false;
             }
 
-            if (!_routeIdentityByPlayerSlotId.TryGetValue(normalizedPlayerSlotId, out retainedIdentity) || !retainedIdentity.IsValid)
+            if (!IsSameSessionPipeline(retained.ActorIdentity.Identity, scopeIdentity))
             {
-                throw new InvalidOperationException($"Retained identity missing for playerSlotId='{normalizedPlayerSlotId}'.");
+                throw new InvalidOperationException($"stale_or_foreign_retained_player_actor: participantId='{participantId}'.");
             }
 
-            if (!IsSameSessionPipeline(retainedIdentity.Identity, scopeIdentity))
-            {
-                throw new InvalidOperationException($"stale_or_foreign_retained_player_actor: playerSlotId='{normalizedPlayerSlotId}'.");
-            }
-
+            handle = retained;
             return true;
         }
 
-        public void RegisterRetainedParticipation(SessionActivityIdentity scopeIdentity, PlayerActorIdentityRecord actorIdentity, GameObject instance)
+        public void RegisterRetainedParticipation(SessionActivityIdentity scopeIdentity, PlayerActorRuntimeHandle handle)
         {
             EnsureScopeMatchesOrFail(scopeIdentity);
-            EnsureIdentityMatchesActiveScopeOrFail(actorIdentity.Identity, "stale_or_foreign_player_actor_reenter_registration");
-            if (instance == null)
+            if (!handle.IsValid)
             {
-                throw new InvalidOperationException($"Cannot register retained null player actor. playerSlotId='{actorIdentity.PlayerSlotId}'.");
+                throw new InvalidOperationException("Cannot register retained invalid player actor runtime handle.");
             }
 
-            _activeInstancesByPlayerActorId[actorIdentity.PlayerActorId] = instance;
-            _activeIdentityByPlayerActorId[actorIdentity.PlayerActorId] = actorIdentity;
-            _routeInstancesByPlayerSlotId[actorIdentity.PlayerSlotId] = instance;
-            _routeIdentityByPlayerSlotId[actorIdentity.PlayerSlotId] = actorIdentity;
+            PlayerActorIdentityRecord actorIdentity = handle.ActorIdentity;
+            EnsureIdentityMatchesActiveScopeOrFail(actorIdentity.Identity, "stale_or_foreign_player_actor_reenter_registration");
+            _activeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
+            _activeHandlesByPlayerActorId[actorIdentity.PlayerActorId] = handle;
+            _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
         }
 
         public IReadOnlyList<PlayerActorIdentityRecord> GetActiveActorIdentitiesOrFail(SessionActivityIdentity expectedScopeIdentity)
         {
             EnsureScopeMatchesOrFail(expectedScopeIdentity);
-            List<PlayerActorIdentityRecord> records = new(_activeIdentityByPlayerActorId.Count);
-            foreach (KeyValuePair<string, PlayerActorIdentityRecord> pair in _activeIdentityByPlayerActorId)
+            List<PlayerActorIdentityRecord> records = new(_activeHandlesByParticipantId.Count);
+            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _activeHandlesByParticipantId)
             {
-                records.Add(pair.Value);
+                if (pair.Value.IsValid)
+                {
+                    records.Add(pair.Value.ActorIdentity);
+                }
             }
 
             return records;
@@ -116,76 +120,82 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 return false;
             }
 
-            List<PlayerActorIdentityRecord> active = new(_activeIdentityByPlayerActorId.Count);
-            foreach (KeyValuePair<string, PlayerActorIdentityRecord> pair in _activeIdentityByPlayerActorId)
+            List<PlayerActorIdentityRecord> active = new(_activeHandlesByParticipantId.Count);
+            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _activeHandlesByParticipantId)
             {
-                active.Add(pair.Value);
+                if (pair.Value.IsValid)
+                {
+                    active.Add(pair.Value.ActorIdentity);
+                }
             }
 
             records = active;
             return true;
         }
 
-        public GameObject ResolveActiveInstanceOrFail(SessionActivityIdentity expectedScopeIdentity, string playerActorId)
+        public PlayerActorRuntimeHandle ResolveActiveHandleOrFail(SessionActivityIdentity expectedScopeIdentity, SessionParticipantId participantId)
         {
             EnsureScopeMatchesOrFail(expectedScopeIdentity);
-            string normalizedId = Normalize(playerActorId);
-            if (string.IsNullOrWhiteSpace(normalizedId))
+            if (!participantId.IsValid)
+            {
+                throw new InvalidOperationException("participantId is required.");
+            }
+
+            if (!_activeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+            {
+                throw new InvalidOperationException($"Active PlayerActor handle not found in registry. participantId='{participantId}'.");
+            }
+
+            return handle;
+        }
+
+        public PlayerActorRuntimeHandle ResolveActiveHandleOrFail(SessionActivityIdentity expectedScopeIdentity, PlayerActorId playerActorId)
+        {
+            EnsureScopeMatchesOrFail(expectedScopeIdentity);
+            if (!playerActorId.IsValid)
             {
                 throw new InvalidOperationException("playerActorId is required.");
             }
 
-            if (!_activeInstancesByPlayerActorId.TryGetValue(normalizedId, out GameObject instance) || instance == null)
+            if (!_activeHandlesByPlayerActorId.TryGetValue(playerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
             {
-                throw new InvalidOperationException($"Active PlayerActor instance not found in registry. playerActorId='{normalizedId}'.");
+                throw new InvalidOperationException($"Active PlayerActor handle not found in registry. playerActorId='{playerActorId}'.");
             }
 
-            return instance;
+            return handle;
         }
 
-        public bool TryResolveInstanceForControl(SessionActivityIdentity expectedIdentity, string playerActorId, out GameObject instance, out PlayerActorIdentityRecord actorIdentity)
+        public bool TryResolveHandleForControl(SessionActivityIdentity expectedIdentity, PlayerActorId playerActorId, out PlayerActorRuntimeHandle handle)
         {
-            instance = null;
-            actorIdentity = default;
-            string normalizedId = Normalize(playerActorId);
-            if (!expectedIdentity.IsValid || string.IsNullOrWhiteSpace(normalizedId))
+            handle = default;
+            if (!expectedIdentity.IsValid || !playerActorId.IsValid)
             {
                 return false;
             }
 
             if (_activeScopeIdentity.IsValid &&
                 IsSameActivityCycle(_activeScopeIdentity, expectedIdentity) &&
-                _activeInstancesByPlayerActorId.TryGetValue(normalizedId, out GameObject activeInstance) &&
-                activeInstance != null &&
-                _activeIdentityByPlayerActorId.TryGetValue(normalizedId, out PlayerActorIdentityRecord activeIdentity) &&
-                activeIdentity.IsValid)
+                _activeHandlesByPlayerActorId.TryGetValue(playerActorId, out PlayerActorRuntimeHandle activeHandle) &&
+                activeHandle.IsValid)
             {
-                instance = activeInstance;
-                actorIdentity = activeIdentity;
+                handle = activeHandle;
                 return true;
             }
 
-            foreach (KeyValuePair<string, PlayerActorIdentityRecord> pair in _routeIdentityByPlayerSlotId)
+            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
             {
-                PlayerActorIdentityRecord retained = pair.Value;
-                if (!retained.IsValid ||
-                    !string.Equals(retained.PlayerActorId, normalizedId, StringComparison.Ordinal))
+                PlayerActorRuntimeHandle retained = pair.Value;
+                if (!retained.IsValid || retained.PlayerActorId != playerActorId)
                 {
                     continue;
                 }
 
-                if (!IsSameSessionPipeline(retained.Identity, expectedIdentity))
+                if (!IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
                 {
                     continue;
                 }
 
-                if (!_routeInstancesByPlayerSlotId.TryGetValue(retained.PlayerSlotId, out GameObject retainedInstance) || retainedInstance == null)
-                {
-                    continue;
-                }
-
-                instance = retainedInstance;
-                actorIdentity = retained;
+                handle = retained;
                 return true;
             }
 
@@ -200,18 +210,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             List<PlayerActorIdentityRecord> records = new();
-            foreach (KeyValuePair<string, PlayerActorIdentityRecord> pair in _routeIdentityByPlayerSlotId)
+            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
             {
-                PlayerActorIdentityRecord retained = pair.Value;
-                if (!retained.IsValid || !IsSameSessionPipeline(retained.Identity, expectedIdentity))
+                PlayerActorRuntimeHandle retained = pair.Value;
+                if (!retained.IsValid || !IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
                 {
                     continue;
                 }
 
-                if (_routeInstancesByPlayerSlotId.TryGetValue(retained.PlayerSlotId, out GameObject retainedInstance) && retainedInstance != null)
-                {
-                    records.Add(retained);
-                }
+                records.Add(retained.ActorIdentity);
             }
 
             return records;
@@ -219,18 +226,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public void ClearAllRouteRetained()
         {
-            foreach (KeyValuePair<string, GameObject> pair in _routeInstancesByPlayerSlotId)
+            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
             {
-                if (pair.Value != null)
+                if (pair.Value.Instance != null)
                 {
-                    UnityEngine.Object.Destroy(pair.Value);
+                    UnityEngine.Object.Destroy(pair.Value.Instance);
                 }
             }
 
-            _routeInstancesByPlayerSlotId.Clear();
-            _routeIdentityByPlayerSlotId.Clear();
-            _activeInstancesByPlayerActorId.Clear();
-            _activeIdentityByPlayerActorId.Clear();
+            _routeHandlesByParticipantId.Clear();
+            _activeHandlesByParticipantId.Clear();
+            _activeHandlesByPlayerActorId.Clear();
             _activeScopeIdentity = default;
         }
 
@@ -273,11 +279,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
                 left.ActivityOrdinal == right.ActivityOrdinal &&
                 left.EntrySequence == right.EntrySequence;
-        }
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

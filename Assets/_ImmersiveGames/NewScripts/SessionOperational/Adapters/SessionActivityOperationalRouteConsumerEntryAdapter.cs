@@ -113,9 +113,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
 
                 SessionParticipantBinding participant = ResolveSessionParticipantForTechnicalEntryOrFail(entry, sessionParticipationContext);
-                string participantId = participant.ParticipantId.Value;
                 technicalEntries.Add(new SessionActivityPlayerTechnicalPlanEntry(
-                    participantId,
+                    participant.ParticipantId,
                     entry.Required,
                     entry.Prefab,
                     entry.PlacementMode,
@@ -124,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     entry.LocalRotation));
 
                 DebugUtility.Log(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
-                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerActorTechnicalPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedEntryId='{entry.PlayerId}' resolutionKey='SessionParticipantId'.");
+                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerActorTechnicalPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' resolutionKey='ActorDefinitionIdToSessionParticipantId'.");
             }
 
             return technicalEntries;
@@ -134,10 +133,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             PlayerSetDefinitionAsset.PlayerActorResolvedEntry entry,
             SessionParticipationContext sessionParticipationContext)
         {
-            string seedEntryId = Normalize(entry.PlayerId);
-            if (string.IsNullOrWhiteSpace(seedEntryId))
+            var seedActorDefinitionId = entry.ActorDefinitionId;
+            if (!seedActorDefinitionId.IsValid)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Player technical seed entry id is required.");
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Player technical seed actorDefinitionId is required.");
             }
 
             IReadOnlyList<SessionParticipantBinding> participants = sessionParticipationContext.Participants ?? Array.Empty<SessionParticipantBinding>();
@@ -149,17 +148,15 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     continue;
                 }
 
-                string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
-                string actorId = participant.ActorId.IsValid ? Normalize(participant.ActorId.Value) : string.Empty;
-                if (string.Equals(actorDefinitionId, seedEntryId, StringComparison.Ordinal) ||
-                    string.Equals(actorId, seedEntryId, StringComparison.Ordinal))
+                var actorDefinitionId = participant.ActorDefinitionId;
+                if (actorDefinitionId == seedActorDefinitionId)
                 {
                     return participant;
                 }
             }
 
             throw new InvalidOperationException(
-                $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for player technical seed entry seedEntryId='{seedEntryId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+                $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for player technical seed entry seedActorDefinitionId='{seedActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
         }
 
         private static string Normalize(string value)

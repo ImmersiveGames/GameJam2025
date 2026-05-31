@@ -1,3 +1,5 @@
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences
@@ -7,17 +9,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
         public ActivityCapabilityPermissionReceiverReference(
             string capabilityId,
             string ownerId,
-            string targetId,
+            ActorId actorId,
+            PlayerActorId playerActorId,
+            PlayerSlotId playerSlotId,
             string componentPath,
-            string permissionId,
+            ActivityCapabilityPermissionId permissionId,
             ActivityCapabilityPermissionReceiverIdentity identity,
             IActivityCapabilityPermissionReceiver receiver)
         {
             CapabilityId = Normalize(capabilityId);
             OwnerId = Normalize(ownerId);
-            TargetId = Normalize(targetId);
+            ActorId = actorId;
+            PlayerActorId = playerActorId;
+            PlayerSlotId = playerSlotId;
             ComponentPath = Normalize(componentPath);
-            PermissionId = Normalize(permissionId);
+            PermissionId = permissionId;
             Identity = identity;
             Receiver = receiver;
             ReceiverId = receiver?.ReceiverId ?? string.Empty;
@@ -25,16 +31,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.Runt
 
         public string CapabilityId { get; }
         public string OwnerId { get; }
-        public string TargetId { get; }
+        public ActorId ActorId { get; }
+        public PlayerActorId PlayerActorId { get; }
+        public PlayerSlotId PlayerSlotId { get; }
         public string ComponentPath { get; }
-        public string PermissionId { get; }
+        public ActivityCapabilityPermissionId PermissionId { get; }
         public ActivityCapabilityPermissionReceiverIdentity Identity { get; }
         public string ReceiverId { get; }
         public IActivityCapabilityPermissionReceiver Receiver { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(CapabilityId) &&
-            !string.IsNullOrWhiteSpace(PermissionId) &&
+            PermissionId != ActivityCapabilityPermissionId.Unknown &&
+            ActorId.IsValid &&
+            PlayerActorId.IsValid &&
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(ReceiverId) &&
             Receiver != null;
