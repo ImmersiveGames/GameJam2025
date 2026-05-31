@@ -2,8 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -231,6 +236,79 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
+
+    public readonly struct ActivityEntryActorPresentationSetupCommand
+    {
+        public ActivityEntryActorPresentationSetupCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryActorPresentationSetupResult
+    {
+        public ActivityEntryActorPresentationSetupResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int total,
+            int resolved,
+            int materialized,
+            int retained,
+            int skipped,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            Total = total < 0 ? 0 : total;
+            Resolved = resolved < 0 ? 0 : resolved;
+            Materialized = materialized < 0 ? 0 : materialized;
+            Retained = retained < 0 ? 0 : retained;
+            Skipped = skipped < 0 ? 0 : skipped;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int Total { get; }
+        public int Resolved { get; }
+        public int Materialized { get; }
+        public int Retained { get; }
+        public int Skipped { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public interface IActivityEntryRuntimeEndpoint : IActivityEntryPipelineBoundary
     {
         SessionActivityIdentity BuildIdentity(SessionActivityDefinition definition, SessionActivityStage stage, int entrySequence);
@@ -276,6 +354,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         void ClearCurrentActivityContentLoadedSet();
         void ClearCurrentActivityObjectContributorDiscoveryResult();
         void ClearCurrentActivitySetupInventory();
+        void ClearCurrentActorInventoryFeedResult();
     }
 
     // Bridge transitoria SA-3B0: expõe apenas state técnico canônico e actor scan targets
@@ -290,10 +369,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation);
         void ClearCurrentActivityCapabilityInventoryPreview();
-        IReadOnlyList<ActorScanTarget> BuildActorScanTargetsForCurrentEntry(
+    }
+
+    public interface IActivityEntryActorInventoryRuntimeBridge
+    {
+        ActivityNonPlayerActorRegistry GetActivitySceneActorRegistry();
+        ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
+        IReadOnlyList<PlayerActorIdentityRecord> ResolvePlayerActorCapabilityTargetsForCurrentEntry(SessionActivityIdentity identity);
+        ActorInventoryFeedResult GetCurrentActorInventoryFeedResult();
+        void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result);
+        void ClearCurrentActorInventoryFeedResult();
+    }
+
+
+
+    public interface IActivityEntryActorPresentationRuntimeBridge
+    {
+        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
+        bool TryGetActiveActorPresentationHandle(
+            ActorPresentationEndpointReference presentationReference,
+            out ActorPresentationRuntimeHandle handle);
+        void StoreActiveActorPresentationHandle(
             SessionActivityIdentity identity,
-            string source,
-            string reason);
+            ActorPresentationEndpointReference presentationReference,
+            ActorPresentationRuntimeHandle handle);
+        void SyncActiveActorPresentationHandle(
+            SessionActivityIdentity identity,
+            ActorPresentationEndpointReference presentationReference,
+            ActorPresentationRuntimeHandle handle);
+        void ReleaseActorPresentationBeforeRematerialization(
+            ActivityEntryActorPresentationSetupCommand command,
+            ActorInstanceId actorInstanceRuntimeId,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
     }
 
     public interface IActivityEntryPipeline
@@ -313,6 +421,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
             ActivityEntryObjectSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryActorPresentationSetupResult ExecuteActorPresentationSetup(
+            ActivityEntryActorPresentationSetupCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         void FailContentLoad(ActivityEntryContentLoadFailureCommand command, List<SessionActivityFact> facts);

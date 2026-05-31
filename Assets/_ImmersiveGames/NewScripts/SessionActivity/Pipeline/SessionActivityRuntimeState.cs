@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
@@ -25,6 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public ActivityContentLoadedSet CurrentActivityContentLoadedSet { get; internal set; }
         public ActivityObjectContributorDiscoveryResult CurrentActivityObjectContributorDiscoveryResult { get; internal set; }
         public ActivitySetupInventory CurrentActivitySetupInventory { get; internal set; }
+        public ActorInventoryFeedResult CurrentActorInventoryFeedResult { get; internal set; }
         public ActivityCapabilityInventory CurrentActivityCapabilityInventoryPreview { get; internal set; }
         public ActivityCapabilityInventoryValidationResult CurrentActivityCapabilityInventoryPreviewValidation { get; internal set; }
 
@@ -50,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             CurrentActivityContentLoadedSet = default;
             CurrentActivityObjectContributorDiscoveryResult = default;
             CurrentActivitySetupInventory = default;
+            CurrentActorInventoryFeedResult = default;
             CurrentActivityCapabilityInventoryPreview = default;
             CurrentActivityCapabilityInventoryPreviewValidation = default;
             _facts.Clear();
@@ -118,6 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void ClearCurrentActivityObjectContributorDiscoveryResult()
         {
             CurrentActivityObjectContributorDiscoveryResult = default;
+            CurrentActorInventoryFeedResult = default;
             CurrentActivityCapabilityInventoryPreview = default;
             CurrentActivityCapabilityInventoryPreviewValidation = default;
         }
@@ -130,6 +134,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void ClearCurrentActivitySetupInventory()
         {
             CurrentActivitySetupInventory = default;
+        }
+
+        public void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result)
+        {
+            CurrentActorInventoryFeedResult = result;
+        }
+
+        public void ClearCurrentActorInventoryFeedResult()
+        {
+            CurrentActorInventoryFeedResult = default;
         }
 
         public void SetCurrentActivityCapabilityInventoryPreview(

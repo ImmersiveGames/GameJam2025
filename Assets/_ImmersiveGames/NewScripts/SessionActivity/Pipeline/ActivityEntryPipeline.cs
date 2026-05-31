@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -36,6 +39,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private readonly IActivityEntryRuntimeEndpoint _endpoint;
         private readonly IActivityEntryObjectSetupRuntimeBridge _objectSetupBridge;
+        private readonly IActivityEntryActorInventoryRuntimeBridge _actorInventoryBridge;
+        private readonly IActivityEntryActorPresentationRuntimeBridge _actorPresentationBridge;
+        private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
+        private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
         private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
@@ -43,10 +50,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public ActivityEntryPipeline(
             IActivityEntryRuntimeEndpoint endpoint,
-            IActivityEntryObjectSetupRuntimeBridge objectSetupBridge)
+            IActivityEntryObjectSetupRuntimeBridge objectSetupBridge,
+            IActivityEntryActorInventoryRuntimeBridge actorInventoryBridge,
+            IActivityEntryActorPresentationRuntimeBridge actorPresentationBridge)
         {
             _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             _objectSetupBridge = objectSetupBridge ?? throw new ArgumentNullException(nameof(objectSetupBridge));
+            _actorInventoryBridge = actorInventoryBridge ?? throw new ArgumentNullException(nameof(actorInventoryBridge));
+            _actorPresentationBridge = actorPresentationBridge ?? throw new ArgumentNullException(nameof(actorPresentationBridge));
+            _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
+            _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
             _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
@@ -84,6 +97,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _endpoint.ClearCurrentActivityContentLoadedSet();
             _endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
             _endpoint.ClearCurrentActivitySetupInventory();
+            _endpoint.ClearCurrentActorInventoryFeedResult();
 
             _endpoint.LogEntryOwnerEvent(
                 "ActivityEntryPreparationCompleted",
@@ -332,6 +346,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             try
             {
                 ActivityContentLoadedSet loadedSet = _objectSetupBridge.GetCurrentActivityContentLoadedSet();
+                ActivityEntryActorInventoryStage.ExecuteSceneDiscovery(
+                    command,
+                    loadedSet,
+                    _endpoint,
+                    _actorInventoryBridge.GetActivitySceneActorRegistry(),
+                    facts,
+                    snapshots);
+
                 ActivityEntryObjectContributorDiscoveryStage.Execute(
                     command,
                     loadedSet,
@@ -400,10 +422,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             try
             {
                 ActivityObjectContributorDiscoveryResult discoveryResult = _objectSetupBridge.GetCurrentActivityObjectContributorDiscoveryResult();
-                IReadOnlyList<ActorScanTarget> actorTargets = _objectSetupBridge.BuildActorScanTargetsForCurrentEntry(
-                    command.Identity,
-                    command.Source,
-                    command.Reason);
+                ActorInventoryFeedResult actorInventoryFeed = ActivityEntryActorInventoryStage.ExecuteActorInventoryFeed(
+                    command,
+                    _endpoint,
+                    _actorInventoryBridge);
+                IReadOnlyList<ActorScanTarget> actorTargets = actorInventoryFeed.BuildScanTargets(command.Source);
 
                 ActivityCapabilityInventoryBuildResult buildResult = ActivityEntryCapabilityInventoryPreviewStage.Execute(
                     command,
@@ -451,6 +474,56 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Source,
                     command.Reason,
                     $"owner='ActivityEntryPipeline' block='capability_inventory_object_state' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+
+
+        public ActivityEntryActorPresentationSetupResult ExecuteActorPresentationSetup(
+            ActivityEntryActorPresentationSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryActorPresentationSetupCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryActorPresentationSetupStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='actor_presentation_setup'");
+
+            try
+            {
+                ActivityEntryActorPresentationSetupResult result = ActivityEntryActorPresentationStage.Execute(
+                    command,
+                    _endpoint,
+                    _actorPresentationBridge,
+                    _actorPresentationPlanResolver,
+                    _actorPresentationMaterializationAdapter,
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryActorPresentationSetupCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_presentation_setup' total='{result.Total}' resolved='{result.Resolved}' materialized='{result.Materialized}' retained='{result.Retained}' skipped='{result.Skipped}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryActorPresentationSetupFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_presentation_setup' error='{exception.Message}'");
                 throw;
             }
         }

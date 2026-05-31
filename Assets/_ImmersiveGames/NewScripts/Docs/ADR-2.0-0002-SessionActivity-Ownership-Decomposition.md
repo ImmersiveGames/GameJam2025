@@ -487,6 +487,103 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
+
+### Corte de normalização aplicado — SA-5A0-H1
+
+Status: **CLOSED / PASS funcional + PASS arquitetural do corte**.
+
+Objetivo:
+
+```text
+Normalizar a base lexical/arquitetural antes da auditoria SA-5A para não iniciar ActorDiscovery/ActorReadiness com a leitura torta de rails PlayerActor/NonPlayerActor.
+```
+
+Decisões aplicadas:
+
+```text
+- `NonPlayerActorDiscoveryStage` foi renomeado para `ActorSceneDiscoveryStage`.
+- O método de emissão passou de `EmitNonPlayerActorDiscoveryStage` para `EmitActorSceneDiscoveryStage`.
+- Os facts/stages de discovery de cena passaram de `NonPlayerActorDiscovery*` para `ActorSceneDiscovery*`, preservando os valores numéricos dos enums.
+- `NonPlayerActor` permanece como componente/fonte concreta scene-authored, mas não como nome do stage/corte/owner arquitetural.
+- `PlayerActorReadinessStage` foi renomeado para `ActivityParticipantReadinessStage`.
+- Os facts/stages de readiness passaram de `PlayerActorReadiness*` para `ActivityParticipantReadiness*`, preservando os valores numéricos dos enums.
+- Entries antigas e não usadas `NonPlayerActorPresentation*` foram removidas dos contratos para não sugerir rail paralelo de presentation.
+- `NonPlayerActorDiscoveryRecord` não usado foi removido dos contratos concretos.
+```
+
+Fronteira preservada:
+
+```text
+- Não move ActorPresentation.
+- Não move ActorAttributes.
+- Não move ActorParticipation.
+- Não altera Camera, Permission, Movement, Reset, Release, Deactivation ou RouteExit.
+- Não altera a semântica de activity_01/activity_02.
+- Não cria stage final para PlayerActor ou NonPlayerActor.
+```
+
+Critério de aceite:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActorSceneDiscovery preservado em activity_01 e skip/no-content preservado em activity_02
+ActivityParticipantReadiness preservado
+ActorPresentationSetupCompleted preservado
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+ActorResetQaApplied preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Resultado do smoke SA-5A0-H1
+
+Smoke manual validado após aplicação do pacote.
+
+Evidência aceita:
+
+```text
+sem erros CS observáveis pelo smoke no Editor
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+sem NonPlayerActorDiscoveryStage no log
+sem PlayerActorReadinessStage no log
+ActorPresentationSetupCompleted preservado
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+ActorResetQaApplied preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+activity_01 preserva cenário com conteúdo/contributors
+activity_02 preserva cenário negativo/no-content com skip explícito e PassedNoCommands
+```
+
+Nota de observabilidade:
+
+```text
+O smoke não emite facts literais chamados ActorSceneDiscovery ou ActivityParticipantReadiness.
+Neste corte, o aceite arquitetural é restrito à normalização lexical/contratual confirmada por compile/smoke e pela ausência dos nomes antigos de stage no log.
+Adicionar facts explícitos para ActorSceneDiscovery/ActivityParticipantReadiness pode ser tratado como hygiene futura, sem bloquear este PASS.
+```
+
+
+Após esse smoke, a auditoria `SA-5A — ActorDiscovery / ActorReadiness ownership audit` pode começar sobre uma base menos contaminada por nomes de rails concretos.
+
+---
+
 ## Roadmap normativo por fases
 
 ### Fase A — Consolidar entry lifecycle real
@@ -630,72 +727,6 @@ Sem alteração de ActorPresentation, ActorAttributes, ActorParticipation, Playe
 
 ---
 
-
-### Checkpoint SA-4A0 — ActivityObjectContributorDiscoveryStage real
-
-Status: CLOSED / PASS funcional + PASS arquitetural do corte.
-
-Auditoria do `outputv7.zip` confirmou que o corte `SA-4A0` já estava aplicado no código runtime:
-
-```text
-ActivityEntryPipeline.ExecuteSetupInfrastructure
--> ActivityEntryObjectContributorDiscoveryStage.Execute
--> ActivityEntrySetupInventoryStage.Execute
--> ActivityEntryObjectSnapshotContractValidationStage.Execute
-```
-
-Resultado arquitetural confirmado:
-
-```text
-ActivityEntryPipeline chama ActivityEntryObjectContributorDiscoveryStage antes de ActivitySetupInventory.
-ActivityObjectContributorDiscoveryStarted/Discovered/SkippedNoContent/Completed/Failed permanecem preservados no checkpoint/facts do fluxo.
-CurrentActivityObjectContributorDiscoveryResult tem writer runtime único no stage de entry.
-ActivitySetupInventory e ActivityObjectSnapshotContractValidation consomem o discovery result produzido no mesmo subfluxo de entry.
-SessionActivityPipeline não possui chamada direta a DiscoverActivityObjectContributorsOrSkipCore ou equivalente.
-Não houve alteração de ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, Movement, Camera, Permission, Release, Deactivation ou RouteExit neste checkpoint documental.
-```
-
-Evidência de smoke aceita:
-
-```text
-Boot -> Menu -> Sandbox
-CompleteActivationWindow
-QA Reset Current Player Actor
-RestartCurrentActivity
-CompleteActivationWindow
-CompleteCurrentActivity
-Activity01ToActivity02
-BackToMenu / RouteExit
-
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem foreign/stale indevido
-sem checkpointStatus='Failed'
-ActivityObjectContributorDiscovery checkpointStatus='Passed' em activity_01 entrySequence=1
-ActivityObjectContributorDiscovery checkpointStatus='Passed' em activity_01 entrySequence=2
-ActivityObjectContributorDiscovery checkpointStatus='Passed' em activity_02 entrySequence=3 com skippedNoContent='true'
-ActivityEntryObjectContributorDiscoveryStarted/Completed observados com owner='ActivityEntryPipeline'
-ActivityEntryObjectContributorDiscoverySkipped observado em activity_02 com reason='no_content_loaded_set' e owner='ActivityEntryPipeline'
-ActivityObjectSnapshotContractValidation checkpointStatus='Passed' preservado
-ActivityObjectReset checkpointStatus='PassedApplied' preservado em activity_01
-ActivityObjectReset checkpointStatus='PassedNoCommands' preservado em activity_02 no-content
-ActivityObjectSnapshotRestore checkpointStatus='Skipped' preservado sem falha
-ActorResetQaApplied preservado
-MovementBindingCompleted preservado
-CameraBindingCompleted preservado
-RestartCurrentActivity checkpointStatus='Passed'
-Activity01ToActivity02 checkpointStatus='Passed'
-RouteExitBackToMenu checkpointStatus='Passed'
-```
-
-Conclusão:
-
-```text
-SA-4A0 está fechado como PASS do corte.
-O próximo passo autorizado permanece SA-5A — ActorDiscovery / ActorReadiness ownership audit, sem criar cortes/stages canônicos por PlayerActor ou NonPlayerActor.
-```
-
 #### `SA-4B — ActivityObjectSnapshot/Reset/Restore cleanup`
 
 Objetivo: separar snapshot/reset/restore em commands/facts/adapters claros.
@@ -760,7 +791,17 @@ O próximo corte autorizado nesta área é auditoria/correção de ActorDiscover
 
 #### `SA-5B — ActorPresentation setup stage`
 
-Objetivo: mover `ActorPresentation` setup para stage real de entry.
+Objetivo: mover `ActorPresentation` setup para stage real de entry, sem transformar `ActivityEntryPipeline.cs` em novo monólito.
+
+Formulação correta:
+
+```text
+ActivityEntryPipeline ordena/chama o stage.
+ActivityEntryActorPresentationStage executa o setup determinístico.
+Policies classificam retain/materialize/skip/fail.
+Adapters/endpoints executam side-effects.
+SessionActivityPipeline perde o bloco concreto de presentation setup.
+```
 
 Critério:
 
@@ -770,6 +811,9 @@ Materialization em adapter.
 Stage não decide next activity.
 Presentation obrigatória ausente falha explicitamente.
 Sem fallback silencioso.
+ActivityEntryPipeline não recebe loop grande de Presentation.
+SessionActivityPipeline perde mais lógica concreta do que ganha.
+Release ActivityExit/RouteExit fica fora deste corte.
 ```
 
 #### `SA-5C — ActorAttributes setup stage`
@@ -1075,11 +1119,13 @@ DONE  SA-3A-H1 lifecycle log semantics + inventory writer hygiene
 DONE  SA-3B0  Entry Setup Pre-Inventory Ownership / Ordering Correction
 DONE  SA-3B1  ActivityCapabilityInventory ownership final
 
-APPLIED/PENDING SMOKE  SA-4A0  ActivityObjectContributorDiscoveryStage real
-NEXT                   SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pós-smoke ainda encontrar wrapper/debt
+DONE  SA-4A0  ActivityObjectContributorDiscoveryStage real
+      SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pós-smoke ainda encontrar wrapper/debt
       SA-4B   Object snapshot/reset/restore cleanup
 
-      SA-5A   Actor discovery/readiness ownership
+DONE  SA-5A0-H1 Actor rail naming normalization before audit
+DONE  SA-5A1 ActorInventoryFeed / ActorScanTarget ownership normalization
+DONE  SA-5B0 ActorPresentation ownership contradiction cleanup / extraction audit
       SA-5B   ActorPresentation setup stage
       SA-5C   ActorAttributes setup stage
       SA-5D   ActorParticipation enter stage
@@ -1245,3 +1291,343 @@ SA-1 — RouteExit teardown owner unification
 ```
 
 Nenhum corte deve ser aceito como PASS sem smoke/log.
+
+
+---
+
+## Corte aplicado — SA-5A1 ActorInventoryFeed / ActorScanTarget ownership normalization
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Objetivo
+
+Mover o ownership efetivo de `ActorSceneDiscovery`, `ActorInventoryFeed` e `ActorScanTarget` para o escopo de `ActivityEntryPipeline`, sem migrar ainda `ActorPresentation`, `ActorAttributes`, `ActorParticipation`, Input, Movement, Camera, Permission, Release, Deactivation ou RouteExit.
+
+### Alterações aplicadas
+
+```text
+ActivityEntryPipeline agora chama ActivityEntryActorInventoryStage.ExecuteSceneDiscovery durante ExecuteSetupInfrastructure.
+ActivityEntryPipeline agora chama ActivityEntryActorInventoryStage.ExecuteActorInventoryFeed durante ExecuteCapabilityObjectSetup.
+ActorScanTarget passa a nascer do ActorInventoryFeedResult produzido no owner da entry.
+SessionActivityPipeline deixou de executar diretamente EmitActorSceneDiscoveryStage.
+SessionActivityPipeline deixou de montar diretamente PlayerActorInstanceSource + NonPlayerActorInstanceSource.
+SessionActivityPipeline passa a consumir o ActorInventoryFeedResult corrente produzido pela entry.
+ActorSceneDiscoveryStage deixou de retornar tipos nested do SessionActivityPipeline.
+```
+
+### Fronteira preservada
+
+```text
+PlayerActor e NonPlayerActor continuam apenas como fontes concretas para o feed genérico de Actor.
+ActivityEntryPipeline é o owner do feed/targets da entry.
+SessionActivityPipeline permanece owner do lifecycle macro.
+ActivityNonPlayerActorRegistry e ActivityPlayerActorRegistry continuam índices técnicos, não owners de lifecycle.
+ActorPresentation, ActorAttributes e ActorParticipation ainda não foram movidos neste corte.
+```
+
+### Débito aceito do corte
+
+```text
+IActivityEntryActorInventoryRuntimeBridge ainda é bridge transitória para expor registries e targets já existentes ao ActivityEntryPipeline.
+Esse bridge não pode virar owner permanente nem crescer para lifecycle/policy.
+O próximo corte deve continuar reduzindo o SessionActivityPipeline sem criar ActorManager/Coordinator.
+```
+
+### Critério de aceite
+
+```text
+compilar sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityEntryActorSceneDiscoveryStarted/Completed visível com owner ActivityEntryPipeline
+ActivityEntryActorInventoryFeedStarted/Completed visível com owner ActivityEntryPipeline
+ActivityCapabilityInventoryValidationPassed preservado
+ActorPresentationSetupCompleted preservado
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+ActorResetQaApplied preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Smoke / evidência aceita
+
+```text
+Boot -> Menu -> Sandbox
+CompleteActivationWindow
+QA Reset Current Player Actor
+RestartCurrentActivity
+CompleteActivationWindow
+CompleteCurrentActivity
+Activity01ToActivity02
+BackToMenu / RouteExit
+```
+
+Resultado observado no smoke manual:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityEntryActorSceneDiscoveryStarted/Completed com owner ActivityEntryPipeline
+ActivityEntryActorInventoryFeedStarted/Completed com owner ActivityEntryPipeline
+ActivityCapabilityInventoryValidationPassed preservado
+ActorPresentationSetupCompleted preservado
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+ActorResetQaApplied preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+activity_02 negativa/no-content preservada com skip explícito e PassedNoCommands
+```
+
+Decisão: `SA-5A1` está fechado como PASS do corte. O débito restante é mover os consumidores de Actor setup (`ActorPresentation`, `ActorAttributes`, `ActorParticipation`) para stages reais, sem reabrir Feed/ScanTarget.
+
+---
+
+## Corte documental — SA-5B0 ActorPresentation Ownership Contradiction Cleanup / Extraction Audit
+
+Status: CLOSED / AUDIT + DOCUMENTATION ONLY.
+
+### Objetivo
+
+Limpar a contradição antes do `SA-5B`: mover `ActorPresentation` para o owner correto não significa adicionar lógica concreta em `ActivityEntryPipeline.cs`.
+
+Decisão normativa:
+
+```text
+ActivityEntryPipeline é owner de ordem/lifecycle da ActivityEntry.
+ActivityEntryActorPresentationStage deve ser o executor determinístico do setup.
+Policies classificam retain/materialize/skip/fail.
+Adapters/endpoints executam side-effects.
+SessionActivityPipeline deve perder o bloco concreto de ActorPresentation setup.
+```
+
+### Auditoria do bloco atual
+
+O bloco de `ActorPresentation` ainda vive majoritariamente no `SessionActivityPipeline`:
+
+```text
+_actorPresentationPlanResolver
+_actorPresentationMaterializationAdapter
+_activeActorPresentationByActorInstanceId
+ActorPresentationReleaseRail
+ActorPresentationCapabilityState
+EmitActorPresentationSetupFromInventoryStage
+ResolveActorPresentationReferencesFromInventory
+TryGetActivePresentationHandle
+CanRetainPresentationHandle
+StoreActivePresentationHandle
+RemoveActivePresentationHandle
+SyncNonPlayerPresentationHandle
+IsNonPlayerPresentationReference
+EmitActorPresentationReleaseGenericStage
+ActorParticipationReadinessPolicy consultando presentation ativa
+```
+
+Responsabilidades concretas ainda no macro pipeline:
+
+```text
+validar ActivityCapabilityInventory
+resolver ActorPresentationEndpointReference
+validar endpoint/profile
+resolver ActorPresentationResolvedPlan
+classificar retain/materialize/skip/fail
+chamar materialization adapter
+gravas estado ativo por ActorInstanceId
+sincronizar handle no ActivityNonPlayerActorRegistry
+emitir facts/snapshots/logs detalhados
+executar release por rail ActivityExit/RouteExit/BeforeRematerialization
+```
+
+### Decisão
+
+`SA-5B` só fica autorizado se for extração real, não redistribuição de monólito.
+
+Permitido:
+
+```text
+Criar ActivityEntryActorPresentationStage ou evoluir ActorPresentationSetupStage para stage real.
+Mover setup from-inventory para stage dedicado.
+Mover helpers de resolve references/retention/store state necessários ao setup.
+Manter facts/logs equivalentes.
+Preservar ActorPresentationSetupCompleted/Materialized/Retained/Ready.
+```
+
+Proibido:
+
+```text
+Não colocar loop/materialization/retention diretamente em ActivityEntryPipeline.cs.
+Não adicionar lógica concreta nova ao SessionActivityPipeline.
+Não mover ActorAttributes.
+Não mover ActorParticipationEnter.
+Não mover release/deactivation/route-exit.
+Não mexer em PlayerInput, Movement, Camera ou Permission.
+Não criar ActorManager/ActorCoordinator.
+Não criar fallback para caminho antigo.
+Não criar branch global Player/NonPlayer.
+```
+
+### Critério de aceite para SA-5B
+
+```text
+SessionActivityPipeline deve perder mais lógica concreta do que ganhar.
+ActivityEntryPipeline deve continuar pequeno: ordem, lifecycle e chamada de stage.
+ActivityEntryActorPresentationStage executa setup determinístico.
+Caminho antigo de setup no SessionActivityPipeline sai ou fica inacessível.
+Sem fallback silencioso.
+Smoke preservado.
+```
+
+### Artefato
+
+Relatório detalhado criado em:
+
+```text
+NewScripts/Docs/Reports/SA-5B0-ActorPresentation-Ownership-Audit.md
+```
+
+---
+
+## SA-5B — ActorPresentation setup stage extraction
+
+**Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
+**Data:** 2026-05-31
+
+### Decisão aplicada
+
+`ActorPresentation` setup deixou de ser executado diretamente pelo `SessionActivityPipeline` e passou a ser executado por stage dedicado da entry:
+
+```text
+ActivityEntryPipeline.ExecuteActorPresentationSetup
+-> ActivityEntryActorPresentationStage.Execute
+```
+
+O `ActivityEntryPipeline` permanece como owner de ordem/lifecycle da entry, mas não recebeu o loop concreto de presentation. A execução determinística foi extraída para `ActivityEntryActorPresentationStage`.
+
+### Mudança de ownership
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitActorPresentationSetupFromInventoryStage
+-> resolve references
+-> resolve plan
+-> retain/materialize/skip/fail
+-> store/sync handle
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> chama ActivityEntryPipeline.ExecuteActorPresentationSetup
+
+ActivityEntryPipeline
+-> chama ActivityEntryActorPresentationStage
+
+ActivityEntryActorPresentationStage
+-> resolve references
+-> resolve plan
+-> classify retain/materialize/skip/fail
+-> call presentation adapter
+-> store/sync via bridge transitória
+```
+
+### Bridge transitória
+
+Foi criada `IActivityEntryActorPresentationRuntimeBridge` para expor ao stage o mínimo necessário enquanto o estado de presentation ainda não saiu totalmente do `SessionActivityPipeline`:
+
+```text
+CurrentActivityCapabilityInventoryPreview
+TryGetActiveActorPresentationHandle
+StoreActiveActorPresentationHandle
+SyncActiveActorPresentationHandle
+ReleaseActorPresentationBeforeRematerialization
+```
+
+Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para Attributes, Participation, Movement ou Camera.
+
+### Critério de PASS pendente
+
+Não marcar PASS sem smoke/log confirmando:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityEntryActorPresentationSetupStarted/Completed com owner ActivityEntryPipeline
+ActorPresentationSetupCompleted preservado
+ActorPresentationMaterialized preservado na primeira entrada
+ActorPresentationRetained preservado no restart quando policy permite
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Smoke / evidência de PASS
+
+Smoke manual validado após `SA-5B`.
+
+Resultado mínimo confirmado:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+```
+
+Evidência de ownership:
+
+```text
+ActivityEntryActorPresentationSetupStarted owner='ActivityEntryPipeline'
+ActivityEntryActorPresentationSetupCompleted owner='ActivityEntryPipeline'
+ActivityEntryActorPresentationStage event='ActorPresentationSetupFromInventoryStarted' owner='ActivityEntryPipeline'
+ActorPresentationSetupCompleted owner='ActivityEntryPipeline'
+```
+
+Evidência funcional preservada:
+
+```text
+ActorPresentationMaterialized preservado na entry inicial
+ActorPresentationRetained preservado no restart para actors route-scoped quando policy permite
+ActorPresentation release no ActivityExit preservado
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+ActorResetQaApplied preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+Conclusão:
+
+```text
+SA-5B extraiu o setup concreto de ActorPresentation para ActivityEntryActorPresentationStage.
+ActivityEntryPipeline ficou como owner de ordem/lifecycle da entry.
+SessionActivityPipeline manteve lifecycle macro e não retomou o loop concreto de presentation.
+A bridge IActivityEntryActorPresentationRuntimeBridge permanece débito transitório controlado.
+```
+

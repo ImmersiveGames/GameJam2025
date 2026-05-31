@@ -98,29 +98,6 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
-    public readonly struct NonPlayerActorDiscoveryRecord
-    {
-        public NonPlayerActorDiscoveryRecord(
-            NonPlayerActorIdentityRecord actorIdentity,
-            NonPlayerActor actor,
-            GameObject actorInstance,
-            string sceneName)
-        {
-            ActorIdentity = actorIdentity;
-            Actor = actor;
-            ActorInstance = actorInstance;
-            SceneName = Normalize(sceneName);
-        }
-
-        public NonPlayerActorIdentityRecord ActorIdentity { get; }
-        public NonPlayerActor Actor { get; }
-        public GameObject ActorInstance { get; }
-        public string SceneName { get; }
-        public bool IsValid => ActorIdentity.IsValid && Actor != null && ActorInstance != null && !string.IsNullOrWhiteSpace(SceneName);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
-
     public readonly struct NonPlayerActorRuntimeEntry
     {
         public NonPlayerActorRuntimeEntry(

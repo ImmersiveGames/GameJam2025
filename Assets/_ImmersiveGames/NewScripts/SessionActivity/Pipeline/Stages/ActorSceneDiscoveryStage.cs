@@ -7,9 +7,35 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
-    internal static class NonPlayerActorDiscoveryStage
+    internal readonly struct ActorSceneDiscoveredRecord
     {
-        public static SessionActivityPipeline.NonPlayerActorDiscoveryStageResult Execute(
+        public ActorSceneDiscoveredRecord(NonPlayerActorIdentityRecord identity)
+        {
+            Identity = identity;
+        }
+
+        public NonPlayerActorIdentityRecord Identity { get; }
+        public bool IsValid => Identity.IsValid;
+    }
+
+    internal readonly struct ActorSceneDiscoveryStageResult
+    {
+        public ActorSceneDiscoveryStageResult(
+            bool hasAuthorizedSource,
+            IReadOnlyList<ActorSceneDiscoveredRecord> discoveredRecords)
+        {
+            HasAuthorizedSource = hasAuthorizedSource;
+            DiscoveredRecords = discoveredRecords ?? Array.Empty<ActorSceneDiscoveredRecord>();
+        }
+
+        public bool HasAuthorizedSource { get; }
+        public IReadOnlyList<ActorSceneDiscoveredRecord> DiscoveredRecords { get; }
+        public int DiscoveredCount => DiscoveredRecords?.Count ?? 0;
+    }
+
+    internal static class ActorSceneDiscoveryStage
+    {
+        public static ActorSceneDiscoveryStageResult Execute(
             SessionActivityDefinition definition,
             SessionActivityIdentity identity,
             ActivityContentLoadedSet loadedSet,
@@ -17,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityNonPlayerActorRegistry registry)
         {
             bool hasAuthorizedSource = false;
-            List<SessionActivityPipeline.NonPlayerActorDiscoveredRecord> discovered = new();
+            List<ActorSceneDiscoveredRecord> discovered = new();
             if (canDiscoverFromLoadedSet && loadedSet.HasScenes)
             {
                 hasAuthorizedSource = true;
@@ -26,13 +52,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
                     if (!record.IsValid)
                     {
-                        throw new InvalidOperationException($"Invalid loaded scene record at index='{sceneIndex}' for non-player actor discovery.");
+                        throw new InvalidOperationException($"Invalid loaded scene record at index='{sceneIndex}' for actor scene discovery.");
                     }
 
                     Scene contentScene = SceneManager.GetSceneByName(record.SceneName);
                     if (!contentScene.IsValid() || !contentScene.isLoaded)
                     {
-                        throw new InvalidOperationException($"Non-player actor discovery requires loaded scene='{record.SceneName}' activityId='{definition.ActivityId}'.");
+                        throw new InvalidOperationException($"Actor scene discovery requires loaded scene='{record.SceneName}' activityId='{definition.ActivityId}'.");
                     }
 
                     DiscoverInScene(identity, contentScene, NonPlayerActorOriginSource.ActivityContent, NonPlayerActorScope.ActivityScoped, registry, discovered);
@@ -46,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 DiscoverInScene(identity, routeScene, NonPlayerActorOriginSource.RouteScene, NonPlayerActorScope.RouteScoped, registry, discovered);
             }
 
-            return new SessionActivityPipeline.NonPlayerActorDiscoveryStageResult(hasAuthorizedSource, discovered);
+            return new ActorSceneDiscoveryStageResult(hasAuthorizedSource, discovered);
         }
 
         private static void DiscoverInScene(
@@ -55,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             NonPlayerActorOriginSource originSource,
             NonPlayerActorScope expectedScope,
             ActivityNonPlayerActorRegistry registry,
-            List<SessionActivityPipeline.NonPlayerActorDiscoveredRecord> discovered)
+            List<ActorSceneDiscoveredRecord> discovered)
         {
             GameObject[] roots = sourceScene.GetRootGameObjects();
             for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
@@ -69,7 +95,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         continue;
                     }
 
-                    actor.ValidateOrThrow($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}");
+                    actor.ValidateOrThrow($"ActorSceneDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}");
                     if (actor.ActorScope == NonPlayerActorScope.GlobalScopedUnsupported)
                     {
                         throw new InvalidOperationException($"NonPlayerActor '{actor.name}' uses unsupported actorScope='GlobalScopedUnsupported'.");
@@ -86,11 +112,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         actor.ActorKind,
                         actor.ActorScope,
                         actor.ParticipationPolicy,
-                        actor.ResolveParticipatingActivityIdsOrFail($"NonPlayerActorDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}"),
+                        actor.ResolveParticipatingActivityIdsOrFail($"ActorSceneDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}"),
                         originSource,
                         sourceScene.name);
                     registry.RegisterDiscovered(resolvedIdentity, actor, actor.gameObject);
-                    discovered.Add(new SessionActivityPipeline.NonPlayerActorDiscoveredRecord(resolvedIdentity));
+                    discovered.Add(new ActorSceneDiscoveredRecord(resolvedIdentity));
                 }
             }
         }
