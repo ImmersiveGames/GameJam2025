@@ -584,9 +584,9 @@ Sem alteração de ActorPresentation, ActorAttributes, ActorParticipation, Playe
 
 ### Checkpoint SA-4A0 — ActivityObjectContributorDiscoveryStage real
 
-Status: Applied / Pending smoke.
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
 
-Auditoria do `outputv7.zip` confirmou que o corte `SA-4A0` já está aplicado no código runtime:
+Auditoria do `outputv7.zip` confirmou que o corte `SA-4A0` já estava aplicado no código runtime:
 
 ```text
 ActivityEntryPipeline.ExecuteSetupInfrastructure
@@ -595,43 +595,56 @@ ActivityEntryPipeline.ExecuteSetupInfrastructure
 -> ActivityEntryObjectSnapshotContractValidationStage.Execute
 ```
 
-Resultado arquitetural observado:
+Resultado arquitetural confirmado:
 
 ```text
 ActivityEntryPipeline chama ActivityEntryObjectContributorDiscoveryStage antes de ActivitySetupInventory.
-ActivityObjectContributorDiscoveryStarted/Discovered/SkippedNoContent/Completed/Failed são emitidos pelo stage de entry.
-CurrentActivityObjectContributorDiscoveryResult tem writer runtime único no stage.
+ActivityObjectContributorDiscoveryStarted/Discovered/SkippedNoContent/Completed/Failed permanecem preservados no checkpoint/facts do fluxo.
+CurrentActivityObjectContributorDiscoveryResult tem writer runtime único no stage de entry.
 ActivitySetupInventory e ActivityObjectSnapshotContractValidation consomem o discovery result produzido no mesmo subfluxo de entry.
 SessionActivityPipeline não possui chamada direta a DiscoverActivityObjectContributorsOrSkipCore ou equivalente.
 Não houve alteração de ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, Movement, Camera, Permission, Release, Deactivation ou RouteExit neste checkpoint documental.
 ```
 
-Restrições preservadas:
+Evidência de smoke aceita:
 
 ```text
-Não reabrir reset/restore/inventory sem evidência de regressão.
-Não promover NonPlayerActorDiscovery ou PlayerActorReadiness a cortes/stages canônicos finais.
-Não considerar este checkpoint como PASS sem smoke/log.
-```
+Boot -> Menu -> Sandbox
+CompleteActivationWindow
+QA Reset Current Player Actor
+RestartCurrentActivity
+CompleteActivationWindow
+CompleteCurrentActivity
+Activity01ToActivity02
+BackToMenu / RouteExit
 
-Critério para fechar como `CLOSED / PASS`:
-
-```text
 sem FATAL
 sem Exception
 sem route_transition_failed
 sem foreign/stale indevido
 sem checkpointStatus='Failed'
-ActivityObjectContributorDiscovery checkpoint preservado
-ActivityObjectSnapshotContractValidation preservado
-ActivityObjectReset PassedApplied preservado
-ActivityObjectSnapshotRestore preservado
+ActivityObjectContributorDiscovery checkpointStatus='Passed' em activity_01 entrySequence=1
+ActivityObjectContributorDiscovery checkpointStatus='Passed' em activity_01 entrySequence=2
+ActivityObjectContributorDiscovery checkpointStatus='Passed' em activity_02 entrySequence=3 com skippedNoContent='true'
+ActivityEntryObjectContributorDiscoveryStarted/Completed observados com owner='ActivityEntryPipeline'
+ActivityEntryObjectContributorDiscoverySkipped observado em activity_02 com reason='no_content_loaded_set' e owner='ActivityEntryPipeline'
+ActivityObjectSnapshotContractValidation checkpointStatus='Passed' preservado
+ActivityObjectReset checkpointStatus='PassedApplied' preservado em activity_01
+ActivityObjectReset checkpointStatus='PassedNoCommands' preservado em activity_02 no-content
+ActivityObjectSnapshotRestore checkpointStatus='Skipped' preservado sem falha
 ActorResetQaApplied preservado
 MovementBindingCompleted preservado
 CameraBindingCompleted preservado
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed'
+```
+
+Conclusão:
+
+```text
+SA-4A0 está fechado como PASS do corte.
+O próximo passo autorizado permanece SA-5A — ActorDiscovery / ActorReadiness ownership audit, sem criar cortes/stages canônicos por PlayerActor ou NonPlayerActor.
 ```
 
 #### `SA-4B — ActivityObjectSnapshot/Reset/Restore cleanup`
