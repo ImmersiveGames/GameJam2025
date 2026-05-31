@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
-using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -309,6 +311,494 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
+    public readonly struct ActivityEntryActorAttributeSetupCommand
+    {
+        public ActivityEntryActorAttributeSetupCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryActorAttributeSetupResult
+    {
+        public ActivityEntryActorAttributeSetupResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int total,
+            int resolved,
+            int ready,
+            int skipped,
+            int failed,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            Total = total < 0 ? 0 : total;
+            Resolved = resolved < 0 ? 0 : resolved;
+            Ready = ready < 0 ? 0 : ready;
+            Skipped = skipped < 0 ? 0 : skipped;
+            Failed = failed < 0 ? 0 : failed;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int Total { get; }
+        public int Resolved { get; }
+        public int Ready { get; }
+        public int Skipped { get; }
+        public int Failed { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+
+    public readonly struct ActivityEntryActorParticipationEnterCommand
+    {
+        public ActivityEntryActorParticipationEnterCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryActorParticipationEnterResult
+    {
+        public ActivityEntryActorParticipationEnterResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int total,
+            int entered,
+            int skipped,
+            int failed,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            Total = total < 0 ? 0 : total;
+            Entered = entered < 0 ? 0 : entered;
+            Skipped = skipped < 0 ? 0 : skipped;
+            Failed = failed < 0 ? 0 : failed;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int Total { get; }
+        public int Entered { get; }
+        public int Skipped { get; }
+        public int Failed { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+
+    public readonly struct ActivityEntryPlayerInputBindingReference
+    {
+        public ActivityEntryPlayerInputBindingReference(
+            string requirementId,
+            ActivityParticipantRequirementKind participantKind,
+            PlayerActivityParticipantBinding participantBinding,
+            bool required)
+        {
+            RequirementId = Normalize(requirementId);
+            ParticipantKind = participantKind;
+            ParticipantBinding = participantBinding;
+            Required = required;
+        }
+
+        public string RequirementId { get; }
+        public ActivityParticipantRequirementKind ParticipantKind { get; }
+        public PlayerActivityParticipantBinding ParticipantBinding { get; }
+        public bool Required { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(RequirementId) &&
+            ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
+            ParticipantBinding.IsValid;
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryPlayerInputBindingCommand
+    {
+        public ActivityEntryPlayerInputBindingCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            IReadOnlyList<ActivityEntryPlayerInputBindingReference> participantBindings,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            ParticipantBindings = participantBindings ?? Array.Empty<ActivityEntryPlayerInputBindingReference>();
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public IReadOnlyList<ActivityEntryPlayerInputBindingReference> ParticipantBindings { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            ParticipantBindings != null &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryPlayerInputBindingResult
+    {
+        public ActivityEntryPlayerInputBindingResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int requiredCount,
+            int requiredBoundCount,
+            int totalBoundCount,
+            bool skipped,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            RequiredCount = requiredCount < 0 ? 0 : requiredCount;
+            RequiredBoundCount = requiredBoundCount < 0 ? 0 : requiredBoundCount;
+            TotalBoundCount = totalBoundCount < 0 ? 0 : totalBoundCount;
+            Skipped = skipped;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int RequiredCount { get; }
+        public int RequiredBoundCount { get; }
+        public int TotalBoundCount { get; }
+        public bool Skipped { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+
+    public readonly struct ActivityEntryPermissionTargetPreparationCommand
+    {
+        public ActivityEntryPermissionTargetPreparationCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            bool registerReceivers,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            RegisterReceivers = registerReceivers;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public bool RegisterReceivers { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryPermissionTargetPreparationResult
+    {
+        public ActivityEntryPermissionTargetPreparationResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int receiverCount,
+            bool skipped,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            ReceiverCount = receiverCount < 0 ? 0 : receiverCount;
+            Skipped = skipped;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int ReceiverCount { get; }
+        public bool Skipped { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryMovementBindingReference
+    {
+        public ActivityEntryMovementBindingReference(
+            string requirementId,
+            ActivityParticipantRequirementKind participantKind,
+            PlayerActivityParticipantBinding participantBinding,
+            bool required)
+        {
+            RequirementId = Normalize(requirementId);
+            ParticipantKind = participantKind;
+            ParticipantBinding = participantBinding;
+            Required = required;
+        }
+
+        public string RequirementId { get; }
+        public ActivityParticipantRequirementKind ParticipantKind { get; }
+        public PlayerActivityParticipantBinding ParticipantBinding { get; }
+        public bool Required { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(RequirementId) &&
+            ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
+            ParticipantBinding.IsValid;
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryMovementBindingCommand
+    {
+        public ActivityEntryMovementBindingCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            IReadOnlyList<ActivityEntryMovementBindingReference> participantBindings,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            ParticipantBindings = participantBindings ?? Array.Empty<ActivityEntryMovementBindingReference>();
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public IReadOnlyList<ActivityEntryMovementBindingReference> ParticipantBindings { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            ParticipantBindings != null &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryMovementBindingResult
+    {
+        public ActivityEntryMovementBindingResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int requiredCount,
+            int requiredBoundCount,
+            int totalBoundCount,
+            int retainedCount,
+            bool retainedExistingBinding,
+            bool skipped,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            RequiredCount = requiredCount < 0 ? 0 : requiredCount;
+            RequiredBoundCount = requiredBoundCount < 0 ? 0 : requiredBoundCount;
+            TotalBoundCount = totalBoundCount < 0 ? 0 : totalBoundCount;
+            RetainedCount = retainedCount < 0 ? 0 : retainedCount;
+            RetainedExistingBinding = retainedExistingBinding;
+            Skipped = skipped;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int RequiredCount { get; }
+        public int RequiredBoundCount { get; }
+        public int TotalBoundCount { get; }
+        public int RetainedCount { get; }
+        public bool RetainedExistingBinding { get; }
+        public bool Skipped { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryCameraBindingCommand
+    {
+        public ActivityEntryCameraBindingCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryCameraBindingResult
+    {
+        public ActivityEntryCameraBindingResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            int requiredCount,
+            bool targetBound,
+            bool skipped,
+            string reason)
+        {
+            Completed = completed;
+            Identity = identity;
+            RequiredCount = requiredCount < 0 ? 0 : requiredCount;
+            TargetBound = targetBound;
+            Skipped = skipped;
+            Reason = Normalize(reason);
+        }
+
+        public bool Completed { get; }
+        public SessionActivityIdentity Identity { get; }
+        public int RequiredCount { get; }
+        public bool TargetBound { get; }
+        public bool Skipped { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public interface IActivityEntryRuntimeEndpoint : IActivityEntryPipelineBoundary
     {
         SessionActivityIdentity BuildIdentity(SessionActivityDefinition definition, SessionActivityStage stage, int entrySequence);
@@ -383,6 +873,63 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
 
 
+    public interface IActivityEntryActorAttributeRuntimeBridge
+    {
+        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
+        void StoreActiveActorAttributeCapability(
+            SessionActivityIdentity identity,
+            ActorAttributeEndpointReference attributeReference,
+            ActorAttributeEndpoint endpoint,
+            string pipelineIdentity,
+            string activityIdentity);
+        void RemoveActiveActorAttributeCapability(ActorInstanceId actorInstanceRuntimeId);
+    }
+
+
+
+    public interface IActivityEntryActorParticipationRuntimeBridge
+    {
+        ActorParticipationReadinessEvaluation EvaluateActorParticipationReadiness(
+            SessionActivityIdentity identity,
+            ActorInstanceRecord instance);
+        void StoreActiveActorParticipation(ActorInstanceId actorInstanceRuntimeId);
+    }
+
+
+
+
+    public interface IActivityEntryPermissionTargetRuntimeBridge
+    {
+        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
+        void BeginPermissionScope(SessionActivityIdentity identity);
+        void ReplacePermissionReceivers(IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers);
+    }
+
+
+    public interface IActivityEntryMovementBindingRuntimeBridge
+    {
+        ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
+        IMovementBindingAdapter GetMovementBindingAdapter();
+        IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargets(SessionActivityIdentity identity);
+        void SetMovementControlTargets(IReadOnlyList<PlayerActorIdentityRecord> targets, bool enableAllowed);
+    }
+
+    public interface IActivityEntryCameraBindingRuntimeBridge
+    {
+        ActivitySetupInventory GetCurrentActivitySetupInventory();
+        bool TryGetCurrentActivityCapabilityInventory(
+            SessionActivityIdentity identity,
+            out ActivityCapabilityInventory inventory,
+            out ActivityCapabilityInventoryValidationResult validation);
+        IReadOnlyList<PlayerActivityParticipantBinding> GetActivityParticipantBindings();
+        bool TryResolvePlayerActorHandle(
+            SessionActivityIdentity identity,
+            PlayerActivityParticipantBinding binding,
+            out PlayerActorRuntimeHandle handle);
+        bool TryGetActivityCameraPreparationExecutor(out IActivityCameraPreparationExecutor executor);
+    }
+
+
     public interface IActivityEntryActorPresentationRuntimeBridge
     {
         ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
@@ -425,6 +972,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryActorPresentationSetupResult ExecuteActorPresentationSetup(
             ActivityEntryActorPresentationSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryActorAttributeSetupResult ExecuteActorAttributeSetup(
+            ActivityEntryActorAttributeSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryActorParticipationEnterResult ExecuteActorParticipationEnter(
+            ActivityEntryActorParticipationEnterCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryPlayerInputBindingResult ExecutePlayerInputBinding(
+            ActivityEntryPlayerInputBindingCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryPermissionTargetPreparationResult ExecutePermissionTargetPreparation(
+            ActivityEntryPermissionTargetPreparationCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryMovementBindingResult ExecuteMovementBinding(
+            ActivityEntryMovementBindingCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryCameraBindingResult ExecuteCameraBinding(
+            ActivityEntryCameraBindingCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         void FailContentLoad(ActivityEntryContentLoadFailureCommand command, List<SessionActivityFact> facts);

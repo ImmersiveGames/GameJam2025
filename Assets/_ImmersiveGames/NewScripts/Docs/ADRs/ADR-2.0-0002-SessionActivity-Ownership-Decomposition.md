@@ -439,6 +439,55 @@ O plano original `SA-3 = ActivityContent + Inventory` foi refinado pela auditori
 ---
 
 
+
+### Corte corretivo aplicado localmente — SA-5A0 + SA-5A1
+
+Status: implementado neste pacote, **pendente de smoke/log**.
+
+Objetivo:
+
+```text
+Interromper regressão de Actor rails e isolar mistura de identidade antes de continuar ActorDiscovery genérico.
+```
+
+Decisões aplicadas:
+
+```text
+SA-5A0 — Actor rail regression stopper
+- Actor é a única entrada arquitetural para discovery/readiness/setup.
+- PlayerActor/NonPlayerActor permanecem tipos concretos, mas não podem definir stage/corte/rail final.
+- Fontes transitórias podem alimentar ActorInventoryFeed/ActorScanTarget.
+- README de SessionActivity recebeu guarda anti-regressão explícita.
+
+SA-5A1 — Identity quarantine
+- PlayerActorMaterializationAdapter não pode mais definir ActorId a partir de PlayerSlotId.
+- ActorId do PlayerActor materializado passa a ser o PlayerActorId semântico.
+- Permission command expõe TargetActorId em vez de TargetId ambíguo.
+- Permission binding/reference exige TargetActorId quando scope=Actor.
+- PlayerMovementPermissionReceiver só aceita TargetActorId == PlayerActorId.
+- PlayerSlotId e ReceiverId deixam de ser fallback de matching de alvo.
+- Camera requirement matching deixa de aceitar PlayerSlotId como alias de TargetId.
+```
+
+Não congelar como PASS sem smoke contendo:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+MovementControlEnabled em ActivityRunning
+MovementControlDisabled em completion/route-exit
+sem PermissionTargetIdentityUnresolved em cenário válido
+sem fallback TargetActorId == PlayerSlotId
+sem fallback TargetActorId == ReceiverId
+ActorId, PlayerActorId e PlayerSlotId observáveis como domínios separados
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
 ### Corte de normalização aplicado — SA-5A0-H1
 
 Status: **CLOSED / PASS funcional + PASS arquitetural do corte**.
@@ -779,6 +828,51 @@ Pipeline/stage prepara/descobre.
 Reação local não vira command global quando for ação local.
 ```
 
+
+##### Status pós-smoke — SA-5C
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Evidência validada no smoke:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityEntryActorAttributeSetupStarted/Completed owner='ActivityEntryPipeline'
+ActorAttributeReady preservado
+ActorAttributeSetupCompleted preservado
+ActorPresentationSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+ActorResetQaApplied preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+Conclusão arquitetural:
+
+```text
+ActorAttributes setup saiu do caminho concreto do SessionActivityPipeline.
+ActivityEntryPipeline ficou como owner de ordem/lifecycle da entry.
+ActivityEntryActorAttributeStage executa o setup determinístico de attributes.
+SessionActivityPipeline ainda mantém lifecycle macro e ainda possui débitos posteriores em ActorParticipation/Input/Movement/Camera.
+IActivityEntryActorAttributeRuntimeBridge permanece transitória e não pode crescer como manager/coordinator.
+```
+
+Débitos remanescentes não bloqueantes deste corte:
+
+```text
+ActorParticipationEnter ainda executa no SessionActivityPipeline.
+PlayerInput, Movement e Camera ainda serão avaliados em cortes próprios.
+ActorAttribute release ainda fica fora do escopo do SA-5C e será tratado em exit/release decomposition.
+```
+
 #### `SA-5D — ActorParticipation enter stage`
 
 Objetivo: mover participation enter/readiness para stage real.
@@ -1077,12 +1171,12 @@ DONE  SA-4A0  ActivityObjectContributorDiscoveryStage real
 DONE  SA-5A0-H1 Actor rail naming normalization before audit
 DONE  SA-5A1 ActorInventoryFeed / ActorScanTarget ownership normalization
 DONE  SA-5B0 ActorPresentation ownership contradiction cleanup / extraction audit
-      SA-5B   ActorPresentation setup stage
-      SA-5C   ActorAttributes setup stage
-      SA-5D   ActorParticipation enter stage
+DONE  SA-5B   ActorPresentation setup stage
+DONE  SA-5C   ActorAttributes setup stage
+DONE  SA-5D   ActorParticipation enter stage
 
-      SA-6A   PlayerInput binding stage
-      SA-6B   Permission target preparation stage
+DONE  SA-6A   PlayerInput binding stage
+DONE  SA-6B   Permission target preparation stage
       SA-6C   Movement binding stage
       SA-6D   Camera binding stage
 
@@ -1510,9 +1604,9 @@ ReleaseActorPresentationBeforeRematerialization
 
 Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para Attributes, Participation, Movement ou Camera.
 
-### Critério de PASS pendente
+### Evidência de PASS
 
-Não marcar PASS sem smoke/log confirmando:
+Smoke validado em 2026-05-31 confirmou:
 
 ```text
 sem erros CS
@@ -1533,11 +1627,153 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-### Smoke / evidência de PASS
 
-Smoke manual validado após `SA-5B`.
 
-Resultado mínimo confirmado:
+---
+
+## SA-5C — ActorAttributes setup stage extraction
+
+**Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
+**Data:** 2026-05-31
+
+### Decisão aplicada
+
+`ActorAttributes` setup deixa de ser executado diretamente pelo `SessionActivityPipeline` e passa a ser executado por stage dedicado da entry:
+
+```text
+ActivityEntryPipeline.ExecuteActorAttributeSetup
+-> ActivityEntryActorAttributeStage.Execute
+```
+
+O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. O loop concreto de attributes fica em `ActivityEntryActorAttributeStage`.
+
+### Mudança de ownership
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitActorAttributeSetupFromInventoryStage
+-> resolve references
+-> resolve profile
+-> initialize endpoint
+-> classify ready/skip/fail
+-> store active attribute capability
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> chama ActivityEntryPipeline.ExecuteActorAttributeSetup
+
+ActivityEntryPipeline
+-> chama ActivityEntryActorAttributeStage
+
+ActivityEntryActorAttributeStage
+-> resolve references
+-> resolve profile
+-> initialize endpoint
+-> classify ready/skip/fail
+-> store active attribute capability via bridge transitória
+```
+
+### Bridge transitória
+
+Foi criada `IActivityEntryActorAttributeRuntimeBridge` para expor ao stage o mínimo necessário enquanto o state de actor attributes ainda não saiu totalmente do `SessionActivityPipeline`:
+
+```text
+CurrentActivityCapabilityInventoryPreview
+StoreActiveActorAttributeCapability
+RemoveActiveActorAttributeCapability
+```
+
+Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para Participation, Movement ou Camera.
+
+### Evidência de PASS
+
+Smoke validado em 2026-05-31 confirmou:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityEntryActorAttributeSetupStarted/Completed com owner ActivityEntryPipeline
+ActorAttributeSetupCompleted preservado
+ActorAttributeReady preservado
+ActorPresentationSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
+---
+
+## SA-5D — ActorParticipation enter stage extraction
+
+**Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
+**Data:** 2026-05-31
+
+### Decisão aplicada
+
+`ActorParticipationEnter` deixa de ser executado diretamente pelo `SessionActivityPipeline` e passa a ser executado por stage dedicado da entry:
+
+```text
+ActivityEntryPipeline.ExecuteActorParticipationEnter
+-> ActivityEntryActorParticipationStage.ExecuteEnter
+```
+
+O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. A execução concreta de participation enter fica em `ActivityEntryActorParticipationStage`.
+
+### Mudança de ownership
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitActorParticipationEnterFromInventoryStage
+-> monta ActorParticipationCommand
+-> executa ActorParticipationStageExecutor
+-> classifica entered/skipped/failed
+-> registra active participations
+-> emite ActorReady
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> chama ActivityEntryPipeline.ExecuteActorParticipationEnter
+
+ActivityEntryPipeline
+-> chama ActivityEntryActorParticipationStage
+
+ActivityEntryActorParticipationStage
+-> consome ActorInventoryFeedResult da entry
+-> aplica readiness policy via bridge transitória
+-> classifica entered/skipped/failed
+-> registra active participations via bridge transitória
+-> emite ActorReady
+```
+
+### Bridge transitória
+
+Foi criada `IActivityEntryActorParticipationRuntimeBridge` para expor ao stage o mínimo necessário enquanto o state de participation/readiness ainda não saiu totalmente do `SessionActivityPipeline`:
+
+```text
+EvaluateActorParticipationReadiness
+StoreActiveActorParticipation
+```
+
+Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para PlayerInput, Movement ou Camera.
+
+### Evidência de PASS
+
+Smoke validado em 2026-05-31 confirmou:
 
 ```text
 sem erros CS
@@ -1546,39 +1782,922 @@ sem Exception
 sem route_transition_failed
 sem foreign/stale indevido
 sem checkpointStatus='Failed'
-```
-
-Evidência de ownership:
-
-```text
-ActivityEntryActorPresentationSetupStarted owner='ActivityEntryPipeline'
-ActivityEntryActorPresentationSetupCompleted owner='ActivityEntryPipeline'
-ActivityEntryActorPresentationStage event='ActorPresentationSetupFromInventoryStarted' owner='ActivityEntryPipeline'
-ActorPresentationSetupCompleted owner='ActivityEntryPipeline'
-```
-
-Evidência funcional preservada:
-
-```text
-ActorPresentationMaterialized preservado na entry inicial
-ActorPresentationRetained preservado no restart para actors route-scoped quando policy permite
-ActorPresentation release no ActivityExit preservado
+ActivityEntryActorParticipationEnterStarted/Completed com owner ActivityEntryPipeline
+ActorParticipationEntered preservado
+ActorReady preservado
+ActorPresentationSetupCompleted preservado
 ActorAttributeSetupCompleted preservado
-ActorParticipationEnterCompleted preservado
 MovementBindingCompleted preservado
 CameraBindingCompleted preservado
-ActorResetQaApplied preservado
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-Conclusão:
+Leitura arquitetural:
 
 ```text
-SA-5B extraiu o setup concreto de ActorPresentation para ActivityEntryActorPresentationStage.
-ActivityEntryPipeline ficou como owner de ordem/lifecycle da entry.
-SessionActivityPipeline manteve lifecycle macro e não retomou o loop concreto de presentation.
-A bridge IActivityEntryActorPresentationRuntimeBridge permanece débito transitório controlado.
+ActorParticipationEnter deixou de ser execução concreta do SessionActivityPipeline.
+ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
+ActivityEntryActorParticipationStage passou a executar enter/ready determinístico.
+SessionActivityPipeline preserva lifecycle macro e ainda mantém exits/releases para cortes futuros.
 ```
 
+Débitos restantes controlados:
+
+```text
+IActivityEntryActorParticipationRuntimeBridge ainda é transitória.
+ActorParticipationExit ainda pertence ao fluxo de Exit/Release.
+PlayerInput, Movement e Camera ainda serão cortes próprios da entry.
+ActorPresentation/ActorAttribute release ainda pertence ao bloco futuro de Exit/Release decomposition.
+```
+
+---
+
+## SA-6A — PlayerInput binding stage extraction
+
+**Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
+**Data:** 2026-05-31
+
+### Decisão aplicada
+
+`PlayerInputBinding` deixa de ser executado diretamente pelo `SessionActivityPipeline` e passa a ser executado por stage dedicado da entry:
+
+```text
+ActivityEntryPipeline.ExecutePlayerInputBinding
+-> ActivityEntryPlayerInputBindingStage.Execute
+```
+
+O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. A execução concreta do binding de `PlayerInput` fica em `ActivityEntryPlayerInputBindingStage`.
+
+### Mudança de ownership
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitPlayerInputBindingStage
+-> valida participant binding
+-> monta requisitos de PlayerInput
+-> chama PlayerInputBindingAdapter
+-> classifica skip/fail/completed
+-> emite PlayerInputBindingCommandIssued/PlayerInputBound/PlayerInputBindingCompleted
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> passa referências passivas dos participant bindings da entry
+-> chama ActivityEntryPipeline.ExecutePlayerInputBinding
+
+ActivityEntryPipeline
+-> chama ActivityEntryPlayerInputBindingStage
+
+ActivityEntryPlayerInputBindingStage
+-> monta requisitos de PlayerInput
+-> chama PlayerInputBindingAdapter
+-> classifica skip/fail/completed
+-> emite PlayerInputBindingCommandIssued/PlayerInputBound/PlayerInputBindingCompleted
+```
+
+### Regra anti-monólito preservada
+
+O corte não move lógica concreta para dentro do `ActivityEntryPipeline.cs`. O pipeline de entry só ordena e valida resultado; o trabalho concreto fica no stage dedicado.
+
+O antigo `PlayerInputBindingStage` foi esvaziado como trilho ativo. O caminho canônico passa a ser `ActivityEntryPlayerInputBindingStage`.
+
+### Escopo preservado
+
+```text
+Movement não foi alterado.
+Camera não foi alterada.
+Permission não foi alterada.
+Release/Deactivation/RouteExit não foram alterados.
+OperationalInputRuntime não foi alterado.
+```
+
+### Critério de smoke validado
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityEntryPlayerInputBindingStarted/Completed com owner ActivityEntryPipeline
+PlayerInputBindingCompleted preservado
+PlayerInputActionsReboundToCanonical preservado
+ActorPresentationSetupCompleted preservado
+ActorAttributeSetupCompleted preservado
+ActorParticipationEnterCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Evidência do smoke
+
+O smoke manual após o compile hotfix confirmou o novo owner do binding de input na entry:
+
+```text
+ActivityEntryPlayerInputBindingStarted owner='ActivityEntryPipeline'
+ActivityEntryPlayerInputBindingCompleted owner='ActivityEntryPipeline'
+```
+
+Também confirmou que o rebinding canônico continuou ativo:
+
+```text
+PlayerInputActionsReboundToCanonical actorId='actor.player.primary' playerSlotId='player.slot.1'
+```
+
+Fluxos preservados:
+
+```text
+ActorPresentationSetupCompleted
+ActorAttributeSetupCompleted
+ActorParticipationEnterCompleted
+MovementBindingCompleted
+CameraBindingCompleted
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+Observação: `PlayerInputBindingCommandIssued` e `PlayerInputBound` permanecem emitidos como `SessionActivityFactKind` pelo stage, mas não aparecem como linhas `OBS` individuais no log manual. Como `ActivityEntryPlayerInputBindingCompleted`, `PlayerInputActionsReboundToCanonical`, `MovementBindingCompleted` e `CameraBindingCompleted` validam o caminho ativo, isso foi classificado como observabilidade interna não bloqueante para este corte. Se a exigência futura for log `OBS` explícito para esses facts, tratar como hygiene local de observabilidade, não como regressão funcional do SA-6A.
+
+### Leitura arquitetural
+
+```text
+PlayerInputBinding deixou de ser execução concreta do SessionActivityPipeline.
+ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
+ActivityEntryPlayerInputBindingStage executa o trabalho concreto de binding.
+Movement, Camera, Permission, Release, Deactivation e RouteExit permaneceram fora do corte.
+```
+
+Débitos restantes controlados:
+
+```text
+Movement binding ainda está no SessionActivityPipeline.
+Camera binding ainda está no SessionActivityPipeline.
+Permission target preparation ainda será corte próprio.
+ActivityEntryPlayerInputBindingStage ainda usa bridge/endpoint de entry já existente para emitir facts/snapshots.
+```
+
+
+---
+
+## Checkpoint — SA-6B Permission target preparation stage / CLOSED / PASS
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Objetivo
+
+Extrair a preparação de `PermissionTarget` para stage real da `ActivityEntry`, sem redesenhar toda identity de permission e sem alterar a reação local dos receivers.
+
+### Mudança de ownership
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitMovementBindingStage
+-> BeginPermissionScope
+-> ResolvePermissionReceiversFromInventory
+-> valida receiver identity
+-> ReplaceReceivers
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> ActivityEntryPipeline.ExecutePermissionTargetPreparation
+   -> ActivityEntryPermissionTargetPreparationStage
+      -> BeginPermissionScope
+      -> resolve PermissionTarget no ActivityCapabilityInventory
+      -> valida receiver identity
+      -> ReplaceReceivers
+
+SessionActivityPipeline.EmitMovementBindingStage
+-> continua responsável apenas pelo MovementBinding até SA-6C
+```
+
+### Regra anti-monólito preservada
+
+`ActivityEntryPipeline.cs` só ordena e valida resultado. A execução concreta fica em `ActivityEntryPermissionTargetPreparationStage`.
+
+### Escopo preservado
+
+```text
+Movement binding não foi movido.
+Camera binding não foi movido.
+Permission reaction local não foi alterada.
+ActivityCapabilityPermissionRuntime não foi redesenhado.
+Release/Deactivation/RouteExit não foram alterados.
+```
+
+### Critério de smoke esperado
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityEntryPermissionTargetPreparationStarted/Completed com owner ActivityEntryPipeline
+ActivityCapabilityPermissionReceiverRegistered preservado
+ActivityCapabilityPermissionPublished/Applied preservado para Blocked/Allowed/Unbound
+PlayerMovementPermissionApplied preservado
+MovementBindingCompleted preservado
+MovementBindingRetained preservado na activity_02
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Débito controlado
+
+`MovementBinding` ainda está no `SessionActivityPipeline` e será tratado no `SA-6C`. O `SA-6B` apenas separa a preparação dos permission targets para que `MovementBinding` não continue sendo o owner indireto de receiver discovery/registration.
+
+
+---
+
+## Checkpoint — SA-6C Movement binding stage / CLOSED / PASS
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Objetivo
+
+Extrair o binding concreto de Movement para um stage real da `ActivityEntry`, sem alterar `PermissionRuntime`, reaction local, Camera, Release, Deactivation ou RouteExit.
+
+### Mudança de ownership
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitMovementBindingStage
+-> monta MovementBindingRequirement
+-> chama MovementBindingAdapter
+-> emite PlayerMovementBound
+-> grava movement control targets
+-> classifica retained/skip/fail/completed
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> ActivityEntryPipeline.ExecuteMovementBinding
+   -> ActivityEntryMovementBindingStage
+      -> monta MovementBindingRequirement
+      -> chama MovementBindingAdapter
+      -> emite PlayerMovementBound / MovementBindingRetained / MovementBindingCompleted
+      -> grava movement control targets via bridge mínima
+
+SessionActivityPipeline
+-> continua apenas lifecycle macro e chama CameraBinding após o resultado da entry
+```
+
+### Correções de compile aplicadas antes do smoke
+
+O primeiro pacote `SA-6C` exigiu dois hotfixes de compilação antes do smoke:
+
+```text
+SA-6C-compilefix-movement-binding-stage
+- restaurou SessionActivityPipeline.cs completo com TryGetSnapshotPayloadForSaveOnExit preservado.
+
+SA-6C-compilefix2-movement-binding-references
+- restaurou BuildMovementBindingReferences(...) como helper passivo para montar ActivityEntryMovementBindingReference.
+```
+
+Esses hotfixes não reintroduziram execução concreta de Movement no `SessionActivityPipeline`.
+
+### Evidência do smoke
+
+O smoke manual confirmou o novo owner do binding de Movement na entry:
+
+```text
+ActivityEntryMovementBindingStarted owner='ActivityEntryPipeline'
+MovementBindingStarted owner='ActivityEntryPipeline'
+PlayerMovementBound owner='ActivityEntryPipeline'
+MovementBindingCompleted owner='ActivityEntryPipeline'
+ActivityEntryMovementBindingCompleted owner='ActivityEntryPipeline'
+```
+
+Na `activity_02`, que é cenário negativo/no-content, o binding preservou retenção explícita:
+
+```text
+MovementBindingStarted activityId='activity_02' owner='ActivityEntryPipeline'
+MovementBindingRetained activityId='activity_02' owner='ActivityEntryPipeline'
+MovementBindingCompleted activityId='activity_02' owner='ActivityEntryPipeline' status='RetainedExistingBinding'
+ActivityEntryMovementBindingCompleted activityId='activity_02' retainedExisting='True'
+```
+
+O fluxo de permission permaneceu preservado:
+
+```text
+ActivityCapabilityPermissionPublished/Applied state='Blocked'
+PlayerMovementPermissionApplied state='Blocked'
+ActivityCapabilityPermissionPublished/Applied state='Allowed'
+PlayerMovementPermissionApplied state='Allowed'
+ActivityCapabilityPermissionPublished/Applied state='Unbound'
+PlayerMovementPermissionApplied state='Unbound'
+```
+
+Fluxos preservados:
+
+```text
+CameraBindingCompleted
+MovementControlEnabled
+MovementControlDisabled/Unbound via permission no exit/restart
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+```
+
+### Leitura arquitetural
+
+```text
+MovementBinding deixou de ser execução concreta do SessionActivityPipeline.
+ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
+ActivityEntryMovementBindingStage executa o trabalho concreto de binding.
+PermissionRuntime continua command/fact/snapshot e não decide lifecycle.
+PlayerMovementPermissionReceiver continua reaction local.
+Camera, Release, Deactivation e RouteExit permaneceram fora do corte.
+```
+
+### Regra anti-monólito preservada
+
+`ActivityEntryPipeline.cs` só ordena e valida resultado. A execução concreta fica em `ActivityEntryMovementBindingStage`. O stage legado `PlayerMovementBindingStage` foi esvaziado para não manter trilho paralelo ativo.
+
+### Escopo preservado
+
+```text
+PermissionRuntime não foi redesenhado.
+Permission target preparation permanece no SA-6B.
+Camera binding não foi movido.
+MovementControl enable/disable não foi movido.
+Release/Deactivation/RouteExit não foram alterados.
+```
+
+### Débito controlado
+
+`IActivityEntryMovementBindingRuntimeBridge` é transitória e expõe apenas registry, adapter e targets de movement control enquanto o state de MovementControl ainda está no `SessionActivityPipeline`. Camera binding permanece como próximo corte.
+
+## SA-6D — Camera binding stage — CLOSED / PASS funcional + PASS arquitetural do corte
+
+### Objetivo
+
+Extrair o binding concreto de Camera para um stage real da `ActivityEntry`, sem alterar `CameraPresentation` operacional, ActivityCamera preparation/release, Release, Deactivation ou RouteExit.
+
+### Mudança de ownership validada
+
+Antes:
+
+```text
+SessionActivityPipeline.EmitCameraBindingStage
+-> lê ActivitySetupInventory
+-> lê ActivityCapabilityInventory
+-> resolve CameraTarget por participante/player actor
+-> chama IActivityCameraPreparationExecutor.TryRebindTargets
+-> emite PlayerCameraEndpointResolved / ActivityCameraTargetBound / CameraBindingCompleted
+```
+
+Depois validado no smoke:
+
+```text
+SessionActivityPipeline
+-> ActivityEntryPipeline.ExecuteCameraBinding
+   -> ActivityEntryCameraBindingStage
+      -> resolve CameraTarget por participante/player actor
+      -> chama IActivityCameraPreparationExecutor.TryRebindTargets
+      -> emite PlayerCameraEndpointResolved / ActivityCameraTargetBound / CameraBindingCompleted
+```
+
+### Evidência funcional do smoke
+
+O smoke manual pós-compilefix confirmou:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+```
+
+E confirmou o novo owner no binding inicial da `activity_01`:
+
+```text
+ActivityEntryCameraBindingStarted owner='ActivityEntryPipeline'
+CameraBindingStarted owner='ActivityEntryPipeline'
+PlayerCameraEndpointResolved owner='ActivityEntryPipeline'
+ActivityCameraTargetBound owner='ActivityEntryPipeline'
+CameraBindingCompleted owner='ActivityEntryPipeline'
+ActivityEntryCameraBindingCompleted owner='ActivityEntryPipeline' required='1' targetBound='True' skipped='False'
+```
+
+No restart da `activity_01`, o mesmo stage foi reexecutado para `entrySequence='2'` e preservou target binding/rebind:
+
+```text
+ActivityEntryCameraBindingStarted owner='ActivityEntryPipeline'
+ActivityCameraTargetsRebound
+ActivityCameraTargetBound owner='ActivityEntryPipeline'
+CameraBindingCompleted owner='ActivityEntryPipeline'
+```
+
+Na `activity_02` negativa/no-content, o skip explícito foi preservado:
+
+```text
+ActivityEntryCameraBindingStarted owner='ActivityEntryPipeline'
+CameraBindingSkippedNoRequiredCamera owner='ActivityEntryPipeline' reasonCode='no_activity_camera_requirement'
+ActivityEntryCameraBindingCompleted owner='ActivityEntryPipeline' required='0' targetBound='False' skipped='True'
+```
+
+### Checkpoints preservados
+
+```text
+MovementBindingCompleted preservado
+ActivityCapabilityPermissionPublished/Applied preservado para Blocked/Allowed/Unbound
+PlayerMovementPermissionApplied preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Leitura arquitetural
+
+```text
+CameraBinding deixou de ser execução concreta do SessionActivityPipeline.
+ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
+ActivityEntryCameraBindingStage executa o trabalho concreto de binding.
+CameraPresentation operacional continua no owner atual.
+ActivityCamera preparation/release não foi movido.
+Release, Deactivation e RouteExit permaneceram fora do corte.
+```
+
+### Regra anti-monólito preservada
+
+`ActivityEntryPipeline.cs` só ordena e valida resultado. A execução concreta fica em `ActivityEntryCameraBindingStage`. Não foi criado trilho paralelo ativo para camera binding.
+
+### Débito controlado
+
+`IActivityEntryCameraBindingRuntimeBridge` permanece transitória e expõe apenas inventory, participantes, resolução de handle e `IActivityCameraPreparationExecutor` enquanto `CameraPresentation` e o state de ActivityCamera continuam nos owners atuais.
+
+## SA-7A — Exit / Release Decomposition Audit — CLOSED / AUDIT ONLY
+
+### Contexto
+
+Após os cortes SA-5A1..SA-6D, a entrada da Activity já possui stages explícitos para ActorInventoryFeed, ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, PermissionTargetPreparation, Movement e Camera.
+
+A saída ainda concentra release, teardown, snapshot e unload dentro do `SessionActivityPipeline`.
+
+### Decisão
+
+```text
+Não criar ActivityExitPipeline agora.
+Manter SessionActivityPipeline como owner macro de saída por enquanto.
+Extrair primeiro stages determinísticos de exit/release chamados pelo SessionActivityPipeline.
+```
+
+### Razão
+
+Exit ainda mistura rails e timings diferentes:
+
+```text
+CompleteCurrentActivity
+RestartCurrentActivity
+RouteExit
+NavigationExit
+DeactivationWindow
+transition blackout
+ActorPresentation release
+ActorAttribute release
+ActorParticipation exit
+ActivityObject snapshot/release
+ActivityContent unload async
+RouteActivitySave payload
+ClosedForRouteExit
+```
+
+Criar `ActivityExitPipeline` agora produziria owner duplicado de lifecycle. A extração deve começar por stages sem alterar ordering.
+
+### Resultado da auditoria
+
+O próximo corte autorizado é:
+
+```text
+SA-7B — ActivityExitActorTeardownStage
+```
+
+Objetivo:
+
+```text
+Extrair o teardown de actors para stage dedicado:
+- ActorPresentation release/retain por rail;
+- ActorAttribute release;
+- ActorParticipation exit;
+- player participation exit quando aplicável.
+```
+
+### Escopo proibido no SA-7B
+
+```text
+Não criar ActivityExitPipeline.
+Não mover DeactivationWindow.
+Não mover ActivityContentRelease async.
+Não mover ActivityObject snapshot/release.
+Não mover CompleteRouteExitClosure.
+Não alterar RouteActivitySave.
+Não alterar CameraPresentation operacional release.
+Não alterar PermissionRuntime/reaction local.
+Não criar branch global player/nonplayer.
+```
+
+### Critério de aceite do SA-7B
+
+```text
+SessionActivityPipeline decide quando o teardown roda.
+ActivityExitActorTeardownStage executa o teardown determinístico.
+ActorPresentationReleased/Skipped preservado.
+ActorAttributeReleased preservado.
+ActorParticipationExited preservado.
+Ordering de Restart/Activity01ToActivity02/RouteExit preservado.
+ActivityObjectSnapshotCapture preservado.
+ActivityObjectRelease preservado.
+ActivityContentRelease preservado.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+sem FATAL / Exception / route_transition_failed / foreign/stale.
+```
+
+### Relatório
+
+Relatório detalhado:
+
+```text
+NewScripts/Docs/Reports/SA-7A-Exit-Release-Decomposition-Audit.md
+```
+
+## SA-7B — ActivityExitActorTeardownStage — CLOSED / PASS funcional + PASS arquitetural do corte
+
+### Objetivo
+
+Extrair o teardown concreto de actors da saída da Activity para um stage dedicado, sem criar `ActivityExitPipeline` e sem alterar `DeactivationWindow`, `ActivityContentRelease`, `ActivityObject snapshot/release`, `RouteActivitySave`, `CameraPresentation` operacional ou `RouteExit` macro.
+
+### Mudança de ownership aplicada
+
+Antes:
+
+```text
+SessionActivityPipeline
+-> EmitActorPresentationReleaseGenericStage
+-> EmitActorAttributeReleaseFromInventoryStage
+-> EmitActorParticipationExitFromInventoryStage
+-> PlayerActorParticipationExit quando aplicável
+```
+
+Depois:
+
+```text
+SessionActivityPipeline
+-> decide quando o teardown roda conforme rail atual
+-> ActivityExitActorTeardownStage
+   -> ActorPresentation release/retain por rail
+   -> ActorAttribute release
+   -> ActorParticipation exit
+   -> PlayerActorParticipation exit quando aplicável
+```
+
+### Regra preservada
+
+```text
+SessionActivityPipeline continua owner do lifecycle macro de saída.
+ActivityExitActorTeardownStage executa apenas o teardown determinístico de actors.
+Não foi criado ActivityExitPipeline.
+```
+
+### Escopo preservado
+
+```text
+DeactivationWindow não foi movida.
+ActivityObjectSnapshotCapture não foi movido.
+ActivityObjectRelease não foi movido.
+ActivityContent scene unload async não foi movido.
+CompleteRouteExitClosure não foi movido.
+RouteActivitySave não foi alterado.
+CameraPresentation operacional release não foi alterado.
+PermissionRuntime/reaction local não foi alterado.
+```
+
+### Bridge transitória
+
+`IActivityExitActorTeardownRuntimeBridge` foi criada como ponte mínima para o stage acessar state runtime ainda preso no `SessionActivityPipeline`:
+
+```text
+active ActorPresentation handles
+active ActorAttribute capabilities
+active ActorParticipation records
+player participant binding resolution
+player actor participation adapter/registry
+```
+
+Essa bridge é transitória e não deve virar manager/coordinator.
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActorPresentationReleaseStarted/Released/Skipped/Completed preservado
+ActorAttributeReleaseStarted/Released/Completed preservado
+ActorParticipationExitStarted/Exited/Completed preservado
+PlayerActorParticipationExit preservado quando aplicável
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Smoke / evidência
+
+Smoke manual validado após compile fix de `ActorParticipationExitCommand`.
+
+O log confirmou:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityExitActorTeardownStage como owner visível do teardown de actors
+ActorPresentationReleaseStarted/Released/Skipped/Completed preservado
+ActorAttributeReleaseStarted/Released/Completed preservado
+ActorParticipationExitStarted/Exited/Completed preservado
+ActorParticipationPlayerExitStarted/Completed preservado
+ActivityCapabilityPermission Unbound preservado durante player exit
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+Evidência funcional relevante:
+
+```text
+ActivityExitActorTeardownStage executa ActorPresentation release no rail ActivityExit e RouteExit.
+ActivityExitActorTeardownStage executa ActorAttribute release sem failures.
+ActivityExitActorTeardownStage executa ActorParticipation exit sem failures.
+ActivityObject snapshot/release/unregister continuam no caminho existente e passam.
+ActivityContent scene unload async continua preservado fora do corte.
+RouteExitBackToMenu aplica Menu route após ClosedForRouteExit.
+```
+
+### Status
+
+`SA-7B` está `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Débito controlado
+
+```text
+IActivityExitActorTeardownRuntimeBridge permanece transitória.
+ActivityObject snapshot/release ainda pertence a corte futuro.
+ActivityContent unload async ainda pertence a corte futuro.
+DeactivationWindow e RouteExit macro continuam ownership do SessionActivityPipeline.
+```
+
+
+
+## SA-7C — ActivityObject Snapshot / Release / Unregister / Content Release Audit
+
+Status: `CLOSED / AUDIT ONLY`
+
+### Decisão
+
+O SA-7C confirmou que o bloco de objetos da saída não deve ser movido em um único patch.
+
+A ordem segura passa a ser:
+
+```text
+SA-7D — ActivityObjectSnapshotCaptureStage
+SA-7E — ActivityObjectReleaseStage
+SA-7F — ActivityObjectContributorUnregisterStage
+SA-7G — ActivityContentReleaseAsync audit/extraction
+```
+
+### Motivo
+
+O fluxo atual mistura responsabilidades diferentes:
+
+```text
+Snapshot capture produz payload para RouteActivitySave.
+Object release executa side-effects em endpoints locais.
+Contributor unregister limpa discovery/runtime state.
+ActivityContentRelease controla pending operation e scene unload async.
+```
+
+Mover tudo junto aumentaria risco de regressão em restart, activity transition e route-exit.
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída.
+Stages dedicados executam passos determinísticos.
+RouteActivitySave continua consumidor de payload, não owner de snapshot capture.
+SaveRuntime continua persistência, não decide snapshot.
+```
+
+### Bridge identificada
+
+A classe interna `ActivityObjectExitStage` foi classificada como bridge transitória, não stage Base 2.0 real:
+
+```text
+CaptureSnapshot -> EmitObjectSnapshotCaptureStageCore
+Release -> EmitObjectReleaseStageCore
+UnregisterContributors -> EmitObjectContributorUnregisterStageCore
+```
+
+Ela deve ser substituída gradualmente por stages reais em arquivos próprios.
+
+### Próximo corte aceito
+
+`SA-7D — ActivityObjectSnapshotCaptureStage`.
+
+Escopo permitido:
+
+```text
+Extrair snapshot capture para stage dedicado.
+Manter TryGetSnapshotPayloadForSaveOnExit como API pública.
+Registrar payload/failure flags por bridge mínima.
+Preservar facts/checkpoints de ActivityObjectSnapshotCapture.
+```
+
+Escopo proibido:
+
+```text
+Não mover ObjectRelease.
+Não mover ContributorUnregister.
+Não mover ActivityContentRelease async.
+Não alterar RouteActivitySave.
+Não criar ActivityExitPipeline.
+Não executar save dentro do stage.
+```
+
+### Status
+
+`SA-7C` está `CLOSED / AUDIT ONLY`.
+
+
+## SA-7D — ActivityObjectSnapshotCaptureStage
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`
+
+### Decisão
+
+O snapshot capture de objetos da Activity foi extraído do bloco concreto do `SessionActivityPipeline` para um stage dedicado:
+
+```text
+SessionActivityPipeline
+-> decide quando a saída/dematerialization exige snapshot
+-> ActivityObjectSnapshotCaptureStage
+   -> valida discovery/result atual
+   -> resolve SnapshotProvider pelo ActivityCapabilityInventory
+   -> executa ActivityObjectSnapshotCaptureCommand
+   -> registra payload/failure flags por bridge mínima
+   -> preserva facts/checkpoints de ActivityObjectSnapshotCapture
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída.
+ActivityObjectSnapshotCaptureStage executa apenas o passo determinístico de captura.
+RouteActivitySave continua consumidor do payload; não decide capture.
+SaveRuntime continua backend/executor de persistência; não participa deste stage.
+```
+
+### Escopo aplicado
+
+```text
+Criado ActivityObjectSnapshotCaptureStage.
+Criada bridge transitória IActivityObjectSnapshotCaptureRuntimeBridge.
+EmitObjectSnapshotCaptureStage agora delega ao stage dedicado.
+Removido o caminho ativo EmitObjectSnapshotCaptureStageCore do macro pipeline.
+ActivityObjectExitStage deixou de possuir CaptureSnapshot e permanece só como bridge transitória para Release/Unregister.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+ObjectRelease não foi movido.
+ContributorUnregister não foi movido.
+ActivityContentRelease async não foi movido.
+RouteActivitySave não foi alterado.
+TryGetSnapshotPayloadForSaveOnExit foi preservado como API pública.
+ActivityExitPipeline não foi criado.
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityObjectSnapshotCaptureStarted/Captured/Completed preservado
+ActivityObjectSnapshotCapture checkpoint PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+RouteActivitySave payload continua consumível quando existir snapshot
+```
+
+### Status
+
+`SA-7D` está `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+
+### Smoke / evidência SA-7D
+
+Smoke manual validado após compile. O log confirmou:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityObjectSnapshotCaptureStage executado como owner do snapshot capture
+ActivityObjectSnapshotCaptureStarted preservado
+ActivityObjectSnapshotCaptureCompleted preservado
+ActivityObjectSnapshotCapture checkpointStatus='Passed'
+ActivityObjectRelease checkpointStatus='Passed'
+ActivityObjectContributorUnregister checkpointStatus='Passed'
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed'
+RouteActivitySaveSaveOnExitStageCompleted preservado no BackToMenu
+```
+
+Evidência observada:
+
+```text
+ActivityObjectSnapshotCaptureStarted owner='ActivityObjectSnapshotCaptureStage' activityId='activity_01' entrySequence='1'
+ActivityObjectSnapshotCaptureCompleted owner='ActivityObjectSnapshotCaptureStage' activityId='activity_01' entrySequence='1' capturedCount='1' failedCount='0' targetIds='test_object_01' hasTransformPayload='true'
+ActivityObjectSnapshotCapture checkpointStatus='Passed' activityId='activity_01' entrySequence='1' capturedCount='1' captureCompleted='true' captureFailed='false'
+
+ActivityObjectSnapshotCaptureCompleted owner='ActivityObjectSnapshotCaptureStage' activityId='activity_01' entrySequence='2' capturedCount='1' failedCount='0' targetIds='test_object_01' hasTransformPayload='true'
+ActivityObjectSnapshotCapture checkpointStatus='Passed' activityId='activity_01' entrySequence='2' capturedCount='1' captureCompleted='true' captureFailed='false'
+
+ActivityObjectSnapshotCaptureCompleted owner='ActivityObjectSnapshotCaptureStage' activityId='activity_02' entrySequence='3' capturedCount='0' failedCount='0' targetIds='<none>' hasTransformPayload='false'
+ActivityObjectSnapshotCapture checkpointStatus='Passed' activityId='activity_02' entrySequence='3' capturedCount='0' captureCompleted='true' captureFailed='false'
+
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed'
+```
+
+Conclusão arquitetural:
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
+ActivityObjectSnapshotCaptureStage executa apenas o passo determinístico de capture.
+RouteActivitySave continua consumidor do payload; não virou owner de snapshot capture.
+ObjectRelease, ContributorUnregister, ActivityContentRelease async, DeactivationWindow e RouteExit não foram movidos.
+Não foi criado ActivityExitPipeline.
+```
+
+Débito controlado:
+
+```text
+IActivityObjectSnapshotCaptureRuntimeBridge permanece transitória.
+ActivityObjectRelease ainda deve virar stage próprio no SA-7E.
+ActivityObjectContributorUnregister ainda deve virar stage próprio no SA-7F.
+ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
+```

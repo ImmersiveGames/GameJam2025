@@ -5,7 +5,6 @@ using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -1339,7 +1338,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!inventory.TryGetRuntimeReference<ActivityObjectResetEndpointReference>(capability.CapabilityId, out ActivityObjectResetEndpointReference runtimeReference) ||
+                if (!inventory.TryGetRuntimeReference(capability.CapabilityId, out ActivityObjectResetEndpointReference runtimeReference) ||
                     runtimeReference.Endpoint == null)
                 {
                     continue;
@@ -1379,7 +1378,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!inventory.TryGetRuntimeReference<ActivityObjectSnapshotRestoreEndpointReference>(capability.CapabilityId, out ActivityObjectSnapshotRestoreEndpointReference runtimeReference) ||
+                if (!inventory.TryGetRuntimeReference(capability.CapabilityId, out ActivityObjectSnapshotRestoreEndpointReference runtimeReference) ||
                     runtimeReference.Endpoint == null)
                 {
                     continue;

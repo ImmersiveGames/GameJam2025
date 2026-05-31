@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
-using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -41,8 +41,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActivityEntryObjectSetupRuntimeBridge _objectSetupBridge;
         private readonly IActivityEntryActorInventoryRuntimeBridge _actorInventoryBridge;
         private readonly IActivityEntryActorPresentationRuntimeBridge _actorPresentationBridge;
+        private readonly IActivityEntryActorAttributeRuntimeBridge _actorAttributeBridge;
+        private readonly IActivityEntryActorParticipationRuntimeBridge _actorParticipationBridge;
+        private readonly IActivityEntryPermissionTargetRuntimeBridge _permissionTargetBridge;
+        private readonly IActivityEntryMovementBindingRuntimeBridge _movementBindingBridge;
+        private readonly IActivityEntryCameraBindingRuntimeBridge _cameraBindingBridge;
         private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
+        private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
         private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
@@ -52,14 +58,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             IActivityEntryRuntimeEndpoint endpoint,
             IActivityEntryObjectSetupRuntimeBridge objectSetupBridge,
             IActivityEntryActorInventoryRuntimeBridge actorInventoryBridge,
-            IActivityEntryActorPresentationRuntimeBridge actorPresentationBridge)
+            IActivityEntryActorPresentationRuntimeBridge actorPresentationBridge,
+            IActivityEntryActorAttributeRuntimeBridge actorAttributeBridge,
+            IActivityEntryActorParticipationRuntimeBridge actorParticipationBridge,
+            IActivityEntryPermissionTargetRuntimeBridge permissionTargetBridge,
+            IActivityEntryMovementBindingRuntimeBridge movementBindingBridge,
+            IActivityEntryCameraBindingRuntimeBridge cameraBindingBridge)
         {
             _endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             _objectSetupBridge = objectSetupBridge ?? throw new ArgumentNullException(nameof(objectSetupBridge));
             _actorInventoryBridge = actorInventoryBridge ?? throw new ArgumentNullException(nameof(actorInventoryBridge));
             _actorPresentationBridge = actorPresentationBridge ?? throw new ArgumentNullException(nameof(actorPresentationBridge));
+            _actorAttributeBridge = actorAttributeBridge ?? throw new ArgumentNullException(nameof(actorAttributeBridge));
+            _actorParticipationBridge = actorParticipationBridge ?? throw new ArgumentNullException(nameof(actorParticipationBridge));
+            _permissionTargetBridge = permissionTargetBridge ?? throw new ArgumentNullException(nameof(permissionTargetBridge));
+            _movementBindingBridge = movementBindingBridge ?? throw new ArgumentNullException(nameof(movementBindingBridge));
+            _cameraBindingBridge = cameraBindingBridge ?? throw new ArgumentNullException(nameof(cameraBindingBridge));
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
+            _playerInputBindingAdapter = new PlayerInputBindingAdapter();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
             _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
@@ -524,6 +541,285 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Source,
                     command.Reason,
                     $"owner='ActivityEntryPipeline' block='actor_presentation_setup' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        public ActivityEntryActorAttributeSetupResult ExecuteActorAttributeSetup(
+            ActivityEntryActorAttributeSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryActorAttributeSetupCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryActorAttributeSetupStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='actor_attribute_setup'");
+
+            try
+            {
+                ActivityEntryActorAttributeSetupResult result = ActivityEntryActorAttributeStage.Execute(
+                    command,
+                    _endpoint,
+                    _actorAttributeBridge,
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryActorAttributeSetupCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_attribute_setup' total='{result.Total}' resolved='{result.Resolved}' ready='{result.Ready}' skipped='{result.Skipped}' failed='{result.Failed}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryActorAttributeSetupFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_attribute_setup' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        public ActivityEntryActorParticipationEnterResult ExecuteActorParticipationEnter(
+            ActivityEntryActorParticipationEnterCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryActorParticipationEnterCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryActorParticipationEnterStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='actor_participation_enter'");
+
+            try
+            {
+                ActivityEntryActorParticipationEnterResult result = ActivityEntryActorParticipationStage.ExecuteEnter(
+                    command,
+                    _endpoint,
+                    _actorInventoryBridge,
+                    _actorParticipationBridge,
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryActorParticipationEnterCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_participation_enter' total='{result.Total}' entered='{result.Entered}' skipped='{result.Skipped}' failed='{result.Failed}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryActorParticipationEnterFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_participation_enter' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+
+        public ActivityEntryPlayerInputBindingResult ExecutePlayerInputBinding(
+            ActivityEntryPlayerInputBindingCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryPlayerInputBindingCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryPlayerInputBindingStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='player_input_binding'");
+
+            try
+            {
+                ActivityEntryPlayerInputBindingResult result = ActivityEntryPlayerInputBindingStage.Execute(
+                    command,
+                    _endpoint,
+                    _playerInputBindingAdapter,
+                    _actorInventoryBridge.GetActivityPlayerActorRegistry(),
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryPlayerInputBindingCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='player_input_binding' required='{result.RequiredCount}' requiredBound='{result.RequiredBoundCount}' totalBound='{result.TotalBoundCount}' skipped='{result.Skipped}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryPlayerInputBindingFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='player_input_binding' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        public ActivityEntryPermissionTargetPreparationResult ExecutePermissionTargetPreparation(
+            ActivityEntryPermissionTargetPreparationCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryPermissionTargetPreparationCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryPermissionTargetPreparationStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='permission_target_preparation'");
+
+            try
+            {
+                ActivityEntryPermissionTargetPreparationResult result = ActivityEntryPermissionTargetPreparationStage.Execute(
+                    command,
+                    _endpoint,
+                    _permissionTargetBridge,
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryPermissionTargetPreparationCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='permission_target_preparation' receivers='{result.ReceiverCount}' skipped='{result.Skipped}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryPermissionTargetPreparationFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='permission_target_preparation' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        public ActivityEntryMovementBindingResult ExecuteMovementBinding(
+            ActivityEntryMovementBindingCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryMovementBindingCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryMovementBindingStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='movement_binding'");
+
+            try
+            {
+                ActivityEntryMovementBindingResult result = ActivityEntryMovementBindingStage.Execute(
+                    command,
+                    _endpoint,
+                    _movementBindingBridge,
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryMovementBindingCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='movement_binding' required='{result.RequiredCount}' requiredBound='{result.RequiredBoundCount}' totalBound='{result.TotalBoundCount}' retained='{result.RetainedCount}' skipped='{result.Skipped}' retainedExisting='{result.RetainedExistingBinding}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryMovementBindingFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='movement_binding' error='{exception.Message}'");
+                throw;
+            }
+        }
+
+        public ActivityEntryCameraBindingResult ExecuteCameraBinding(
+            ActivityEntryCameraBindingCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActivityEntryCameraBindingCommand is invalid.");
+            }
+
+            _endpoint.LogEntryOwnerEvent(
+                "ActivityEntryCameraBindingStarted",
+                command.Identity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='camera_binding'");
+
+            try
+            {
+                ActivityEntryCameraBindingResult result = ActivityEntryCameraBindingStage.Execute(
+                    command,
+                    _endpoint,
+                    _cameraBindingBridge,
+                    facts,
+                    snapshots);
+
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryCameraBindingCompleted",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='camera_binding' required='{result.RequiredCount}' targetBound='{result.TargetBound}' skipped='{result.Skipped}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _endpoint.LogEntryOwnerEvent(
+                    "ActivityEntryCameraBindingFailed",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='camera_binding' error='{exception.Message}'");
                 throw;
             }
         }

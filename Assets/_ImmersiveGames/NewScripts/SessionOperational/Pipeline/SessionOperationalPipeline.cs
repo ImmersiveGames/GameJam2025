@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using DebugUtility = _ImmersiveGames.NewScripts.Foundation.Core.Logging.DebugUtility;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline

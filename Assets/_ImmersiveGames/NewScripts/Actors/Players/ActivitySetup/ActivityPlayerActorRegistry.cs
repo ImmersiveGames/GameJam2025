@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class ActivityPlayerActorRegistry
