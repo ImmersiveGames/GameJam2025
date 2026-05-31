@@ -1,19 +1,21 @@
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
     [DisallowMultipleComponent]
     public sealed class PlayerActorInputBindingState : MonoBehaviour
     {
-        [SerializeField] private string pipelineId;
-        [SerializeField] private string sessionId;
-        [SerializeField] private string activityId;
-        [SerializeField] private int entrySequence;
-        [SerializeField] private string playerSlotId;
-        [SerializeField] private string playerActorId;
-        [SerializeField] private int playerInputInstanceId;
-        [SerializeField] private int playerInputIndex;
-        [SerializeField] private string playerInputName;
+        [SerializeField, HideInInspector] private string pipelineId;
+        [SerializeField, HideInInspector] private string sessionId;
+        [SerializeField, HideInInspector] private string activityId;
+        [SerializeField, HideInInspector] private int entrySequence;
+        [SerializeField, HideInInspector] private string playerSlotId;
+        [SerializeField, HideInInspector] private string playerActorId;
+        [SerializeField, HideInInspector] private int playerInputInstanceId;
+        [SerializeField, HideInInspector] private int playerInputIndex;
+        [SerializeField, HideInInspector] private string playerInputName;
 
         public string PipelineId => pipelineId;
         public string SessionId => sessionId;
@@ -37,25 +39,41 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             !string.IsNullOrWhiteSpace(playerInputName);
 
         public void Bind(
-            string bindPipelineId,
-            string bindSessionId,
-            string bindActivityId,
-            int bindEntrySequence,
+            SessionActivityIdentity identity,
             PlayerSlotId bindPlayerSlotId,
             PlayerActorId bindPlayerActorId,
             int bindPlayerInputInstanceId,
             int bindPlayerInputIndex,
             string bindPlayerInputName)
         {
-            pipelineId = Normalize(bindPipelineId);
-            sessionId = Normalize(bindSessionId);
-            activityId = Normalize(bindActivityId);
-            entrySequence = bindEntrySequence < 0 ? 0 : bindEntrySequence;
-            playerSlotId = bindPlayerSlotId.IsValid ? bindPlayerSlotId.Value : string.Empty;
-            playerActorId = bindPlayerActorId.IsValid ? bindPlayerActorId.Value : string.Empty;
+            if (!identity.IsValid || !bindPlayerSlotId.IsValid || !bindPlayerActorId.IsValid)
+            {
+                Clear();
+                return;
+            }
+
+            pipelineId = identity.PipelineId;
+            sessionId = identity.SessionId;
+            activityId = identity.ActivityId;
+            entrySequence = identity.EntrySequence;
+            playerSlotId = bindPlayerSlotId.Value;
+            playerActorId = bindPlayerActorId.Value;
             playerInputInstanceId = bindPlayerInputInstanceId;
             playerInputIndex = bindPlayerInputIndex < 0 ? 0 : bindPlayerInputIndex;
             playerInputName = Normalize(bindPlayerInputName);
+        }
+
+        public void Clear()
+        {
+            pipelineId = string.Empty;
+            sessionId = string.Empty;
+            activityId = string.Empty;
+            entrySequence = 0;
+            playerSlotId = string.Empty;
+            playerActorId = string.Empty;
+            playerInputInstanceId = 0;
+            playerInputIndex = 0;
+            playerInputName = string.Empty;
         }
 
         private static string Normalize(string value)

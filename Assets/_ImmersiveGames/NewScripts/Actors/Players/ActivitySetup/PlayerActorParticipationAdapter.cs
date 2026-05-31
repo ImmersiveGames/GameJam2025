@@ -170,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     participation = instance.AddComponent<PlayerActorParticipationState>();
                 }
 
-                participation.MarkActiveInActivity(activeIdentity.ActivityId, activeIdentity.EntrySequence);
+                participation.MarkActiveInActivity(activeIdentity);
                 records.Add(new PlayerActorParticipationEnterRecord(actorIdentity, entered: true, retainedForRoute: true));
             }
 

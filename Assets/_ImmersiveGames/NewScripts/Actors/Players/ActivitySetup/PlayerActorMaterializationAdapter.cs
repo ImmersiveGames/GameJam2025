@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActor prefab missing PlayerActor component. prefab='{plan.Prefab.name}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}'.");
                 }
 
-                actor.SetActorId(plan.ActorIdentity.ActorId.ToString());
+                actor.SetActorId(plan.ActorIdentity.ActorId);
                 ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedIdentity(
                     activeIdentity,
                     ActorKind.Player,
@@ -78,14 +78,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     identity = instance.AddComponent<PlayerActorIdentity>();
                 }
 
-                identity.Bind(
-                    activeIdentity.PipelineId,
-                    activeIdentity.SessionId,
-                    activeIdentity.ActivityId,
-                    activeIdentity.ActivityOrdinal,
-                    activeIdentity.EntrySequence,
-                    plan.ActorIdentity.PlayerSlotId,
-                    plan.ActorIdentity.PlayerActorId);
+                identity.Bind(activeIdentity, plan.ActorIdentity);
 
                 PlayerActorParticipationState participation = instance.GetComponent<PlayerActorParticipationState>();
                 if (participation == null)
@@ -93,7 +86,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     participation = instance.AddComponent<PlayerActorParticipationState>();
                 }
 
-                participation.MarkActiveInActivity(activeIdentity.ActivityId, activeIdentity.EntrySequence);
+                participation.MarkActiveInActivity(activeIdentity);
 
                 MonoBehaviour[] behaviours = instance.GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
                 bool hasResetEndpoint = false;

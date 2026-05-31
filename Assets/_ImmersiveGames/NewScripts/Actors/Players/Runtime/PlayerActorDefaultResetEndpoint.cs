@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                     participation = gameObject.AddComponent<PlayerActorParticipationState>();
                 }
 
-                participation.MarkActiveInActivity(context.PipelineIdentity.ActivityId, context.PipelineIdentity.EntrySequence);
+                participation.MarkActiveInActivity(context.PipelineIdentity);
             }
         }
     }

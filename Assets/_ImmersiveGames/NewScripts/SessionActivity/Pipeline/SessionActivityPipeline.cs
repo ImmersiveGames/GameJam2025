@@ -6695,14 +6695,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 PlayerActorIdentityRecord reboundIdentity = BuildParticipantActorIdentity(identity, participant);
-                identityComponent.Bind(
-                    identity.PipelineId,
-                    identity.SessionId,
-                    identity.ActivityId,
-                    identity.ActivityOrdinal,
-                    identity.EntrySequence,
-                    reboundIdentity.PlayerSlotId,
-                    reboundIdentity.PlayerActorId);
+                identityComponent.Bind(identity, reboundIdentity);
                 EnsurePlayerRuntimeActorIdentityBoundOrFail(retainedInstance, identity, participant.ParticipantId, "retained_rebind");
                 Actor retainedActor = retainedInstance.GetComponent<Actor>();
                 if (retainedActor == null)

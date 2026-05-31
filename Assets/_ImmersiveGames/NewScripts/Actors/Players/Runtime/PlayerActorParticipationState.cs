@@ -1,4 +1,6 @@
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
     public enum PlayerActorParticipationStateKind
@@ -17,20 +19,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
     [DisallowMultipleComponent]
     public sealed class PlayerActorParticipationState : MonoBehaviour
     {
-        [SerializeField] private PlayerActorParticipationStateKind participationState = PlayerActorParticipationStateKind.ActiveInActivity;
-        [SerializeField] private PlayerActorRetentionKind retention = PlayerActorRetentionKind.RetainedForRoute;
-        [SerializeField] private string currentActivityId;
-        [SerializeField] private int currentEntrySequence;
+        [SerializeField, HideInInspector] private PlayerActorParticipationStateKind participationState = PlayerActorParticipationStateKind.ActiveInActivity;
+        [SerializeField, HideInInspector] private PlayerActorRetentionKind retention = PlayerActorRetentionKind.RetainedForRoute;
+        [SerializeField, HideInInspector] private string currentActivityId;
+        [SerializeField, HideInInspector] private int currentEntrySequence;
 
         public PlayerActorParticipationStateKind ParticipationState => participationState;
         public PlayerActorRetentionKind Retention => retention;
         public string CurrentActivityId => string.IsNullOrWhiteSpace(currentActivityId) ? string.Empty : currentActivityId.Trim();
         public int CurrentEntrySequence => currentEntrySequence;
 
-        public void MarkActiveInActivity(string activityId, int entrySequence)
+        public void MarkActiveInActivity(SessionActivityIdentity identity)
         {
-            currentActivityId = string.IsNullOrWhiteSpace(activityId) ? string.Empty : activityId.Trim();
-            currentEntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            if (!identity.IsValid)
+            {
+                Clear();
+                return;
+            }
+
+            currentActivityId = identity.ActivityId;
+            currentEntrySequence = identity.EntrySequence;
             participationState = PlayerActorParticipationStateKind.ActiveInActivity;
             retention = PlayerActorRetentionKind.RetainedForRoute;
         }
@@ -39,6 +47,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         {
             participationState = PlayerActorParticipationStateKind.ExitedActivity;
             retention = PlayerActorRetentionKind.RetainedForRoute;
+        }
+
+        public void Clear()
+        {
+            currentActivityId = string.Empty;
+            currentEntrySequence = 0;
+            participationState = PlayerActorParticipationStateKind.Unknown;
+            retention = PlayerActorRetentionKind.Unknown;
         }
     }
 }

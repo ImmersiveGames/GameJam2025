@@ -68,10 +68,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 bindingState.Bind(
-                    activeIdentity.PipelineId,
-                    activeIdentity.SessionId,
-                    activeIdentity.ActivityId,
-                    activeIdentity.EntrySequence,
+                    activeIdentity,
                     requirement.PlayerSlotId,
                     requirement.PlayerActorId,
                     resolvedInput.GetInstanceID(),

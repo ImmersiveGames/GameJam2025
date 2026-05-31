@@ -1,17 +1,20 @@
-﻿using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
+
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
     [DisallowMultipleComponent]
     public sealed class PlayerActorIdentity : MonoBehaviour
     {
-        [SerializeField] private string pipelineId;
-        [SerializeField] private string sessionId;
-        [SerializeField] private string activityId;
-        [SerializeField] private int activityOrdinal;
-        [SerializeField] private int entrySequence;
-        [SerializeField] private string playerSlotId;
-        [SerializeField] private string playerActorId;
+        [SerializeField, HideInInspector] private string pipelineId;
+        [SerializeField, HideInInspector] private string sessionId;
+        [SerializeField, HideInInspector] private string activityId;
+        [SerializeField, HideInInspector] private int activityOrdinal;
+        [SerializeField, HideInInspector] private int entrySequence;
+        [SerializeField, HideInInspector] private string playerSlotId;
+        [SerializeField, HideInInspector] private string playerActorId;
 
         public string PipelineId => pipelineId;
         public string SessionId => sessionId;
@@ -30,27 +33,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             PlayerSlotId.IsValid &&
             PlayerActorId.IsValid;
 
-        public void Bind(
-            string bindPipelineId,
-            string bindSessionId,
-            string bindActivityId,
-            int bindActivityOrdinal,
-            int bindEntrySequence,
-            PlayerSlotId bindPlayerSlotId,
-            PlayerActorId bindPlayerActorId)
+        public void Bind(SessionActivityIdentity identity, PlayerActorIdentityRecord actorIdentity)
         {
-            pipelineId = Normalize(bindPipelineId);
-            sessionId = Normalize(bindSessionId);
-            activityId = Normalize(bindActivityId);
-            activityOrdinal = bindActivityOrdinal < 0 ? 0 : bindActivityOrdinal;
-            entrySequence = bindEntrySequence < 0 ? 0 : bindEntrySequence;
-            playerSlotId = bindPlayerSlotId.IsValid ? bindPlayerSlotId.Value : string.Empty;
-            playerActorId = bindPlayerActorId.IsValid ? bindPlayerActorId.Value : string.Empty;
+            if (!identity.IsValid || !actorIdentity.IsValid)
+            {
+                Clear();
+                return;
+            }
+
+            pipelineId = identity.PipelineId;
+            sessionId = identity.SessionId;
+            activityId = identity.ActivityId;
+            activityOrdinal = identity.ActivityOrdinal;
+            entrySequence = identity.EntrySequence;
+            playerSlotId = actorIdentity.PlayerSlotId.Value;
+            playerActorId = actorIdentity.PlayerActorId.Value;
         }
 
-        private static string Normalize(string value)
+        public void Clear()
         {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            pipelineId = string.Empty;
+            sessionId = string.Empty;
+            activityId = string.Empty;
+            activityOrdinal = 0;
+            entrySequence = 0;
+            playerSlotId = string.Empty;
+            playerActorId = string.Empty;
         }
     }
 }

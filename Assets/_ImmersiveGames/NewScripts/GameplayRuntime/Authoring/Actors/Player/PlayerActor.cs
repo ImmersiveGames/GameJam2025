@@ -8,27 +8,31 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
     [DisallowMultipleComponent]
     public sealed class PlayerActor : Actor
     {
-        [SerializeField] private string actorId = string.Empty;
+        [SerializeField, HideInInspector] private string actorId = string.Empty;
 
-        public override string ActorId => Normalize(actorId);
+        public override string ActorId => ActorIdValue.ToString();
+
+        public ActorId ActorIdValue => new(Normalize(actorId));
 
         public override ActorRole ActorRoleMetadata => ActorRole.PrimaryPlayer;
         public override ActorScope ActorScopeMetadata => ActorScope.RouteScoped;
 
-        public void SetActorId(string newActorId)
+        public void SetActorId(ActorId newActorId)
         {
-            if (!string.IsNullOrWhiteSpace(newActorId))
+            if (!newActorId.IsValid)
             {
-                actorId = Normalize(newActorId);
+                throw new InvalidOperationException($"PlayerActor cannot bind an invalid ActorId. actor='{name}'.");
             }
+
+            actorId = newActorId.Value;
         }
 
         public override void ValidateLocalConfigurationOrThrow(string source)
         {
             string origin = ResolveOrigin(source, nameof(PlayerActor), name);
-            if (string.IsNullOrWhiteSpace(ActorId))
+            if (!ActorIdValue.IsValid)
             {
-                throw new InvalidOperationException($"{origin} requires actorId.");
+                throw new InvalidOperationException($"{origin} requires runtime ActorId binding.");
             }
 
             if (CapabilitySurface == null)
