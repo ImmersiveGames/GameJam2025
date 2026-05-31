@@ -48,12 +48,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("actor_reset_identity_mismatch: actor identity does not match active identity.");
             }
 
-            if (!actor.PlayerActorId.IsValid)
-            {
-                throw new InvalidOperationException(
-                    $"actor_reset_player_identity_missing: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
-            }
-
             if (_registry.TryResolveHandleForActorInstance(activeIdentity, actor.ActorInstanceRuntimeId, out PlayerActorRuntimeHandle handle) &&
                 handle.IsValid &&
                 handle.Instance != null)
@@ -86,12 +80,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||
-                !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal) ||
-                identity.PlayerSlotId != actor.PlayerSlotId ||
-                identity.PlayerActorId != actor.PlayerActorId)
+                !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
-                    $"actor_reset_player_identity_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' playerActorId='{actor.PlayerActorId}' playerSlotId='{actor.PlayerSlotId}' does not match endpoint identity.");
+                    $"actor_reset_player_identity_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' pipelineId='{activeIdentity.PipelineId}' sessionId='{activeIdentity.SessionId}' does not match endpoint identity.");
             }
 
             bool isRouteScoped = runtimeActor.ActorScopeMetadata == Actors.Foundation.ActorScope.RouteScoped;

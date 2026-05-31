@@ -1079,3 +1079,650 @@ compilação voltou;
 RouteExitBackToMenu recuperado no smoke;
 sem aceitar novo PASS arquitetural antes deste contrato estar registrado.
 ```
+
+
+## SA-IDREF-4A — Camera target reference by ActorInstanceRuntimeId
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+Motivo:
+
+```text
+A auditoria pós-contrato encontrou `ActivityCameraTargetReference.Matches(...)` usando `PlayerActorId + ActorId` para casar runtime reference de câmera com `PlayerActorRuntimeHandle`.
+Isso preservava `PlayerActorId` como parte do lookup de endpoint, contrariando o contrato corretivo: PlayerActorId é observável, não chave operacional primária.
+```
+
+Decisão:
+
+```text
+Camera target runtime reference deve casar com PlayerActorRuntimeHandle por ActorInstanceRuntimeId.
+ActorId pode permanecer como guarda tipada adicional.
+PlayerActorId e PlayerSlotId permanecem no reference para logs/facts/payload observável, não para resolver o endpoint.
+```
+
+Correção aplicada:
+
+```text
+PlayerActorCapabilityIdentity passa a carregar ActorInstanceRuntimeId.
+PlayerActorCapabilityIdentityResolver deriva ActorInstanceRuntimeId a partir do ActorScanTarget tipado.
+ActivityCameraTargetReference passa a carregar ActorInstanceRuntimeId.
+ActivityCameraTargetReference.Matches(handle) usa ActorInstanceRuntimeId == handle.ActorInstanceRuntimeId e ActorId == handle.ActorId.
+ActivityCapabilityCameraTargetScanner registra actorInstanceRuntimeId nos metadados e no runtime reference.
+```
+
+Fronteira preservada:
+
+```text
+ActivityEntryPipeline continua dono de materialização/binding.
+ActivityCapabilityInventory continua snapshot/reference runtime, não owner de lifecycle.
+Camera binding consome referência runtime já resolvida; não fabrica PlayerActorId nem resolve por texto.
+```
+
+Critério de aceite:
+
+```text
+compilar sem erros CS;
+CameraBindingCompleted preservado em activity_01 e restart;
+Activity01ToActivity02 sem regressão;
+RouteExitBackToMenu sem regressão;
+sem route_transition_failed;
+sem foreign/stale indevido.
+```
+
+Evidência de smoke:
+
+```text
+sem FATAL;
+sem Exception;
+sem route_transition_failed;
+sem foreign/stale indevido;
+RestartCurrentActivity PASS;
+Activity01ToActivity02 PASS;
+RouteExitBackToMenu PASS;
+CameraBindingCompleted preservado na entry inicial e no restart;
+PlayerCameraEndpointResolved preservado;
+ActivityCameraTargetBound preservado;
+MovementBindingCompleted preservado;
+MovementControlEnabled/Disabled preservado.
+```
+
+Conclusão:
+
+```text
+SA-IDREF-4A fechado como PASS do corte.
+A mudança de Camera target reference para ActorInstanceRuntimeId não regrediu Camera, Restart, Activity transition nem RouteExit.
+PlayerActorId permanece observável em logs/facts, mas não é chave primária de match de Camera target.
+```
+
+## SA-IDREF-4B — Permission identity audit
+
+Status: AUDITED / NO RUNTIME CHANGE / Implementation blocked until explicit next cut.
+
+Motivo:
+
+```text
+Após SA-IDREF-4A, Camera já casa runtime reference por ActorInstanceRuntimeId.
+Permission ainda preserva PlayerActorId como alvo operacional principal em command, binding, receiver identity, receiver id e key interna.
+O fluxo atual funciona no smoke, mas está arquiteturalmente um corte atrás do contrato SA-IDREF.
+```
+
+Decisão desta etapa:
+
+```text
+Esta etapa é apenas auditoria e congelamento de plano.
+Nenhum runtime code deve ser alterado neste corte.
+A correção de Permission precisa ser um corte próprio, pequeno e com smoke dedicado.
+```
+
+### Matriz de auditoria
+
+| Arquivo/classe | Responsabilidade atual | Owner correto | Problema | Severidade | Ação recomendada | Risco | Evidência |
+|---|---|---|---|---|---|---|---|
+| `ActivityCapabilityPermissionCommand` | Publica mudança de permission por `PermissionId`, state, activity identity, `PlayerActorId` e `PlayerSlotId`. | Pipeline/stage cria command depois de resolver handle; runtime só aplica. | Não carrega `ActorInstanceRuntimeId`; o alvo funcional fica implícito em `PlayerActorId`. | Alta | Adicionar `ActorInstanceRuntimeId` e `ActorId` ao command; manter `PlayerActorId`/`PlayerSlotId` somente como observabilidade. | Médio: afeta MovementBinding, MovementControl e ParticipationExit. | Command atual tem `PlayerActorId`/`PlayerSlotId`, sem instância runtime. |
+| `ActivityCapabilityPermissionBinding` | Snapshot interno do estado aplicado. | Permission runtime/facts. | Binding é indexável por `PlayerActorId`; não identifica a instância runtime exata. | Alta | Adicionar `ActorInstanceRuntimeId`; binding/fact devem refletir o alvo runtime exato. | Médio: snapshot/log muda shape. | Binding atual exige `PlayerActorId.IsValid`. |
+| `ActivityCapabilityPermissionReceiverIdentity` | Identifica receiver registrado no scope ativo. | Scanner/inventory cria; runtime valida scope. | Receiver identity usa activity scope + `PlayerActorId`/`PlayerSlotId`; não possui `ActorInstanceRuntimeId`. | Alta | Adicionar `ActorInstanceRuntimeId` e `ActorId`; `PlayerActorId` vira campo observável. | Médio: `ReceiverId` muda se for derivado da identity. | `CreateReceiverId` hoje deriva `actor={PlayerActorId}`. |
+| `ActivityCapabilityPermissionReceiverReference` | Runtime reference do receiver descoberto no inventory. | ActivityCapabilityInventory é snapshot/reference; não decide lifecycle. | Reference possui `ActorId`, `PlayerActorId`, `PlayerSlotId`, mas não `ActorInstanceRuntimeId`. | Alta | Espelhar Camera: carregar `ActorInstanceRuntimeId`; validar/matchar por instância runtime + guarda `ActorId`. | Baixo/Médio se mantiver logs antigos. | Scanner já tem `ActorScanTarget.ActorInstanceId`, mas não propaga para reference. |
+| `ActivityCapabilityPermissionRuntime.PermissionKey` | Dedup/idempotência de estado de permission. | Permission runtime. | Key usa `PermissionId + Scope + PlayerActorId`. | Alta | Trocar key para `PermissionId + Scope + ActorInstanceRuntimeId`; manter `PlayerActorId` no binding/log. | Médio: idempotência pode mudar se houver múltiplas instâncias por mesmo actor observável. | Key atual armazena `PlayerActorId`. |
+| `PlayerMovementPermissionReceiver` | Reage localmente a permission e liga/desliga movement endpoint. | Receiver local decide como reagir; pipeline decide quando. | `TargetsCurrentActor` filtra por `PlayerActorId`; receiver não conhece `ActorInstanceRuntimeId`. | Alta | Receiver deve ser construído com `ActorInstanceRuntimeId` e filtrar command por essa identity. | Médio: precisa alterar scanner e command juntos. | `TargetsCurrentActor(PlayerActorId)` é o filtro funcional atual. |
+| `MovementBindingAdapter` | Binding inicial publica `Blocked`. | Stage/adapter usa handle resolvido. | Publica command com `playerActorId` observado; não inclui instância runtime. | Média/Alta | Ao montar command, usar `actorHandle.ActorInstanceRuntimeId` como alvo funcional e `actorHandle.PlayerActorId` como observável. | Médio. | Adapter já resolve `PlayerActorRuntimeHandle`, então a fonte correta já existe. |
+| `PlayerMovementControlAdapter` | Running/completion publica `Allowed`/`Blocked`. | Pipeline decide quando; adapter publica command. | Publica permission por `PlayerActorId`; receiver filtra por `PlayerActorId`. | Média/Alta | Usar `ActorInstanceRuntimeId` do handle/record como alvo funcional. | Médio. | Adapter já resolve handle por participant. |
+| `PlayerActorParticipationAdapter` | Exit publica `Unbound`. | SessionActivity exit/adapter. | Publica `Unbound` por `PlayerActorId` observado. | Média | Usar `ActorInstanceRuntimeId` no command, preservando route-scoped validation por session/scope/participant. | Médio: não reintroduzir validação por entry ativa para actor route-scoped. | Foi o ponto sensível da regressão anterior. |
+
+### Classificação
+
+```text
+Permission está funcional, mas ainda usa PlayerActorId como identity de target operacional.
+Isso não quebra o smoke atual porque há um player actor primário e o receiver é recriado por entry.
+Arquiteturalmente, porém, a correção deve seguir o mesmo padrão já aplicado em Camera.
+```
+
+### Contrato para o próximo corte de Permission
+
+O próximo corte de runtime deve ser algo como:
+
+```text
+SA-IDREF-4C — Permission target by ActorInstanceRuntimeId
+```
+
+Escopo permitido:
+
+```text
+Adicionar ActorInstanceRuntimeId e ActorId a ActivityCapabilityPermissionCommand.
+Adicionar ActorInstanceRuntimeId e ActorId a ActivityCapabilityPermissionBinding.
+Adicionar ActorInstanceRuntimeId e ActorId a ActivityCapabilityPermissionReceiverIdentity.
+Adicionar ActorInstanceRuntimeId a ActivityCapabilityPermissionReceiverReference.
+Propagar ActorInstanceRuntimeId a partir de ActorScanTarget no ActivityCapabilityPermissionScanner.
+Trocar PermissionKey de PlayerActorId para ActorInstanceRuntimeId.
+Trocar PlayerMovementPermissionReceiver.TargetsCurrentActor para ActorInstanceRuntimeId.
+Preservar PlayerActorId e PlayerSlotId para logs/facts/payload observável.
+```
+
+Fora do escopo desse próximo corte:
+
+```text
+Criar sistema genérico de permission.
+Mudar reaction local de movement.
+Mover lifecycle para receiver/adapter.
+Alterar Camera, Reset, Presentation ou Attribute.
+Criar fallback textual ou alias de slot/player.
+Validar actor route-scoped contra entry ativa.
+Remover PlayerActorId observável.
+```
+
+### Respostas obrigatórias do corte futuro
+
+```text
+Qual pipeline é dono desta decisão?
+SessionActivity/ActivityEntryPipeline decide quando publicar Blocked/Allowed/Unbound.
+Receiver local decide como reagir.
+PermissionRuntime aplica command/fact/snapshot; não decide lifecycle.
+
+Isso é stage, policy, command, fact, adapter, endpoint, snapshot ou authoring data?
+Command/fact/snapshot/runtime reference/receiver identity.
+Não é authoring data.
+
+Isso é comportamento final ou bridge transitória?
+ActorInstanceRuntimeId como target funcional é comportamento final.
+PlayerActorId como target funcional é bridge transitória a remover.
+
+Essa compatibilidade ainda é necessária?
+Não para lookup. Sim apenas para logs/facts observáveis durante transição.
+
+O erro está no sintoma ou na fronteira arquitetural errada?
+Fronteira: Permission está usando identidade observável como target operacional.
+
+Existe owner duplicado para o mesmo lifecycle?
+Não deve existir. PermissionRuntime não decide lifecycle; apenas aplica command da Activity.
+```
+
+### Critério de aceite do corte futuro
+
+```text
+Compilar sem erros CS.
+Sem FATAL.
+Sem Exception.
+Sem route_transition_failed.
+Sem foreign/stale indevido.
+PermissionTargetIdentityUnresolved ausente em cenário válido.
+ActivityCapabilityPermissionPublished/Applied/ReceiverNotified preservados para Blocked, Allowed e Unbound.
+PlayerMovementPermissionApplied preservado para Blocked, Allowed e Unbound.
+MovementControlEnabled/Disabled preservados.
+MovementBindingCompleted preservado.
+CameraBindingCompleted preservado, sem tocar Camera.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+```
+
+Conclusão:
+
+```text
+SA-IDREF-4B fecha apenas a auditoria de Permission identity.
+Não há PASS funcional novo porque não houve alteração runtime.
+A próxima implementação deve ser SA-IDREF-4C e deve ser pequena, focada apenas em target funcional por ActorInstanceRuntimeId.
+```
+
+
+## SA-IDREF-4C — Permission target by ActorInstanceRuntimeId
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Decisão aplicada
+
+```text
+Permission deixa de usar PlayerActorId como target/key operacional primário.
+O target funcional passa a ser ActorInstanceRuntimeId.
+PlayerActorId e PlayerSlotId permanecem como observabilidade em logs, facts, bindings e payloads.
+ActorId permanece como guarda tipada adicional.
+```
+
+### Escopo alterado
+
+```text
+ActivityCapabilityPermissionCommand agora carrega ActorId e ActorInstanceRuntimeId.
+ActivityCapabilityPermissionBinding agora carrega ActorId e ActorInstanceRuntimeId.
+ActivityCapabilityPermissionReceiverIdentity agora carrega ActorId e ActorInstanceRuntimeId.
+ActivityCapabilityPermissionReceiverReference agora carrega ActorInstanceRuntimeId.
+ActivityCapabilityPermissionScanner propaga ActorInstanceRuntimeId a partir de PlayerActorCapabilityIdentity.
+ActivityCapabilityPermissionRuntime.PermissionKey passou de PlayerActorId para ActorInstanceRuntimeId.
+PlayerMovementPermissionReceiver passou a filtrar por ActorInstanceRuntimeId.
+MovementBindingAdapter publica Blocked com ActorInstanceRuntimeId do PlayerActorRuntimeHandle.
+PlayerMovementControlAdapter publica Allowed/Blocked com ActorInstanceRuntimeId do PlayerActorRuntimeHandle.
+PlayerActorParticipationAdapter publica Unbound com ActorInstanceRuntimeId do PlayerActorRuntimeHandle.
+```
+
+### Fronteira preservada
+
+```text
+PermissionRuntime aplica command/fact/snapshot; não decide lifecycle.
+Pipeline/stage/adapter continua decidindo quando publicar Blocked, Allowed ou Unbound.
+Receiver local continua decidindo como reagir, sem ganhar ownership de lifecycle.
+Movement reaction local não foi alterada além do filtro de target.
+```
+
+### Uso permitido de identidades após 4C
+
+| Identidade | Uso em Permission após 4C |
+|---|---|
+| `ActorInstanceRuntimeId` | Target funcional de command, binding, receiver identity, receiver reference e permission key. |
+| `ActorId` | Guarda tipada adicional e observabilidade. |
+| `PlayerActorId` | Observabilidade/log/fact/payload; não é target/key operacional primário. |
+| `PlayerSlotId` | Observabilidade/log/fact/payload; não é actor identity. |
+| `ReceiverId` | Índice técnico local do receiver registrado no runtime; derivado com `ActorInstanceRuntimeId`. |
+| `PermissionId` | Tipo da permission; não identifica actor/receiver sozinho. |
+
+### Critério de aceite
+
+```text
+Compilar sem erros CS.
+Sem FATAL.
+Sem Exception.
+Sem route_transition_failed.
+Sem foreign/stale indevido.
+PermissionTargetIdentityUnresolved ausente em cenário válido.
+ActivityCapabilityPermissionPublished/Applied/ReceiverNotified preservados para Blocked, Allowed e Unbound.
+PlayerMovementPermissionApplied preservado para Blocked, Allowed e Unbound.
+MovementControlEnabled/Disabled preservados.
+MovementBindingCompleted preservado.
+CameraBindingCompleted preservado, sem regressão no SA-IDREF-4A.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+```
+
+### Status
+
+```text
+SA-IDREF-4C fechado como PASS após smoke manual.
+Compile foi considerado limpo pelo smoke executado no Editor.
+```
+
+### Evidência de smoke aceita
+
+```text
+Boot -> Menu -> Sandbox
+CompleteActivationWindow
+RestartCurrentActivity
+CompleteActivationWindow
+CompleteCurrentActivity
+Activity01ToActivity02
+BackToMenu / RouteExit
+```
+
+Resultado observado:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+sem PermissionTargetIdentityUnresolved
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActivityCapabilityPermissionPublished/Applied/ReceiverNotified preservados
+PlayerMovementPermissionApplied preservado
+MovementBindingCompleted preservado
+MovementControlEnabled/Disabled preservados
+CameraBindingCompleted preservado
+```
+
+Decisão: `SA-IDREF-4C` está fechado. Próximos cortes de identity devem continuar a mesma regra: target funcional por typed runtime identity; IDs observáveis permanecem apenas para log/fact/payload.
+
+## SA-IDREF-4D — Reset identity / endpoint reference audit
+
+Status: AUDITED / NO RUNTIME CHANGE.
+
+### Escopo auditado
+
+```text
+Actors/Capabilities/Reset/ActorResetContracts.cs
+Actors/Capabilities/Reset/ActorResetAdapter.cs
+Actors/Players/ActivitySetup/PlayerActorResetEndpointResolver.cs
+Actors/Players/Runtime/PlayerActorDefaultResetEndpoint.cs
+SessionActivity/Pipeline/SessionActivityPipeline.cs
+SessionActivity/Pipeline/Stages/ActivityEntryObjectSetupStages.cs
+SessionActivity/Capabilities/Inventory/RuntimeReferences/ActivityObjectResetEndpointReference.cs
+```
+
+### Conclusão
+
+Reset não está no mesmo estado que Permission estava antes do 4C.
+
+O caminho funcional principal de `ActorReset` já está parcialmente alinhado ao contrato SA-IDREF:
+
+```text
+ActivityParticipantBinding / PlayerActorIdentityRecord
+-> ActivityPlayerActorRegistry
+-> PlayerActorRuntimeHandle
+-> ActorInstanceRuntimeId
+-> PlayerActorResetEndpointResolver
+-> IActorResetEndpoint
+```
+
+A resolução do `PlayerActorRuntimeHandle` em `PlayerActorResetEndpointResolver` já usa `ActorInstanceRuntimeId`, não `PlayerActorId`. Portanto, não há necessidade de um patch emergencial equivalente ao `SA-IDREF-4C`.
+
+O problema restante é contratual/higiene: `PlayerActorId` e `PlayerSlotId` ainda aparecem como requisitos de validade ou guarda funcional em pontos de reset. Pelo contrato SA-IDREF, eles devem permanecer como observabilidade/log/fact/payload, não como condição funcional primária depois que `ActorInstanceRuntimeId` já identifica a instância runtime.
+
+### Matriz de auditoria
+
+| Arquivo/classe/método | Responsabilidade atual | Owner correto | Problema | Severidade | Ação recomendada | Risco | Evidência |
+|---|---|---|---|---|---|---|---|
+| `ActorResetActorRef` | Transporta identity do actor alvo do reset. | `ActivityEntryPipeline` cria command; `ActorResetAdapter` consome. | Carrega `ActorInstanceRuntimeId`, `ActorId`, `PlayerActorId` e `PlayerSlotId`; para `ActorKind.Player`, `IsValid` exige `PlayerActorId` e `PlayerSlotId`. | Média | Em próximo corte, tornar `ActorInstanceRuntimeId + ActorId + ActorKind` o núcleo funcional; manter `PlayerActorId/PlayerSlotId` como campos observáveis opcionais/diagnósticos. | Médio: muda validações de contrato. | `ActorResetActorRef.IsValid` exige `(!IsPlayer || (PlayerActorId.IsValid && PlayerSlotId.IsValid))`. |
+| `SessionActivityPipeline.BuildActorResetActorRef(...)` | Constrói target de reset a partir do handle materializado. | `ActivityEntryPipeline`; command carrega payload runtime resolvido. | Bom sinal: resolve `PlayerActorRuntimeHandle` por `ParticipantId` e extrai `ActorInstanceRuntimeId` do `Actor`. Ainda inclui `PlayerActorId/PlayerSlotId` no ref. | Baixa | Manter o fluxo; apenas não deixar `PlayerActorId/PlayerSlotId` serem critérios funcionais no adapter/resolver. | Baixo. | Usa `_activityPlayerActorRegistry.TryResolveHandleForParticipant(...)` e `runtimeActor.RuntimeActorInstanceId`. |
+| `PlayerActorResetEndpointResolver.ResolveOrFail(...)` | Resolve o `GameObject`/endpoint para reset. | Resolver/adapter técnico; não decide lifecycle. | Lookup já usa `TryResolveHandleForActorInstance(activeIdentity, actor.ActorInstanceRuntimeId, ...)`, correto. Mas ainda rejeita `actor.PlayerActorId` inválido antes do lookup. | Média | Remover rejeição funcional por `PlayerActorId` inválido; se necessário, manter apenas log/diagnóstico. | Médio: pode expor comandos antigos sem observabilidade; deve ser coberto por smoke. | `ResolveOrFail` chama `actor.PlayerActorId.IsValid` antes do lookup. |
+| `PlayerActorResetEndpointResolver.EnsureIdentityMatchesOrFail(...)` | Valida que a instância resolvida corresponde ao target. | Resolver técnico. | Validação funcional inclui `identity.PlayerSlotId != actor.PlayerSlotId` e `identity.PlayerActorId != actor.PlayerActorId`. Depois disso também valida `RuntimeActorInstanceId` e `ActorId`, que são as guards corretas. | Média/Alta | Fazer a validação funcional depender de `PipelineId`, `SessionId`, `ActorInstanceRuntimeId` e `ActorId`; `PlayerActorId/PlayerSlotId` devem ser observabilidade adicional, não bloqueio primário. | Médio/Alto: área sensível a route-scoped retention e QA reset. | Comparação explícita de `PlayerActorId`/`PlayerSlotId` antes da checagem de `ActorInstanceRuntimeId`. |
+| `ActorResetAdapter.Execute(...)` | Executa reset groups nos endpoints resolvidos. | Adapter executa side-effects comandados. | Valida `target.Actor.Identity` contra entry ativa por activity cycle. Para reset de entry corrente isso é esperado; para route-scoped actor, pode virar limite se reset futuro for route-level. | Baixa/Média | Manter para reset de entry atual. Se houver reset route-scoped fora da entry corrente no futuro, criar policy/command próprio. | Baixo no corte atual. | `IsSameActivityCycle(target.Actor.Identity, activeIdentity)`. |
+| `TryQaResetCurrentPlayerActor(...)` | QA manual de reset do player ativo. | QA deve chamar command/stage canônico. | Usa `playerSlotId` como seletor de QA. Isso é aceitável para UI/QA, mas não pode virar lookup runtime canônico. Depois resolve instância via feed e constrói `ActorResetActorRef` com `ActorInstanceRuntimeId`. | Baixa | Documentar como selector de QA, não identity de runtime. Não criar alias textual tipo `player1`. | Baixo. | Seleciona por `candidate.PlayerSlotId.Value`, mas command final usa `ActorInstanceRuntimeId`. |
+| `ActivityObjectResetEndpointReference` / `ResolveObjectResetEndpointsFromInventory` | Reset de objetos de Activity por `ActivityObjectContributionReport.TargetId`. | `ActivityEntryPipeline`/ObjectSetup. | Usa `targetId` textual, mas este pertence ao domínio `ActivityObject`, não ao domínio Actor/PlayerActor. Não é a mesma regressão de `PlayerActorId`. | Baixa | Não misturar com `ActorReset`. Futuro corte separado poderá tipar `ActivityObjectRuntimeId` se necessário. | Baixo. | `targetId` vem de `ActivityObjectContributionReport`, não de Actor runtime identity. |
+
+### Respostas arquiteturais obrigatórias
+
+**Qual pipeline é dono desta decisão?**
+
+```text
+ActivityEntryPipeline é dono de criar o ActorResetCommand para setup/reset da entry atual.
+ActorResetAdapter executa side-effects comandados.
+PlayerActorResetEndpointResolver resolve endpoint técnico; não decide lifecycle.
+```
+
+**Isso é stage, policy, command, fact, adapter, endpoint, snapshot ou authoring data?**
+
+```text
+ActorResetActorRef / ActorResetTargetRef / ActorResetCommand são commands/payload runtime resolvido.
+ActorResetAdapter é adapter.
+PlayerActorResetEndpointResolver é resolver/endpoint adapter técnico.
+PlayerActorDefaultResetEndpoint é endpoint local.
+ActivityObjectResetEndpointReference é runtime reference de inventário de objeto, não actor identity.
+```
+
+**Isso é comportamento final ou bridge transitória?**
+
+```text
+Lookup por ActorInstanceRuntimeId é comportamento final.
+Exigir PlayerActorId/PlayerSlotId como validade funcional em Reset é bridge transitória/higiene pendente.
+Usar playerSlotId como selector de QA é aceitável se não virar lookup runtime canônico.
+```
+
+**Essa compatibilidade ainda é necessária?**
+
+```text
+Não há compat de produção a preservar.
+Não criar alias textual para playerSlotId.
+Não manter PlayerActorId como requisito funcional se ActorInstanceRuntimeId já identifica a instância.
+```
+
+**O erro está no sintoma ou na fronteira arquitetural errada?**
+
+```text
+A fronteira principal já está melhor que Permission pré-4C: resolver usa ActorInstanceRuntimeId.
+O sintoma restante é contrato permissivo/ambíguo: campos observáveis ainda bloqueiam funcionalmente.
+```
+
+**Existe owner duplicado para o mesmo lifecycle?**
+
+```text
+Não no estado atual.
+Registry indexa handle; resolver resolve endpoint; adapter executa reset; pipeline decide quando resetar.
+O risco seria permitir que resolver/endpoint decida lifecycle ou que QA use playerSlotId como identity runtime.
+```
+
+### Próximo corte recomendado
+
+```text
+SA-IDREF-4E — Reset actor ref validity by ActorInstanceRuntimeId
+```
+
+Escopo recomendado:
+
+```text
+1. Alterar ActorResetActorRef.IsValid para não exigir PlayerActorId/PlayerSlotId como validade funcional.
+2. Em PlayerActorResetEndpointResolver.ResolveOrFail, remover rejeição funcional por PlayerActorId inválido.
+3. Em EnsureIdentityMatchesOrFail, validar funcionalmente por:
+   - PipelineId;
+   - SessionId;
+   - ActorInstanceRuntimeId;
+   - ActorId;
+   - Activity cycle apenas para actor não-route-scoped.
+4. Manter PlayerActorId/PlayerSlotId em logs, facts, payload e diagnóstico.
+5. Não alterar ActivityObjectReset, Camera, Permission, Presentation ou Attributes.
+6. Não criar fallback textual ou alias de playerSlot.
+```
+
+### Critério de aceite para eventual SA-IDREF-4E
+
+```text
+Compilar sem erros CS.
+Sem FATAL.
+Sem Exception.
+Sem route_transition_failed.
+Sem foreign/stale indevido.
+ActorResetQaApplied preservado quando QA reset for executado em ActivityRunning.
+ActivityObjectReset PassedApplied preservado.
+MovementBindingCompleted preservado.
+MovementControlEnabled/Disabled preservados.
+CameraBindingCompleted preservado.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+```
+
+### Status
+
+```text
+SA-IDREF-4D fecha apenas auditoria de Reset identity / endpoint reference.
+Não houve alteração runtime.
+Não há compile novo a validar.
+Não há smoke novo exigido.
+Próximo patch runtime, se aceito, deve ser SA-IDREF-4E.
+```
+
+
+---
+
+## SA-IDREF-4E — Reset actor ref validity by ActorInstanceRuntimeId
+
+Status: Applied / Pending compile + smoke.
+
+### Contexto
+
+O checkpoint `SA-IDREF-4D` confirmou que Reset já estava mais próximo do contrato correto do que Permission antes do `SA-IDREF-4C`: o resolver técnico de PlayerActor já usava `ActorInstanceRuntimeId` para resolver o `PlayerActorRuntimeHandle`.
+
+O resíduo era contratual: `PlayerActorId` e `PlayerSlotId`, embora sejam úteis para logs/facts/payload, ainda participavam da validade funcional do `ActorResetActorRef` e da guarda funcional do `PlayerActorResetEndpointResolver`.
+
+### Decisão
+
+Para Reset, o alvo funcional passa a ser:
+
+```text
+ActorInstanceRuntimeId + ActorId
+```
+
+Com contexto de pipeline:
+
+```text
+PipelineId + SessionId
+```
+
+`PlayerActorId` e `PlayerSlotId` permanecem no payload para observabilidade, mas não podem bloquear a resolução funcional se `ActorInstanceRuntimeId` e `ActorId` são válidos e correspondem à instância runtime resolvida.
+
+### Alterações aplicadas
+
+| Arquivo/classe/método | Alteração | Owner correto | Observação |
+|---|---|---|---|
+| `ActorResetActorRef.IsValid` | Removeu exigência funcional de `PlayerActorId` e `PlayerSlotId` para `ActorKind.Player`. | Command/payload runtime resolvido pelo `ActivityEntryPipeline`. | `ActorInstanceRuntimeId`, `ActorId`, `ActorKind` e `SessionActivityIdentity` são o núcleo funcional. |
+| `PlayerActorResetEndpointResolver.ResolveOrFail(...)` | Removeu rejeição antecipada por `actor.PlayerActorId.IsValid == false`. | Resolver técnico. | Lookup continua por `TryResolveHandleForActorInstance(...)`. |
+| `PlayerActorResetEndpointResolver.EnsureIdentityMatchesOrFail(...)` | Removeu comparação funcional por `identity.PlayerSlotId` e `identity.PlayerActorId`. | Resolver técnico. | Validação funcional agora depende de `PipelineId`, `SessionId`, `ActorInstanceRuntimeId` e `ActorId`; activity cycle continua aplicado apenas para actor não-route-scoped. |
+
+### Invariantes preservados
+
+```text
+PlayerActorId permanece observável.
+PlayerSlotId permanece observável.
+ActorInstanceRuntimeId é a chave funcional de runtime actor reset.
+ActorId é guarda tipada adicional.
+Registry continua índice técnico, não owner de lifecycle.
+Resolver não decide lifecycle; apenas resolve e valida endpoint.
+ActivityObjectReset não foi alterado.
+Camera, Permission, Presentation e Attributes não foram alterados.
+```
+
+### Respostas arquiteturais obrigatórias
+
+**Qual pipeline é dono desta decisão?**
+
+```text
+ActivityEntryPipeline é dono de criar o ActorResetCommand para setup/reset da entry atual.
+SessionActivityPipeline mantém ordem/lifecycle do reset dentro da entry.
+PlayerActorResetEndpointResolver não decide lifecycle; apenas resolve/valida endpoint técnico.
+```
+
+**Isso é stage, policy, command, fact, adapter, endpoint, snapshot ou authoring data?**
+
+```text
+ActorResetActorRef é command payload runtime resolvido.
+PlayerActorResetEndpointResolver é resolver/adapter técnico.
+IActorResetEndpoint é endpoint local.
+PlayerActorId/PlayerSlotId são campos de observabilidade no payload.
+```
+
+**Isso é comportamento final ou bridge transitória?**
+
+```text
+Reset funcional por ActorInstanceRuntimeId + ActorId é comportamento final.
+Exigir PlayerActorId/PlayerSlotId como guarda funcional era bridge transitória removida.
+```
+
+**Essa compatibilidade ainda é necessária?**
+
+```text
+Não. Não há produção dependente de reset por PlayerActorId/PlayerSlotId.
+Não criar fallback textual ou alias de playerSlot.
+```
+
+**O erro está no sintoma ou na fronteira arquitetural errada?**
+
+```text
+A fronteira já estava majoritariamente correta; o problema era uma ambiguidade contratual remanescente entre identidade observável e identidade funcional.
+```
+
+**Existe owner duplicado para o mesmo lifecycle?**
+
+```text
+Não. Pipeline decide quando resetar; adapter/resolver executa side-effect técnico; endpoint aplica reset local.
+```
+
+### Critério de aceite
+
+`SA-IDREF-4E` só pode ser fechado como PASS após compile e smoke.
+
+Critério mínimo:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActorResetQaApplied preservado quando QA reset for executado em ActivityRunning
+ActivityObjectReset PassedApplied preservado
+MovementBindingCompleted preservado
+MovementControlEnabled/Disabled preservados
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
+## SA-IDREF-4E-H1 — QA current player reset sem slot textual legado
+
+### Status
+
+CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Contexto
+
+O smoke posterior ao `SA-IDREF-4E` confirmou que o fluxo macro voltou sem regressão de rota/activity, mas não validou o reset QA de PlayerActor.
+
+Evidência observada no smoke:
+
+```text
+ActorResetQaRejected reason='actor_reset_qa_player_actor_not_found'
+playerSlotId='player1'
+availablePlayerSlots='player.slot.1'
+```
+
+Isso não é falha do resolver de reset por `ActorInstanceRuntimeId`; é resíduo de QA chamando o caminho canônico com slot textual legado.
+
+### Decisão
+
+`QaResetCurrentPlayerActor` não deve enviar `player1` como alias textual.
+
+O Host passa a solicitar reset do player atual sem slot explícito. O pipeline seleciona automaticamente apenas quando existe exatamente um target player válido na entry atual. Se houver zero ou múltiplos targets, o QA falha explicitamente sem fallback.
+
+### Invariantes
+
+```text
+Não criar alias player1 -> player.slot.1.
+Não voltar a usar PlayerActorId como lookup primário.
+Não exigir PlayerSlotId como validade funcional de reset.
+Seleção automática só é permitida quando há exatamente um target válido.
+PlayerSlotId continua observável no log após o target resolvido.
+```
+
+### Critério de aceite
+
+`SA-IDREF-4E-H1` foi fechado como PASS após compile e smoke com:
+
+```text
+sem erros CS
+ActorResetQaApplied quando QA reset current player actor foi executado em ActivityRunning
+sem ActorResetQaRejected por player1
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+MovementBindingCompleted preservado
+MovementControlEnabled/Disabled preservados
+CameraBindingCompleted preservado
+```
+
+### Evidência de smoke
+
+O smoke de fechamento confirmou:
+
+```text
+ActorResetQaRequested playerSlotId=''
+ActorResetQaApplied reason='actor_reset_qa_applied' playerSlotId='player.slot.1' playerActorId='SessionActivitySandboxSession|actor.player.primary' appliedGroups='2' skippedGroups='0'
+QaResetCurrentPlayerActor outcomeKind='Applied' reason='actor_reset_qa_applied'
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed' closedForRouteExit='true' routeExitTeardownCompleted='true' menuRouteApplied='true'
+```
+
+Conclusão: o QA current player reset não usa mais alias textual `player1`; a seleção automática só ocorreu porque havia exatamente um player target válido na entry atual.

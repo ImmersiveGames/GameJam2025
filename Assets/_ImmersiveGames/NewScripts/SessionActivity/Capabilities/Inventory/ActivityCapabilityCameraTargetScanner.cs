@@ -112,6 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     policyMetadata: new[]
                     {
                         new ActivityCapabilityPolicyEntry("actorId", playerIdentity.ActorId.Value),
+                        new ActivityCapabilityPolicyEntry("actorInstanceRuntimeId", playerIdentity.ActorInstanceRuntimeId.Value),
                         new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId.Value),
                         new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId.Value),
                         new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
@@ -122,6 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     capabilityId,
                     ownerId,
                     playerIdentity.ActorId,
+                    playerIdentity.ActorInstanceRuntimeId,
                     playerIdentity.PlayerActorId,
                     playerIdentity.PlayerSlotId,
                     componentPath,

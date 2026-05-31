@@ -108,6 +108,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     context.Identity.SessionId,
                     context.Identity.ActivityId,
                     context.Identity.EntrySequence,
+                    playerIdentity.ActorId,
+                    playerIdentity.ActorInstanceRuntimeId,
                     playerIdentity.PlayerActorId,
                     playerIdentity.PlayerSlotId);
                 string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
@@ -119,6 +121,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     receiver = new PlayerMovementPermissionReceiver(
                         movementEndpoint,
                         receiverId,
+                        playerIdentity.ActorId,
+                        playerIdentity.ActorInstanceRuntimeId,
                         playerIdentity.PlayerActorId,
                         playerIdentity.PlayerSlotId);
                 }
@@ -136,6 +140,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     {
                         new ActivityCapabilityPolicyEntry("permissionId", permissionToken),
                         new ActivityCapabilityPolicyEntry("actorId", playerIdentity.ActorId.Value),
+                        new ActivityCapabilityPolicyEntry("actorInstanceRuntimeId", playerIdentity.ActorInstanceRuntimeId.Value),
                         new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId.Value),
                         new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId.Value),
                         new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
@@ -146,6 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     capabilityId,
                     ownerId,
                     playerIdentity.ActorId,
+                    playerIdentity.ActorInstanceRuntimeId,
                     playerIdentity.PlayerActorId,
                     playerIdentity.PlayerSlotId,
                     componentPath,

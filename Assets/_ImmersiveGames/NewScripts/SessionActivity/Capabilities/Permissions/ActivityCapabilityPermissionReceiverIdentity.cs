@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
@@ -11,6 +12,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             string sessionStateId,
             string activityId,
             int entrySequence,
+            ActorId actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
         {
@@ -18,6 +21,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             SessionStateId = Normalize(sessionStateId);
             ActivityId = Normalize(activityId);
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             PlayerActorId = playerActorId;
             PlayerSlotId = playerSlotId;
         }
@@ -26,6 +31,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public string SessionStateId { get; }
         public string ActivityId { get; }
         public int EntrySequence { get; }
+        public ActorId ActorId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public PlayerActorId PlayerActorId { get; }
         public PlayerSlotId PlayerSlotId { get; }
 
@@ -34,6 +41,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             !string.IsNullOrWhiteSpace(SessionStateId) &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             EntrySequence > 0 &&
+            ActorId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
             PlayerActorId.IsValid;
 
         public bool Equals(ActivityCapabilityPermissionReceiverIdentity other)
@@ -42,6 +51,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                    string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
                    string.Equals(ActivityId, other.ActivityId, StringComparison.Ordinal) &&
                    EntrySequence == other.EntrySequence &&
+                   ActorId == other.ActorId &&
+                   ActorInstanceRuntimeId == other.ActorInstanceRuntimeId &&
                    PlayerActorId == other.PlayerActorId &&
                    PlayerSlotId == other.PlayerSlotId;
         }
@@ -58,13 +69,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
                 SessionStateId ?? string.Empty,
                 ActivityId ?? string.Empty,
                 EntrySequence,
+                ActorId,
+                ActorInstanceRuntimeId,
                 PlayerActorId,
                 PlayerSlotId);
         }
 
         public override string ToString()
         {
-            return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', entrySequence='{EntrySequence}', playerActorId='{PlayerActorId}', playerSlotId='{PlayerSlotId}'";
+            return $"pipelineId='{PipelineId}', sessionStateId='{SessionStateId}', activityId='{ActivityId}', entrySequence='{EntrySequence}', actorId='{ActorId}', actorInstanceRuntimeId='{ActorInstanceRuntimeId}', playerActorId='{PlayerActorId}', playerSlotId='{PlayerSlotId}'";
         }
 
         private static string Normalize(string value)

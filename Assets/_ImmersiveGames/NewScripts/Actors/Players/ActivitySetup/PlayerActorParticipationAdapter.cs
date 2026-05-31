@@ -63,6 +63,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                         $"player_participation_exit_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
+                ActorInstanceRuntimeId actorInstanceRuntimeId = handle.ActorInstanceRuntimeId;
+                if (!actorInstanceRuntimeId.IsValid)
+                {
+                    throw new InvalidOperationException($"player_participation_exit_actor_missing_actor_instance_runtime_id: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                }
+
                 GameObject instance = handle.Instance;
                 PlayerActorIdentity boundIdentity = instance.GetComponent<PlayerActorIdentity>();
                 if (boundIdentity == null || !boundIdentity.IsValid)
@@ -88,6 +94,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.SessionId,
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
+                    actorIdentity.ActorId,
+                    actorInstanceRuntimeId,
                     actorIdentity.PlayerActorId,
                     actorIdentity.PlayerSlotId,
                     command.Source,

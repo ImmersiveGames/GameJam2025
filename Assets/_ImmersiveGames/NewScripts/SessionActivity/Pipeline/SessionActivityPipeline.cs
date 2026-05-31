@@ -7522,16 +7522,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(normalizedPlayerSlotId))
-            {
-                outcomeReason = "actor_reset_qa_player_slot_missing";
-                DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaRejected' reason='{outcomeReason}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
-                    DebugUtility.Colors.Warning);
-                return false;
-            }
-
             IReadOnlyList<PlayerActorIdentityRecord> targets = ResolvePlayerActorCapabilityTargetsForCurrentEntry(commandIdentity);
             if (targets == null || targets.Count == 0)
             {
@@ -7545,17 +7535,38 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             PlayerActorIdentityRecord selected = default;
             bool found = false;
-            for (int index = 0; index < targets.Count; index++)
+            if (string.IsNullOrWhiteSpace(normalizedPlayerSlotId))
             {
-                PlayerActorIdentityRecord candidate = targets[index];
-                if (!candidate.IsValid || !string.Equals(candidate.PlayerSlotId.Value, normalizedPlayerSlotId, StringComparison.Ordinal))
+                if (targets.Count == 1 && targets[0].IsValid)
                 {
-                    continue;
+                    selected = targets[0];
+                    normalizedPlayerSlotId = selected.PlayerSlotId.Value;
+                    found = true;
                 }
+                else
+                {
+                    outcomeReason = "actor_reset_qa_player_slot_missing";
+                    DebugUtility.Log(
+                        typeof(SessionActivityPipeline),
+                        $"[OBS][SessionActivityPipeline][QA] event='ActorResetQaRejected' reason='{outcomeReason}' targetCount='{targets.Count}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                        DebugUtility.Colors.Warning);
+                    return false;
+                }
+            }
+            else
+            {
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    PlayerActorIdentityRecord candidate = targets[index];
+                    if (!candidate.IsValid || !string.Equals(candidate.PlayerSlotId.Value, normalizedPlayerSlotId, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
 
-                selected = candidate;
-                found = true;
-                break;
+                    selected = candidate;
+                    found = true;
+                    break;
+                }
             }
 
             if (!found)

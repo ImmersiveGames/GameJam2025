@@ -36,8 +36,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
             Identity.IsValid &&
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
-            ActorKind != ActorKind.Unknown &&
-            (!IsPlayer || (PlayerActorId.IsValid && PlayerSlotId.IsValid));
+            ActorKind != ActorKind.Unknown;
     }
 
     public enum ActorResetGroup

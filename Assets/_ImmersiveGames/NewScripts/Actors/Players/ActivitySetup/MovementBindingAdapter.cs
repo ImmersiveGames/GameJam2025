@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
@@ -65,6 +66,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantId);
                 PlayerActorId playerActorId = actorHandle.PlayerActorId;
+                ActorInstanceRuntimeId actorInstanceRuntimeId = actorHandle.ActorInstanceRuntimeId;
+                if (!actorInstanceRuntimeId.IsValid)
+                {
+                    throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorInstanceRuntimeId.");
+                }
+
                 GameObject actorInstance = actorHandle.Instance;
                 if (actorHandle.PlayerSlotId != requirement.PlayerSlotId || actorHandle.ActorId != requirement.ActorId)
                 {
@@ -100,6 +107,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.SessionId,
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
+                    requirement.ActorId,
+                    actorInstanceRuntimeId,
                     playerActorId,
                     requirement.PlayerSlotId,
                     command.Source,

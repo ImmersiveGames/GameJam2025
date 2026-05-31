@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
@@ -11,6 +12,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             ActivityCapabilityPermissionScope scope,
             ActivityCapabilityPermissionState state,
             string receiverId,
+            ActorId actorId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
         {
@@ -18,6 +21,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             Scope = scope;
             State = state;
             ReceiverId = Normalize(receiverId);
+            ActorId = actorId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             PlayerActorId = playerActorId;
             PlayerSlotId = playerSlotId;
         }
@@ -26,6 +31,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
         public ActivityCapabilityPermissionScope Scope { get; }
         public ActivityCapabilityPermissionState State { get; }
         public string ReceiverId { get; }
+        public ActorId ActorId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public PlayerActorId PlayerActorId { get; }
         public PlayerSlotId PlayerSlotId { get; }
 
@@ -34,6 +41,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
             Scope != ActivityCapabilityPermissionScope.Unknown &&
             State != ActivityCapabilityPermissionState.Unknown &&
             !string.IsNullOrWhiteSpace(ReceiverId) &&
+            ActorId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
             PlayerActorId.IsValid;
 
         private static string Normalize(string value)

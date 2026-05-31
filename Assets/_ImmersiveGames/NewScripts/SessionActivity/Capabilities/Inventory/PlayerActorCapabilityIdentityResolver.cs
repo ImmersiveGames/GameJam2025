@@ -19,7 +19,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return false;
             }
 
-            identity = new PlayerActorCapabilityIdentity(new ActorId(target.ActorId), playerIdentity.PlayerActorId, playerIdentity.PlayerSlotId);
+            ActorInstanceRuntimeId actorInstanceRuntimeId = new(target.ActorInstanceId.Value);
+            identity = new PlayerActorCapabilityIdentity(new ActorId(target.ActorId), actorInstanceRuntimeId, playerIdentity.PlayerActorId, playerIdentity.PlayerSlotId);
             return identity.IsValid;
         }
     }
