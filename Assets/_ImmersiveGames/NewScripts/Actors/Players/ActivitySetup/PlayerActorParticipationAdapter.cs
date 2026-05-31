@@ -57,15 +57,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActorIdentityRecord at index '{index}' is invalid.");
                 }
 
-                if (!IsSameActivityCycle(actorIdentity.Identity, activeIdentity))
-                {
-                    throw new InvalidOperationException("stale_or_foreign_player_actor_identity: actor identity does not match active identity.");
-                }
-
-                if (!registry.TryResolveHandleForControl(activeIdentity, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!registry.TryResolveHandleForParticipant(activeIdentity, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"player_participation_exit_actor_not_found: participantId='{actorIdentity.ParticipantId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                        $"player_participation_exit_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
                 GameObject instance = handle.Instance;
@@ -93,8 +88,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.SessionId,
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
-                    handle.PlayerActorId,
-                    handle.PlayerSlotId,
+                    actorIdentity.PlayerActorId,
+                    actorIdentity.PlayerSlotId,
                     command.Source,
                     command.Reason);
 
@@ -104,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Player participation exit permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actorIdentity.PlayerActorId}'.");
                 }
 
-                records.Add(new PlayerActorParticipationExitRecord(handle.ActorIdentity, exited: true, retainedForRoute: true));
+                records.Add(new PlayerActorParticipationExitRecord(actorIdentity, exited: true, retainedForRoute: true));
             }
 
             return records;
@@ -144,15 +139,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActorIdentityRecord at index '{index}' is invalid.");
                 }
 
-                if (!IsSameActivityCycle(actorIdentity.Identity, activeIdentity))
-                {
-                    throw new InvalidOperationException("stale_or_foreign_player_actor_identity: actor identity does not match active identity.");
-                }
-
-                if (!registry.TryResolveHandleForControl(activeIdentity, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!registry.TryResolveHandleForParticipant(activeIdentity, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"player_participation_enter_actor_not_found: participantId='{actorIdentity.ParticipantId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                        $"player_participation_enter_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
                 }
 
                 GameObject instance = handle.Instance;
@@ -171,7 +161,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 participation.MarkActiveInActivity(activeIdentity);
-                records.Add(new PlayerActorParticipationEnterRecord(handle.ActorIdentity, entered: true, retainedForRoute: true));
+                records.Add(new PlayerActorParticipationEnterRecord(actorIdentity, entered: true, retainedForRoute: true));
             }
 
             return records;

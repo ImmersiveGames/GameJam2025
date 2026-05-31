@@ -4,7 +4,7 @@
 
 Accepted / Frozen as Base 2.0 plan.
 
-Checkpoint operacional: `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS funcional + PASS arquitetural do corte após smoke manual.
+Checkpoint operacional: `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS funcional + PASS arquitetural do corte após smoke manual. `SA-IDREF-3A` teve regressão em `RouteExit` por confusão entre lookup operacional e identidade observável; `SA-IDREF-3A-H1/H2/H3` está registrado como correção aplicada. O smoke pós-H3 recuperou `RouteExitBackToMenu`, mas este ADR congela o contrato antes de novos cortes de identidade.
 
 Este ADR congela o plano `SA-IDREF — Typed Runtime References` e registra os checkpoints aceitos desta frente.
 
@@ -154,19 +154,22 @@ Se o consumidor precisa de `PlayerActorId`, deve obtê-lo do `PlayerActorRuntime
 
 ### 4. `ActivityPlayerActorRegistry` é índice técnico, não owner tardio de lifecycle
 
-O registry pode indexar handles materializados e expor lookup por identity tipada.
+O registry pode indexar handles materializados e expor lookup por identity tipada canônica da fronteira correta.
 
-Permitido:
+Permitido no caminho ativo:
 
 ```text
 TryGetHandle(SessionParticipantId, out PlayerActorRuntimeHandle)
-TryGetHandle(PlayerActorId, out PlayerActorRuntimeHandle) quando a origem já é PlayerActorId tipado válido
+TryGetHandle(ActorInstanceRuntimeId, out PlayerActorRuntimeHandle)
 ```
+
+`PlayerActorId` permanece como identidade observável do handle, mas não é chave operacional primária de lookup runtime.
 
 Proibido:
 
 ```text
 fabricar PlayerActorId dentro do registry para satisfazer lookup textual;
+usar PlayerActorId como chave primária para resolver PlayerActorRuntimeHandle em consumers;
 comparar PlayerSlotId.Value com ActorId.Value;
 servir como fallback para consumidor que não recebeu ActivityParticipantBinding;
 decidir lifecycle ou materialização.
@@ -296,6 +299,157 @@ Se um stage consumidor consegue fabricar `PlayerActorId`, ele vira owner informa
 | Registry | índice técnico por typed key | owner tardio de lifecycle |
 | Fact/log | string derivada para observabilidade | string como decisão funcional |
 | Authoring | asset reference/typed ref futura | string solta como runtime key |
+
+## Contrato corretivo pós-regressão SA-IDREF-3A-H1/H2/H3
+
+A regressão de `SA-IDREF-3A` revelou que o contrato ainda estava ambíguo entre duas operações diferentes:
+
+```text
+resolver runtime handle
+observar identity do handle já resolvido
+```
+
+Este ADR congela a distinção.
+
+### Regra central
+
+```text
+PlayerActorId não é chave operacional primária.
+PlayerActorId é identidade observável do PlayerActorIdentityRecord / PlayerActorRuntimeHandle já resolvido.
+```
+
+Portanto:
+
+```text
+Permitido:
+handle.ActorIdentity.PlayerActorId
+record.ActorIdentity.PlayerActorId
+runtimeHandle.PlayerActorId
+```
+
+Proibido:
+
+```text
+fabricar PlayerActorId em stage/consumer para resolver runtime handle;
+usar PlayerActorId como lookup principal de ActivityPlayerActorRegistry;
+usar PlayerActorId para validar lifecycle de Activity entry;
+comparar PlayerActorId com ActorInstanceRuntimeId, ActorId, PlayerSlotId ou SessionActivityIdentity;
+remover PlayerActorId do contrato observável para impedir uso indevido.
+```
+
+### Ownership correto
+
+| Item | Owner correto | Regra |
+|---|---|---|
+| Criar/materializar actor runtime | `ActivityEntryPipeline` / materialization stage-adapter | Cria o handle e suas identities runtime. |
+| Registrar handle ativo | `ActivityPlayerActorRegistry` | Registry indexa tecnicamente por `SessionParticipantId` e/ou `ActorInstanceRuntimeId`. |
+| Resolver participação de entry | `ActivityParticipantBinding` | Binding liga requirement, participant e authoring refs. |
+| Input/Movement binding | Entry stage + adapter | Stage passa binding; adapter resolve handle. |
+| Permission payload player-specific | Permission command/fact | Pode carregar `PlayerActorId` observado do handle. |
+| RouteExit player participation | Exit stage/adapter | Deve resolver por binding/handle, sem validar contra entry ativa quando o actor é route-scoped. |
+
+### Contrato por identidade
+
+| Identidade | Significado | Pode ser usada para lookup runtime? | Pode ser log/payload? |
+|---|---|---:|---:|
+| `ActorId` | Identidade semântica/autoral do actor | Não como handle runtime | Sim |
+| `ActorDefinitionId` | Definição autoral do actor | Não | Sim |
+| `ActorInstanceRuntimeId` | Instância runtime concreta | Sim, para actor/endpoint runtime | Sim |
+| `SessionParticipantId` | Participante da sessão/activity | Sim, para participation/handle player | Sim |
+| `PlayerSlotId` | Slot de jogador/input | Não como actor identity | Sim |
+| `PlayerActorId` | Identidade typed do player actor observado | Não como chave primária | Sim |
+| `ActivityParticipantBinding` | Binding resolvido da entry | Sim, como referência primária do consumer | Sim |
+| `PlayerActorRuntimeHandle` | Fonte canônica do player actor runtime ativo | Sim, objeto já resolvido | Sim |
+
+### Regra de ouro para consumers
+
+Consumers nunca constroem identity para achar runtime.
+
+```text
+Consumer recebe:
+ActivityParticipantBinding
+
+Consumer resolve:
+ActivityParticipantBinding.ParticipantId
+ -> ActivityPlayerActorRegistry
+ -> PlayerActorRuntimeHandle
+
+Consumer observa:
+handle.ActorIdentity.PlayerActorId
+handle.ActorIdentity.ActorInstanceRuntimeId
+handle.PlayerSlotId
+```
+
+Quando o consumer já opera sobre uma instância concreta de actor, a resolução pode partir de:
+
+```text
+ActorInstanceRuntimeId
+ -> ActivityPlayerActorRegistry
+ -> PlayerActorRuntimeHandle
+```
+
+mas não pode cair para comparação textual entre domínios.
+
+### Regra de route-scoped actor
+
+Para actor `RouteScoped`:
+
+```text
+A Activity entry atual pode mudar.
+O PlayerActorRuntimeHandle pode continuar válido.
+Logo, validação por active activity identity é inválida para release/exit route-scoped.
+```
+
+A validação correta é:
+
+```text
+mesma sessão;
+mesmo route scope quando aplicável;
+mesmo SessionParticipantId ou ActorInstanceRuntimeId;
+handle ainda registrado/válido.
+```
+
+A validação incorreta é:
+
+```text
+mesma entrySequence;
+mesma ActivityId;
+mesmo active activity identity.
+```
+
+### Invariante de contrato observável
+
+```text
+PlayerActorId é parte do PlayerActorIdentityRecord e deve permanecer exposto como propriedade observável.
+Remover essa propriedade é regressão de contrato.
+O proibido não é expor PlayerActorId; o proibido é usá-lo como chave primária de resolução runtime fora do owner canônico.
+```
+
+### Checklist obrigatória antes de qualquer patch de identidade
+
+Antes de alterar qualquer contrato/lookup de identidade, a mudança deve responder explicitamente:
+
+```text
+Identidade removida de onde?
+Identidade preservada onde?
+Quem cria?
+Quem observa?
+Quem pode usar como lookup?
+Quem não pode comparar?
+Qual smoke prova que não houve regressão?
+```
+
+A mudança deve ser rejeitada se:
+
+```text
+remover propriedade observável usada por contrato público;
+trocar uma identity por string;
+usar PlayerSlotId como alias de actor;
+usar ActorId como runtime instance;
+usar PlayerActorId para lookup primário de handle fora do registry;
+validar route-scoped actor contra entry ativa;
+criar fallback silencioso para resolver identity ausente.
+```
 
 ## Plano congelado
 
@@ -675,6 +829,70 @@ paths antigos equivalentes removidos ou inacessíveis;
 smoke/log preserva checkpoints funcionais.
 ```
 
+
+## Checkpoint SA-IDREF-3A — Registry lookup cleanup por ActorInstanceRuntimeId
+
+Status: Applied / Pending smoke.
+
+### Contexto
+
+Após `SA-IDREF-2H5`, Input e Movement deixaram de fabricar `PlayerActorId`, mas a auditoria dos consumers restantes encontrou resíduos no registry/exit/reset:
+
+```text
+ActivityPlayerActorRegistry ainda mantinha índice ativo por PlayerActorId.
+ActorParticipation exit resolvia PlayerActorRuntimeHandle por PlayerActorId.
+PlayerActorResetEndpointResolver resolvia PlayerActorRuntimeHandle por PlayerActorId.
+```
+
+Isso ainda deixava `PlayerActorId` como chave técnica de lookup runtime fora do ponto de materialização.
+
+### Decisão
+
+O registry de PlayerActor passa a ser indexado operacionalmente por:
+
+```text
+SessionParticipantId
+ActorInstanceRuntimeId
+```
+
+`PlayerActorId` permanece válido como identidade observável do handle, para logs, permission payload atual e validação local, mas não como índice ativo de resolução de handle por consumers.
+
+### Alterações aplicadas
+
+```text
+ActivityPlayerActorRegistry removeu o índice ativo Dictionary<PlayerActorId, PlayerActorRuntimeHandle>.
+ActivityPlayerActorRegistry ganhou lookup por ActorInstanceRuntimeId.
+ActorParticipation exit resolve handle por ActorInstanceRuntimeId observado no ActorInstanceRecord.
+PlayerActorResetEndpointResolver resolve handle por ActorInstanceRuntimeId.
+Lookup por SessionParticipantId permanece canônico para ActivityParticipantBinding/Input/Movement/Participation.
+```
+
+### Critério de aceite
+
+Só pode ser fechado como PASS se smoke/log confirmar:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActorResetQaApplied preservado
+ActivityObjectReset PassedApplied preservado
+MovementBindingCompleted preservado
+MovementControlEnabled/Disabled preservado
+CameraBindingCompleted preservado
+```
+
+Sem esse smoke/log, o status permanece:
+
+```text
+implementação aplicada
+pendente de smoke/log
+```
+
 ## Smoke mínimo após corte funcional
 
 Após qualquer implementação runtime desta frente, exigir smoke/log manual com:
@@ -745,7 +963,119 @@ Status operacional atual:
 
 ```text
 SA-IDREF-2H5 CLOSED / PASS funcional + PASS arquitetural do corte.
-Próximo corte recomendado: SA-IDREF-3/4 por auditoria pequena dos consumers restantes antes de implementação.
+SA-IDREF-3A-H1/H2/H3 aplicado; regressão conceitual registrada e contrato corretivo congelado.
+Próximo corte recomendado: somente auditoria de identities restantes antes de qualquer implementação runtime.
 ```
 
 Nenhum corte desta frente deve ser aceito como PASS sem smoke/log.
+
+
+## SA-IDREF-3A-H1 — RouteExit retained PlayerActor lookup regression fix
+
+Status: Applied / Pending smoke.
+
+Após o smoke de `SA-IDREF-3A`, o fluxo quebrou no `BackToMenu / RouteExit` com:
+
+```text
+route_transition_failed
+stale_or_foreign_player_actor_identity: actor identity does not match active identity
+```
+
+Causa:
+
+```text
+PlayerActorParticipationAdapter ainda exigia que PlayerActorIdentityRecord.Identity fosse do mesmo Activity cycle ativo.
+Isso é incorreto para PlayerActor route-scoped retido, porque o handle runtime pode ter nascido em entry anterior e continuar válido na rota.
+Além disso, o registry ainda preservava lookup operacional por PlayerActorId.
+```
+
+Correção aplicada:
+
+```text
+ActivityPlayerActorRegistry não mantém mais índice ativo por PlayerActorId.
+Lookup operacional passa a ser por SessionParticipantId ou ActorInstanceRuntimeId.
+PlayerActorParticipationAdapter resolve handle por SessionParticipantId e valida a identidade observada pelo handle.
+PlayerInputBindingRequirement e MovementBindingRequirement deixam de carregar PlayerActorId.
+PlayerInputBindingStage e PlayerMovementBindingStage deixam de fabricar PlayerActorId.
+Cache de ActivityParticipantBinding em SessionActivityPipeline passa a ser por ActorId tipado, não por PlayerActorId reconstruído.
+PlayerActorId permanece observável em handle/log/permission payload, mas não é chave primária para resolver runtime handle.
+```
+
+Critério de smoke:
+
+```text
+BackToMenu / RouteExit não pode gerar stale_or_foreign_player_actor_identity.
+RouteExitBackToMenu deve passar.
+Input/Movement/Camera/Reset não podem regredir.
+```
+
+## SA-IDREF-3A-H2 — Contract restore after over-aggressive identity removal
+
+Status: Applied / Pending compile.
+
+A tentativa anterior removeu exposição demais de `PlayerActorId` e deixou consumers legítimos sem um contrato observável após resolverem o runtime handle.
+
+Decisão corretiva:
+
+```text
+PlayerActorId não deve ser usado como lookup operacional primário de PlayerActorRuntimeHandle.
+PlayerActorId pode e deve permanecer como identidade observável dentro de PlayerActorIdentityRecord/PlayerActorRuntimeHandle.
+Consumers podem logar/publicar PlayerActorId depois de resolver o handle por SessionParticipantId ou ActorInstanceRuntimeId.
+PlayerInputBindingRequirement e MovementBindingRequirement continuam sem PlayerActorId.
+PlayerInputBindingRecord e MovementBindingRecord passam a carregar PlayerActorIdentityRecord observado pelo handle resolvido.
+```
+
+Correção aplicada:
+
+```text
+PlayerActorIdentityRecord expõe PlayerActorId novamente.
+PlayerInputBindingRecord inclui ActorIdentity.
+MovementBindingRecord inclui ActorIdentity.
+SessionActivityPipeline usa record.ActorIdentity.PlayerActorId para logs/facts/permissões derivadas.
+SessionActivityPipeline não tenta acessar PlayerActorId nos requirements de Input/Movement.
+```
+
+Critério imediato:
+
+```text
+O projeto deve voltar a compilar.
+Depois disso, repetir smoke completo de SA-IDREF-3A-H1.
+```
+
+
+## SA-IDREF-3A-H3 — PlayerActorId observable contract compile fix
+
+Status: Compile restored / Smoke observed / Contract frozen before next identity cut.
+
+A compilação quebrou porque `PlayerActorIdentityRecord` continuava sendo consumido como contrato observável com `PlayerActorId`, mas a propriedade havia sido removida durante a tentativa de impedir lookup operacional por `PlayerActorId`.
+
+Causa normativa:
+
+```text
+Foi confundido remover PlayerActorId como chave de lookup com remover PlayerActorId do contrato observável.
+```
+
+Correção congelada:
+
+```text
+PlayerActorIdentityRecord deve expor PlayerActorId.
+PlayerActorRuntimeHandle pode expor PlayerActorId derivado de ActorIdentity.
+PlayerInputBindingRequirement e MovementBindingRequirement continuam sem PlayerActorId.
+Records produzidos por adapters podem carregar ActorIdentity observado após resolverem o handle.
+Consumers usam record.ActorIdentity.PlayerActorId apenas para log/fact/permission payload derivado.
+```
+
+Critério para novos cortes:
+
+```text
+Nenhum patch SA-IDREF pode remover uma propriedade observável para impedir uso indevido.
+Uso indevido deve ser bloqueado removendo o lookup/constructor/factory do consumer errado, não quebrando o contrato público do handle.
+```
+
+Evidência funcional observada após recuperação:
+
+```text
+compilação voltou;
+RouteExitBackToMenu recuperado no smoke;
+sem aceitar novo PASS arquitetural antes deste contrato estar registrado.
+```

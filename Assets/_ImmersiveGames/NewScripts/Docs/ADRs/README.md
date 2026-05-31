@@ -111,6 +111,8 @@ O ADR-2.0-0004 congela que:
 - `PlayerActorRuntimeHandle` é a referência primária do PlayerActor materializado.
 - Stages consumidores como Input, Movement, Camera, Permission e Reset não fabricam `PlayerActorId`.
 - `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS após smoke manual.
+- `SA-IDREF-3A-H1/H2/H3` registrou a regressão e congelou a separação entre lookup operacional e identidade observável.
+- `PlayerActorId` permanece exposto em `PlayerActorIdentityRecord` / `PlayerActorRuntimeHandle` como identidade observável, mas não é chave operacional primária de lookup runtime.
 - `PlayerInputBindingStage` e `PlayerMovementBindingStage` não fabricam `PlayerActorId`; consumers usam binding/handle.
 - Nenhum corte `SA-IDREF` futuro é PASS sem smoke/log.
 
@@ -135,3 +137,28 @@ Evidência aceita:
 - `MovementControlEnabled/Disabled` preservados;
 - `CameraBindingCompleted` preservado;
 - `BuildPlayerActorId` ausente no log.
+
+
+### Checkpoint SA-IDREF-3A
+
+Status: Applied / Pending smoke.
+
+Resumo:
+
+- `ActivityPlayerActorRegistry` deixou de manter índice ativo por `PlayerActorId`.
+- Lookup operacional de handle continua por `SessionParticipantId` quando existe `ActivityParticipantBinding`.
+- Consumers de exit/reset passam a resolver `PlayerActorRuntimeHandle` por `ActorInstanceRuntimeId`.
+- `PlayerActorId` permanece como identidade observada/logada depois do handle resolvido, não como chave ativa de lookup runtime.
+- PASS exige novo smoke/log.
+
+- `ADR-2.0-0004-SA-IDREF-Typed-Runtime-References.md` — Typed runtime references / IDREF cleanup. Status: SA-IDREF-3A-H1/H2/H3 applied; contract regression registered; next runtime cut blocked until identity audit.
+
+
+### Contrato corretivo SA-IDREF-3A-H1/H2/H3
+
+- Remover `PlayerActorId` do contrato observável é regressão.
+- O proibido é usar `PlayerActorId` como chave primária de lookup runtime fora do owner canônico.
+- Lookup ativo de `PlayerActorRuntimeHandle` deve partir de `SessionParticipantId` ou `ActorInstanceRuntimeId` conforme a fronteira.
+- Consumers observam `PlayerActorId` somente depois do handle resolvido.
+- Actor `RouteScoped` não pode ser validado contra a entry ativa atual; deve ser validado por sessão/scope/participant ou instância runtime.
+- Próximos cortes de identity devem declarar: identidade removida, identidade preservada, quem cria, quem observa, quem pode usar como lookup, quem não pode comparar e qual smoke prova ausência de regressão.

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -9,7 +10,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         private readonly Dictionary<SessionParticipantId, PlayerActorRuntimeHandle> _routeHandlesByParticipantId = new();
         private readonly Dictionary<SessionParticipantId, PlayerActorRuntimeHandle> _activeHandlesByParticipantId = new();
-        private readonly Dictionary<PlayerActorId, PlayerActorRuntimeHandle> _activeHandlesByPlayerActorId = new();
         private SessionActivityIdentity _activeScopeIdentity;
 
         public SessionActivityIdentity ActiveScopeIdentity => _activeScopeIdentity;
@@ -23,7 +23,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             _activeScopeIdentity = scopeIdentity;
             _activeHandlesByParticipantId.Clear();
-            _activeHandlesByPlayerActorId.Clear();
         }
 
         public void RegisterMaterialized(PlayerActorRuntimeHandle handle)
@@ -42,11 +41,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException($"Duplicate player participant registration detected. participantId='{actorIdentity.ParticipantId}'.");
             }
 
-            if (_activeHandlesByPlayerActorId.ContainsKey(actorIdentity.PlayerActorId))
-            {
-                throw new InvalidOperationException($"Duplicate playerActorId registration detected. playerActorId='{actorIdentity.PlayerActorId}'.");
-            }
-
             if (_routeHandlesByParticipantId.TryGetValue(actorIdentity.ParticipantId, out PlayerActorRuntimeHandle existing) &&
                 existing.IsValid &&
                 existing.Instance != handle.Instance)
@@ -55,7 +49,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             _activeHandlesByParticipantId.Add(actorIdentity.ParticipantId, handle);
-            _activeHandlesByPlayerActorId.Add(actorIdentity.PlayerActorId, handle);
             _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
         }
 
@@ -93,7 +86,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             PlayerActorIdentityRecord actorIdentity = handle.ActorIdentity;
             EnsureIdentityMatchesActiveScopeOrFail(actorIdentity.Identity, "stale_or_foreign_player_actor_reenter_registration");
             _activeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
-            _activeHandlesByPlayerActorId[actorIdentity.PlayerActorId] = handle;
             _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
         }
 
@@ -149,60 +141,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             return handle;
         }
 
-        public PlayerActorRuntimeHandle ResolveActiveHandleOrFail(SessionActivityIdentity expectedScopeIdentity, PlayerActorId playerActorId)
-        {
-            EnsureScopeMatchesOrFail(expectedScopeIdentity);
-            if (!playerActorId.IsValid)
-            {
-                throw new InvalidOperationException("playerActorId is required.");
-            }
-
-            if (!_activeHandlesByPlayerActorId.TryGetValue(playerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
-            {
-                throw new InvalidOperationException($"Active PlayerActor handle not found in registry. playerActorId='{playerActorId}'.");
-            }
-
-            return handle;
-        }
-
-        public bool TryResolveHandleForControl(SessionActivityIdentity expectedIdentity, PlayerActorId playerActorId, out PlayerActorRuntimeHandle handle)
-        {
-            handle = default;
-            if (!expectedIdentity.IsValid || !playerActorId.IsValid)
-            {
-                return false;
-            }
-
-            if (_activeScopeIdentity.IsValid &&
-                IsSameActivityCycle(_activeScopeIdentity, expectedIdentity) &&
-                _activeHandlesByPlayerActorId.TryGetValue(playerActorId, out PlayerActorRuntimeHandle activeHandle) &&
-                activeHandle.IsValid)
-            {
-                handle = activeHandle;
-                return true;
-            }
-
-            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
-            {
-                PlayerActorRuntimeHandle retained = pair.Value;
-                if (!retained.IsValid || retained.PlayerActorId != playerActorId)
-                {
-                    continue;
-                }
-
-                if (!IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
-                {
-                    continue;
-                }
-
-                handle = retained;
-                return true;
-            }
-
-            return false;
-        }
-
-        public bool TryResolveHandleForControl(SessionActivityIdentity expectedIdentity, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
+        public bool TryResolveHandleForParticipant(SessionActivityIdentity expectedIdentity, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
         {
             handle = default;
             if (!expectedIdentity.IsValid || !participantId.IsValid)
@@ -223,6 +162,46 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 retained.IsValid &&
                 IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
             {
+                handle = retained;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryResolveHandleForActorInstance(SessionActivityIdentity expectedIdentity, ActorInstanceRuntimeId actorInstanceRuntimeId, out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            if (!expectedIdentity.IsValid || !actorInstanceRuntimeId.IsValid)
+            {
+                return false;
+            }
+
+            if (_activeScopeIdentity.IsValid &&
+                IsSameActivityCycle(_activeScopeIdentity, expectedIdentity))
+            {
+                foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _activeHandlesByParticipantId)
+                {
+                    PlayerActorRuntimeHandle active = pair.Value;
+                    if (active.IsValid &&
+                        active.ActorInstanceRuntimeId == actorInstanceRuntimeId)
+                    {
+                        handle = active;
+                        return true;
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
+            {
+                PlayerActorRuntimeHandle retained = pair.Value;
+                if (!retained.IsValid ||
+                    retained.ActorInstanceRuntimeId != actorInstanceRuntimeId ||
+                    !IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
+                {
+                    continue;
+                }
+
                 handle = retained;
                 return true;
             }
@@ -264,7 +243,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             _routeHandlesByParticipantId.Clear();
             _activeHandlesByParticipantId.Clear();
-            _activeHandlesByPlayerActorId.Clear();
             _activeScopeIdentity = default;
         }
 

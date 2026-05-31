@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     $"actor_reset_player_identity_missing: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
             }
 
-            if (_registry.TryResolveHandleForControl(activeIdentity, actor.PlayerActorId, out PlayerActorRuntimeHandle handle) &&
+            if (_registry.TryResolveHandleForActorInstance(activeIdentity, actor.ActorInstanceRuntimeId, out PlayerActorRuntimeHandle handle) &&
                 handle.IsValid &&
                 handle.Instance != null)
             {
