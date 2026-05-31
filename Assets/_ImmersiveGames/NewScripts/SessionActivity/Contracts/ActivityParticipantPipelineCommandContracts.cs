@@ -16,18 +16,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             string requirementId,
             ActivityParticipantRequirementKind participantKind,
-            string requestedParticipantId,
+            SessionParticipantId requestedParticipantId,
             ActivityParticipantBinding participantBinding,
-            string roleId,
             string source,
             string reason)
         {
             Identity = identity;
             RequirementId = Normalize(requirementId);
             ParticipantKind = participantKind;
-            RequestedParticipantId = Normalize(requestedParticipantId);
+            RequestedParticipantId = requestedParticipantId;
             ParticipantBinding = participantBinding;
-            RoleId = Normalize(roleId);
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -35,9 +33,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
         public ActivityParticipantRequirementKind ParticipantKind { get; }
-        public string RequestedParticipantId { get; }
+        public SessionParticipantId RequestedParticipantId { get; }
         public ActivityParticipantBinding ParticipantBinding { get; }
-        public string RoleId { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -50,7 +47,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', requestedParticipantId='{(string.IsNullOrWhiteSpace(RequestedParticipantId) ? "<none>" : RequestedParticipantId)}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', roleId='{RoleId}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', requestedParticipantId='{FormatRequestedParticipantId(RequestedParticipantId)}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
+        }
+
+        private static string FormatRequestedParticipantId(SessionParticipantId participantId)
+        {
+            return participantId.IsValid ? participantId.ToString() : "<none>";
         }
 
         private static string Normalize(string value)

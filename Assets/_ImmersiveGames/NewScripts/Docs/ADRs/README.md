@@ -39,7 +39,7 @@ Fases fechadas:
 ## Invariantes congeladas
 
 - Actor é raiz abstrata.
-- PlayerActor/NonPlayerActor são especializações concretas.
+- Actor é a entrada canônica; `PlayerActor`/`NonPlayerActor` são nomes/resíduos concretos do corte atual, não categorias normativas nem trilhos separados.
 - ActorKind/Role/Scope são metadata/log/transição, não rail funcional.
 - ActorCapabilitySurface é a fonte local primária de endpoints.
 - Scanners migrados usam ActorScanTarget + ActorCapabilitySurface.
@@ -217,7 +217,7 @@ Status: AUDITED / NO RUNTIME CHANGE.
 
 ### Checkpoint SA-IDREF-4E
 
-Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+Status: Applied / Pending compile + smoke.
 
 - Reset actor ref validity passou a depender funcionalmente de `ActorInstanceRuntimeId + ActorId`, com contexto `PipelineId + SessionId`.
 - `ActorResetActorRef.IsValid` não exige mais `PlayerActorId`/`PlayerSlotId` para `ActorKind.Player`.
@@ -225,6 +225,58 @@ Status: CLOSED / PASS funcional + PASS arquitetural do corte.
 - `PlayerActorResetEndpointResolver.EnsureIdentityMatchesOrFail(...)` não usa mais `PlayerActorId`/`PlayerSlotId` como guarda funcional.
 - `PlayerActorId` e `PlayerSlotId` permanecem em logs/facts/payload como observabilidade.
 - `ActivityObjectReset`, Camera, Permission, Presentation e Attributes não foram alterados.
-- PASS confirmado por smoke manual com `ActorResetQaApplied`, sem `ActorResetQaRejected` por `player1`, sem `FATAL`, `Exception`, `route_transition_failed` ou `foreign/stale` indevido.
-- Checkpoints `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` passaram. Movement/Camera preservados.
-- `SA-IDREF-4E-H1` fechado: removeu o alias textual `player1` do QA reset current player e permitiu seleção automática somente quando há exatamente um player target válido na entry atual.
+- PASS depende de compile sem erros CS e smoke com `ActorResetQaApplied`, `ActivityObjectReset PassedApplied`, Movement/Camera preservados e checkpoints principais passando.
+- `SA-IDREF-4E-H1` está CLOSED / PASS funcional + PASS arquitetural do corte: removeu o alias textual `player1` do QA reset current player e validou seleção automática somente quando há exatamente um player target válido na entry atual.
+
+
+### Checkpoint SA-IDREF-5A
+
+Status: AUDITED / NO RUNTIME CHANGE.
+
+- Auditoria residual de strings/IDs executada sobre `NewScripts/**/*.cs`, ignorando logs/evidências históricas e markdowns.
+- Não há literais `player1`/`player2` em código C# ativo.
+- Não há `Dictionary<PlayerActorId, ...>` nem lookup ativo `TryResolveHandleForPlayerActor`.
+- `BuildPlayerActorId` permanece restrito ao ponto de criação de `PlayerActorIdentityRecord` em materialização/binding de participante.
+- Usos de `.Value`/`ToString()` em scanners, logs, policy entries, binding states, receiverId e paths Unity foram classificados como observabilidade/serialização técnica aceitável neste checkpoint.
+- Resíduos funcionais encontrados: `routeParticipantHint` textual comparado com `PlayerSlotId.Value`, role inferida por `ContainsOrdinalToken(primary/support)` e overload QA interno ainda aceitando slot textual opcional.
+- Próximo corte recomendado: `SA-IDREF-5B — typed participant requirement binding / no semantic role parsing`.
+
+### Checkpoint SA-IDREF-5B
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- Removeu o binding funcional por `routeParticipantHint` string contra `PlayerSlotId.Value`.
+- Removeu inferência de role por `ContainsOrdinalToken(primary/support)`.
+- `ParticipantRequirement` agora carrega `SessionParticipantId` tipado e `ExpectedSessionRole` explícito.
+- `ActivityParticipantRequirementAuthoring` ganhou `expectedSessionRole`, default `PrimaryPlayer`.
+- `TryQaResetCurrentPlayerActor` não aceita mais slot textual opcional; QA current reset só seleciona automaticamente quando há exatamente um player target válido.
+- PASS confirmado por smoke completo: sem `FATAL`, `Exception`, `route_transition_failed`, `foreign/stale` indevido ou `checkpointStatus='Failed'`.
+- O smoke confirmou `ActorResetQaApplied`, `ActivityParticipantBindingCompleted`, `ActivityParticipantActorMaterialized`/`ActivityParticipantActorMaterializationRetained`, `MovementBindingCompleted`, `CameraBindingCompleted`, `RestartCurrentActivity PASS`, `Activity01ToActivity02 PASS` e `RouteExitBackToMenu PASS`.
+- `SA-IDREF-5B-H1` fechado como PASS: logging de ambiguidade do QA reset agora observa `ActorInstanceRuntimeId` via `PlayerActorRuntimeHandle`, não por propriedade inexistente em `PlayerActorIdentityRecord`.
+- O caminho QA current reset não reintroduziu `player1`, `player2`, slot textual opcional ou lookup primário por `PlayerActorId`.
+
+### Checkpoint SA-IDREF-5C
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- Auditoria de authoring refs/assets executada com separação entre string serializada aceitável, ids autorais de asset/profile, logs/paths técnicos e referência funcional indevida.
+- Corrigido resíduo de participant authoring: `roleId` textual foi removido de `ActivityParticipantRequirementAuthoring`, `ParticipantRequirement`, `ActivityParticipantBindCommand` e `ActivityContentProfile01.asset`.
+- `ActivityParticipantRequirementAuthoring` ainda serializa `participantId` como string técnica de Unity, mas expõe `SessionParticipantId` tipado para o builder.
+- `ParticipantRequirement` passou a carregar `SessionParticipantId + ExpectedSessionRole` como contrato primário.
+- `ActivityParticipantBindCommand` passou a carregar `RequestedParticipantId` como `SessionParticipantId` tipado e não carrega mais `RoleId` textual.
+- `ActivityObject` targetId/roleId, Activity asset ids, profile ids, Actor Presentation slot ids e Attribute ids foram classificados como domínios separados/ids autorais e ficaram fora do corte runtime.
+- PASS depende de compile sem erros CS e smoke completo preservando participant binding, Movement, Camera, ActorReset QA e checkpoints principais.
+
+### Checkpoint SA-IDREF-5D
+
+Status: AUDITED / NO RUNTIME CHANGE.
+
+- Auditoria de fronteira dos resíduos de string/ID restantes após `SA-IDREF-5C` concluída.
+- Não há novo resíduo crítico no trilho Player/Participant/Handle: sem `player1/player2`, sem `routeParticipantHint`, sem `ContainsOrdinalToken`/`ResolveExpectedSessionParticipantRole`, sem `Dictionary<PlayerActorId, ...>` e sem lookup `TryResolveHandleForPlayerActor` no código ativo.
+- `BuildPlayerActorId` permanece restrito ao ponto de criação/materialização do `PlayerActorIdentityRecord`.
+- Strings restantes foram classificadas como authoring/Unity/log/domínio próprio: `participantId` serializado com projeção typed, `ActivityObject targetId/roleId`, ids de Activity/profile, capability ids/paths, receiver ids técnicos, Presentation slot local e Attribute definition ids.
+- Correção de enquadramento registrada: `NonPlayer` não é categoria normativa; qualquer `NonPlayer*` remanescente é resíduo lexical/legado ou nome concreto ainda não convergido para `Actor + ActorRole + ActorScope + Capability/Endpoint`.
+- Risco futuro registrado: há superfícies de Actor ainda nomeadas `NonPlayer*` com filtro autoral por activity ids textuais; isso deve virar `ActivityId` tipado em corte próprio de Actor/Activity authoring refs, sem tratar `NonPlayer` como domínio.
+- Próximos cortes possíveis, não automáticos: `SA-IDREF-6A` ActivityObject typed refs, `SA-IDREF-6B` Activity authoring refs, `SA-IDREF-6C` Presentation refs, `SA-IDREF-6D` Attribute refs, `SA-IDREF-6E` Actor ActivityId refs / remover resíduo de taxonomia NonPlayer.
+- Não houve runtime change; não há compile/smoke novo exigido.
+

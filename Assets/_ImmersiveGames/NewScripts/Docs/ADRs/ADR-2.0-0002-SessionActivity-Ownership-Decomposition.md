@@ -581,6 +581,59 @@ Sem alteração de ActorPresentation, ActorAttributes, ActorParticipation, Playe
 
 ---
 
+
+### Checkpoint SA-4A0 — ActivityObjectContributorDiscoveryStage real
+
+Status: Applied / Pending smoke.
+
+Auditoria do `outputv7.zip` confirmou que o corte `SA-4A0` já está aplicado no código runtime:
+
+```text
+ActivityEntryPipeline.ExecuteSetupInfrastructure
+-> ActivityEntryObjectContributorDiscoveryStage.Execute
+-> ActivityEntrySetupInventoryStage.Execute
+-> ActivityEntryObjectSnapshotContractValidationStage.Execute
+```
+
+Resultado arquitetural observado:
+
+```text
+ActivityEntryPipeline chama ActivityEntryObjectContributorDiscoveryStage antes de ActivitySetupInventory.
+ActivityObjectContributorDiscoveryStarted/Discovered/SkippedNoContent/Completed/Failed são emitidos pelo stage de entry.
+CurrentActivityObjectContributorDiscoveryResult tem writer runtime único no stage.
+ActivitySetupInventory e ActivityObjectSnapshotContractValidation consomem o discovery result produzido no mesmo subfluxo de entry.
+SessionActivityPipeline não possui chamada direta a DiscoverActivityObjectContributorsOrSkipCore ou equivalente.
+Não houve alteração de ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, Movement, Camera, Permission, Release, Deactivation ou RouteExit neste checkpoint documental.
+```
+
+Restrições preservadas:
+
+```text
+Não reabrir reset/restore/inventory sem evidência de regressão.
+Não promover NonPlayerActorDiscovery ou PlayerActorReadiness a cortes/stages canônicos finais.
+Não considerar este checkpoint como PASS sem smoke/log.
+```
+
+Critério para fechar como `CLOSED / PASS`:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityObjectContributorDiscovery checkpoint preservado
+ActivityObjectSnapshotContractValidation preservado
+ActivityObjectReset PassedApplied preservado
+ActivityObjectSnapshotRestore preservado
+ActorResetQaApplied preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
 #### `SA-4B — ActivityObjectSnapshot/Reset/Restore cleanup`
 
 Objetivo: separar snapshot/reset/restore em commands/facts/adapters claros.
@@ -960,8 +1013,8 @@ DONE  SA-3A-H1 lifecycle log semantics + inventory writer hygiene
 DONE  SA-3B0  Entry Setup Pre-Inventory Ownership / Ordering Correction
 DONE  SA-3B1  ActivityCapabilityInventory ownership final
 
-NEXT  SA-4A0  ActivityObjectContributorDiscoveryStage real
-      SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pós-smoke ainda encontrar wrapper/debt
+APPLIED/PENDING SMOKE  SA-4A0  ActivityObjectContributorDiscoveryStage real
+NEXT                   SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pós-smoke ainda encontrar wrapper/debt
       SA-4B   Object snapshot/reset/restore cleanup
 
       SA-5A   Actor discovery/readiness ownership

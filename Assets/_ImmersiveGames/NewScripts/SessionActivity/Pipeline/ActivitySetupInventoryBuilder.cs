@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityParticipantRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Participant requirement at index '{index}' cannot be null.");
                 ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.Participant, entry.RequirementId, entry.Requiredness);
-                requirements.Add(new ParticipantRequirement(requirement, entry.ParticipantKind, entry.ParticipantId, entry.RoleId, entry.PlacementRequirementId));
+                requirements.Add(new ParticipantRequirement(requirement, entry.ParticipantKind, entry.SessionParticipantId, entry.ExpectedSessionRole, entry.PlacementRequirementId));
             }
 
             return requirements;

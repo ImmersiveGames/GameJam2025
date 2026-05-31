@@ -25,7 +25,7 @@ MonoBehaviour:
       requiredness: 2
       participantKind: 1
       participantId: participant.primary_player
-      roleId: primary_player
+      expectedSessionRole: 1
       placementRequirementId: 
     objectEntryRequirements: []
     sceneContributorRequirements: []

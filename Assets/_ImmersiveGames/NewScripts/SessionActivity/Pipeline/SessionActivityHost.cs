@@ -246,7 +246,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 applied = _pipeline.TryQaResetCurrentPlayerActor(
                     State.CurrentIdentity,
-                    string.Empty,
                     QaSource("QaResetCurrentPlayerActor"),
                     QaReason("QaResetCurrentPlayerActor"),
                     out outcomeReason);

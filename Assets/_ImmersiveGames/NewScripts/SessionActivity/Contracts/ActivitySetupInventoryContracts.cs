@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -180,32 +181,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ParticipantRequirement(
             ActivitySetupRequirement requirement,
             ActivityParticipantRequirementKind participantKind,
-            string participantId,
-            string roleId,
+            SessionParticipantId sessionParticipantId,
+            SessionParticipantRole expectedSessionRole,
             string placementRequirementId)
         {
             Requirement = requirement;
             ParticipantKind = participantKind;
-            ParticipantId = Normalize(participantId);
-            RoleId = Normalize(roleId);
+            SessionParticipantId = sessionParticipantId;
+            ExpectedSessionRole = expectedSessionRole;
             PlacementRequirementId = Normalize(placementRequirementId);
         }
 
         public ActivitySetupRequirement Requirement { get; }
         public ActivityParticipantRequirementKind ParticipantKind { get; }
-        public string ParticipantId { get; }
-        public string RoleId { get; }
+        public SessionParticipantId SessionParticipantId { get; }
+        public string ParticipantId => SessionParticipantId.ToString();
+        public SessionParticipantRole ExpectedSessionRole { get; }
         public string PlacementRequirementId { get; }
 
         public bool IsValid =>
             Requirement.IsValid &&
             Requirement.SubplanKind == ActivitySetupSubplanKind.Participant &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
-            !string.IsNullOrWhiteSpace(ParticipantId);
+            SessionParticipantId.IsValid &&
+            ExpectedSessionRole != SessionParticipantRole.Unknown;
 
         public override string ToString()
         {
-            return $"requirement='{Requirement}', participantKind='{ParticipantKind}', participantId='{ParticipantId}', roleId='{RoleId}', placementRequirementId='{PlacementRequirementId}'";
+            return $"requirement='{Requirement}', participantKind='{ParticipantKind}', participantId='{ParticipantId}', expectedSessionRole='{ExpectedSessionRole}', placementRequirementId='{PlacementRequirementId}'";
         }
 
         private static string Normalize(string value)

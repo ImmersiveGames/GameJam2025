@@ -1698,31 +1698,546 @@ PlayerSlotId continua observável no log após o target resolvido.
 
 ```text
 sem erros CS
-ActorResetQaApplied quando QA reset current player actor foi executado em ActivityRunning
+ActorResetQaApplied quando QA reset current player actor for executado em ActivityRunning
 sem ActorResetQaRejected por player1
 sem FATAL
 sem Exception
 sem route_transition_failed
-sem foreign/stale indevido
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-MovementBindingCompleted preservado
-MovementControlEnabled/Disabled preservados
-CameraBindingCompleted preservado
 ```
+
+## SA-IDREF-5A — residual string/id reference audit
+
+### Status
+
+AUDITED / NO RUNTIME CHANGE.
+
+### Escopo
+
+Auditoria estática sobre código C# em `NewScripts/**/*.cs`, ignorando `Docs/Reports/Evidence`, logs históricos, assets serializados e markdowns antigos.
+
+Objetivo: localizar resíduos de `player1`, `player.slot.*`, `PlayerActorId.Value`, `ActorId.Value`, `ActorInstanceRuntimeId.Value`, `ToString()` e concatenação de IDs em paths operacionais, separando uso observável aceitável de lookup funcional indevido.
+
+### Resultado objetivo da busca
+
+```text
+player1/player2 em código C#: 0 ocorrências
+Dictionary<PlayerActorId, ...>: 0 ocorrências
+TryResolveHandleForPlayerActor: 0 ocorrências
+BuildPlayerActorId: 1 uso runtime, restrito a BuildParticipantActorIdentity, mais a própria definição do helper
+```
+
+### Resíduos aceitáveis neste checkpoint
+
+| Área | Evidência | Classificação | Justificativa |
+|---|---|---|---|
+| `ActivityCapabilityCameraTargetScanner` | `ActivityCapabilityPolicyEntry("actorId"/"actorInstanceRuntimeId"/"playerActorId"/"playerSlotId", *.Value)` | Aceitável | Metadado de inventário/log/fact. Não faz lookup funcional. |
+| `ActivityCapabilityPermissionScanner` | `ActivityCapabilityPolicyEntry(...)` com IDs tipados convertidos para texto | Aceitável | Metadado de inventário/log/fact. Permission funcional já usa `ActorInstanceRuntimeId`. |
+| `PlayerActorIdentity`, `PlayerActorInputBindingState`, `PlayerActorMovementBindingState` | armazenamento serializado como string e exposição typed | Aceitável com observação | Componente Unity-facing mantém string serializada, mas expõe typed IDs. Não é registry/lookup canônico. |
+| `OperationalPlayerParticipationStage` / `PlayerParticipationStage` | `ToString()` para `seedSlotIds`, `seedActorDefinitionIds`, `seedActorIds`, `sessionParticipantIds` | Aceitável | Observabilidade de seed/context. Não decide lifecycle. |
+| `PlayerMovementControlAdapter.CreateReceiverId(...)` | `receiverId` textual contendo `actorInstanceRuntimeId` e slot | Aceitável | Chave técnica local de receiver/log. O match funcional usa `ActorInstanceRuntimeId`; slot permanece observável. |
+| `PlayerActorInstanceSource` / materialization | construção de `ActorInstanceId` a partir de `ActorId` tipado | Aceitável como criação de runtime identity | Esse é ponto de criação/coleta de instância, não consumer fabricando ID para lookup. |
+
+### Resíduos que não devem ser corrigidos no 5A
+
+`ActivityObjectReset` ainda usa `targetId` de objeto de Activity. Isso é domínio de objeto/contributor de Activity, não `ActorInstanceRuntimeId`. Não misturar `ActivityObject` com `Actor runtime identity` neste trilho.
+
+Paths como `componentPath`, `ownerPath`, nomes de `GameObject` e transform path continuam texto observável/técnico de Unity. Não são referência canônica de domínio.
+
+### Resíduos funcionais encontrados
+
+#### 1. `routeParticipantHint` ainda é string funcional
+
+`SessionActivityPipeline.TryResolveSessionParticipantBinding(...)` recebe `routeParticipantHint` como `string`, normaliza e compara contra `candidate.PlayerSlotId.Value`.
+
+Classificação: **High / future cut required**.
+
+Motivo: isso ainda permite que um hint textual decida binding funcional de participante. Não é regressão atual porque o smoke PASS não depende de alias `player1`, mas o shape ainda carrega uma fronteira textual.
+
+Owner correto: `ActivityEntryPipeline` resolve `ActivityParticipantBinding`; o dado de hint deve virar referência tipada/estruturada, não string.
+
+#### 2. Role de participante ainda é inferida por tokens textuais
+
+`ResolveExpectedSessionParticipantRole(...)` usa `ContainsOrdinalToken(requirementId, "primary")` e `ContainsOrdinalToken(roleId, "primary"/"support")`.
+
+Classificação: **High / future cut required**.
+
+Motivo: comportamento não deve depender de texto de ID. `PrimaryPlayer`/`SupportingPlayer` precisa vir de authoring data tipado ou contrato explícito da requirement, não de parsing de string.
+
+Owner correto: authoring data/requirement declara role; ActivityEntryPipeline apenas consome.
+
+#### 3. `TryQaResetCurrentPlayerActor(...)` ainda aceita slot textual opcional
+
+Depois do H1, o Host passa `string.Empty`, então o caminho nominal seleciona automaticamente quando há exatamente um target válido. Mesmo assim, a API interna ainda permite `playerSlotId` textual opcional e compara contra `PlayerSlotId.Value`.
+
+Classificação: **Medium / QA-only debt**.
+
+Motivo: não afeta o smoke atual e não há mais hardcode `player1`, mas o método ainda preserva uma porta de entrada textual em QA. Deve ser removido ou trocado por overload typed quando o QA for limpo.
+
+### Decisão do 5A
+
+Não aplicar runtime change neste corte.
+
+Motivo: os resíduos funcionais encontrados estão concentrados em participant binding/authoring requirement, não em Reset/Camera/Permission. Corrigir agora misturaria auditoria global com refactor de `ActivityParticipantBinding`, com risco de regressão semelhante à ocorrida no `SA-IDREF-3A`.
+
+### Próximo corte recomendado
+
+```text
+SA-IDREF-5B — typed participant requirement binding / no semantic role parsing
+```
+
+Escopo sugerido:
+
+```text
+1. Auditar ParticipantRequirement e os assets/authoring que alimentam routeParticipantHint, requirementId e roleId.
+2. Definir campo/contrato tipado para participant role/slot binding.
+3. Remover parsing por ContainsOrdinalToken de primary/support.
+4. Remover comparação funcional de routeParticipantHint string contra PlayerSlotId.Value.
+5. Não alterar Camera, Permission, Reset, Presentation, Attributes ou ActivityObject neste corte.
+```
+
+### Respostas arquiteturais obrigatórias
+
+**Qual pipeline é dono desta decisão?**
+
+```text
+ActivityEntryPipeline é dono de resolver ActivityParticipantBinding.
+SessionOperational produz SessionParticipationContext/seed, mas não escolhe binding por texto dentro da Activity.
+```
+
+**Isso é stage, policy, command, fact, adapter, endpoint, snapshot ou authoring data?**
+
+```text
+routeParticipantHint/role inferido é authoring/requirement data mal tipado.
+TryResolveSessionParticipantBinding é stage/helper de binding que consome esse dado.
+Logs/policy entries são facts/observabilidade e não exigem runtime change.
+```
+
+**Isso é comportamento final ou bridge transitória?**
+
+```text
+Parsing de role por texto e binding por hint string são bridges transitórias.
+ActivityParticipantBinding tipado é comportamento final.
+```
+
+**Essa compatibilidade ainda é necessária?**
+
+```text
+Não como contrato final. Pode permanecer somente até o corte 5B por risco de regressão.
+```
+
+**O erro está no sintoma ou na fronteira arquitetural errada?**
+
+```text
+A fronteira errada está em authoring/requirement textual alimentando binding funcional.
+Não está em Camera, Permission ou Reset, que já foram normalizados para ActorInstanceRuntimeId nos cortes anteriores.
+```
+
+**Existe owner duplicado para o mesmo lifecycle?**
+
+```text
+Não foi encontrado owner duplicado novo. O problema é input textual de binding, não lifecycle duplicado.
+```
+
+
+## Checkpoint SA-IDREF-5B — typed participant requirement binding / no semantic role parsing
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Objetivo
+
+Fechar os três resíduos funcionais encontrados no `SA-IDREF-5A` sem reabrir Camera, Permission, Reset, Presentation, Attributes ou ActivityObject.
+
+### Decisão normativa
+
+`ActivityParticipantBinding` deve ser resolvido por contrato tipado de participante, não por hint textual de slot nem por parsing semântico de `requirementId`/`roleId`.
+
+```text
+Permitido:
+ParticipantRequirement.SessionParticipantId -> SessionParticipationContext.Participants[].ParticipantId
+ParticipantRequirement.ExpectedSessionRole -> validação explícita de Role
+
+Proibido:
+routeParticipantHint string -> PlayerSlotId.Value
+ContainsOrdinalToken(primary/support)
+role inferido por requirementId/roleId
+QA reset current player com seletor textual opcional
+```
+
+### Alterações aplicadas
+
+- `ParticipantRequirement` agora carrega `SessionParticipantId` tipado e `ExpectedSessionRole` explícito.
+- `ActivityParticipantRequirementAuthoring` ganhou `expectedSessionRole` serializado, default `PrimaryPlayer`.
+- `ActivitySetupInventoryBuilder` passa o `expectedSessionRole` para o inventário.
+- `SessionActivityPipeline.TryResolveSessionParticipantBinding(...)` deixou de receber `routeParticipantHint` string.
+- Binding funcional agora procura o participante por `SessionParticipantId` e valida `ExpectedSessionRole`.
+- `ResolveExpectedSessionParticipantRole(...)` e `ContainsOrdinalToken(...)` foram removidos do código ativo.
+- `TryQaResetCurrentPlayerActor(...)` não aceita mais `playerSlotId` textual opcional; QA current reset só seleciona automaticamente quando há exatamente um player target válido.
+- `ActivityContentProfile01.asset` declara `expectedSessionRole: PrimaryPlayer` para a requirement `participant.player.primary`.
+
+### Ownership
+
+| Decisão | Owner correto | Resultado |
+|---|---|---|
+| Declarar qual participante da sessão a Activity exige | Authoring data / `ParticipantRequirement` | `participantId` vira `SessionParticipantId` tipado no inventário |
+| Declarar role esperada do participante | Authoring data / `ParticipantRequirement` | `ExpectedSessionRole` explícito |
+| Resolver binding da Activity | `ActivityEntryPipeline` | Consome `SessionParticipantId + ExpectedSessionRole` |
+| Selecionar current player no QA reset | QA helper do `SessionActivityPipeline` | Seleção automática apenas se único target válido |
+
+### Critério de aceite
+
+Primeiro compile sem erros CS.
+
+Depois smoke completo:
+
+```text
+Boot -> Menu -> Sandbox
+CompleteActivationWindow
+QA Reset Current Player Actor
+RestartCurrentActivity
+CompleteActivationWindow
+CompleteCurrentActivity
+Activity01ToActivity02
+BackToMenu / RouteExit
+```
+
+Critérios:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActorResetQaApplied
+ActivityParticipantBindingCompleted preservado
+ActivityParticipantActorMaterialized ou Retained preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Status
+
+CLOSED / PASS funcional + PASS arquitetural do corte.
 
 ### Evidência de smoke
 
-O smoke de fechamento confirmou:
+Smoke manual validado após `SA-IDREF-5B-H1`.
 
 ```text
-ActorResetQaRequested playerSlotId=''
-ActorResetQaApplied reason='actor_reset_qa_applied' playerSlotId='player.slot.1' playerActorId='SessionActivitySandboxSession|actor.player.primary' appliedGroups='2' skippedGroups='0'
-QaResetCurrentPlayerActor outcomeKind='Applied' reason='actor_reset_qa_applied'
-RestartCurrentActivity checkpointStatus='Passed'
-Activity01ToActivity02 checkpointStatus='Passed'
-RouteExitBackToMenu checkpointStatus='Passed' closedForRouteExit='true' routeExitTeardownCompleted='true' menuRouteApplied='true'
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+sem ActorResetQaRejected
+sem player1/player2
+ActorResetQaApplied
+ActivityParticipantBindingCompleted preservado
+ActivityParticipantActorMaterialized ou ActivityParticipantActorMaterializationRetained preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
 ```
 
-Conclusão: o QA current player reset não usa mais alias textual `player1`; a seleção automática só ocorreu porque havia exatamente um player target válido na entry atual.
+Evidência funcional relevante:
+
+```text
+ActorResetQaRequested selectionMode='CurrentSinglePlayerActor'
+ActorResetQaApplied reason='actor_reset_qa_applied' playerSlotId='player.slot.1' playerActorId='SessionActivitySandboxSession|actor.player.primary' appliedGroups='2' skippedGroups='0'
+ActivityParticipationContextPrepared stage='ActivityParticipantBindingCompleted' status='ResolvedNominally'
+ActivityParticipantActorMaterialized/Retained sem routeParticipantHint textual
+```
+
+Conclusão:
+
+```text
+Participant binding não depende mais de routeParticipantHint string.
+Role não é inferida por primary/support em IDs.
+QA current reset não aceita slot textual opcional.
+PlayerActorId continua observável, mas não vira lookup primário.
+```
+
+## SA-IDREF-5B-H1 — compile hotfix: QA ambiguous target logging via runtime handle
+
+Status: CLOSED / PASS funcional + PASS arquitetural do hotfix.
+
+### Contexto
+
+O `SA-IDREF-5B` removeu seletor textual do QA reset e passou a selecionar o current player automaticamente quando existe exatamente um target válido. A branch de rejeição por ambiguidade ainda tentava logar `candidate.ActorInstanceRuntimeId` diretamente a partir de `PlayerActorIdentityRecord`.
+
+Isso é incorreto porque `PlayerActorIdentityRecord` preserva `PlayerActorId` como identidade observável, mas não expõe `ActorInstanceRuntimeId` diretamente. O `ActorInstanceRuntimeId` runtime deve ser observado por `PlayerActorRuntimeHandle`, resolvido pelo registry.
+
+### Correção
+
+- A branch de logging de ambiguidade em `TryQaResetCurrentPlayerActor(...)` agora resolve `PlayerActorRuntimeHandle` por `candidate.ParticipantId` antes de logar `ActorInstanceRuntimeId`.
+- Se o handle não puder ser resolvido, o log registra explicitamente `unresolved_runtime_for_participant:<participantId>`.
+- Nenhum lookup por `PlayerActorId` foi reintroduzido.
+- Nenhum fallback textual foi reintroduzido.
+
+### Status
+
+CLOSED / PASS funcional + PASS arquitetural do hotfix.
+
+O smoke do `SA-IDREF-5B-H1` confirmou que a correção compila e que o caminho QA atual não reintroduziu slot textual, alias legado ou lookup por `PlayerActorId`.
+
+## SA-IDREF-5C — authoring refs/assets audit + participant authoring cleanup
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Objetivo
+
+Auditar campos autorais/assets que ainda usam string como referência funcional e aplicar somente correções de baixo impacto onde havia resíduo claro do fluxo de participant binding.
+
+### Auditoria
+
+Classificação aplicada:
+
+```text
+Aceito neste corte:
+- strings serializadas por limitação/ergonomia de Unity authoring, desde que convertidas para typed identity antes do runtime binding;
+- ids autorais estáveis usados como identidade do próprio asset/profile;
+- targetId de ActivityObject, pois é domínio separado de objeto de Activity e não Actor runtime identity;
+- logs, facts, paths Unity, capabilityId, ownerPath, receiverId e debug labels.
+
+Não aceito:
+- campo autoral textual que decide role/comportamento quando já existe enum/typed identity;
+- string redundante que pode ser confundida com fonte funcional;
+- command runtime carregando role textual sem necessidade.
+```
+
+### Correção aplicada
+
+O resíduo funcional encontrado estava no authoring de participante:
+
+```text
+ActivityParticipantRequirementAuthoring.roleId
+ParticipantRequirement.RoleId
+ActivityParticipantBindCommand.RoleId
+ActivityContentProfile01.asset.roleId: primary_player
+```
+
+Após `SA-IDREF-5B`, a role funcional já é `expectedSessionRole` tipado. Portanto o `roleId` textual restante não era mais owner de decisão e só criava ambiguidade documental/runtime.
+
+Mudanças:
+
+- `ActivityParticipantRequirementAuthoring` não declara mais `roleId`.
+- `ActivityParticipantRequirementAuthoring` ainda serializa `participantId` como string técnica de Unity, mas agora expõe `SessionParticipantId` tipado para o builder.
+- `ActivitySetupInventoryBuilder` passa `SessionParticipantId` tipado para `ParticipantRequirement`.
+- `ParticipantRequirement` armazena `SessionParticipantId` como contrato primário; `ParticipantId` permanece apenas projeção textual para log.
+- `ActivityParticipantBindCommand` recebe `SessionParticipantId` tipado como `RequestedParticipantId`.
+- `ActivityParticipantBindCommand` não carrega mais `RoleId` textual.
+- Logs de participant binding removem `roleId` e mantêm `role` tipada da `ActivityParticipantBinding`.
+- `ActivityContentProfile01.asset` remove `roleId: primary_player`.
+
+### Ownership congelado
+
+```text
+ActivityParticipantRequirementAuthoring:
+  authoring técnico serializado;
+  não decide role por string.
+
+ActivitySetupInventoryBuilder:
+  converte authoring para ParticipantRequirement tipado.
+
+ParticipantRequirement:
+  carrega SessionParticipantId + ExpectedSessionRole.
+
+SessionActivityPipeline / ActivityEntryPipeline:
+  resolve participant binding por SessionParticipantId + ExpectedSessionRole.
+
+ActivityParticipantBindCommand:
+  carrega payload runtime resolvido/typed;
+  não carrega role textual redundante.
+```
+
+### Fora do corte
+
+- `ActivityObject` targetId/roleId continuam fora do SA-IDREF de Actor/Player, pois pertencem ao domínio de objetos de Activity.
+- `ActivityAsset.activityId`, `ActivityContentProfileAsset.contentProfileId` e profile ids continuam como ids autorais do próprio asset/profile.
+- `ActorPresentationProfileAsset.primarySlotId` permanece escopo Presentation/slot local, não participante runtime.
+- `ActorAttributeDefinitionAsset.attributeId` permanece domínio de Attribute Definition, não actor runtime lookup.
+
+### Critério de aceite
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityParticipantBindingCompleted preservado
+ActivityParticipantActorMaterialized ou ActivityParticipantActorMaterializationRetained preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+ActorResetQaApplied preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
+### Smoke / evidência
+
+Status validado por smoke manual após compile. O log confirmou:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+sem ActorResetQaRejected
+sem player1/player2
+ActorResetQaApplied preservado
+ActivityParticipantBindingCompleted preservado
+ActivityParticipantActorMaterialized preservado na entry inicial
+ActivityParticipantActorMaterializationRetained preservado no restart
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+Conclusão:
+
+```text
+SA-IDREF-5C — CLOSED / PASS funcional + PASS arquitetural do corte
+```
+## SA-IDREF-5D — remaining accepted string refs audit
+
+Status: AUDITED / NO RUNTIME CHANGE.
+
+### Objetivo
+
+Auditar os resíduos restantes de strings/IDs após `SA-IDREF-5C`, separando:
+
+```text
+string aceitável por authoring/Unity/log/domínio próprio;
+string perigosa por lookup funcional ou comparação cruzada;
+ponto que exige corte futuro dedicado.
+```
+
+Este checkpoint não altera runtime. Ele existe para evitar nova regressão por remoção ampla de contrato observável ou por conversão apressada de campos autorais que ainda pertencem a domínios separados.
+
+### Resultado executivo
+
+Não foi encontrado novo resíduo crítico no trilho canônico Player/Participant/Handle.
+
+Confirmado no código ativo:
+
+```text
+player1/player2: 0 ocorrências em runtime ativo
+routeParticipantHint: 0 ocorrências em runtime ativo
+ContainsOrdinalToken / ResolveExpectedSessionParticipantRole: 0 ocorrências em runtime ativo
+Dictionary<PlayerActorId, ...>: 0 ocorrências
+TryResolveHandleForPlayerActor: 0 ocorrências
+BuildPlayerActorId: restrito ao ponto de criação/materialização de PlayerActorIdentityRecord
+```
+
+Portanto, não há patch runtime autorizado neste checkpoint.
+
+### Matriz de fronteira
+
+| Área | String/ID residual | Classificação | Owner correto | Decisão |
+|---|---|---|---|---|
+| Participant authoring | `participantId` serializado como string em `ActivityParticipantRequirementAuthoring` | Aceitável condicionado | Authoring data -> Builder | Mantido porque já projeta `SessionParticipantId` tipado antes do binding runtime. Não usar como lookup fora do builder. |
+| Participant runtime | `ParticipantRequirement.ParticipantId` textual | Aceitável como projeção | Fact/log/debug | Mantido apenas como projeção de `SessionParticipantId`; contrato primário é typed. |
+| Player runtime | `PlayerActorId.Value`, `PlayerSlotId.Value` | Aceitável como observabilidade | Logs/facts/binding state/payload | Permitido somente depois do `PlayerActorRuntimeHandle` resolvido. Proibido como lookup primário. |
+| PlayerSet authoring | comparação de `.Value` entre `PlayerSlotId`, `PlayerSelectionId`, `ActorDefinitionId`, `ActorId` | Aceitável como guarda de validação | Authoring validation | Mantido porque rejeita colisão entre domínios; não é lookup funcional. Não expandir esse padrão para runtime. |
+| ActivityObject | `targetId`, `roleId`, `objectId`, `objectTypeId` | Fora do SA-IDREF Player/Actor | ActivityObject domain | Mantido. É domínio separado de objeto de Activity, validado por contributors/endpoints próprios. Converter só em corte dedicado de ActivityObject typed refs. |
+| Activity setup subplans | `placementRequirementId`, `bindingId`, `profileId`, `markerId`, `policyId` | Aceitável condicionado | ActivitySetup authoring/contracts | Mantido enquanto subplans ainda são authoring strings. Não usar para resolver Actor runtime identity. |
+| Activity ids | `ActivityAsset.activityId`, `ActivityContentProfileAsset.contentProfileId` | Aceitável | Authoring asset identity | Mantido como identity do próprio asset/profile. Converter exigiria corte de Activity authoring refs, não SA-IDREF runtime. |
+| Camera/Permission capability inventory | `capabilityId`, `ownerPath`, `componentPath`, `receiverId`, policy entries | Aceitável técnico | Inventory/facts/debug | Mantido como índice técnico/observabilidade. O target funcional já está em `ActorInstanceRuntimeId`. |
+| Actor Presentation | `profileId`, `primarySlotId` | Aceitável condicionado | Presentation authoring | Mantido. `primarySlotId` é slot local de Presentation, não `PlayerSlotId`. Não comparar com player slot. |
+| Actor Attributes | `attributeId`, `profileId` | Aceitável | Attribute definition domain | Mantido como domínio de definição de atributo. Não usar como Actor runtime identity. |
+| Actor authored activity filter em superfície ainda nomeada `NonPlayer*` | explicit activity ids strings | Risco médio / futuro + risco conceitual de nomenclatura | Actor authoring + ActivityId typed refs | `NonPlayer` não é categoria normativa. O resíduo é um campo/fonte de authoring de Actor ainda nomeado pelo shape antigo. Deve virar `ActivityId` tipado em corte futuro de Actor/Activity authoring refs e a nomenclatura deve convergir para Actor/ActorRole/ActorScope. Não misturar com Player/Participant cleanup. |
+| DebugPanel parsers | `ExtractToken("targetId")`, `ExtractToken("roleId")` | Aceitável | QA/observability | Mantido porque lê facts textuais. Não usar para executar lifecycle. |
+
+### Strings perigosas que continuam proibidas
+
+```text
+player1/player2 como alias runtime
+routeParticipantHint textual para escolher participante
+primary/support inferidos de requirementId ou roleId
+PlayerActorId como lookup primário de handle
+PlayerSlotId.Value comparado para resolver Actor runtime
+ActorId.Value usado como ActorInstanceRuntimeId
+fallback textual quando typed identity está ausente
+DebugPanel/QA textual executando lifecycle fora de command/stage canônico
+```
+
+### Próximos cortes possíveis, mas não automáticos
+
+Nenhum deles deve ser feito como limpeza ampla. Cada um exige auditoria própria, owner explícito e smoke dedicado.
+
+```text
+SA-IDREF-6A — ActivityObject typed target/role references
+SA-IDREF-6B — Activity authoring refs typed ActivityId/ProfileId
+SA-IDREF-6C — Actor Presentation local slot/profile refs audit
+SA-IDREF-6D — Actor Attribute definition/profile refs audit
+SA-IDREF-6E — Actor authored ActivityId refs typing / remove NonPlayer taxonomy residue
+```
+
+### Critério de aceite do 5D
+
+Como não houve runtime change:
+
+```text
+não há compile novo exigido
+não há smoke novo exigido
+não é PASS funcional novo
+é checkpoint documental de fronteira
+```
+
+Conclusão:
+
+```text
+SA-IDREF-5D — AUDITED / NO RUNTIME CHANGE
+Trilho Player/Participant/Handle permanece fechado após 5C.
+Novas remoções de string devem ocorrer apenas em cortes de domínio específicos.
+```
+
+### Correção de enquadramento — `NonPlayer` não é categoria normativa
+
+Após revisão do checkpoint `SA-IDREF-5D`, fica congelada a correção:
+
+```text
+NonPlayer não deve ser tratado como domínio, categoria normativa ou trilho arquitetural próprio.
+Actor é a raiz e a entrada canônica.
+Diferenças como Player, NPC, scene-authored, route-scoped ou activity-scoped devem ser expressas por Role/Scope/Capability/Endpoint, não por rail paralelo.
+```
+
+Portanto, qualquer ocorrência de `NonPlayer*` em código, documentação ou assets deve ser classificada como uma destas opções:
+
+```text
+histórico/legado textual;
+resíduo lexical a remover;
+nome de arquivo/classe ainda não convergido;
+não uma entidade arquitetural nova.
+```
+
+Regra para próximos cortes:
+
+```text
+Proibido criar corte, matriz ou ADR que trate NonPlayer como owner, pipeline, lifecycle ou domínio separado.
+Quando o código atual ainda tiver NonPlayer-named surfaces, descrevê-las como Actor authored/Actor scoped surfaces ainda nomeadas pelo legado.
+O corte correto é convergir para Actor + ActorRole + ActorScope + Capability/Endpoint.
+```
+
+Correção aplicada ao plano futuro:
+
+```text
+Antes: SA-IDREF-6E — NonPlayer authored ActivityId refs typing
+Agora: SA-IDREF-6E — Actor authored ActivityId refs typing / remove NonPlayer taxonomy residue
+```
+
