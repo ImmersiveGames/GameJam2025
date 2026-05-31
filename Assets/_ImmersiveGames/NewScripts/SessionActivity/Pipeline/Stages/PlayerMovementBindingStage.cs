@@ -26,12 +26,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(startedIdentity, resolved.ParticipantBinding);
                 requirements.Add(new MovementBindingRequirement(
                     startedIdentity,
                     resolved.RequirementId,
                     resolved.ParticipantBinding,
-                    actorIdentity.PlayerActorId,
                     resolved.Required,
                     source,
                     reason));
@@ -71,15 +69,5 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return new SessionActivityPipeline.MovementBindingStageResult(requirements, requiredCount, records, Array.Empty<PlayerActorIdentityRecord>(), usedRetainedTargets: false, skippedNoRequiredMovement: false);
         }
 
-        private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, ActivityParticipantBinding participantBinding)
-        {
-            PlayerActorId playerActorId = PlayerActorIdentityRecord.BuildPlayerActorId(identity, participantBinding.ActorId);
-            if (!identity.IsValid || !participantBinding.IsValid || !playerActorId.IsValid)
-            {
-                throw new InvalidOperationException("Cannot build participant actor identity with invalid ActivityParticipantBinding.");
-            }
-
-            return new PlayerActorIdentityRecord(identity, participantBinding, playerActorId);
-        }
     }
 }

@@ -202,6 +202,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             return false;
         }
 
+        public bool TryResolveHandleForControl(SessionActivityIdentity expectedIdentity, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            if (!expectedIdentity.IsValid || !participantId.IsValid)
+            {
+                return false;
+            }
+
+            if (_activeScopeIdentity.IsValid &&
+                IsSameActivityCycle(_activeScopeIdentity, expectedIdentity) &&
+                _activeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle activeHandle) &&
+                activeHandle.IsValid)
+            {
+                handle = activeHandle;
+                return true;
+            }
+
+            if (_routeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle retained) &&
+                retained.IsValid &&
+                IsSameSessionPipeline(retained.ActorIdentity.Identity, expectedIdentity))
+            {
+                handle = retained;
+                return true;
+            }
+
+            return false;
+        }
+
         public IReadOnlyList<PlayerActorIdentityRecord> GetRouteRetainedActorIdentitiesForSession(SessionActivityIdentity expectedIdentity)
         {
             if (!expectedIdentity.IsValid)

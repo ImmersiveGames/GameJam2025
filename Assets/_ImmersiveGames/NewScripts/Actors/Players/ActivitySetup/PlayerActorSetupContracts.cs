@@ -264,7 +264,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             SessionActivityIdentity identity,
             string requirementId,
             ActivityParticipantBinding participantBinding,
-            PlayerActorId playerActorId,
             bool required,
             string source,
             string reason)
@@ -272,7 +271,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Identity = identity;
             RequirementId = Normalize(requirementId);
             ParticipantBinding = participantBinding;
-            PlayerActorId = playerActorId;
             Required = required;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -286,7 +284,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public PlayerSelectionId PlayerSelectionId => ParticipantBinding.PlayerSelectionId;
         public ActorDefinitionId ActorDefinitionId => ParticipantBinding.ActorDefinitionId;
         public ActorId ActorId => ParticipantBinding.ActorId;
-        public PlayerActorId PlayerActorId { get; }
         public bool Required { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -295,7 +292,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantBinding.IsValid &&
-            PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -329,18 +325,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         public PlayerInputBindingRecord(
             PlayerInputBindingRequirement requirement,
+            PlayerActorIdentityRecord actorIdentity,
             bool bound,
             string observedInputId)
         {
             Requirement = requirement;
+            ActorIdentity = actorIdentity;
             Bound = bound;
             ObservedInputId = Normalize(observedInputId);
         }
 
         public PlayerInputBindingRequirement Requirement { get; }
+        public PlayerActorIdentityRecord ActorIdentity { get; }
         public bool Bound { get; }
         public string ObservedInputId { get; }
-        public bool IsValid => Requirement.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedInputId);
+        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedInputId);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -359,7 +358,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             SessionActivityIdentity identity,
             string requirementId,
             ActivityParticipantBinding participantBinding,
-            PlayerActorId playerActorId,
             bool required,
             string source,
             string reason)
@@ -367,7 +365,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Identity = identity;
             RequirementId = Normalize(requirementId);
             ParticipantBinding = participantBinding;
-            PlayerActorId = playerActorId;
             Required = required;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -381,7 +378,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public PlayerSelectionId PlayerSelectionId => ParticipantBinding.PlayerSelectionId;
         public ActorDefinitionId ActorDefinitionId => ParticipantBinding.ActorDefinitionId;
         public ActorId ActorId => ParticipantBinding.ActorId;
-        public PlayerActorId PlayerActorId { get; }
         public bool Required { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -390,7 +386,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantBinding.IsValid &&
-            PlayerActorId.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -424,18 +419,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         public MovementBindingRecord(
             MovementBindingRequirement requirement,
+            PlayerActorIdentityRecord actorIdentity,
             bool bound,
             string observedEndpoint)
         {
             Requirement = requirement;
+            ActorIdentity = actorIdentity;
             Bound = bound;
             ObservedEndpoint = Normalize(observedEndpoint);
         }
 
         public MovementBindingRequirement Requirement { get; }
+        public PlayerActorIdentityRecord ActorIdentity { get; }
         public bool Bound { get; }
         public string ObservedEndpoint { get; }
-        public bool IsValid => Requirement.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedEndpoint);
+        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedEndpoint);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                if (!_playerRegistry.TryResolveHandleForControl(identity, player.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!_playerRegistry.TryResolveHandleForControl(identity, player.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }

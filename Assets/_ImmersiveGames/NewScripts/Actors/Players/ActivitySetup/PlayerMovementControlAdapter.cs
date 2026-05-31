@@ -58,14 +58,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement control actor identity invalid at index '{index}'.");
                 }
 
-                if (!registry.TryResolveHandleForControl(activeIdentity, actor.PlayerActorId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!registry.TryResolveHandleForControl(activeIdentity, actor.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
-                    throw new InvalidOperationException($"Movement control failed: actor not found for playerActorId='{actor.PlayerActorId}'.");
+                    throw new InvalidOperationException($"Movement control failed: actor not found for participantId='{actor.ParticipantId}'.");
                 }
 
                 if (handle.PlayerSlotId != actor.PlayerSlotId || handle.ParticipantId != actor.ParticipantId)
                 {
-                    throw new InvalidOperationException($"Movement control failed: handle mismatch participantId='{actor.ParticipantId}' playerActorId='{actor.PlayerActorId}' playerSlotId='{actor.PlayerSlotId}'.");
+                    throw new InvalidOperationException($"Movement control failed: handle mismatch participantId='{actor.ParticipantId}' handlePlayerActorId='{handle.PlayerActorId}' handlePlayerSlotId='{handle.PlayerSlotId}'.");
                 }
 
                 GameObject actorInstance = handle.Instance;
@@ -85,18 +85,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.SessionId,
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
-                    actor.PlayerActorId,
-                    actor.PlayerSlotId,
+                    handle.PlayerActorId,
+                    handle.PlayerSlotId,
                     command.Source,
                     command.Reason);
 
                 ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
                 if (IsRejected(fact))
                 {
-                    throw new InvalidOperationException($"Movement control permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actor.PlayerActorId}'.");
+                    throw new InvalidOperationException($"Movement control permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{handle.PlayerActorId}'.");
                 }
 
-                records.Add(new MovementControlRecord(actor, command.Enable, $"{controller.GetType().Name}|reader={reader.GetType().Name}"));
+                records.Add(new MovementControlRecord(handle.ActorIdentity, command.Enable, $"{controller.GetType().Name}|reader={reader.GetType().Name}"));
             }
 
             return records;

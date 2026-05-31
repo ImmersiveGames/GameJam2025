@@ -88,6 +88,7 @@ O checkpoint atual aceita como evidência:
 - ADR-2.0-0001 — SessionOperational Ownership Stabilization e Regra Anti-Deslocamento
 - ADR-2.0-0002 — SessionActivity Ownership Decomposition e ActivityEntryPipeline
 - ADR-2.0-0003 — PlayerParticipation, PlayerSlot, PlayerSelection, SessionParticipation e ActorMaterialization Boundary
+- ADR-2.0-0004 — SA-IDREF Typed Runtime References e PlayerActor Runtime Identity
 
 ### Checkpoint conceitual Base 2.0
 
@@ -103,3 +104,34 @@ O ADR-2.0-0003 congela que:
 - `PlayerInputBinding`, Camera, Movement e Permission binding ocorrem após materialização.
 - Runtime join futuro via `PlayerInputManager.Join` deve passar pelo mesmo domínio `PlayerParticipation`, sem trilho paralelo.
 
+O ADR-2.0-0004 congela que:
+
+- IDs textuais podem existir para authoring, serialização, logs e debug, mas não como referência runtime entre domínios.
+- `ActivityParticipantBinding` é a referência primária dentro da Activity para participant.
+- `PlayerActorRuntimeHandle` é a referência primária do PlayerActor materializado.
+- Stages consumidores como Input, Movement, Camera, Permission e Reset não fabricam `PlayerActorId`.
+- `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS após smoke manual.
+- `PlayerInputBindingStage` e `PlayerMovementBindingStage` não fabricam `PlayerActorId`; consumers usam binding/handle.
+- Nenhum corte `SA-IDREF` futuro é PASS sem smoke/log.
+
+
+
+### Checkpoint SA-IDREF-2H5
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+Evidência aceita:
+
+- sem `FATAL`;
+- sem `Exception`;
+- sem `route_transition_failed`;
+- sem foreign/stale indevido;
+- `RestartCurrentActivity PASS`;
+- `Activity01ToActivity02 PASS`;
+- `RouteExitBackToMenu PASS`;
+- `PlayerInputActionsReboundToCanonical` observado;
+- `MovementBindingCompleted` preservado;
+- `MovementBindingRetained` preservado em `activity_02`;
+- `MovementControlEnabled/Disabled` preservados;
+- `CameraBindingCompleted` preservado;
+- `BuildPlayerActorId` ausente no log.

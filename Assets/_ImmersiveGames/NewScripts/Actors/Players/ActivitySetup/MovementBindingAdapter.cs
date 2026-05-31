@@ -63,15 +63,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantId);
-                GameObject actorInstance = actorHandle.Instance;
-                if (actorHandle.PlayerActorId != requirement.PlayerActorId || actorHandle.PlayerSlotId != requirement.PlayerSlotId)
-                {
-                    throw new InvalidOperationException($"stale_or_foreign_movement_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' playerActorId='{requirement.PlayerActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
-                }
+                EnsureHandleMatchesRequirement(actorHandle, requirement);
 
-                PlayerInput input = ResolveBoundPlayerInputOrFail(actorInstance, requirement);
-                PlayerMoveInputReader reader = ResolveSingleComponentOrFail<PlayerMoveInputReader>(actorInstance, requirement, "PlayerMoveInputReader");
-                PlayerMovementController controller = ResolveSingleComponentOrFail<PlayerMovementController>(actorInstance, requirement, "PlayerMovementController");
+                GameObject actorInstance = actorHandle.Instance;
+                PlayerInput input = ResolveBoundPlayerInputOrFail(actorInstance, actorHandle);
+                PlayerMoveInputReader reader = ResolveSingleComponentOrFail<PlayerMoveInputReader>(actorInstance, actorHandle, "PlayerMoveInputReader");
+                PlayerMovementController controller = ResolveSingleComponentOrFail<PlayerMovementController>(actorInstance, actorHandle, "PlayerMovementController");
 
                 reader.Bind(input);
                 reader.SetInputEnabled(false);
@@ -86,8 +83,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 bindingState.Bind(
                     activeIdentity,
-                    requirement.PlayerSlotId,
-                    requirement.PlayerActorId,
+                    actorHandle.PlayerSlotId,
+                    actorHandle.PlayerActorId,
                     bindEndpointType: nameof(PlayerMovementController));
 
                 ActivityCapabilityPermissionCommand permissionCommand = new(
@@ -98,22 +95,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity.SessionId,
                     activeIdentity.ActivityId,
                     activeIdentity.EntrySequence,
-                    requirement.PlayerActorId,
-                    requirement.PlayerSlotId,
+                    actorHandle.PlayerActorId,
+                    actorHandle.PlayerSlotId,
                     command.Source,
                     command.Reason);
 
                 ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
                 if (IsRejected(fact))
                 {
-                    throw new InvalidOperationException($"Movement binding permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{requirement.PlayerActorId}'.");
+                    throw new InvalidOperationException($"Movement binding permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actorHandle.PlayerActorId}'.");
                 }
 
-                records.Add(new MovementBindingRecord(requirement, bound: true,
+                records.Add(new MovementBindingRecord(requirement, actorHandle.ActorIdentity, bound: true,
                     observedEndpoint: $"{controller.GetType().Name}|reader={reader.GetType().Name}|playerInput={input.name}|controlEnabled=false"));
             }
 
             return records;
+        }
+
+        private static void EnsureHandleMatchesRequirement(PlayerActorRuntimeHandle actorHandle, MovementBindingRequirement requirement)
+        {
+            if (!actorHandle.IsValid)
+            {
+                throw new InvalidOperationException($"stale_or_foreign_movement_binding_requirement: invalid handle participantId='{requirement.ParticipantId}'.");
+            }
+
+            if (actorHandle.ParticipantId != requirement.ParticipantId ||
+                actorHandle.PlayerSlotId != requirement.PlayerSlotId ||
+                actorHandle.ActorDefinitionId != requirement.ActorDefinitionId ||
+                actorHandle.ActorId != requirement.ActorId)
+            {
+                throw new InvalidOperationException(
+                    $"stale_or_foreign_movement_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' handleParticipantId='{actorHandle.ParticipantId}' handlePlayerActorId='{actorHandle.PlayerActorId}' handlePlayerSlotId='{actorHandle.PlayerSlotId}'.");
+            }
         }
 
         private static bool IsRejected(ActivityCapabilityPermissionFact fact)
@@ -131,37 +145,37 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                    outcomeKind == PermissionOutcomeKind.Failed;
         }
 
-        private static PlayerInput ResolveBoundPlayerInputOrFail(GameObject actorInstance, MovementBindingRequirement requirement)
+        private static PlayerInput ResolveBoundPlayerInputOrFail(GameObject actorInstance, PlayerActorRuntimeHandle actorHandle)
         {
             PlayerInput[] inputs = actorInstance.GetComponentsInChildren<PlayerInput>(includeInactive: true);
             if (inputs == null || inputs.Length == 0)
             {
-                throw new InvalidOperationException($"Movement binding failed: playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}' sem PlayerInput.");
+                throw new InvalidOperationException($"Movement binding failed: playerActorId='{actorHandle.PlayerActorId}' slotId='{actorHandle.PlayerSlotId}' sem PlayerInput.");
             }
 
             if (inputs.Length > 1)
             {
-                throw new InvalidOperationException($"Movement binding failed: playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}' possui multiplos PlayerInput sem endpoint explicito.");
+                throw new InvalidOperationException($"Movement binding failed: playerActorId='{actorHandle.PlayerActorId}' slotId='{actorHandle.PlayerSlotId}' possui multiplos PlayerInput sem endpoint explicito.");
             }
 
-            return inputs[0] ?? throw new InvalidOperationException($"Movement binding failed: playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}' PlayerInput invalido.");
+            return inputs[0] ?? throw new InvalidOperationException($"Movement binding failed: playerActorId='{actorHandle.PlayerActorId}' slotId='{actorHandle.PlayerSlotId}' PlayerInput invalido.");
         }
 
-        private static T ResolveSingleComponentOrFail<T>(GameObject actorInstance, MovementBindingRequirement requirement, string componentLabel)
+        private static T ResolveSingleComponentOrFail<T>(GameObject actorInstance, PlayerActorRuntimeHandle actorHandle, string componentLabel)
             where T : Component
         {
             T[] found = actorInstance.GetComponentsInChildren<T>(includeInactive: true);
             if (found == null || found.Length == 0)
             {
-                throw new InvalidOperationException($"Movement binding failed: playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}' sem {componentLabel}.");
+                throw new InvalidOperationException($"Movement binding failed: playerActorId='{actorHandle.PlayerActorId}' slotId='{actorHandle.PlayerSlotId}' sem {componentLabel}.");
             }
 
             if (found.Length > 1)
             {
-                throw new InvalidOperationException($"Movement binding failed: playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}' possui multiplos {componentLabel} sem endpoint explicito.");
+                throw new InvalidOperationException($"Movement binding failed: playerActorId='{actorHandle.PlayerActorId}' slotId='{actorHandle.PlayerSlotId}' possui multiplos {componentLabel} sem endpoint explicito.");
             }
 
-            return found[0] ?? throw new InvalidOperationException($"Movement binding failed: playerActorId='{requirement.PlayerActorId}' slotId='{requirement.PlayerSlotId}' {componentLabel} invalido.");
+            return found[0] ?? throw new InvalidOperationException($"Movement binding failed: playerActorId='{actorHandle.PlayerActorId}' slotId='{actorHandle.PlayerSlotId}' {componentLabel} invalido.");
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)
