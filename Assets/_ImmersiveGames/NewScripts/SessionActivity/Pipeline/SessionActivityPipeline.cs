@@ -3904,9 +3904,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     }
                 }
 
-                string resolvedParticipantKey = activityParticipantBinding.PlayerSlotId.IsValid
-                    ? activityParticipantBinding.PlayerSlotId.Value
-                    : activityParticipantBinding.ParticipantId.Value;
                 activityParticipantBindings.Add(activityParticipantBinding);
                 resolvedCount += 1;
                 if (requirementRequired)
@@ -3917,7 +3914,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 resolvedParticipants.Add(new ParticipantBindingResolvedRecord(
                     requirement.Requirement.RequirementId,
                     requirement.ParticipantKind,
-                    resolvedParticipantKey,
+                    activityParticipantBinding,
                     requirementRequired));
                 EmitFact(
                     facts,
@@ -3932,7 +3929,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     requirement.Requirement.RequirementId,
                     requirement.ParticipantKind,
                     requestedParticipantId,
-                    resolvedParticipantKey,
+                    activityParticipantBinding,
                     requirement.RoleId,
                     command.Source,
                     command.Reason);
@@ -3947,14 +3944,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityParticipantPlacementCommand placementCommand = new(
                     startedIdentity,
                     requirement.Requirement.RequirementId,
-                    resolvedParticipantKey,
+                    activityParticipantBinding,
                     requirement.PlacementRequirementId,
                     command.Source,
                     command.Reason);
                 ActivityParticipantResetCommand resetCommand = new(
                     startedIdentity,
                     requirement.Requirement.RequirementId,
-                    resolvedParticipantKey,
+                    activityParticipantBinding,
+                    requirement.PlacementRequirementId,
                     BuildDefaultParticipantResetGroups(),
                     command.Source,
                     command.Reason);
@@ -5459,24 +5457,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public ParticipantBindingResolvedRecord(
                 string requirementId,
                 ActivityParticipantRequirementKind participantKind,
-                string resolvedParticipantId,
+                PlayerActivityParticipantBinding participantBinding,
                 bool required)
             {
                 RequirementId = Normalize(requirementId);
                 ParticipantKind = participantKind;
-                ResolvedParticipantId = Normalize(resolvedParticipantId);
+                ParticipantBinding = participantBinding;
                 Required = required;
             }
 
             public string RequirementId { get; }
             public ActivityParticipantRequirementKind ParticipantKind { get; }
-            public string ResolvedParticipantId { get; }
+            public PlayerActivityParticipantBinding ParticipantBinding { get; }
             public bool Required { get; }
 
             public bool IsValid =>
                 !string.IsNullOrWhiteSpace(RequirementId) &&
                 ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
-                !string.IsNullOrWhiteSpace(ResolvedParticipantId);
+                ParticipantBinding.IsValid;
         }
 
         private void EmitPlayerInputBindingStage(
@@ -6405,7 +6403,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     bindCommand.Identity,
                     bindCommand.Source,
                     bindCommand.Reason,
-                    $"'{definition.ActivityId}' participant bind command issued requirementId='{bindCommand.RequirementId}' requestedParticipantId='{(string.IsNullOrWhiteSpace(bindCommand.RequestedParticipantId) ? "<none>" : bindCommand.RequestedParticipantId)}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant bind command issued requirementId='{bindCommand.RequirementId}' requestedParticipantId='{(string.IsNullOrWhiteSpace(bindCommand.RequestedParticipantId) ? "<none>" : bindCommand.RequestedParticipantId)}' participantId='{bindCommand.ParticipantBinding.ParticipantId}' role='{bindCommand.ParticipantBinding.Role}' playerSlotId='{bindCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{bindCommand.ParticipantBinding.ActorDefinitionId}' actorId='{bindCommand.ParticipantBinding.ActorId}' roleId='{bindCommand.RoleId}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             for (int index = 0; index < materializationCommands.Count; index++)
@@ -6417,7 +6415,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     materializationCommand.Identity,
                     materializationCommand.Source,
                     materializationCommand.Reason,
-                    $"'{definition.ActivityId}' participant materialization command issued requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' technicalKey='{materializationCommand.ResolvedParticipantId}' participantKind='{materializationCommand.ParticipantKind}' needKind='{materializationCommand.NeedKind}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant materialization command issued requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' role='{materializationCommand.ParticipantBinding.Role}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' participantKind='{materializationCommand.ParticipantKind}' needKind='{materializationCommand.NeedKind}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             for (int index = 0; index < placementCommands.Count; index++)
@@ -6429,7 +6427,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     placementCommand.Identity,
                     placementCommand.Source,
                     placementCommand.Reason,
-                    $"'{definition.ActivityId}' participant placement command issued requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' placementScope='ActivityLocal' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant placement command issued requirementId='{placementCommand.RequirementId}' participantId='{placementCommand.ParticipantBinding.ParticipantId}' role='{placementCommand.ParticipantBinding.Role}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{placementCommand.ParticipantBinding.ActorDefinitionId}' actorId='{placementCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' placementScope='ActivityLocal' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             for (int index = 0; index < resetCommands.Count; index++)
@@ -6441,7 +6439,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     resetCommand.Identity,
                     resetCommand.Source,
                     resetCommand.Reason,
-                    $"'{definition.ActivityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             ExecuteParticipantCommandPlan(definition, command, facts, snapshots, identity, plan, technicalPlanByParticipantId);
@@ -6459,13 +6457,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             try
             {
                 _activityPlayerActorRegistry.BeginActivityScope(identity);
-                Dictionary<string, PlayerActorIdentityRecord> ensuredActors = new(StringComparer.Ordinal);
+                Dictionary<string, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant = new(StringComparer.Ordinal);
                 Dictionary<string, ActivityParticipantPlacementCommand> placementByParticipant = new(StringComparer.Ordinal);
 
                 for (int index = 0; index < plan.PlacementCommands.Count; index++)
                 {
                     ActivityParticipantPlacementCommand placementCommand = plan.PlacementCommands[index];
-                    placementByParticipant[placementCommand.ResolvedParticipantId] = placementCommand;
+                    placementByParticipant[placementCommand.ParticipantBinding.ParticipantId.Value] = placementCommand;
                 }
 
                 for (int index = 0; index < plan.MaterializationCommands.Count; index++)
@@ -6478,20 +6476,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         technicalPlanByParticipantId,
                         command.Source,
                         command.Reason);
-                    ensuredActors[materializationCommand.ResolvedParticipantId] = actorIdentity;
+                    if (materializationCommand.ParticipantBinding.ParticipantId.IsValid)
+                    {
+                        ensuredActorsByActivityParticipant[materializationCommand.ParticipantBinding.ParticipantId.Value] = actorIdentity;
+                    }
                     EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityParticipantMaterialized,
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant materialization applied requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' technicalKey='{materializationCommand.ResolvedParticipantId}' needKind='{materializationCommand.NeedKind}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
+                        $"'{definition.ActivityId}' participant materialization applied requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' role='{materializationCommand.ParticipantBinding.Role}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' needKind='{materializationCommand.NeedKind}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
                 for (int index = 0; index < plan.BindCommands.Count; index++)
                 {
                     ActivityParticipantBindCommand bindCommand = plan.BindCommands[index];
-                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityOrFail(bindCommand.ResolvedParticipantId, ensuredActors, definition, "bind");
+                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(bindCommand.ParticipantBinding, ensuredActorsByActivityParticipant, definition, "bind");
                     PlayerActorParticipationEnterCommand enterCommand = new(identity, new[] { actorIdentity }, bindCommand.Source, bindCommand.Reason);
                     IReadOnlyList<PlayerActorParticipationEnterRecord> records = _playerActorParticipationAdapter.Execute(
                         enterCommand,
@@ -6500,7 +6501,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     if (records.Count != 1 || !records[0].IsValid)
                     {
                         throw new InvalidOperationException(
-                            $"Invalid participant bind apply record for participantId='{bindCommand.ResolvedParticipantId}' requirementId='{bindCommand.RequirementId}'.");
+                            $"Invalid participant bind apply record for participantId='{bindCommand.ParticipantBinding.ParticipantId}' requirementId='{bindCommand.RequirementId}'.");
                     }
 
                     EmitFact(
@@ -6509,15 +6510,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant bind applied requirementId='{bindCommand.RequirementId}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
+                        $"'{definition.ActivityId}' participant bind applied requirementId='{bindCommand.RequirementId}' participantId='{bindCommand.ParticipantBinding.ParticipantId}' role='{bindCommand.ParticipantBinding.Role}' playerSlotId='{bindCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{bindCommand.ParticipantBinding.ActorDefinitionId}' actorId='{bindCommand.ParticipantBinding.ActorId}' roleId='{bindCommand.RoleId}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
                 for (int index = 0; index < plan.PlacementCommands.Count; index++)
                 {
                     ActivityParticipantPlacementCommand placementCommand = plan.PlacementCommands[index];
-                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityOrFail(placementCommand.ResolvedParticipantId, ensuredActors, definition, "placement");
+                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(placementCommand.ParticipantBinding, ensuredActorsByActivityParticipant, definition, "placement");
                     SessionActivityPlayerTechnicalPlanEntry definitionEntry =
-                        ResolveTechnicalPlanEntryOrFail(definition, placementCommand.ResolvedParticipantId, technicalPlanByParticipantId, "placement");
+                        ResolveTechnicalPlanEntryForActivityParticipantOrFail(definition, placementCommand.ParticipantBinding, technicalPlanByParticipantId, "placement");
 
                     bool placementDeclared;
                     bool placementRequired;
@@ -6545,7 +6546,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     if (placementRecords.Count != 1 || !placementRecords[0].IsValid)
                     {
                         throw new InvalidOperationException(
-                            $"Invalid participant placement apply record for participantId='{placementCommand.ResolvedParticipantId}' requirementId='{placementCommand.RequirementId}'.");
+                            $"Invalid participant placement apply record for participantId='{placementCommand.ParticipantBinding.ParticipantId}' requirementId='{placementCommand.RequirementId}'.");
                     }
 
                     EmitFact(
@@ -6554,18 +6555,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant placement applied requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
+                        $"'{definition.ActivityId}' participant placement applied requirementId='{placementCommand.RequirementId}' participantId='{placementCommand.ParticipantBinding.ParticipantId}' role='{placementCommand.ParticipantBinding.Role}' playerSlotId='{placementCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{placementCommand.ParticipantBinding.ActorDefinitionId}' actorId='{placementCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
                 for (int index = 0; index < plan.ResetCommands.Count; index++)
                 {
                     ActivityParticipantResetCommand resetCommand = plan.ResetCommands[index];
-                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityOrFail(resetCommand.ResolvedParticipantId, ensuredActors, definition, "reset");
+                    PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(
+                        resetCommand.ParticipantBinding,
+                        ensuredActorsByActivityParticipant,
+                        definition,
+                        "reset");
                     SessionActivityPlayerTechnicalPlanEntry definitionEntry =
-                        ResolveTechnicalPlanEntryOrFail(definition, resetCommand.ResolvedParticipantId, technicalPlanByParticipantId, "reset");
-                    ActivityParticipantPlacementCommand placementCommand = placementByParticipant.TryGetValue(resetCommand.ResolvedParticipantId, out ActivityParticipantPlacementCommand mappedPlacement)
-                        ? mappedPlacement
-                        : default;
+                        ResolveTechnicalPlanEntryForActivityParticipantOrFail(definition, resetCommand.ParticipantBinding, technicalPlanByParticipantId, "reset");
 
                     bool placementDeclared;
                     bool placementRequired;
@@ -6574,10 +6576,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     Vector3 placementPosition;
                     Vector3 placementEuler;
                     ResolvePlacementPlanFromDefinition(definitionEntry, out placementDeclared, out placementRequired, out placementOptional, out hasPlacement, out placementPosition, out placementEuler);
-                    string placementId = ResolvePlacementIdForCommand(placementCommand, definitionEntry);
+                    string placementId = ResolvePlacementIdForResetCommand(resetCommand, definitionEntry);
 
                     ActorResetTargetRef resetTarget = new(
-                        BuildActorResetActorRef(identity, actorIdentity, definition, "reset"),
+                        BuildActorResetActorRef(identity, actorIdentity, resetCommand.ParticipantBinding, definition, "reset"),
                         MapResetGroupsOrFail(resetCommand.ResetGroups),
                         placementId,
                         placementDeclared,
@@ -6593,7 +6595,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     if (resetRecords.Count != 1 || !resetRecords[0].IsValid)
                     {
                         throw new InvalidOperationException(
-                            $"Invalid participant reset apply record for participantId='{resetCommand.ResolvedParticipantId}' requirementId='{resetCommand.RequirementId}'.");
+                            $"Invalid participant reset apply record for participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' requirementId='{resetCommand.RequirementId}'.");
                     }
                     ValidateRequiredResetGroupsOrFail(resetCommand, resetRecords[0]);
 
@@ -6603,7 +6605,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant reset applied requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
+                        $"'{definition.ActivityId}' participant reset applied requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
             }
             catch (Exception exception)
@@ -6793,75 +6795,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return new PlayerActorIdentityRecord(identity, playerSlotId, $"{identity.SessionId}|{actorId}");
         }
 
-        private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, string participantId)
-        {
-            string normalized = Normalize(participantId);
-            if (!identity.IsValid || string.IsNullOrWhiteSpace(normalized))
-            {
-                throw new InvalidOperationException("Cannot build participant actor identity with invalid inputs.");
-            }
-
-            return new PlayerActorIdentityRecord(identity, normalized, $"{identity.SessionId}|{normalized}");
-        }
-
         private static SessionActivityPlayerTechnicalPlanEntry ResolveTechnicalPlanEntryForActivityParticipantOrFail(
             SessionActivityDefinition definition,
             PlayerActivityParticipantBinding participant,
             Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
             string operation)
         {
-            if (!participant.IsValid)
+            if (!participant.IsValid || !participant.ParticipantId.IsValid)
             {
                 throw new InvalidOperationException(
                     $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' operation='{operation}' reason='participant_binding_invalid'.");
             }
 
+            string sessionParticipantId = Normalize(participant.ParticipantId.Value);
+            if (technicalPlanByParticipantId != null &&
+                technicalPlanByParticipantId.TryGetValue(sessionParticipantId, out SessionActivityPlayerTechnicalPlanEntry byParticipant) &&
+                byParticipant.IsValid)
+            {
+                return byParticipant;
+            }
+
             string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
             string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
-            string sessionParticipantId = participant.ParticipantId.IsValid ? Normalize(participant.ParticipantId.Value) : string.Empty;
-
-            if (technicalPlanByParticipantId != null)
-            {
-                if (!string.IsNullOrWhiteSpace(actorDefinitionId) &&
-                    technicalPlanByParticipantId.TryGetValue(actorDefinitionId, out SessionActivityPlayerTechnicalPlanEntry byActorDefinition) &&
-                    byActorDefinition.IsValid)
-                {
-                    return byActorDefinition;
-                }
-
-                if (!string.IsNullOrWhiteSpace(playerSlotId) &&
-                    technicalPlanByParticipantId.TryGetValue(playerSlotId, out SessionActivityPlayerTechnicalPlanEntry bySlot) &&
-                    bySlot.IsValid)
-                {
-                    return bySlot;
-                }
-
-                if (!string.IsNullOrWhiteSpace(sessionParticipantId) &&
-                    technicalPlanByParticipantId.TryGetValue(sessionParticipantId, out SessionActivityPlayerTechnicalPlanEntry byParticipant) &&
-                    byParticipant.IsValid)
-                {
-                    return byParticipant;
-                }
-            }
-
             throw new InvalidOperationException(
-                $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}'.");
-        }
-
-        private static SessionActivityPlayerTechnicalPlanEntry ResolveTechnicalPlanEntryOrFail(
-            SessionActivityDefinition definition,
-            string participantId,
-            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
-            string operation)
-        {
-            string normalized = Normalize(participantId);
-            if (technicalPlanByParticipantId == null || !technicalPlanByParticipantId.TryGetValue(normalized, out SessionActivityPlayerTechnicalPlanEntry entry) || !entry.IsValid)
-            {
-                throw new InvalidOperationException(
-                    $"missing_route_session_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{normalized}' operation='{operation}'.");
-            }
-
-            return entry;
+                $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}' resolutionKey='SessionParticipantId'.");
         }
 
         private static string ResolvePlacementIdForCommand(
@@ -6869,6 +6826,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityPlayerTechnicalPlanEntry definitionEntry)
         {
             string commandPlacementId = placementCommand.IsValid ? Normalize(placementCommand.PlacementRequirementId) : string.Empty;
+            if (!string.IsNullOrWhiteSpace(commandPlacementId))
+            {
+                return commandPlacementId;
+            }
+
+            return Normalize(definitionEntry.PlacementId);
+        }
+
+        private static string ResolvePlacementIdForResetCommand(
+            ActivityParticipantResetCommand resetCommand,
+            SessionActivityPlayerTechnicalPlanEntry definitionEntry)
+        {
+            string commandPlacementId = Normalize(resetCommand.PlacementRequirementId);
             if (!string.IsNullOrWhiteSpace(commandPlacementId))
             {
                 return commandPlacementId;
@@ -6923,17 +6893,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             };
         }
 
-        private static PlayerActorIdentityRecord EnsureResolvedActorIdentityOrFail(
-            string participantId,
-            Dictionary<string, PlayerActorIdentityRecord> ensuredActors,
+        private static PlayerActorIdentityRecord EnsureResolvedActorIdentityForActivityParticipantOrFail(
+            PlayerActivityParticipantBinding participantBinding,
+            Dictionary<string, PlayerActorIdentityRecord> ensuredActorsByActivityParticipant,
             SessionActivityDefinition definition,
             string operation)
         {
-            string normalized = Normalize(participantId);
-            if (ensuredActors == null || !ensuredActors.TryGetValue(normalized, out PlayerActorIdentityRecord identity) || !identity.IsValid)
+            if (!participantBinding.IsValid || !participantBinding.ParticipantId.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"Participant '{normalized}' is not available for operation='{operation}' activityId='{definition.ActivityId}'.");
+                    $"Activity participant binding is invalid for operation='{operation}' activityId='{definition.ActivityId}'.");
+            }
+
+            string participantId = Normalize(participantBinding.ParticipantId.Value);
+            if (ensuredActorsByActivityParticipant == null || !ensuredActorsByActivityParticipant.TryGetValue(participantId, out PlayerActorIdentityRecord identity) || !identity.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Activity participant '{participantId}' is not available for operation='{operation}' activityId='{definition.ActivityId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}'.");
             }
 
             return identity;
@@ -6974,6 +6950,47 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 observedIdentity.PlayerSlotId);
         }
 
+        private ActorResetActorRef BuildActorResetActorRef(
+            SessionActivityIdentity identity,
+            PlayerActorIdentityRecord actorIdentity,
+            PlayerActivityParticipantBinding participantBinding,
+            SessionActivityDefinition definition,
+            string operation)
+        {
+            if (!actorIdentity.IsValid)
+            {
+                throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid PlayerActorIdentityRecord.");
+            }
+
+            if (!participantBinding.IsValid)
+            {
+                throw new InvalidOperationException("Cannot build ActorResetActorRef from invalid ActivityParticipantBinding.");
+            }
+
+            if (!_activityPlayerActorRegistry.TryResolveInstanceForControl(identity, actorIdentity.PlayerActorId, out GameObject actorInstance, out PlayerActorIdentityRecord observedIdentity) ||
+                actorInstance == null ||
+                !observedIdentity.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Actor reset {operation} requires active player actor instance. activityId='{definition.ActivityId}' participantId='{participantBinding.ParticipantId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}' playerActorId='{actorIdentity.PlayerActorId}'.");
+            }
+
+            Actor runtimeActor = actorInstance.GetComponent<Actor>();
+            if (runtimeActor == null || !runtimeActor.RuntimeActorInstanceId.IsValid || string.IsNullOrWhiteSpace(runtimeActor.ActorId))
+            {
+                throw new InvalidOperationException(
+                    $"Actor reset {operation} requires valid runtime actor identity. activityId='{definition.ActivityId}' participantId='{participantBinding.ParticipantId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}' playerActorId='{actorIdentity.PlayerActorId}'.");
+            }
+
+            return new ActorResetActorRef(
+                identity,
+                runtimeActor.ActorId,
+                runtimeActor.RuntimeActorInstanceId.Value,
+                ActorKind.Player,
+                observedIdentity.PlayerActorId,
+                observedIdentity.PlayerSlotId);
+        }
+
         private static void ValidateRequiredResetGroupsOrFail(
             ActivityParticipantResetCommand resetCommand,
             ActorResetResult record)
@@ -6986,7 +7003,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (record.SkippedGroupReasons == null || record.SkippedGroupReasons.Count == 0)
             {
                 throw new InvalidOperationException(
-                    $"required_reset_group_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ResolvedParticipantId}' skippedGroups='{record.SkippedGroups.Count}' reason='missing_skip_reason'.");
+                    $"required_reset_group_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' skippedGroups='{record.SkippedGroups.Count}' reason='missing_skip_reason'.");
             }
 
             for (int index = 0; index < record.SkippedGroupReasons.Count; index++)
@@ -7003,7 +7020,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 throw new InvalidOperationException(
-                    $"required_reset_group_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ResolvedParticipantId}' group='{reason.Group}' reason='{reason.ReasonCode}'.");
+                    $"required_reset_group_failed: requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' group='{reason.Group}' reason='{reason.ReasonCode}'.");
             }
         }
 

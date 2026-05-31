@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     return 90;
                 case SessionOperationalStage.SessionOperationalSetupNoOp:
                     return 100;
-                case SessionOperationalStage.PlayerPreparationObserved:
+                case SessionOperationalStage.PlayerParticipationSeedObserved:
                     return 110;
                 case SessionOperationalStage.InputCapabilityPrepared:
                     return 120;

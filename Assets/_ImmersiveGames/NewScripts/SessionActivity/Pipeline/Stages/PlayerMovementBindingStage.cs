@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -25,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(startedIdentity, resolved.ResolvedParticipantId);
+                PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(startedIdentity, resolved.ParticipantBinding);
                 requirements.Add(new MovementBindingRequirement(
                     startedIdentity,
                     resolved.RequirementId,
@@ -70,15 +71,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return new SessionActivityPipeline.MovementBindingStageResult(requirements, requiredCount, records, Array.Empty<PlayerActorIdentityRecord>(), usedRetainedTargets: false, skippedNoRequiredMovement: false);
         }
 
-        private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, string participantId)
+        private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, ActivityParticipantBinding participantBinding)
         {
-            string normalized = Normalize(participantId);
-            if (!identity.IsValid || string.IsNullOrWhiteSpace(normalized))
+            string playerSlotId = participantBinding.PlayerSlotId.IsValid ? Normalize(participantBinding.PlayerSlotId.Value) : string.Empty;
+            string actorId = participantBinding.ActorId.IsValid ? Normalize(participantBinding.ActorId.Value) : string.Empty;
+            if (!identity.IsValid || string.IsNullOrWhiteSpace(playerSlotId) || string.IsNullOrWhiteSpace(actorId))
             {
-                throw new InvalidOperationException("Cannot build participant actor identity with invalid inputs.");
+                throw new InvalidOperationException("Cannot build participant actor identity with invalid ActivityParticipantBinding.");
             }
 
-            return new PlayerActorIdentityRecord(identity, normalized, $"{identity.SessionId}|{normalized}");
+            return new PlayerActorIdentityRecord(identity, playerSlotId, $"{identity.SessionId}|{actorId}");
         }
 
         private static string Normalize(string value)

@@ -12,17 +12,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             }
 
             PlayerParticipationKind participationKind = ResolveParticipationKind(plan);
-            IReadOnlyList<PlayerPlannedEntry> plannedEntries = BuildPlannedEntries(plan.PlayerSet);
-            IReadOnlyList<PlayerMaterializationEntry> materializationEntries = BuildMaterializationEntries(plannedEntries, materializationRecords);
+            IReadOnlyList<PlayerParticipationSeedEntry> seedEntries = BuildSeedEntries(plan.PlayerSet);
+            IReadOnlyList<PlayerMaterializationEntry> materializationEntries = BuildMaterializationEntries(seedEntries, materializationRecords);
             IReadOnlyList<PlayerReadinessEntry> readinessEntries = BuildReadinessEntries(materializationEntries);
             PlayerParticipationOutcome outcome = ResolveOutcome(plan.PlayerSet, materializationEntries);
             string message = BuildOutcomeMessage(outcome);
-            PlayerPreparationSnapshot snapshot = new(
+            PlayerParticipationSeedSnapshot snapshot = new(
                 plan.Identity,
                 outcome,
                 participationKind,
                 plan.PlayerSet,
-                plannedEntries,
+                seedEntries,
                 materializationEntries,
                 readinessEntries,
                 message);
@@ -34,7 +34,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             }
 
             DebugUtility.Log(typeof(PlayerParticipationStage),
-                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.PlannedPlayersCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.PlannedEntries)}' message='{snapshot.Message}'.",
+                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredSeedEntriesCount}' optionalSeedEntries='{snapshot.OptionalSeedEntriesCount}' unmaterializedSeedEntries='{snapshot.UnmaterializedSeedEntriesCount}' requiredMaterializationPending='{snapshot.PendingRequiredSeedEntriesCount}' optionalMaterializationPending='{snapshot.PendingOptionalSeedEntriesCount}' entriesWithPrefab='{snapshot.EntriesWithPrefabCount}' entriesWithoutPrefab='{snapshot.EntriesWithoutPrefabCount}' entriesWithPlacement='{snapshot.EntriesWithPlacementCount}' entriesWithoutPlacement='{snapshot.EntriesWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
                 DebugUtility.Colors.Info);
 
             return result;
@@ -73,53 +73,53 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 }
             }
 
-            return PlayerParticipationOutcome.PlannedOnly;
+            return PlayerParticipationOutcome.SeedResolved;
         }
 
-        private static IReadOnlyList<PlayerPlannedEntry> BuildPlannedEntries(PlayerSet playerSet)
+        private static IReadOnlyList<PlayerParticipationSeedEntry> BuildSeedEntries(PlayerSet playerSet)
         {
             if (playerSet.Entries == null || playerSet.Entries.Count == 0)
             {
-                return System.Array.Empty<PlayerPlannedEntry>();
+                return System.Array.Empty<PlayerParticipationSeedEntry>();
             }
 
-            List<PlayerPlannedEntry> plannedEntries = new(playerSet.Entries.Count);
+            List<PlayerParticipationSeedEntry> seedEntries = new(playerSet.Entries.Count);
             for (int i = 0; i < playerSet.Entries.Count; i++)
             {
                 PlayerSetEntry sourceEntry = playerSet.Entries[i];
-                plannedEntries.Add(new PlayerPlannedEntry(
+                seedEntries.Add(new PlayerParticipationSeedEntry(
                     sourceEntry.PlayerId,
                     sourceEntry.Required,
                     sourceEntry.HasPrefabReference,
                     sourceEntry.PlacementMode,
                     sourceEntry.HasPlacementPlan,
-                    PlayerPrarticipationEntryStatus.PlannedOnly));
+                    PlayerParticipationSeedEntryStatus.SeedResolved));
             }
 
-            return plannedEntries;
+            return seedEntries;
         }
 
-        private static IReadOnlyList<PlayerMaterializationEntry> BuildMaterializationEntries(IReadOnlyList<PlayerPlannedEntry> plannedEntries, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)
+        private static IReadOnlyList<PlayerMaterializationEntry> BuildMaterializationEntries(IReadOnlyList<PlayerParticipationSeedEntry> seedEntries, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)
         {
-            if (plannedEntries == null || plannedEntries.Count == 0)
+            if (seedEntries == null || seedEntries.Count == 0)
             {
                 return System.Array.Empty<PlayerMaterializationEntry>();
             }
 
-            List<PlayerMaterializationEntry> materializationEntries = new(plannedEntries.Count);
-            for (int i = 0; i < plannedEntries.Count; i++)
+            List<PlayerMaterializationEntry> materializationEntries = new(seedEntries.Count);
+            for (int i = 0; i < seedEntries.Count; i++)
             {
-                PlayerPlannedEntry plannedEntry = plannedEntries[i];
-                PlayerMaterializationRecord record = ResolveRecord(plannedEntry, materializationRecords);
+                PlayerParticipationSeedEntry seedEntry = seedEntries[i];
+                PlayerMaterializationRecord record = ResolveRecord(seedEntry, materializationRecords);
                 bool isMaterialized = record.MaterializationStatus == PlayerMaterializationStatus.Materialized;
                 bool isSkipped = record.MaterializationStatus == PlayerMaterializationStatus.Skipped;
                 materializationEntries.Add(new PlayerMaterializationEntry(
-                    plannedEntry.PlayerId,
-                    plannedEntry.Required,
-                    plannedEntry.HasPrefabReference,
-                    plannedEntry.PlacementMode,
-                    plannedEntry.HasPlacementPlan,
-                    isMaterialized ? PlayerPrarticipationEntryStatus.Materialized : (isSkipped ? PlayerPrarticipationEntryStatus.Skipped : plannedEntry.Status),
+                    seedEntry.PlayerId,
+                    seedEntry.Required,
+                    seedEntry.HasPrefabReference,
+                    seedEntry.PlacementMode,
+                    seedEntry.HasPlacementPlan,
+                    isMaterialized ? PlayerParticipationSeedEntryStatus.Materialized : (isSkipped ? PlayerParticipationSeedEntryStatus.Skipped : seedEntry.Status),
                     record.MaterializationStatus == PlayerMaterializationStatus.Unknown ? PlayerMaterializationStatus.NotMaterialized : record.MaterializationStatus,
                     record.RuntimeName,
                     record.RuntimeSceneName));
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             return readinessEntries;
         }
 
-        private static string FormatSeedSlotIds(IReadOnlyList<PlayerPlannedEntry> entries)
+        private static string FormatSeedSlotIds(IReadOnlyList<PlayerParticipationSeedEntry> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -193,7 +193,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             return outcome switch
             {
                 PlayerParticipationOutcome.ObservedNoOp => "observed_noop",
-                PlayerParticipationOutcome.PlannedOnly => "seed_resolved",
+                PlayerParticipationOutcome.SeedResolved => "seed_resolved",
                 PlayerParticipationOutcome.Materialized => "materialized",
                 _ => "unknown"
             };
@@ -201,14 +201,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
         private static string BuildOutcomeMessage(PlayerParticipationOutcome outcome)
         {
-            return outcome == PlayerParticipationOutcome.PlannedOnly
+            return outcome == PlayerParticipationOutcome.SeedResolved
                 ? "Player participation seed resolved. Actor materialization remains owned by ActivityEntryPipeline."
                 : (outcome == PlayerParticipationOutcome.Materialized
                     ? "Player participation materialization observed."
                     : "No player participation seed entries resolved. Stage observed as canonical no-op.");
         }
 
-        private static PlayerMaterializationRecord ResolveRecord(PlayerPlannedEntry plannedEntry, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)
+        private static PlayerMaterializationRecord ResolveRecord(PlayerParticipationSeedEntry seedEntry, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)
         {
             if (materializationRecords == null || materializationRecords.Count == 0)
             {
@@ -223,7 +223,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     continue;
                 }
 
-                if (candidate.PlayerId == plannedEntry.PlayerId)
+                if (candidate.PlayerId == seedEntry.PlayerId)
                 {
                     return candidate;
                 }

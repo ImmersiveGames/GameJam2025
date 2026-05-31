@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_dependencies.RouteCameraAdapter);
             _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_dependencies.RouteCameraAdapter);
             _inputPreparationStage = new OperationalInputPreparationStage(_factRecorder, _dependencies.ResolveInputModeRequestPort);
-            _playerParticipationStage = new OperationalPlayerParticipationStage(_dependencies.ResolveRoutePlayerPreparationEndpoint, _dependencies.ResolvePlayerParticipationRuntime);
+            _playerParticipationStage = new OperationalPlayerParticipationStage(_dependencies.ResolveRoutePlayerParticipationEndpoint, _dependencies.ResolvePlayerParticipationRuntime);
             _routeCompletionStage = new OperationalRouteCompletionStage(_factRecorder);
             _activityCameraPresentationStage = new OperationalActivityCameraPresentationStage(_dependencies.ActivityCameraAdapter);
             _activityCameraReleasePreviousStage = new OperationalActivityCameraReleasePreviousStage(_dependencies.ActivityCameraAdapter);
@@ -581,7 +581,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 }
 
                 OperationalPlayerParticipationResult playerParticipationStageResult = _playerParticipationStage.Execute(
-                    BuildPlayerPreparationCommand(
+                    BuildPlayerParticipationCommand(
                         command,
                         routeIdentity,
                         routeOperationId,
@@ -592,7 +592,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 if (!playerParticipationStageResult.IsAccepted)
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][SessionOperationalPipeline][PlayerPreparation] OperationalPlayerParticipationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+                        $"[FATAL][SessionOperationalPipeline][PlayerParticipation] OperationalPlayerParticipationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
                 }
 
                 PlayerParticipationResult playerParticipationResult = playerParticipationStageResult.PlayerParticipationResult;
@@ -1087,7 +1087,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "Session operational setup no-op.");
         }
 
-        public bool TryObservePlayerPreparationObserved(
+        public bool TryObservePlayerParticipationSeedObserved(
             string routeOperationId,
             string transitionId,
             int transitionSequence,
@@ -1097,7 +1097,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             return TryRecordStage(
-                SessionOperationalStage.PlayerPreparationObserved,
+                SessionOperationalStage.PlayerParticipationSeedObserved,
                 routeOperationId,
                 transitionId,
                 transitionSequence,
@@ -1105,7 +1105,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 routeProfileId,
                 source,
                 reason,
-                "Player preparation observed no-op.");
+                "Player participation seed observed no-op.");
         }
 
         public bool TryObservePauseCapabilityPrepared(
@@ -1456,7 +1456,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reasonText);
         }
 
-        private OperationalPlayerParticipationCommand BuildPlayerPreparationCommand(
+        private OperationalPlayerParticipationCommand BuildPlayerParticipationCommand(
             SessionOperationalRouteCommand command,
             string routeIdentity,
             string routeOperationId,

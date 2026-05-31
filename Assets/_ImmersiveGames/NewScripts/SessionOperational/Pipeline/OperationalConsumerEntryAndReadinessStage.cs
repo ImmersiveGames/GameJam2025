@@ -301,7 +301,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionParticipationContext sessionParticipationContext)
         {
             DebugUtility.Log(typeof(OperationalConsumerEntryAndReadinessStage),
-                $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}'.",
+                $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -310,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return outcome switch
             {
                 PlayerParticipationOutcome.ObservedNoOp => "ObservedNoOp",
-                PlayerParticipationOutcome.PlannedOnly => "SeedResolved",
+                PlayerParticipationOutcome.SeedResolved => "SeedResolved",
                 PlayerParticipationOutcome.Materialized => "Materialized",
                 _ => "Unknown",
             };

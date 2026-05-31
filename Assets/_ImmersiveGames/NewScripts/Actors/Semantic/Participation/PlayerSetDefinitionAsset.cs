@@ -77,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
                 if (actorDefinition.ActorKind != ActorDefinitionKind.Player)
                 {
-                    errorMessage = $"entries[{i}].actorDefinition.actorKind must be Player for PlayerPreparation rail. actorId='{actorDefinition.ActorId}' actorKind='{actorDefinition.ActorKind}'.";
+                    errorMessage = $"entries[{i}].actorDefinition.actorKind must be Player for PlayerParticipation seed. actorId='{actorDefinition.ActorId}' actorKind='{actorDefinition.ActorKind}'.";
                     return false;
                 }
 

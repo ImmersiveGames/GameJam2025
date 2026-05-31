@@ -65,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
             EnsureSessionOperationalRouteCameraAdapter();
             EnsureSessionOperationalActivityCameraAdapter();
             EnsurePlayerParticipationRuntime();
-            EnsureRoutePlayerPreparationEndpoint();
+            EnsureRoutePlayerParticipationEndpoint();
             EnsureSessionOperationalRouteHandoffExitAdapter();
             EnsureSessionOperationalRouteConsumerEntryAdapter();
             EnsureSessionOperationalRouteConsumerReadinessAdapter();
@@ -177,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 DebugUtility.Colors.Info);
         }
 
-        private static void EnsureRoutePlayerPreparationEndpoint()
+        private static void EnsureRoutePlayerParticipationEndpoint()
         {
             if (_routePlayerParticipationEndpoint != null)
             {

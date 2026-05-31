@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
 {
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        PlayerPreparationObserved = 11,
+        PlayerParticipationSeedObserved = 11,
         InputCapabilityPrepared = 12,
         InitialInputModePrepared = 13,
         PauseCapabilityPrepared = 14,
@@ -292,7 +292,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Contracts
         RoutePhysicalApplyObserved = 8,
         ScenesReadyObserved = 9,
         SessionOperationalSetupNoOp = 10,
-        PlayerPreparationObserved = 11,
+        PlayerParticipationSeedObserved = 11,
         InputCapabilityPrepared = 12,
         InitialInputModePrepared = 13,
         PauseCapabilityPrepared = 14,

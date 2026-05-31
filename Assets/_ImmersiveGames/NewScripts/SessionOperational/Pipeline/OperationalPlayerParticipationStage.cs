@@ -120,7 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("handoffSessionStateId is required when completionHandoff=SessionActivityEntry.");
             }
 
-            PlayerPreparationIdentity playerParticipationIdentity = new(
+            PlayerParticipationSeedIdentity playerParticipationIdentity = new(
                 command.PipelineId,
                 command.RouteCommand.HandoffSessionStateId,
                 command.RouteIdentity,
@@ -216,14 +216,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalPlayerParticipationCommand command,
             PlayerParticipationResult result)
         {
-            IReadOnlyList<PlayerPlannedEntry> plannedEntries = result.Snapshot.PlannedEntries ?? Array.Empty<PlayerPlannedEntry>();
-            List<PlayerSlotReservation> slotReservations = new(plannedEntries.Count);
-            List<PlayerSelection> selections = new(plannedEntries.Count);
-            List<SessionParticipantBinding> participants = new(plannedEntries.Count);
+            IReadOnlyList<PlayerParticipationSeedEntry> seedEntries = result.Snapshot.SeedEntries ?? Array.Empty<PlayerParticipationSeedEntry>();
+            List<PlayerSlotReservation> slotReservations = new(seedEntries.Count);
+            List<PlayerSelection> selections = new(seedEntries.Count);
+            List<SessionParticipantBinding> participants = new(seedEntries.Count);
 
-            for (int i = 0; i < plannedEntries.Count; i++)
+            for (int i = 0; i < seedEntries.Count; i++)
             {
-                PlayerPlannedEntry entry = plannedEntries[i];
+                PlayerParticipationSeedEntry entry = seedEntries[i];
                 if (!entry.IsValid)
                 {
                     continue;
@@ -281,7 +281,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Reason);
         }
 
-        private static SessionParticipantId ResolveParticipantId(PlayerPlannedEntry entry, int index)
+        private static SessionParticipantId ResolveParticipantId(PlayerParticipationSeedEntry entry, int index)
         {
             if (index == 0 && entry.Required)
             {
@@ -294,7 +294,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 : $"participant.player.{normalizedPlayerId}");
         }
 
-        private static SessionParticipantRole ResolveParticipantRole(PlayerPlannedEntry entry, int index)
+        private static SessionParticipantRole ResolveParticipantRole(PlayerParticipationSeedEntry entry, int index)
         {
             if (index == 0 && entry.Required)
             {
@@ -311,7 +311,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 : "<none>";
         }
 
-        private static string FormatSeedSlotIds(IReadOnlyList<PlayerPlannedEntry> entries)
+        private static string FormatSeedSlotIds(IReadOnlyList<PlayerParticipationSeedEntry> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -356,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return "observed_noop";
             }
 
-            return result.IsPlannedOnly ? "seed_resolved" : "materialized";
+            return result.IsSeedResolved ? "seed_resolved" : "materialized";
         }
 
         private static string FormatSlotReservations(IReadOnlyList<PlayerSlotReservation> slotReservations)
@@ -413,21 +413,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static void LogPlayerParticipationStarted(
             OperationalPlayerParticipationCommand command,
-            PlayerPreparationIdentity identity)
+            PlayerParticipationSeedIdentity identity)
         {
             DebugUtility.Log(typeof(OperationalPlayerParticipationStage),
-                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationStarted' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationStarted' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static void LogPlayerParticipationSeedResolved(
             OperationalPlayerParticipationCommand command,
-            PlayerPreparationIdentity identity,
+            PlayerParticipationSeedIdentity identity,
             PlayerParticipationResult result,
             SessionParticipationContext context)
         {
             DebugUtility.Log(typeof(OperationalPlayerParticipationStage),
-                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationSeedResolved' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' seedOutcome='{FormatPlayerParticipationOutcome(result)}' seedSlotIds='{FormatSeedSlotIds(result.Snapshot.PlannedEntries)}' sessionParticipantIds='{FormatSessionParticipantIds(context.Participants)}'.",
+                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationSeedResolved' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' seedOutcome='{FormatPlayerParticipationOutcome(result)}' seedSlotIds='{FormatSeedSlotIds(result.Snapshot.SeedEntries)}' sessionParticipantIds='{FormatSessionParticipantIds(context.Participants)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -452,11 +452,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static void LogPlayerParticipationCompleted(
             OperationalPlayerParticipationCommand command,
-            PlayerPreparationIdentity identity,
+            PlayerParticipationSeedIdentity identity,
             PlayerParticipationResult result)
         {
             DebugUtility.Log(typeof(OperationalPlayerParticipationStage),
-                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationCompleted' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' outcome='{FormatPlayerParticipationOutcome(result)}'.",
+                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationCompleted' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' outcome='{FormatPlayerParticipationOutcome(result)}'.",
                 DebugUtility.Colors.Info);
         }
 

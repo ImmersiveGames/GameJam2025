@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 
@@ -44,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 0,
                 request.SessionStateId,
                 request.SessionParticipationContext,
-                BuildPlayerTechnicalPlanEntries(request.PlayerTechnicalEntries),
+                BuildPlayerTechnicalPlanEntries(request.PlayerTechnicalEntries, request.SessionParticipationContext),
                 new SessionActivityRouteTransitionContext(
                     request.HasRouteFadeProfile && request.RouteFadeProfile != null,
                     request.RouteFadeProfile,
@@ -88,11 +90,17 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         }
 
         private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntries(
-            IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> entries)
+            IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> entries,
+            SessionParticipationContext sessionParticipationContext)
         {
             if (entries == null || entries.Count == 0)
             {
                 return Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            }
+
+            if (sessionParticipationContext == null || !sessionParticipationContext.IsValid)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] SessionParticipationContext is required to build player technical plan entries.");
             }
 
             List<SessionActivityPlayerTechnicalPlanEntry> technicalEntries = new(entries.Count);
@@ -104,17 +112,59 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     continue;
                 }
 
+                SessionParticipantBinding participant = ResolveSessionParticipantForTechnicalEntryOrFail(entry, sessionParticipationContext);
+                string participantId = participant.ParticipantId.Value;
                 technicalEntries.Add(new SessionActivityPlayerTechnicalPlanEntry(
-                    entry.PlayerId,
+                    participantId,
                     entry.Required,
                     entry.Prefab,
                     entry.PlacementMode,
                     entry.PlacementId,
                     entry.LocalPosition,
                     entry.LocalRotation));
+
+                DebugUtility.Log(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
+                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerActorTechnicalPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedEntryId='{entry.PlayerId}' resolutionKey='SessionParticipantId'.");
             }
 
             return technicalEntries;
+        }
+
+        private static SessionParticipantBinding ResolveSessionParticipantForTechnicalEntryOrFail(
+            PlayerSetDefinitionAsset.PlayerActorResolvedEntry entry,
+            SessionParticipationContext sessionParticipationContext)
+        {
+            string seedEntryId = Normalize(entry.PlayerId);
+            if (string.IsNullOrWhiteSpace(seedEntryId))
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Player technical seed entry id is required.");
+            }
+
+            IReadOnlyList<SessionParticipantBinding> participants = sessionParticipationContext.Participants ?? Array.Empty<SessionParticipantBinding>();
+            for (int index = 0; index < participants.Count; index++)
+            {
+                SessionParticipantBinding participant = participants[index];
+                if (!participant.IsValid || !participant.ParticipantId.IsValid)
+                {
+                    continue;
+                }
+
+                string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
+                string actorId = participant.ActorId.IsValid ? Normalize(participant.ActorId.Value) : string.Empty;
+                if (string.Equals(actorDefinitionId, seedEntryId, StringComparison.Ordinal) ||
+                    string.Equals(actorId, seedEntryId, StringComparison.Ordinal))
+                {
+                    return participant;
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for player technical seed entry seedEntryId='{seedEntryId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
     }
 }

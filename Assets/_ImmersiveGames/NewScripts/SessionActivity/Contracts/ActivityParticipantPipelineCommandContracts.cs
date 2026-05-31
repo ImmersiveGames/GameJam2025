@@ -17,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string requirementId,
             ActivityParticipantRequirementKind participantKind,
             string requestedParticipantId,
-            string resolvedParticipantId,
+            ActivityParticipantBinding participantBinding,
             string roleId,
             string source,
             string reason)
@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             RequirementId = Normalize(requirementId);
             ParticipantKind = participantKind;
             RequestedParticipantId = Normalize(requestedParticipantId);
-            ResolvedParticipantId = Normalize(resolvedParticipantId);
+            ParticipantBinding = participantBinding;
             RoleId = Normalize(roleId);
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -36,7 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string RequirementId { get; }
         public ActivityParticipantRequirementKind ParticipantKind { get; }
         public string RequestedParticipantId { get; }
-        public string ResolvedParticipantId { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
         public string RoleId { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -45,12 +45,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
-            !string.IsNullOrWhiteSpace(ResolvedParticipantId) &&
+            ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', requestedParticipantId='{(string.IsNullOrWhiteSpace(RequestedParticipantId) ? "<none>" : RequestedParticipantId)}', resolvedParticipantId='{ResolvedParticipantId}', roleId='{RoleId}', participantOwnership='RouteSession', activityOwnership='false', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', requestedParticipantId='{(string.IsNullOrWhiteSpace(RequestedParticipantId) ? "<none>" : RequestedParticipantId)}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', roleId='{RoleId}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
@@ -74,9 +74,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             RequirementId = Normalize(requirementId);
             ParticipantKind = participantKind;
             ParticipantBinding = participantBinding;
-            ResolvedParticipantId = participantBinding.PlayerSlotId.IsValid
-                ? participantBinding.PlayerSlotId.Value
-                : string.Empty;
             NeedKind = needKind;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -85,10 +82,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
         public ActivityParticipantRequirementKind ParticipantKind { get; }
-
-        // Chave técnica transitória para stages legados de placement/reset/binding.
-        // A fonte canônica da materialização é ParticipantBinding.
-        public string ResolvedParticipantId { get; }
 
         public ActivityParticipantBinding ParticipantBinding { get; }
         public ActivityParticipantMaterializationNeedKind NeedKind { get; }
@@ -100,13 +93,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
             ParticipantBinding.IsValid &&
-            !string.IsNullOrWhiteSpace(ResolvedParticipantId) &&
             NeedKind != ActivityParticipantMaterializationNeedKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', participantId='{ParticipantBinding.ParticipantId}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', materializationPolicy='{ParticipantBinding.MaterializationPolicy}', technicalKey='{ResolvedParticipantId}', needKind='{NeedKind}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', materializationPolicy='{ParticipantBinding.MaterializationPolicy}', needKind='{NeedKind}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
@@ -120,14 +112,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityParticipantPlacementCommand(
             SessionActivityIdentity identity,
             string requirementId,
-            string resolvedParticipantId,
+            ActivityParticipantBinding participantBinding,
             string placementRequirementId,
             string source,
             string reason)
         {
             Identity = identity;
             RequirementId = Normalize(requirementId);
-            ResolvedParticipantId = Normalize(resolvedParticipantId);
+            ParticipantBinding = participantBinding;
             PlacementRequirementId = Normalize(placementRequirementId);
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -135,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
-        public string ResolvedParticipantId { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
         public string PlacementRequirementId { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -143,12 +135,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsValid =>
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
-            !string.IsNullOrWhiteSpace(ResolvedParticipantId) &&
+            ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', resolvedParticipantId='{ResolvedParticipantId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', placementScope='ActivityLocal', participantOwnership='RouteSession', activityOwnership='false', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', placementScope='ActivityLocal', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)
@@ -162,14 +154,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public ActivityParticipantResetCommand(
             SessionActivityIdentity identity,
             string requirementId,
-            string resolvedParticipantId,
+            ActivityParticipantBinding participantBinding,
+            string placementRequirementId,
             IReadOnlyList<ActivityStateResetGroup> resetGroups,
             string source,
             string reason)
         {
             Identity = identity;
             RequirementId = Normalize(requirementId);
-            ResolvedParticipantId = Normalize(resolvedParticipantId);
+            ParticipantBinding = participantBinding;
+            PlacementRequirementId = Normalize(placementRequirementId);
             ResetGroups = resetGroups ?? Array.Empty<ActivityStateResetGroup>();
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -177,7 +171,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
-        public string ResolvedParticipantId { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
+        public string PlacementRequirementId { get; }
         public IReadOnlyList<ActivityStateResetGroup> ResetGroups { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -188,7 +183,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             get
             {
-                if (!Identity.IsValid || string.IsNullOrWhiteSpace(RequirementId) || string.IsNullOrWhiteSpace(ResolvedParticipantId) || ResetGroups == null || ResetGroups.Count == 0 || string.IsNullOrWhiteSpace(Source))
+                if (!Identity.IsValid || string.IsNullOrWhiteSpace(RequirementId) || !ParticipantBinding.IsValid || ResetGroups == null || ResetGroups.Count == 0 || string.IsNullOrWhiteSpace(Source))
                 {
                     return false;
                 }
@@ -207,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', resolvedParticipantId='{ResolvedParticipantId}', resetGroups='{FormatResetGroups(ResetGroups)}', participantOwnership='RouteSession', activityOwnership='false', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantId='{ParticipantBinding.ParticipantId}', role='{ParticipantBinding.Role}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', placementRequirementId='{(string.IsNullOrWhiteSpace(PlacementRequirementId) ? "<none>" : PlacementRequirementId)}', resetGroups='{FormatResetGroups(ResetGroups)}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string FormatResetGroups(IReadOnlyList<ActivityStateResetGroup> resetGroups)
@@ -272,7 +267,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"identity='{Identity}', totalCommands='{TotalCommandCount}', bind='{BindCommands.Count}', materialization='{MaterializationCommands.Count}', placement='{PlacementCommands.Count}', reset='{ResetCommands.Count}', participantOwnership='RouteSession', activityOwnership='false', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', totalCommands='{TotalCommandCount}', bind='{BindCommands.Count}', materialization='{MaterializationCommands.Count}', placement='{PlacementCommands.Count}', reset='{ResetCommands.Count}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)

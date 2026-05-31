@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
     {
         Unknown = 0,
         ObservedNoOp = 1,
-        PlannedOnly = 2,
+        SeedResolved = 2,
         Materialized = 3,
     }
 
@@ -42,17 +42,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         }
     }
 
-    public enum PlayerPrarticipationEntryStatus
+    public enum PlayerParticipationSeedEntryStatus
     {
         Unknown = 0,
-        PlannedOnly = 1,
+        SeedResolved = 1,
         Materialized = 2,
         Skipped = 3,
     }
 
-    public readonly struct PlayerPlannedEntry
+    public readonly struct PlayerParticipationSeedEntry
     {
-        public PlayerPlannedEntry(string playerId, bool required, bool hasPrefabReference, ActorPlacementMode placementMode, bool hasPlacementPlan, PlayerPrarticipationEntryStatus status)
+        public PlayerParticipationSeedEntry(string playerId, bool required, bool hasPrefabReference, ActorPlacementMode placementMode, bool hasPlacementPlan, PlayerParticipationSeedEntryStatus status)
         {
             PlayerId = Normalize(playerId);
             Required = required;
@@ -67,8 +67,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
         public bool HasPlacementPlan { get; }
-        public PlayerPrarticipationEntryStatus Status { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId) && Status != PlayerPrarticipationEntryStatus.Unknown;
+        public PlayerParticipationSeedEntryStatus Status { get; }
+        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId) && Status != PlayerParticipationSeedEntryStatus.Unknown;
 
         private static string Normalize(string value)
         {
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             bool hasPrefabReference,
             ActorPlacementMode placementMode,
             bool hasPlacementPlan,
-            PlayerPrarticipationEntryStatus participationStatus,
+            PlayerParticipationSeedEntryStatus participationStatus,
             PlayerMaterializationStatus materializationStatus,
             string runtimeName,
             string runtimeSceneName)
@@ -113,16 +113,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
         public bool HasPlacementPlan { get; }
-        public PlayerPrarticipationEntryStatus ParticipationStatus { get; }
+        public PlayerParticipationSeedEntryStatus ParticipationStatus { get; }
         public PlayerMaterializationStatus MaterializationStatus { get; }
         public string RuntimeName { get; }
         public string RuntimeSceneName { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PlayerId) &&
-            ((ParticipationStatus == PlayerPrarticipationEntryStatus.PlannedOnly && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized) ||
-             (ParticipationStatus == PlayerPrarticipationEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized) ||
-             (ParticipationStatus == PlayerPrarticipationEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped));
+            ((ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized) ||
+             (ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized) ||
+             (ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped));
 
         private static string Normalize(string value)
         {
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             bool hasPrefabReference,
             ActorPlacementMode placementMode,
             bool hasPlacementPlan,
-            PlayerPrarticipationEntryStatus prarticipationStatus,
+            PlayerParticipationSeedEntryStatus participationStatus,
             PlayerMaterializationStatus materializationStatus,
             PlayerReadinessStatus readinessStatus)
         {
@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             HasPrefabReference = hasPrefabReference;
             PlacementMode = placementMode;
             HasPlacementPlan = hasPlacementPlan;
-            PrarticipationStatus = prarticipationStatus;
+            ParticipationStatus = participationStatus;
             MaterializationStatus = materializationStatus;
             ReadinessStatus = readinessStatus;
         }
@@ -166,21 +166,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
         public bool HasPlacementPlan { get; }
-        public PlayerPrarticipationEntryStatus PrarticipationStatus { get; }
+        public PlayerParticipationSeedEntryStatus ParticipationStatus { get; }
         public PlayerMaterializationStatus MaterializationStatus { get; }
         public PlayerReadinessStatus ReadinessStatus { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PlayerId) &&
-            ((PrarticipationStatus == PlayerPrarticipationEntryStatus.PlannedOnly &&
+            ((ParticipationStatus == PlayerParticipationSeedEntryStatus.SeedResolved &&
               MaterializationStatus == PlayerMaterializationStatus.NotMaterialized &&
               ((Required && ReadinessStatus == PlayerReadinessStatus.PendingMaterialization) ||
                (!Required && ReadinessStatus == PlayerReadinessStatus.OptionalPending))) ||
-             (PrarticipationStatus == PlayerPrarticipationEntryStatus.Materialized &&
+             (ParticipationStatus == PlayerParticipationSeedEntryStatus.Materialized &&
               MaterializationStatus == PlayerMaterializationStatus.Materialized &&
               ReadinessStatus == PlayerReadinessStatus.Ready) ||
              (!Required &&
-              PrarticipationStatus == PlayerPrarticipationEntryStatus.Skipped &&
+              ParticipationStatus == PlayerParticipationSeedEntryStatus.Skipped &&
               MaterializationStatus == PlayerMaterializationStatus.Skipped &&
               ReadinessStatus == PlayerReadinessStatus.OptionalSkipped));
 
@@ -230,10 +230,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         }
 
         public IReadOnlyList<PlayerSetEntry> Entries { get; }
-        public int PlannedPlayersCount => Entries?.Count ?? 0;
-        public int RequiredPlayersCount => CountRequired(Entries);
-        public int OptionalPlayersCount => PlannedPlayersCount - RequiredPlayersCount;
-        public bool IsEmpty => PlannedPlayersCount == 0;
+        public int SeedEntriesCount => Entries?.Count ?? 0;
+        public int RequiredSeedEntriesCount => CountRequired(Entries);
+        public int OptionalSeedEntriesCount => SeedEntriesCount - RequiredSeedEntriesCount;
+        public bool IsEmpty => SeedEntriesCount == 0;
         public bool IsValid => Entries != null && AreEntriesValid(Entries);
         public static PlayerSet Empty => new(Array.Empty<PlayerSetEntry>());
 
@@ -275,9 +275,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         }
     }
 
-    public readonly struct PlayerPreparationIdentity
+    public readonly struct PlayerParticipationSeedIdentity
     {
-        public PlayerPreparationIdentity(
+        public PlayerParticipationSeedIdentity(
             string pipelineId,
             string sessionId,
             string routeIdentity,
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
     public readonly struct PlayerParticipationPlan
     {
         public PlayerParticipationPlan(
-            PlayerPreparationIdentity identity,
+            PlayerParticipationSeedIdentity identity,
             bool expectsSessionActivityEntry,
             PlayerSet playerSet,
             string source,
@@ -330,7 +330,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             Reason = Normalize(reason);
         }
 
-        public PlayerPreparationIdentity Identity { get; }
+        public PlayerParticipationSeedIdentity Identity { get; }
         public bool ExpectsSessionActivityEntry { get; }
         public PlayerSet PlayerSet { get; }
         public string Source { get; }
@@ -348,14 +348,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         }
     }
 
-    public readonly struct PlayerPreparationSnapshot
+    public readonly struct PlayerParticipationSeedSnapshot
     {
-        public PlayerPreparationSnapshot(
-            PlayerPreparationIdentity identity,
+        public PlayerParticipationSeedSnapshot(
+            PlayerParticipationSeedIdentity identity,
             PlayerParticipationOutcome outcome,
             PlayerParticipationKind participationKind,
             PlayerSet playerSet,
-            IReadOnlyList<PlayerPlannedEntry> plannedEntries,
+            IReadOnlyList<PlayerParticipationSeedEntry> seedEntries,
             IReadOnlyList<PlayerMaterializationEntry> materializationEntries,
             IReadOnlyList<PlayerReadinessEntry> readinessEntries,
             string message)
@@ -364,31 +364,31 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             Outcome = outcome;
             ParticipationKind = participationKind;
             PlayerSet = playerSet.IsValid ? playerSet : PlayerSet.Empty;
-            PlannedEntries = plannedEntries ?? Array.Empty<PlayerPlannedEntry>();
+            SeedEntries = seedEntries ?? Array.Empty<PlayerParticipationSeedEntry>();
             MaterializationEntries = materializationEntries ?? Array.Empty<PlayerMaterializationEntry>();
             ReadinessEntries = readinessEntries ?? Array.Empty<PlayerReadinessEntry>();
             Message = Normalize(message);
         }
 
-        public PlayerPreparationIdentity Identity { get; }
+        public PlayerParticipationSeedIdentity Identity { get; }
         public PlayerParticipationOutcome Outcome { get; }
         public PlayerParticipationKind ParticipationKind { get; }
         public PlayerSet PlayerSet { get; }
-        public IReadOnlyList<PlayerPlannedEntry> PlannedEntries { get; }
+        public IReadOnlyList<PlayerParticipationSeedEntry> SeedEntries { get; }
         public IReadOnlyList<PlayerMaterializationEntry> MaterializationEntries { get; }
         public IReadOnlyList<PlayerReadinessEntry> ReadinessEntries { get; }
-        public int PlannedPlayersCount => PlayerSet.PlannedPlayersCount;
-        public int RequiredPlayersCount => PlayerSet.RequiredPlayersCount;
-        public int OptionalPlayersCount => PlayerSet.OptionalPlayersCount;
-        public int NotMaterializedPlayersCount => CountNotMaterialized(MaterializationEntries);
+        public int SeedEntriesCount => PlayerSet.SeedEntriesCount;
+        public int RequiredSeedEntriesCount => PlayerSet.RequiredSeedEntriesCount;
+        public int OptionalSeedEntriesCount => PlayerSet.OptionalSeedEntriesCount;
+        public int UnmaterializedSeedEntriesCount => CountNotMaterialized(MaterializationEntries);
         public int MaterializedPlayersCount => CountByMaterialization(MaterializationEntries, PlayerMaterializationStatus.Materialized);
         public int SkippedPlayersCount => CountByMaterialization(MaterializationEntries, PlayerMaterializationStatus.Skipped);
-        public int PendingRequiredPlayersCount => CountByReadiness(ReadinessEntries, PlayerReadinessStatus.PendingMaterialization);
-        public int PendingOptionalPlayersCount => CountByReadiness(ReadinessEntries, PlayerReadinessStatus.OptionalPending);
-        public int PlayersWithPrefabCount => CountByPrefab(PlannedEntries, true);
-        public int PlayersWithoutPrefabCount => CountByPrefab(PlannedEntries, false);
-        public int PlayersWithPlacementCount => CountByPlacement(PlannedEntries, true);
-        public int PlayersWithoutPlacementCount => CountByPlacement(PlannedEntries, false);
+        public int PendingRequiredSeedEntriesCount => CountByReadiness(ReadinessEntries, PlayerReadinessStatus.PendingMaterialization);
+        public int PendingOptionalSeedEntriesCount => CountByReadiness(ReadinessEntries, PlayerReadinessStatus.OptionalPending);
+        public int EntriesWithPrefabCount => CountByPrefab(SeedEntries, true);
+        public int EntriesWithoutPrefabCount => CountByPrefab(SeedEntries, false);
+        public int EntriesWithPlacementCount => CountByPlacement(SeedEntries, true);
+        public int EntriesWithoutPlacementCount => CountByPlacement(SeedEntries, false);
         public string Message { get; }
 
         public bool IsValid =>
@@ -396,32 +396,32 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             Outcome != PlayerParticipationOutcome.Unknown &&
             ParticipationKind != PlayerParticipationKind.Unknown &&
             PlayerSet.IsValid &&
-            ArePlannedEntriesValid(PlannedEntries) &&
+            AreSeedEntriesValid(SeedEntries) &&
             AreMaterializationEntriesValid(MaterializationEntries) &&
             AreOutcomeCountsConsistent(
                 Outcome,
-                PlannedEntries,
+                SeedEntries,
                 MaterializationEntries,
                 ReadinessEntries,
-                PlannedPlayersCount,
-                RequiredPlayersCount,
-                OptionalPlayersCount,
-                NotMaterializedPlayersCount,
-                PendingRequiredPlayersCount,
-                PendingOptionalPlayersCount) &&
+                SeedEntriesCount,
+                RequiredSeedEntriesCount,
+                OptionalSeedEntriesCount,
+                UnmaterializedSeedEntriesCount,
+                PendingRequiredSeedEntriesCount,
+                PendingOptionalSeedEntriesCount) &&
             AreReadinessEntriesValid(ReadinessEntries) &&
             !string.IsNullOrWhiteSpace(Message);
 
-        private static bool ArePlannedEntriesValid(IReadOnlyList<PlayerPlannedEntry> plannedEntries)
+        private static bool AreSeedEntriesValid(IReadOnlyList<PlayerParticipationSeedEntry> seedEntries)
         {
-            if (plannedEntries == null)
+            if (seedEntries == null)
             {
                 return false;
             }
 
-            for (int i = 0; i < plannedEntries.Count; i++)
+            for (int i = 0; i < seedEntries.Count; i++)
             {
-                if (!plannedEntries[i].IsValid)
+                if (!seedEntries[i].IsValid)
                 {
                     return false;
                 }
@@ -430,7 +430,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             return true;
         }
 
-        private static int CountByPrefab(IReadOnlyList<PlayerPlannedEntry> entries, bool hasPrefab)
+        private static int CountByPrefab(IReadOnlyList<PlayerParticipationSeedEntry> entries, bool hasPrefab)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -449,7 +449,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             return count;
         }
 
-        private static int CountByPlacement(IReadOnlyList<PlayerPlannedEntry> entries, bool hasPlacement)
+        private static int CountByPlacement(IReadOnlyList<PlayerParticipationSeedEntry> entries, bool hasPlacement)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -568,53 +568,53 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
         private static bool AreOutcomeCountsConsistent(
             PlayerParticipationOutcome outcome,
-            IReadOnlyList<PlayerPlannedEntry> plannedEntries,
+            IReadOnlyList<PlayerParticipationSeedEntry> seedEntries,
             IReadOnlyList<PlayerMaterializationEntry> materializationEntries,
             IReadOnlyList<PlayerReadinessEntry> readinessEntries,
-            int plannedPlayersCount,
-            int requiredPlayersCount,
-            int optionalPlayersCount,
-            int notMaterializedPlayersCount,
-            int pendingRequiredPlayersCount,
-            int pendingOptionalPlayersCount)
+            int seedEntriesCount,
+            int requiredSeedEntriesCount,
+            int optionalSeedEntriesCount,
+            int unmaterializedSeedEntriesCount,
+            int pendingRequiredSeedEntriesCount,
+            int pendingOptionalSeedEntriesCount)
         {
-            int plannedCount = plannedEntries?.Count ?? 0;
+            int seedCount = seedEntries?.Count ?? 0;
             int materializationCount = materializationEntries?.Count ?? 0;
             int readinessCount = readinessEntries?.Count ?? 0;
 
             if (outcome == PlayerParticipationOutcome.ObservedNoOp)
             {
-                return plannedPlayersCount == 0 &&
-                       plannedCount == 0 &&
+                return seedEntriesCount == 0 &&
+                       seedCount == 0 &&
                        materializationCount == 0 &&
                        readinessCount == 0 &&
-                       requiredPlayersCount == 0 &&
-                       optionalPlayersCount == 0 &&
-                       notMaterializedPlayersCount == 0 &&
-                       pendingRequiredPlayersCount == 0 &&
-                       pendingOptionalPlayersCount == 0;
+                       requiredSeedEntriesCount == 0 &&
+                       optionalSeedEntriesCount == 0 &&
+                       unmaterializedSeedEntriesCount == 0 &&
+                       pendingRequiredSeedEntriesCount == 0 &&
+                       pendingOptionalSeedEntriesCount == 0;
             }
 
-            if (outcome == PlayerParticipationOutcome.PlannedOnly)
+            if (outcome == PlayerParticipationOutcome.SeedResolved)
             {
-                return plannedPlayersCount > 0 &&
-                       plannedCount == plannedPlayersCount &&
-                       materializationCount == plannedPlayersCount &&
-                       readinessCount == plannedPlayersCount &&
-                       requiredPlayersCount + optionalPlayersCount == plannedPlayersCount &&
-                       notMaterializedPlayersCount == plannedPlayersCount &&
-                       pendingRequiredPlayersCount == requiredPlayersCount &&
-                       pendingOptionalPlayersCount == optionalPlayersCount;
+                return seedEntriesCount > 0 &&
+                       seedCount == seedEntriesCount &&
+                       materializationCount == seedEntriesCount &&
+                       readinessCount == seedEntriesCount &&
+                       requiredSeedEntriesCount + optionalSeedEntriesCount == seedEntriesCount &&
+                       unmaterializedSeedEntriesCount == seedEntriesCount &&
+                       pendingRequiredSeedEntriesCount == requiredSeedEntriesCount &&
+                       pendingOptionalSeedEntriesCount == optionalSeedEntriesCount;
             }
 
             if (outcome == PlayerParticipationOutcome.Materialized)
             {
-                return plannedPlayersCount > 0 &&
-                       plannedCount == plannedPlayersCount &&
-                       materializationCount == plannedPlayersCount &&
-                       readinessCount == plannedPlayersCount &&
-                       requiredPlayersCount + optionalPlayersCount == plannedPlayersCount &&
-                       pendingRequiredPlayersCount == 0;
+                return seedEntriesCount > 0 &&
+                       seedCount == seedEntriesCount &&
+                       materializationCount == seedEntriesCount &&
+                       readinessCount == seedEntriesCount &&
+                       requiredSeedEntriesCount + optionalSeedEntriesCount == seedEntriesCount &&
+                       pendingRequiredSeedEntriesCount == 0;
             }
 
             return false;
@@ -623,21 +623,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
     public readonly struct PlayerParticipationResult
     {
-        public PlayerParticipationResult(PlayerParticipationPlan plan, PlayerPreparationSnapshot snapshot)
+        public PlayerParticipationResult(PlayerParticipationPlan plan, PlayerParticipationSeedSnapshot snapshot)
         {
             Plan = plan;
             Snapshot = snapshot;
         }
 
         public PlayerParticipationPlan Plan { get; }
-        public PlayerPreparationSnapshot Snapshot { get; }
-        public IReadOnlyList<PlayerPlannedEntry> PlannedEntries => Snapshot.PlannedEntries;
+        public PlayerParticipationSeedSnapshot Snapshot { get; }
+        public IReadOnlyList<PlayerParticipationSeedEntry> SeedEntries => Snapshot.SeedEntries;
         public IReadOnlyList<PlayerMaterializationEntry> MaterializationEntries => Snapshot.MaterializationEntries;
         public IReadOnlyList<PlayerReadinessEntry> ReadinessEntries => Snapshot.ReadinessEntries;
         public bool IsObservedNoOp => Snapshot.Outcome == PlayerParticipationOutcome.ObservedNoOp;
-        public bool IsPlannedOnly => Snapshot.Outcome == PlayerParticipationOutcome.PlannedOnly;
+        public bool IsSeedResolved => Snapshot.Outcome == PlayerParticipationOutcome.SeedResolved;
         public bool IsMaterialized => Snapshot.Outcome == PlayerParticipationOutcome.Materialized;
-        public bool IsPlannedOrNoOp => IsObservedNoOp || IsPlannedOnly;
+        public bool IsSeedOrNoOp => IsObservedNoOp || IsSeedResolved;
 
         public bool IsValid =>
             Plan.IsValid &&
