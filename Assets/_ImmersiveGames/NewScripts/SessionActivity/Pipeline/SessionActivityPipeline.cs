@@ -14,13 +14,19 @@ using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
+using PlayerActivityParticipantRequirementId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantRequirementId;
+using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
+using PlayerSessionParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantBinding;
+using PlayerSessionParticipantRole = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantRole;
+using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
@@ -75,7 +81,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private bool _pendingContinuationExitTeardownCompleted;
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
-        private SessionActivityPlayerPreparationHandoff _lastRouteSessionPlayerPreparationHandoff;
+        private PlayerSessionParticipationContext _lastSessionParticipationContext;
+        private IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> _lastPlayerActorTechnicalPlanEntries = Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+        private PlayerActivityParticipationContext _lastActivityParticipationContext;
+        private readonly Dictionary<string, PlayerActivityParticipantBinding> _activePlayerParticipantBindingsBySlotId = new(StringComparer.Ordinal);
         private SessionActivityRailKind _activeRailKind;
         private SessionActivitySnapshotPayload _lastSnapshotPayloadForSaveOnExit;
         private bool _lastSnapshotCaptureFailedForSaveOnExit;
@@ -741,12 +750,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 "pipeline_reset_for_new_handoff",
                 "SessionActivity started a new prepared handoff before the previous route-exit teardown request completed.");
             _lastVisualReadinessSignal = default;
-            _lastRouteSessionPlayerPreparationHandoff = handoff.PlayerPreparation;
+            _lastSessionParticipationContext = handoff.SessionParticipationContext;
+            _lastPlayerActorTechnicalPlanEntries = handoff.PlayerActorTechnicalPlanEntries ?? Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            _lastActivityParticipationContext = null;
+            _activePlayerParticipantBindingsBySlotId.Clear();
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activityNonPlayerActorRegistry.ClearAllRouteRetained();
             _activeActorParticipationsByActorInstanceId.Clear();
-            _activeActorPresentationByActorInstanceId.Clear();            _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
+            _activeActorPresentationByActorInstanceId.Clear();
+            _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
             _state.SetCurrentDefinition(initialDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -758,7 +771,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff handoff='{handoff}' source='{source}' reason='{reason}'");
             _state.AppendTrace($"[OBS][SessionActivityPipeline] SessionActivityEntryHandoffAccepted handoff='{handoff}' source='{source}' reason='{reason}'");
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' playerPreparationOutcome='{handoff.PlayerPreparation.Outcome}' plannedPlayers='{handoff.PlayerPreparation.PlannedPlayers}' materializedPlayers='{handoff.PlayerPreparation.MaterializedPlayers}' pendingRequiredPlayers='{handoff.PlayerPreparation.PendingRequiredPlayers}'.",
+                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' playerActorTechnicalPlanEntries='{handoff.PlayerActorTechnicalPlanEntryCount}'.",
                 DebugUtility.Colors.Success);
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "SessionActivityPipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
@@ -2456,11 +2469,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastSnapshotPayloadForSaveOnExit = default;
             _lastSnapshotCaptureFailedForSaveOnExit = false;
             _lastSnapshotCaptureFailureDetail = string.Empty;
-            _lastRouteSessionPlayerPreparationHandoff = default;
+            _lastSessionParticipationContext = null;
+            _lastPlayerActorTechnicalPlanEntries = Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            _lastActivityParticipationContext = null;
+            _activePlayerParticipantBindingsBySlotId.Clear();
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activityNonPlayerActorRegistry.ClearAllRouteRetained();
             _activeActorParticipationsByActorInstanceId.Clear();
-            _activeActorPresentationByActorInstanceId.Clear();            _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
+            _activeActorPresentationByActorInstanceId.Clear();
+            _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
             _state.SetCurrentDefinition(firstDefinition);
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
@@ -3588,8 +3605,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason,
             string readinessPoint)
         {
-            string routeOperationId = _lastRouteSessionPlayerPreparationHandoff.IsValid
-                ? _lastRouteSessionPlayerPreparationHandoff.RouteOperationId
+            string routeOperationId = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
+                ? _lastSessionParticipationContext.RouteOperationId
                 : string.Empty;
             if (string.IsNullOrWhiteSpace(routeOperationId))
             {
@@ -3632,13 +3649,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding stage started. routeSessionParticipantOwnership='external' activityOwnership='false'.");
+                $"'{definition.ActivityId}' participant binding stage started. participantOwnership='ActivityParticipationContext' sessionParticipationContext='required'.");
             EmitSnapshot(
                 snapshots,
                 "activity_participant_binding_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding stage started. routeSessionParticipantOwnership='external' activityOwnership='false'.");
+                $"'{definition.ActivityId}' participant binding stage started. participantOwnership='ActivityParticipationContext'.");
 
             SessionActivityIdentity expectedInventoryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
             if (!inventory.IsValid || inventory.Identity.CycleKey != expectedInventoryIdentity.CycleKey)
@@ -3682,6 +3699,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"'{definition.ActivityId}' participant binding skipped because no participant requirements were declared totalRequirements='0'.");
 
                 SessionActivityIdentity completedAfterSkipIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
+                StoreActivityParticipationContext(
+                    definition,
+                    completedAfterSkipIdentity,
+                    Array.Empty<PlayerActivityParticipantBinding>(),
+                    command.Source,
+                    command.Reason,
+                    "SkippedNoRequirements");
                 _state.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
                 EmitFact(
                     facts,
@@ -3706,28 +3730,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     resolvedParticipants: Array.Empty<ParticipantBindingResolvedRecord>());
             }
 
-            SessionActivityPlayerPreparationHandoff routeSessionPlayerPreparation = ResolveRouteSessionPlayerPreparationOrFail(
+            PlayerSessionParticipationContext sessionParticipationContext = ResolveSessionParticipationContextOrFail(
                 definition,
                 command,
                 facts,
                 snapshots,
                 entrySequence);
-            HashSet<string> plannedRouteSessionParticipants = BuildPlannedRouteSessionParticipantSet(routeSessionPlayerPreparation.ParticipantIds);
             Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId =
-                BuildTechnicalPlanMap(routeSessionPlayerPreparation.TechnicalPlanEntries);
+                BuildTechnicalPlanMap(_lastPlayerActorTechnicalPlanEntries);
+
             EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityParticipantBindingResolutionStarted,
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding resolution started routeSessionParticipantOwnership='external' activityOwnership='false' participantOwnership='RouteSession' playerPreparationOutcome='{routeSessionPlayerPreparation.Outcome}' participationKind='{routeSessionPlayerPreparation.ParticipationKind}' plannedParticipants='{plannedRouteSessionParticipants.Count}'.");
+                $"'{definition.ActivityId}' participant binding resolution started participantOwnership='ActivityParticipationContext' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' technicalPlanEntries='{technicalPlanByParticipantId.Count}'.");
             EmitSnapshot(
                 snapshots,
                 "activity_participant_binding_resolution_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding resolution started plannedParticipants='{plannedRouteSessionParticipants.Count}'.");
+                $"'{definition.ActivityId}' participant binding resolution started sessionParticipants='{sessionParticipationContext.ParticipantCount}' technicalPlanEntries='{technicalPlanByParticipantId.Count}'.");
 
             int resolvedCount = 0;
             int skippedCount = 0;
@@ -3738,6 +3762,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ActivityParticipantMaterializationCommand> materializationCommands = new(participantRequirements.Count);
             List<ActivityParticipantPlacementCommand> placementCommands = new(participantRequirements.Count);
             List<ActivityParticipantResetCommand> resetCommands = new(participantRequirements.Count);
+            List<PlayerActivityParticipantBinding> activityParticipantBindings = new(participantRequirements.Count);
 
             for (int index = 0; index < participantRequirements.Count; index++)
             {
@@ -3769,7 +3794,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant requirement declared requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' participantId='{requirement.ParticipantId}' roleId='{requirement.RoleId}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' status='Declared'.");
+                    $"'{definition.ActivityId}' participant requirement declared requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' participantId='{requirement.ParticipantId}' roleId='{requirement.RoleId}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='ActivityParticipationContext' activityOwnership='true' status='Declared'.");
 
                 string requestedParticipantId = Normalize(requirement.ParticipantId);
                 bool requirementRequired = requirement.Requirement.IsRequired;
@@ -3777,49 +3802,85 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 {
                     requiredRequirementCount += 1;
                 }
-                bool hasRequestedHint = !string.IsNullOrWhiteSpace(requestedParticipantId);
-                bool resolvedFromHint = false;
-                bool resolved = false;
-                string resolvedParticipantId = string.Empty;
-                string resolutionReason = "no_route_session_participant_available";
 
-                if (hasRequestedHint)
+                if (!TryBuildActivityParticipantBinding(
+                        requirement,
+                        requestedParticipantId,
+                        command.Source,
+                        command.Reason,
+                        out PlayerActivityParticipantBinding activityParticipantBinding,
+                        out string activityParticipationResolutionReason))
                 {
-                    if (plannedRouteSessionParticipants.Contains(requestedParticipantId))
+                    if (!requirementRequired)
                     {
-                        resolved = true;
-                        resolvedFromHint = true;
-                        resolvedParticipantId = requestedParticipantId;
-                        resolutionReason = "resolved_from_requested_participant_id";
+                        skippedCount += 1;
+                        LogActivityParticipationBindingSkipped(
+                            definition,
+                            startedIdentity,
+                            requirement.Requirement.RequirementId,
+                            requestedParticipantId,
+                            activityParticipationResolutionReason,
+                            command.Source,
+                            command.Reason);
+                        EmitFact(
+                            facts,
+                            SessionActivityFactKind.ActivityParticipantBindingResolved,
+                            startedIdentity,
+                            command.Source,
+                            command.Reason,
+                            $"'{definition.ActivityId}' optional activity participation binding skipped requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(string.IsNullOrWhiteSpace(requestedParticipantId) ? "<none>" : requestedParticipantId)}' skipReason='{activityParticipationResolutionReason}' sessionParticipationContext='present' status='OptionalActivityParticipationBindingSkipped'.");
+                        continue;
                     }
-                    else
-                    {
-                        resolutionReason = "requested_participant_id_not_found_in_route_session";
-                    }
-                }
-                else if (TryResolveSingleParticipantHint(plannedRouteSessionParticipants, out string inferredParticipantId))
-                {
-                    resolved = true;
-                    resolvedParticipantId = inferredParticipantId;
-                    resolutionReason = "resolved_from_route_session_single_participant";
+
+                    SessionActivityIdentity missingSessionParticipantIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                    _state.SetCurrentIdentity(missingSessionParticipantIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantBindingFailed,
+                        missingSessionParticipantIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' required activity participant binding failed requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(string.IsNullOrWhiteSpace(requestedParticipantId) ? "<none>" : requestedParticipantId)}' sessionParticipationContext='present' resolutionReason='{activityParticipationResolutionReason}' error='activity_session_participant_binding_missing'.");
+                    EmitSnapshot(
+                        snapshots,
+                        "activity_participant_binding_failed",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' required activity participant binding failed requirementId='{requirement.Requirement.RequirementId}' resolutionReason='{activityParticipationResolutionReason}'.");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Required activity participant binding missing requirementId='{requirement.Requirement.RequirementId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requestedParticipantId='{requestedParticipantId}' resolutionReason='{activityParticipationResolutionReason}'.");
                 }
 
-                if (resolved)
+                if (activityParticipantBinding.RequiresPlayerActor)
                 {
-                    bool hasTechnicalPlan = technicalPlanByParticipantId.TryGetValue(resolvedParticipantId, out SessionActivityPlayerTechnicalPlanEntry technicalPlanEntry) &&
-                        technicalPlanEntry.IsValid;
-                    if (!hasTechnicalPlan)
+                    try
+                    {
+                        ResolveTechnicalPlanEntryForActivityParticipantOrFail(
+                            definition,
+                            activityParticipantBinding,
+                            technicalPlanByParticipantId,
+                            "binding_validation");
+                    }
+                    catch (Exception exception)
                     {
                         if (!requirementRequired)
                         {
                             skippedCount += 1;
+                            LogActivityParticipationBindingSkipped(
+                                definition,
+                                startedIdentity,
+                                requirement.Requirement.RequirementId,
+                                requestedParticipantId,
+                                exception.Message,
+                                command.Source,
+                                command.Reason);
                             EmitFact(
                                 facts,
                                 SessionActivityFactKind.ActivityParticipantBindingResolved,
                                 startedIdentity,
                                 command.Source,
                                 command.Reason,
-                                $"'{definition.ActivityId}' optional participant requirement unresolved technical plan requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' resolvedParticipantId='{resolvedParticipantId}' participantOwnership='RouteSession' activityOwnership='false' activityBinding='skipped' status='OptionalTechnicalPlanMissingSkipped' resolutionReason='missing_route_session_participant_technical_plan'.");
+                                $"'{definition.ActivityId}' optional activity participant technical plan skipped requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' skipReason='{exception.Message}' status='OptionalTechnicalPlanMissingSkipped'.");
                             continue;
                         }
 
@@ -3831,125 +3892,98 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                             missingTechnicalPlanIdentity,
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' required participant technical plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{resolvedParticipantId}' operation='materialization' routeIdentity='{routeSessionPlayerPreparation.RouteIdentity}' routeOperationId='{routeSessionPlayerPreparation.RouteOperationId}' transitionId='{routeSessionPlayerPreparation.TransitionId}' routeSequence='{routeSessionPlayerPreparation.RouteSequence}' error='missing_route_session_participant_technical_plan'.");
+                            $"'{definition.ActivityId}' required activity participant technical plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}' error='missing_activity_participant_technical_plan'.");
                         EmitSnapshot(
                             snapshots,
                             "activity_participant_binding_failed",
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' required participant technical plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{resolvedParticipantId}'.");
+                            $"'{definition.ActivityId}' required activity participant technical plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}'.");
                         throw new InvalidOperationException(
-                            $"missing_route_session_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{resolvedParticipantId}' operation='materialization' routeIdentity='{routeSessionPlayerPreparation.RouteIdentity}' routeOperationId='{routeSessionPlayerPreparation.RouteOperationId}' transitionId='{routeSessionPlayerPreparation.TransitionId}' routeSequence='{routeSessionPlayerPreparation.RouteSequence}'.");
+                            $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
                     }
-
-                    resolvedCount += 1;
-                    if (requirementRequired)
-                    {
-                        requiredResolvedCount += 1;
-                    }
-                    resolvedParticipants.Add(new ParticipantBindingResolvedRecord(
-                        requirement.Requirement.RequirementId,
-                        requirement.ParticipantKind,
-                        resolvedParticipantId,
-                        requirementRequired));
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityParticipantBindingResolved,
-                        startedIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' participant requirement resolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' resolvedParticipantId='{resolvedParticipantId}' resolvedFromHint='{resolvedFromHint}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' status='ResolvedNominally' resolutionReason='{resolutionReason}'.");
-
-                    ActivityParticipantBindCommand bindCommand = new(
-                        startedIdentity,
-                        requirement.Requirement.RequirementId,
-                        requirement.ParticipantKind,
-                        requestedParticipantId,
-                        resolvedParticipantId,
-                        requirement.RoleId,
-                        command.Source,
-                        command.Reason);
-                    ActivityParticipantMaterializationCommand materializationCommand = new(
-                        startedIdentity,
-                        requirement.Requirement.RequirementId,
-                        requirement.ParticipantKind,
-                        resolvedParticipantId,
-                        ActivityParticipantMaterializationNeedKind.EnsureRouteSessionParticipantAvailable,
-                        command.Source,
-                        command.Reason);
-                    ActivityParticipantPlacementCommand placementCommand = new(
-                        startedIdentity,
-                        requirement.Requirement.RequirementId,
-                        resolvedParticipantId,
-                        requirement.PlacementRequirementId,
-                        command.Source,
-                        command.Reason);
-                    ActivityParticipantResetCommand resetCommand = new(
-                        startedIdentity,
-                        requirement.Requirement.RequirementId,
-                        resolvedParticipantId,
-                        BuildDefaultParticipantResetGroups(),
-                        command.Source,
-                        command.Reason);
-
-                    if (!bindCommand.IsValid || !materializationCommand.IsValid || !placementCommand.IsValid || !resetCommand.IsValid)
-                    {
-                        SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
-                        _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
-                        EmitFact(
-                            facts,
-                            SessionActivityFactKind.ActivityParticipantBindingFailed,
-                            failedIdentity,
-                            command.Source,
-                            command.Reason,
-                            $"'{definition.ActivityId}' participant command plan failed invalid command requirementId='{requirement.Requirement.RequirementId}' resolvedParticipantId='{resolvedParticipantId}'.");
-                        EmitSnapshot(
-                            snapshots,
-                            "activity_participant_binding_failed",
-                            command.Source,
-                            command.Reason,
-                            $"'{definition.ActivityId}' participant command plan failed invalid command requirementId='{requirement.Requirement.RequirementId}'.");
-                        throw new InvalidOperationException(
-                            $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Invalid participant command plan requirementId='{requirement.Requirement.RequirementId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
-                    }
-
-                    bindCommands.Add(bindCommand);
-                    materializationCommands.Add(materializationCommand);
-                    placementCommands.Add(placementCommand);
-                    resetCommands.Add(resetCommand);
-                    continue;
                 }
 
-                if (!requirementRequired)
+                string resolvedParticipantKey = activityParticipantBinding.PlayerSlotId.IsValid
+                    ? activityParticipantBinding.PlayerSlotId.Value
+                    : activityParticipantBinding.ParticipantId.Value;
+                activityParticipantBindings.Add(activityParticipantBinding);
+                resolvedCount += 1;
+                if (requirementRequired)
                 {
-                    skippedCount += 1;
-                    EmitFact(
-                        facts,
-                        SessionActivityFactKind.ActivityParticipantBindingResolved,
-                        startedIdentity,
-                        command.Source,
-                        command.Reason,
-                        $"'{definition.ActivityId}' optional participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' activityBinding='skipped' status='OptionalUnresolvedSkipped' resolutionReason='{resolutionReason}'.");
-                    continue;
+                    requiredResolvedCount += 1;
                 }
 
-                SessionActivityIdentity requiredFailedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
-                _state.SetCurrentIdentity(requiredFailedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                resolvedParticipants.Add(new ParticipantBindingResolvedRecord(
+                    requirement.Requirement.RequirementId,
+                    requirement.ParticipantKind,
+                    resolvedParticipantKey,
+                    requirementRequired));
                 EmitFact(
                     facts,
-                    SessionActivityFactKind.ActivityParticipantBindingFailed,
-                    requiredFailedIdentity,
+                    SessionActivityFactKind.ActivityParticipantBindingResolved,
+                    startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' required participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(hasRequestedHint ? requestedParticipantId : "<none>")}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='RouteSession' activityOwnership='false' resolutionReason='{resolutionReason}'.");
-                EmitSnapshot(
-                    snapshots,
-                    "activity_participant_binding_failed",
+                    $"'{definition.ActivityId}' participant requirement resolved requirementId='{requirement.Requirement.RequirementId}' participantKind='{requirement.ParticipantKind}' requestedParticipantId='{(string.IsNullOrWhiteSpace(requestedParticipantId) ? "<none>" : requestedParticipantId)}' participantId='{activityParticipantBinding.ParticipantId}' role='{activityParticipantBinding.Role}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' actorId='{activityParticipantBinding.ActorId}' requiredness='{requirement.Requirement.Requiredness}' participantOwnership='ActivityParticipationContext' activityOwnership='true' status='ResolvedNominally' resolutionReason='{activityParticipationResolutionReason}'.");
+
+                ActivityParticipantBindCommand bindCommand = new(
+                    startedIdentity,
+                    requirement.Requirement.RequirementId,
+                    requirement.ParticipantKind,
+                    requestedParticipantId,
+                    resolvedParticipantKey,
+                    requirement.RoleId,
                     command.Source,
-                    command.Reason,
-                    $"'{definition.ActivityId}' required participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}'.");
-                throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Required participant requirement unresolved requirementId='{requirement.Requirement.RequirementId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' resolutionReason='{resolutionReason}'.");
+                    command.Reason);
+                ActivityParticipantMaterializationCommand materializationCommand = new(
+                    startedIdentity,
+                    requirement.Requirement.RequirementId,
+                    requirement.ParticipantKind,
+                    activityParticipantBinding,
+                    ActivityParticipantMaterializationNeedKind.EnsureRouteSessionParticipantAvailable,
+                    command.Source,
+                    command.Reason);
+                ActivityParticipantPlacementCommand placementCommand = new(
+                    startedIdentity,
+                    requirement.Requirement.RequirementId,
+                    resolvedParticipantKey,
+                    requirement.PlacementRequirementId,
+                    command.Source,
+                    command.Reason);
+                ActivityParticipantResetCommand resetCommand = new(
+                    startedIdentity,
+                    requirement.Requirement.RequirementId,
+                    resolvedParticipantKey,
+                    BuildDefaultParticipantResetGroups(),
+                    command.Source,
+                    command.Reason);
+
+                if (!bindCommand.IsValid || !materializationCommand.IsValid || !placementCommand.IsValid || !resetCommand.IsValid)
+                {
+                    SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                    _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                    EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantBindingFailed,
+                        failedIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' participant command plan failed invalid command requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}'.");
+                    EmitSnapshot(
+                        snapshots,
+                        "activity_participant_binding_failed",
+                        command.Source,
+                        command.Reason,
+                        $"'{definition.ActivityId}' participant command plan failed invalid command requirementId='{requirement.Requirement.RequirementId}'.");
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Invalid participant command plan requirementId='{requirement.Requirement.RequirementId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                }
+
+                bindCommands.Add(bindCommand);
+                materializationCommands.Add(materializationCommand);
+                placementCommands.Add(placementCommand);
+                resetCommands.Add(resetCommand);
             }
 
             if (bindCommands.Count > 0)
@@ -3968,6 +4002,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityIdentity completedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
+            StoreActivityParticipationContext(
+                definition,
+                completedIdentity,
+                activityParticipantBindings,
+                command.Source,
+                command.Reason,
+                "ResolvedNominally");
             _state.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
             EmitFact(
                 facts,
@@ -3975,7 +4016,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 completedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding completed resolved='{resolvedCount}' skipped='{skippedCount}' totalRequirements='{participantRequirements.Count}' participantOwnership='RouteSession' activityOwnership='false' status='ResolvedNominally'.");
+                $"'{definition.ActivityId}' participant binding completed resolved='{resolvedCount}' skipped='{skippedCount}' totalRequirements='{participantRequirements.Count}' participantOwnership='ActivityParticipationContext' activityOwnership='true' status='ResolvedNominally'.");
             EmitSnapshot(
                 snapshots,
                 "activity_participant_binding_completed",
@@ -5177,49 +5218,40 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (instance.Kind == ActorKind.Player)
                 {
-                    if (!actorResult.HasResolvedPlayerIdentity)
+                    if (!TryResolveActivePlayerParticipantBindingForExit(
+                            actorResult,
+                            instance,
+                            out PlayerActivityParticipantBinding participantBinding,
+                            out string participantBindingFailureReason))
                     {
                         throw new InvalidOperationException(
-                            $"[FATAL][SessionActivityPipeline][ActorParticipationExit] player_identity_resolution_failed reason='player_identity_missing_in_actor_participation_record' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                            $"[FATAL][SessionActivityPipeline][ActorParticipationExit] player_participant_binding_resolution_failed reason='{participantBindingFailureReason}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
                     }
 
                     PlayerActorIdentityRecord resolvedIdentity = new(
                         startedIdentity,
-                        actorResult.PlayerSlotId,
+                        participantBinding.PlayerSlotId.Value,
                         actorResult.PlayerActorId);
                     exitedPlayerActors.Add(resolvedIdentity);
                     exitedPlayerActorDetails.Add(
-                        $"actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}'");
+                        $"participantId='{participantBinding.ParticipantId}' requirementId='{participantBinding.RequirementId}' role='{participantBinding.Role}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{participantBinding.PlayerSlotId}'");
                 }
             }
 
-            try
+            if (exitedPlayerActors.Count > 0)
             {
-                DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][Actor] event='ActorParticipationExitBridgeStarted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerCount='{exitedPlayerActors.Count}' source='{command.Source}' reason='{command.Reason}'.",
-                    DebugUtility.Colors.Info);
-                EmitPlayerActorParticipationExitIfNeeded(definition, command, facts, snapshots, entrySequence, exitedPlayerActors);
-                DebugUtility.Log(
-                    typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][Actor] event='ActorParticipationExitBridgeCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerCount='{exitedPlayerActors.Count}' source='{command.Source}' reason='{command.Reason}'.",
-                    DebugUtility.Colors.Success);
-            }
-            catch (Exception ex)
-            {
-                failed += 1;
                 string actorDetails = exitedPlayerActorDetails.Count == 0
                     ? "actorId='<none>' actorInstanceRuntimeId='<none>' playerActorId='<none>' playerSlotId='<none>'"
                     : string.Join(" | ", exitedPlayerActorDetails);
                 DebugUtility.Log(
                     typeof(SessionActivityPipeline),
-                    $"[OBS][SessionActivityPipeline][Actor] event='ActorParticipationExitBridgeFailed' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' reason='player_side_effect_bridge_failed' details='{actorDetails}' error='{ex.Message}' source='{command.Source}' reasonDetail='{command.Reason}'.",
-                    DebugUtility.Colors.Error);
-                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActorParticipationExitFailed, entrySequence);
-                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorParticipationExitFailed);
-                EmitFact(facts, SessionActivityFactKind.ActorParticipationExitFailed, failedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed reason='player_side_effect_bridge_failed:{ex.Message}'.");
-                EmitSnapshot(snapshots, "actor_participation_exit_failed", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit failed reason='player_side_effect_bridge_failed'.");
-                throw;
+                    $"[OBS][SessionActivityPipeline][Actor] event='ActorParticipationPlayerExitStarted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerCount='{exitedPlayerActors.Count}' ownership='ActivityParticipantBinding' details=\"{actorDetails}\" source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Info);
+                EmitPlayerActorParticipationExitIfNeeded(definition, command, facts, snapshots, entrySequence, exitedPlayerActors);
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][Actor] event='ActorParticipationPlayerExitCompleted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' playerCount='{exitedPlayerActors.Count}' ownership='ActivityParticipantBinding' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Success);
             }
 
             if (exited == 0)
@@ -6356,7 +6388,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 identity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant command plan ready totalCommands='{plan.TotalCommandCount}' bind='{bindCommands.Count}' materialization='{materializationCommands.Count}' placement='{placementCommands.Count}' reset='{resetCommands.Count}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='true' commandOwner='SessionActivityPipeline' status='AdaptersConnected'.");
+                $"'{definition.ActivityId}' participant command plan ready totalCommands='{plan.TotalCommandCount}' bind='{bindCommands.Count}' materialization='{materializationCommands.Count}' placement='{placementCommands.Count}' reset='{resetCommands.Count}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline' status='AdaptersConnected'.");
             EmitSnapshot(
                 snapshots,
                 "activity_participant_command_plan_ready",
@@ -6373,7 +6405,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     bindCommand.Identity,
                     bindCommand.Source,
                     bindCommand.Reason,
-                    $"'{definition.ActivityId}' participant bind command issued requirementId='{bindCommand.RequirementId}' requestedParticipantId='{(string.IsNullOrWhiteSpace(bindCommand.RequestedParticipantId) ? "<none>" : bindCommand.RequestedParticipantId)}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant bind command issued requirementId='{bindCommand.RequirementId}' requestedParticipantId='{(string.IsNullOrWhiteSpace(bindCommand.RequestedParticipantId) ? "<none>" : bindCommand.RequestedParticipantId)}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             for (int index = 0; index < materializationCommands.Count; index++)
@@ -6385,7 +6417,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     materializationCommand.Identity,
                     materializationCommand.Source,
                     materializationCommand.Reason,
-                    $"'{definition.ActivityId}' participant materialization command issued requirementId='{materializationCommand.RequirementId}' resolvedParticipantId='{materializationCommand.ResolvedParticipantId}' participantKind='{materializationCommand.ParticipantKind}' needKind='{materializationCommand.NeedKind}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant materialization command issued requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' technicalKey='{materializationCommand.ResolvedParticipantId}' participantKind='{materializationCommand.ParticipantKind}' needKind='{materializationCommand.NeedKind}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             for (int index = 0; index < placementCommands.Count; index++)
@@ -6397,7 +6429,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     placementCommand.Identity,
                     placementCommand.Source,
                     placementCommand.Reason,
-                    $"'{definition.ActivityId}' participant placement command issued requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' placementScope='ActivityLocal' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant placement command issued requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' placementScope='ActivityLocal' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             for (int index = 0; index < resetCommands.Count; index++)
@@ -6409,7 +6441,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     resetCommand.Identity,
                     resetCommand.Source,
                     resetCommand.Reason,
-                    $"'{definition.ActivityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='RouteSession' activityOwnership='false' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
+                    $"'{definition.ActivityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
             ExecuteParticipantCommandPlan(definition, command, facts, snapshots, identity, plan, technicalPlanByParticipantId);
@@ -6453,7 +6485,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant materialization applied requirementId='{materializationCommand.RequirementId}' resolvedParticipantId='{materializationCommand.ResolvedParticipantId}' needKind='{materializationCommand.NeedKind}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='RouteSession' activityOwnership='false'.");
+                        $"'{definition.ActivityId}' participant materialization applied requirementId='{materializationCommand.RequirementId}' participantId='{materializationCommand.ParticipantBinding.ParticipantId}' playerSlotId='{materializationCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{materializationCommand.ParticipantBinding.ActorDefinitionId}' actorId='{materializationCommand.ParticipantBinding.ActorId}' technicalKey='{materializationCommand.ResolvedParticipantId}' needKind='{materializationCommand.NeedKind}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
                 for (int index = 0; index < plan.BindCommands.Count; index++)
@@ -6477,7 +6509,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant bind applied requirementId='{bindCommand.RequirementId}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='RouteSession' activityOwnership='false'.");
+                        $"'{definition.ActivityId}' participant bind applied requirementId='{bindCommand.RequirementId}' resolvedParticipantId='{bindCommand.ResolvedParticipantId}' roleId='{bindCommand.RoleId}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
                 for (int index = 0; index < plan.PlacementCommands.Count; index++)
@@ -6522,7 +6554,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant placement applied requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='RouteSession' activityOwnership='false'.");
+                        $"'{definition.ActivityId}' participant placement applied requirementId='{placementCommand.RequirementId}' resolvedParticipantId='{placementCommand.ResolvedParticipantId}' placementRequirementId='{(string.IsNullOrWhiteSpace(placementCommand.PlacementRequirementId) ? "<none>" : placementCommand.PlacementRequirementId)}' appliedGroups='{placementRecords[0].AppliedGroups.Count}' skippedGroups='{placementRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
 
                 for (int index = 0; index < plan.ResetCommands.Count; index++)
@@ -6571,7 +6603,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         identity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' participant reset applied requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='RouteSession' activityOwnership='false'.");
+                        $"'{definition.ActivityId}' participant reset applied requirementId='{resetCommand.RequirementId}' resolvedParticipantId='{resetCommand.ResolvedParticipantId}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true'.");
                 }
             }
             catch (Exception exception)
@@ -6582,7 +6614,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     identity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant setup failed commandOwner='SessionActivityPipeline' participantOwnership='RouteSession' activityOwnership='false' error='{exception.Message}'.");
+                    $"'{definition.ActivityId}' participant setup failed commandOwner='SessionActivityPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true' error='{exception.Message}'.");
                 EmitSnapshot(
                     snapshots,
                     "activity_participant_setup_failed",
@@ -6630,21 +6662,37 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string source,
             string reason)
         {
-            string participantId = Normalize(command.ResolvedParticipantId);
-            if (_activityPlayerActorRegistry.TryGetRetainedForPlayerSlot(identity, participantId, out GameObject retainedInstance, out PlayerActorIdentityRecord retainedIdentity))
+            PlayerActivityParticipantBinding participant = command.ParticipantBinding;
+            if (!participant.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"activity_participant_materialization_binding_invalid: activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}'.");
+            }
+
+            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
+            string sessionParticipantId = participant.ParticipantId.IsValid ? Normalize(participant.ParticipantId.Value) : string.Empty;
+            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
+            string actorId = participant.ActorId.IsValid ? Normalize(participant.ActorId.Value) : string.Empty;
+            if (string.IsNullOrWhiteSpace(playerSlotId) || string.IsNullOrWhiteSpace(sessionParticipantId) || string.IsNullOrWhiteSpace(actorDefinitionId) || string.IsNullOrWhiteSpace(actorId))
+            {
+                throw new InvalidOperationException(
+                    $"activity_participant_materialization_identity_invalid: activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}'.");
+            }
+
+            if (_activityPlayerActorRegistry.TryGetRetainedForPlayerSlot(identity, playerSlotId, out GameObject retainedInstance, out PlayerActorIdentityRecord retainedIdentity))
             {
                 if (retainedInstance == null)
                 {
-                    throw new InvalidOperationException($"Retained participant instance is null participantId='{participantId}'.");
+                    throw new InvalidOperationException($"Retained participant instance is null participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}'.");
                 }
 
                 PlayerActorIdentity identityComponent = retainedInstance.GetComponent<PlayerActorIdentity>();
                 if (identityComponent == null)
                 {
-                    throw new InvalidOperationException($"Retained participant is missing PlayerActorIdentity component participantId='{participantId}'.");
+                    throw new InvalidOperationException($"Retained participant is missing PlayerActorIdentity component participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}'.");
                 }
 
-                PlayerActorIdentityRecord reboundIdentity = BuildParticipantActorIdentity(identity, participantId);
+                PlayerActorIdentityRecord reboundIdentity = BuildParticipantActorIdentity(identity, participant);
                 identityComponent.Bind(
                     identity.PipelineId,
                     identity.SessionId,
@@ -6653,37 +6701,43 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     identity.EntrySequence,
                     reboundIdentity.PlayerSlotId,
                     reboundIdentity.PlayerActorId);
-                EnsurePlayerRuntimeActorIdentityBoundOrFail(retainedInstance, identity, participantId, "retained_rebind");
+                EnsurePlayerRuntimeActorIdentityBoundOrFail(retainedInstance, identity, sessionParticipantId, "retained_rebind");
                 _activityPlayerActorRegistry.RegisterRetainedParticipation(identity, reboundIdentity, retainedInstance);
+                DebugUtility.Log(typeof(SessionActivityPipeline),
+                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantActorMaterializationRetained' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' role='{participant.Role}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}' playerActorId='{reboundIdentity.PlayerActorId}' materializationPolicy='{participant.MaterializationPolicy}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Success);
                 return reboundIdentity;
             }
 
             SessionActivityPlayerTechnicalPlanEntry definitionEntry =
-                ResolveTechnicalPlanEntryOrFail(definition, participantId, technicalPlanByParticipantId, "materialization");
+                ResolveTechnicalPlanEntryForActivityParticipantOrFail(definition, participant, technicalPlanByParticipantId, "materialization");
             if (definitionEntry.Prefab == null)
             {
                 throw new InvalidOperationException(
-                    $"missing_route_session_participant_technical_plan: participant prefab missing participantId='{participantId}' activityId='{definition.ActivityId}' operation='materialization' requirementId='{command.RequirementId}'.");
+                    $"missing_activity_participant_materialization_prefab: participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' activityId='{definition.ActivityId}' operation='materialization' requirementId='{command.RequirementId}'.");
             }
 
-            Vector3 localPosition = definitionEntry.PlacementMode == Actors.Semantic.Preparation.ActorPlacementMode.FixedTransform
+            Vector3 localPosition = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform
                 ? definitionEntry.LocalPosition
                 : Vector3.zero;
-            Vector3 localEuler = definitionEntry.PlacementMode == Actors.Semantic.Preparation.ActorPlacementMode.FixedTransform
+            Vector3 localEuler = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform
                 ? definitionEntry.LocalEulerAngles
                 : Vector3.zero;
-            PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(identity, participantId);
+            PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(identity, participant);
             PlayerActorEntryPlan plan = new(actorIdentity, definitionEntry.Prefab, localPosition, localEuler);
             PlayerActorMaterializationCommand technicalCommand = new(identity, new[] { plan }, source, reason);
             IReadOnlyList<PlayerActorMaterializationRecord> records = _playerActorMaterializationAdapter.Execute(technicalCommand, identity);
             if (records.Count != 1 || !records[0].IsValid)
             {
                 throw new InvalidOperationException(
-                    $"Materialization adapter returned invalid record participantId='{participantId}' requirementId='{command.RequirementId}'.");
+                    $"Materialization adapter returned invalid record participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' requirementId='{command.RequirementId}'.");
             }
 
-            EnsurePlayerRuntimeActorIdentityBoundOrFail(records[0].Instance, identity, participantId, "materialization");
+            EnsurePlayerRuntimeActorIdentityBoundOrFail(records[0].Instance, identity, sessionParticipantId, "materialization");
             _activityPlayerActorRegistry.RegisterMaterialized(records[0].ActorIdentity, records[0].Instance);
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantActorMaterialized' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{command.RequirementId}' participantId='{sessionParticipantId}' role='{participant.Role}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}' playerActorId='{records[0].ActorIdentity.PlayerActorId}' materializationPolicy='{participant.MaterializationPolicy}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Success);
             return records[0].ActorIdentity;
         }
 
@@ -6727,6 +6781,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
+        private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, PlayerActivityParticipantBinding participant)
+        {
+            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
+            string actorId = participant.ActorId.IsValid ? Normalize(participant.ActorId.Value) : string.Empty;
+            if (!identity.IsValid || string.IsNullOrWhiteSpace(playerSlotId) || string.IsNullOrWhiteSpace(actorId))
+            {
+                throw new InvalidOperationException("Cannot build participant actor identity with invalid ActivityParticipantBinding.");
+            }
+
+            return new PlayerActorIdentityRecord(identity, playerSlotId, $"{identity.SessionId}|{actorId}");
+        }
+
         private static PlayerActorIdentityRecord BuildParticipantActorIdentity(SessionActivityIdentity identity, string participantId)
         {
             string normalized = Normalize(participantId);
@@ -6736,6 +6802,50 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return new PlayerActorIdentityRecord(identity, normalized, $"{identity.SessionId}|{normalized}");
+        }
+
+        private static SessionActivityPlayerTechnicalPlanEntry ResolveTechnicalPlanEntryForActivityParticipantOrFail(
+            SessionActivityDefinition definition,
+            PlayerActivityParticipantBinding participant,
+            Dictionary<string, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            string operation)
+        {
+            if (!participant.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' operation='{operation}' reason='participant_binding_invalid'.");
+            }
+
+            string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
+            string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
+            string sessionParticipantId = participant.ParticipantId.IsValid ? Normalize(participant.ParticipantId.Value) : string.Empty;
+
+            if (technicalPlanByParticipantId != null)
+            {
+                if (!string.IsNullOrWhiteSpace(actorDefinitionId) &&
+                    technicalPlanByParticipantId.TryGetValue(actorDefinitionId, out SessionActivityPlayerTechnicalPlanEntry byActorDefinition) &&
+                    byActorDefinition.IsValid)
+                {
+                    return byActorDefinition;
+                }
+
+                if (!string.IsNullOrWhiteSpace(playerSlotId) &&
+                    technicalPlanByParticipantId.TryGetValue(playerSlotId, out SessionActivityPlayerTechnicalPlanEntry bySlot) &&
+                    bySlot.IsValid)
+                {
+                    return bySlot;
+                }
+
+                if (!string.IsNullOrWhiteSpace(sessionParticipantId) &&
+                    technicalPlanByParticipantId.TryGetValue(sessionParticipantId, out SessionActivityPlayerTechnicalPlanEntry byParticipant) &&
+                    byParticipant.IsValid)
+                {
+                    return byParticipant;
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}'.");
         }
 
         private static SessionActivityPlayerTechnicalPlanEntry ResolveTechnicalPlanEntryOrFail(
@@ -10295,15 +10405,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return snapshot;
         }
 
-        private SessionActivityPlayerPreparationHandoff ResolveRouteSessionPlayerPreparationOrFail(
+        private PlayerSessionParticipationContext ResolveSessionParticipationContextOrFail(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
             int entrySequence)
         {
-            SessionActivityPlayerPreparationHandoff handoff = _lastRouteSessionPlayerPreparationHandoff;
-            if (!handoff.IsValid || !string.Equals(handoff.SessionId, _sessionId, StringComparison.Ordinal))
+            PlayerSessionParticipationContext context = _lastSessionParticipationContext;
+            if (context == null || !context.IsValid)
             {
                 SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
                 _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
@@ -10313,56 +10423,334 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant binding failed invalid route/session participant context sessionStateId='{_sessionId}' handoffSessionId='{handoff.SessionId}'.");
+                    $"'{definition.ActivityId}' participant binding failed missing SessionParticipationContext sessionStateId='{_sessionId}'.");
                 EmitSnapshot(
                     snapshots,
                     "activity_participant_binding_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant binding failed invalid route/session participant context.");
+                    $"'{definition.ActivityId}' participant binding failed missing SessionParticipationContext.");
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Missing or stale route/session player preparation context activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Missing valid SessionParticipationContext activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sessionStateId='{_sessionId}'.");
             }
 
-            return handoff;
+            if (context.HasSessionId && !string.Equals(context.SessionId, _sessionId, StringComparison.Ordinal))
+            {
+                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActivityParticipantBindingFailed,
+                    failedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding failed foreign SessionParticipationContext sessionStateId='{_sessionId}' contextSessionId='{context.SessionId}'.");
+                EmitSnapshot(
+                    snapshots,
+                    "activity_participant_binding_failed",
+                    command.Source,
+                    command.Reason,
+                    $"'{definition.ActivityId}' participant binding failed foreign SessionParticipationContext.");
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Foreign SessionParticipationContext activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sessionStateId='{_sessionId}' contextSessionId='{context.SessionId}'.");
+            }
+
+            return context;
         }
 
-        private static HashSet<string> BuildPlannedRouteSessionParticipantSet(IReadOnlyList<SessionParticipantId> participantIds)
+
+
+        private void StoreActivityParticipationContext(
+            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
+            IReadOnlyList<PlayerActivityParticipantBinding> participants,
+            string source,
+            string reason,
+            string status)
         {
-            HashSet<string> participants = new(StringComparer.Ordinal);
-            if (participantIds == null || participantIds.Count == 0)
+            IReadOnlyList<PlayerActivityParticipantBinding> safeParticipants = participants ?? Array.Empty<PlayerActivityParticipantBinding>();
+            PlayerActivityParticipationContext context = new(
+                identity,
+                safeParticipants,
+                source,
+                reason);
+            _lastActivityParticipationContext = context;
+            UpdateActivePlayerParticipantBindings(context);
+            string sessionParticipationState = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
+                ? "present"
+                : "absent";
+            int sessionRevision = _lastSessionParticipationContext?.Revision ?? 0;
+            int sessionParticipants = _lastSessionParticipationContext?.ParticipantCount ?? 0;
+            int activityParticipants = context.ParticipantCount;
+            string bindings = FormatActivityParticipantBindings(safeParticipants);
+            _state.AppendTrace(
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] ActivityParticipationContextPrepared activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' sessionParticipationContext='{sessionParticipationState}' sessionParticipationRevision='{sessionRevision}' activityParticipants='{activityParticipants}' status='{status}' source='{source}' reason='{reason}'.");
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationContextPrepared' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' sessionParticipationContext='{sessionParticipationState}' sessionParticipationRevision='{sessionRevision}' sessionParticipants='{sessionParticipants}' activityParticipationContext='{(context.IsValid ? "present" : "invalid")}' activityParticipants='{activityParticipants}' status='{status}' materializationOwner='ActivityEntryPipeline' inputBindingOwner='ActivityEntryPipeline' bindings=\"{bindings}\" source='{source}' reason='{reason}'.",
+                context.IsValid ? DebugUtility.Colors.Info : DebugUtility.Colors.Warning);
+        }
+
+        private void UpdateActivePlayerParticipantBindings(PlayerActivityParticipationContext context)
+        {
+            if (context == null || !context.IsValid || context.Participants == null)
             {
-                return participants;
+                return;
             }
 
-            for (int index = 0; index < participantIds.Count; index++)
+            for (int index = 0; index < context.Participants.Count; index++)
             {
-                string participantId = Normalize(participantIds[index].Value);
-                if (!string.IsNullOrWhiteSpace(participantId))
+                PlayerActivityParticipantBinding binding = context.Participants[index];
+                if (!binding.IsValid || !binding.RequiresPlayerActor || !binding.PlayerSlotId.IsValid)
                 {
-                    participants.Add(participantId);
+                    continue;
+                }
+
+                _activePlayerParticipantBindingsBySlotId[binding.PlayerSlotId.Value] = binding;
+            }
+        }
+
+        private bool TryResolveActivePlayerParticipantBindingForExit(
+            ActorParticipationExitActorResult actorResult,
+            ActorInstanceRecord instance,
+            out PlayerActivityParticipantBinding binding,
+            out string failureReason)
+        {
+            binding = default;
+            failureReason = "unknown";
+
+            if (!instance.IsValid || instance.Kind != ActorKind.Player)
+            {
+                failureReason = "not_player_actor";
+                return false;
+            }
+
+            if (!actorResult.HasResolvedPlayerIdentity)
+            {
+                failureReason = "player_identity_missing_in_actor_participation_record";
+                return false;
+            }
+
+            string playerSlotId = Normalize(actorResult.PlayerSlotId);
+            if (string.IsNullOrWhiteSpace(playerSlotId))
+            {
+                failureReason = "player_slot_id_missing";
+                return false;
+            }
+
+            if (_activePlayerParticipantBindingsBySlotId.TryGetValue(playerSlotId, out PlayerActivityParticipantBinding activeBinding) &&
+                activeBinding.IsValid)
+            {
+                binding = activeBinding;
+                failureReason = string.Empty;
+                return true;
+            }
+
+            if (_lastActivityParticipationContext != null && _lastActivityParticipationContext.IsValid && _lastActivityParticipationContext.Participants != null)
+            {
+                for (int index = 0; index < _lastActivityParticipationContext.Participants.Count; index++)
+                {
+                    PlayerActivityParticipantBinding candidate = _lastActivityParticipationContext.Participants[index];
+                    if (!candidate.IsValid || !candidate.RequiresPlayerActor || !candidate.PlayerSlotId.IsValid)
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(candidate.PlayerSlotId.Value, playerSlotId, StringComparison.Ordinal))
+                    {
+                        binding = candidate;
+                        failureReason = string.Empty;
+                        return true;
+                    }
                 }
             }
 
-            return participants;
+            failureReason = "activity_participant_binding_missing_for_player_slot";
+            return false;
         }
 
-        private static bool TryResolveSingleParticipantHint(HashSet<string> participants, out string participantId)
+        private bool TryBuildActivityParticipantBinding(
+            ParticipantRequirement requirement,
+            string routeParticipantHint,
+            string source,
+            string reason,
+            out PlayerActivityParticipantBinding binding,
+            out string resolutionReason)
         {
-            participantId = string.Empty;
-            if (participants == null || participants.Count != 1)
+            binding = default;
+            resolutionReason = "unknown";
+            if (string.IsNullOrWhiteSpace(requirement.Requirement.RequirementId))
+            {
+                resolutionReason = "invalid_requirement_id";
+                return false;
+            }
+
+            if (!TryResolveSessionParticipantBinding(requirement, routeParticipantHint, out PlayerSessionParticipantBinding sessionParticipant, out resolutionReason))
             {
                 return false;
             }
 
-            foreach (string candidate in participants)
+            binding = new PlayerActivityParticipantBinding(
+                new PlayerActivityParticipantRequirementId(requirement.Requirement.RequirementId),
+                sessionParticipant.ParticipantId,
+                sessionParticipant.Role,
+                sessionParticipant.PlayerSlotId,
+                sessionParticipant.PlayerSelectionId,
+                sessionParticipant.ActorDefinitionId,
+                sessionParticipant.ActorId,
+                sessionParticipant.ActorScope,
+                sessionParticipant.MaterializationPolicy,
+                requirement.Requirement.IsRequired,
+                sessionParticipant.RequiresPlayerActor,
+                sessionParticipant.RequiresPlayerInput,
+                source,
+                reason);
+            if (!binding.IsValid)
             {
-                participantId = candidate;
-                break;
+                resolutionReason = "activity_participant_binding_invalid";
+                return false;
             }
 
-            return !string.IsNullOrWhiteSpace(participantId);
+            return true;
         }
+
+        private bool TryResolveSessionParticipantBinding(
+            ParticipantRequirement requirement,
+            string routeParticipantHint,
+            out PlayerSessionParticipantBinding binding,
+            out string resolutionReason)
+        {
+            binding = default;
+            resolutionReason = "unknown";
+            string normalizedRouteParticipantHint = Normalize(routeParticipantHint);
+            if (_lastSessionParticipationContext == null ||
+                !_lastSessionParticipationContext.IsValid ||
+                _lastSessionParticipationContext.Participants == null)
+            {
+                resolutionReason = "session_participation_context_missing";
+                return false;
+            }
+
+            PlayerSessionParticipantRole expectedRole = ResolveExpectedSessionParticipantRole(requirement);
+            IReadOnlyList<PlayerSessionParticipantBinding> participants = _lastSessionParticipationContext.Participants;
+            if (expectedRole != PlayerSessionParticipantRole.Unknown)
+            {
+                for (int index = 0; index < participants.Count; index++)
+                {
+                    PlayerSessionParticipantBinding candidate = participants[index];
+                    if (candidate.Role != expectedRole)
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(normalizedRouteParticipantHint) ||
+                        (candidate.PlayerSlotId.IsValid && string.Equals(candidate.PlayerSlotId.Value, normalizedRouteParticipantHint, StringComparison.Ordinal)))
+                    {
+                        binding = candidate;
+                        resolutionReason = "resolved_by_role_and_player_slot";
+                        return true;
+                    }
+                }
+
+                for (int index = 0; index < participants.Count; index++)
+                {
+                    PlayerSessionParticipantBinding candidate = participants[index];
+                    if (candidate.Role == expectedRole)
+                    {
+                        binding = candidate;
+                        resolutionReason = "resolved_by_role";
+                        return true;
+                    }
+                }
+
+                resolutionReason = "session_participant_role_missing";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedRouteParticipantHint))
+            {
+                resolutionReason = "route_participant_hint_missing";
+                return false;
+            }
+
+            for (int index = 0; index < participants.Count; index++)
+            {
+                PlayerSessionParticipantBinding candidate = participants[index];
+                if (candidate.PlayerSlotId.IsValid && string.Equals(candidate.PlayerSlotId.Value, normalizedRouteParticipantHint, StringComparison.Ordinal))
+                {
+                    binding = candidate;
+                    resolutionReason = "resolved_by_player_slot";
+                    return true;
+                }
+            }
+
+            resolutionReason = "player_slot_binding_missing";
+            return false;
+        }
+
+        private static PlayerSessionParticipantRole ResolveExpectedSessionParticipantRole(ParticipantRequirement requirement)
+        {
+            string requirementId = Normalize(requirement.Requirement.RequirementId);
+            string roleId = Normalize(requirement.RoleId);
+            if (requirement.ParticipantKind == ActivityParticipantRequirementKind.ControllablePlayer)
+            {
+                if (ContainsOrdinalToken(requirementId, "primary") || ContainsOrdinalToken(roleId, "primary"))
+                {
+                    return PlayerSessionParticipantRole.PrimaryPlayer;
+                }
+
+                return PlayerSessionParticipantRole.PrimaryPlayer;
+            }
+
+            if (ContainsOrdinalToken(requirementId, "primary") || ContainsOrdinalToken(roleId, "primary"))
+            {
+                return PlayerSessionParticipantRole.PrimaryPlayer;
+            }
+
+            if (ContainsOrdinalToken(requirementId, "support") || ContainsOrdinalToken(roleId, "support"))
+            {
+                return PlayerSessionParticipantRole.SupportingPlayer;
+            }
+
+            return PlayerSessionParticipantRole.Unknown;
+        }
+
+        private static bool ContainsOrdinalToken(string value, string token)
+        {
+            return !string.IsNullOrWhiteSpace(value) && value.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private void LogActivityParticipationBindingSkipped(
+            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
+            string requirementId,
+            string participantId,
+            string skipReason,
+            string source,
+            string reason)
+        {
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{participantId}' sessionParticipationContext='{(_lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Warning);
+        }
+
+        private static string FormatActivityParticipantBindings(IReadOnlyList<PlayerActivityParticipantBinding> participants)
+        {
+            if (participants == null || participants.Count == 0)
+            {
+                return "<none>";
+            }
+
+            List<string> segments = new(participants.Count);
+            for (int index = 0; index < participants.Count; index++)
+            {
+                PlayerActivityParticipantBinding participant = participants[index];
+                segments.Add($"requirementId='{participant.RequirementId}' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' materializationPolicy='{participant.MaterializationPolicy}' requiresPlayerInput='{participant.RequiresPlayerInput}'");
+            }
+
+            return string.Join(" | ", segments);
+        }
+
+
 
         public bool TryGetSnapshotPayloadForSaveOnExit(
             string sessionStateId,
@@ -10687,8 +11075,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return true;
             }
 
-            string observedRouteOperationId = _lastRouteSessionPlayerPreparationHandoff.IsValid
-                ? _lastRouteSessionPlayerPreparationHandoff.RouteOperationId
+            string observedRouteOperationId = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
+                ? _lastSessionParticipationContext.RouteOperationId
                 : string.Empty;
 
             if (!string.IsNullOrWhiteSpace(observedRouteOperationId) &&

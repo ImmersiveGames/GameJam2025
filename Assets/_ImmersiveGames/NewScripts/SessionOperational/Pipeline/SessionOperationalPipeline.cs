@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly OperationalRouteCameraReleasePreviousStage _routeCameraReleasePreviousStage;
         private readonly OperationalRouteCameraPresentationStage _routeCameraPresentationStage;
         private readonly OperationalInputPreparationStage _inputPreparationStage;
-        private readonly OperationalPlayerPreparationStage _playerPreparationStage;
+        private readonly OperationalPlayerParticipationStage _playerParticipationStage;
         private readonly OperationalActivityCameraPresentationStage _activityCameraPresentationStage;
         private readonly OperationalActivityCameraReleasePreviousStage _activityCameraReleasePreviousStage;
         private readonly OperationalConsumerEntryAndReadinessStage _consumerEntryAndReadinessStage;
@@ -124,7 +124,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _routeCameraReleasePreviousStage = new OperationalRouteCameraReleasePreviousStage(_dependencies.RouteCameraAdapter);
             _routeCameraPresentationStage = new OperationalRouteCameraPresentationStage(_dependencies.RouteCameraAdapter);
             _inputPreparationStage = new OperationalInputPreparationStage(_factRecorder, _dependencies.ResolveInputModeRequestPort);
-            _playerPreparationStage = new OperationalPlayerPreparationStage(_dependencies.ResolveRoutePlayerPreparationEndpoint);
+            _playerParticipationStage = new OperationalPlayerParticipationStage(_dependencies.ResolveRoutePlayerPreparationEndpoint, _dependencies.ResolvePlayerParticipationRuntime);
             _routeCompletionStage = new OperationalRouteCompletionStage(_factRecorder);
             _activityCameraPresentationStage = new OperationalActivityCameraPresentationStage(_dependencies.ActivityCameraAdapter);
             _activityCameraReleasePreviousStage = new OperationalActivityCameraReleasePreviousStage(_dependencies.ActivityCameraAdapter);
@@ -580,7 +580,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[FATAL][SessionOperationalPipeline][InputCapability] OperationalInputPreparationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
                 }
 
-                OperationalPlayerPreparationResult playerPreparationStageResult = _playerPreparationStage.Execute(
+                OperationalPlayerParticipationResult playerParticipationStageResult = _playerParticipationStage.Execute(
                     BuildPlayerPreparationCommand(
                         command,
                         routeIdentity,
@@ -589,14 +589,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeSequence,
                         sourceText,
                         reasonText));
-                if (!playerPreparationStageResult.IsAccepted)
+                if (!playerParticipationStageResult.IsAccepted)
                 {
                     throw new InvalidOperationException(
-                        $"[FATAL][SessionOperationalPipeline][PlayerPreparation] OperationalPlayerPreparationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
+                        $"[FATAL][SessionOperationalPipeline][PlayerPreparation] OperationalPlayerParticipationStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}'.");
                 }
 
-                PlayerPreparationResult playerPreparationResult = playerPreparationStageResult.PlayerPreparationResult;
-                if (playerPreparationStageResult.IsCompleted)
+                PlayerParticipationResult playerParticipationResult = playerParticipationStageResult.PlayerParticipationResult;
+                if (playerParticipationStageResult.IsCompleted)
                 {
                     OperationalActivityCameraPresentationResult activityCameraPresentationResult = _activityCameraPresentationStage.Execute(
                         BuildActivityCameraPresentationCommand(
@@ -627,7 +627,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         routeSequence,
                         sourceText,
                         reasonText),
-                    playerPreparationResult);
+                    playerParticipationStageResult);
                 if (!consumerEntryAndReadinessResult.IsAccepted)
                 {
                     throw new InvalidOperationException(
@@ -1456,7 +1456,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 reasonText);
         }
 
-        private OperationalPlayerPreparationCommand BuildPlayerPreparationCommand(
+        private OperationalPlayerParticipationCommand BuildPlayerPreparationCommand(
             SessionOperationalRouteCommand command,
             string routeIdentity,
             string routeOperationId,
@@ -1465,7 +1465,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string sourceText,
             string reasonText)
         {
-            return new OperationalPlayerPreparationCommand(
+            return new OperationalPlayerParticipationCommand(
                 _sessionOperationalPipelineId,
                 command,
                 routeIdentity,

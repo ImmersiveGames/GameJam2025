@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -64,7 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             string requirementId,
             ActivityParticipantRequirementKind participantKind,
-            string resolvedParticipantId,
+            ActivityParticipantBinding participantBinding,
             ActivityParticipantMaterializationNeedKind needKind,
             string source,
             string reason)
@@ -72,7 +73,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity = identity;
             RequirementId = Normalize(requirementId);
             ParticipantKind = participantKind;
-            ResolvedParticipantId = Normalize(resolvedParticipantId);
+            ParticipantBinding = participantBinding;
+            ResolvedParticipantId = participantBinding.PlayerSlotId.IsValid
+                ? participantBinding.PlayerSlotId.Value
+                : string.Empty;
             NeedKind = needKind;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -81,7 +85,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public string RequirementId { get; }
         public ActivityParticipantRequirementKind ParticipantKind { get; }
+
+        // Chave técnica transitória para stages legados de placement/reset/binding.
+        // A fonte canônica da materialização é ParticipantBinding.
         public string ResolvedParticipantId { get; }
+
+        public ActivityParticipantBinding ParticipantBinding { get; }
         public ActivityParticipantMaterializationNeedKind NeedKind { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -90,13 +99,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             Identity.IsValid &&
             !string.IsNullOrWhiteSpace(RequirementId) &&
             ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
+            ParticipantBinding.IsValid &&
             !string.IsNullOrWhiteSpace(ResolvedParticipantId) &&
             NeedKind != ActivityParticipantMaterializationNeedKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         public override string ToString()
         {
-            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', resolvedParticipantId='{ResolvedParticipantId}', needKind='{NeedKind}', participantOwnership='RouteSession', activityOwnership='false', source='{Source}', reason='{Reason}'";
+            return $"identity='{Identity}', requirementId='{RequirementId}', participantKind='{ParticipantKind}', participantId='{ParticipantBinding.ParticipantId}', playerSlotId='{ParticipantBinding.PlayerSlotId}', actorDefinitionId='{ParticipantBinding.ActorDefinitionId}', actorId='{ParticipantBinding.ActorId}', materializationPolicy='{ParticipantBinding.MaterializationPolicy}', technicalKey='{ResolvedParticipantId}', needKind='{NeedKind}', participantOwnership='ActivityParticipationContext', activityOwnership='true', source='{Source}', reason='{Reason}'";
         }
 
         private static string Normalize(string value)

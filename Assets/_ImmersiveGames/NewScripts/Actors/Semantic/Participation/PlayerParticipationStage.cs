@@ -1,21 +1,21 @@
-using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using System.Collections.Generic;
-namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
-    public static class PlayerPreparationStage
+    public static class PlayerParticipationStage
     {
-        public static PlayerPreparationResult Execute(PlayerPreparationPlan plan, IReadOnlyList<PlayerMaterializationRecord> materializationRecords = null)
+        public static PlayerParticipationResult Execute(PlayerParticipationPlan plan, IReadOnlyList<PlayerMaterializationRecord> materializationRecords = null)
         {
             if (!plan.IsValid)
             {
-                throw new System.InvalidOperationException("PlayerPreparationPlan is invalid.");
+                throw new System.InvalidOperationException("PlayerParticipationPlan is invalid.");
             }
 
             PlayerParticipationKind participationKind = ResolveParticipationKind(plan);
             IReadOnlyList<PlayerPlannedEntry> plannedEntries = BuildPlannedEntries(plan.PlayerSet);
             IReadOnlyList<PlayerMaterializationEntry> materializationEntries = BuildMaterializationEntries(plannedEntries, materializationRecords);
             IReadOnlyList<PlayerReadinessEntry> readinessEntries = BuildReadinessEntries(materializationEntries);
-            PlayerPreparationOutcome outcome = ResolveOutcome(plan.PlayerSet, materializationEntries);
+            PlayerParticipationOutcome outcome = ResolveOutcome(plan.PlayerSet, materializationEntries);
             string message = BuildOutcomeMessage(outcome);
             PlayerPreparationSnapshot snapshot = new(
                 plan.Identity,
@@ -27,20 +27,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                 readinessEntries,
                 message);
 
-            PlayerPreparationResult result = new(plan, snapshot);
+            PlayerParticipationResult result = new(plan, snapshot);
             if (!result.IsValid)
             {
-                throw new System.InvalidOperationException("PlayerPreparationResult is invalid.");
+                throw new System.InvalidOperationException("PlayerParticipationResult is invalid.");
             }
 
-            DebugUtility.Log(typeof(PlayerPreparationStage),
-                $"[OBS][PlayerPreparationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerPreparationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' plannedPlayers='{snapshot.PlannedPlayersCount}' requiredPlayers='{snapshot.RequiredPlayersCount}' optionalPlayers='{snapshot.OptionalPlayersCount}' notMaterializedPlayers='{snapshot.NotMaterializedPlayersCount}' pendingRequiredPlayers='{snapshot.PendingRequiredPlayersCount}' pendingOptionalPlayers='{snapshot.PendingOptionalPlayersCount}' playersWithPrefab='{snapshot.PlayersWithPrefabCount}' playersWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' playersWithPlacement='{snapshot.PlayersWithPlacementCount}' playersWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' playerIds='{FormatPlayerIds(snapshot.PlannedEntries)}' message='{snapshot.Message}'.",
+            DebugUtility.Log(typeof(PlayerParticipationStage),
+                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.PlannedPlayersCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.PlannedEntries)}' message='{snapshot.Message}'.",
                 DebugUtility.Colors.Info);
 
             return result;
         }
 
-        private static PlayerParticipationKind ResolveParticipationKind(PlayerPreparationPlan plan)
+        private static PlayerParticipationKind ResolveParticipationKind(PlayerParticipationPlan plan)
         {
             if (!plan.PlayerSet.IsEmpty)
             {
@@ -55,11 +55,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             return PlayerParticipationKind.NoPlayers;
         }
 
-        private static PlayerPreparationOutcome ResolveOutcome(PlayerSet playerSet, IReadOnlyList<PlayerMaterializationEntry> materializationEntries)
+        private static PlayerParticipationOutcome ResolveOutcome(PlayerSet playerSet, IReadOnlyList<PlayerMaterializationEntry> materializationEntries)
         {
             if (playerSet.IsEmpty)
             {
-                return PlayerPreparationOutcome.ObservedNoOp;
+                return PlayerParticipationOutcome.ObservedNoOp;
             }
 
             if (materializationEntries != null)
@@ -68,12 +68,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                 {
                     if (materializationEntries[i].MaterializationStatus == PlayerMaterializationStatus.Materialized)
                     {
-                        return PlayerPreparationOutcome.Materialized;
+                        return PlayerParticipationOutcome.Materialized;
                     }
                 }
             }
 
-            return PlayerPreparationOutcome.PlannedOnly;
+            return PlayerParticipationOutcome.PlannedOnly;
         }
 
         private static IReadOnlyList<PlayerPlannedEntry> BuildPlannedEntries(PlayerSet playerSet)
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                     sourceEntry.HasPrefabReference,
                     sourceEntry.PlacementMode,
                     sourceEntry.HasPlacementPlan,
-                    PlayerPreparationEntryStatus.PlannedOnly));
+                    PlayerPrarticipationEntryStatus.PlannedOnly));
             }
 
             return plannedEntries;
@@ -119,7 +119,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                     plannedEntry.HasPrefabReference,
                     plannedEntry.PlacementMode,
                     plannedEntry.HasPlacementPlan,
-                    isMaterialized ? PlayerPreparationEntryStatus.Materialized : (isSkipped ? PlayerPreparationEntryStatus.Skipped : plannedEntry.Status),
+                    isMaterialized ? PlayerPrarticipationEntryStatus.Materialized : (isSkipped ? PlayerPrarticipationEntryStatus.Skipped : plannedEntry.Status),
                     record.MaterializationStatus == PlayerMaterializationStatus.Unknown ? PlayerMaterializationStatus.NotMaterialized : record.MaterializationStatus,
                     record.RuntimeName,
                     record.RuntimeSceneName));
@@ -158,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                     materializationEntry.HasPrefabReference,
                     materializationEntry.PlacementMode,
                     materializationEntry.HasPlacementPlan,
-                    materializationEntry.PreparationStatus,
+                    materializationEntry.ParticipationStatus,
                     materializationEntry.MaterializationStatus,
                     readinessStatus));
             }
@@ -166,7 +166,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             return readinessEntries;
         }
 
-        private static string FormatPlayerIds(IReadOnlyList<PlayerPlannedEntry> entries)
+        private static string FormatSeedSlotIds(IReadOnlyList<PlayerPlannedEntry> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -188,24 +188,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             return string.Join(", ", ids);
         }
 
-        private static string FormatOutcome(PlayerPreparationOutcome outcome)
+        private static string FormatOutcome(PlayerParticipationOutcome outcome)
         {
             return outcome switch
             {
-                PlayerPreparationOutcome.ObservedNoOp => "observed_noop",
-                PlayerPreparationOutcome.PlannedOnly => "planned_only",
-                PlayerPreparationOutcome.Materialized => "materialized",
+                PlayerParticipationOutcome.ObservedNoOp => "observed_noop",
+                PlayerParticipationOutcome.PlannedOnly => "seed_resolved",
+                PlayerParticipationOutcome.Materialized => "materialized",
                 _ => "unknown"
             };
         }
 
-        private static string BuildOutcomeMessage(PlayerPreparationOutcome outcome)
+        private static string BuildOutcomeMessage(PlayerParticipationOutcome outcome)
         {
-            return outcome == PlayerPreparationOutcome.PlannedOnly
-                ? "Player preparation plan created. No player materialization executed."
-                : (outcome == PlayerPreparationOutcome.Materialized
-                    ? "Prototype players materialized."
-                    : "No players planned. Stage observed as canonical no-op.");
+            return outcome == PlayerParticipationOutcome.PlannedOnly
+                ? "Player participation seed resolved. Actor materialization remains owned by ActivityEntryPipeline."
+                : (outcome == PlayerParticipationOutcome.Materialized
+                    ? "Player participation materialization observed."
+                    : "No player participation seed entries resolved. Stage observed as canonical no-op.");
         }
 
         private static PlayerMaterializationRecord ResolveRecord(PlayerPlannedEntry plannedEntry, IReadOnlyList<PlayerMaterializationRecord> materializationRecords)

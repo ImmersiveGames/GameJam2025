@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
@@ -138,7 +139,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public async Task<OperationalConsumerEntryAndReadinessResult> ExecuteAsync(
             OperationalConsumerEntryAndReadinessCommand command,
-            PlayerPreparationResult playerPreparationResult)
+            OperationalPlayerParticipationResult playerParticipationStageResult)
         {
             if (!command.IsValid)
             {
@@ -159,16 +160,23 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException("handoffSessionStateId is required when completionHandoff=SessionActivityEntry.");
             }
 
-            if (!playerPreparationResult.IsValid)
+            if (!playerParticipationStageResult.IsCompleted)
             {
-                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerPreparation] Missing valid PlayerPreparationResult for operational consumer entry routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing valid OperationalPlayerParticipationResult for operational consumer entry routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
             }
 
-            LogEntryStarted(command, playerPreparationResult);
+            PlayerParticipationResult playerParticipationResult = playerParticipationStageResult.PlayerParticipationResult;
+            SessionParticipationContext sessionParticipationContext = playerParticipationStageResult.SessionParticipationContext;
+            if (sessionParticipationContext == null || !sessionParticipationContext.IsValid)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing valid SessionParticipationContext for operational consumer entry routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}'.");
+            }
+
+            LogEntryStarted(command, playerParticipationResult, sessionParticipationContext);
 
             OperationalRouteConsumerEntryRequest consumerEntryRequest = new(
                 command.RouteCommand.HandoffSessionStateId,
-                playerPreparationResult.Snapshot,
+                sessionParticipationContext,
                 ResolvePlayerTechnicalEntriesFromPlan(command.RouteCommand.Plan),
                 command.RouteCommand.UsesTransition,
                 command.RouteCommand.TransitionProfile,
@@ -189,7 +197,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryCompleted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' resultKind='{consumerEntryResult.Kind}' resultReason='{consumerEntryResult.Reason}'.",
                 DebugUtility.Colors.Success);
 
-            await AwaitReadinessOrFailAsync(command, playerPreparationResult.Snapshot.Identity.RouteOperationId);
+            await AwaitReadinessOrFailAsync(command, playerParticipationResult.Snapshot.Identity.RouteOperationId);
 
             return OperationalConsumerEntryAndReadinessResult.Completed(
                 command.RouteCommand.HandoffSessionStateId,
@@ -289,21 +297,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         private static void LogEntryStarted(
             OperationalConsumerEntryAndReadinessCommand command,
-            PlayerPreparationResult playerPreparationResult)
+            PlayerParticipationResult playerParticipationResult,
+            SessionParticipationContext sessionParticipationContext)
         {
             DebugUtility.Log(typeof(OperationalConsumerEntryAndReadinessStage),
-                $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' playerPreparationOutcome='{FormatPlayerPreparationOutcome(playerPreparationResult.Snapshot.Outcome)}' plannedPlayers='{playerPreparationResult.Snapshot.PlannedPlayersCount}' materializedPlayers='{playerPreparationResult.Snapshot.MaterializedPlayersCount}' pendingRequiredPlayers='{playerPreparationResult.Snapshot.PendingRequiredPlayersCount}'.",
+                $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipantPreparation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}'.",
                 DebugUtility.Colors.Info);
         }
 
-        private static string FormatPlayerPreparationOutcome(PlayerPreparationOutcome outcome)
+        private static string FormatPlayerParticipationSeedOutcome(PlayerParticipationOutcome outcome)
         {
             return outcome switch
             {
-                PlayerPreparationOutcome.ObservedNoOp => "observed_noop",
-                PlayerPreparationOutcome.PlannedOnly => "planned_only",
-                PlayerPreparationOutcome.Materialized => "materialized",
-                _ => "unknown",
+                PlayerParticipationOutcome.ObservedNoOp => "ObservedNoOp",
+                PlayerParticipationOutcome.PlannedOnly => "SeedResolved",
+                PlayerParticipationOutcome.Materialized => "Materialized",
+                _ => "Unknown",
             };
         }
 

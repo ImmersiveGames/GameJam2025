@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Pipeline;
 
@@ -38,13 +38,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"requestSessionStateId='{request.SessionStateId}' receiverSessionId='{receiver.SessionId}'."));
             }
 
-            var playerPreparationHandoff = BuildPlayerPreparationHandoff(request.PlayerPreparation, request.PlayerTechnicalEntries);
             SessionActivityEntryHandoff handoff = new(
                 string.Empty,
                 0,
                 0,
                 request.SessionStateId,
-                playerPreparationHandoff,
+                request.SessionParticipationContext,
+                BuildPlayerTechnicalPlanEntries(request.PlayerTechnicalEntries),
                 new SessionActivityRouteTransitionContext(
                     request.HasRouteFadeProfile && request.RouteFadeProfile != null,
                     request.RouteFadeProfile,
@@ -87,52 +87,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             return receiver;
         }
 
-        private static SessionActivityPlayerPreparationHandoff BuildPlayerPreparationHandoff(
-            PlayerPreparationSnapshot snapshot,
-            IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> technicalEntries)
-        {
-            return new SessionActivityPlayerPreparationHandoff(
-                snapshot.Identity.PipelineId,
-                snapshot.Identity.SessionId,
-                snapshot.Identity.RouteIdentity,
-                snapshot.Identity.RouteOperationId,
-                snapshot.Identity.TransitionId,
-                snapshot.Identity.RouteSequence,
-                FormatPlayerPreparationOutcome(snapshot.Outcome),
-                snapshot.ParticipationKind.ToString(),
-                snapshot.PlannedPlayersCount,
-                snapshot.RequiredPlayersCount,
-                snapshot.OptionalPlayersCount,
-                snapshot.MaterializedPlayersCount,
-                snapshot.SkippedPlayersCount,
-                snapshot.PendingRequiredPlayersCount,
-                BuildParticipantIds(snapshot.PlannedEntries),
-                BuildPlayerTechnicalPlanEntries(technicalEntries));
-        }
-
-        private static IReadOnlyList<SessionParticipantId> BuildParticipantIds(IReadOnlyList<PlayerPlannedEntry> entries)
-        {
-            if (entries == null || entries.Count == 0)
-            {
-                return Array.Empty<SessionParticipantId>();
-            }
-
-            List<SessionParticipantId> participantIds = new(entries.Count);
-            HashSet<string> unique = new(StringComparer.Ordinal);
-            for (int i = 0; i < entries.Count; i++)
-            {
-                SessionParticipantId participantId = new(entries[i].PlayerId);
-                if (!participantId.IsValid || !unique.Add(participantId.Value))
-                {
-                    continue;
-                }
-
-                participantIds.Add(participantId);
-            }
-
-            return participantIds;
-        }
-
         private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntries(
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> entries)
         {
@@ -161,17 +115,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             return technicalEntries;
-        }
-
-        private static string FormatPlayerPreparationOutcome(PlayerPreparationOutcome outcome)
-        {
-            return outcome switch
-            {
-                PlayerPreparationOutcome.ObservedNoOp => "observed_noop",
-                PlayerPreparationOutcome.PlannedOnly => "planned_only",
-                PlayerPreparationOutcome.Materialized => "materialized",
-                _ => "unknown",
-            };
         }
     }
 }

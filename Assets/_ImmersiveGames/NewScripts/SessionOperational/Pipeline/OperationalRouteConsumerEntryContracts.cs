@@ -2,9 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -20,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     {
         public OperationalRouteConsumerEntryRequest(
             string sessionStateId,
-            PlayerPreparationSnapshot playerPreparation,
+            SessionParticipationContext sessionParticipationContext,
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> playerTechnicalEntries,
             bool hasRouteFadeProfile,
             SceneTransitionProfile routeFadeProfile,
@@ -30,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string reason)
         {
             SessionStateId = Normalize(sessionStateId);
-            PlayerPreparation = playerPreparation;
+            SessionParticipationContext = sessionParticipationContext;
             PlayerTechnicalEntries = playerTechnicalEntries ?? Array.Empty<PlayerSetDefinitionAsset.PlayerActorResolvedEntry>();
             HasRouteFadeProfile = hasRouteFadeProfile;
             RouteFadeProfile = routeFadeProfile;
@@ -41,7 +42,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         public string SessionStateId { get; }
-        public PlayerPreparationSnapshot PlayerPreparation { get; }
+        public SessionParticipationContext SessionParticipationContext { get; }
+        public bool HasSessionParticipationContext => SessionParticipationContext != null && SessionParticipationContext.IsValid;
         public IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> PlayerTechnicalEntries { get; }
         public bool HasRouteFadeProfile { get; }
         public SceneTransitionProfile RouteFadeProfile { get; }
@@ -49,7 +51,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public RuntimeLoadingProfileAsset RouteLoadingProfile { get; }
         public string Source { get; }
         public string Reason { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(SessionStateId) && PlayerPreparation.IsValid && !string.IsNullOrWhiteSpace(Source);
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            HasSessionParticipationContext &&
+            !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

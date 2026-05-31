@@ -1,7 +1,6 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Identifiers;
 using UnityEngine;
-
-namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
+namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
     public enum ActorDefinitionKind
     {

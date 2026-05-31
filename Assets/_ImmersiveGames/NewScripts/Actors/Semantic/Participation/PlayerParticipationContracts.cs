@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
+namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
-    public enum PlayerPreparationOutcome
+    public enum PlayerParticipationOutcome
     {
         Unknown = 0,
         ObservedNoOp = 1,
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         }
     }
 
-    public enum PlayerPreparationEntryStatus
+    public enum PlayerPrarticipationEntryStatus
     {
         Unknown = 0,
         PlannedOnly = 1,
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
 
     public readonly struct PlayerPlannedEntry
     {
-        public PlayerPlannedEntry(string playerId, bool required, bool hasPrefabReference, ActorPlacementMode placementMode, bool hasPlacementPlan, PlayerPreparationEntryStatus status)
+        public PlayerPlannedEntry(string playerId, bool required, bool hasPrefabReference, ActorPlacementMode placementMode, bool hasPlacementPlan, PlayerPrarticipationEntryStatus status)
         {
             PlayerId = Normalize(playerId);
             Required = required;
@@ -67,8 +67,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
         public bool HasPlacementPlan { get; }
-        public PlayerPreparationEntryStatus Status { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId) && Status != PlayerPreparationEntryStatus.Unknown;
+        public PlayerPrarticipationEntryStatus Status { get; }
+        public bool IsValid => !string.IsNullOrWhiteSpace(PlayerId) && Status != PlayerPrarticipationEntryStatus.Unknown;
 
         private static string Normalize(string value)
         {
@@ -92,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             bool hasPrefabReference,
             ActorPlacementMode placementMode,
             bool hasPlacementPlan,
-            PlayerPreparationEntryStatus preparationStatus,
+            PlayerPrarticipationEntryStatus participationStatus,
             PlayerMaterializationStatus materializationStatus,
             string runtimeName,
             string runtimeSceneName)
@@ -102,7 +102,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             HasPrefabReference = hasPrefabReference;
             PlacementMode = placementMode;
             HasPlacementPlan = hasPlacementPlan;
-            PreparationStatus = preparationStatus;
+            ParticipationStatus = participationStatus;
             MaterializationStatus = materializationStatus;
             RuntimeName = Normalize(runtimeName);
             RuntimeSceneName = Normalize(runtimeSceneName);
@@ -113,16 +113,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
         public bool HasPlacementPlan { get; }
-        public PlayerPreparationEntryStatus PreparationStatus { get; }
+        public PlayerPrarticipationEntryStatus ParticipationStatus { get; }
         public PlayerMaterializationStatus MaterializationStatus { get; }
         public string RuntimeName { get; }
         public string RuntimeSceneName { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PlayerId) &&
-            ((PreparationStatus == PlayerPreparationEntryStatus.PlannedOnly && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized) ||
-             (PreparationStatus == PlayerPreparationEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized) ||
-             (PreparationStatus == PlayerPreparationEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped));
+            ((ParticipationStatus == PlayerPrarticipationEntryStatus.PlannedOnly && MaterializationStatus == PlayerMaterializationStatus.NotMaterialized) ||
+             (ParticipationStatus == PlayerPrarticipationEntryStatus.Materialized && MaterializationStatus == PlayerMaterializationStatus.Materialized) ||
+             (ParticipationStatus == PlayerPrarticipationEntryStatus.Skipped && MaterializationStatus == PlayerMaterializationStatus.Skipped));
 
         private static string Normalize(string value)
         {
@@ -147,7 +147,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             bool hasPrefabReference,
             ActorPlacementMode placementMode,
             bool hasPlacementPlan,
-            PlayerPreparationEntryStatus preparationStatus,
+            PlayerPrarticipationEntryStatus prarticipationStatus,
             PlayerMaterializationStatus materializationStatus,
             PlayerReadinessStatus readinessStatus)
         {
@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             HasPrefabReference = hasPrefabReference;
             PlacementMode = placementMode;
             HasPlacementPlan = hasPlacementPlan;
-            PreparationStatus = preparationStatus;
+            PrarticipationStatus = prarticipationStatus;
             MaterializationStatus = materializationStatus;
             ReadinessStatus = readinessStatus;
         }
@@ -166,21 +166,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
         public bool HasPlacementPlan { get; }
-        public PlayerPreparationEntryStatus PreparationStatus { get; }
+        public PlayerPrarticipationEntryStatus PrarticipationStatus { get; }
         public PlayerMaterializationStatus MaterializationStatus { get; }
         public PlayerReadinessStatus ReadinessStatus { get; }
 
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(PlayerId) &&
-            ((PreparationStatus == PlayerPreparationEntryStatus.PlannedOnly &&
+            ((PrarticipationStatus == PlayerPrarticipationEntryStatus.PlannedOnly &&
               MaterializationStatus == PlayerMaterializationStatus.NotMaterialized &&
               ((Required && ReadinessStatus == PlayerReadinessStatus.PendingMaterialization) ||
                (!Required && ReadinessStatus == PlayerReadinessStatus.OptionalPending))) ||
-             (PreparationStatus == PlayerPreparationEntryStatus.Materialized &&
+             (PrarticipationStatus == PlayerPrarticipationEntryStatus.Materialized &&
               MaterializationStatus == PlayerMaterializationStatus.Materialized &&
               ReadinessStatus == PlayerReadinessStatus.Ready) ||
              (!Required &&
-              PreparationStatus == PlayerPreparationEntryStatus.Skipped &&
+              PrarticipationStatus == PlayerPrarticipationEntryStatus.Skipped &&
               MaterializationStatus == PlayerMaterializationStatus.Skipped &&
               ReadinessStatus == PlayerReadinessStatus.OptionalSkipped));
 
@@ -314,9 +314,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         }
     }
 
-    public readonly struct PlayerPreparationPlan
+    public readonly struct PlayerParticipationPlan
     {
-        public PlayerPreparationPlan(
+        public PlayerParticipationPlan(
             PlayerPreparationIdentity identity,
             bool expectsSessionActivityEntry,
             PlayerSet playerSet,
@@ -352,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
     {
         public PlayerPreparationSnapshot(
             PlayerPreparationIdentity identity,
-            PlayerPreparationOutcome outcome,
+            PlayerParticipationOutcome outcome,
             PlayerParticipationKind participationKind,
             PlayerSet playerSet,
             IReadOnlyList<PlayerPlannedEntry> plannedEntries,
@@ -371,7 +371,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         }
 
         public PlayerPreparationIdentity Identity { get; }
-        public PlayerPreparationOutcome Outcome { get; }
+        public PlayerParticipationOutcome Outcome { get; }
         public PlayerParticipationKind ParticipationKind { get; }
         public PlayerSet PlayerSet { get; }
         public IReadOnlyList<PlayerPlannedEntry> PlannedEntries { get; }
@@ -393,7 +393,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
 
         public bool IsValid =>
             Identity.IsValid &&
-            Outcome != PlayerPreparationOutcome.Unknown &&
+            Outcome != PlayerParticipationOutcome.Unknown &&
             ParticipationKind != PlayerParticipationKind.Unknown &&
             PlayerSet.IsValid &&
             ArePlannedEntriesValid(PlannedEntries) &&
@@ -567,7 +567,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         }
 
         private static bool AreOutcomeCountsConsistent(
-            PlayerPreparationOutcome outcome,
+            PlayerParticipationOutcome outcome,
             IReadOnlyList<PlayerPlannedEntry> plannedEntries,
             IReadOnlyList<PlayerMaterializationEntry> materializationEntries,
             IReadOnlyList<PlayerReadinessEntry> readinessEntries,
@@ -582,7 +582,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
             int materializationCount = materializationEntries?.Count ?? 0;
             int readinessCount = readinessEntries?.Count ?? 0;
 
-            if (outcome == PlayerPreparationOutcome.ObservedNoOp)
+            if (outcome == PlayerParticipationOutcome.ObservedNoOp)
             {
                 return plannedPlayersCount == 0 &&
                        plannedCount == 0 &&
@@ -595,7 +595,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                        pendingOptionalPlayersCount == 0;
             }
 
-            if (outcome == PlayerPreparationOutcome.PlannedOnly)
+            if (outcome == PlayerParticipationOutcome.PlannedOnly)
             {
                 return plannedPlayersCount > 0 &&
                        plannedCount == plannedPlayersCount &&
@@ -607,7 +607,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
                        pendingOptionalPlayersCount == optionalPlayersCount;
             }
 
-            if (outcome == PlayerPreparationOutcome.Materialized)
+            if (outcome == PlayerParticipationOutcome.Materialized)
             {
                 return plannedPlayersCount > 0 &&
                        plannedCount == plannedPlayersCount &&
@@ -621,22 +621,22 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Preparation
         }
     }
 
-    public readonly struct PlayerPreparationResult
+    public readonly struct PlayerParticipationResult
     {
-        public PlayerPreparationResult(PlayerPreparationPlan plan, PlayerPreparationSnapshot snapshot)
+        public PlayerParticipationResult(PlayerParticipationPlan plan, PlayerPreparationSnapshot snapshot)
         {
             Plan = plan;
             Snapshot = snapshot;
         }
 
-        public PlayerPreparationPlan Plan { get; }
+        public PlayerParticipationPlan Plan { get; }
         public PlayerPreparationSnapshot Snapshot { get; }
         public IReadOnlyList<PlayerPlannedEntry> PlannedEntries => Snapshot.PlannedEntries;
         public IReadOnlyList<PlayerMaterializationEntry> MaterializationEntries => Snapshot.MaterializationEntries;
         public IReadOnlyList<PlayerReadinessEntry> ReadinessEntries => Snapshot.ReadinessEntries;
-        public bool IsObservedNoOp => Snapshot.Outcome == PlayerPreparationOutcome.ObservedNoOp;
-        public bool IsPlannedOnly => Snapshot.Outcome == PlayerPreparationOutcome.PlannedOnly;
-        public bool IsMaterialized => Snapshot.Outcome == PlayerPreparationOutcome.Materialized;
+        public bool IsObservedNoOp => Snapshot.Outcome == PlayerParticipationOutcome.ObservedNoOp;
+        public bool IsPlannedOnly => Snapshot.Outcome == PlayerParticipationOutcome.PlannedOnly;
+        public bool IsMaterialized => Snapshot.Outcome == PlayerParticipationOutcome.Materialized;
         public bool IsPlannedOrNoOp => IsObservedNoOp || IsPlannedOnly;
 
         public bool IsValid =>

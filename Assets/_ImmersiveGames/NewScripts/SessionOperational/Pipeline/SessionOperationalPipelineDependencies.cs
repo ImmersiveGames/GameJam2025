@@ -1,9 +1,10 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Runtime;
 using _ImmersiveGames.NewScripts.SaveRuntime.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Preparation;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -17,7 +18,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private readonly Func<IOperationalRouteConsumerReadinessPort> _routeConsumerReadinessPortResolver;
         private readonly Func<IOperationalRouteHandoffExitPort> _routeHandoffExitPortResolver;
         private readonly Func<ISessionActivityRouteExitTeardownBoundary> _sessionActivityRouteExitBoundaryResolver;
-        private readonly Func<IRoutePlayerPreparationEndpoint> _routePlayerPreparationEndpointResolver;
+        private readonly Func<IRoutePlayerParticipationEndpoint> _routePlayerPreparationEndpointResolver;
+        private readonly Func<IPlayerParticipationRuntime> _playerParticipationRuntimeResolver;
         private readonly Func<ISessionActivitySnapshotPayloadProvider> _activitySnapshotPayloadProviderResolver;
         private readonly Func<ISaveStateService> _saveStateServiceResolver;
 
@@ -37,7 +39,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             ISessionOperationalActivityCameraAdapter activityCameraAdapter,
             Func<IOperationalRouteHandoffExitPort> routeHandoffExitPortResolver,
             Func<ISessionActivityRouteExitTeardownBoundary> sessionActivityRouteExitBoundaryResolver,
-            Func<IRoutePlayerPreparationEndpoint> routePlayerPreparationEndpointResolver,
+            Func<IRoutePlayerParticipationEndpoint> routePlayerPreparationEndpointResolver,
+            Func<IPlayerParticipationRuntime> playerParticipationRuntimeResolver,
             Func<ISessionActivitySnapshotPayloadProvider> activitySnapshotPayloadProviderResolver,
             Func<ISaveStateService> saveStateServiceResolver)
         {
@@ -57,6 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _routeHandoffExitPortResolver = routeHandoffExitPortResolver ?? throw new ArgumentNullException(nameof(routeHandoffExitPortResolver));
             _sessionActivityRouteExitBoundaryResolver = sessionActivityRouteExitBoundaryResolver ?? throw new ArgumentNullException(nameof(sessionActivityRouteExitBoundaryResolver));
             _routePlayerPreparationEndpointResolver = routePlayerPreparationEndpointResolver ?? throw new ArgumentNullException(nameof(routePlayerPreparationEndpointResolver));
+            _playerParticipationRuntimeResolver = playerParticipationRuntimeResolver ?? throw new ArgumentNullException(nameof(playerParticipationRuntimeResolver));
             _activitySnapshotPayloadProviderResolver = activitySnapshotPayloadProviderResolver ?? throw new ArgumentNullException(nameof(activitySnapshotPayloadProviderResolver));
             _saveStateServiceResolver = saveStateServiceResolver ?? throw new ArgumentNullException(nameof(saveStateServiceResolver));
         }
@@ -109,9 +113,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return _sessionActivityRouteExitBoundaryResolver();
         }
 
-        public IRoutePlayerPreparationEndpoint ResolveRoutePlayerPreparationEndpoint()
+        public IRoutePlayerParticipationEndpoint ResolveRoutePlayerPreparationEndpoint()
         {
             return _routePlayerPreparationEndpointResolver();
+        }
+
+        public IPlayerParticipationRuntime ResolvePlayerParticipationRuntime()
+        {
+            return _playerParticipationRuntimeResolver();
         }
 
         public bool TryResolveActivitySnapshotPayloadProvider(out ISessionActivitySnapshotPayloadProvider provider)

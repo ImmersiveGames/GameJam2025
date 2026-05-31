@@ -46,3 +46,11 @@ MonoBehaviour:
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.CameraPresentation
     level: 4
+  - ruleId: logger.player.participation
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.PlayerParticipation
+    level: 4
+  - ruleId: logger.actors
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Actors
+    level: 4

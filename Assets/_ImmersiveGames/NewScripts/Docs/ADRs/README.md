@@ -80,3 +80,26 @@ O checkpoint atual aceita como evidência:
 - ActorReset futuro: resolver por `ActorInstanceId`/Actor registry genérico, não por resolver player-specific transitório.
 - Reset por escopo: desenhar `World`, `Route`, `Activity`, `Actor/Object` em fase própria, sem `EventBus` global e sem `ResetManager` monolítico.
 - Hygiene final: revisão de nomes legados e diagnostics passivos.
+
+---
+
+## ADRs Base 2.0 — Session Architecture Convergence
+
+- ADR-2.0-0001 — SessionOperational Ownership Stabilization e Regra Anti-Deslocamento
+- ADR-2.0-0002 — SessionActivity Ownership Decomposition e ActivityEntryPipeline
+- ADR-2.0-0003 — PlayerParticipation, PlayerSlot, PlayerSelection, SessionParticipation e ActorMaterialization Boundary
+
+### Checkpoint conceitual Base 2.0
+
+O ADR-2.0-0003 congela que:
+
+- `PlayerInputManager` é infraestrutura técnica de input criada/validada no boot.
+- `InputModes` aplica modo de input por rota/superfície e funciona também sem PlayerActor materializado.
+- `PlayerParticipation` resolve `PlayerSlotReservation`, `PlayerSelection` e `SessionParticipationContext`.
+- Rotas com `SessionActivityEntry` handoff precisam de participação resolvida antes do handoff.
+- Se a rota exige participação e nenhuma seleção existe, `SessionOperational/PlayerParticipation` aplica default explícito.
+- `SessionActivity/ActivityEntryPipeline` materializa Actors a partir da participação resolvida.
+- `PlayerInput` concreto do player nasce com o `PlayerActor` materializado pela Activity.
+- `PlayerInputBinding`, Camera, Movement e Permission binding ocorrem após materialização.
+- Runtime join futuro via `PlayerInputManager.Join` deve passar pelo mesmo domínio `PlayerParticipation`, sem trilho paralelo.
+
