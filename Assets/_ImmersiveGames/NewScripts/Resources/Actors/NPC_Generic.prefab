@@ -49,7 +49,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   nonPlayerActorId: npc.generic.01
-  actorKind: NonPlayerActor
   actorScope: 1
   participationPolicy: 1
   participatingActivities:

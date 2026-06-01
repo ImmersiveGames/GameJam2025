@@ -177,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalRouteConsumerEntryRequest consumerEntryRequest = new(
                 command.RouteCommand.HandoffSessionStateId,
                 sessionParticipationContext,
-                ResolvePlayerTechnicalEntriesFromPlan(command.RouteCommand.Plan),
+                ResolveActorMaterializationSeedEntriesFromPlan(command.RouteCommand.Plan),
                 command.RouteCommand.UsesTransition,
                 command.RouteCommand.TransitionProfile,
                 command.LoadingCommand.LoadingMode == SessionOperationalRouteLoadingMode.Profile,
@@ -316,7 +316,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             };
         }
 
-        private static IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> ResolvePlayerTechnicalEntriesFromPlan(SessionOperationalRoutePlan plan)
+        private static IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> ResolveActorMaterializationSeedEntriesFromPlan(SessionOperationalRoutePlan plan)
         {
             if (plan.RouteParticipantSetDefinition == null)
             {

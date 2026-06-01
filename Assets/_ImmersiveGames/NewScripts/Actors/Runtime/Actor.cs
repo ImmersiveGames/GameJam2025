@@ -5,10 +5,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     public abstract class Actor : MonoBehaviour, IActor
     {
-        [SerializeField] private string runtimeActorInstanceId = string.Empty;
-        [SerializeField] private string actorDefinitionId = string.Empty;
-        [SerializeField] private string actorDefinitionAssetName = string.Empty;
-        [SerializeField] private string actorDefinitionAssetPath = string.Empty;
+        private ActorInstanceId _runtimeActorInstanceId;
         [SerializeField] private ActorRole baseActorRoleMetadata = ActorRole.Unknown;
         [SerializeField] private ActorScope baseActorScopeMetadata = ActorScope.Unknown;
         [SerializeField] private ActorCapabilitySurface capabilitySurface;
@@ -24,17 +21,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 return capabilitySurface;
             }
         }
-        public virtual ActorInstanceId RuntimeActorInstanceId => new(Normalize(runtimeActorInstanceId));
+        public virtual ActorInstanceId RuntimeActorInstanceId => _runtimeActorInstanceId;
 
-        public virtual ActorDefinitionRef ActorDefinitionRef =>
-            new(
-                new ActorDefinitionId(Normalize(actorDefinitionId)),
-                Normalize(actorDefinitionAssetName),
-                Normalize(actorDefinitionAssetPath));
+        public virtual ActorDefinitionRef ActorDefinitionRef => default;
 
         public void SetRuntimeActorInstanceId(ActorInstanceId actorInstanceId)
         {
-            runtimeActorInstanceId = actorInstanceId.IsValid ? actorInstanceId.Value : string.Empty;
+            _runtimeActorInstanceId = actorInstanceId.IsValid ? actorInstanceId : default;
         }
 
         public abstract void ValidateLocalConfigurationOrThrow(string source);
@@ -55,11 +48,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         protected virtual void OnValidate()
         {
-            runtimeActorInstanceId = Normalize(runtimeActorInstanceId);
-            actorDefinitionId = Normalize(actorDefinitionId);
-            actorDefinitionAssetName = Normalize(actorDefinitionAssetName);
-            actorDefinitionAssetPath = Normalize(actorDefinitionAssetPath);
-
             EnsureCapabilitySurfaceResolved();
         }
 

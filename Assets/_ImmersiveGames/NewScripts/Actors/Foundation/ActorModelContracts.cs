@@ -47,6 +47,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
     public readonly struct ActorInstanceId : IEquatable<ActorInstanceId>
     {
+        private const string RuntimeActorTypeDiscriminator = nameof(Actor);
+
         public ActorInstanceId(string value)
         {
             Value = Normalize(value);
@@ -79,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             }
 
             return new ActorInstanceId(
-                $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{actorKind}|{normalizedActorId}|{normalizedScopeDiscriminator}");
+                $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}");
         }
 
         public static ActorInstanceId FromScopedIdentity(
@@ -89,14 +91,44 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ActorScope actorScope,
             string actorScopeDiscriminator)
         {
+            return FromScopedActorIdentity(
+                identity,
+                actorId,
+                actorScope,
+                RuntimeActorTypeDiscriminator,
+                actorScopeDiscriminator);
+        }
+
+        public static ActorInstanceId FromScopedRuntimeActorIdentity(
+            SessionActivityIdentity identity,
+            string actorId,
+            ActorScope actorScope,
+            string actorScopeDiscriminator)
+        {
+            return FromScopedActorIdentity(
+                identity,
+                actorId,
+                actorScope,
+                RuntimeActorTypeDiscriminator,
+                actorScopeDiscriminator);
+        }
+
+        private static ActorInstanceId FromScopedActorIdentity(
+            SessionActivityIdentity identity,
+            string actorId,
+            ActorScope actorScope,
+            string actorTypeDiscriminator,
+            string actorScopeDiscriminator)
+        {
             if (!identity.IsValid)
             {
                 return default;
             }
 
             string normalizedActorId = Normalize(actorId);
+            string normalizedActorTypeDiscriminator = Normalize(actorTypeDiscriminator);
             string normalizedScopeDiscriminator = Normalize(actorScopeDiscriminator);
-            if (string.IsNullOrWhiteSpace(normalizedActorId))
+            if (string.IsNullOrWhiteSpace(normalizedActorId) || string.IsNullOrWhiteSpace(normalizedActorTypeDiscriminator))
             {
                 return default;
             }
@@ -104,9 +136,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             return actorScope switch
             {
                 ActorScope.RouteScoped => new ActorInstanceId(
-                    $"{identity.PipelineId}|{identity.SessionId}|route|{actorKind}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                    $"{identity.PipelineId}|{identity.SessionId}|route|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
                 ActorScope.ActivityScoped => new ActorInstanceId(
-                    $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{actorKind}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                    $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
                 _ => default,
             };
         }
@@ -121,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
     {
         Unknown = 0,
         Player = 1,
-        NonPlayer = 2,
+        Actor = 3,
     }
 
     public enum ActorRole

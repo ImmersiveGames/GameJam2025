@@ -7,9 +7,9 @@ using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
-    public readonly struct SessionActivityPlayerTechnicalPlanEntry : IEquatable<SessionActivityPlayerTechnicalPlanEntry>
+    public readonly struct SessionActivityActorMaterializationPlanEntry : IEquatable<SessionActivityActorMaterializationPlanEntry>
     {
-        public SessionActivityPlayerTechnicalPlanEntry(
+        public SessionActivityActorMaterializationPlanEntry(
             SessionParticipantId participantId,
             bool required,
             GameObject prefab,
@@ -41,7 +41,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
              PlacementMode == ActorPlacementMode.FixedTransform);
         public bool HasPrefab => Prefab != null;
 
-        public bool Equals(SessionActivityPlayerTechnicalPlanEntry other)
+        public bool Equals(SessionActivityActorMaterializationPlanEntry other)
         {
             return ParticipantId.Equals(other.ParticipantId) &&
                    Required == other.Required &&
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                    LocalEulerAngles.Equals(other.LocalEulerAngles);
         }
 
-        public override bool Equals(object obj) => obj is SessionActivityPlayerTechnicalPlanEntry other && Equals(other);
+        public override bool Equals(object obj) => obj is SessionActivityActorMaterializationPlanEntry other && Equals(other);
         public override int GetHashCode()
         {
             unchecked
@@ -128,7 +128,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             int entrySequence,
             string sessionStateId,
             SessionParticipationContext sessionParticipationContext,
-            IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> playerActorTechnicalPlanEntries,
+            IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
             SessionActivityRouteTransitionContext routeTransitionContext,
             string source,
             string reason)
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             SessionStateId = Normalize(sessionStateId);
             SessionParticipationContext = sessionParticipationContext;
-            PlayerActorTechnicalPlanEntries = playerActorTechnicalPlanEntries ?? Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            ActorMaterializationPlanEntries = actorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             RouteTransitionContext = routeTransitionContext;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -149,7 +149,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int EntrySequence { get; }
         public string SessionStateId { get; }
         public SessionParticipationContext SessionParticipationContext { get; }
-        public IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> PlayerActorTechnicalPlanEntries { get; }
+        public IReadOnlyList<SessionActivityActorMaterializationPlanEntry> ActorMaterializationPlanEntries { get; }
         public SessionActivityRouteTransitionContext RouteTransitionContext { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -159,7 +159,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int SessionParticipationSlotReservationCount => SessionParticipationContext?.SlotReservationCount ?? 0;
         public int SessionParticipationSelectionCount => SessionParticipationContext?.SelectionCount ?? 0;
         public int SessionParticipationParticipantCount => SessionParticipationContext?.ParticipantCount ?? 0;
-        public int PlayerActorTechnicalPlanEntryCount => CountTechnicalEntries(PlayerActorTechnicalPlanEntries);
+        public int ActorMaterializationPlanEntryCount => CountMaterializationPlanEntries(ActorMaterializationPlanEntries);
 
         public bool HasResolvedActivity =>
             !string.IsNullOrWhiteSpace(ActivityId) &&
@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                    string.Equals(SessionStateId, other.SessionStateId, StringComparison.Ordinal) &&
                    string.Equals(SessionParticipationContext?.RouteOperationId, other.SessionParticipationContext?.RouteOperationId, StringComparison.Ordinal) &&
                    SessionParticipationRevision == other.SessionParticipationRevision &&
-                   PlayerActorTechnicalPlanEntryCount == other.PlayerActorTechnicalPlanEntryCount &&
+                   ActorMaterializationPlanEntryCount == other.ActorMaterializationPlanEntryCount &&
                    RouteTransitionContext.Equals(other.RouteTransitionContext) &&
                    string.Equals(Source, other.Source, StringComparison.Ordinal) &&
                    string.Equals(Reason, other.Reason, StringComparison.Ordinal);
@@ -205,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionStateId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(SessionParticipationContext?.RouteOperationId ?? string.Empty);
                 hashCode = (hashCode * 397) ^ SessionParticipationRevision;
-                hashCode = (hashCode * 397) ^ PlayerActorTechnicalPlanEntryCount;
+                hashCode = (hashCode * 397) ^ ActorMaterializationPlanEntryCount;
                 hashCode = (hashCode * 397) ^ RouteTransitionContext.GetHashCode();
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
@@ -226,13 +226,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                     ? $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='{EntrySequence}'"
                     : "activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>'";
 
-            return $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', playerActorTechnicalPlanEntries='{PlayerActorTechnicalPlanEntryCount}'";
+            return $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}'";
         }
 
         public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => left.Equals(right);
         public static bool operator !=(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => !left.Equals(right);
 
-        private static int CountTechnicalEntries(IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> entries)
+        private static int CountMaterializationPlanEntries(IReadOnlyList<SessionActivityActorMaterializationPlanEntry> entries)
         {
             if (entries == null || entries.Count == 0)
             {

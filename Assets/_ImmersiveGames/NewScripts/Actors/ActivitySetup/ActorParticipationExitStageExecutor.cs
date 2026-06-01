@@ -84,7 +84,6 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             Outcome != ActorParticipationExitActorOutcome.Unknown &&
             Instance.IsValid &&
             Participation.IsValid &&
-            (Instance.Kind != ActorKind.Player || HasResolvedPlayerIdentity || IsFailed) &&
             !string.IsNullOrWhiteSpace(ReasonCode);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
@@ -188,7 +187,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
                 PlayerActorId playerActorId = default;
                 PlayerSlotId playerSlotId = default;
-                if (instance.Kind == ActorKind.Player &&
+                bool hasPlayerIdentityComponent = HasPlayerIdentityComponent(instance);
+                if (hasPlayerIdentityComponent &&
                     !TryResolvePlayerIdentityFromInstance(instance, out playerActorId, out playerSlotId, out string playerIdentityFailureReason))
                 {
                     failed += 1;
@@ -208,8 +208,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     ActorParticipationExitActorOutcome.Exited,
                     instance,
                     participation,
-                    instance.Kind == ActorKind.Player ? playerActorId : default,
-                    instance.Kind == ActorKind.Player ? playerSlotId : default,
+                    hasPlayerIdentityComponent ? playerActorId : default,
+                    hasPlayerIdentityComponent ? playerSlotId : default,
                     "exited",
                     string.Empty));
             }
@@ -223,6 +223,13 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 failed,
                 command.Source,
                 command.Reason);
+        }
+
+        private static bool HasPlayerIdentityComponent(ActorInstanceRecord instance)
+        {
+            return instance.IsValid &&
+                instance.ActorRoot != null &&
+                instance.ActorRoot.GetComponent<PlayerActorIdentity>() != null;
         }
 
         private static bool TryResolvePlayerIdentityFromInstance(

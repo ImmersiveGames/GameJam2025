@@ -69,9 +69,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 string stableActorId = resolvedIdentity.ActorId.ToString();
-                ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedIdentity(
+                ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
                     identity,
-                    ActorKind.Player,
                     stableActorId,
                     actorScope,
                     actorScopeDiscriminator: actorScope.ToString());

@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 0,
                 request.SessionStateId,
                 request.SessionParticipationContext,
-                BuildPlayerTechnicalPlanEntries(request.PlayerTechnicalEntries, request.SessionParticipationContext),
+                BuildActorMaterializationPlanEntries(request.ActorMaterializationSeedEntries, request.SessionParticipationContext),
                 new SessionActivityRouteTransitionContext(
                     request.HasRouteFadeProfile && request.RouteFadeProfile != null,
                     request.RouteFadeProfile,
@@ -89,21 +89,21 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             return receiver;
         }
 
-        private static IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> BuildPlayerTechnicalPlanEntries(
+        private static IReadOnlyList<SessionActivityActorMaterializationPlanEntry> BuildActorMaterializationPlanEntries(
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> entries,
             SessionParticipationContext sessionParticipationContext)
         {
             if (entries == null || entries.Count == 0)
             {
-                return Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+                return Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             }
 
             if (sessionParticipationContext == null || !sessionParticipationContext.IsValid)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] SessionParticipationContext is required to build player technical plan entries.");
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] SessionParticipationContext is required to build actor materialization plan entries.");
             }
 
-            List<SessionActivityPlayerTechnicalPlanEntry> technicalEntries = new(entries.Count);
+            List<SessionActivityActorMaterializationPlanEntry> materializationPlanEntries = new(entries.Count);
             for (int index = 0; index < entries.Count; index++)
             {
                 var entry = entries[index];
@@ -112,8 +112,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     continue;
                 }
 
-                SessionParticipantBinding participant = ResolveSessionParticipantForTechnicalEntryOrFail(entry, sessionParticipationContext);
-                technicalEntries.Add(new SessionActivityPlayerTechnicalPlanEntry(
+                SessionParticipantBinding participant = ResolveSessionParticipantForMaterializationSeedOrFail(entry, sessionParticipationContext);
+                materializationPlanEntries.Add(new SessionActivityActorMaterializationPlanEntry(
                     participant.ParticipantId,
                     entry.Required,
                     entry.Prefab,
@@ -123,20 +123,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     entry.LocalRotation));
 
                 DebugUtility.Log(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
-                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerActorTechnicalPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' resolutionKey='ActorDefinitionIdToSessionParticipantId'.");
+                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' resolutionKey='ActorDefinitionIdToSessionParticipantId'.");
             }
 
-            return technicalEntries;
+            return materializationPlanEntries;
         }
 
-        private static SessionParticipantBinding ResolveSessionParticipantForTechnicalEntryOrFail(
+        private static SessionParticipantBinding ResolveSessionParticipantForMaterializationSeedOrFail(
             PlayerSetDefinitionAsset.PlayerActorResolvedEntry entry,
             SessionParticipationContext sessionParticipationContext)
         {
             var seedActorDefinitionId = entry.ActorDefinitionId;
             if (!seedActorDefinitionId.IsValid)
             {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Player technical seed actorDefinitionId is required.");
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Actor materialization seed actorDefinitionId is required.");
             }
 
             IReadOnlyList<SessionParticipantBinding> participants = sessionParticipationContext.Participants ?? Array.Empty<SessionParticipantBinding>();
@@ -156,7 +156,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             throw new InvalidOperationException(
-                $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for player technical seed entry seedActorDefinitionId='{seedActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+                $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for actor materialization seed entry seedActorDefinitionId='{seedActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
         }
 
         private static string Normalize(string value)

@@ -120,17 +120,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         private static string ResolveActorKindLabel(ActorScanTarget target)
         {
-            if (target.ActorRole == ActorRole.PrimaryPlayer || target.ActorRole == ActorRole.SupportingPlayer)
-            {
-                return "Player";
-            }
-
-            if (target.ActorRole == ActorRole.SceneAuthoredNonPlayer)
-            {
-                return "NonPlayer";
-            }
-
-            return target.RuntimeActor != null ? target.RuntimeActor.GetType().Name : target.ActorKind.ToString();
+            return target.ActorKind.ToString();
         }
     }
 }

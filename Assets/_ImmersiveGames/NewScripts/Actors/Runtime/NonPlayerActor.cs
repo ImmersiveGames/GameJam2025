@@ -10,10 +10,9 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class NonPlayerActor : Actor
+    public sealed class NonPlayerActor : Actor, ISceneAuthoredActor
     {
         [SerializeField] private string nonPlayerActorId;
-        [SerializeField] private string actorKind = "NonPlayerActor";
         [SerializeField] private NonPlayerActorScope actorScope = NonPlayerActorScope.ActivityScoped;
         [SerializeField] private NonPlayerActorParticipationPolicy participationPolicy = NonPlayerActorParticipationPolicy.ExplicitActivityIds;
         [SerializeField] private List<ActivityAsset> participatingActivities = new();
@@ -26,7 +25,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public override ActorScope ActorScopeMetadata => actorScope == NonPlayerActorScope.RouteScoped
             ? _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.RouteScoped
             : _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.ActivityScoped;
-        public string ActorKind => Normalize(actorKind);
+        public ActorScope SceneActorScope => ActorScopeMetadata;
+        public ActorParticipationRecord.ActorParticipationPolicy SceneActorParticipationPolicy => MapParticipationPolicy(participationPolicy);
         public NonPlayerActorScope ActorScope => actorScope;
         public NonPlayerActorParticipationPolicy ParticipationPolicy => participationPolicy;
         public IReadOnlyList<ActivityAsset> ParticipatingActivities => (IReadOnlyList<ActivityAsset>)participatingActivities ?? Array.Empty<ActivityAsset>();
@@ -76,9 +76,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             return resolved;
         }
 
+        public IReadOnlyList<string> ResolveExplicitParticipationActivityIdsOrFail(string source)
+        {
+            return participationPolicy == NonPlayerActorParticipationPolicy.ExplicitActivityIds
+                ? ResolveParticipatingActivityIdsOrFail(source)
+                : Array.Empty<string>();
+        }
+
+        public void ValidateSceneAuthoredConfigurationOrThrow(string source)
+        {
+            ValidateLocalConfigurationOrThrow(source);
+        }
+
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(NonPlayerActorId) &&
-            !string.IsNullOrWhiteSpace(ActorKind) &&
             actorScope != NonPlayerActorScope.Unknown &&
             actorScope != NonPlayerActorScope.GlobalScopedUnsupported &&
             participationPolicy != NonPlayerActorParticipationPolicy.Unknown &&
@@ -95,11 +106,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             if (string.IsNullOrWhiteSpace(NonPlayerActorId))
             {
                 throw new InvalidOperationException($"{origin} requires nonPlayerActorId.");
-            }
-
-            if (string.IsNullOrWhiteSpace(ActorKind))
-            {
-                throw new InvalidOperationException($"{origin} requires actorKind.");
             }
 
             if (actorScope == NonPlayerActorScope.Unknown)
@@ -147,7 +153,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             base.OnValidate();
             nonPlayerActorId = Normalize(nonPlayerActorId);
-            actorKind = Normalize(actorKind);
             if (participatingActivities == null)
             {
                 participatingActivities = new List<ActivityAsset>();
@@ -172,6 +177,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
 
             return false;
+        }
+
+        private static ActorParticipationRecord.ActorParticipationPolicy MapParticipationPolicy(NonPlayerActorParticipationPolicy policy)
+        {
+            return policy switch
+            {
+                NonPlayerActorParticipationPolicy.AllActivitiesInRoute => ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
+                NonPlayerActorParticipationPolicy.ExplicitActivityIds => ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds,
+                _ => ActorParticipationRecord.ActorParticipationPolicy.None,
+            };
         }
 
         private bool IsParticipatingActivitiesConfigValid(string origin)

@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public OperationalRouteConsumerEntryRequest(
             string sessionStateId,
             SessionParticipationContext sessionParticipationContext,
-            IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> playerTechnicalEntries,
+            IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> actorMaterializationSeedEntries,
             bool hasRouteFadeProfile,
             SceneTransitionProfile routeFadeProfile,
             bool hasRouteLoadingProfile,
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             SessionStateId = Normalize(sessionStateId);
             SessionParticipationContext = sessionParticipationContext;
-            PlayerTechnicalEntries = playerTechnicalEntries ?? Array.Empty<PlayerSetDefinitionAsset.PlayerActorResolvedEntry>();
+            ActorMaterializationSeedEntries = actorMaterializationSeedEntries ?? Array.Empty<PlayerSetDefinitionAsset.PlayerActorResolvedEntry>();
             HasRouteFadeProfile = hasRouteFadeProfile;
             RouteFadeProfile = routeFadeProfile;
             HasRouteLoadingProfile = hasRouteLoadingProfile;
@@ -44,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string SessionStateId { get; }
         public SessionParticipationContext SessionParticipationContext { get; }
         public bool HasSessionParticipationContext => SessionParticipationContext != null && SessionParticipationContext.IsValid;
-        public IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> PlayerTechnicalEntries { get; }
+        public IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> ActorMaterializationSeedEntries { get; }
         public bool HasRouteFadeProfile { get; }
         public SceneTransitionProfile RouteFadeProfile { get; }
         public bool HasRouteLoadingProfile { get; }

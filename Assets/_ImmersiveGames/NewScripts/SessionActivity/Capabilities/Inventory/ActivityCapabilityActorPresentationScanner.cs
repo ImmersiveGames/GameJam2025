@@ -4,7 +4,6 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -148,30 +147,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 : ActivityCapabilityOwnerKind.Unsupported;
         }
 
-        private static Actor ResolveActor(ActorScanTarget target)
-        {
-            if (target.RuntimeActor != null)
-            {
-                return target.RuntimeActor;
-            }
-
-            return target.ActorRoot != null ? target.ActorRoot.GetComponent<Actor>() : null;
-        }
-
         private static string ResolveActorKindLabel(ActorScanTarget target)
         {
-            if (target.ActorRole == ActorRole.PrimaryPlayer || target.ActorRole == ActorRole.SupportingPlayer)
-            {
-                return "Player";
-            }
-
-            if (target.ActorRole == ActorRole.SceneAuthoredNonPlayer)
-            {
-                return "NonPlayer";
-            }
-
-            Actor actor = ResolveActor(target);
-            return actor != null ? actor.GetType().Name : target.ActorKind.ToString();
+            return target.ActorKind.ToString();
         }
 
     }

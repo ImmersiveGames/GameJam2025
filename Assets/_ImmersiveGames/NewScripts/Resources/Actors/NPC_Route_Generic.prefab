@@ -76,7 +76,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   nonPlayerActorId: npc.route.generic.01
-  actorKind: NonPlayerActor
   actorScope: 2
   participationPolicy: 1
   participatingActivities:

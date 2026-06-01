@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private string _pendingRestartCompletionActivityId;
         private int _pendingRestartCompletionEntrySequence;
         private PlayerSessionParticipationContext _lastSessionParticipationContext;
-        private IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> _lastPlayerActorTechnicalPlanEntries = Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+        private IReadOnlyList<SessionActivityActorMaterializationPlanEntry> _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
         private PlayerActivityParticipationContext _lastActivityParticipationContext;
         private SessionActivityRailKind _activeRailKind;
         private IReadOnlyList<PlayerActorIdentityRecord> _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
@@ -662,7 +662,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 "SessionActivity started a new prepared handoff before the previous route-exit teardown request completed.");
             _lastVisualReadinessSignal = default;
             _lastSessionParticipationContext = handoff.SessionParticipationContext;
-            _lastPlayerActorTechnicalPlanEntries = handoff.PlayerActorTechnicalPlanEntries ?? Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            _lastActorMaterializationPlanEntries = handoff.ActorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             _lastActivityParticipationContext = null;
             _activeRailKind = SessionActivityRailKind.ActivityEntryRail;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
@@ -679,7 +679,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff handoff='{handoff}' source='{source}' reason='{reason}'");
             _state.AppendTrace($"[OBS][SessionActivityPipeline] SessionActivityEntryHandoffAccepted handoff='{handoff}' source='{source}' reason='{reason}'");
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' playerActorTechnicalPlanEntries='{handoff.PlayerActorTechnicalPlanEntryCount}'.",
+                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' actorMaterializationPlanEntries='{handoff.ActorMaterializationPlanEntryCount}'.",
                 DebugUtility.Colors.Success);
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "SessionActivityPipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
@@ -2185,7 +2185,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _pendingContinuationExitTeardownCompleted = false;
             _activityObjectExitRuntimeState.ClearAll(firstDefinition.ActivityId, entrySequence, "SessionActivityPipeline", "pipeline_start_reset");
             _lastSessionParticipationContext = null;
-            _lastPlayerActorTechnicalPlanEntries = Array.Empty<SessionActivityPlayerTechnicalPlanEntry>();
+            _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             _lastActivityParticipationContext = null;
             _activityPlayerActorRegistry.ClearAllRouteRetained();
             _activitySceneActorRegistry.ClearAllRouteRetained();
@@ -3494,8 +3494,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 facts,
                 snapshots,
                 entrySequence);
-            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId =
-                BuildTechnicalPlanMap(_lastPlayerActorTechnicalPlanEntries);
+            Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId =
+                BuildMaterializationPlanMap(_lastActorMaterializationPlanEntries);
 
             EmitFact(
                 facts,
@@ -3503,13 +3503,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding resolution started participantOwnership='ActivityParticipationContext' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' technicalPlanEntries='{technicalPlanByParticipantId.Count}'.");
+                $"'{definition.ActivityId}' participant binding resolution started participantOwnership='ActivityParticipationContext' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' materializationPlanEntries='{materializationPlanByParticipantId.Count}'.");
             EmitSnapshot(
                 snapshots,
                 "activity_participant_binding_resolution_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' participant binding resolution started sessionParticipants='{sessionParticipationContext.ParticipantCount}' technicalPlanEntries='{technicalPlanByParticipantId.Count}'.");
+                $"'{definition.ActivityId}' participant binding resolution started sessionParticipants='{sessionParticipationContext.ParticipantCount}' materializationPlanEntries='{materializationPlanByParticipantId.Count}'.");
 
             int resolvedCount = 0;
             int skippedCount = 0;
@@ -3612,10 +3612,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 {
                     try
                     {
-                        ResolveTechnicalPlanEntryForActivityParticipantOrFail(
+                        ResolveMaterializationPlanEntryForActivityParticipantOrFail(
                             definition,
                             activityParticipantBinding,
-                            technicalPlanByParticipantId,
+                            materializationPlanByParticipantId,
                             "binding_validation");
                     }
                     catch (Exception exception)
@@ -3637,27 +3637,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                                 startedIdentity,
                                 command.Source,
                                 command.Reason,
-                                $"'{definition.ActivityId}' optional activity participant technical plan skipped requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' skipReason='{exception.Message}' status='OptionalTechnicalPlanMissingSkipped'.");
+                                $"'{definition.ActivityId}' optional activity participant materialization plan skipped requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' skipReason='{exception.Message}' status='OptionalMaterializationPlanMissingSkipped'.");
                             continue;
                         }
 
-                        SessionActivityIdentity missingTechnicalPlanIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
-                        _state.SetCurrentIdentity(missingTechnicalPlanIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
+                        SessionActivityIdentity missingMaterializationPlanIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                        _state.SetCurrentIdentity(missingMaterializationPlanIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
                         EmitFact(
                             facts,
                             SessionActivityFactKind.ActivityParticipantBindingFailed,
-                            missingTechnicalPlanIdentity,
+                            missingMaterializationPlanIdentity,
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' required activity participant technical plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}' error='missing_activity_participant_technical_plan'.");
+                            $"'{definition.ActivityId}' required activity participant materialization plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}' error='missing_activity_participant_materialization_plan'.");
                         EmitSnapshot(
                             snapshots,
                             "activity_participant_binding_failed",
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' required activity participant technical plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}'.");
+                            $"'{definition.ActivityId}' required activity participant materialization plan missing requirementId='{requirement.Requirement.RequirementId}' participantId='{activityParticipantBinding.ParticipantId}'.");
                         throw new InvalidOperationException(
-                            $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+                            $"missing_activity_participant_materialization_plan: activityId='{definition.ActivityId}' participantId='{activityParticipantBinding.ParticipantId}' playerSlotId='{activityParticipantBinding.PlayerSlotId}' actorDefinitionId='{activityParticipantBinding.ActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
                     }
                 }
 
@@ -3748,7 +3748,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     facts,
                     snapshots,
                     startedIdentity,
-                    technicalPlanByParticipantId,
+                    materializationPlanByParticipantId,
                     bindCommands,
                     materializationCommands,
                     placementCommands,
@@ -4646,7 +4646,7 @@ private void EmitActorPresentationReleaseGenericStage(
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
             SessionActivityIdentity identity,
-            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId,
             IReadOnlyList<ActivityParticipantBindCommand> bindCommands,
             IReadOnlyList<ActivityParticipantMaterializationCommand> materializationCommands,
             IReadOnlyList<ActivityParticipantPlacementCommand> placementCommands,
@@ -4736,7 +4736,7 @@ private void EmitActorPresentationReleaseGenericStage(
                     $"'{definition.ActivityId}' participant reset command issued requirementId='{resetCommand.RequirementId}' participantId='{resetCommand.ParticipantBinding.ParticipantId}' role='{resetCommand.ParticipantBinding.Role}' playerSlotId='{resetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resetCommand.PlacementRequirementId) ? "<none>" : resetCommand.PlacementRequirementId)}' resetGroups='{FormatActivityStateResetGroups(resetCommand.ResetGroups)}' participantOwnership='ActivityParticipationContext' activityOwnership='true' adapterExecution='true' commandOwner='SessionActivityPipeline'.");
             }
 
-            ExecuteParticipantCommandPlan(definition, command, facts, snapshots, identity, plan, technicalPlanByParticipantId);
+            ExecuteParticipantCommandPlan(definition, command, facts, snapshots, identity, plan, materializationPlanByParticipantId);
         }
 
         private void ExecuteParticipantCommandPlan(
@@ -4746,7 +4746,7 @@ private void EmitActorPresentationReleaseGenericStage(
             List<SessionActivitySnapshot> snapshots,
             SessionActivityIdentity identity,
             ActivityParticipantCommandPlan plan,
-            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId)
+            Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId)
         {
             try
             {
@@ -4767,7 +4767,7 @@ private void EmitActorPresentationReleaseGenericStage(
                         definition,
                         identity,
                         materializationCommand,
-                        technicalPlanByParticipantId,
+                        materializationPlanByParticipantId,
                         command.Source,
                         command.Reason);
                     if (materializationCommand.ParticipantBinding.ParticipantId.IsValid)
@@ -4811,8 +4811,8 @@ private void EmitActorPresentationReleaseGenericStage(
                 {
                     ActivityParticipantPlacementCommand placementCommand = plan.PlacementCommands[index];
                     PlayerActorIdentityRecord actorIdentity = EnsureResolvedActorIdentityForActivityParticipantOrFail(placementCommand.ParticipantBinding, ensuredActorsByActivityParticipant, definition, "placement");
-                    SessionActivityPlayerTechnicalPlanEntry definitionEntry =
-                        ResolveTechnicalPlanEntryForActivityParticipantOrFail(definition, placementCommand.ParticipantBinding, technicalPlanByParticipantId, "placement");
+                    SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
+                        ResolveMaterializationPlanEntryForActivityParticipantOrFail(definition, placementCommand.ParticipantBinding, materializationPlanByParticipantId, "placement");
 
                     bool placementDeclared;
                     bool placementRequired;
@@ -4820,8 +4820,8 @@ private void EmitActorPresentationReleaseGenericStage(
                     bool hasPlacement;
                     Vector3 placementPosition;
                     Vector3 placementEuler;
-                    ResolvePlacementPlanFromDefinition(definitionEntry, out placementDeclared, out placementRequired, out placementOptional, out hasPlacement, out placementPosition, out placementEuler);
-                    string placementId = ResolvePlacementIdForCommand(placementCommand, definitionEntry);
+                    ResolvePlacementPlanFromDefinition(materializationPlanEntry, out placementDeclared, out placementRequired, out placementOptional, out hasPlacement, out placementPosition, out placementEuler);
+                    string placementId = ResolvePlacementIdForCommand(placementCommand, materializationPlanEntry);
 
                     ActorResetTargetRef placementTarget = new(
                         BuildActorResetActorRef(identity, actorIdentity, definition, "placement"),
@@ -4860,8 +4860,8 @@ private void EmitActorPresentationReleaseGenericStage(
                         ensuredActorsByActivityParticipant,
                         definition,
                         "reset");
-                    SessionActivityPlayerTechnicalPlanEntry definitionEntry =
-                        ResolveTechnicalPlanEntryForActivityParticipantOrFail(definition, resetCommand.ParticipantBinding, technicalPlanByParticipantId, "reset");
+                    SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
+                        ResolveMaterializationPlanEntryForActivityParticipantOrFail(definition, resetCommand.ParticipantBinding, materializationPlanByParticipantId, "reset");
 
                     bool placementDeclared;
                     bool placementRequired;
@@ -4869,8 +4869,8 @@ private void EmitActorPresentationReleaseGenericStage(
                     bool hasPlacement;
                     Vector3 placementPosition;
                     Vector3 placementEuler;
-                    ResolvePlacementPlanFromDefinition(definitionEntry, out placementDeclared, out placementRequired, out placementOptional, out hasPlacement, out placementPosition, out placementEuler);
-                    string placementId = ResolvePlacementIdForResetCommand(resetCommand, definitionEntry);
+                    ResolvePlacementPlanFromDefinition(materializationPlanEntry, out placementDeclared, out placementRequired, out placementOptional, out hasPlacement, out placementPosition, out placementEuler);
+                    string placementId = ResolvePlacementIdForResetCommand(resetCommand, materializationPlanEntry);
 
                     ActorResetTargetRef resetTarget = new(
                         BuildActorResetActorRef(identity, actorIdentity, resetCommand.ParticipantBinding, definition, "reset"),
@@ -4882,9 +4882,9 @@ private void EmitActorPresentationReleaseGenericStage(
                         hasPlacement,
                         placementPosition,
                         placementEuler);
-                    ActorResetCommand technicalResetCommand = new(identity, new[] { resetTarget }, resetCommand.Source, resetCommand.Reason);
+                    ActorResetCommand actorResetCommand = new(identity, new[] { resetTarget }, resetCommand.Source, resetCommand.Reason);
                     IReadOnlyList<ActorResetResult> resetRecords = _actorResetAdapter.Execute(
-                        technicalResetCommand,
+                        actorResetCommand,
                         identity);
                     if (resetRecords.Count != 1 || !resetRecords[0].IsValid)
                     {
@@ -4930,17 +4930,17 @@ private void EmitActorPresentationReleaseGenericStage(
             };
         }
 
-        private static Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> BuildTechnicalPlanMap(IReadOnlyList<SessionActivityPlayerTechnicalPlanEntry> technicalPlanEntries)
+        private static Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> BuildMaterializationPlanMap(IReadOnlyList<SessionActivityActorMaterializationPlanEntry> materializationPlanEntries)
         {
-            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> map = new();
-            if (technicalPlanEntries == null || technicalPlanEntries.Count == 0)
+            Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> map = new();
+            if (materializationPlanEntries == null || materializationPlanEntries.Count == 0)
             {
                 return map;
             }
 
-            for (int index = 0; index < technicalPlanEntries.Count; index++)
+            for (int index = 0; index < materializationPlanEntries.Count; index++)
             {
-                SessionActivityPlayerTechnicalPlanEntry entry = technicalPlanEntries[index];
+                SessionActivityActorMaterializationPlanEntry entry = materializationPlanEntries[index];
                 if (entry.IsValid && !map.ContainsKey(entry.ParticipantId))
                 {
                     map.Add(entry.ParticipantId, entry);
@@ -4954,7 +4954,7 @@ private void EmitActorPresentationReleaseGenericStage(
             SessionActivityDefinition definition,
             SessionActivityIdentity identity,
             ActivityParticipantMaterializationCommand command,
-            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId,
             string source,
             string reason)
         {
@@ -5006,24 +5006,24 @@ private void EmitActorPresentationReleaseGenericStage(
                 return reboundIdentity;
             }
 
-            SessionActivityPlayerTechnicalPlanEntry definitionEntry =
-                ResolveTechnicalPlanEntryForActivityParticipantOrFail(definition, participant, technicalPlanByParticipantId, "materialization");
-            if (definitionEntry.Prefab == null)
+            SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
+                ResolveMaterializationPlanEntryForActivityParticipantOrFail(definition, participant, materializationPlanByParticipantId, "materialization");
+            if (materializationPlanEntry.Prefab == null)
             {
                 throw new InvalidOperationException(
                     $"missing_activity_participant_materialization_prefab: participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' activityId='{definition.ActivityId}' operation='materialization' requirementId='{command.RequirementId}'.");
             }
 
-            Vector3 localPosition = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform
-                ? definitionEntry.LocalPosition
+            Vector3 localPosition = materializationPlanEntry.PlacementMode == ActorPlacementMode.FixedTransform
+                ? materializationPlanEntry.LocalPosition
                 : Vector3.zero;
-            Vector3 localEuler = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform
-                ? definitionEntry.LocalEulerAngles
+            Vector3 localEuler = materializationPlanEntry.PlacementMode == ActorPlacementMode.FixedTransform
+                ? materializationPlanEntry.LocalEulerAngles
                 : Vector3.zero;
             PlayerActorIdentityRecord actorIdentity = BuildParticipantActorIdentity(identity, participant);
-            PlayerActorEntryPlan plan = new(actorIdentity, definitionEntry.Prefab, localPosition, localEuler);
-            PlayerActorMaterializationCommand technicalCommand = new(identity, new[] { plan }, source, reason);
-            IReadOnlyList<PlayerActorMaterializationRecord> records = _playerActorMaterializationAdapter.Execute(technicalCommand, identity);
+            PlayerActorEntryPlan plan = new(actorIdentity, materializationPlanEntry.Prefab, localPosition, localEuler);
+            PlayerActorMaterializationCommand playerMaterializationCommand = new(identity, new[] { plan }, source, reason);
+            IReadOnlyList<PlayerActorMaterializationRecord> records = _playerActorMaterializationAdapter.Execute(playerMaterializationCommand, identity);
             if (records.Count != 1 || !records[0].IsValid)
             {
                 throw new InvalidOperationException(
@@ -5057,9 +5057,8 @@ private void EmitActorPresentationReleaseGenericStage(
                     $"player_actor_runtime_identity_missing_after_{operation}: participantId='{participantId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' reason='runtime_actor_missing'.");
             }
 
-            ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedIdentity(
+            ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
                 identity,
-                ActorKind.Player,
                 runtimeActor.ActorId,
                 runtimeActor.ActorScopeMetadata,
                 runtimeActor.ActorScopeMetadata.ToString());
@@ -5089,21 +5088,21 @@ private void EmitActorPresentationReleaseGenericStage(
             return new PlayerActorIdentityRecord(identity, participant, playerActorId);
         }
 
-        private static SessionActivityPlayerTechnicalPlanEntry ResolveTechnicalPlanEntryForActivityParticipantOrFail(
+        private static SessionActivityActorMaterializationPlanEntry ResolveMaterializationPlanEntryForActivityParticipantOrFail(
             SessionActivityDefinition definition,
             PlayerActivityParticipantBinding participant,
-            Dictionary<PlayerSessionParticipantId, SessionActivityPlayerTechnicalPlanEntry> technicalPlanByParticipantId,
+            Dictionary<PlayerSessionParticipantId, SessionActivityActorMaterializationPlanEntry> materializationPlanByParticipantId,
             string operation)
         {
             if (!participant.IsValid || !participant.ParticipantId.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' operation='{operation}' reason='participant_binding_invalid'.");
+                    $"missing_activity_participant_materialization_plan: activityId='{definition.ActivityId}' operation='{operation}' reason='participant_binding_invalid'.");
             }
 
             PlayerSessionParticipantId sessionParticipantId = participant.ParticipantId;
-            if (technicalPlanByParticipantId != null &&
-                technicalPlanByParticipantId.TryGetValue(sessionParticipantId, out SessionActivityPlayerTechnicalPlanEntry byParticipant) &&
+            if (materializationPlanByParticipantId != null &&
+                materializationPlanByParticipantId.TryGetValue(sessionParticipantId, out SessionActivityActorMaterializationPlanEntry byParticipant) &&
                 byParticipant.IsValid)
             {
                 return byParticipant;
@@ -5112,12 +5111,12 @@ private void EmitActorPresentationReleaseGenericStage(
             string actorDefinitionId = participant.ActorDefinitionId.IsValid ? Normalize(participant.ActorDefinitionId.Value) : string.Empty;
             string playerSlotId = participant.PlayerSlotId.IsValid ? Normalize(participant.PlayerSlotId.Value) : string.Empty;
             throw new InvalidOperationException(
-                $"missing_activity_participant_technical_plan: activityId='{definition.ActivityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}' resolutionKey='SessionParticipantId'.");
+                $"missing_activity_participant_materialization_plan: activityId='{definition.ActivityId}' participantId='{sessionParticipantId}' playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' operation='{operation}' resolutionKey='SessionParticipantId'.");
         }
 
         private static string ResolvePlacementIdForCommand(
             ActivityParticipantPlacementCommand placementCommand,
-            SessionActivityPlayerTechnicalPlanEntry definitionEntry)
+            SessionActivityActorMaterializationPlanEntry materializationPlanEntry)
         {
             string commandPlacementId = placementCommand.IsValid ? Normalize(placementCommand.PlacementRequirementId) : string.Empty;
             if (!string.IsNullOrWhiteSpace(commandPlacementId))
@@ -5125,12 +5124,12 @@ private void EmitActorPresentationReleaseGenericStage(
                 return commandPlacementId;
             }
 
-            return Normalize(definitionEntry.PlacementId);
+            return Normalize(materializationPlanEntry.PlacementId);
         }
 
         private static string ResolvePlacementIdForResetCommand(
             ActivityParticipantResetCommand resetCommand,
-            SessionActivityPlayerTechnicalPlanEntry definitionEntry)
+            SessionActivityActorMaterializationPlanEntry materializationPlanEntry)
         {
             string commandPlacementId = Normalize(resetCommand.PlacementRequirementId);
             if (!string.IsNullOrWhiteSpace(commandPlacementId))
@@ -5138,11 +5137,11 @@ private void EmitActorPresentationReleaseGenericStage(
                 return commandPlacementId;
             }
 
-            return Normalize(definitionEntry.PlacementId);
+            return Normalize(materializationPlanEntry.PlacementId);
         }
 
         private static void ResolvePlacementPlanFromDefinition(
-            SessionActivityPlayerTechnicalPlanEntry definitionEntry,
+            SessionActivityActorMaterializationPlanEntry materializationPlanEntry,
             out bool placementDeclared,
             out bool placementRequired,
             out bool placementOptional,
@@ -5150,14 +5149,14 @@ private void EmitActorPresentationReleaseGenericStage(
             out Vector3 placementPosition,
             out Vector3 placementEuler)
         {
-            placementDeclared = definitionEntry.PlacementMode != ActorPlacementMode.None;
-            hasPlacement = definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform;
+            placementDeclared = materializationPlanEntry.PlacementMode != ActorPlacementMode.None;
+            hasPlacement = materializationPlanEntry.PlacementMode == ActorPlacementMode.FixedTransform;
             placementRequired =
-                definitionEntry.PlacementMode == ActorPlacementMode.FixedTransform ||
-                definitionEntry.PlacementMode == ActorPlacementMode.SceneMarker;
+                materializationPlanEntry.PlacementMode == ActorPlacementMode.FixedTransform ||
+                materializationPlanEntry.PlacementMode == ActorPlacementMode.SceneMarker;
             placementOptional = placementDeclared && !placementRequired;
-            placementPosition = hasPlacement ? definitionEntry.LocalPosition : Vector3.zero;
-            placementEuler = hasPlacement ? definitionEntry.LocalEulerAngles : Vector3.zero;
+            placementPosition = hasPlacement ? materializationPlanEntry.LocalPosition : Vector3.zero;
+            placementEuler = hasPlacement ? materializationPlanEntry.LocalEulerAngles : Vector3.zero;
         }
 
         private static IReadOnlyList<ActorResetGroup> MapResetGroupsOrFail(IReadOnlyList<ActivityStateResetGroup> groups)
@@ -5973,18 +5972,18 @@ private void EmitActorPresentationReleaseGenericStage(
             for (int index = 0; index < feed.ActorInstances.Count; index++)
             {
                 ActorInstanceRecord instance = feed.ActorInstances[index];
-                if (!instance.IsValid || instance.Kind != ActorKind.Player || instance.ActorRoot == null)
+                if (!instance.IsValid || instance.ActorRoot == null)
                 {
                     continue;
                 }
-
-                availableActorIds.Add(instance.ActorId);
 
                 PlayerActorIdentity identity = instance.ActorRoot.GetComponent<PlayerActorIdentity>();
                 if (identity == null || !identity.IsValid)
                 {
                     continue;
                 }
+
+                availableActorIds.Add(instance.ActorId);
 
                 availablePlayerSlots.Add(identity.PlayerSlotId.ToString());
                 if (identity.PlayerSlotId != selected.PlayerSlotId)
@@ -6014,7 +6013,7 @@ private void EmitActorPresentationReleaseGenericStage(
                 for (int index = 0; index < instances.Count; index++)
                 {
                     ActorInstanceRecord instance = instances[index];
-                    if (instance.IsValid && instance.Kind == ActorKind.Player)
+                    if (instance.IsValid && instance.ActorRoot != null && instance.ActorRoot.GetComponent<PlayerActorIdentity>() != null)
                     {
                         actorIds.Add(instance.ActorId);
                     }

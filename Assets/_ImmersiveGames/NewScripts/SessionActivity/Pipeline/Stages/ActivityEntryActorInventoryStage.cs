@@ -167,11 +167,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 "owner='ActivityEntryPipeline' block='actor_inventory_feed'");
 
             IReadOnlyList<PlayerActorIdentityRecord> playerActors = bridge.ResolvePlayerActorCapabilityTargetsForCurrentEntry(identity);
-            IReadOnlyList<NonPlayerActorRuntimeEntry> sceneActors = ResolveActiveSceneActors(sceneActorRegistry, identity);
+            IReadOnlyList<SceneAuthoredActorRuntimeEntry> sceneActors = ResolveActiveSceneActors(sceneActorRegistry, identity);
             IActivityActorInstanceSource[] actorSources =
             {
                 new PlayerActorInstanceSource(playerActors ?? Array.Empty<PlayerActorIdentityRecord>(), playerActorRegistry),
-                new NonPlayerActorInstanceSource(sceneActors),
+                new SceneAuthoredActorInstanceSource(sceneActors),
             };
 
             ActorInventoryFeed feed = new();
@@ -197,17 +197,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return result;
         }
 
-        private static IReadOnlyList<NonPlayerActorRuntimeEntry> ResolveActiveSceneActors(
+        private static IReadOnlyList<SceneAuthoredActorRuntimeEntry> ResolveActiveSceneActors(
             ActivitySceneActorRegistry sceneActorRegistry,
             SessionActivityIdentity identity)
         {
             try
             {
-                return sceneActorRegistry.GetActiveEntries(identity) ?? Array.Empty<NonPlayerActorRuntimeEntry>();
+                return sceneActorRegistry.GetActiveEntries(identity) ?? Array.Empty<SceneAuthoredActorRuntimeEntry>();
             }
             catch (InvalidOperationException)
             {
-                return Array.Empty<NonPlayerActorRuntimeEntry>();
+                return Array.Empty<SceneAuthoredActorRuntimeEntry>();
             }
         }
 

@@ -1,20 +1,22 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal readonly struct ActorSceneDiscoveredRecord
     {
-        public ActorSceneDiscoveredRecord(NonPlayerActorIdentityRecord identity)
+        public ActorSceneDiscoveredRecord(SceneAuthoredActorIdentityRecord identity)
         {
             Identity = identity;
         }
 
-        public NonPlayerActorIdentityRecord Identity { get; }
+        public SceneAuthoredActorIdentityRecord Identity { get; }
         public bool IsValid => Identity.IsValid;
     }
 
@@ -61,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         throw new InvalidOperationException($"Actor scene discovery requires loaded scene='{record.SceneName}' activityId='{definition.ActivityId}'.");
                     }
 
-                    DiscoverInScene(identity, contentScene, NonPlayerActorOriginSource.ActivityContent, NonPlayerActorScope.ActivityScoped, registry, discovered);
+                    DiscoverInScene(identity, contentScene, ActorSourceKind.ActivityContent, ActorScope.ActivityScoped, registry, discovered);
                 }
             }
 
@@ -69,7 +71,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (routeScene.IsValid() && routeScene.isLoaded)
             {
                 hasAuthorizedSource = true;
-                DiscoverInScene(identity, routeScene, NonPlayerActorOriginSource.RouteScene, NonPlayerActorScope.RouteScoped, registry, discovered);
+                DiscoverInScene(identity, routeScene, ActorSourceKind.RouteScene, ActorScope.RouteScoped, registry, discovered);
             }
 
             return new ActorSceneDiscoveryStageResult(hasAuthorizedSource, discovered);
@@ -78,47 +80,62 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static void DiscoverInScene(
             SessionActivityIdentity identity,
             Scene sourceScene,
-            NonPlayerActorOriginSource originSource,
-            NonPlayerActorScope expectedScope,
+            ActorSourceKind originSource,
+            ActorScope expectedScope,
             ActivitySceneActorRegistry registry,
             List<ActorSceneDiscoveredRecord> discovered)
         {
             GameObject[] roots = sourceScene.GetRootGameObjects();
             for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
             {
-                NonPlayerActor[] actors = roots[rootIndex].GetComponentsInChildren<NonPlayerActor>(true);
+                Actor[] actors = roots[rootIndex].GetComponentsInChildren<Actor>(true);
                 for (int actorIndex = 0; actorIndex < actors.Length; actorIndex++)
                 {
-                    NonPlayerActor actor = actors[actorIndex];
-                    if (actor == null)
+                    Actor actor = actors[actorIndex];
+                    if (actor == null || actor is not ISceneAuthoredActor sceneAuthoredActor)
                     {
                         continue;
                     }
 
-                    actor.ValidateOrThrow($"ActorSceneDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}");
-                    if (actor.ActorScope == NonPlayerActorScope.GlobalScopedUnsupported)
-                    {
-                        throw new InvalidOperationException($"NonPlayerActor '{actor.name}' uses unsupported actorScope='GlobalScopedUnsupported'.");
-                    }
+                    string context = $"ActorSceneDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}";
+                    actor.ValidateLocalConfigurationOrThrow(context);
+                    sceneAuthoredActor.ValidateSceneAuthoredConfigurationOrThrow(context);
 
-                    if (actor.ActorScope != expectedScope)
+                    if (sceneAuthoredActor.SceneActorScope != expectedScope)
                     {
                         continue;
                     }
 
-                    NonPlayerActorIdentityRecord resolvedIdentity = new(
+                    string actorId = Normalize(actor.ActorId);
+                    string actorType = nameof(Actor);
+                    ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
                         identity,
-                        actor.NonPlayerActorId,
-                        actor.ActorKind,
-                        actor.ActorScope,
-                        actor.ParticipationPolicy,
-                        actor.ResolveParticipatingActivityIdsOrFail($"ActorSceneDiscovery:{sourceScene.name}:{rootIndex}:{actorIndex}"),
+                        actorId,
+                        sceneAuthoredActor.SceneActorScope,
+                        sceneAuthoredActor.SceneActorScope.ToString());
+                    if (!actorInstanceId.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            $"ActorSceneDiscovery generated invalid actor instance identity actorId='{actorId}' actorType='{actorType}' actorScope='{sceneAuthoredActor.SceneActorScope}'.");
+                    }
+
+                    SceneAuthoredActorIdentityRecord resolvedIdentity = new(
+                        identity,
+                        actorInstanceId,
+                        actorId,
+                        actor.ActorRoleMetadata,
+                        sceneAuthoredActor.SceneActorScope,
+                        sceneAuthoredActor.SceneActorParticipationPolicy,
+                        sceneAuthoredActor.ResolveExplicitParticipationActivityIdsOrFail(context),
                         originSource,
-                        sourceScene.name);
+                        sourceScene.name,
+                        actorType);
                     registry.RegisterDiscovered(resolvedIdentity, actor, actor.gameObject);
                     discovered.Add(new ActorSceneDiscoveredRecord(resolvedIdentity));
                 }
             }
         }
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 }
