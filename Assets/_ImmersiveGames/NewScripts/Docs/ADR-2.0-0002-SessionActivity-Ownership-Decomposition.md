@@ -4294,3 +4294,43 @@ ActivityExitPipeline não foi criado.
 Manager/coordinator novo não foi criado.
 ```
 
+## SA-7H4A-Big — ActivityActorExitRuntimeState + bridge slimming
+
+Status: `Applied / Pending smoke`.
+
+### Decisão aplicada
+
+Criado `ActivityActorExitRuntimeState` e movido o state técnico de actor exit para ele:
+
+```text
+active actor presentation states
+active actor attribute states
+active actor participation records
+```
+
+`ActivityExitActorTeardownStage` passa a usar `ActivityActorExitRuntimeState` diretamente para leitura/remoção desses records.
+
+### Bridge preservada como port fino
+
+`IActivityExitActorTeardownRuntimeBridge` permanece apenas para side-effects/adapters e resoluções que ainda não são state puro:
+
+```text
+ReleaseActorPresentation
+ClearNonPlayerPresentationHandle
+BuildActorInventoryFeedForExit
+TryResolveActivePlayerParticipantBindingForExit
+ExecutePlayerActorParticipationExit
+```
+
+### Escopo preservado
+
+```text
+Não move lifecycle.
+Não move RouteActivitySave.
+Não move ActivityContentRelease.
+Não move ActivityObjectExit.
+Não cria ActivityExitPipeline.
+Não cria manager/coordinator.
+Não reintroduz Player/NonPlayer como owner.
+```
+

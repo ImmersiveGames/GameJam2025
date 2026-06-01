@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
             IActivityEntryRuntimeEndpoint endpoint,
-            ActivityNonPlayerActorRegistry sceneActorRegistry,
+            ActivitySceneActorRegistry sceneActorRegistry,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            ActivityNonPlayerActorRegistry sceneActorRegistry = bridge.GetActivitySceneActorRegistry();
+            ActivitySceneActorRegistry sceneActorRegistry = bridge.GetActivitySceneActorRegistry();
             ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
             if (sceneActorRegistry == null)
             {
@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
 
         private static IReadOnlyList<NonPlayerActorRuntimeEntry> ResolveActiveSceneActors(
-            ActivityNonPlayerActorRegistry sceneActorRegistry,
+            ActivitySceneActorRegistry sceneActorRegistry,
             SessionActivityIdentity identity)
         {
             try

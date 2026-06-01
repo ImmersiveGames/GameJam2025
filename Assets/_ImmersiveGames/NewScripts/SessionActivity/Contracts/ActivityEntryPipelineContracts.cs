@@ -863,7 +863,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryActorInventoryRuntimeBridge
     {
-        ActivityNonPlayerActorRegistry GetActivitySceneActorRegistry();
+        ActivitySceneActorRegistry GetActivitySceneActorRegistry();
         ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
         IReadOnlyList<PlayerActorIdentityRecord> ResolvePlayerActorCapabilityTargetsForCurrentEntry(SessionActivityIdentity identity);
         ActorInventoryFeedResult GetCurrentActorInventoryFeedResult();

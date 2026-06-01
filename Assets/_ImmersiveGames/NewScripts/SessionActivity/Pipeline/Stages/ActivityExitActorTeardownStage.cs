@@ -5,8 +5,11 @@ using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
+using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -68,22 +71,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
     internal interface IActivityExitActorTeardownRuntimeBridge
     {
-        IReadOnlyList<SessionActivityPipeline.ActorPresentationCapabilityState> ResolveActiveActorPresentationStates(ActorInstanceId targetActorInstanceRuntimeId);
         ActorPresentationResult ReleaseActorPresentation(ActorPresentationRuntimeHandle handle, string source, string reason);
-        void RemoveActiveActorPresentation(ActorInstanceId actorInstanceRuntimeId);
-        void ClearNonPlayerPresentationHandle(SessionActivityIdentity identity, SessionActivityPipeline.ActorPresentationCapabilityState state);
+        void ClearActorPresentationRegistryHandle(SessionActivityIdentity identity, SessionActivityPipeline.ActorPresentationCapabilityState state);
 
-        IReadOnlyList<SessionActivityPipeline.ActorAttributeCapabilityState> ResolveActiveActorAttributeStates();
-        void RemoveActiveActorAttributeCapability(ActorInstanceId actorInstanceRuntimeId);
-
-        ActorInventoryFeedResult BuildActorInventoryFeedForExit(SessionActivityIdentity identity, string source, string reason);
-        ActorParticipationExitResult ExecuteActorParticipationExit(ActorParticipationExitCommand command);
-        void RemoveActiveActorParticipation(ActorInstanceId actorInstanceRuntimeId);
-        bool TryResolveActivePlayerParticipantBindingForExit(
-            ActorParticipationExitActorResult actorResult,
-            ActorInstanceRecord instance,
-            out PlayerActivityParticipantBinding binding,
-            out string failureReason);
         IReadOnlyList<PlayerActorParticipationExitRecord> ExecutePlayerActorParticipationExit(
             PlayerActorParticipationExitCommand command,
             SessionActivityIdentity identity);
@@ -94,6 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityExitActorTeardownResult Execute(
             ActivityExitActorTeardownCommand command,
             IActivityEntryRuntimeEndpoint endpoint,
+            ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -108,14 +99,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(endpoint));
             }
 
+            if (runtimeState == null)
+            {
+                throw new ArgumentNullException(nameof(runtimeState));
+            }
+
             if (bridge == null)
             {
                 throw new ArgumentNullException(nameof(bridge));
             }
 
-            ExecuteActorPresentationRelease(command, endpoint, bridge, facts, snapshots);
-            ExecuteActorAttributeRelease(command, endpoint, bridge, facts, snapshots);
-            SessionActivityIdentity completedIdentity = ExecuteActorParticipationExit(command, endpoint, bridge, facts, snapshots);
+            ExecuteActorPresentationRelease(command, endpoint, runtimeState, bridge, facts, snapshots);
+            ExecuteActorAttributeRelease(command, endpoint, runtimeState, bridge, facts, snapshots);
+            SessionActivityIdentity completedIdentity = ExecuteActorParticipationExit(command, endpoint, runtimeState, bridge, facts, snapshots);
 
             return new ActivityExitActorTeardownResult(
                 completed: true,
@@ -126,6 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static void ExecuteActorPresentationRelease(
             ActivityExitActorTeardownCommand command,
             IActivityEntryRuntimeEndpoint endpoint,
+            ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -146,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.EmitSnapshot(snapshots, "actor_presentation_release_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release started rail='{rail}'.");
             DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"[OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationReleaseStarted' owner='ActivityExitActorTeardownStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' rail='{rail}' target='{(targetActorInstanceRuntimeId.IsValid ? targetActorInstanceRuntimeId.Value : "all")}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
-            IReadOnlyList<SessionActivityPipeline.ActorPresentationCapabilityState> activeStates = bridge.ResolveActiveActorPresentationStates(targetActorInstanceRuntimeId);
+            IReadOnlyList<SessionActivityPipeline.ActorPresentationCapabilityState> activeStates = runtimeState.ResolveActiveActorPresentationStates(targetActorInstanceRuntimeId);
             if (activeStates == null || activeStates.Count == 0)
             {
                 SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
@@ -217,8 +214,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         continue;
                     }
 
-                    bridge.RemoveActiveActorPresentation(state.ActorInstanceRuntimeId);
-                    bridge.ClearNonPlayerPresentationHandle(startedIdentity, state);
+                    runtimeState.RemoveActiveActorPresentation(state.ActorInstanceRuntimeId, definition.ActivityId, entrySequence, command.Source, command.Reason);
+                    bridge.ClearActorPresentationRegistryHandle(startedIdentity, state);
                 }
             }
 
@@ -232,6 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static void ExecuteActorAttributeRelease(
             ActivityExitActorTeardownCommand command,
             IActivityEntryRuntimeEndpoint endpoint,
+            ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -244,7 +242,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.EmitSnapshot(snapshots, "actor_attribute_release_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor attribute release started.");
             DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"[OBS][ActivityExitActorTeardownStage][Actor] event='ActorAttributeReleaseStarted' owner='ActivityExitActorTeardownStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
-            IReadOnlyList<SessionActivityPipeline.ActorAttributeCapabilityState> activeStates = bridge.ResolveActiveActorAttributeStates();
+            IReadOnlyList<SessionActivityPipeline.ActorAttributeCapabilityState> activeStates = runtimeState.ResolveActiveActorAttributeStates();
             int totalCount = activeStates?.Count ?? 0;
             int releasedCount = 0;
             int skippedCount = 0;
@@ -313,7 +311,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         releasedCount += 1;
                     }
 
-                    bridge.RemoveActiveActorAttributeCapability(capabilityState.ActorInstanceRuntimeId);
+                    runtimeState.RemoveActiveActorAttributeCapability(capabilityState.ActorInstanceRuntimeId, definition.ActivityId, entrySequence, command.Source, command.Reason);
                     releasedOrSkippedCount += 1;
                 }
 
@@ -337,6 +335,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static SessionActivityIdentity ExecuteActorParticipationExit(
             ActivityExitActorTeardownCommand command,
             IActivityEntryRuntimeEndpoint endpoint,
+            ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -349,7 +348,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.EmitSnapshot(snapshots, "actor_participation_exit_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exit started.");
             DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"[OBS][ActivityExitActorTeardownStage][Actor] event='ActorParticipationExitStarted' owner='ActivityExitActorTeardownStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
-            ActorInventoryFeedResult feedResult = bridge.BuildActorInventoryFeedForExit(startedIdentity, command.Source, command.Reason);
+            ActorInventoryFeedResult feedResult = runtimeState.GetActorInventoryFeedForExit(startedIdentity, command.Source, command.Reason);
             ActorParticipationExitCommand exitCommand = new(
                 startedIdentity,
                 definition.ActivityId,
@@ -357,7 +356,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 feedResult,
                 command.Source,
                 command.Reason);
-            ActorParticipationExitResult exitResult = bridge.ExecuteActorParticipationExit(exitCommand);
+            ActorParticipationExitResult exitResult = runtimeState.ExecuteActorParticipationExit(exitCommand);
             DebugUtility.Log(
                 typeof(ActivityExitActorTeardownStage),
                 $"[OBS][ActivityExitActorTeardownStage][Actor] event='ActorParticipationExitResultBuilt' owner='ActivityExitActorTeardownStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' total='{exitResult.Total}' exited='{exitResult.Exited}' skipped='{exitResult.Skipped}' failed='{exitResult.Failed}' source='{command.Source}' reason='{command.Reason}'.",
@@ -399,23 +398,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     throw new InvalidOperationException($"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
                 }
 
-                bridge.RemoveActiveActorParticipation(instance.ActorInstanceId);
+                runtimeState.RemoveActiveActorParticipation(instance.ActorInstanceId, definition.ActivityId, entrySequence, command.Source, command.Reason);
                 endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationExited, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exited actorId='{instance.ActorId}' actorRole='{instance.Role}'.");
                 endpoint.EmitSnapshot(snapshots, "actor_participation_exited", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation exited actorId='{instance.ActorId}'.");
                 DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"[OBS][ActivityExitActorTeardownStage][Actor] event='ActorParticipationExited' owner='ActivityExitActorTeardownStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
-                if (instance.Kind == ActorKind.Player)
+                if (runtimeState.TryResolveActivePlayerParticipantBindingForExit(
+                        actorResult,
+                        instance,
+                        out PlayerActivityParticipantBinding participantBinding,
+                        out string participantBindingFailureReason))
                 {
-                    if (!bridge.TryResolveActivePlayerParticipantBindingForExit(
-                            actorResult,
-                            instance,
-                            out PlayerActivityParticipantBinding participantBinding,
-                            out string participantBindingFailureReason))
-                    {
-                        throw new InvalidOperationException(
-                            $"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] player_participant_binding_resolution_failed reason='{participantBindingFailureReason}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
-                    }
-
                     PlayerActorIdentityRecord resolvedIdentity = new(
                         startedIdentity,
                         participantBinding,
@@ -423,6 +416,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     exitedPlayerActors.Add(resolvedIdentity);
                     exitedPlayerActorDetails.Add(
                         $"participantId='{participantBinding.ParticipantId}' requirementId='{participantBinding.RequirementId}' role='{participantBinding.Role}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{participantBinding.PlayerSlotId}'");
+                }
+                else if (actorResult.HasResolvedPlayerIdentity)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][ActivityExitActorTeardownStage][ActorParticipationExit] player_participant_binding_resolution_failed reason='{participantBindingFailureReason}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerActorId='{actorResult.PlayerActorId}' playerSlotId='{actorResult.PlayerSlotId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
                 }
             }
 

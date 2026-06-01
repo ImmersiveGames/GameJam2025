@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             ActivityContentLoadedSet loadedSet,
             bool canDiscoverFromLoadedSet,
-            ActivityNonPlayerActorRegistry registry)
+            ActivitySceneActorRegistry registry)
         {
             bool hasAuthorizedSource = false;
             List<ActorSceneDiscoveredRecord> discovered = new();
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Scene sourceScene,
             NonPlayerActorOriginSource originSource,
             NonPlayerActorScope expectedScope,
-            ActivityNonPlayerActorRegistry registry,
+            ActivitySceneActorRegistry registry,
             List<ActorSceneDiscoveredRecord> discovered)
         {
             GameObject[] roots = sourceScene.GetRootGameObjects();
