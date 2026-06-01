@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -73,23 +74,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
     }
 
-    internal interface IActivityObjectSnapshotCaptureRuntimeBridge
-    {
-        ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult();
-        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
-        ActivityCapabilityInventoryValidationResult GetCurrentActivityCapabilityInventoryPreviewValidation();
-        void SetSnapshotPayloadForSaveOnExit(
-            SessionActivitySnapshotPayload payload,
-            bool captureFailed,
-            string failureDetail);
-    }
-
     internal static class ActivityObjectSnapshotCaptureStage
     {
         public static ActivityObjectSnapshotCaptureStageResult Execute(
             ActivityObjectSnapshotCaptureStageCommand command,
             IActivityEntryRuntimeEndpoint endpoint,
-            IActivityObjectSnapshotCaptureRuntimeBridge bridge,
+            ActivityObjectExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -99,13 +89,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
-            bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
+            runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
             SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
-            ActivityObjectContributorDiscoveryResult discoveryResult = bridge.GetCurrentActivityObjectContributorDiscoveryResult();
+            ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
             SessionActivityIdentity captureIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.Deactivation, entrySequence);
             endpoint.SetCurrentIdentity(captureIdentity, SessionActivityStage.Deactivation);
             endpoint.EmitFact(
@@ -130,7 +120,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 !IsDiscoveryResultForCurrentEntry(discoveryResult, captureIdentity, definition, entrySequence) ||
                 discoveryResult.Reports.Count == 0)
             {
-                bridge.SetSnapshotPayloadForSaveOnExit(default, captureFailed: false, failureDetail: string.Empty);
+                runtimeState.SetSnapshotPayloadForSaveOnExit(
+                    default,
+                    captureFailed: false,
+                    failureDetail: string.Empty,
+                    definition.ActivityId,
+                    entrySequence,
+                    "ActivityObjectSnapshotCaptureStage",
+                    "activity_object_snapshot_capture_skipped_no_discovery");
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotCaptureSkippedNoProviders,
@@ -170,8 +167,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string captureFailureDetail = string.Empty;
             HashSet<string> capturedTargetIds = new(StringComparer.Ordinal);
             List<SessionActivitySnapshotPayloadObject> capturedObjects = new();
-            ActivityCapabilityInventory snapshotInventory = bridge.GetCurrentActivityCapabilityInventoryPreview();
-            ActivityCapabilityInventoryValidationResult snapshotInventoryValidation = bridge.GetCurrentActivityCapabilityInventoryPreviewValidation();
+            ActivityCapabilityInventory snapshotInventory = runtimeState.CurrentInventoryPreview;
+            ActivityCapabilityInventoryValidationResult snapshotInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
             bool hasValidSnapshotInventory =
                 snapshotInventory.IsValid &&
                 snapshotInventoryValidation.IsValid &&
@@ -327,7 +324,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     definition.ActivityOrdinal,
                     entrySequence,
                     capturedObjects);
-                bridge.SetSnapshotPayloadForSaveOnExit(payload, captureFailed: false, failureDetail: string.Empty);
+                runtimeState.SetSnapshotPayloadForSaveOnExit(
+                    payload,
+                    captureFailed: false,
+                    failureDetail: string.Empty,
+                    definition.ActivityId,
+                    entrySequence,
+                    "ActivityObjectSnapshotCaptureStage",
+                    "activity_object_snapshot_capture_completed");
             }
             else
             {
@@ -335,7 +339,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 string failureDetail = failedCount > 0
                     ? (string.IsNullOrWhiteSpace(captureFailureDetail) ? "snapshot_capture_failed" : Normalize(captureFailureDetail))
                     : string.Empty;
-                bridge.SetSnapshotPayloadForSaveOnExit(default, captureFailed, failureDetail);
+                runtimeState.SetSnapshotPayloadForSaveOnExit(
+                    default,
+                    captureFailed,
+                    failureDetail,
+                    definition.ActivityId,
+                    entrySequence,
+                    "ActivityObjectSnapshotCaptureStage",
+                    "activity_object_snapshot_capture_completed");
             }
 
             endpoint.EmitFact(

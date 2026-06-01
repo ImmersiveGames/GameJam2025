@@ -2697,7 +2697,1600 @@ Débito controlado:
 
 ```text
 IActivityObjectSnapshotCaptureRuntimeBridge permanece transitória.
-ActivityObjectRelease ainda deve virar stage próprio no SA-7E.
-ActivityObjectContributorUnregister ainda deve virar stage próprio no SA-7F.
+ActivityObjectReleaseStage fechado no SA-7E.
+ActivityObjectContributorUnregisterStage fechado no SA-7F.
 ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
 ```
+
+## SA-7E — ActivityObjectReleaseStage
+
+Status: `Applied / Pending smoke`
+
+### Decisão
+
+O release de objetos da Activity foi extraído do caminho ativo do `SessionActivityPipeline` para um stage dedicado:
+
+```text
+SessionActivityPipeline
+-> decide quando a saída/dematerialization exige release de objetos
+-> ActivityObjectReleaseStage
+   -> valida discovery/result atual
+   -> resolve ReleaseEndpoint pelo ActivityCapabilityInventory
+   -> executa ActivityObjectReleaseCommand
+   -> preserva facts/checkpoints de ObjectRelease
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída.
+ActivityObjectReleaseStage executa apenas o passo determinístico de release.
+ActivityContentRelease async continua dono do unload de scenes.
+RouteActivitySave continua consumidor do payload já capturado; não decide release.
+```
+
+### Escopo aplicado
+
+```text
+Criado ActivityObjectReleaseStage.
+Criada bridge transitória IActivityObjectReleaseRuntimeBridge.
+EmitObjectReleaseStage agora delega ao stage dedicado.
+ActivityObjectExitStage deixa de possuir Release e permanece apenas como bridge transitória para ContributorUnregister.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+ContributorUnregister não foi movido.
+ActivityContentRelease async não foi movido.
+RouteActivitySave não foi alterado.
+ActivityObjectSnapshotCaptureStage não foi alterado.
+DeactivationWindow e RouteExit não foram movidos.
+ActivityExitPipeline não foi criado.
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityObjectReleaseStarted/Applied/Completed preservado
+ActivityObjectRelease checkpoint PASS
+ActivityObjectSnapshotCapture checkpoint PASS
+ActivityObjectContributorUnregister checkpoint PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
+### Status
+
+`SA-7E` está `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Evidência de smoke
+
+Smoke manual validado após compile.
+
+Resultado observado:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+```
+
+Evidência funcional relevante:
+
+```text
+ActivityObjectSnapshotCaptureStage:
+  ActivityObjectSnapshotCaptureStarted/Completed preservado
+  capturedCount='1'
+  failedCount='0'
+  targetIds='test_object_01'
+  hasTransformPayload='true'
+
+ActivityObjectReleaseStage:
+  ActivityObjectReleaseStarted preservado
+  ActivityObjectReleaseCompleted preservado
+  commandCount='1'
+  appliedCount='1'
+  skippedCount='0'
+  failedCount='0'
+
+ActivityObjectSnapshotCapture checkpointStatus='Passed'
+ActivityObjectRelease checkpointStatus='Passed'
+ActivityObjectContributorUnregister checkpointStatus='Passed'
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed'
+```
+
+Observação de observabilidade:
+
+```text
+Não há linha OBS literal ActivityObjectReleaseApplied no smoke.
+A aplicação está confirmada por ActivityObjectReleaseCompleted appliedCount='1'
+e pelo checkpoint ActivityObjectRelease checkpointStatus='Passed' appliedCount='1'.
+Se necessário, emitir ActivityObjectReleaseApplied como OBS explícito deve ser hygiene local futuro,
+não bloqueio funcional deste corte.
+```
+
+Conclusão arquitetural:
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
+ActivityObjectReleaseStage executa apenas o passo determinístico de release.
+ActivityObjectSnapshotCaptureStage continua separado e executa antes do release.
+ContributorUnregister, ActivityContentRelease async, RouteActivitySave, DeactivationWindow e RouteExit não foram movidos.
+Não foi criado ActivityExitPipeline.
+```
+
+Débito controlado:
+
+```text
+IActivityObjectReleaseRuntimeBridge permanece transitória.
+ActivityObjectContributorUnregisterStage fechado no SA-7F.
+ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
+```
+
+
+## SA-7F — ActivityObjectContributorUnregisterStage
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Decisão
+
+O unregister de contributors de ActivityObject foi extraído do caminho ativo do `SessionActivityPipeline` para um stage dedicado:
+
+```text
+SessionActivityPipeline
+-> decide quando a saída/dematerialization exige unregister de contributors
+-> ActivityObjectContributorUnregisterStage
+   -> valida discovery result da entry
+   -> emite ActivityObjectContributorUnregisterStarted
+   -> emite ActivityObjectContributorUnregistered por contributor quando houver
+   -> limpa CurrentActivityObjectContributorDiscoveryResult
+   -> emite ActivityObjectContributorUnregisterCompleted
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
+ActivityObjectContributorUnregisterStage executa apenas o passo determinístico de unregister.
+ActivityObjectSnapshotCaptureStage continua separado e executa antes do release.
+ActivityObjectReleaseStage continua separado e executa antes do unregister.
+ActivityContentRelease async continua responsável pelo unload de scenes.
+RouteActivitySave continua consumidor do payload capturado; não decide unregister.
+```
+
+### Escopo aplicado
+
+```text
+Criado ActivityObjectContributorUnregisterStage.
+Criada bridge transitória IActivityObjectContributorUnregisterRuntimeBridge.
+Removido ActivityObjectExitStage do caminho ativo.
+EmitObjectContributorUnregisterStage agora delega ao stage dedicado.
+CurrentActivityObjectContributorDiscoveryResult passa a ser limpo pelo stage dedicado.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+ActivityObjectSnapshotCaptureStage não foi alterado.
+ActivityObjectReleaseStage não foi alterado.
+ActivityContentRelease async não foi movido.
+RouteActivitySave não foi alterado.
+SaveRuntime não foi alterado.
+DeactivationWindow e RouteExit não foram movidos.
+ActivityExitPipeline não foi criado.
+```
+
+### Evidência de smoke
+
+Smoke manual validado após compile.
+
+Resultado observado:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+```
+
+Evidência funcional relevante:
+
+```text
+ActivityObjectContributorUnregisterStage:
+  ActivityObjectContributorUnregisterStarted preservado
+  ActivityObjectContributorUnregistered preservado em activity_01
+  ActivityObjectContributorUnregisterCompleted preservado
+  owner='ActivityObjectContributorUnregisterStage'
+
+activity_01:
+  unregisteredCount='1'
+  skippedNoContributors='False'
+  targetId='test_object_01'
+
+activity_02:
+  unregisteredCount='0'
+  skippedNoContributors='True'
+
+ActivityObjectContributorUnregister checkpointStatus='Passed'
+ActivityObjectRelease checkpointStatus='Passed'
+ActivityObjectSnapshotCapture checkpointStatus='Passed'
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed'
+```
+
+Conclusão arquitetural:
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
+ActivityObjectContributorUnregisterStage executa apenas o passo determinístico de unregister.
+Snapshot capture, object release e contributor unregister agora estão separados em stages próprios.
+ActivityContentRelease async, RouteActivitySave, DeactivationWindow e RouteExit não foram movidos.
+Não foi criado ActivityExitPipeline.
+```
+
+Débito controlado:
+
+```text
+IActivityObjectContributorUnregisterRuntimeBridge permanece transitória.
+ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
+```
+
+
+## SA-7G — ActivityContentReleaseAsync audit
+
+Status: `CLOSED / AUDIT ONLY`.
+
+### Decisão
+
+Não mover `ActivityContentRelease async` inteiro agora.
+
+O bloco atual mistura:
+
+```text
+ActivityObjectSnapshotCaptureStage
+ActivityObjectReleaseStage
+ActivityContentSceneUnloadCommand
+SessionActivityPendingOperation
+async unload callback
+ActivityContentReleaseCompleted
+ActivityObjectContributorUnregisterStage
+Restart continuation
+Activity transition continuation
+RouteExit closure
+Deactivation continuation
+```
+
+Mover tudo para um stage/pipeline novo criaria risco de owner duplicado do macro lifecycle.
+
+### Owner correto
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
+ActivityContent scene unload dispatch pode virar stage determinístico.
+UnityActivityContentSceneReleaseAdapter continua adapter de side-effect Unity.
+UnitySessionActivityPendingOperationRunner continua bridge async técnica.
+RouteActivitySave continua consumidor do payload; não decide unload/release.
+```
+
+### Próximo corte recomendado
+
+```text
+SA-7G1 — ActivityContentSceneUnloadDispatchStage
+```
+
+Escopo do próximo corte:
+
+```text
+Extrair apenas:
+- validação do próximo loaded scene record;
+- criação de ActivityContentSceneUnloadCommand;
+- criação de SessionActivityPendingOperation;
+- SetPendingOperation;
+- ActivityContentSceneUnloadCommandIssued;
+- chamada a RunActivityContentReleaseOperation.
+```
+
+Fica proibido no `SA-7G1`:
+
+```text
+Não mover CompleteActivityContentSceneUnloadOperation.
+Não mover FinalizeActivityContentReleaseCompleted.
+Não mover FailPendingOperation.
+Não mover PendingActivityContentReleaseContext.
+Não alterar RouteExit closure.
+Não alterar restart/activity transition/deactivation continuation.
+Não criar ActivityContentReleasePipeline.
+Não criar ActivityExitPipeline.
+```
+
+### Critério de aceite futuro
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityContentSceneUnloadCommandIssued preservado
+ActivityContentSceneUnloaded preservado
+ActivityContentReleaseCompleted preservado
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+### Débito documentado
+
+```text
+ExecuteNextActivityContentSceneRelease ainda é bridge transitória dentro do SessionActivityPipeline.
+CompleteActivityContentSceneUnloadOperation permanece macro continuation owner.
+PendingActivityContentReleaseContext permanece state técnico do macro pipeline.
+```
+
+## SA-7G1 — ActivityContentSceneUnloadDispatchStage
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Decisão aplicada
+
+O dispatch do unload async de uma scene de `ActivityContent` foi extraído para um stage dedicado:
+
+```text
+SessionActivityPipeline
+-> mantém PendingActivityContentReleaseContext
+-> decide que precisa descarregar a próxima scene
+-> ActivityContentSceneUnloadDispatchStage
+   -> valida LoadedSet e NextSceneIndex
+   -> monta ActivityContentSceneUnloadCommand
+   -> monta SessionActivityPendingOperation
+   -> seta pending operation
+   -> emite ActivityContentSceneUnloadCommandIssued
+   -> chama RunActivityContentReleaseOperation
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
+ActivityContentSceneUnloadDispatchStage executa apenas o dispatch determinístico do unload de uma scene.
+CompleteActivityContentSceneUnloadOperation continua no SessionActivityPipeline como callback/continuation macro.
+FinalizeActivityContentReleaseCompleted continua no SessionActivityPipeline.
+FailPendingOperation continua no SessionActivityPipeline.
+PendingActivityContentReleaseContext continua state técnico do macro pipeline.
+```
+
+### Escopo aplicado
+
+```text
+Criado ActivityContentSceneUnloadDispatchStage.
+Criada bridge transitória IActivityContentSceneUnloadDispatchRuntimeBridge.
+ExecuteNextActivityContentSceneRelease deixou de montar diretamente command/pending operation/runner call.
+ActivityContentSceneUnloadCommandIssued foi preservado pelo stage dedicado.
+Pending operation ActivityContentSceneUnload continua sendo criada antes do runner async.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+Não moveu CompleteActivityContentSceneUnloadOperation.
+Não moveu FinalizeActivityContentReleaseCompleted.
+Não moveu FailPendingOperation.
+Não moveu PendingActivityContentReleaseContext.
+Não alterou UnityActivityContentSceneReleaseAdapter.
+Não alterou UnitySessionActivityPendingOperationRunner.
+Não alterou restart/activity transition/deactivation continuation.
+Não alterou RouteExit closure.
+Não alterou RouteActivitySave.
+Não criou ActivityContentReleasePipeline.
+Não criou ActivityExitPipeline.
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityContentSceneUnloadCommandIssued preservado
+ActivityContentSceneUnloaded preservado
+ActivityContentReleaseCompleted preservado
+ActivityObjectSnapshotCapture checkpoint PASS
+ActivityObjectRelease checkpoint PASS
+ActivityObjectContributorUnregister checkpoint PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+pendingOperation ActivityContentSceneUnload observado nos releases com content
+activity_02 no-content preserva skip explícito
+```
+
+### Débito controlado
+
+```text
+IActivityContentSceneUnloadDispatchRuntimeBridge é transitória.
+CompleteActivityContentSceneUnloadOperation ainda concentra continuation macro.
+ActivityContentRelease finalization ainda deve ser auditada antes de qualquer extração futura.
+```
+
+## SA-7G2A — ActivityContentReleaseFinalizationStage
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Decisão aplicada
+
+A finalização determinística de `ActivityContentRelease` foi extraída para stage dedicado:
+
+```text
+SessionActivityPipeline
+-> decide que o content release chegou ao ponto de finalização
+-> ActivityContentReleaseFinalizationStage
+   -> emite ActivityContentReleaseFinalizationStarted
+   -> preserva ActivityContentReleaseCompleted
+   -> preserva SessionActivityDematerializationCompleted
+   -> emite ActivityContentReleaseFinalizationCleanupStarted
+   -> chama ActivityObjectContributorUnregisterStage
+   -> limpa CurrentActivityContentLoadedSet
+   -> limpa PendingActivityContentReleaseContext
+   -> limpa awaiting continuation flag
+   -> emite ActivityContentReleaseFinalizationCleanupCompleted
+   -> emite ActivityContentReleaseFinalizationCompleted
+-> SessionActivityPipeline continua a continuation macro
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle.
+ActivityContentReleaseFinalizationStage fecha apenas o release determinístico.
+StartPendingRestartEntry permanece no SessionActivityPipeline.
+CompleteRouteExitClosure permanece no SessionActivityPipeline.
+ContinueAfterDeactivationAsync permanece no SessionActivityPipeline.
+NextActivity continuation permanece no SessionActivityPipeline.
+```
+
+### Observabilidade obrigatória aplicada
+
+O corte preserva os nomes canônicos:
+
+```text
+ActivityContentReleaseCompleted
+SessionActivityDematerializationCompleted
+ActivityObjectContributorUnregisterStarted
+ActivityObjectContributorUnregistered
+ActivityObjectContributorUnregisterCompleted
+```
+
+E adiciona os eventos explícitos:
+
+```text
+ActivityContentReleaseFinalizationStarted
+ActivityContentReleaseFinalizationCleanupStarted
+ActivityContentReleaseFinalizationCleanupCompleted
+ActivityContentReleaseFinalizationCompleted
+```
+
+Campos observáveis adicionados:
+
+```text
+owner='ActivityContentReleaseFinalizationStage'
+pipelineId
+sessionStateId
+activityId
+entrySequence
+stage
+source
+reason
+completionKind
+status
+loadedSceneCount
+releasedSceneCount
+skippedNoContent
+pendingReleaseContextPresentBefore
+pendingReleaseContextPresentAfter
+loadedSetPresentBefore
+loadedSetPresentAfter
+awaitingContinuationBefore
+awaitingContinuationAfter
+continuationKind
+```
+
+### Escopo explicitamente não alterado
+
+```text
+CompleteActivityContentSceneUnloadOperation não foi movido.
+FailPendingOperation não foi movido.
+StartPendingRestartEntry não foi movido.
+CompleteRouteExitClosure não foi movido.
+ContinueAfterDeactivationAsync não foi movido.
+NextActivity continuation não foi movido.
+UnityActivityContentSceneReleaseAdapter não foi alterado.
+UnitySessionActivityPendingOperationRunner não foi alterado.
+RouteActivitySave não foi alterado.
+Não foi criado ActivityContentReleasePipeline.
+Não foi criado ActivityExitPipeline.
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityContentReleaseFinalizationStarted aparece
+ActivityContentReleaseCompleted preservado
+SessionActivityDematerializationCompleted preservado
+ActivityContentReleaseFinalizationCleanupStarted aparece
+ActivityContentReleaseFinalizationCleanupCompleted aparece
+ActivityContentReleaseFinalizationCompleted aparece
+ActivityObjectContributorUnregisterStarted/Completed preservado
+pendingReleaseContextPresentBefore/After observado
+loadedSetPresentBefore/After observado
+awaitingContinuationBefore/After observado
+continuationKind observado
+
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+activity_02 no-content preserva skip explícito
+```
+
+
+## SA-7G2A-H1 — ActivityContentReleaseCompleted observability alias
+
+
+
+### Status
+
+`SA-7G2A-H1` está `CLOSED / PASS funcional + PASS arquitetural do hygiene`.
+
+### Evidência de smoke
+
+Smoke manual validado após aplicação do H1.
+
+Resultado observado:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+```
+
+Observabilidade corrigida:
+
+```text
+event='ActivityContentReleaseCompleted'
+owner='ActivityContentReleaseFinalizationStage'
+```
+
+O evento aparece nos três caminhos relevantes:
+
+```text
+RestartCurrentActivity:
+  activityId='activity_01'
+  entrySequence='1'
+  status='Unloaded'
+  loadedSceneCount='1'
+  releasedSceneCount='1'
+  skippedNoContent='false'
+  continuationKind='RestartCurrentActivity'
+
+Activity01ToActivity02:
+  activityId='activity_01'
+  entrySequence='2'
+  status='Unloaded'
+  loadedSceneCount='1'
+  releasedSceneCount='1'
+  skippedNoContent='false'
+  continuationKind='CompleteActivity'
+
+RouteExitBackToMenu:
+  activityId='activity_02'
+  entrySequence='3'
+  status='SkippedNoContent'
+  loadedSceneCount='0'
+  releasedSceneCount='0'
+  skippedNoContent='true'
+  continuationKind='RouteExit'
+```
+
+Demais eventos de finalization preservados:
+
+```text
+ActivityContentReleaseFinalizationStarted
+SessionActivityDematerializationCompleted
+ActivityContentReleaseFinalizationCleanupStarted
+ActivityObjectContributorUnregisterStarted
+ActivityObjectContributorUnregisterCompleted
+ActivityContentReleaseFinalizationCleanupCompleted
+ActivityContentReleaseFinalizationCompleted
+```
+
+Checkpoints preservados:
+
+```text
+ActivityObjectSnapshotCapture checkpointStatus='Passed'
+ActivityObjectRelease checkpointStatus='Passed'
+ActivityObjectContributorUnregister checkpointStatus='Passed'
+RestartCurrentActivity checkpointStatus='Passed'
+Activity01ToActivity02 checkpointStatus='Passed'
+RouteExitBackToMenu checkpointStatus='Passed'
+```
+
+Conclusão arquitetural:
+
+```text
+O H1 corrigiu somente a observabilidade literal exigida pelo SA-7G2.
+Não houve alteração de lifecycle.
+Não houve alteração de cleanup.
+Não houve alteração de continuation macro.
+Não houve ActivityContentReleasePipeline.
+Não houve ActivityExitPipeline.
+SessionActivityPipeline segue dono da continuação macro.
+ActivityContentReleaseFinalizationStage segue responsável apenas pela finalização determinística.
+```
+
+### Motivo
+
+O smoke de `SA-7G2A` validou funcionalmente o fluxo de finalization, cleanup e continuation, mas a observabilidade literal `event='ActivityContentReleaseCompleted'` não apareceu no log. O nome `ActivityContentReleaseCompleted` aparecia como `stage` e como fact interno, mas não como evento OBS explícito do stage.
+
+Como `SA-7G2` exigiu observabilidade canônica preservada, este hygiene adiciona um alias/fact OBS explícito sem alterar lifecycle.
+
+### Alteração
+
+`ActivityContentReleaseFinalizationStage` passa a emitir:
+
+```text
+event='ActivityContentReleaseCompleted'
+owner='ActivityContentReleaseFinalizationStage'
+```
+
+logo após `SessionActivityFactKind.ActivityContentReleaseCompleted` ser registrado e antes de `SessionActivityDematerializationCompleted`.
+
+Campos preservados:
+
+```text
+pipelineId
+sessionStateId
+activityId
+entrySequence
+stage='ActivityContentReleaseCompleted'
+source
+reason
+completionKind
+status
+loadedSceneCount
+releasedSceneCount
+skippedNoContent
+pendingReleaseContextPresentBefore
+pendingReleaseContextPresentAfter
+loadedSetPresentBefore
+loadedSetPresentAfter
+awaitingContinuationBefore
+awaitingContinuationAfter
+continuationKind
+```
+
+### Escopo
+
+```text
+Sem alteração de lifecycle.
+Sem alteração de cleanup.
+Sem alteração de continuation macro.
+Sem alteração de RouteExit/Restart/NextActivity.
+Sem novo pipeline.
+Sem fallback.
+```
+
+### Smoke necessário
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+event='ActivityContentReleaseCompleted' owner='ActivityContentReleaseFinalizationStage' aparece
+ActivityContentReleaseFinalizationStarted/CleanupStarted/CleanupCompleted/Completed preservados
+SessionActivityDematerializationCompleted preservado
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
+## SA-7G2B — ActivityContentReleaseContinuation audit
+
+Status: `CLOSED / AUDIT ONLY`.
+
+### Decisão
+
+Não criar `ActivityContentReleaseContinuationStage` ainda.
+
+A continuação pós-release ainda é macro lifecycle do `SessionActivityPipeline`.
+
+### Owner correto
+
+```text
+SessionActivityPipeline continua dono de:
+- restart continuation;
+- next activity continuation;
+- route-exit closure;
+- deactivation/complete continuation.
+```
+
+### Próximo corte recomendado
+
+```text
+SA-7G2B-H1 — ActivityContentReleaseContinuationObservability
+```
+
+Escopo:
+
+```text
+Adicionar fact/OBS explícito para:
+- ActivityContentReleaseContinuationResolved;
+- ActivityContentReleaseContinuationStarted;
+- ActivityContentReleaseContinuationCompleted.
+```
+
+Owner obrigatório:
+
+```text
+owner='SessionActivityPipeline'
+```
+
+Campos obrigatórios:
+
+```text
+pipelineId
+sessionStateId
+activityId
+entrySequence
+stage
+source
+reason
+continuationKind
+continuationTargetActivityId
+continuationTargetEntrySequence
+hasPendingRestartTransition
+hasPendingRouteExit
+hasNextActivity
+routeExitRequested
+deactivationCompleted
+activityCompletionRequested
+releaseStatus
+skippedNoContent
+loadedSceneCount
+releasedSceneCount
+previousStage
+nextStage
+```
+
+### Escopo proibido no H1
+
+```text
+Não criar ActivityContentReleaseContinuationStage.
+Não criar ActivityContentReleasePipeline.
+Não criar ActivityExitPipeline.
+Não mover StartPendingRestartEntry.
+Não mover CompleteRouteExitClosure.
+Não mover ContinueAfterDeactivationAsync.
+Não alterar route-exit handoff.
+Não alterar restart lifecycle.
+Não alterar next activity lifecycle.
+```
+
+### Critério de aceite futuro
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityContentReleaseContinuationResolved aparece
+ActivityContentReleaseContinuationStarted aparece
+ActivityContentReleaseContinuationCompleted aparece quando aplicável
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+owner='SessionActivityPipeline'
+```
+
+## SA-7G2B-H1 — ActivityContentReleaseContinuationObservability
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Decisão aplicada
+
+Observabilidade explícita foi adicionada para a continuação macro pós-`ActivityContentReleaseFinalizationStage`.
+
+Eventos novos:
+
+```text
+ActivityContentReleaseContinuationResolved
+ActivityContentReleaseContinuationStarted
+ActivityContentReleaseContinuationCompleted
+```
+
+Owner obrigatório preservado:
+
+```text
+owner='SessionActivityPipeline'
+```
+
+### Regra arquitetural
+
+```text
+Pipeline decide a continuação.
+Logs tornam a decisão verificável.
+```
+
+O patch não cria `ActivityContentReleaseContinuationStage`, não cria `ActivityContentReleasePipeline` e não cria `ActivityExitPipeline`.
+
+### Escopo aplicado
+
+```text
+Adicionada telemetry interna transitória ActivityContentReleaseContinuationTelemetry.
+ActivityContentReleaseContinuationResolved é emitido ao final da finalization.
+ActivityContentReleaseContinuationStarted é emitido imediatamente antes da chamada de continuação macro.
+ActivityContentReleaseContinuationCompleted é emitido após a chamada síncrona/delegação aplicável.
+RestartCurrentActivity, NextActivity, RouteExit e CompleteActivity são classificados explicitamente.
+```
+
+### Campos observáveis
+
+```text
+pipelineId
+sessionStateId
+activityId
+entrySequence
+stage
+source
+reason
+continuationKind
+continuationTargetActivityId
+continuationTargetEntrySequence
+hasPendingRestartTransition
+hasPendingRouteExit
+hasNextActivity
+routeExitRequested
+deactivationCompleted
+activityCompletionRequested
+releaseStatus
+skippedNoContent
+loadedSceneCount
+releasedSceneCount
+previousStage
+nextStage
+```
+
+### Escopo explicitamente não alterado
+
+```text
+StartPendingRestartEntry continua no SessionActivityPipeline.
+CompleteRouteExitClosure continua no SessionActivityPipeline.
+ContinueAfterDeactivationAsync continua no SessionActivityPipeline.
+Route-exit handoff não foi alterado.
+Restart lifecycle não foi alterado.
+Next activity lifecycle não foi alterado.
+ActivityContentReleaseFinalizationStage não foi alterado.
+Unload adapter/runner não foram alterados.
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityContentReleaseContinuationResolved aparece
+ActivityContentReleaseContinuationStarted aparece
+ActivityContentReleaseContinuationCompleted aparece quando aplicável
+
+RestartCurrentActivity:
+  continuationKind='RestartCurrentActivity'
+  owner='SessionActivityPipeline'
+  continuationTargetActivityId='activity_01'
+
+Activity01ToActivity02:
+  continuationKind='NextActivity'
+  owner='SessionActivityPipeline'
+  continuationTargetActivityId='activity_02'
+
+RouteExitBackToMenu:
+  continuationKind='RouteExit'
+  owner='SessionActivityPipeline'
+  routeExitRequested='true'
+
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+
+## SA-7H — Release/Exit Bridge Debt audit
+
+Status: `CLOSED / AUDIT ONLY`.
+
+### Decisão
+
+As bridges transitórias criadas nos cortes SA-7B até SA-7G2B-H1 são aceitáveis temporariamente, mas não são contratos finais.
+
+Bridges auditadas:
+
+```text
+IActivityExitActorTeardownRuntimeBridge
+IActivityObjectSnapshotCaptureRuntimeBridge
+IActivityObjectReleaseRuntimeBridge
+IActivityObjectContributorUnregisterRuntimeBridge
+IActivityContentSceneUnloadDispatchRuntimeBridge
+IActivityContentReleaseFinalizationRuntimeBridge
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization/continuation.
+Stages dedicados executam passos determinísticos.
+Bridges apenas expõem state temporário ainda preso no pipeline.
+```
+
+### Regra
+
+```text
+Não expandir bridges.
+Não transformar bridge em manager/coordinator.
+Não expor continuation macro por bridge.
+Não criar ActivityExitPipeline.
+Não criar ActivityContentReleasePipeline.
+```
+
+### Próximo corte recomendado
+
+```text
+SA-7H1 — SessionActivityExitRuntimeState audit/design
+```
+
+Escopo:
+
+```text
+Mapear fields internos do SessionActivityPipeline usados por release/exit.
+Propor ActivityExitRuntimeState / ActivityObjectRuntimeState / ActivityContentReleaseRuntimeState.
+Definir ownership de loaded set, pending release context, discovery result, inventory preview, snapshot payload.
+Definir quais stages recebem state direto e quais continuam recebendo command.
+Definir smoke e observabilidade.
+```
+
+Proibido:
+
+```text
+Não mover código runtime.
+Não remover bridge ainda.
+Não alterar lifecycle.
+Não criar manager/coordinator.
+Não mover continuation macro.
+```
+
+
+## SA-7H1 — SessionActivityExitRuntimeState audit/design
+
+Status: `CLOSED / DESIGN ONLY`.
+
+### Decisão
+
+Não criar um único `SessionActivityExitRuntimeState` gigante.
+
+Separação aprovada para próximos cortes:
+
+```text
+ActivityActorExitRuntimeState
+ActivityObjectExitRuntimeState
+ActivityContentReleaseRuntimeState
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle:
+- release ordering;
+- deactivation window;
+- restart continuation;
+- next activity continuation;
+- route-exit closure;
+- foreign/stale guards;
+- handoffs.
+```
+
+Runtime states armazenam state técnico.  
+Runtime states não decidem lifecycle.
+
+### Mapeamento
+
+```text
+ActivityActorExitRuntimeState:
+  substitui gradualmente IActivityExitActorTeardownRuntimeBridge.
+
+ActivityObjectExitRuntimeState:
+  substitui gradualmente IActivityObjectSnapshotCaptureRuntimeBridge,
+  IActivityObjectReleaseRuntimeBridge,
+  IActivityObjectContributorUnregisterRuntimeBridge.
+
+ActivityContentReleaseRuntimeState:
+  substitui gradualmente IActivityContentSceneUnloadDispatchRuntimeBridge,
+  IActivityContentReleaseFinalizationRuntimeBridge.
+```
+
+### Próximo corte recomendado
+
+```text
+SA-7H2 — ActivityContentReleaseRuntimeState implementation
+```
+
+Motivo:
+
+```text
+É o menor state coeso.
+Cobre loaded set, pending release context e awaiting flag.
+Reduz duas bridges relacionadas.
+Não toca actor stores.
+Não toca snapshot payload/save.
+Não move continuation macro.
+```
+
+### Proibido no SA-7H2
+
+```text
+Não mover CompleteActivityContentSceneUnloadOperation.
+Não mover StartPendingRestartEntry.
+Não mover CompleteRouteExitClosure.
+Não mover ContinueAfterDeactivationAsync.
+Não criar manager/coordinator.
+Não criar ActivityExitPipeline.
+Não criar ActivityContentReleasePipeline.
+Não alterar RouteActivitySave.
+```
+
+### Critério de aceite futuro
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+ActivityContentSceneUnloadDispatchStage preservado
+ActivityContentReleaseFinalizationStage preservado
+ActivityContentReleaseContinuationResolved/Started/Completed preservado
+ActivityObjectSnapshotCapture Passed
+ActivityObjectRelease Passed
+ActivityObjectContributorUnregister Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+## SA-7H2 — ActivityContentReleaseRuntimeState implementation
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Decisão aplicada
+
+Criado `ActivityContentReleaseRuntimeState` para concentrar o state técnico de release async de ActivityContent:
+
+```text
+CurrentLoadedSet
+PendingActivityContentReleaseContext
+IsAwaitingContinuation
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono da continuation macro.
+ActivityContentReleaseRuntimeState guarda apenas state técnico.
+ActivityContentSceneUnloadDispatchStage continua stage de dispatch.
+ActivityContentReleaseFinalizationStage continua stage de finalization.
+```
+
+### Escopo aplicado
+
+```text
+Criado NewScripts/SessionActivity/Pipeline/Runtime/ActivityContentReleaseRuntimeState.cs.
+SessionActivityPipeline passa a delegar pending release context e awaiting flag ao runtime state.
+Set/Clear de CurrentActivityContentLoadedSet passa a espelhar o state técnico no runtime state.
+Bridges existentes continuam como camada transitória, mas agora leem/limpam o runtime state em vez de fields soltos do pipeline.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+CompleteActivityContentSceneUnloadOperation não foi movido.
+StartPendingRestartEntry não foi movido.
+CompleteRouteExitClosure não foi movido.
+ContinueAfterDeactivationAsync não foi movido.
+ActivityContentReleaseContinuation* permanece owner='SessionActivityPipeline'.
+RouteActivitySave não foi alterado.
+ActivityExitPipeline não foi criado.
+ActivityContentReleasePipeline não foi criado.
+```
+
+### Observabilidade nova esperada
+
+```text
+ActivityContentReleaseRuntimeStateLoadedSetStored
+ActivityContentReleaseRuntimeStateLoadedSetCleared
+ActivityContentReleaseRuntimeStatePendingContextStored
+ActivityContentReleaseRuntimeStatePendingContextCleared
+ActivityContentReleaseRuntimeStateAwaitingContinuationChanged
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityContentReleaseRuntimeState* observado nos releases com content
+ActivityContentSceneUnloadDispatchStage preservado
+ActivityContentReleaseFinalizationStage preservado
+ActivityContentReleaseContinuationResolved/Started/Completed preservado
+ActivityObjectSnapshotCapture Passed
+ActivityObjectRelease Passed
+ActivityObjectContributorUnregister Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+
+## SA-7H2-H1 — ContentRelease bridge retirement audit
+
+Status: `CLOSED / AUDIT ONLY`.
+
+### Decisão
+
+Não remover as duas bridges de `ActivityContentRelease` de uma vez.
+
+Bridges auditadas:
+
+```text
+IActivityContentSceneUnloadDispatchRuntimeBridge
+IActivityContentReleaseFinalizationRuntimeBridge
+```
+
+### Resultado
+
+```text
+IActivityContentSceneUnloadDispatchRuntimeBridge:
+  pode ser reduzida/removida primeiro, desde que ActivityContentSceneUnloadDispatchStage dependa de ActivityContentReleaseRuntimeState e ports explícitos de pending operation/runner.
+
+IActivityContentReleaseFinalizationRuntimeBridge:
+  pode ser reduzida/removida depois, desde que ActivityContentReleaseFinalizationStage dependa de ActivityContentReleaseRuntimeState e de ActivityObjectContributorUnregisterStage ou executor explícito.
+```
+
+### Próximos cortes recomendados
+
+```text
+SA-7H2-H2 — ActivityContentSceneUnloadDispatchBridgeReduction
+SA-7H2-H3 — ActivityContentReleaseFinalizationBridgeReduction
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle e da continuation.
+ActivityContentReleaseRuntimeState guarda state técnico.
+Stages executam passos determinísticos.
+Bridges são transitórias.
+```
+
+### Proibido
+
+```text
+Não mover CompleteActivityContentSceneUnloadOperation.
+Não mover FailPendingOperation.
+Não mover StartPendingRestartEntry.
+Não mover CompleteRouteExitClosure.
+Não mover ContinueAfterDeactivationAsync.
+Não alterar RouteActivitySave.
+Não criar ActivityContentReleasePipeline.
+Não criar ActivityExitPipeline.
+```
+
+## SA-7H2-H2 — ActivityContentSceneUnloadDispatchBridgeReduction
+
+Status: `Applied / Pending smoke`.
+
+### Decisão aplicada
+
+A bridge transitória de dispatch de unload de `ActivityContent` foi removida do caminho ativo:
+
+```text
+IActivityContentSceneUnloadDispatchRuntimeBridge
+```
+
+O stage passou a depender de contratos explícitos:
+
+```text
+ActivityContentReleaseRuntimeState
+IActivityEntryRuntimeEndpoint
+ISessionActivityPendingOperationRunner
+ISessionActivityPendingOperationCallback
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do callback e da continuation macro.
+ActivityContentReleaseRuntimeState guarda state técnico.
+ActivityContentSceneUnloadDispatchStage executa apenas o dispatch determinístico de unload.
+PendingOperationRunner continua bridge técnica async.
+UnityActivityContentSceneReleaseAdapter continua adapter de side-effect Unity.
+```
+
+### Escopo aplicado
+
+```text
+ActivityContentSceneUnloadDispatchStage lê PendingActivityContentReleaseContext via ActivityContentReleaseRuntimeState.
+ActivityContentSceneUnloadDispatchStage monta SessionActivityPendingOperation localmente a partir de identity canônica.
+ActivityContentSceneUnloadDispatchStage chama ISessionActivityPendingOperationRunner.RunActivityContentReleaseOperation diretamente.
+SessionActivityPipeline deixou de implementar IActivityContentSceneUnloadDispatchRuntimeBridge.
+Métodos explícitos da bridge de dispatch foram removidos.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+CompleteActivityContentSceneUnloadOperation não foi movido.
+FailPendingOperation não foi movido.
+StartPendingRestartEntry não foi movido.
+CompleteRouteExitClosure não foi movido.
+ContinueAfterDeactivationAsync não foi movido.
+ActivityContentReleaseFinalizationStage não foi alterado.
+ActivityObjectContributorUnregisterStage não foi alterado.
+RouteActivitySave não foi alterado.
+Não foi criado ActivityContentReleasePipeline.
+Não foi criado ActivityExitPipeline.
+```
+
+### Critério de smoke
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+
+ActivityContentReleaseRuntimeStateLoadedSetStored observado
+ActivityContentReleaseRuntimeStatePendingContextStored observado
+ActivityContentReleaseRuntimeStateAwaitingContinuationChanged observado
+ActivityContentSceneUnloadDispatchStage preservado
+pendingOperation ActivityContentSceneUnload preservado
+ActivityContentReleaseFinalizationStage preservado
+ActivityContentReleaseContinuationResolved/Started/Completed preservado
+ActivityObjectSnapshotCapture Passed
+ActivityObjectRelease Passed
+ActivityObjectContributorUnregister Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+
+## SA-7H2-H3 — ActivityContentReleaseFinalizationBridgeReduction
+
+Status: `Applied / Pending smoke`.
+
+### Decisão aplicada
+
+`IActivityContentReleaseFinalizationRuntimeBridge` foi removida do caminho ativo de finalization de `ActivityContentRelease`.
+
+`ActivityContentReleaseFinalizationStage` passa a depender diretamente de:
+
+```text
+ActivityContentReleaseRuntimeState
+IActivityObjectContributorUnregisterRuntimeBridge
+IActivityEntryRuntimeEndpoint
+```
+
+### Owner preservado
+
+```text
+ActivityContentReleaseRuntimeState guarda state técnico de release async.
+ActivityContentReleaseFinalizationStage executa somente finalization determinística.
+ActivityObjectContributorUnregisterStage continua stage explícito.
+SessionActivityPipeline continua dono de continuation macro.
+```
+
+### O que saiu
+
+```text
+IActivityContentReleaseFinalizationRuntimeBridge
+implementações explícitas dessa bridge no SessionActivityPipeline
+acesso indireto ao ActivityContentReleaseRuntimeState via bridge
+chamada indireta de unregister via finalization bridge
+```
+
+### O que permanece
+
+```text
+ActivityContentReleaseCompleted preservado
+SessionActivityDematerializationCompleted preservado
+ActivityContentReleaseFinalizationCleanupStarted preservado
+ActivityContentReleaseFinalizationCleanupCompleted preservado
+ActivityContentReleaseFinalizationCompleted preservado
+ActivityObjectContributorUnregisterStarted/Completed preservado
+ActivityContentReleaseContinuationResolved/Started/Completed preservado
+```
+
+### Escopo proibido preservado
+
+```text
+CompleteActivityContentSceneUnloadOperation não foi movido.
+FailPendingOperation não foi movido.
+StartPendingRestartEntry não foi movido.
+CompleteRouteExitClosure não foi movido.
+ContinueAfterDeactivationAsync não foi movido.
+RouteActivitySave não foi alterado.
+ActivityContentReleasePipeline não foi criado.
+ActivityExitPipeline não foi criado.
+Manager/coordinator novo não foi criado.
+```
+
+### Observação
+
+`ActivityContentReleaseFinalizationStage` ainda usa `IActivityEntryRuntimeEndpoint.ClearCurrentActivityContentLoadedSet()` para limpar o loaded set espelhado em `SessionActivityRuntimeState`, enquanto `ActivityContentReleaseRuntimeState` permanece dono do state técnico de release async.
+
+Isso não move lifecycle e não reintroduz a bridge de finalization.
+
+## SA-7H3A — ActivityObjectExitRuntimeState
+
+Status: `Applied / Pending smoke`.
+
+### Decisão aplicada
+
+`ActivityObjectExitRuntimeState` foi criado como owner técnico do state de object exit:
+
+```text
+CurrentActivityObjectContributorDiscoveryResult
+CurrentActivityCapabilityInventoryPreview
+CurrentActivityCapabilityInventoryPreviewValidation
+SessionActivitySnapshotPayloadForSaveOnExit
+```
+
+### Escopo aplicado
+
+```text
+Criado ActivityObjectExitRuntimeState.
+SessionActivityPipeline passa a manter ActivityObjectExitRuntimeState.
+IActivityObjectSnapshotCaptureRuntimeBridge passa a ler/gravar via ActivityObjectExitRuntimeState.
+IActivityObjectReleaseRuntimeBridge passa a ler via ActivityObjectExitRuntimeState.
+IActivityObjectContributorUnregisterRuntimeBridge passa a ler/limpar via ActivityObjectExitRuntimeState.
+ISessionActivitySnapshotPayloadProvider.TryGetSnapshotPayloadForSaveOnExit passa a ler o payload via ActivityObjectExitRuntimeState.
+```
+
+### Compatibilidade técnica transitória
+
+```text
+As bridges de object exit continuam existindo como facade fina.
+SessionActivityRuntimeState ainda mantém espelho para consumidores de entry que ainda não foram migrados.
+Esse espelho não é owner final e deve ser removido em cortes SA-7H3B/C/D.
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do macro lifecycle.
+ActivityObjectExitRuntimeState guarda state técnico.
+Stages continuam executando passos determinísticos.
+RouteActivitySave continua consumidor do payload.
+```
+
+### Proibido preservado
+
+```text
+RouteActivitySave não foi movido.
+Save não é executado pelo runtime state.
+ActivityContentRelease não foi movido.
+Callback async não foi movido.
+Continuation macro não foi movida.
+ActivityExitPipeline não foi criado.
+Manager/coordinator novo não foi criado.
+```
+
+### Smoke necessário
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityObjectExitRuntimeState* observado
+ActivityObjectSnapshotCaptureStage preservado
+ActivityObjectReleaseStage preservado
+ActivityObjectContributorUnregisterStage preservado
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+
+## SA-7H3B — ActivityObjectSnapshotCaptureBridgeReduction
+
+Status: `Applied / Pending smoke`.
+
+### Decisão aplicada
+
+`IActivityObjectSnapshotCaptureRuntimeBridge` saiu do caminho ativo.
+
+`ActivityObjectSnapshotCaptureStage` passa a depender diretamente de:
+
+```text
+ActivityObjectExitRuntimeState
+IActivityEntryRuntimeEndpoint
+```
+
+### Owner preservado
+
+```text
+ActivityObjectExitRuntimeState guarda discovery/inventory/snapshot payload.
+ActivityObjectSnapshotCaptureStage executa apenas snapshot capture determinístico.
+SessionActivityPipeline continua dono de ordering/lifecycle/continuation macro.
+RouteActivitySave continua consumidor externo do payload.
+```
+
+### O que saiu
+
+```text
+IActivityObjectSnapshotCaptureRuntimeBridge
+implementações explícitas dessa bridge no SessionActivityPipeline
+acesso indireto ao ActivityObjectExitRuntimeState via bridge de snapshot capture
+```
+
+### O que permanece
+
+```text
+IActivityObjectReleaseRuntimeBridge permanece para SA-7H3C.
+IActivityObjectContributorUnregisterRuntimeBridge permanece para SA-7H3D.
+ActivityObjectSnapshotCaptureStarted preservado.
+ActivityObjectSnapshotCaptureCompleted preservado.
+ActivityObjectExitRuntimeStateSnapshotPayloadStored preservado.
+TryGetSnapshotPayloadForSaveOnExit continua lendo do ActivityObjectExitRuntimeState.
+RouteActivitySave não foi movido.
+```
+
+### Escopo proibido preservado
+
+```text
+RouteActivitySave não foi movido.
+Save não é executado pelo runtime state.
+ObjectRelease não foi alterado.
+ContributorUnregister não foi alterado.
+ActivityContentRelease não foi alterado.
+Callback async não foi movido.
+Restart / next activity / route-exit / deactivation continuation não foram movidos.
+ActivityExitPipeline não foi criado.
+Manager/coordinator novo não foi criado.
+```
+
+
+## SA-7H3C-D — ActivityObjectReleaseAndContributorUnregisterBridgeReduction
+
+Status: `Applied / Pending smoke`.
+
+### Decisão aplicada
+
+As bridges transitórias restantes de object exit saíram do caminho ativo:
+
+```text
+IActivityObjectReleaseRuntimeBridge
+IActivityObjectContributorUnregisterRuntimeBridge
+```
+
+`ActivityObjectReleaseStage` passa a depender diretamente de:
+
+```text
+ActivityObjectExitRuntimeState
+IActivityEntryRuntimeEndpoint
+```
+
+`ActivityObjectContributorUnregisterStage` passa a depender diretamente de:
+
+```text
+ActivityObjectExitRuntimeState
+IActivityEntryRuntimeEndpoint
+```
+
+### Owner preservado
+
+```text
+ActivityObjectExitRuntimeState guarda discovery/inventory/snapshot payload.
+ActivityObjectReleaseStage executa somente release determinístico.
+ActivityObjectContributorUnregisterStage executa somente unregister determinístico.
+SessionActivityPipeline continua dono de ordering/lifecycle/continuation macro.
+RouteActivitySave continua consumidor externo do payload.
+```
+
+### O que saiu
+
+```text
+IActivityObjectReleaseRuntimeBridge
+IActivityObjectContributorUnregisterRuntimeBridge
+implementações explícitas dessas bridges no SessionActivityPipeline
+acesso indireto ao ActivityObjectExitRuntimeState via bridges de release/unregister
+```
+
+### O que permanece
+
+```text
+ActivityObjectSnapshotCaptureStage permanece como validado no SA-7H3B.
+ActivityObjectReleaseStarted/Completed preservados.
+ActivityObjectContributorUnregisterStarted/Unregistered/Completed preservados.
+ActivityObjectExitRuntimeStateContributorDiscoveryCleared preservado via IActivityEntryRuntimeEndpoint.
+TryGetSnapshotPayloadForSaveOnExit continua lendo do ActivityObjectExitRuntimeState.
+RouteActivitySave não foi movido.
+```
+
+### Escopo proibido preservado
+
+```text
+RouteActivitySave não foi movido.
+Save não é executado pelo runtime state.
+SnapshotCapture não foi alterado.
+ActivityContentRelease não foi alterado.
+Callback async não foi movido.
+Restart / next activity / route-exit / deactivation continuation não foram movidos.
+ActivityExitPipeline não foi criado.
+Manager/coordinator novo não foi criado.
+```
+
