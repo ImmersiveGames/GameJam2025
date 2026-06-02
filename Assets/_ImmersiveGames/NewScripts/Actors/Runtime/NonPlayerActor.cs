@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using UnityEngine;
 
@@ -12,41 +10,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     [DisallowMultipleComponent]
     public sealed class NonPlayerActor : Actor, ISceneAuthoredActor
     {
-        [SerializeField] private string nonPlayerActorId;
-        [SerializeField] private NonPlayerActorScope actorScope = NonPlayerActorScope.ActivityScoped;
-        [SerializeField] private NonPlayerActorParticipationPolicy participationPolicy = NonPlayerActorParticipationPolicy.ExplicitActivityIds;
         [SerializeField] private List<ActivityAsset> participatingActivities = new();
-        [SerializeField] private ActorPresentationProfileAsset presentationProfile;
-        [SerializeField] private ActorPresentationEndpoint presentationEndpoint;
 
-        public string NonPlayerActorId => Normalize(nonPlayerActorId);
-        public override string ActorId => NonPlayerActorId;
         public override ActorRole ActorRoleMetadata => ActorRole.SceneAuthoredNonPlayer;
-        public override ActorScope ActorScopeMetadata => actorScope == NonPlayerActorScope.RouteScoped
-            ? _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.RouteScoped
-            : _ImmersiveGames.NewScripts.Actors.Foundation.ActorScope.ActivityScoped;
         public ActorScope SceneActorScope => ActorScopeMetadata;
-        public ActorParticipationRecord.ActorParticipationPolicy SceneActorParticipationPolicy => MapParticipationPolicy(participationPolicy);
-        public NonPlayerActorScope ActorScope => actorScope;
-        public NonPlayerActorParticipationPolicy ParticipationPolicy => participationPolicy;
-        public IReadOnlyList<ActivityAsset> ParticipatingActivities => (IReadOnlyList<ActivityAsset>)participatingActivities ?? Array.Empty<ActivityAsset>();
-        public ActorPresentationProfileAsset PresentationProfile => presentationProfile;
-        public ActorPresentationEndpoint PresentationEndpoint => presentationEndpoint;
+        public ActorParticipationRecord.ActorParticipationPolicy SceneActorParticipationPolicy => ActorParticipationPolicy;
 
-        public IReadOnlyList<string> ResolveParticipatingActivityIdsOrFail(string source)
+        private IReadOnlyList<string> ResolveParticipatingActivityIdsOrFail(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
                 ? $"{nameof(NonPlayerActor)}:{name}"
                 : source.Trim();
 
-            if (participationPolicy != NonPlayerActorParticipationPolicy.ExplicitActivityIds)
+            if (ActorParticipationPolicy != ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds)
             {
                 return Array.Empty<string>();
             }
 
             if (participatingActivities == null || participatingActivities.Count == 0)
             {
-                throw new InvalidOperationException($"{origin} requires at least one ActivityAsset when participationPolicy=ExplicitActivityIds.");
+                throw new InvalidOperationException($"{origin} requires at least one ActivityAsset when ActorParticipationPolicy=ExplicitActivityIds.");
             }
 
             List<string> resolved = new(participatingActivities.Count);
@@ -56,7 +39,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 ActivityAsset activity = participatingActivities[index];
                 if (activity == null)
                 {
-                    throw new InvalidOperationException($"{origin} has null participatingActivities[{index}] with participationPolicy=ExplicitActivityIds.");
+                    throw new InvalidOperationException($"{origin} has null participatingActivities[{index}] with ActorParticipationPolicy=ExplicitActivityIds.");
                 }
 
                 string activityId = Normalize(activity.ActivityId);
@@ -78,7 +61,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public IReadOnlyList<string> ResolveExplicitParticipationActivityIdsOrFail(string source)
         {
-            return participationPolicy == NonPlayerActorParticipationPolicy.ExplicitActivityIds
+            return ActorParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds
                 ? ResolveParticipatingActivityIdsOrFail(source)
                 : Array.Empty<string>();
         }
@@ -88,110 +71,58 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             ValidateLocalConfigurationOrThrow(source);
         }
 
-        public bool IsValid =>
-            !string.IsNullOrWhiteSpace(NonPlayerActorId) &&
-            actorScope != NonPlayerActorScope.Unknown &&
-            actorScope != NonPlayerActorScope.GlobalScopedUnsupported &&
-            participationPolicy != NonPlayerActorParticipationPolicy.Unknown &&
-            IsParticipatingActivitiesConfigValid($"{nameof(NonPlayerActor)}:{nameof(IsValid)}:{name}") &&
-            presentationProfile != null &&
-            presentationEndpoint != null;
-
         public override void ValidateLocalConfigurationOrThrow(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
                 ? $"{nameof(NonPlayerActor)}:{name}"
                 : source.Trim();
 
-            if (string.IsNullOrWhiteSpace(NonPlayerActorId))
+            if (string.IsNullOrWhiteSpace(ActorId))
             {
-                throw new InvalidOperationException($"{origin} requires nonPlayerActorId.");
+                throw new InvalidOperationException($"{origin} requires actorId.");
             }
 
-            if (actorScope == NonPlayerActorScope.Unknown)
+            if (ActorScopeMetadata == ActorScope.Unknown)
             {
                 throw new InvalidOperationException($"{origin} requires explicit actorScope.");
             }
 
-            if (actorScope == NonPlayerActorScope.GlobalScopedUnsupported)
+            if (!Enum.IsDefined(typeof(ActorParticipationRecord.ActorParticipationPolicy), ActorParticipationPolicy))
             {
-                throw new InvalidOperationException($"{origin} does not support actorScope=GlobalScopedUnsupported in Base 1.2.");
-            }
-
-            if (participationPolicy == NonPlayerActorParticipationPolicy.Unknown)
-            {
-                throw new InvalidOperationException($"{origin} requires explicit participationPolicy.");
+                throw new InvalidOperationException($"{origin} requires valid ActorParticipationPolicy.");
             }
 
             if (!IsParticipatingActivitiesConfigValid(origin))
             {
-                throw new InvalidOperationException($"{origin} has invalid participatingActivities when participationPolicy=ExplicitActivityIds.");
+                throw new InvalidOperationException($"{origin} has invalid participatingActivities when ActorParticipationPolicy=ExplicitActivityIds.");
             }
 
-            if (presentationProfile == null)
-            {
-                throw new InvalidOperationException($"{origin} requires ActorPresentationProfileAsset.");
-            }
-
-            if (presentationEndpoint == null)
-            {
-                throw new InvalidOperationException($"{origin} requires ActorPresentationEndpoint.");
-            }
-
-            if (CapabilitySurface == null)
+            ActorCapabilitySurface surface = CapabilitySurface;
+            if (surface == null)
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
-        }
 
-        public void ValidateOrThrow(string source)
-        {
-            ValidateLocalConfigurationOrThrow(source);
+            if (surface.PresentationEndpoint == null)
+            {
+                throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.PresentationEndpoint.");
+            }
+
+            surface.PresentationEndpoint.ValidateOrThrow($"{origin}/{nameof(ActorCapabilitySurface)}.{nameof(ActorCapabilitySurface.PresentationEndpoint)}");
         }
 
         protected override void OnValidate()
         {
             base.OnValidate();
-            nonPlayerActorId = Normalize(nonPlayerActorId);
             if (participatingActivities == null)
             {
                 participatingActivities = new List<ActivityAsset>();
             }
         }
 
-        public bool ContainsActivityId(string activityId)
-        {
-            string normalized = Normalize(activityId);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return false;
-            }
-
-            IReadOnlyList<string> resolvedActivityIds = ResolveParticipatingActivityIdsOrFail($"{nameof(ContainsActivityId)}:{name}");
-            for (int index = 0; index < resolvedActivityIds.Count; index++)
-            {
-                if (string.Equals(Normalize(resolvedActivityIds[index]), normalized, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static ActorParticipationRecord.ActorParticipationPolicy MapParticipationPolicy(NonPlayerActorParticipationPolicy policy)
-        {
-            return policy switch
-            {
-                NonPlayerActorParticipationPolicy.AllActivitiesInRoute => ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
-                NonPlayerActorParticipationPolicy.ExplicitActivityIds => ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds,
-                _ => ActorParticipationRecord.ActorParticipationPolicy.None,
-            };
-        }
-
         private bool IsParticipatingActivitiesConfigValid(string origin)
         {
-            if (participationPolicy != NonPlayerActorParticipationPolicy.ExplicitActivityIds)
+            if (ActorParticipationPolicy != ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds)
             {
                 return true;
             }

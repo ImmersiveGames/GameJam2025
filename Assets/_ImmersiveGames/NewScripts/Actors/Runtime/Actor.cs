@@ -1,3 +1,4 @@
+using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using UnityEngine;
 
@@ -5,14 +6,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     public abstract class Actor : MonoBehaviour, IActor
     {
-        private ActorInstanceId _runtimeActorInstanceId;
-        [SerializeField] private ActorRole baseActorRoleMetadata = ActorRole.Unknown;
-        [SerializeField] private ActorScope baseActorScopeMetadata = ActorScope.Unknown;
+        private ActorInstanceId runtimeActorInstanceId;
+        [SerializeField] private string actorId = string.Empty;
+        [SerializeField] private ActorScope actorScope = ActorScope.Unknown;
+        [SerializeField] private ActorParticipationRecord.ActorParticipationPolicy participationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
         [SerializeField] private ActorCapabilitySurface capabilitySurface;
 
-        public abstract string ActorId { get; }
-        public virtual ActorRole ActorRoleMetadata => baseActorRoleMetadata;
-        public virtual ActorScope ActorScopeMetadata => baseActorScopeMetadata;
+        public virtual string ActorId => ActorIdValue.ToString();
+        public ActorId ActorIdValue => new(Normalize(actorId));
+        public abstract ActorRole ActorRoleMetadata { get; }
+        public virtual ActorScope ActorScopeMetadata => actorScope;
+        public virtual ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => participationPolicy;
         public virtual ActorCapabilitySurface CapabilitySurface
         {
             get
@@ -21,13 +25,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 return capabilitySurface;
             }
         }
-        public virtual ActorInstanceId RuntimeActorInstanceId => _runtimeActorInstanceId;
+        public virtual ActorInstanceId RuntimeActorInstanceId => runtimeActorInstanceId;
 
         public virtual ActorDefinitionRef ActorDefinitionRef => default;
 
         public void SetRuntimeActorInstanceId(ActorInstanceId actorInstanceId)
         {
-            _runtimeActorInstanceId = actorInstanceId.IsValid ? actorInstanceId : default;
+            runtimeActorInstanceId = actorInstanceId.IsValid ? actorInstanceId : default;
+        }
+
+        protected void SetActorIdValue(ActorId newActorId, string source)
+        {
+            if (!newActorId.IsValid)
+            {
+                string origin = ResolveOrigin(source, nameof(Actor), name);
+                throw new InvalidOperationException($"{origin} cannot bind an invalid ActorId. actor='{name}'.");
+            }
+
+            actorId = Normalize(newActorId.Value);
         }
 
         public abstract void ValidateLocalConfigurationOrThrow(string source);
@@ -48,6 +63,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         protected virtual void OnValidate()
         {
+            actorId = Normalize(actorId);
             EnsureCapabilitySurfaceResolved();
         }
 

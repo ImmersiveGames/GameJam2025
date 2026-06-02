@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryActorAttributeSetupResult Execute(
             ActivityEntryActorAttributeSetupCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityEntryActorAttributeRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)

@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityObjectSnapshotCaptureStageResult Execute(
             ActivityObjectSnapshotCaptureStageCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityObjectExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)

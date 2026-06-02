@@ -11,7 +11,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryPermissionTargetPreparationResult Execute(
             ActivityEntryPermissionTargetPreparationCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityEntryPermissionTargetRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)

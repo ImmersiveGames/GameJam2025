@@ -68,6 +68,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActorInstanceSource requires known ActorScope for playerActorId='{resolvedIdentity.PlayerActorId}'.");
                 }
 
+                ActorParticipationRecord.ActorParticipationPolicy participationPolicy = runtimeActor.ActorParticipationPolicy;
+                if (!Enum.IsDefined(typeof(ActorParticipationRecord.ActorParticipationPolicy), participationPolicy) ||
+                    participationPolicy == ActorParticipationRecord.ActorParticipationPolicy.None)
+                {
+                    throw new InvalidOperationException($"PlayerActorInstanceSource requires non-empty ActorParticipationPolicy for playerActorId='{resolvedIdentity.PlayerActorId}'.");
+                }
+
                 string stableActorId = resolvedIdentity.ActorId.ToString();
                 ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
                     identity,
@@ -85,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     runtimeActor.ActorRoleMetadata,
                     actorScope,
                     ActorSourceKind.PlayerParticipation,
-                    "all_activities_in_route",
+                    participationPolicy.ToString(),
                     actorRoot,
                     actorRoot.scene.name,
                     BuildTransformPath(actorRoot.transform),
@@ -102,10 +109,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     identity,
                     actorInstanceId,
                     participatesInCurrentEntry: true,
-                    retainedForRoute: true,
-                    policy: ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
+                    retainedForRoute: actorScope == ActorScope.RouteScoped,
+                    policy: participationPolicy,
                     explicitActivityIds: Array.Empty<string>(),
-                    policyMetadata: "all_activities_in_route",
+                    policyMetadata: participationPolicy.ToString(),
                     source: source,
                     reason: reason));
             }

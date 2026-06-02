@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityContentSceneUnloadDispatchStageResult Execute(
             ActivityContentSceneUnloadDispatchStageCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityContentReleaseRuntimeState releaseRuntimeState,
             ISessionActivityPendingOperationRunner pendingOperationRunner,
             ISessionActivityPendingOperationCallback pendingOperationCallback,
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
 
         private static SessionActivityPendingOperation BuildActivityContentReleasePendingOperation(
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             SessionActivityDefinition definition,
             int entrySequence,
             ActivityContentSceneUnloadCommand command)
@@ -184,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
 
         private static void EmitActivityContentSceneUnloadCommandIssued(
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             SessionActivityDefinition definition,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,

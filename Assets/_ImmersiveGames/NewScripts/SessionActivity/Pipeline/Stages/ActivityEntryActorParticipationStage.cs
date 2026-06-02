@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static ActivityEntryActorParticipationEnterResult ExecuteEnter(
             ActivityEntryActorParticipationEnterCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityEntryActorInventoryRuntimeBridge actorInventoryBridge,
             IActivityEntryActorParticipationRuntimeBridge participationBridge,
             List<SessionActivityFact> facts,

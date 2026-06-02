@@ -9,8 +9,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static SessionActivityPipeline.ActivityParticipantReadinessStageResult Execute(
             SessionActivityIdentity startedIdentity,
             SessionActivityIdentity expectedParticipantBindingIdentity,
-            SessionActivityPipeline.ParticipantBindingStageResult participantBindingResult,
-            ActivityPlayerActorRegistry registry)
+            ActivityEntryParticipantBindingResult participantBindingResult,
+            IReadOnlyList<PlayerActorIdentityRecord> activeActors)
         {
             if (!participantBindingResult.IsValid || !IsSameActivityCycle(participantBindingResult.Identity, expectedParticipantBindingIdentity))
             {
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     "required_participant_not_ready");
             }
 
-            if (!registry.TryGetActiveActorIdentities(startedIdentity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) || activeActors == null)
+            if (activeActors == null)
             {
                 return new SessionActivityPipeline.ActivityParticipantReadinessStageResult(
                     SessionActivityPipeline.ActivityParticipantReadinessStageOutcome.Failed,

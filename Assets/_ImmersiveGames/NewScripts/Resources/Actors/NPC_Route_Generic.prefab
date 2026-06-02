@@ -75,14 +75,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1b6f71a4c8e4d38b73a2d9c46a2f0a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  nonPlayerActorId: npc.route.generic.01
+  actorId: npc.route.generic.01
   actorScope: 2
-  participationPolicy: 1
+  participationPolicy: 2
   participatingActivities:
   - {fileID: 11400000, guid: 7e00c8fd7db0457389e637499f6fda17, type: 2}
   - {fileID: 11400000, guid: 489ed87ad55c44a8b48f37f42f0ea03d, type: 2}
-  presentationProfile: {fileID: 11400000, guid: f6181426ce0fb224e839479dd7cb196c, type: 2}
-  presentationEndpoint: {fileID: 2527674146183889330}
 --- !u!1 &1996203835894000634
 GameObject:
   m_ObjectHideFlags: 0

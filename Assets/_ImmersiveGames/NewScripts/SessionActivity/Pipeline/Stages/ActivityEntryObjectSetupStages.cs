@@ -17,7 +17,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityObjectContributorDiscoveryResult Execute(
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryIdentityRuntimeBridge identityBridge,
+            IActivityEntryFactRuntimeBridge factBridge,
+            IActivityEntryLogRuntimeBridge logBridge,
+            IActivityEntryPreparationRuntimeBridge preparationBridge,
             IActivityEntryObjectSetupRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -29,22 +32,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity discoveryIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            endpoint.SetCurrentIdentity(discoveryIdentity, SessionActivityStage.ActivitySetupStarted);
-            endpoint.EmitFact(
+            SessionActivityIdentity discoveryIdentity = identityBridge.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            identityBridge.SetCurrentIdentity(discoveryIdentity, SessionActivityStage.ActivitySetupStarted);
+            factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted,
                 discoveryIdentity,
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object contributor discovery started.");
-            endpoint.EmitSnapshot(
+            factBridge.EmitSnapshot(
                 snapshots,
                 "activity_object_contributor_discovery_started",
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object contributor discovery started.");
-            endpoint.LogEntryOwnerEvent(
+            logBridge.LogEntryOwnerEvent(
                 "ActivityEntryObjectContributorDiscoveryStarted",
                 discoveryIdentity,
                 command.Source,
@@ -53,21 +56,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (!HasLoadedSetForCurrentEntry(loadedSet, definition, entrySequence, command.Identity) || !loadedSet.HasScenes)
             {
-                endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
-                endpoint.EmitFact(
+                preparationBridge.ClearCurrentActivityObjectContributorDiscoveryResult();
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent,
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "activity_object_contributor_discovery_skipped_no_content",
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
-                endpoint.LogEntryOwnerEvent(
+                logBridge.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoverySkipped",
                     discoveryIdentity,
                     command.Source,
@@ -115,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 for (int reportIndex = 0; reportIndex < reports.Count; reportIndex++)
                 {
                     ActivityObjectContributionReport report = reports[reportIndex];
-                    endpoint.EmitFact(
+                    factBridge.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectContributorDiscovered,
                         discoveryIdentity,
@@ -124,20 +127,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         $"'{definition.ActivityId}' contributor discovered contentProfileId='{report.ContentProfileId}' sceneName='{report.SceneName}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroups='{FormatActivityStateResetGroups(report.SupportedResetGroups)}' releaseKinds='{FormatReleaseKinds(report.SupportedReleaseKinds)}'.");
                 }
 
-                endpoint.EmitFact(
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorDiscoveryCompleted,
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "activity_object_contributor_discovery_completed",
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
-                endpoint.LogEntryOwnerEvent(
+                logBridge.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoveryCompleted",
                     discoveryIdentity,
                     command.Source,
@@ -147,21 +150,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
             catch (Exception exception)
             {
-                endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
-                endpoint.EmitFact(
+                preparationBridge.ClearCurrentActivityObjectContributorDiscoveryResult();
+                factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed,
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
-                endpoint.EmitSnapshot(
+                factBridge.EmitSnapshot(
                     snapshots,
                     "activity_object_contributor_discovery_failed",
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
-                endpoint.LogEntryOwnerEvent(
+                logBridge.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoveryFailed",
                     discoveryIdentity,
                     command.Source,
@@ -262,7 +265,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityContentLoadedSet loadedSet,
             ActivitySetupInventoryBuilder builder,
             ActivitySetupInventoryValidator validator,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityEntryObjectSetupRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -405,7 +408,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
             ActivityObjectContributorDiscoveryResult discoveryResult,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts)
         {
             if (!command.IsValid)
@@ -585,7 +588,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             IReadOnlyList<ActorScanTarget> actorTargets,
             ActivityCapabilityInventoryCoordinator coordinator,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityEntryObjectSetupRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -723,7 +726,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -1001,7 +1004,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts)
         {
             if (!command.IsValid)
@@ -1735,7 +1738,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityDefinition definition,
             int entrySequence,
             SessionActivityIdentity identity,
-            IActivityEntryRuntimeEndpoint endpoint)
+            IActivityEntryRuntimeBridge endpoint)
         {
             ActivityObjectSnapshotRestoreCommand command = result.Command;
             return result.IsValid &&

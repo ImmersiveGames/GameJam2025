@@ -9,7 +9,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryPlayerInputBindingResult Execute(
             ActivityEntryPlayerInputBindingCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IPlayerInputBindingAdapter adapter,
             ActivityPlayerActorRegistry registry,
             List<SessionActivityFact> facts,

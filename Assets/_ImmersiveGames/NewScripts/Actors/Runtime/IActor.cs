@@ -9,6 +9,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         ActorDefinitionRef ActorDefinitionRef { get; }
         ActorRole ActorRoleMetadata { get; }
         ActorScope ActorScopeMetadata { get; }
+        ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy { get; }
         ActorCapabilitySurface CapabilitySurface { get; }
         void ValidateLocalConfigurationOrThrow(string source);
     }

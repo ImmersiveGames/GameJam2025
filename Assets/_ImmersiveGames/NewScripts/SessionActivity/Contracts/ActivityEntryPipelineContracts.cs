@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
@@ -11,6 +9,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeR
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
+using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
@@ -47,23 +46,83 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
-    public readonly struct ActivityEntryResult
+    public enum ActivityEntryPreparationResultKind
     {
-        public ActivityEntryResult(
-            bool accepted,
+        Unknown = 0,
+        Prepared = 1,
+        Failed = 2,
+        RejectedStaleOrForeign = 3
+    }
+
+    public readonly struct ActivityEntryPreparationResult
+    {
+        public ActivityEntryPreparationResult(
+            bool prepared,
+            SessionActivityIdentity identity,
+            string reason)
+            : this(prepared ? ActivityEntryPreparationResultKind.Prepared : ActivityEntryPreparationResultKind.Failed, identity, reason)
+        {
+        }
+
+        public ActivityEntryPreparationResult(
+            ActivityEntryPreparationResultKind kind,
             SessionActivityIdentity identity,
             string reason)
         {
-            Accepted = accepted;
+            Kind = kind;
             Identity = identity;
             Reason = Normalize(reason);
         }
 
-        public bool Accepted { get; }
+        public ActivityEntryPreparationResultKind Kind { get; }
+        public bool Prepared => Kind == ActivityEntryPreparationResultKind.Prepared;
         public SessionActivityIdentity Identity { get; }
         public string Reason { get; }
 
-        public bool IsValid => Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+        public bool IsValid => Kind != ActivityEntryPreparationResultKind.Unknown && Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public enum ActivityEntrySetupReadinessResultKind
+    {
+        Unknown = 0,
+        Completed = 1,
+        SkippedNoContent = 2,
+        Failed = 3,
+        RejectedStaleOrForeign = 4
+    }
+
+    public readonly struct ActivityEntrySetupReadinessResult
+    {
+        public ActivityEntrySetupReadinessResult(
+            bool completed,
+            SessionActivityIdentity identity,
+            string reason)
+            : this(completed ? ActivityEntrySetupReadinessResultKind.Completed : ActivityEntrySetupReadinessResultKind.Failed, identity, reason)
+        {
+        }
+
+        public ActivityEntrySetupReadinessResult(
+            ActivityEntrySetupReadinessResultKind kind,
+            SessionActivityIdentity identity,
+            string reason)
+        {
+            Kind = kind;
+            Identity = identity;
+            Reason = Normalize(reason);
+        }
+
+        public ActivityEntrySetupReadinessResultKind Kind { get; }
+        public bool Completed => Kind == ActivityEntrySetupReadinessResultKind.Completed;
+        public bool IsTerminalSuccess => Kind == ActivityEntrySetupReadinessResultKind.Completed || Kind == ActivityEntrySetupReadinessResultKind.SkippedNoContent;
+        public SessionActivityIdentity Identity { get; }
+        public string Reason { get; }
+
+        public bool IsValid => Kind != ActivityEntrySetupReadinessResultKind.Unknown && Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
 
         private static string Normalize(string value)
         {
@@ -799,10 +858,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
-    public interface IActivityEntryRuntimeEndpoint : IActivityEntryPipelineBoundary
+    public interface IActivityEntryIdentityRuntimeBridge : IActivityEntryPipelineBoundary
     {
         SessionActivityIdentity BuildIdentity(SessionActivityDefinition definition, SessionActivityStage stage, int entrySequence);
         void SetCurrentIdentity(SessionActivityIdentity identity, SessionActivityStage stage);
+    }
+
+    public interface IActivityEntryFactRuntimeBridge
+    {
         void EmitFact(
             List<SessionActivityFact> emittedFacts,
             SessionActivityFactKind kind,
@@ -816,7 +879,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string source,
             string reason,
             string message);
+    }
+
+    public interface IActivityEntryContentLoadedSetRuntimeBridge
+    {
         void SetCurrentActivityContentLoadedSet(ActivityContentLoadedSet loadedSet);
+        void ClearCurrentActivityContentLoadedSet();
+    }
+
+    public interface IActivityEntryContentPendingOperationRuntimeBridge
+    {
         SessionActivityPendingOperation BuildActivityContentPendingOperation(
             SessionActivityDefinition definition,
             int entrySequence,
@@ -825,7 +897,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         void RunActivityContentOperation(
             SessionActivityPendingOperation operation,
             ActivityContentSceneLoadCommand command);
+    }
 
+    public interface IActivityEntryContentRuntimeBridge :
+        IActivityEntryContentLoadedSetRuntimeBridge,
+        IActivityEntryContentPendingOperationRuntimeBridge
+    {
+    }
+
+    public interface IActivityEntryLogRuntimeBridge
+    {
         void LogEntryOwnerEvent(
             string eventName,
             SessionActivityIdentity identity,
@@ -840,11 +921,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason,
             bool completed = false,
             string detail = "");
+    }
 
-        void ClearCurrentActivityContentLoadedSet();
+    public interface IActivityEntryPreparationRuntimeBridge
+    {
         void ClearCurrentActivityObjectContributorDiscoveryResult();
         void ClearCurrentActivitySetupInventory();
         void ClearCurrentActorInventoryFeedResult();
+        void ResetMovementControlStateForEntry();
+        void BeginActivityActorScope(SessionActivityIdentity identity);
+        void ClearActiveActorParticipations(string activityId, int entrySequence, string source, string reason);
+        bool TryGetActivePlayerActorIdentities(SessionActivityIdentity identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors);
+        void EmitPredefinedVisualSetupReadyFactIfApplicable(
+            SessionActivityDefinition definition,
+            List<SessionActivityFact> facts,
+            SessionActivityIdentity readinessIdentity,
+            string source,
+            string reason,
+            string readinessPoint);
+
+        void ObserveActivitySceneContractOrSkip(
+            SessionActivityDefinition definition,
+            string source,
+            string reason,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence);
+    }
+
+    public interface IActivityEntryRuntimeBridge :
+        IActivityEntryIdentityRuntimeBridge,
+        IActivityEntryFactRuntimeBridge,
+        IActivityEntryContentRuntimeBridge,
+        IActivityEntryLogRuntimeBridge,
+        IActivityEntryPreparationRuntimeBridge
+    {
     }
 
     // Bridge transitoria SA-3B0: expõe apenas state técnico canônico e actor scan targets
@@ -897,6 +1008,109 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
 
 
+
+
+    public readonly struct ActivityEntryParticipantBindingCommand
+    {
+        public ActivityEntryParticipantBindingCommand(
+            SessionActivityIdentity identity,
+            SessionActivityDefinition definition,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Definition = definition;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public SessionActivityDefinition Definition { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Definition.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryParticipantBindingResolvedRecord
+    {
+        public ActivityEntryParticipantBindingResolvedRecord(
+            string requirementId,
+            ActivityParticipantRequirementKind participantKind,
+            PlayerActivityParticipantBinding participantBinding,
+            bool required)
+        {
+            RequirementId = Normalize(requirementId);
+            ParticipantKind = participantKind;
+            ParticipantBinding = participantBinding;
+            Required = required;
+        }
+
+        public string RequirementId { get; }
+        public ActivityParticipantRequirementKind ParticipantKind { get; }
+        public PlayerActivityParticipantBinding ParticipantBinding { get; }
+        public bool Required { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(RequirementId) &&
+            ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
+            ParticipantBinding.IsValid;
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryParticipantBindingResult
+    {
+        public ActivityEntryParticipantBindingResult(
+            SessionActivityIdentity identity,
+            int totalRequirements,
+            int requiredRequirements,
+            int resolvedRequirements,
+            int skippedRequirements,
+            int requiredResolvedRequirements,
+            IReadOnlyList<ActivityEntryParticipantBindingResolvedRecord> resolvedParticipants)
+        {
+            Identity = identity;
+            TotalRequirements = totalRequirements < 0 ? 0 : totalRequirements;
+            RequiredRequirements = requiredRequirements < 0 ? 0 : requiredRequirements;
+            ResolvedRequirements = resolvedRequirements < 0 ? 0 : resolvedRequirements;
+            SkippedRequirements = skippedRequirements < 0 ? 0 : skippedRequirements;
+            RequiredResolvedRequirements = requiredResolvedRequirements < 0 ? 0 : requiredResolvedRequirements;
+            ResolvedParticipants = resolvedParticipants ?? Array.Empty<ActivityEntryParticipantBindingResolvedRecord>();
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public int TotalRequirements { get; }
+        public int RequiredRequirements { get; }
+        public int ResolvedRequirements { get; }
+        public int SkippedRequirements { get; }
+        public int RequiredResolvedRequirements { get; }
+        public IReadOnlyList<ActivityEntryParticipantBindingResolvedRecord> ResolvedParticipants { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivityParticipantBindingCompleted &&
+            RequiredRequirements >= 0 &&
+            ResolvedRequirements >= 0 &&
+            SkippedRequirements >= 0 &&
+            RequiredResolvedRequirements >= 0 &&
+            RequiredResolvedRequirements <= RequiredRequirements &&
+            ResolvedParticipants != null;
+    }
 
     public interface IActivityEntryPermissionTargetRuntimeBridge
     {
@@ -953,7 +1167,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryPipeline
     {
-        Task<ActivityEntryResult> ExecuteAsync(ActivityEntryCommand command, CancellationToken cancellationToken = default);
+        ActivityEntryPreparationResult PrepareEntry(ActivityEntryCommand command);
+        ActivityEntrySetupReadinessResult ExecuteSetupAndReadiness(
+            ActivityEntryCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
         ActivityEntryContentLoadResult BeginContentLoad(
             ActivityEntryContentLoadCommand command,
             List<SessionActivityFact> facts,
@@ -964,6 +1182,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteSetupInfrastructure(
             ActivityEntryObjectSetupCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
+        ActivityEntryParticipantBindingResult ExecuteParticipantBinding(
+            ActivityEntryParticipantBindingCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(

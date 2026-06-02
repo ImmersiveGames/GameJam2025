@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityExitActorTeardownResult Execute(
             ActivityExitActorTeardownCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static void ExecuteActorPresentationRelease(
             ActivityExitActorTeardownCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static void ExecuteActorAttributeRelease(
             ActivityExitActorTeardownCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
@@ -334,7 +334,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static SessionActivityIdentity ExecuteActorParticipationExit(
             ActivityExitActorTeardownCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
@@ -464,7 +464,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static void ExecutePlayerActorParticipationExit(
             ActivityExitActorTeardownCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,

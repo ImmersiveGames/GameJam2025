@@ -14,7 +14,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityEntryActorPresentationSetupResult Execute(
             ActivityEntryActorPresentationSetupCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             IActivityEntryActorPresentationRuntimeBridge bridge,
             ActorPresentationPlanResolver planResolver,
             IActorPresentationMaterializationAdapter materializationAdapter,

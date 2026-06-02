@@ -82,7 +82,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityContentReleaseFinalizationStageResult Execute(
             ActivityContentReleaseFinalizationStageCommand command,
-            IActivityEntryRuntimeEndpoint endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityContentReleaseRuntimeState runtimeState,
             ActivityObjectExitRuntimeState objectExitRuntimeState,
             List<SessionActivityFact> facts,

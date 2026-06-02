@@ -8,23 +8,11 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
     [DisallowMultipleComponent]
     public sealed class PlayerActor : Actor
     {
-        [SerializeField, HideInInspector] private string actorId = string.Empty;
-
-        public override string ActorId => ActorIdValue.ToString();
-
-        public ActorId ActorIdValue => new(Normalize(actorId));
-
         public override ActorRole ActorRoleMetadata => ActorRole.PrimaryPlayer;
-        public override ActorScope ActorScopeMetadata => ActorScope.RouteScoped;
 
         public void SetActorId(ActorId newActorId)
         {
-            if (!newActorId.IsValid)
-            {
-                throw new InvalidOperationException($"PlayerActor cannot bind an invalid ActorId. actor='{name}'.");
-            }
-
-            actorId = newActorId.Value;
+            SetActorIdValue(newActorId, nameof(PlayerActor));
         }
 
         public override void ValidateLocalConfigurationOrThrow(string source)
@@ -35,16 +23,26 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 throw new InvalidOperationException($"{origin} requires runtime ActorId binding.");
             }
 
+            if (ActorScopeMetadata == ActorScope.Unknown)
+            {
+                throw new InvalidOperationException($"{origin} requires explicit actorScope.");
+            }
+
+            if (!Enum.IsDefined(typeof(ActorParticipationRecord.ActorParticipationPolicy), ActorParticipationPolicy) ||
+                ActorParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.None)
+            {
+                throw new InvalidOperationException($"{origin} requires valid non-empty participationPolicy.");
+            }
+
             if (CapabilitySurface == null)
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
         }
 
-        private void OnValidate()
+        protected override void OnValidate()
         {
             base.OnValidate();
-            actorId = Normalize(actorId);
         }
     }
 }

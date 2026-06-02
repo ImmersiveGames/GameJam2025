@@ -58,7 +58,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   actorId: 
-  displayName: 
+  actorScope: 2
+  participationPolicy: 1
 --- !u!114 &666666666666666666
 MonoBehaviour:
   m_ObjectHideFlags: 0
