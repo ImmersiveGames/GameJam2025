@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposto para congelamento antes de implementação.
+Aceito / congelado incrementalmente. Último checkpoint: `SA-ACTOR-1C1-H7B2 — PASS funcional` para `ActorScope.SessionScoped` estrutural, `ExitToMenu -> SessionReset` canônico e separação entre lifetime estrutural de Actor e lifetime próprio de componentes/capabilities.
 
 ## Área
 
@@ -4345,3 +4345,182 @@ Não cria ActivityExitPipeline.
 Não cria manager/coordinator.
 Não reintroduz Player/NonPlayer como owner.
 ```
+
+---
+
+## Checkpoint SA-ACTOR-1C1 — ActorScope.SessionScoped structural lifetime
+
+Status: `CLOSED / PASS funcional`.
+
+### Contexto
+
+O corte `SA-ACTOR-1C1` corrigiu uma fronteira de ownership em Actors dentro da Base 2.0: `ActorScope.SessionScoped` não pode ser apenas um enum nem uma configuração local do prefab. O scope precisa produzir identidade runtime, store/root session-owned, regras explícitas de teardown e integração com `ExitToMenu` sem criar trilho `Player/NonPlayer` paralelo.
+
+### Decisão congelada
+
+`ActorScope` decide apenas o lifetime estrutural do Actor.
+
+```text
+ActorScope.SessionScoped => o Actor estrutural sobrevive dentro da sessão.
+ActorScope.RouteScoped => o Actor estrutural sobrevive dentro da rota.
+ActorScope.ActivityScoped => o Actor estrutural vive só na Activity/entry.
+```
+
+`ActorScope.SessionScoped` não arrasta automaticamente:
+
+```text
+ActorPresentation
+ActorAttributes
+PowerUps
+Permission receivers
+Movement binding
+Camera binding
+PlayerInput binding
+qualquer capability/component local
+```
+
+Esses componentes/capabilities têm policy própria, como `ActivityScoped`, `RouteScoped`, `SessionScoped`, `ReleaseOnActivityExit`, `ReleaseOnRouteExit` ou equivalente local. A separação normativa é:
+
+```text
+ActorScope decide a sobrevivência estrutural do Actor.
+ComponentScope/CapabilityPolicy decide a sobrevivência de cada componente/capability.
+```
+
+### Owner correto
+
+| Decisão | Owner correto |
+|---|---|
+| `PlayerSlot`, seleção e `SessionParticipationContext` | `SessionOperational` / `PlayerParticipation` |
+| `actorScope` do player materializado | `PlayerSetDefinition.Entry.actorScope` -> `PlayerParticipation` |
+| Materialização/reuso do Actor na Activity | `ActivityEntryPipeline` |
+| Root/store session-owned do Actor estrutural | `SessionActorRuntimeStore` como índice técnico + adapter/root runtime |
+| Lifetime estrutural em `ActivityExit`, `RouteExit`, `SessionReset` | `SessionActivityPipeline` / `ActivityExitActorTeardownStage` / reset stage |
+| Lifetime de Presentation/Attribute/Permission/Movement/Camera | stages/policies locais das capabilities |
+| Encerramento de sessão ao sair para Menu | `SessionOperationalPipeline` detecta policy de destino; `SessionActivityPipeline` executa reset estrutural |
+
+### Regras de lifetime congeladas
+
+| Scope | ActivityExit | RouteExit | ExitToMenu / SessionReset |
+|---|---|---|---|
+| `ActivityScoped` | `Release` | `Release` se ainda ativo | `Release` |
+| `RouteScoped` | `Retain` | `Release` | `Release` |
+| `SessionScoped` | `Retain` | `Retain` | `Release` |
+
+`RouteExit` genérico não libera `SessionScoped`, pois uma troca futura `GameplayRouteA -> GameplayRouteB` deve preservar actors de sessão. `ExitToMenu` encerra a sessão de gameplay e, por isso, executa `SessionReset` depois do teardown/save da rota anterior.
+
+### Pontos implementados nos cortes H1-H7B2
+
+```text
+H1/H2 — Placement resolvido pela ActivityEntry usando fontes autorizadas, não pela scene física do actor persistente.
+H3 — PlayerActor runtime metadata vem do binding/materialization context, não de campos soltos do prefab.
+H4 — actorScope do Player sai do prefab e passa para PlayerSetDefinition.Entry.actorScope.
+H5 — restaura owner correto de placement para SessionScoped.
+H6 — RouteExit também emite decisão explícita para SessionScoped retido no SessionActorRuntimeStore.
+H7A — Observabilidade separa ActorLifetime de ComponentLifetime e reduz logs redundantes locais.
+H7B — Primitiva SessionReset libera SessionScoped estrutural.
+H7B1 — ExitToMenu chama SessionReset automaticamente após RouteExit/save-on-exit.
+H7B2 — SessionReset pós-RouteExit é permitido mesmo com pipeline terminal em ClosedForRouteExit.
+```
+
+### Observabilidade congelada
+
+Logs/facts mínimos esperados:
+
+```text
+ActorLifetimeDecisionResolved actorScope='SessionScoped' trigger='ActivityExit' decision='Retain'
+ActorLifetimeDecisionResolved actorScope='SessionScoped' trigger='RouteExit' decision='Retain'
+ActorLifetimeDecisionResolved actorScope='SessionScoped' trigger='SessionReset' decision='Release'
+ActorLifetimeReleased actorScope='SessionScoped' trigger='SessionReset'
+SessionResetCompleted sessionActorCount='0'
+```
+
+Logs de component/capability lifetime devem expor explicitamente que não seguem automaticamente `ActorScope`:
+
+```text
+[OBS][ComponentLifetime] event='ActorPresentationRetained|Released'
+actorScope='SessionScoped'
+componentKind='ActorPresentation'
+componentLifetimePolicy='ReleaseOnActivityExit|ReleaseOnRouteExit|...'
+releaseTrigger='ActivityExit|RouteExit|SessionReset'
+releaseDecision='Retain|Release'
+
+[OBS][ComponentLifetime] event='ActorAttributeReleased'
+actorScope='SessionScoped'
+componentKind='ActorAttribute'
+componentScope='ActivityScoped'
+releaseTrigger='ActivityExit'
+releaseDecision='Release'
+```
+
+### Evidência de smoke aceita
+
+Smoke canônico usado para fechamento:
+
+```text
+Boot -> Menu -> Sandbox
+Activity 01 entry
+CompleteActivationWindow
+RestartCurrentActivity
+CompleteActivationWindow
+CompleteCurrentActivity
+Activity 01 -> Activity 02
+BackToMenu / ExitToMenu
+```
+
+Critérios observados no fechamento:
+
+```text
+sem erro CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+sem invalid_required_placement
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+SessionParticipationContextPrepared com scope='SessionScoped'
+ActorPresentationPlanResolved com actorInstanceRuntimeId contendo '|session|Actor|actor.player.primary|SessionScoped'
+ActivityParticipantPlacementApplied
+ActivityParticipantResetApplied
+ActivityEntryParticipantBindingCompleted
+RouteActivitySaveSaveOnExitStageCompleted antes de SessionReset
+OperationalSessionResetAfterRouteExitStarted
+SessionResetStarted
+ActorLifetimeDecisionResolved trigger='SessionReset' decision='Release'
+ActorLifetimeReleased trigger='SessionReset'
+SessionResetCompleted sessionActorCount='0'
+OperationalSessionResetAfterRouteExitCompleted
+UnloadSceneCompleted scene='SessionActivitySandboxScene'
+```
+
+### Invariantes congeladas
+
+```text
+PlayerActor prefab não é owner de ActorId, ActorScope nem ParticipationPolicy runtime.
+PlayerSetDefinition.Entry.actorScope é a fonte autoral do actorScope do player materializado.
+SessionParticipationContext carrega participação resolvida antes do handoff.
+ActivityEntryPipeline materializa/reusa Actor a partir de ActivityParticipantBinding.
+SessionActorRuntimeStore é índice técnico, não owner de lifecycle.
+ActivityPlayerActorRegistry e ActivitySceneActorRegistry não decidem lifetime.
+ActorScope não decide lifetime de Presentation/Attribute/Permission/Movement/Camera.
+RouteExit genérico retém SessionScoped.
+ExitToMenu chama SessionReset após RouteExit/save-on-exit.
+SessionReset pode rodar após ClosedForRouteExit sem reabrir Activity lifecycle.
+```
+
+### Fora do escopo deste checkpoint
+
+```text
+Runtime join real.
+Multiplayer/split-screen.
+Progression Save real de actors.
+Policy avançada de PowerUps/Attributes além da observabilidade de ComponentLifetime.
+Pooling real de ActorPresentation.
+Redução global de logs de InputModes/Loading/Permission.
+```
+
+### Resultado
+
+`SA-ACTOR-1C1` fica fechado como PASS funcional para o objetivo de `ActorScope.SessionScoped` estrutural dentro da decomposição de `SessionActivity` Base 2.0. Novos cortes de components/capabilities devem respeitar a separação: Actor estrutural ≠ componente/capability material.
+

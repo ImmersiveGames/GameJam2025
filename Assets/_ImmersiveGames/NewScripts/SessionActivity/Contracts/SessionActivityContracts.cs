@@ -459,6 +459,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         PauseSimulation = 12,
         ResumeSimulation = 13,
         CloseForRouteExit = 14,
+        ResetSession = 15,
     }
 
     public enum SessionActivityPendingOperationKind

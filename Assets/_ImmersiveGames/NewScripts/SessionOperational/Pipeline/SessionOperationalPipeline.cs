@@ -492,6 +492,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] OperationalRouteActivitySaveSaveOnExitStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{saveOnExitResult.Kind}' reason='{saveOnExitResult.Reason}' detail='{saveOnExitResult.Detail}'.");
                 }
 
+                SessionActivitySessionResetResult sessionResetResult = ExecuteSessionResetAfterPreviousRouteExitIfRequired(
+                    command,
+                    previousCompletedRoute,
+                    handoffExitResult,
+                    sourceText,
+                    reasonText);
+                if (sessionResetResult.IsValid && sessionResetResult.IsFailed)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] Session reset after previous route exit failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' result='{sessionResetResult}'.");
+                }
+
                 OperationalPreviousRouteExitBoundaryResult previousRouteExitCompleteResult =
                     _previousRouteExitBoundary.Complete(previousRouteExitBoundaryCommand);
                 if (!previousRouteExitCompleteResult.IsCompleted)
@@ -1540,6 +1552,71 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 loadingCommand,
                 sourceText,
                 reasonText);
+        }
+
+        private SessionActivitySessionResetResult ExecuteSessionResetAfterPreviousRouteExitIfRequired(
+            SessionOperationalRouteCommand command,
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            OperationalHandoffExitResult handoffExitResult,
+            string source,
+            string reason)
+        {
+            if (!ShouldResetSessionAfterPreviousRouteExit(command, previousCompletedRoute, handoffExitResult))
+            {
+                return new SessionActivitySessionResetResult(
+                    SessionActivitySessionResetKind.NotRequired,
+                    previousCompletedRoute.ActivityIdentity,
+                    SessionActivityStage.Unknown,
+                    string.Empty,
+                    0,
+                    0,
+                    "session_reset_not_required",
+                    "route_does_not_end_session");
+            }
+
+            ISessionActivityRouteExitTeardownBoundary boundary = _dependencies.ResolveSessionActivityRouteExitTeardownBoundary();
+            if (boundary == null)
+            {
+                throw new InvalidOperationException("[FATAL][SessionOperationalPipeline][PreviousRouteExit] SessionActivity route-exit boundary ausente para session reset after route exit.");
+            }
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][SessionReset] OperationalSessionResetAfterRouteExitStarted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousActivityIdentity='{previousCompletedRoute.ActivityIdentity}' destinationSurfaceKind='{command.SurfaceKind}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Info);
+
+            SessionActivitySessionResetResult result = boundary.ResetSessionAfterRouteExit(
+                previousCompletedRoute.ActivityIdentity,
+                source,
+                reason);
+
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][SessionReset] OperationalSessionResetAfterRouteExitCompleted routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' previousRouteIdentity='{previousCompletedRoute.RouteIdentity}' previousActivityIdentity='{previousCompletedRoute.ActivityIdentity}' result='{result}' source='{source}' reason='{reason}'.",
+                result.IsFailed ? DebugUtility.Colors.Warning : DebugUtility.Colors.Success);
+
+            return result;
+        }
+
+        private static bool ShouldResetSessionAfterPreviousRouteExit(
+            SessionOperationalRouteCommand command,
+            SessionOperationalRouteSnapshot previousCompletedRoute,
+            OperationalHandoffExitResult handoffExitResult)
+        {
+            if (!previousCompletedRoute.IsValid || string.IsNullOrWhiteSpace(previousCompletedRoute.ActivityIdentity))
+            {
+                return false;
+            }
+
+            if (!handoffExitResult.IsCompleted)
+            {
+                return false;
+            }
+
+            if (command.CompletionHandoff != SessionOperationalRouteCompletionHandoffKind.NoHandoff)
+            {
+                return false;
+            }
+
+            return command.SurfaceKind == OperationalSurfaceKind.FrontendMenu;
         }
 
         private static OperationalRouteMaterializationBoundaryCommand BuildMaterializationBoundaryCommand(

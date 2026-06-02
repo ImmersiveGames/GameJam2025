@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposto para congelamento antes de implementação.
+Aceito / congelado incrementalmente. Último checkpoint relacionado: `SA-ACTOR-1C1-H7B2 — PASS funcional`, confirmando que `PlayerParticipation` entrega `ActorScope.SessionScoped` por `PlayerSetDefinition.Entry.actorScope` e que `ActivityEntryPipeline` materializa o Actor sem usar o prefab como owner de scope/participation policy.
 
 ## Área
 
@@ -962,3 +962,81 @@ ActivityEntryPipeline materializa Actor e executa bindings pós-materialização
 ```
 
 Nenhum patch em `Camera`, `Movement`, `Permission`, `ActorDiscovery` ou `PlayerActorMaterialization` deve ser aceito antes de `SA-PART-0` definir o contexto de participação.
+
+---
+
+## Checkpoint SA-ACTOR-1C1 — Player actorScope authoring e materialization boundary
+
+Status: `CLOSED / PASS funcional`.
+
+### Decisão adicionada
+
+Para player materializado por `PlayerParticipation`, o prefab `PlayerActor` não é a fonte normativa de:
+
+```text
+ActorId
+ActorScope
+ParticipationPolicy
+```
+
+O owner correto é:
+
+```text
+PlayerSetDefinition.Entry.actorScope
+  -> OperationalPlayerParticipationStage
+  -> SessionParticipationContext / SessionParticipantBinding
+  -> ActivityParticipantBinding
+  -> ActivityEntryPipeline / PlayerActorMaterializationAdapter
+  -> PlayerActor runtime metadata
+```
+
+### Justificativa
+
+`PlayerActor` é um Actor, mas sua origem é diferente de actors scene-authored:
+
+```text
+PlayerActor:
+  resolvido antes do handoff pelo domínio PlayerParticipation.
+  materializado pela ActivityEntryPipeline.
+  recebe metadata runtime do binding resolvido.
+
+Scene-authored Actor:
+  descoberto por scan de scenes autorizadas.
+  declara actorId/scope/policy em seu componente especializado/local.
+```
+
+Portanto, usar o prefab `PlayerActor` como owner de `ActorScope` reintroduz owner duplicado. O prefab é contrato físico/materializável: componente, `PlayerInput`, capability surface, endpoints e presentation/capability anchors. A participação e o lifetime estrutural do player vêm do contexto de participação resolvido.
+
+### Invariantes congeladas
+
+```text
+PlayerSetDefinition.Entry.actorScope é obrigatório para player participation seed.
+OperationalPlayerParticipationStage não hardcoda RouteScoped.
+PlayerActorMaterializationAdapter não lê ActorScope do prefab como fonte normativa.
+PlayerActor runtime recebe metadata resolvida via BindRuntimeMetadata ou equivalente.
+ActivityEntryPipeline não cria participante default fora do contexto recebido.
+Scene-authored actors continuam usando authoring local descoberto via scan.
+```
+
+### Smoke aceito
+
+```text
+SessionParticipationContextPrepared ... participant.primary_player ... scope='SessionScoped'
+ActorMaterializationPlanEntryResolved ... actorScope='SessionScoped'
+ActivityParticipantActorMaterialized ... actorScope='SessionScoped'
+ActorPresentationPlanResolved ... actorInstanceRuntimeId='...|session|Actor|actor.player.primary|SessionScoped'
+ActivityParticipantPlacementApplied
+ActivityParticipantResetApplied
+ActivityEntryParticipantBindingCompleted
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+sem FATAL
+sem Exception
+sem route_transition_failed
+```
+
+### Relação com ExitToMenu
+
+`PlayerParticipation` não decide quando uma sessão termina. `SessionOperationalPipeline` detecta que o destino `FrontendMenu` encerra sessão, e `SessionActivityPipeline` executa `SessionReset` após `RouteExit`/save-on-exit para liberar actors `SessionScoped` estruturais.
+

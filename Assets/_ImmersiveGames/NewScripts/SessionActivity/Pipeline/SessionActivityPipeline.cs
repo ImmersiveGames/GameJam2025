@@ -563,6 +563,103 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason);
         }
 
+        public SessionActivityCommand BuildResetSessionCommand(string source, string reason)
+        {
+            EnsureStartedOrFail("ResetSessionCommand");
+            return new SessionActivityCommand(
+                SessionActivityCommandKind.ResetSession,
+                _state.CurrentIdentity,
+                source,
+                reason);
+        }
+
+        public SessionActivityCommandResult ResetSession(string source, string reason)
+        {
+            if (!_state.HasStarted)
+            {
+                return RejectWithoutActiveIdentity(
+                    SessionActivityCommandKind.ResetSession,
+                    source,
+                    reason,
+                    "session_reset_requires_started_pipeline");
+            }
+
+            return Execute(BuildResetSessionCommand(source, reason));
+        }
+
+        public SessionActivitySessionResetResult ResetSessionAfterRouteExit(string sessionStateId, string source, string reason)
+        {
+            string normalizedSessionStateId = Normalize(sessionStateId);
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+
+            if (!string.Equals(normalizedSessionStateId, _sessionId, StringComparison.Ordinal))
+            {
+                return new SessionActivitySessionResetResult(
+                    SessionActivitySessionResetKind.Failed,
+                    _sessionId,
+                    _state.CurrentStage,
+                    _state.CurrentDefinition.ActivityId,
+                    _sessionActorRuntimeStore.Count,
+                    _sessionActorRuntimeStore.Count,
+                    "session_reset_session_mismatch",
+                    $"requestedSessionStateId='{normalizedSessionStateId}' activeSessionStateId='{_sessionId}'");
+            }
+
+            if (!_state.HasStarted)
+            {
+                return new SessionActivitySessionResetResult(
+                    SessionActivitySessionResetKind.NotRequired,
+                    _sessionId,
+                    _state.CurrentStage,
+                    _state.CurrentDefinition.ActivityId,
+                    0,
+                    0,
+                    "session_reset_not_required",
+                    "pipeline_not_started");
+            }
+
+            if (_state.CurrentPendingOperation.IsValid)
+            {
+                return new SessionActivitySessionResetResult(
+                    SessionActivitySessionResetKind.Failed,
+                    _sessionId,
+                    _state.CurrentStage,
+                    _state.CurrentDefinition.ActivityId,
+                    _sessionActorRuntimeStore.Count,
+                    _sessionActorRuntimeStore.Count,
+                    "session_reset_blocked_pending_operation",
+                    $"pendingOperation='{_state.CurrentPendingOperation.OperationKind}'");
+            }
+
+            int beforeCount = _sessionActorRuntimeStore.Count;
+            if (_state.HasCompleted && beforeCount == 0)
+            {
+                return new SessionActivitySessionResetResult(
+                    SessionActivitySessionResetKind.NotRequired,
+                    _sessionId,
+                    _state.CurrentStage,
+                    _state.CurrentDefinition.ActivityId,
+                    0,
+                    0,
+                    "session_reset_not_required",
+                    "pipeline_already_completed_and_session_store_empty");
+            }
+
+            SessionActivityCommandResult result = ResetSession(normalizedSource, normalizedReason);
+            int afterCount = _sessionActorRuntimeStore.Count;
+            bool completed = result.Kind == SessionActivityCommandResultKind.Completed && afterCount == 0;
+            return new SessionActivitySessionResetResult(
+                completed ? SessionActivitySessionResetKind.Completed : SessionActivitySessionResetKind.Failed,
+                _sessionId,
+                _state.CurrentStage,
+                _state.CurrentDefinition.ActivityId,
+                beforeCount,
+                afterCount,
+                completed ? "session_reset_completed" : "session_reset_failed",
+                completed ? "session_scoped_actors_released" : $"commandResult='{result.Kind}' remaining='{afterCount}' reason='{result.Reason}'");
+        }
+
         public SessionActivityCommandResult Start(string source, string reason)
         {
             if (IsTerminalCompleted())
@@ -917,7 +1014,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityCommand is invalid.");
             }
 
-            if (IsTerminalCompleted())
+            if (IsTerminalCompleted() && command.Kind != SessionActivityCommandKind.ResetSession)
             {
                 return RejectTerminalCommand(command.Kind, command.Source, command.Reason);
             }
@@ -964,6 +1061,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     break;
                 case SessionActivityCommandKind.CloseForRouteExit:
                     EmitCloseForRouteExit(command, emittedFacts, emittedSnapshots);
+                    break;
+                case SessionActivityCommandKind.ResetSession:
+                    EmitSessionReset(command, emittedFacts, emittedSnapshots);
                     break;
                 case SessionActivityCommandKind.GoToNextActivity:
                 case SessionActivityCommandKind.GoToPreviousActivity:
@@ -2139,6 +2239,85 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command,
                 emittedFacts,
                 emittedFacts.Count > 0 ? emittedFacts[emittedFacts.Count - 1].Reason : string.Empty);
+        }
+
+        private void EmitSessionReset(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
+        {
+            if (!_state.HasStarted)
+            {
+                EmitRejected(
+                    command,
+                    facts,
+                    "session_reset_requires_started_pipeline",
+                    "Session reset requires a started pipeline.",
+                    command.Identity,
+                    true);
+                return;
+            }
+
+            if (_state.CurrentPendingOperation.IsValid)
+            {
+                EmitRejected(
+                    command,
+                    facts,
+                    "session_reset_blocked_pending_operation",
+                    $"Session reset blocked while pending operation '{_state.CurrentPendingOperation.OperationKind}' is active.",
+                    _state.CurrentIdentity,
+                    true);
+                return;
+            }
+
+            SessionActivityDefinition currentDefinition = _state.CurrentDefinition.IsValid
+                ? _state.CurrentDefinition
+                : ResolveFirstActivityOrFail();
+            int entrySequence = _state.CurrentEntrySequence > 0 ? _state.CurrentEntrySequence : 1;
+            SessionActivityIdentity resetIdentity = BuildIdentity(currentDefinition, SessionActivityStage.Completed, entrySequence);
+
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][SessionReset] event='SessionResetStarted' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{resetIdentity.ActivityId}' entrySequence='{resetIdentity.EntrySequence}' source='{command.Source}' reason='{command.Reason}' sessionActorCount='{_sessionActorRuntimeStore.Count}'.",
+                DebugUtility.Colors.Info);
+
+            _state.SetCurrentIdentity(resetIdentity, SessionActivityStage.Completed);
+
+            ReleaseSessionScopedActors(resetIdentity, facts, command.Source, command.Reason);
+            ReleaseIndexedRouteScopedPlayerActors();
+            _sessionActorRuntimeStore.Clear();
+            _activityPlayerActorRegistry.ClearAllRouteScopedIndexes();
+            _activitySceneActorRegistry.ClearAllRouteRetained();
+            _activityEntryPipeline.ResetState();
+            _activityContentReleaseRuntimeState.ClearCurrentLoadedSet(resetIdentity.ActivityId, resetIdentity.EntrySequence, "SessionActivityPipeline", "session_reset");
+            _activityContentReleaseRuntimeState.ClearPendingReleaseContext(resetIdentity.ActivityId, resetIdentity.EntrySequence, "SessionActivityPipeline", "session_reset");
+            _activityContentReleaseRuntimeState.SetAwaitingContinuation(false, resetIdentity.ActivityId, resetIdentity.EntrySequence, "SessionActivityPipeline", "session_reset");
+            _activityObjectExitRuntimeState.ClearAll(resetIdentity.ActivityId, resetIdentity.EntrySequence, "SessionActivityPipeline", "session_reset");
+            _activityActorExitRuntimeState.ClearAll(resetIdentity.ActivityId, resetIdentity.EntrySequence, "SessionActivityPipeline", "session_reset");
+            _lastSessionParticipationContext = null;
+            _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
+            _lastActivityParticipationContext = null;
+            _pendingContinuationExitTeardownCompleted = false;
+            _routeExitActorTeardownCompleted = false;
+            _pendingTransitionResolution = default;
+            _pendingTransitionCurtainReveal = false;
+            _pendingTransitionCurtainClosed = false;
+            _pendingTransitionLoadingVisible = false;
+            _pendingInternalActivityTransition = default;
+            _pendingRestartCompletionActivityId = string.Empty;
+            _pendingRestartCompletionEntrySequence = 0;
+            _activeRailKind = SessionActivityRailKind.None;
+            _state.SetExecutionState(ActivityExecutionState.Stopped);
+            _state.MarkCompleted();
+
+            EmitFact(
+                facts,
+                SessionActivityFactKind.PipelineCompleted,
+                resetIdentity,
+                command.Source,
+                command.Reason,
+                $"Session reset completed. sessionScopedActorsRemaining='{_sessionActorRuntimeStore.Count}'.");
+            EmitSnapshot(snapshots, "session_reset_completed", command.Source, command.Reason, "Session reset completed.");
+
+            DebugUtility.Log(typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][SessionReset] event='SessionResetCompleted' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{resetIdentity.ActivityId}' entrySequence='{resetIdentity.EntrySequence}' source='{command.Source}' reason='{command.Reason}' sessionActorCount='{_sessionActorRuntimeStore.Count}'.",
+                DebugUtility.Colors.Success);
         }
 
         private void EmitStart(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -6130,6 +6309,11 @@ private void EmitActorPresentationReleaseGenericStage(
             }
 
             if (kind == SessionActivityCommandKind.CloseForRouteExit)
+            {
+                return _state.CurrentIdentity;
+            }
+
+            if (kind == SessionActivityCommandKind.ResetSession)
             {
                 return _state.CurrentIdentity;
             }

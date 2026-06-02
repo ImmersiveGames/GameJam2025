@@ -192,6 +192,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             LogResult("RestartCurrentActivity", result);
         }
 
+        public void ResetSession()
+        {
+            EnsurePipeline();
+            SessionActivityCommandResult result = _pipeline.ResetSession(QaSource("ResetSession"), QaReason("ResetSession"));
+            LogResult("ResetSession", result);
+        }
+
+        public SessionActivitySessionResetResult ResetSessionAfterRouteExit(
+            string sessionStateId,
+            string source,
+            string reason)
+        {
+            EnsurePipeline();
+            return _pipeline.ResetSessionAfterRouteExit(sessionStateId, source, reason);
+        }
+
         public void GoToActivity(string activityId)
         {
             throw new InvalidOperationException(

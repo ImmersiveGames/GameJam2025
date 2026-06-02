@@ -280,3 +280,17 @@ Status: AUDITED / NO RUNTIME CHANGE.
 - Risco futuro registrado: há superfícies de Actor ainda nomeadas `NonPlayer*` com filtro autoral por activity ids textuais; isso deve virar `ActivityId` tipado em corte próprio de Actor/Activity authoring refs, sem tratar `NonPlayer` como domínio.
 - Próximos cortes possíveis, não automáticos: `SA-IDREF-6A` ActivityObject typed refs, `SA-IDREF-6B` Activity authoring refs, `SA-IDREF-6C` Presentation refs, `SA-IDREF-6D` Attribute refs, `SA-IDREF-6E` Actor ActivityId refs / remover resíduo de taxonomia NonPlayer.
 - Não houve runtime change; não há compile/smoke novo exigido.
+
+### Checkpoint SA-ACTOR-1C1 — ActorScope.SessionScoped structural lifetime
+
+Status: CLOSED / PASS funcional.
+
+- `PlayerSetDefinition.Entry.actorScope` é a fonte autoral do scope do player materializado.
+- `PlayerActor` prefab não é owner de `ActorId`, `ActorScope` ou `ParticipationPolicy` runtime.
+- `ActorScope.SessionScoped` decide lifetime estrutural do Actor, não lifetime automático de `Presentation`, `Attributes`, `Permission`, `Movement`, `Camera` ou outras capabilities.
+- `SessionScoped + ActivityExit => Retain`.
+- `SessionScoped + RouteExit => Retain`.
+- `SessionScoped + ExitToMenu/SessionReset => Release`.
+- `ExitToMenu` chama `SessionReset` canônico após `RouteExit`/save-on-exit.
+- Smoke aceito: sem `FATAL`, sem `Exception`, sem `route_transition_failed`, sem `checkpointStatus='Failed'`; `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` passaram; `SessionResetCompleted sessionActorCount='0'` observado.
+
