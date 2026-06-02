@@ -19,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 PlayerSelectionId playerSelectionId,
                 ActorDefinitionId actorDefinitionId,
                 ActorId actorId,
+                ActorScope actorScope,
                 bool required,
                 ActorDefinitionAsset actorDefinition)
             {
@@ -26,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 PlayerSelectionId = playerSelectionId;
                 ActorDefinitionId = actorDefinitionId;
                 ActorId = actorId;
+                ActorScope = actorScope;
                 Required = required;
                 ActorDefinition = actorDefinition;
             }
@@ -34,6 +36,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             public PlayerSelectionId PlayerSelectionId { get; }
             public ActorDefinitionId ActorDefinitionId { get; }
             public ActorId ActorId { get; }
+            public ActorScope ActorScope { get; }
             public bool Required { get; }
             public ActorDefinitionAsset ActorDefinition { get; }
             public GameObject Prefab => ActorDefinition != null ? ActorDefinition.PrefabReference : null;
@@ -46,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 PlayerSelectionId.IsValid &&
                 ActorDefinitionId.IsValid &&
                 ActorId.IsValid &&
+                ActorScope != ActorScope.Unknown &&
                 ActorDefinition != null;
         }
 
@@ -55,6 +59,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             [SerializeField] private string playerSlotId;
             [SerializeField] private string playerSelectionId;
             [SerializeField] private ActorDefinitionAsset actorDefinition;
+            [SerializeField] private ActorScope actorScope;
             [SerializeField] private bool required;
 
             public PlayerSlotId PlayerSlotId => new(Normalize(playerSlotId));
@@ -62,6 +67,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             public ActorDefinitionAsset ActorDefinition => actorDefinition;
             public ActorDefinitionId ActorDefinitionId => new(actorDefinition != null ? actorDefinition.ActorDefinitionId : string.Empty);
             public ActorId ActorId => new(actorDefinition != null ? actorDefinition.ActorId : string.Empty);
+            public ActorScope ActorScope => actorScope;
             public bool HasPrefabReference => actorDefinition != null && actorDefinition.PrefabReference != null;
             public ActorPlacementMode PlacementMode => actorDefinition != null ? actorDefinition.PlacementMode : ActorPlacementMode.None;
             public bool HasPlacementPlan => actorDefinition != null && actorDefinition.HasPlacementPlan;
@@ -132,6 +138,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     return false;
                 }
 
+                if (entries[i].ActorScope == ActorScope.Unknown)
+                {
+                    errorMessage = $"entries[{i}].actorScope is required playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}'.";
+                    return false;
+                }
+
                 if (string.Equals(playerSlotId.Value, actorDefinitionId.Value, StringComparison.Ordinal) ||
                     string.Equals(playerSlotId.Value, actorId.Value, StringComparison.Ordinal) ||
                     string.Equals(playerSelectionId.Value, actorDefinitionId.Value, StringComparison.Ordinal) ||
@@ -187,6 +199,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     entries[i].PlayerSelectionId,
                     entries[i].ActorDefinitionId,
                     entries[i].ActorId,
+                    entries[i].ActorScope,
                     entries[i].Required,
                     entries[i].HasPrefabReference,
                     entries[i].PlacementMode,
@@ -218,6 +231,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     entries[i].PlayerSelectionId,
                     entries[i].ActorDefinitionId,
                     entries[i].ActorId,
+                    entries[i].ActorScope,
                     entries[i].Required,
                     entries[i].ActorDefinition));
             }

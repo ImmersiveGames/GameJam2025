@@ -57,9 +57,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e0c3f028f6c34b489b52b01f0c1abfa2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  actorId: 
-  actorScope: 2
-  participationPolicy: 1
+  capabilitySurface: {fileID: 666666666666666666}
 --- !u!114 &666666666666666666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -174,13 +172,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   followTarget: {fileID: 910000000000000002}
   lookAtTarget: {fileID: 920000000000000002}
-  pipelineId: 
-  sessionId: 
-  activityId: 
-  activityOrdinal: 0
-  entrySequence: 0
-  playerSlotId: 
-  playerActorId: 
 --- !u!114 &444444444444444444
 MonoBehaviour:
   m_ObjectHideFlags: 0

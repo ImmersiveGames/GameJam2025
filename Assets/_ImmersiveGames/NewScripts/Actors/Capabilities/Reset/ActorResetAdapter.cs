@@ -104,7 +104,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                             continue;
                         }
 
-                        if (!string.IsNullOrWhiteSpace(target.PlacementId))
+                        if (!target.HasPlacement && !string.IsNullOrWhiteSpace(target.PlacementId))
                         {
                             ActorResetPlacementResolution resolution = _resolver.ResolvePlacementFromMarker(instance.scene, target.PlacementId);
                             if (resolution.Status == ActorResetPlacementResolutionStatus.Duplicate)

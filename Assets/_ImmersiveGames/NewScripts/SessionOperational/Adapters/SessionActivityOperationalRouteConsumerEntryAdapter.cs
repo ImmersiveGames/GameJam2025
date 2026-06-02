@@ -113,6 +113,12 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
 
                 SessionParticipantBinding participant = ResolveSessionParticipantForMaterializationSeedOrFail(entry, sessionParticipationContext);
+                if (participant.ActorScope != entry.ActorScope)
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Actor scope mismatch between PlayerSetDefinition materialization seed and SessionParticipationContext participantId='{participant.ParticipantId}' actorDefinitionId='{participant.ActorDefinitionId}' seedScope='{entry.ActorScope}' participantScope='{participant.ActorScope}'.");
+                }
+
                 materializationPlanEntries.Add(new SessionActivityActorMaterializationPlanEntry(
                     participant.ParticipantId,
                     entry.Required,
@@ -123,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     entry.LocalRotation));
 
                 DebugUtility.Log(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
-                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' resolutionKey='ActorDefinitionIdToSessionParticipantId'.");
+                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' actorScope='{participant.ActorScope}' resolutionKey='ActorDefinitionIdToSessionParticipantId'.");
             }
 
             return materializationPlanEntries;

@@ -57,6 +57,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 throw new InvalidOperationException("Actor scene registration requires actor and actor instance.");
             }
 
+            if (identity.ActorScope == ActorScope.SessionScoped)
+            {
+                throw new InvalidOperationException($"Scene-authored Actor cannot be SessionScoped in v0. actorId='{identity.ActorId}'.");
+            }
+
             SceneAuthoredActorRuntimeEntry entry = new(identity, actor, actorInstance, default);
             if (!entry.IsValid)
             {

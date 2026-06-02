@@ -276,7 +276,7 @@ Status: AUDITED / NO RUNTIME CHANGE.
 - `BuildPlayerActorId` permanece restrito ao ponto de criação/materialização do `PlayerActorIdentityRecord`.
 - Strings restantes foram classificadas como authoring/Unity/log/domínio próprio: `participantId` serializado com projeção typed, `ActivityObject targetId/roleId`, ids de Activity/profile, capability ids/paths, receiver ids técnicos, Presentation slot local e Attribute definition ids.
 - Correção de enquadramento registrada: `NonPlayer` não é categoria normativa; qualquer `NonPlayer*` remanescente é resíduo lexical/legado ou nome concreto ainda não convergido para `Actor + ActorRole + ActorScope + Capability/Endpoint`.
+- Fechamento documental registrado: `SA-ACTOR-1B1*` concluiu a limpeza de ownership de lifetime dos `Actors`; `ActorScope` ficou congelado como fonte canônica de `lifetime/retention/release`, `ActivityActorExitRuntimeState` ficou como `correlation store` técnico, `ActivityPlayerActorRegistry` ficou como índice técnico puro e `SessionScoped` permanece fora de escopo.
 - Risco futuro registrado: há superfícies de Actor ainda nomeadas `NonPlayer*` com filtro autoral por activity ids textuais; isso deve virar `ActivityId` tipado em corte próprio de Actor/Activity authoring refs, sem tratar `NonPlayer` como domínio.
 - Próximos cortes possíveis, não automáticos: `SA-IDREF-6A` ActivityObject typed refs, `SA-IDREF-6B` Activity authoring refs, `SA-IDREF-6C` Presentation refs, `SA-IDREF-6D` Attribute refs, `SA-IDREF-6E` Actor ActivityId refs / remover resíduo de taxonomia NonPlayer.
 - Não houve runtime change; não há compile/smoke novo exigido.
-

@@ -27,6 +27,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId playerSelectionId,
             ActorDefinitionId actorDefinitionId,
             ActorId actorId,
+            ActorScope actorScope,
             bool required,
             bool hasPrefabReference,
             ActorPlacementMode placementMode,
@@ -36,6 +37,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId = playerSelectionId;
             ActorDefinitionId = actorDefinitionId;
             ActorId = actorId;
+            ActorScope = actorScope;
             Required = required;
             HasPrefabReference = hasPrefabReference;
             PlacementMode = placementMode;
@@ -46,6 +48,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public PlayerSelectionId PlayerSelectionId { get; }
         public ActorDefinitionId ActorDefinitionId { get; }
         public ActorId ActorId { get; }
+        public ActorScope ActorScope { get; }
         public bool Required { get; }
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
@@ -54,7 +57,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSlotId.IsValid &&
             PlayerSelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
-            ActorId.IsValid;
+            ActorId.IsValid &&
+            ActorScope != ActorScope.Unknown;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -74,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId playerSelectionId,
             ActorDefinitionId actorDefinitionId,
             ActorId actorId,
+            ActorScope actorScope,
             bool required,
             bool hasPrefabReference,
             ActorPlacementMode placementMode,
@@ -84,6 +89,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId = playerSelectionId;
             ActorDefinitionId = actorDefinitionId;
             ActorId = actorId;
+            ActorScope = actorScope;
             Required = required;
             HasPrefabReference = hasPrefabReference;
             PlacementMode = placementMode;
@@ -95,6 +101,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public PlayerSelectionId PlayerSelectionId { get; }
         public ActorDefinitionId ActorDefinitionId { get; }
         public ActorId ActorId { get; }
+        public ActorScope ActorScope { get; }
         public bool Required { get; }
         public bool HasPrefabReference { get; }
         public ActorPlacementMode PlacementMode { get; }
@@ -105,6 +112,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             PlayerSelectionId.IsValid &&
             ActorDefinitionId.IsValid &&
             ActorId.IsValid &&
+            ActorScope != ActorScope.Unknown &&
             Status != PlayerParticipationSeedEntryStatus.Unknown;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();

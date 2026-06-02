@@ -135,6 +135,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
             return actorScope switch
             {
+                ActorScope.SessionScoped => new ActorInstanceId(
+                    $"{identity.PipelineId}|{identity.SessionId}|session|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
                 ActorScope.RouteScoped => new ActorInstanceId(
                     $"{identity.PipelineId}|{identity.SessionId}|route|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
                 ActorScope.ActivityScoped => new ActorInstanceId(
@@ -169,6 +171,63 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Unknown = 0,
         ActivityScoped = 1,
         RouteScoped = 2,
+        SessionScoped = 3,
+    }
+
+    public enum ActorLifetimeTrigger
+    {
+        Unknown = 0,
+        ActivityExit = 1,
+        RouteExit = 2,
+        SessionReset = 3,
+    }
+
+    public enum ActorLifetimeDecision
+    {
+        Unknown = 0,
+        Retain = 1,
+        Release = 2,
+    }
+
+    public static class ActorLifetimePolicy
+    {
+        public static ActorLifetimeDecision ResolveDecision(ActorScope actorScope, ActorLifetimeTrigger trigger)
+        {
+            if (actorScope == ActorScope.Unknown)
+            {
+                throw new InvalidOperationException("ActorLifetimePolicy requires explicit ActorScope.");
+            }
+
+            if (trigger == ActorLifetimeTrigger.Unknown)
+            {
+                throw new InvalidOperationException("ActorLifetimePolicy requires explicit ActorLifetimeTrigger.");
+            }
+
+            return trigger switch
+            {
+                ActorLifetimeTrigger.ActivityExit => actorScope switch
+                {
+                    ActorScope.ActivityScoped => ActorLifetimeDecision.Release,
+                    ActorScope.RouteScoped => ActorLifetimeDecision.Retain,
+                    ActorScope.SessionScoped => ActorLifetimeDecision.Retain,
+                    _ => throw new InvalidOperationException($"Unsupported ActorScope='{actorScope}' for trigger='{trigger}'."),
+                },
+                ActorLifetimeTrigger.RouteExit => actorScope switch
+                {
+                    ActorScope.ActivityScoped => ActorLifetimeDecision.Release,
+                    ActorScope.RouteScoped => ActorLifetimeDecision.Release,
+                    ActorScope.SessionScoped => ActorLifetimeDecision.Retain,
+                    _ => throw new InvalidOperationException($"Unsupported ActorScope='{actorScope}' for trigger='{trigger}'."),
+                },
+                ActorLifetimeTrigger.SessionReset => ActorLifetimeDecision.Release,
+                _ => throw new InvalidOperationException($"Unsupported ActorLifetimeTrigger='{trigger}'."),
+            };
+        }
+
+        public static bool IsRetainedAcrossActivity(ActorScope actorScope)
+        {
+            return ResolveDecision(actorScope, ActorLifetimeTrigger.ActivityExit) == ActorLifetimeDecision.Retain;
+        }
     }
 
     public enum ActorSourceKind
@@ -290,7 +349,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             SessionActivityIdentity identity,
             ActorInstanceId actorInstanceId,
             bool participatesInCurrentEntry,
-            bool retainedForRoute,
             ActorParticipationPolicy policy,
             IReadOnlyList<string> explicitActivityIds,
             string policyMetadata,
@@ -300,7 +358,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             Identity = identity;
             ActorInstanceId = actorInstanceId;
             ParticipatesInCurrentEntry = participatesInCurrentEntry;
-            RetainedForRoute = retainedForRoute;
             Policy = policy;
             ExplicitActivityIds = explicitActivityIds ?? Array.Empty<string>();
             PolicyMetadata = Normalize(policyMetadata);
@@ -311,7 +368,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public SessionActivityIdentity Identity { get; }
         public ActorInstanceId ActorInstanceId { get; }
         public bool ParticipatesInCurrentEntry { get; }
-        public bool RetainedForRoute { get; }
         public ActorParticipationPolicy Policy { get; }
         public IReadOnlyList<string> ExplicitActivityIds { get; }
         public string PolicyMetadata { get; }

@@ -48,7 +48,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             _activeHandlesByParticipantId.Add(actorIdentity.ParticipantId, handle);
-            _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
+            if (handle.Actor != null &&
+                handle.Actor.ActorScopeMetadata == ActorScope.RouteScoped)
+            {
+                _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
+            }
         }
 
         public bool TryGetRetainedForParticipant(SessionActivityIdentity scopeIdentity, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
@@ -85,7 +89,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             PlayerActorIdentityRecord actorIdentity = handle.ActorIdentity;
             EnsureIdentityMatchesActiveScopeOrFail(actorIdentity.Identity, "stale_or_foreign_player_actor_reenter_registration");
             _activeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
-            _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
+            if (handle.Actor != null &&
+                handle.Actor.ActorScopeMetadata == ActorScope.RouteScoped)
+            {
+                _routeHandlesByParticipantId[actorIdentity.ParticipantId] = handle;
+            }
         }
 
         public IReadOnlyList<PlayerActorIdentityRecord> GetActiveActorIdentitiesOrFail(SessionActivityIdentity expectedScopeIdentity)
@@ -230,16 +238,22 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             return records;
         }
 
-        public void ClearAllRouteRetained()
+        public IReadOnlyList<PlayerActorRuntimeHandle> GetIndexedRouteScopedHandles()
         {
+            List<PlayerActorRuntimeHandle> handles = new(_routeHandlesByParticipantId.Count);
             foreach (KeyValuePair<SessionParticipantId, PlayerActorRuntimeHandle> pair in _routeHandlesByParticipantId)
             {
-                if (pair.Value.Instance != null)
+                if (pair.Value.IsValid)
                 {
-                    UnityEngine.Object.Destroy(pair.Value.Instance);
+                    handles.Add(pair.Value);
                 }
             }
 
+            return handles;
+        }
+
+        public void ClearAllRouteScopedIndexes()
+        {
             _routeHandlesByParticipantId.Clear();
             _activeHandlesByParticipantId.Clear();
             _activeScopeIdentity = default;

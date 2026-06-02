@@ -3747,6 +3747,18 @@ SessionActivityPipeline continua dono do macro lifecycle:
 Runtime states armazenam state técnico.  
 Runtime states não decidem lifecycle.
 
+### Checkpoint SA-8C-DOC
+
+Status: CLOSED / DOCUMENTED.
+
+- `SA-ACTOR-1B1*` está fechado no trilho Actors.
+- `ActorScope` ficou congelado como fonte canônica de `lifetime/retention/release`.
+- `PlayerActor` e `NonPlayerActor` não são owners de lifetime.
+- `PlayerParticipation` ficou restrito a `slot/selection/participant`.
+- `ActivityActorExitRuntimeState` ficou classificado como `correlation store` técnico.
+- `ActivityPlayerActorRegistry` ficou classificado como índice técnico puro, sem `Destroy` local.
+- O próximo passo volta para decomposição macro de `SessionActivity`; não abrir `SessionScoped` ainda.
+
 ### Mapeamento
 
 ```text
@@ -4333,4 +4345,3 @@ Não cria ActivityExitPipeline.
 Não cria manager/coordinator.
 Não reintroduz Player/NonPlayer como owner.
 ```
-

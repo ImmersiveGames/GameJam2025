@@ -150,6 +150,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             ActivitySceneActorRegistry sceneActorRegistry = bridge.GetActivitySceneActorRegistry();
             ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
+            SessionActorRuntimeStore sessionActorRuntimeStore = bridge.GetSessionActorRuntimeStore();
             if (sceneActorRegistry == null)
             {
                 throw new InvalidOperationException("ActivityEntryActorInventoryStage requires scene actor registry.");
@@ -172,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IReadOnlyList<SceneAuthoredActorRuntimeEntry> sceneActors = ResolveActiveSceneActors(sceneActorRegistry, identity);
             IActivityActorInstanceSource[] actorSources =
             {
-                new PlayerActorInstanceSource(playerActors ?? Array.Empty<PlayerActorIdentityRecord>(), playerActorRegistry),
+                new PlayerActorInstanceSource(playerActors ?? Array.Empty<PlayerActorIdentityRecord>(), playerActorRegistry, sessionActorRuntimeStore),
                 new SceneAuthoredActorInstanceSource(sceneActors),
             };
 

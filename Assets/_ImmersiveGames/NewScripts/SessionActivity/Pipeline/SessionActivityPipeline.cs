@@ -40,6 +40,7 @@ using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeBridge, IActivityEntryObjectSetupRuntimeBridge, IActivityEntryParticipantBindingRuntimeBridge, IActivityEntryActorInventoryRuntimeBridge, IActivityEntryActorPresentationRuntimeBridge, IActivityEntryActorAttributeRuntimeBridge, IActivityEntryActorParticipationRuntimeBridge, IActivityEntryPermissionTargetRuntimeBridge, IActivityEntryMovementBindingRuntimeBridge, IActivityEntryCameraBindingRuntimeBridge, IActivityExitActorTeardownRuntimeBridge
@@ -64,6 +65,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly ActivityPlayerActorRegistry _activityPlayerActorRegistry;
         private readonly ActivitySceneActorRegistry _activitySceneActorRegistry;
+        private readonly SessionActorRuntimeStore _sessionActorRuntimeStore;
         private readonly ActivityActorExitRuntimeState _activityActorExitRuntimeState = new();
         private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
         private readonly IActivityEntryPipeline _activityEntryPipeline;
@@ -462,8 +464,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _playerActorParticipationAdapter = new PlayerActorParticipationAdapter(_permissionRuntime);
             _activityPlayerActorRegistry = new ActivityPlayerActorRegistry();
             _activitySceneActorRegistry = new ActivitySceneActorRegistry();
+            _sessionActorRuntimeStore = new SessionActorRuntimeStore();
             _actorResetAdapter = new ActorResetAdapter(
-                new PlayerActorResetEndpointResolver(_activityPlayerActorRegistry));
+                new PlayerActorResetEndpointResolver(_activityPlayerActorRegistry, _sessionActorRuntimeStore));
             _playerInputBindingAdapter = new PlayerInputBindingAdapter();
             _movementBindingAdapter = new MovementBindingAdapter(_permissionRuntime);
             _playerMovementControlAdapter = new PlayerMovementControlAdapter(_permissionRuntime);
@@ -656,7 +659,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _activityObjectExitRuntimeState,
                 _activityActorExitRuntimeState,
                 _activityPlayerActorRegistry,
-                _activitySceneActorRegistry);
+                _activitySceneActorRegistry,
+                _sessionActorRuntimeStore);
             _pendingContinuationExitTeardownCompleted = false;
             _routeExitActorTeardownCompleted = false;
             FailPendingVisualReadinessCompletion(
@@ -2184,7 +2188,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _lastSessionParticipationContext = null;
             _lastActorMaterializationPlanEntries = Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             _lastActivityParticipationContext = null;
-            _activityPlayerActorRegistry.ClearAllRouteRetained();
+            ReleaseIndexedRouteScopedPlayerActors();
+            ReleaseSessionScopedActors(activationIdentity, facts, command.Source, "pipeline_start_reset");
+            _activityPlayerActorRegistry.ClearAllRouteScopedIndexes();
             _activitySceneActorRegistry.ClearAllRouteRetained();
             _activityActorExitRuntimeState.ClearAll(firstDefinition.ActivityId, entrySequence, "SessionActivityPipeline", "pipeline_start_reset");
             _state.SetCurrentDefinition(firstDefinition);
@@ -2524,6 +2530,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 this,
                 _activityActorExitRuntimeState,
                 this,
+                _sessionActorRuntimeStore,
                 facts,
                 snapshots);
         }
@@ -3550,6 +3557,59 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return resolved.Count == 0 ? Array.Empty<PlayerActorIdentityRecord>() : resolved;
         }
 
+        private void ReleaseIndexedRouteScopedPlayerActors()
+        {
+            IReadOnlyList<PlayerActorRuntimeHandle> handles = _activityPlayerActorRegistry.GetIndexedRouteScopedHandles();
+            for (int index = 0; index < handles.Count; index++)
+            {
+                PlayerActorRuntimeHandle handle = handles[index];
+                if (handle.Instance != null)
+                {
+                    Object.Destroy(handle.Instance);
+                }
+            }
+        }
+
+        private void ReleaseSessionScopedActors(
+            SessionActivityIdentity identity,
+            List<SessionActivityFact> facts,
+            string source,
+            string reason)
+        {
+            IReadOnlyList<SessionActorRuntimeEntry> entries = _sessionActorRuntimeStore.GetEntriesForSession(identity);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                SessionActorRuntimeEntry entry = entries[index];
+                DebugUtility.LogVerbose<SessionActivityPipeline>(
+                    $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='SessionActivityPipeline' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Info);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActorLifetimeDecisionResolved,
+                    identity,
+                    source,
+                    reason,
+                    $"Actor lifetime decision resolved actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='SessionReset' decision='Release'.");
+
+                if (entry.Instance != null)
+                {
+                    Object.Destroy(entry.Instance);
+                }
+
+                _sessionActorRuntimeStore.Remove(entry.ActorInstanceRuntimeId);
+                DebugUtility.LogVerbose<SessionActivityPipeline>(
+                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='SessionActivityPipeline' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{source}' reason='{reason}'.",
+                    DebugUtility.Colors.Success);
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.ActorLifetimeReleased,
+                    identity,
+                    source,
+                    reason,
+                    $"Actor lifetime released actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='SessionReset'.");
+            }
+        }
+
         private bool TryGetActivePresentationHandle(ActorPresentationEndpointReference presentationReference, out ActorPresentationRuntimeHandle handle)
         {
             handle = default;
@@ -3643,6 +3703,7 @@ private void EmitActorPresentationReleaseGenericStage(
                 this,
                 _activityActorExitRuntimeState,
                 this,
+                _sessionActorRuntimeStore,
                 facts,
                 snapshots);
         }
@@ -7985,14 +8046,34 @@ private bool TryBuildActivityParticipantBinding(
             return _activityPlayerActorRegistry.TryGetRetainedForParticipant(identity, participantId, out handle);
         }
 
+        bool IActivityEntryParticipantBindingRuntimeBridge.TryGetSessionScopedPlayerActorForParticipant(
+            SessionActivityIdentity identity,
+            PlayerActivityParticipantBinding participant,
+            out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            if (!participant.IsValid ||
+                !_sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) ||
+                !entry.IsValid)
+            {
+                return false;
+            }
+
+            PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
+            handle = new PlayerActorRuntimeHandle(actorIdentity, entry.Instance, entry.Actor);
+            return handle.IsValid;
+        }
+
         void IActivityEntryParticipantBindingRuntimeBridge.RegisterRetainedPlayerActorParticipation(SessionActivityIdentity identity, PlayerActorRuntimeHandle handle)
         {
             _activityPlayerActorRegistry.RegisterRetainedParticipation(identity, handle);
+            TrackSessionScopedHandle(handle);
         }
 
         void IActivityEntryParticipantBindingRuntimeBridge.RegisterMaterializedPlayerActor(PlayerActorRuntimeHandle handle)
         {
             _activityPlayerActorRegistry.RegisterMaterialized(handle);
+            TrackSessionScopedHandle(handle);
         }
 
         IReadOnlyList<PlayerActorMaterializationRecord> IActivityEntryParticipantBindingRuntimeBridge.ExecutePlayerActorMaterialization(
@@ -8022,6 +8103,176 @@ private bool TryBuildActivityParticipantBinding(
             return _activityPlayerActorRegistry.TryResolveHandleForParticipant(identity, participantId, out handle);
         }
 
+        bool IActivityEntryParticipantBindingRuntimeBridge.TryResolvePlacementMarkerFromCurrentEntry(
+            SessionActivityIdentity identity,
+            string placementId,
+            out Vector3 position,
+            out Vector3 eulerAngles,
+            out string resolutionReason)
+        {
+            position = Vector3.zero;
+            eulerAngles = Vector3.zero;
+            resolutionReason = string.Empty;
+
+            string normalizedPlacementId = Normalize(placementId);
+            if (!identity.IsValid)
+            {
+                resolutionReason = "invalid_activity_identity";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedPlacementId))
+            {
+                resolutionReason = "placement_id_missing";
+                return false;
+            }
+
+            int matchCount = 0;
+            string resolvedSources = string.Empty;
+            string missingScenes = string.Empty;
+            string searchedSources = string.Empty;
+
+            ActivityContentLoadedSet loadedSet = _state.CurrentActivityContentLoadedSet;
+            if (loadedSet.IsValid && loadedSet.Identity.CycleKey == identity.CycleKey)
+            {
+                for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
+                {
+                    ActivityContentLoadedSceneRecord record = loadedSet.Scenes[sceneIndex];
+                    if (!record.IsValid || string.IsNullOrWhiteSpace(record.SceneName))
+                    {
+                        continue;
+                    }
+
+                    searchedSources = AppendCsv(searchedSources, $"ActivityContent:{record.SceneName}");
+                    Scene scene = SceneManager.GetSceneByName(record.SceneName);
+                    if (!scene.IsValid() || !scene.isLoaded)
+                    {
+                        missingScenes = AppendCsv(missingScenes, record.SceneName);
+                        continue;
+                    }
+
+                    if (TryResolvePlacementMarkerInScene(
+                        scene,
+                        normalizedPlacementId,
+                        "ActivityContent",
+                        ref matchCount,
+                        ref position,
+                        ref eulerAngles,
+                        ref resolvedSources,
+                        out resolutionReason))
+                    {
+                        return false;
+                    }
+                }
+            }
+            else
+            {
+                searchedSources = AppendCsv(searchedSources, "ActivityContent:<missing_or_stale>");
+            }
+
+            Scene routeScene = SceneManager.GetActiveScene();
+            if (routeScene.IsValid() && routeScene.isLoaded)
+            {
+                searchedSources = AppendCsv(searchedSources, $"RouteScene:{routeScene.name}");
+                if (TryResolvePlacementMarkerInScene(
+                    routeScene,
+                    normalizedPlacementId,
+                    "RouteScene",
+                    ref matchCount,
+                    ref position,
+                    ref eulerAngles,
+                    ref resolvedSources,
+                    out resolutionReason))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                searchedSources = AppendCsv(searchedSources, "RouteScene:<invalid_or_unloaded>");
+            }
+
+            if (matchCount == 1)
+            {
+                resolutionReason = $"resolved_from_authorized_placement_sources;source={resolvedSources}";
+                return true;
+            }
+
+            string missingDetail = string.IsNullOrWhiteSpace(missingScenes)
+                ? string.Empty
+                : $";missingScenes={missingScenes}";
+            resolutionReason = $"no_placement_marker_found_in_authorized_sources;searchedSources={searchedSources}{missingDetail}";
+            return false;
+        }
+
+        private static bool TryResolvePlacementMarkerInScene(
+            Scene scene,
+            string normalizedPlacementId,
+            string sourceKind,
+            ref int matchCount,
+            ref Vector3 position,
+            ref Vector3 eulerAngles,
+            ref string resolvedSources,
+            out string failureReason)
+        {
+            failureReason = string.Empty;
+            if (!scene.IsValid() || !scene.isLoaded)
+            {
+                return false;
+            }
+
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                GameObject root = roots[rootIndex];
+                if (root == null)
+                {
+                    continue;
+                }
+
+                PlayerActorPlacementMarker[] markers = root.GetComponentsInChildren<PlayerActorPlacementMarker>(true);
+                for (int markerIndex = 0; markerIndex < markers.Length; markerIndex++)
+                {
+                    PlayerActorPlacementMarker marker = markers[markerIndex];
+                    if (marker == null || !marker.IsValid)
+                    {
+                        continue;
+                    }
+
+                    string markerId = Normalize(marker.PlacementId);
+                    if (!string.Equals(markerId, normalizedPlacementId, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    matchCount++;
+                    if (matchCount > 1)
+                    {
+                        failureReason = $"duplicate_placement_marker_in_authorized_sources;placementId={normalizedPlacementId};sources={resolvedSources},{sourceKind}:{scene.name}";
+                        return true;
+                    }
+
+                    position = marker.transform.position;
+                    eulerAngles = marker.transform.rotation.eulerAngles;
+                    resolvedSources = AppendCsv(resolvedSources, $"{sourceKind}:{scene.name}:{marker.name}");
+                }
+            }
+
+            return false;
+        }
+
+        private static string AppendCsv(string current, string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return current ?? string.Empty;
+            }
+
+            return string.IsNullOrWhiteSpace(current)
+                ? value
+                : $"{current},{value}";
+        }
+
         ActivitySceneActorRegistry IActivityEntryActorInventoryRuntimeBridge.GetActivitySceneActorRegistry()
         {
             return _activitySceneActorRegistry;
@@ -8032,6 +8283,11 @@ private bool TryBuildActivityParticipantBinding(
             return _activityPlayerActorRegistry;
         }
 
+        SessionActorRuntimeStore IActivityEntryActorInventoryRuntimeBridge.GetSessionActorRuntimeStore()
+        {
+            return _sessionActorRuntimeStore;
+        }
+
         IReadOnlyList<PlayerActorIdentityRecord> IActivityEntryActorInventoryRuntimeBridge.ResolvePlayerActorCapabilityTargetsForCurrentEntry(SessionActivityIdentity identity)
         {
             return ResolvePlayerActorCapabilityTargetsForCurrentEntry(identity);
@@ -8040,6 +8296,15 @@ private bool TryBuildActivityParticipantBinding(
         ActorInventoryFeedResult IActivityEntryActorInventoryRuntimeBridge.GetCurrentActorInventoryFeedResult()
         {
             return _state.CurrentActorInventoryFeedResult;
+        }
+
+        private void TrackSessionScopedHandle(PlayerActorRuntimeHandle handle)
+        {
+            SessionActorRuntimeEntry entry = SessionActorRuntimeStore.FromPlayerHandle(handle);
+            if (entry.IsValid)
+            {
+                _sessionActorRuntimeStore.Register(entry);
+            }
         }
 
         void IActivityEntryActorInventoryRuntimeBridge.SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result)

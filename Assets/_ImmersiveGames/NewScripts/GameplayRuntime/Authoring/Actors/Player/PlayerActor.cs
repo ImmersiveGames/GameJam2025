@@ -8,11 +8,41 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
     [DisallowMultipleComponent]
     public sealed class PlayerActor : Actor
     {
-        public override ActorRole ActorRoleMetadata => ActorRole.PrimaryPlayer;
+        private ActorId runtimeActorId;
+        private ActorScope runtimeActorScope;
+        private ActorParticipationRecord.ActorParticipationPolicy runtimeParticipationPolicy;
 
-        public void SetActorId(ActorId newActorId)
+        public override ActorId ActorIdValue => runtimeActorId;
+        public override ActorRole ActorRoleMetadata => ActorRole.PrimaryPlayer;
+        public override ActorScope ActorScopeMetadata => runtimeActorScope;
+        public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => runtimeParticipationPolicy;
+
+        public void BindRuntimeMetadata(
+            ActorId actorId,
+            ActorScope actorScope,
+            ActorParticipationRecord.ActorParticipationPolicy participationPolicy,
+            string source)
         {
-            SetActorIdValue(newActorId, nameof(PlayerActor));
+            string origin = ResolveOrigin(source, nameof(PlayerActor), name);
+            if (!actorId.IsValid)
+            {
+                throw new InvalidOperationException($"{origin} cannot bind invalid ActorId.");
+            }
+
+            if (actorScope == ActorScope.Unknown)
+            {
+                throw new InvalidOperationException($"{origin} cannot bind unknown ActorScope.");
+            }
+
+            if (!Enum.IsDefined(typeof(ActorParticipationRecord.ActorParticipationPolicy), participationPolicy) ||
+                participationPolicy == ActorParticipationRecord.ActorParticipationPolicy.None)
+            {
+                throw new InvalidOperationException($"{origin} cannot bind empty ActorParticipationPolicy.");
+            }
+
+            runtimeActorId = actorId;
+            runtimeActorScope = actorScope;
+            runtimeParticipationPolicy = participationPolicy;
         }
 
         public override void ValidateLocalConfigurationOrThrow(string source)
@@ -20,18 +50,18 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             string origin = ResolveOrigin(source, nameof(PlayerActor), name);
             if (!ActorIdValue.IsValid)
             {
-                throw new InvalidOperationException($"{origin} requires runtime ActorId binding.");
+                throw new InvalidOperationException($"{origin} requires runtime ActorId binding from ActivityParticipantBinding.");
             }
 
             if (ActorScopeMetadata == ActorScope.Unknown)
             {
-                throw new InvalidOperationException($"{origin} requires explicit actorScope.");
+                throw new InvalidOperationException($"{origin} requires runtime ActorScope binding from ActivityParticipantBinding.");
             }
 
             if (!Enum.IsDefined(typeof(ActorParticipationRecord.ActorParticipationPolicy), ActorParticipationPolicy) ||
                 ActorParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.None)
             {
-                throw new InvalidOperationException($"{origin} requires valid non-empty participationPolicy.");
+                throw new InvalidOperationException($"{origin} requires runtime ActorParticipationPolicy binding from ActivityParticipantBinding.");
             }
 
             if (CapabilitySurface == null)

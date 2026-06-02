@@ -61,7 +61,6 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Contracts
     {
         Unknown = 0,
         MaterializeOnActivityEntry = 1,
-        RetainRouteScoped = 2,
         ReuseExistingIfAvailable = 3,
         Unsupported = 4,
     }

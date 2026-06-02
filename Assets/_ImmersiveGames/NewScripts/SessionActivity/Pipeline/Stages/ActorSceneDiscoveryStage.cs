@@ -101,6 +101,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     actor.ValidateLocalConfigurationOrThrow(context);
                     sceneAuthoredActor.ValidateSceneAuthoredConfigurationOrThrow(context);
 
+                    if (sceneAuthoredActor.SceneActorScope == ActorScope.SessionScoped)
+                    {
+                        throw new InvalidOperationException(
+                            $"Scene-authored Actor cannot use SessionScoped in v0. actorId='{Normalize(actor.ActorId)}' scene='{sourceScene.name}'.");
+                    }
+
                     if (sceneAuthoredActor.SceneActorScope != expectedScope)
                     {
                         continue;

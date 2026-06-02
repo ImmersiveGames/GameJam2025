@@ -11,6 +11,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     public sealed class PlayerActorMaterializationAdapter : IPlayerActorMaterializationAdapter
     {
         private const string RuntimeRootName = "__ActivityPlayerActorsRuntimeRoot";
+        private const string SessionRuntimeRootName = "__SessionActorsRuntimeRoot";
 
         public IReadOnlyList<PlayerActorMaterializationRecord> Execute(PlayerActorMaterializationCommand command, SessionActivityIdentity activeIdentity)
         {
@@ -29,8 +30,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("stale_or_foreign_player_actor_command: command identity does not match active identity.");
             }
 
-            SceneContext scene = ResolveActiveSceneOrFail();
-            Transform root = EnsureRuntimeRoot(scene, activeIdentity);
             List<PlayerActorMaterializationRecord> records = new(command.Entries.Count);
 
             for (int index = 0; index < command.Entries.Count; index++)
@@ -46,18 +45,31 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_actor_plan: plan identity does not match active identity.");
                 }
 
-                GameObject instance = UnityEngine.Object.Instantiate(plan.Prefab, root);
-                instance.name = $"PlayerActor::{plan.ActorIdentity.PlayerSlotId}::{plan.ActorIdentity.PlayerActorId}";
-                instance.transform.localPosition = plan.LocalPosition;
-                instance.transform.localRotation = Quaternion.Euler(plan.LocalEulerAngles);
-
-                PlayerActor actor = instance.GetComponent<PlayerActor>();
+                PlayerActor actor = plan.Prefab.GetComponent<PlayerActor>();
                 if (actor == null)
                 {
                     throw new InvalidOperationException($"PlayerActor prefab missing PlayerActor component. prefab='{plan.Prefab.name}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}'.");
                 }
 
-                actor.SetActorId(plan.ActorIdentity.ActorId);
+                ActorScope actorScope = plan.ActorIdentity.ParticipantBinding.ActorScope;
+                if (actorScope == ActorScope.Unknown)
+                {
+                    throw new InvalidOperationException($"Player actor materialization requires ActorScope from ActivityParticipantBinding. participantId='{plan.ActorIdentity.ParticipantId}' playerSlotId='{plan.ActorIdentity.PlayerSlotId}'.");
+                }
+
+                SceneContext scene = ResolveActiveSceneOrFail();
+                Transform root = EnsureRuntimeRoot(scene, activeIdentity, actorScope);
+                GameObject instance = UnityEngine.Object.Instantiate(plan.Prefab, root);
+                instance.name = $"PlayerActor::{plan.ActorIdentity.PlayerSlotId}::{plan.ActorIdentity.PlayerActorId}";
+                instance.transform.localPosition = plan.LocalPosition;
+                instance.transform.localRotation = Quaternion.Euler(plan.LocalEulerAngles);
+
+                actor = instance.GetComponent<PlayerActor>();
+                actor.BindRuntimeMetadata(
+                    plan.ActorIdentity.ActorId,
+                    actorScope,
+                    ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
+                    nameof(PlayerActorMaterializationAdapter));
                 ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
                     activeIdentity,
                     actor.ActorId,
@@ -121,8 +133,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             return new SceneContext(scene);
         }
 
-        private static Transform EnsureRuntimeRoot(SceneContext context, SessionActivityIdentity identity)
+        private static Transform EnsureRuntimeRoot(SceneContext context, SessionActivityIdentity identity, ActorScope actorScope)
         {
+            if (actorScope == ActorScope.Unknown)
+            {
+                throw new InvalidOperationException("Player actor materialization requires explicit ActorScope.");
+            }
+
+            if (actorScope == ActorScope.SessionScoped)
+            {
+                return EnsureSessionRuntimeRoot(identity);
+            }
+
             string expected = $"{RuntimeRootName}::{identity.SessionId}::{identity.ActivityId}::{identity.EntrySequence}";
             GameObject[] roots = context.Scene.GetRootGameObjects();
             for (int i = 0; i < roots.Length; i++)
@@ -136,6 +158,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
             GameObject created = new(expected);
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(created, context.Scene);
+            return created.transform;
+        }
+
+        private static Transform EnsureSessionRuntimeRoot(SessionActivityIdentity identity)
+        {
+            string expected = $"{SessionRuntimeRootName}::{identity.SessionId}";
+            GameObject existing = GameObject.Find(expected);
+            if (existing != null)
+            {
+                return existing.transform;
+            }
+
+            GameObject created = new(expected);
+            UnityEngine.Object.DontDestroyOnLoad(created);
             return created.transform;
         }
 

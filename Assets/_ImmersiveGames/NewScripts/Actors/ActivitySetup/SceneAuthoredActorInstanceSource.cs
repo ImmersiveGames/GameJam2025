@@ -60,6 +60,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     throw new InvalidOperationException($"SceneAuthoredActorInstanceSource requires known ActorScope for actorId='{actorIdentity.ActorId}'.");
                 }
 
+                if (runtimeScope == ActorScope.SessionScoped)
+                {
+                    throw new InvalidOperationException($"SceneAuthoredActorInstanceSource forbids SessionScoped scene-authored actor in v0. actorId='{actorIdentity.ActorId}'.");
+                }
+
                 string stableActorId = !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
                     ? runtimeActor.ActorId
                     : actorIdentity.ActorId;
@@ -91,7 +96,6 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     identity,
                     actorIdentity.ActorInstanceId,
                     participatesInCurrentEntry: true,
-                    retainedForRoute: runtimeScope == ActorScope.RouteScoped,
                     policy: actorIdentity.ParticipationPolicy,
                     explicitActivityIds: actorIdentity.ParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds
                         ? actorIdentity.ExplicitActivityIds

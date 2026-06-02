@@ -1,8 +1,11 @@
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -45,7 +48,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectExitRuntimeState activityObjectExitRuntimeState,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
             ActivityPlayerActorRegistry activityPlayerActorRegistry,
-            ActivitySceneActorRegistry activitySceneActorRegistry)
+            ActivitySceneActorRegistry activitySceneActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore)
         {
             if (!command.IsValid)
             {
@@ -59,7 +63,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             activityContentReleaseRuntimeState.ClearPendingReleaseContext("<none>", 0, Owner, ResetReason);
             activityContentReleaseRuntimeState.SetAwaitingContinuation(false, "<none>", 0, Owner, ResetReason);
             activityObjectExitRuntimeState.ClearAll("<none>", 0, Owner, ResetReason);
-            activityPlayerActorRegistry.ClearAllRouteRetained();
+            ReleaseIndexedRouteScopedPlayerActors(activityPlayerActorRegistry);
+            ReleaseSessionScopedActors(command, sessionActorRuntimeStore);
+            activityPlayerActorRegistry.ClearAllRouteScopedIndexes();
             activitySceneActorRegistry.ClearAllRouteRetained();
             activityActorExitRuntimeState.ClearAll(command.InitialDefinition.ActivityId, command.EntrySequence, Owner, ResetReason);
 
@@ -72,6 +78,52 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 typeof(ActivityHandoffRuntimeResetStage),
                 $"[OBS][ActivityHandoffRuntimeResetStage] event='{Normalize(eventName)}' owner='{Owner}' activityId='{Normalize(command.InitialDefinition.ActivityId)}' entrySequence='{command.EntrySequence}' triggerSource='{Normalize(command.TriggerSource)}' triggerReason='{Normalize(command.TriggerReason)}' resetReason='{ResetReason}'.",
                 color);
+        }
+
+        private static void ReleaseIndexedRouteScopedPlayerActors(ActivityPlayerActorRegistry activityPlayerActorRegistry)
+        {
+            if (activityPlayerActorRegistry == null)
+            {
+                throw new System.InvalidOperationException("Activity handoff runtime reset requires player actor registry.");
+            }
+
+            IReadOnlyList<PlayerActorRuntimeHandle> handles = activityPlayerActorRegistry.GetIndexedRouteScopedHandles();
+            for (int index = 0; index < handles.Count; index++)
+            {
+                PlayerActorRuntimeHandle handle = handles[index];
+                if (handle.Instance != null)
+                {
+                    Object.Destroy(handle.Instance);
+                }
+            }
+        }
+
+        private static void ReleaseSessionScopedActors(
+            ActivityHandoffRuntimeResetStageCommand command,
+            SessionActorRuntimeStore sessionActorRuntimeStore)
+        {
+            if (sessionActorRuntimeStore == null)
+            {
+                throw new System.InvalidOperationException("Activity handoff runtime reset requires session actor runtime store.");
+            }
+
+            IReadOnlyList<SessionActorRuntimeEntry> entries = sessionActorRuntimeStore.GetAllEntries();
+            for (int index = 0; index < entries.Count; index++)
+            {
+                SessionActorRuntimeEntry entry = entries[index];
+                DebugUtility.LogVerbose(typeof(ActivityHandoffRuntimeResetStage),
+                    $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='{Owner}' activityId='{Normalize(command.InitialDefinition.ActivityId)}' entrySequence='{command.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{Normalize(command.TriggerSource)}' reason='{Normalize(command.TriggerReason)}'.",
+                    DebugUtility.Colors.Info);
+                if (entry.Instance != null)
+                {
+                    Object.Destroy(entry.Instance);
+                }
+
+                sessionActorRuntimeStore.Remove(entry.ActorInstanceRuntimeId);
+                DebugUtility.LogVerbose(typeof(ActivityHandoffRuntimeResetStage),
+                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='{Owner}' activityId='{Normalize(command.InitialDefinition.ActivityId)}' entrySequence='{command.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{Normalize(command.TriggerSource)}' reason='{Normalize(command.TriggerReason)}'.",
+                    DebugUtility.Colors.Success);
+            }
         }
 
         private static string Normalize(string value)

@@ -189,18 +189,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         public PlayerActorParticipationExitRecord(
             PlayerActorIdentityRecord actorIdentity,
-            bool exited,
-            bool retainedForRoute)
+            bool exited)
         {
             ActorIdentity = actorIdentity;
             Exited = exited;
-            RetainedForRoute = retainedForRoute;
         }
 
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public bool Exited { get; }
-        public bool RetainedForRoute { get; }
-        public bool IsValid => ActorIdentity.IsValid && Exited && RetainedForRoute;
+        public bool IsValid => ActorIdentity.IsValid && Exited;
     }
 
     public interface IPlayerActorParticipationAdapter
@@ -243,18 +240,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         public PlayerActorParticipationEnterRecord(
             PlayerActorIdentityRecord actorIdentity,
-            bool entered,
-            bool retainedForRoute)
+            bool entered)
         {
             ActorIdentity = actorIdentity;
             Entered = entered;
-            RetainedForRoute = retainedForRoute;
         }
 
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public bool Entered { get; }
-        public bool RetainedForRoute { get; }
-        public bool IsValid => ActorIdentity.IsValid && Entered && RetainedForRoute;
+        public bool IsValid => ActorIdentity.IsValid && Entered;
     }
 
     public readonly struct PlayerInputBindingRequirement

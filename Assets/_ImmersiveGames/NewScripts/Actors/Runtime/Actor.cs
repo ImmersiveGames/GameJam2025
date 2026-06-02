@@ -7,16 +7,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     public abstract class Actor : MonoBehaviour, IActor
     {
         private ActorInstanceId runtimeActorInstanceId;
-        [SerializeField] private string actorId = string.Empty;
-        [SerializeField] private ActorScope actorScope = ActorScope.Unknown;
-        [SerializeField] private ActorParticipationRecord.ActorParticipationPolicy participationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
         [SerializeField] private ActorCapabilitySurface capabilitySurface;
 
         public virtual string ActorId => ActorIdValue.ToString();
-        public ActorId ActorIdValue => new(Normalize(actorId));
+        public abstract ActorId ActorIdValue { get; }
         public abstract ActorRole ActorRoleMetadata { get; }
-        public virtual ActorScope ActorScopeMetadata => actorScope;
-        public virtual ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => participationPolicy;
+        public abstract ActorScope ActorScopeMetadata { get; }
+        public abstract ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy { get; }
         public virtual ActorCapabilitySurface CapabilitySurface
         {
             get
@@ -32,17 +29,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public void SetRuntimeActorInstanceId(ActorInstanceId actorInstanceId)
         {
             runtimeActorInstanceId = actorInstanceId.IsValid ? actorInstanceId : default;
-        }
-
-        protected void SetActorIdValue(ActorId newActorId, string source)
-        {
-            if (!newActorId.IsValid)
-            {
-                string origin = ResolveOrigin(source, nameof(Actor), name);
-                throw new InvalidOperationException($"{origin} cannot bind an invalid ActorId. actor='{name}'.");
-            }
-
-            actorId = Normalize(newActorId.Value);
         }
 
         public abstract void ValidateLocalConfigurationOrThrow(string source);
@@ -63,7 +49,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         protected virtual void OnValidate()
         {
-            actorId = Normalize(actorId);
             EnsureCapabilitySurfaceResolved();
         }
 

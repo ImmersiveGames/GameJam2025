@@ -35,6 +35,35 @@ Transform:
   - {fileID: 6230500782231504634}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &651234567890123456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1b6f71a4c8e4d38b73a2d9c46a2f0a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  actorId: npc.route.generic.01
+  actorScope: 2
+  participationPolicy: 1
+  capabilitySurface: {fileID: 2666666666666666666}
+  participatingActivities: []
+--- !u!114 &2666666666666666666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1574379559858498907}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb260e2a6a0a82441bf96aaf5097af6c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &2527674146183889330
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -51,36 +80,6 @@ MonoBehaviour:
   profile: {fileID: 11400000, guid: f6181426ce0fb224e839479dd7cb196c, type: 2}
   containers:
   - {fileID: 7890999837741589754}
---- !u!114 &2666666666666666666
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1574379559858498907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fb260e2a6a0a82441bf96aaf5097af6c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &651234567890123456
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1574379559858498907}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1b6f71a4c8e4d38b73a2d9c46a2f0a1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  actorId: npc.route.generic.01
-  actorScope: 2
-  participationPolicy: 2
-  participatingActivities:
-  - {fileID: 11400000, guid: 7e00c8fd7db0457389e637499f6fda17, type: 2}
-  - {fileID: 11400000, guid: 489ed87ad55c44a8b48f37f42f0ea03d, type: 2}
 --- !u!1 &1996203835894000634
 GameObject:
   m_ObjectHideFlags: 0

@@ -976,6 +976,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         ActivitySceneActorRegistry GetActivitySceneActorRegistry();
         ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
+        SessionActorRuntimeStore GetSessionActorRuntimeStore();
         IReadOnlyList<PlayerActorIdentityRecord> ResolvePlayerActorCapabilityTargetsForCurrentEntry(SessionActivityIdentity identity);
         ActorInventoryFeedResult GetCurrentActorInventoryFeedResult();
         void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result);

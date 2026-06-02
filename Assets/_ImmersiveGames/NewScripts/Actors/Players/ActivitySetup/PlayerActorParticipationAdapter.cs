@@ -84,7 +84,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     participation = instance.AddComponent<PlayerActorParticipationState>();
                 }
 
-                participation.MarkExitedActivityRetainedForRoute();
+                participation.MarkExitedActivity();
 
                 ActivityCapabilityPermissionCommand permissionCommand = new(
                     ActivityCapabilityPermissionId.ActivityGameplayControl,
@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Player participation exit permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actorIdentity.PlayerActorId}'.");
                 }
 
-                records.Add(new PlayerActorParticipationExitRecord(actorIdentity, exited: true, retainedForRoute: true));
+                records.Add(new PlayerActorParticipationExitRecord(actorIdentity, exited: true));
             }
 
             return records;
@@ -169,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 participation.MarkActiveInActivity(activeIdentity);
-                records.Add(new PlayerActorParticipationEnterRecord(actorIdentity, entered: true, retainedForRoute: true));
+                records.Add(new PlayerActorParticipationEnterRecord(actorIdentity, entered: true));
             }
 
             return records;
@@ -203,7 +203,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             Actor runtimeActor = actorInstance.GetComponent<Actor>();
-            bool isRouteScoped = runtimeActor != null && runtimeActor.ActorScopeMetadata == ActorScope.RouteScoped;
+            bool isRetainedAcrossActivity = runtimeActor != null && ActorLifetimePolicy.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
 
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal) ||
@@ -214,7 +214,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     $"stale_or_foreign_player_actor_identity_binding: playerActorId='{expected.PlayerActorId}' does not match current pipeline identity.");
             }
 
-            if (!isRouteScoped &&
+            if (!isRetainedAcrossActivity &&
                 (!string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
                  identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
                  identity.EntrySequence != activeIdentity.EntrySequence))

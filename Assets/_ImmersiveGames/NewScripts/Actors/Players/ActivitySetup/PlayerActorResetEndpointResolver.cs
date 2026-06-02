@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
@@ -13,10 +14,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     public sealed class PlayerActorResetEndpointResolver : IActorResetEndpointResolver
     {
         private readonly ActivityPlayerActorRegistry _registry;
+        private readonly SessionActorRuntimeStore _sessionActorRuntimeStore;
 
-        public PlayerActorResetEndpointResolver(ActivityPlayerActorRegistry registry)
+        public PlayerActorResetEndpointResolver(ActivityPlayerActorRegistry registry, SessionActorRuntimeStore sessionActorRuntimeStore)
         {
             _registry = registry ?? throw new InvalidOperationException("PlayerActorResetEndpointResolver requires non-null registry.");
+            _sessionActorRuntimeStore = sessionActorRuntimeStore ?? throw new InvalidOperationException("PlayerActorResetEndpointResolver requires non-null session actor runtime store.");
         }
 
         public GameObject ResolveOrFail(SessionActivityIdentity activeIdentity, ActorResetActorRef actor)
@@ -54,6 +57,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 return handle.Instance;
             }
 
+            if (_sessionActorRuntimeStore.TryGetByRuntimeId(activeIdentity, actor.ActorInstanceRuntimeId, out SessionActorRuntimeEntry stored) &&
+                stored.IsValid &&
+                stored.Instance != null)
+            {
+                return stored.Instance;
+            }
+
             throw new InvalidOperationException(
                 $"actor_reset_actor_not_found: actorId='{actor.ActorId}' playerActorId='{actor.PlayerActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
         }
@@ -85,8 +95,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     $"actor_reset_player_identity_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' pipelineId='{activeIdentity.PipelineId}' sessionId='{activeIdentity.SessionId}' does not match endpoint identity.");
             }
 
-            bool isRouteScoped = runtimeActor.ActorScopeMetadata == Actors.Foundation.ActorScope.RouteScoped;
-            if (!isRouteScoped &&
+            bool isRetainedAcrossActivity = ActorLifetimePolicy.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
+            if (!isRetainedAcrossActivity &&
                 (!string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
                  identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||
                  identity.EntrySequence != activeIdentity.EntrySequence))

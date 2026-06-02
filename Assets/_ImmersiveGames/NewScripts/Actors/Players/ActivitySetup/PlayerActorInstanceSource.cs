@@ -12,13 +12,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     {
         private readonly IReadOnlyList<PlayerActorIdentityRecord> _playerActors;
         private readonly ActivityPlayerActorRegistry _playerRegistry;
+        private readonly SessionActorRuntimeStore _sessionActorStore;
 
         public PlayerActorInstanceSource(
             IReadOnlyList<PlayerActorIdentityRecord> playerActors,
-            ActivityPlayerActorRegistry playerRegistry)
+            ActivityPlayerActorRegistry playerRegistry,
+            SessionActorRuntimeStore sessionActorStore)
         {
             _playerActors = playerActors ?? Array.Empty<PlayerActorIdentityRecord>();
             _playerRegistry = playerRegistry;
+            _sessionActorStore = sessionActorStore;
         }
 
         public ActivityActorInstanceSourceResult Collect(
@@ -29,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             List<ActorInstanceRecord> actorInstances = new();
             List<ActorParticipationRecord> actorParticipations = new();
 
-            if (_playerRegistry == null || _playerActors.Count == 0)
+            if ((_playerRegistry == null && _sessionActorStore == null) || _playerActors.Count == 0)
             {
                 return new ActivityActorInstanceSourceResult(actorInstances, actorParticipations);
             }
@@ -42,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                if (!_playerRegistry.TryResolveHandleForParticipant(identity, player.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolveHandle(identity, player, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }
@@ -109,7 +112,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     identity,
                     actorInstanceId,
                     participatesInCurrentEntry: true,
-                    retainedForRoute: actorScope == ActorScope.RouteScoped,
                     policy: participationPolicy,
                     explicitActivityIds: Array.Empty<string>(),
                     policyMetadata: participationPolicy.ToString(),
@@ -118,6 +120,30 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             return new ActivityActorInstanceSourceResult(actorInstances, actorParticipations);
+        }
+
+        private bool TryResolveHandle(
+            SessionActivityIdentity identity,
+            PlayerActorIdentityRecord player,
+            out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            if (_playerRegistry != null &&
+                _playerRegistry.TryResolveHandleForParticipant(identity, player.ParticipantId, out handle) &&
+                handle.IsValid)
+            {
+                return true;
+            }
+
+            if (_sessionActorStore != null &&
+                _sessionActorStore.TryGetByParticipantId(identity, player.ParticipantId, out SessionActorRuntimeEntry stored) &&
+                stored.IsValid)
+            {
+                handle = new PlayerActorRuntimeHandle(player, stored.Instance, stored.Actor);
+                return handle.IsValid;
+            }
+
+            return false;
         }
         private static string BuildTransformPath(Transform transform)
         {

@@ -10,9 +10,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     [DisallowMultipleComponent]
     public sealed class NonPlayerActor : Actor, ISceneAuthoredActor
     {
+        [SerializeField] private string actorId = string.Empty;
+        [SerializeField] private ActorScope actorScope = ActorScope.Unknown;
+        [SerializeField] private ActorParticipationRecord.ActorParticipationPolicy participationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
         [SerializeField] private List<ActivityAsset> participatingActivities = new();
 
+        public override ActorId ActorIdValue => new(Normalize(actorId));
         public override ActorRole ActorRoleMetadata => ActorRole.SceneAuthoredNonPlayer;
+        public override ActorScope ActorScopeMetadata => actorScope;
+        public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => participationPolicy;
         public ActorScope SceneActorScope => ActorScopeMetadata;
         public ActorParticipationRecord.ActorParticipationPolicy SceneActorParticipationPolicy => ActorParticipationPolicy;
 
@@ -114,6 +120,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         protected override void OnValidate()
         {
             base.OnValidate();
+            actorId = Normalize(actorId);
             if (participatingActivities == null)
             {
                 participatingActivities = new List<ActivityAsset>();

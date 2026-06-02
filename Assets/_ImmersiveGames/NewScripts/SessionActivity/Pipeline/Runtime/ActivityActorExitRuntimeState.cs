@@ -298,9 +298,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 participantCount = context.Participants.Count;
             }
 
-            string retentionMode = hasExplicitParticipants
+            string correlationMode = hasExplicitParticipants
                 ? "replace_from_current_activity_participation_context"
-                : "retain_existing_route_scoped_player_exit_bindings";
+                : "keep_existing_bindings_for_exit_lookup";
 
             Log(
                 "ActivityActorExitRuntimeStateActivityParticipationContextStored",
@@ -308,7 +308,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"participantCount='{participantCount}' storedPlayerExitBindingCount='{storedPlayerExitBindingCount}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' retentionMode='{retentionMode}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"participantCount='{participantCount}' storedPlayerExitBindingCount='{storedPlayerExitBindingCount}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' correlationMode='{correlationMode}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
         }
 
         public bool TryResolveActivePlayerParticipantBindingForExit(
