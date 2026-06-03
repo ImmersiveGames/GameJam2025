@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
 
@@ -169,7 +170,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 "owner='ActivityEntryPipeline' block='actor_inventory_feed'");
 
-            IReadOnlyList<PlayerActorIdentityRecord> playerActors = bridge.ResolvePlayerActorCapabilityTargetsForCurrentEntry(identity);
+            IReadOnlyList<PlayerActorIdentityRecord> playerActors = ResolvePlayerActorCapabilityTargetsForCurrentEntry(bridge, identity);
             IReadOnlyList<SceneAuthoredActorRuntimeEntry> sceneActors = ResolveActiveSceneActors(sceneActorRegistry, identity);
             IActivityActorInstanceSource[] actorSources =
             {
@@ -198,6 +199,164 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 $"owner='ActivityEntryPipeline' block='actor_inventory_feed' actorInstances='{result.ActorInstances.Count}' actorEntries='{result.ActorEntries.Count}' actorParticipations='{result.ActorParticipations.Count}'");
             return result;
+        }
+
+        internal static IReadOnlyList<PlayerActorIdentityRecord> ResolvePlayerActorCapabilityTargetsForCurrentEntry(
+            IActivityEntryActorInventoryRuntimeBridge bridge,
+            SessionActivityIdentity identity)
+        {
+            if (bridge == null)
+            {
+                throw new ArgumentNullException(nameof(bridge));
+            }
+
+            List<PlayerActorIdentityRecord> resolved = new();
+            HashSet<SessionParticipantId> resolvedParticipantIds = new();
+
+            ActivityParticipationContext participationContext = bridge.GetCurrentActivityParticipationContext();
+            if (participationContext != null &&
+                participationContext.IsValid &&
+                participationContext.Participants != null &&
+                participationContext.Participants.Count > 0)
+            {
+                AddPlayerActorCapabilityTargetsFromParticipationContext(
+                    bridge,
+                    identity,
+                    participationContext.Participants,
+                    resolved,
+                    resolvedParticipantIds);
+            }
+
+            if (resolved.Count > 0)
+            {
+                return resolved;
+            }
+
+            ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
+            if (playerActorRegistry != null &&
+                playerActorRegistry.TryGetActiveActorIdentities(identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
+                activeActors != null &&
+                activeActors.Count > 0)
+            {
+                return activeActors;
+            }
+
+            return ResolveRouteRetainedPlayerActorIdentitiesOrEmpty(identity, playerActorRegistry);
+        }
+
+        private static void AddPlayerActorCapabilityTargetsFromParticipationContext(
+            IActivityEntryActorInventoryRuntimeBridge bridge,
+            SessionActivityIdentity identity,
+            IReadOnlyList<ActivityParticipantBinding> participants,
+            List<PlayerActorIdentityRecord> resolved,
+            HashSet<SessionParticipantId> resolvedParticipantIds)
+        {
+            if (!identity.IsValid || bridge == null || participants == null || resolved == null || resolvedParticipantIds == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < participants.Count; index++)
+            {
+                ActivityParticipantBinding participant = participants[index];
+                if (!participant.IsValid || !participant.RequiresPlayerActor || !participant.ParticipantId.IsValid)
+                {
+                    continue;
+                }
+
+                if (!TryResolvePlayerActorHandleForCapabilityInventory(bridge, identity, participant, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                {
+                    continue;
+                }
+
+                if (!resolvedParticipantIds.Add(participant.ParticipantId))
+                {
+                    continue;
+                }
+
+                resolved.Add(handle.ActorIdentity);
+            }
+        }
+
+        private static bool TryResolvePlayerActorHandleForCapabilityInventory(
+            IActivityEntryActorInventoryRuntimeBridge bridge,
+            SessionActivityIdentity identity,
+            ActivityParticipantBinding participant,
+            out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            if (bridge == null || !identity.IsValid || !participant.IsValid || !participant.RequiresPlayerActor)
+            {
+                return false;
+            }
+
+            ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
+            if (playerActorRegistry != null &&
+                playerActorRegistry.TryResolveHandleForParticipant(identity, participant.ParticipantId, out handle) &&
+                handle.IsValid)
+            {
+                return true;
+            }
+
+            SessionActorRuntimeStore sessionActorRuntimeStore = bridge.GetSessionActorRuntimeStore();
+            if (sessionActorRuntimeStore != null &&
+                sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) &&
+                entry.IsValid)
+            {
+                PlayerActorIdentityRecord actorIdentity = new(identity, participant, PlayerActorIdentityRecord.BuildPlayerActorId(identity, participant.ActorId));
+                handle = new PlayerActorRuntimeHandle(actorIdentity, entry.Instance, entry.Actor);
+                return handle.IsValid;
+            }
+
+            return false;
+        }
+
+        private static IReadOnlyList<PlayerActorIdentityRecord> ResolveRouteRetainedPlayerActorIdentitiesOrEmpty(
+            SessionActivityIdentity identity,
+            ActivityPlayerActorRegistry playerActorRegistry)
+        {
+            if (playerActorRegistry == null)
+            {
+                return Array.Empty<PlayerActorIdentityRecord>();
+            }
+
+            IReadOnlyList<PlayerActorIdentityRecord> retained = playerActorRegistry.GetRouteRetainedActorIdentitiesForSession(identity);
+            return retained == null || retained.Count == 0
+                ? Array.Empty<PlayerActorIdentityRecord>()
+                : FilterRetainedPlayerActorIdentities(identity, playerActorRegistry, retained);
+        }
+
+        private static IReadOnlyList<PlayerActorIdentityRecord> FilterRetainedPlayerActorIdentities(
+            SessionActivityIdentity identity,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            IReadOnlyList<PlayerActorIdentityRecord> retained)
+        {
+            List<PlayerActorIdentityRecord> resolved = new();
+            for (int index = 0; index < retained.Count; index++)
+            {
+                PlayerActorIdentityRecord candidate = retained[index];
+                if (!candidate.IsValid)
+                {
+                    continue;
+                }
+
+                if (!playerActorRegistry.TryResolveHandleForParticipant(identity, candidate.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                {
+                    continue;
+                }
+
+                if (handle.PlayerSlotId != candidate.PlayerSlotId || handle.ParticipantId != candidate.ParticipantId)
+                {
+                    continue;
+                }
+
+                resolved.Add(new PlayerActorIdentityRecord(
+                    identity,
+                    candidate.ParticipantBinding,
+                    candidate.PlayerActorId));
+            }
+
+            return resolved.Count == 0 ? Array.Empty<PlayerActorIdentityRecord>() : resolved;
         }
 
         private static IReadOnlyList<SceneAuthoredActorRuntimeEntry> ResolveActiveSceneActors(

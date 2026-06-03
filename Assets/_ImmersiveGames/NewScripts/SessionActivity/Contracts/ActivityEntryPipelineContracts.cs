@@ -10,6 +10,7 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
+using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
@@ -1104,7 +1105,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivitySceneActorRegistry GetActivitySceneActorRegistry();
         ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
         SessionActorRuntimeStore GetSessionActorRuntimeStore();
-        IReadOnlyList<PlayerActorIdentityRecord> ResolvePlayerActorCapabilityTargetsForCurrentEntry(SessionActivityIdentity identity);
+        PlayerActivityParticipationContext GetCurrentActivityParticipationContext();
         ActorInventoryFeedResult GetCurrentActorInventoryFeedResult();
         void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result);
         void ClearCurrentActorInventoryFeedResult();
