@@ -122,9 +122,12 @@ O checkpoint atual aceita como evidência:
   - Loading voltou a completar/esconder.
   - `activity_02` preserva no-content, mas projeta o `PlayerActor SessionScoped` retido para `ActivityParticipationContext`, capability inventory, PermissionTarget, PlayerInput, MovementBinding e MovementControl.
   - Smoke aceito: `ActivityParticipantRetainedBindingChosen`, `ActivityParticipationContextPrepared activityParticipants='1'`, `ActivityEntryPermissionTargetPreparationCompleted receivers='1'`, `PlayerMovementPermissionApplied state='Allowed'`, `MovementControlEnabled activityId='activity_02' affectedActors='1'`, `Activity01ToActivity02 PASS`.
-  - Débito aceito: `SA-12F-MOV-H1 — Retained PlayerActor target projection ownership hygiene`; mover a projection bridge hoje em `SessionActivityPipeline` para `ActivityEntryPipeline` / `ActivityEntryActorInventoryStage` em corte futuro.
-- Pendências de `SA-12`: `SA-12F5 — residual SessionActivityDefinition command hygiene`; `SA-12F-MOV-H1 — hygiene de ownership da projeção de PlayerActor SessionScoped retido`.
-- `SA-11B` segue `CLOSED / PASS funcional + PASS arquitetural do corte`; `SA-12` permanece parcial até fechamento dos resíduos finais.
+- `SA-12F-MOV-H1 — Retained PlayerActor target projection ownership hygiene`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - A projection bridge concreta saiu de `SessionActivityPipeline` e passou para `ActivityEntryActorInventoryStage`.
+  - `ActivityEntryCapabilityInventoryPreviewStage` continua writer do snapshot de inventory.
+  - `activity_02` preserva no-content com `PlayerActor SessionScoped` retido funcional: `ActivityParticipantRetainedBindingChosen`, `ActivityParticipationContextPrepared activityParticipants='1'`, `ActivityEntryPermissionTargetPreparationCompleted receivers='1'`, `PlayerMovementPermissionApplied state='Allowed'`, `MovementControlEnabled activityId='activity_02' affectedActors='1'`, `Activity01ToActivity02 PASS`.
+- Pendência de `SA-12`: `SA-12F5 — residual SessionActivityDefinition command hygiene`.
+- `SA-11B` segue `CLOSED / PASS funcional + PASS arquitetural do corte`; `SA-12` permanece parcial até fechamento de `SA-12F5`.
 
 ### Checkpoint conceitual Base 2.0
 
@@ -149,7 +152,7 @@ O ADR-2.0-0004 congela que:
 - `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS após smoke manual.
 - `SA-IDREF-3A-H1/H2/H3` registrou a regressão e congelou a separação entre lookup operacional e identidade observável.
 - `PlayerActorId` permanece exposto em `PlayerActorIdentityRecord` / `PlayerActorRuntimeHandle` como identidade observável, mas não é chave operacional primária de lookup runtime.
-- `PlayerInputBindingStage` e `PlayerMovementBindingStage` não fabricam `PlayerActorId`; consumers usam binding/handle.
+- `PlayerInputBindingStage` não fabrica `PlayerActorId`; consumers usam binding/handle.
 - Nenhum corte `SA-IDREF` futuro é PASS sem smoke/log.
 - `SA-IDREF-4A — Camera target by ActorInstanceRuntimeId` está CLOSED / PASS após smoke manual.
 - `SA-IDREF-4B — Permission identity audit` está AUDITED / NO RUNTIME CHANGE.
