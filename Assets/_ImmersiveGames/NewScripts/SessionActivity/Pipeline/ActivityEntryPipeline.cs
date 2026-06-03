@@ -6,7 +6,9 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -56,6 +58,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
         private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
+        private readonly ActivityEntryInventoryRuntimeState _activityInventoryRuntimeState = new();
+        private readonly ActivityParticipationRuntimeState _activityParticipationRuntimeState = new();
         private PendingContentLoadContext _pendingContentLoadContext;
 
         public ActivityEntryPipeline(
@@ -1411,6 +1415,88 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void ResetState()
         {
             _pendingContentLoadContext = null;
+            _activityInventoryRuntimeState.ClearCurrentActivityObjectContributorDiscoveryResult();
+            _activityInventoryRuntimeState.ClearCurrentActorInventoryFeedResult();
+            _activityInventoryRuntimeState.ClearCurrentActivitySetupInventory();
+            _activityInventoryRuntimeState.ClearCurrentActivityCapabilityInventoryPreview();
+            _activityParticipationRuntimeState.ClearCurrentParticipationContext();
+        }
+
+        public ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult()
+        {
+            return _activityInventoryRuntimeState.CurrentActivityObjectContributorDiscoveryResult;
+        }
+
+        public void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result)
+        {
+            _activityInventoryRuntimeState.SetCurrentActivityObjectContributorDiscoveryResult(result);
+        }
+
+        public void ClearCurrentActivityObjectContributorDiscoveryResult()
+        {
+            _activityInventoryRuntimeState.ClearCurrentActivityObjectContributorDiscoveryResult();
+        }
+
+        public ActorInventoryFeedResult GetCurrentActorInventoryFeedResult()
+        {
+            return _activityInventoryRuntimeState.CurrentActorInventoryFeedResult;
+        }
+
+        public void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result)
+        {
+            _activityInventoryRuntimeState.SetCurrentActorInventoryFeedResult(result);
+        }
+
+        public void ClearCurrentActorInventoryFeedResult()
+        {
+            _activityInventoryRuntimeState.ClearCurrentActorInventoryFeedResult();
+        }
+
+        public ActivitySetupInventory GetCurrentActivitySetupInventory()
+        {
+            return _activityInventoryRuntimeState.CurrentActivitySetupInventory;
+        }
+
+        public void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory)
+        {
+            _activityInventoryRuntimeState.SetCurrentActivitySetupInventory(inventory);
+        }
+
+        public void ClearCurrentActivitySetupInventory()
+        {
+            _activityInventoryRuntimeState.ClearCurrentActivitySetupInventory();
+        }
+
+        public ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview()
+        {
+            return _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview;
+        }
+
+        public ActivityCapabilityInventoryValidationResult GetCurrentActivityCapabilityInventoryPreviewValidation()
+        {
+            return _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation;
+        }
+
+        public void SetCurrentActivityCapabilityInventoryPreview(
+            ActivityCapabilityInventory inventory,
+            ActivityCapabilityInventoryValidationResult validation)
+        {
+            _activityInventoryRuntimeState.SetCurrentActivityCapabilityInventoryPreview(inventory, validation);
+        }
+
+        public void ClearCurrentActivityCapabilityInventoryPreview()
+        {
+            _activityInventoryRuntimeState.ClearCurrentActivityCapabilityInventoryPreview();
+        }
+
+        public ActivityParticipationContext GetCurrentActivityParticipationContext()
+        {
+            return _activityParticipationRuntimeState.CurrentParticipationContext;
+        }
+
+        public void StoreActivityParticipationContext(ActivityParticipationContext context)
+        {
+            _activityParticipationRuntimeState.StoreCurrentParticipationContext(context);
         }
 
         private void ExecuteNextContentSceneLoad(

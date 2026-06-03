@@ -424,8 +424,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
-            builder.AppendLine($"activityContentLoadedSet='{host.State.CurrentActivityContentLoadedSet}'");
-            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory(host.State)}'");
+            builder.AppendLine($"activityContentLoadedSet='{host.Pipeline.GetCurrentActivityContentLoadedSet()}'");
+            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory()}'");
             builder.AppendLine($"pendingHandoffTarget='{GetPendingHandoffTarget()}'");
             builder.AppendLine($"nextExpectedQaAction='{GetNextExpectedQaAction()}'");
             builder.AppendLine("qaLifecycleRail='ActivityRunning -> CompleteCurrentActivity/RestartCurrentActivity; CompleteActivationWindow/CompleteDeactivationWindow apenas quando window stage=Ready; ContinueToNextActivity apenas se policy=ManualContinue'");
@@ -505,8 +505,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             builder.AppendLine($"identity='{host.State.CurrentIdentity}'");
             builder.AppendLine($"handoff='{host.State.CurrentHandoff}'");
             builder.AppendLine($"pendingOperation='{host.State.CurrentPendingOperation}'");
-            builder.AppendLine($"activityContentLoadedSet='{host.State.CurrentActivityContentLoadedSet}'");
-            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory(host.State)}'");
+            builder.AppendLine($"activityContentLoadedSet='{host.Pipeline.GetCurrentActivityContentLoadedSet()}'");
+            builder.AppendLine($"activitySetupInventory='{FormatActivitySetupInventory()}'");
             if (host.GateState != null)
             {
                 builder.AppendLine($"gateSessionBlocked='{host.GateState.SessionBlocked}' gateActivityBlocked='{host.GateState.ActivityBlocked}'");
@@ -2853,14 +2853,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 : ActivityTransitionContinuePolicy.Unknown;
         }
 
-        private static string FormatActivitySetupInventory(SessionActivityRuntimeState state)
+        private string FormatActivitySetupInventory()
         {
-            if (state == null)
+            if (host == null || host.Pipeline == null)
             {
                 return "<none>";
             }
 
-            ActivitySetupInventory inventory = state.CurrentActivitySetupInventory;
+            ActivitySetupInventory inventory = host.Pipeline.GetCurrentActivitySetupInventory();
             if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
             {
                 return "<none>";

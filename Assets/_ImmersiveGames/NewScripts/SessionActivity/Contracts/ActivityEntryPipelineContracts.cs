@@ -1315,6 +1315,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryPipeline
     {
+        PlayerActivityParticipationContext GetCurrentActivityParticipationContext();
+        void StoreActivityParticipationContext(PlayerActivityParticipationContext context);
+        ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult();
+        void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result);
+        void ClearCurrentActivityObjectContributorDiscoveryResult();
+        ActorInventoryFeedResult GetCurrentActorInventoryFeedResult();
+        void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result);
+        void ClearCurrentActorInventoryFeedResult();
+        ActivitySetupInventory GetCurrentActivitySetupInventory();
+        void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory);
+        void ClearCurrentActivitySetupInventory();
+        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
+        ActivityCapabilityInventoryValidationResult GetCurrentActivityCapabilityInventoryPreviewValidation();
+        void SetCurrentActivityCapabilityInventoryPreview(
+            ActivityCapabilityInventory inventory,
+            ActivityCapabilityInventoryValidationResult validation);
+        void ClearCurrentActivityCapabilityInventoryPreview();
         ActivityEntryPreparationResult PrepareEntry(ActivityEntryPreparationCommand command);
         ActivityEntrySetupReadinessResult ExecuteSetupAndReadiness(
             ActivityEntryCommand command,

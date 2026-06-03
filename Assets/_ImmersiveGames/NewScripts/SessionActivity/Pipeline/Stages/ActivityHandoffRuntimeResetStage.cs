@@ -44,6 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static void Execute(
             ActivityHandoffRuntimeResetStageCommand command,
             IActivityEntryPipeline activityEntryPipeline,
+            ActivityContentRuntimeState activityContentRuntimeState,
             ActivityContentReleaseRuntimeState activityContentReleaseRuntimeState,
             ActivityObjectExitRuntimeState activityObjectExitRuntimeState,
             ActivityActorExitRuntimeState activityActorExitRuntimeState,
@@ -59,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             Log("ActivityHandoffRuntimeResetStarted", command, DebugUtility.Colors.Info);
 
             activityEntryPipeline.ResetState();
-            activityContentReleaseRuntimeState.ClearCurrentLoadedSet("<none>", 0, Owner, ResetReason);
+            activityContentRuntimeState.ClearCurrentLoadedSet("<none>", 0, Owner, ResetReason);
             activityContentReleaseRuntimeState.ClearPendingReleaseContext("<none>", 0, Owner, ResetReason);
             activityContentReleaseRuntimeState.SetAwaitingContinuation(false, "<none>", 0, Owner, ResetReason);
             activityObjectExitRuntimeState.ClearAll("<none>", 0, Owner, ResetReason);

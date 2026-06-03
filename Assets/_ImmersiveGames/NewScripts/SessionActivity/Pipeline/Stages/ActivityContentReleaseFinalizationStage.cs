@@ -88,7 +88,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityContentReleaseFinalizationStageCommand command,
             SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
-            ActivityContentReleaseRuntimeState runtimeState,
+            ActivityContentRuntimeState contentRuntimeState,
+            ActivityContentReleaseRuntimeState releaseRuntimeState,
             ActivityObjectExitRuntimeState objectExitRuntimeState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -99,14 +100,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
-            runtimeState = runtimeState ?? throw new ArgumentNullException(nameof(runtimeState));
+            contentRuntimeState = contentRuntimeState ?? throw new ArgumentNullException(nameof(contentRuntimeState));
+            releaseRuntimeState = releaseRuntimeState ?? throw new ArgumentNullException(nameof(releaseRuntimeState));
             objectExitRuntimeState = objectExitRuntimeState ?? throw new ArgumentNullException(nameof(objectExitRuntimeState));
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            bool loadedSetPresentBefore = runtimeState.HasCurrentLoadedSet;
-            bool pendingContextPresentBefore = runtimeState.HasPendingReleaseContext;
-            bool awaitingBefore = runtimeState.IsAwaitingContinuation;
+            bool loadedSetPresentBefore = contentRuntimeState.HasCurrentLoadedSet;
+            bool pendingContextPresentBefore = releaseRuntimeState.HasPendingReleaseContext;
+            bool awaitingBefore = releaseRuntimeState.IsAwaitingContinuation;
 
             int entrySequence = command.EntrySequence;
             SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(
@@ -148,12 +150,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 snapshots);
 
             endpoint.ClearCurrentActivityContentLoadedSet();
-            runtimeState.ClearPendingReleaseContext(command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
-            runtimeState.SetAwaitingContinuation(false, command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
-
-            bool loadedSetPresentAfter = runtimeState.HasCurrentLoadedSet;
-            bool pendingContextPresentAfter = runtimeState.HasPendingReleaseContext;
-            bool awaitingAfter = runtimeState.IsAwaitingContinuation;
+            releaseRuntimeState.ClearPendingReleaseContext(command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
+            releaseRuntimeState.SetAwaitingContinuation(false, command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
+            bool loadedSetPresentAfter = contentRuntimeState.HasCurrentLoadedSet;
+            bool pendingContextPresentAfter = releaseRuntimeState.HasPendingReleaseContext;
+            bool awaitingAfter = releaseRuntimeState.IsAwaitingContinuation;
 
             LogFinalizationEvent(
                 "ActivityContentReleaseFinalizationCleanupCompleted",

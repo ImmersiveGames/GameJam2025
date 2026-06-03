@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
-using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -23,12 +22,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public int CatalogLoopCount { get; internal set; }
         public ActivityExecutionState CurrentExecutionState { get; internal set; }
         public SessionActivityPendingOperation CurrentPendingOperation { get; internal set; }
-        public ActivityContentLoadedSet CurrentActivityContentLoadedSet { get; internal set; }
-        public ActivityObjectContributorDiscoveryResult CurrentActivityObjectContributorDiscoveryResult { get; internal set; }
-        public ActivitySetupInventory CurrentActivitySetupInventory { get; internal set; }
-        public ActorInventoryFeedResult CurrentActorInventoryFeedResult { get; internal set; }
-        public ActivityCapabilityInventory CurrentActivityCapabilityInventoryPreview { get; internal set; }
-        public ActivityCapabilityInventoryValidationResult CurrentActivityCapabilityInventoryPreviewValidation { get; internal set; }
 
         public IReadOnlyList<SessionActivityFact> Facts => _facts;
         public IReadOnlyList<SessionActivitySnapshot> Snapshots => _snapshots;
@@ -49,12 +42,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             CatalogLoopCount = 0;
             CurrentExecutionState = ActivityExecutionState.Stopped;
             CurrentPendingOperation = default;
-            CurrentActivityContentLoadedSet = default;
-            CurrentActivityObjectContributorDiscoveryResult = default;
-            CurrentActivitySetupInventory = default;
-            CurrentActorInventoryFeedResult = default;
-            CurrentActivityCapabilityInventoryPreview = default;
-            CurrentActivityCapabilityInventoryPreviewValidation = default;
             _facts.Clear();
             _snapshots.Clear();
             _trace.Clear();
@@ -101,63 +88,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public void ClearPendingOperation()
         {
             CurrentPendingOperation = default;
-        }
-
-        public void SetCurrentActivityContentLoadedSet(ActivityContentLoadedSet loadedSet)
-        {
-            CurrentActivityContentLoadedSet = loadedSet;
-        }
-
-        public void ClearCurrentActivityContentLoadedSet()
-        {
-            CurrentActivityContentLoadedSet = default;
-        }
-
-        public void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result)
-        {
-            CurrentActivityObjectContributorDiscoveryResult = result;
-        }
-
-        public void ClearCurrentActivityObjectContributorDiscoveryResult()
-        {
-            CurrentActivityObjectContributorDiscoveryResult = default;
-            CurrentActorInventoryFeedResult = default;
-            CurrentActivityCapabilityInventoryPreview = default;
-            CurrentActivityCapabilityInventoryPreviewValidation = default;
-        }
-
-        public void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory)
-        {
-            CurrentActivitySetupInventory = inventory;
-        }
-
-        public void ClearCurrentActivitySetupInventory()
-        {
-            CurrentActivitySetupInventory = default;
-        }
-
-        public void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result)
-        {
-            CurrentActorInventoryFeedResult = result;
-        }
-
-        public void ClearCurrentActorInventoryFeedResult()
-        {
-            CurrentActorInventoryFeedResult = default;
-        }
-
-        public void SetCurrentActivityCapabilityInventoryPreview(
-            ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation)
-        {
-            CurrentActivityCapabilityInventoryPreview = inventory;
-            CurrentActivityCapabilityInventoryPreviewValidation = validation;
-        }
-
-        public void ClearCurrentActivityCapabilityInventoryPreview()
-        {
-            CurrentActivityCapabilityInventoryPreview = default;
-            CurrentActivityCapabilityInventoryPreviewValidation = default;
         }
 
         public void IncrementCatalogLoopCount()

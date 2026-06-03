@@ -274,14 +274,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         }
 
 
-        public void StoreActivityParticipationContext(
-            PlayerActivityParticipationContext context,
-            string activityId,
-            int entrySequence,
-            string source,
-            string reason)
+        public void StoreActivityParticipationContext(PlayerActivityParticipationContext context)
         {
             _currentActivityParticipationContext = context;
+
+            string activityId = context?.SessionActivityIdentity.ActivityId ?? string.Empty;
+            int entrySequence = context?.SessionActivityIdentity.EntrySequence ?? 0;
+            string source = context?.Source ?? string.Empty;
+            string reason = context?.Reason ?? string.Empty;
 
             int participantCount = 0;
             int storedPlayerExitBindingCount = 0;

@@ -49,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityContentSceneUnloadDispatchStageResult Execute(
             ActivityContentSceneUnloadDispatchStageCommand command,
             IActivityEntryRuntimeBridge endpoint,
+            ActivityContentRuntimeState contentRuntimeState,
             ActivityContentReleaseRuntimeState releaseRuntimeState,
             ISessionActivityPendingOperationRunner pendingOperationRunner,
             ISessionActivityPendingOperationCallback pendingOperationCallback,
@@ -61,6 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
+            contentRuntimeState = contentRuntimeState ?? throw new ArgumentNullException(nameof(contentRuntimeState));
             releaseRuntimeState = releaseRuntimeState ?? throw new ArgumentNullException(nameof(releaseRuntimeState));
             pendingOperationRunner = pendingOperationRunner ?? throw new ArgumentNullException(nameof(pendingOperationRunner));
             pendingOperationCallback = pendingOperationCallback ?? throw new ArgumentNullException(nameof(pendingOperationCallback));
@@ -75,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             SessionActivityDefinition definition = context.Definition;
             int entrySequence = context.EntrySequence;
-            ActivityContentLoadedSet loadedSet = context.LoadedSet;
+            ActivityContentLoadedSet loadedSet = contentRuntimeState.CurrentLoadedSet;
             int nextSceneIndex = context.NextSceneIndex;
 
             if (nextSceneIndex >= loadedSet.Scenes.Count)

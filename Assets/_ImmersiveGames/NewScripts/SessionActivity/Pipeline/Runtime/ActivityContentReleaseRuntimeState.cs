@@ -5,61 +5,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 {
     internal sealed class ActivityContentReleaseRuntimeState
     {
-        private ActivityContentLoadedSet _currentLoadedSet;
         private SessionActivityPipeline.PendingActivityContentReleaseContext _pendingReleaseContext;
         private bool _isAwaitingContinuation;
 
-        public ActivityContentLoadedSet CurrentLoadedSet => _currentLoadedSet;
         public SessionActivityPipeline.PendingActivityContentReleaseContext PendingReleaseContext => _pendingReleaseContext;
         public bool IsAwaitingContinuation => _isAwaitingContinuation;
 
-        public bool HasCurrentLoadedSet => _currentLoadedSet.IsValid || _currentLoadedSet.HasScenes;
         public bool HasPendingReleaseContext => _pendingReleaseContext != null && _pendingReleaseContext.IsValid;
-
-        public void StoreCurrentLoadedSet(
-            ActivityContentLoadedSet loadedSet,
-            string activityId,
-            int entrySequence,
-            string source,
-            string reason)
-        {
-            bool before = HasCurrentLoadedSet;
-            _currentLoadedSet = loadedSet;
-            LogStateChanged(
-                "ActivityContentReleaseRuntimeStateLoadedSetStored",
-                activityId,
-                entrySequence,
-                before,
-                HasCurrentLoadedSet,
-                HasPendingReleaseContext,
-                HasPendingReleaseContext,
-                _isAwaitingContinuation,
-                _isAwaitingContinuation,
-                source,
-                reason);
-        }
-
-        public void ClearCurrentLoadedSet(
-            string activityId,
-            int entrySequence,
-            string source,
-            string reason)
-        {
-            bool before = HasCurrentLoadedSet;
-            _currentLoadedSet = default;
-            LogStateChanged(
-                "ActivityContentReleaseRuntimeStateLoadedSetCleared",
-                activityId,
-                entrySequence,
-                before,
-                HasCurrentLoadedSet,
-                HasPendingReleaseContext,
-                HasPendingReleaseContext,
-                _isAwaitingContinuation,
-                _isAwaitingContinuation,
-                source,
-                reason);
-        }
 
         public void SetPendingReleaseContext(
             SessionActivityPipeline.PendingActivityContentReleaseContext context,
@@ -74,8 +26,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 "ActivityContentReleaseRuntimeStatePendingContextStored",
                 activityId,
                 entrySequence,
-                HasCurrentLoadedSet,
-                HasCurrentLoadedSet,
                 before,
                 HasPendingReleaseContext,
                 _isAwaitingContinuation,
@@ -96,8 +46,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 "ActivityContentReleaseRuntimeStatePendingContextCleared",
                 activityId,
                 entrySequence,
-                HasCurrentLoadedSet,
-                HasCurrentLoadedSet,
                 before,
                 HasPendingReleaseContext,
                 _isAwaitingContinuation,
@@ -119,8 +67,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 "ActivityContentReleaseRuntimeStateAwaitingContinuationChanged",
                 activityId,
                 entrySequence,
-                HasCurrentLoadedSet,
-                HasCurrentLoadedSet,
                 HasPendingReleaseContext,
                 HasPendingReleaseContext,
                 before,
@@ -133,8 +79,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             string eventName,
             string activityId,
             int entrySequence,
-            bool hasLoadedSetBefore,
-            bool hasLoadedSetAfter,
             bool hasPendingContextBefore,
             bool hasPendingContextAfter,
             bool awaitingBefore,
@@ -144,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             DebugUtility.Log(
                 typeof(ActivityContentReleaseRuntimeState),
-                $"[OBS][ActivityContentReleaseRuntimeState] event='{Normalize(eventName)}' owner='ActivityContentReleaseRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasLoadedSetBefore='{ToLowerInvariant(hasLoadedSetBefore)}' hasLoadedSetAfter='{ToLowerInvariant(hasLoadedSetAfter)}' hasPendingContextBefore='{ToLowerInvariant(hasPendingContextBefore)}' hasPendingContextAfter='{ToLowerInvariant(hasPendingContextAfter)}' awaitingContinuationBefore='{ToLowerInvariant(awaitingBefore)}' awaitingContinuationAfter='{ToLowerInvariant(awaitingAfter)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"[OBS][ActivityContentReleaseRuntimeState] event='{Normalize(eventName)}' owner='ActivityContentReleaseRuntimeState' activityId='{Normalize(activityId)}' entrySequence='{entrySequence}' hasPendingContextBefore='{ToLowerInvariant(hasPendingContextBefore)}' hasPendingContextAfter='{ToLowerInvariant(hasPendingContextAfter)}' awaitingContinuationBefore='{ToLowerInvariant(awaitingBefore)}' awaitingContinuationAfter='{ToLowerInvariant(awaitingAfter)}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
         }
 

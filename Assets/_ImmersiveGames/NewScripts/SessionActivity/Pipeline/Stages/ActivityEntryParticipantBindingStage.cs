@@ -44,13 +44,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string skipReason,
             string source,
             string reason);
-        void StoreActivityParticipationContext(
-            string activityId,
-            SessionActivityIdentity identity,
-            IReadOnlyList<PlayerActivityParticipantBinding> participants,
-            string source,
-            string reason,
-            string status);
+        void StoreActivityParticipationContext(PlayerActivityParticipationContext context);
         void BeginPlayerActorActivityScope(SessionActivityIdentity identity);
         bool TryGetActivePlayerActorIdentities(
             SessionActivityIdentity identity,
@@ -281,12 +275,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         DebugUtility.Colors.Success);
                     SessionActivityIdentity completedAfterRetentionIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingCompleted);
                     bridge.StoreActivityParticipationContext(
-                        command.ActivityId,
-                        completedAfterRetentionIdentity,
-                        retainedParticipants,
-                        command.Source,
-                        command.Reason,
-                        "ResolvedFromRetainedSessionScopedActor");
+                        new PlayerActivityParticipationContext(
+                            completedAfterRetentionIdentity,
+                            retainedParticipants,
+                            command.Source,
+                            command.Reason));
                     endpoint.SetCurrentIdentity(completedAfterRetentionIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
                     endpoint.EmitFact(
                         facts,
@@ -333,12 +326,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 SessionActivityIdentity completedAfterSkipIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingCompleted);
                 bridge.StoreActivityParticipationContext(
-                    command.ActivityId,
-                    completedAfterSkipIdentity,
-                    Array.Empty<PlayerActivityParticipantBinding>(),
-                    command.Source,
-                    command.Reason,
-                    "SkippedNoRequirements");
+                    new PlayerActivityParticipationContext(
+                        completedAfterSkipIdentity,
+                        Array.Empty<PlayerActivityParticipantBinding>(),
+                        command.Source,
+                        command.Reason));
                 endpoint.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
                 endpoint.EmitFact(
                     facts,
@@ -636,12 +628,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingCompleted);
             bridge.StoreActivityParticipationContext(
-                command.ActivityId,
-                completedIdentity,
-                activityParticipantBindings,
-                command.Source,
-                command.Reason,
-                "ResolvedNominally");
+                new PlayerActivityParticipationContext(
+                    completedIdentity,
+                    activityParticipantBindings,
+                    command.Source,
+                    command.Reason));
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
             endpoint.EmitFact(
                 facts,
