@@ -9,7 +9,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal readonly struct ActivityContentReleaseFinalizationStageCommand
     {
         public ActivityContentReleaseFinalizationStageCommand(
-            SessionActivityDefinition definition,
             SessionActivityCommand command,
             int entrySequence,
             int loadedSceneCount,
@@ -19,8 +18,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string status,
             string continuationKind)
         {
-            Definition = definition;
             Command = command;
+            ActivityId = Normalize(command.Identity.ActivityId);
+            ActivityOrdinal = command.Identity.ActivityOrdinal;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             LoadedSceneCount = loadedSceneCount < 0 ? 0 : loadedSceneCount;
             ReleasedSceneCount = releasedSceneCount < 0 ? 0 : releasedSceneCount;
@@ -30,8 +30,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ContinuationKind = Normalize(continuationKind);
         }
 
-        public SessionActivityDefinition Definition { get; }
         public SessionActivityCommand Command { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public int EntrySequence { get; }
         public int LoadedSceneCount { get; }
         public int ReleasedSceneCount { get; }
@@ -43,8 +44,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string Reason => Command.Reason;
 
         public bool IsValid =>
-            Definition.IsValid &&
             Command.Identity.IsValid &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            string.Equals(Command.Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            Command.Identity.ActivityOrdinal == ActivityOrdinal &&
             EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(CompletionKind) &&
@@ -82,6 +86,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityContentReleaseFinalizationStageResult Execute(
             ActivityContentReleaseFinalizationStageCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityContentReleaseRuntimeState runtimeState,
             ActivityObjectExitRuntimeState objectExitRuntimeState,
@@ -103,7 +108,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool pendingContextPresentBefore = runtimeState.HasPendingReleaseContext;
             bool awaitingBefore = runtimeState.IsAwaitingContinuation;
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(
                 definition,
@@ -134,17 +138,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             ActivityObjectContributorUnregisterStage.Execute(
                 new ActivityObjectContributorUnregisterStageCommand(
-                    definition,
+                    command.Command.Identity,
                     command.Command,
                     entrySequence),
+                definition,
                 endpoint,
                 objectExitRuntimeState,
                 facts,
                 snapshots);
 
             endpoint.ClearCurrentActivityContentLoadedSet();
-            runtimeState.ClearPendingReleaseContext(definition.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
-            runtimeState.SetAwaitingContinuation(false, definition.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
+            runtimeState.ClearPendingReleaseContext(command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
+            runtimeState.SetAwaitingContinuation(false, command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
 
             bool loadedSetPresentAfter = runtimeState.HasCurrentLoadedSet;
             bool pendingContextPresentAfter = runtimeState.HasPendingReleaseContext;
@@ -168,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 completedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
+                $"'{command.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
             LogFinalizationEvent(
                 "ActivityContentReleaseCompleted",
                 command,
@@ -191,7 +196,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 "activity_content_release_completed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
+                $"'{command.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
 
             LogFinalizationEvent(
                 "ActivityContentReleaseFinalizationCompleted",
@@ -225,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             DebugUtility.Log(
                 typeof(ActivityContentReleaseFinalizationStage),
                 $"[OBS][ActivityContentReleaseFinalizationStage] event='{eventName}' owner='ActivityContentReleaseFinalizationStage' " +
-                $"pipelineId='{command.Command.Identity.PipelineId}' sessionStateId='{command.Command.Identity.SessionId}' activityId='{command.Definition.ActivityId}' " +
+                $"pipelineId='{command.Command.Identity.PipelineId}' sessionStateId='{command.Command.Identity.SessionId}' activityId='{command.ActivityId}' " +
                 $"entrySequence='{command.EntrySequence}' stage='{SessionActivityStage.ActivityContentReleaseCompleted}' source='{command.Source}' reason='{command.Reason}' " +
                 $"completionKind='{command.CompletionKind}' status='{command.Status}' loadedSceneCount='{command.LoadedSceneCount}' releasedSceneCount='{command.ReleasedSceneCount}' " +
                 $"skippedNoContent='{ToLowerInvariant(command.SkippedNoContent)}' pendingReleaseContextPresentBefore='{ToLowerInvariant(pendingContextPresentBefore)}' " +

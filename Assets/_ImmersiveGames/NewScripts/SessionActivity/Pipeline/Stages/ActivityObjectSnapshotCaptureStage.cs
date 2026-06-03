@@ -11,18 +11,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal readonly struct ActivityObjectSnapshotCaptureStageCommand
     {
         public ActivityObjectSnapshotCaptureStageCommand(
-            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
             SessionActivityCommand command,
             int entrySequence,
             string snapshotSchemaId)
         {
-            Definition = definition;
+            Identity = identity;
             Command = command;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             SnapshotSchemaId = Normalize(snapshotSchemaId);
         }
 
-        public SessionActivityDefinition Definition { get; }
+        public SessionActivityIdentity Identity { get; }
         public SessionActivityCommand Command { get; }
         public int EntrySequence { get; }
         public string SnapshotSchemaId { get; }
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string Reason => Command.Reason;
 
         public bool IsValid =>
-            Definition.IsValid &&
+            Identity.IsValid &&
             Command.Identity.IsValid &&
             EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(SnapshotSchemaId) &&
@@ -78,6 +78,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityObjectSnapshotCaptureStageResult Execute(
             ActivityObjectSnapshotCaptureStageCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityObjectExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
@@ -93,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityDefinition definition = command.Definition;
+            SessionActivityIdentity identity = command.Identity;
             int entrySequence = command.EntrySequence;
             ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
             SessionActivityIdentity captureIdentity = endpoint.BuildIdentity(
@@ -121,7 +122,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             SessionActivityIdentity completedIdentity;
             if (!discoveryResult.IsValid ||
-                !IsDiscoveryResultForCurrentEntry(discoveryResult, captureIdentity, definition, entrySequence) ||
+                !IsDiscoveryResultForCurrentEntry(discoveryResult, captureIdentity, entrySequence) ||
                 discoveryResult.Reports.Count == 0)
             {
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
@@ -194,7 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, captureIdentity, definition, entrySequence))
+                if (!report.IsValid || !IsReportForCurrentEntry(report, captureIdentity, entrySequence))
                 {
                     continue;
                 }
@@ -269,7 +270,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
 
                 ActivityObjectSnapshotCaptureResult captureResult = ExecuteObjectSnapshotCaptureCommand(captureCommand, providers);
-                if (!captureResult.IsValid || !IsObjectSnapshotCaptureResultForCurrentEntry(captureResult, captureIdentity, definition, entrySequence))
+                if (!captureResult.IsValid || !IsObjectSnapshotCaptureResultForCurrentEntry(captureResult, captureIdentity, entrySequence))
                 {
                     failedIdentity = endpoint.BuildIdentity(
                         definition,
@@ -524,37 +525,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static bool IsDiscoveryResultForCurrentEntry(
             ActivityObjectContributorDiscoveryResult result,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             return result.IsValid &&
                    result.Identity.IsValid &&
                    string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
             ActivityObjectContributionReport report,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             return report.IsValid &&
                    report.Identity.IsValid &&
                    string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    report.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsObjectSnapshotCaptureResultForCurrentEntry(
             ActivityObjectSnapshotCaptureResult result,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             SessionActivityIdentity resultIdentity = result.Command.Identity;
@@ -562,8 +560,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 !resultIdentity.IsValid ||
                 !string.Equals(resultIdentity.PipelineId, identity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(resultIdentity.SessionId, identity.SessionId, StringComparison.Ordinal) ||
-                !string.Equals(resultIdentity.ActivityId, definition.ActivityId, StringComparison.Ordinal) ||
-                resultIdentity.ActivityOrdinal != definition.ActivityOrdinal ||
+                !string.Equals(resultIdentity.ActivityId, identity.ActivityId, StringComparison.Ordinal) ||
+                resultIdentity.ActivityOrdinal != identity.ActivityOrdinal ||
                 resultIdentity.EntrySequence != entrySequence)
             {
                 return false;

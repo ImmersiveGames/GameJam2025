@@ -95,18 +95,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public void RefreshFromLocalActorRoot()
         {
-            presentationEndpoint = ResolveSingleInActorRoot<ActorPresentationEndpoint>();
-            attributeEndpoint = ResolveSingleInActorRoot<ActorAttributeEndpoint>();
-            actorCameraTargetEndpoint = ResolveSingleInterfaceInActorRoot<IActorCameraTargetEndpoint>();
-            actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>();
-            actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>();
-            actorIntentSource = ResolveSingleInterfaceInActorRoot<IActorIntentSource>();
+            Transform actorRoot = ResolveActorRootTransform();
+            presentationEndpoint = ResolveSingleInActorRoot<ActorPresentationEndpoint>(actorRoot);
+            attributeEndpoint = ResolveSingleInActorRoot<ActorAttributeEndpoint>(actorRoot);
+            actorCameraTargetEndpoint = ResolveSingleInterfaceInActorRoot<IActorCameraTargetEndpoint>(actorRoot);
+            actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
+            actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
+            actorIntentSource = ResolveSingleInterfaceInActorRoot<IActorIntentSource>(actorRoot);
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)
             where TEndpoint : Component
         {
-            endpoint = ResolveSingleInActorRoot<TEndpoint>();
+            endpoint = ResolveSingleInActorRoot<TEndpoint>(ResolveActorRootTransform());
             return endpoint != null;
         }
 
@@ -122,10 +123,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
         }
 
-        private TEndpoint ResolveSingleInActorRoot<TEndpoint>()
+        private Transform ResolveActorRootTransform()
+        {
+            Actor actor = GetComponentInParent<Actor>(includeInactive: true);
+            if (actor != null && actor.transform != null)
+            {
+                return actor.transform;
+            }
+
+            return transform;
+        }
+
+        private TEndpoint ResolveSingleInActorRoot<TEndpoint>(Transform actorRoot)
             where TEndpoint : Component
         {
-            TEndpoint[] endpoints = GetComponentsInChildren<TEndpoint>(includeInactive: true);
+            if (actorRoot == null)
+            {
+                return null;
+            }
+
+            TEndpoint[] endpoints = actorRoot.GetComponentsInChildren<TEndpoint>(includeInactive: true);
             if (endpoints == null || endpoints.Length == 0)
             {
                 return null;
@@ -134,10 +151,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             return endpoints[0];
         }
 
-        private TEndpoint ResolveSingleInterfaceInActorRoot<TEndpoint>()
+        private TEndpoint ResolveSingleInterfaceInActorRoot<TEndpoint>(Transform actorRoot)
             where TEndpoint : class
         {
-            MonoBehaviour[] components = GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
+            if (actorRoot == null)
+            {
+                return null;
+            }
+
+            MonoBehaviour[] components = actorRoot.GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
             for (int index = 0; index < components.Length; index++)
             {
                 if (components[index] is TEndpoint endpoint)

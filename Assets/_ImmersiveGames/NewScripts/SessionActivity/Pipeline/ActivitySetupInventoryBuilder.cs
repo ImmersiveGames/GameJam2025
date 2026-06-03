@@ -5,80 +5,48 @@ using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
-    internal readonly struct ActivitySetupInventoryBuildContext
-    {
-        public ActivitySetupInventoryBuildContext(
-            SessionActivityDefinition definition,
-            SessionActivityIdentity identity,
-            ActivityContentLoadedSet loadedSet,
-            string source,
-            string reason)
-        {
-            Definition = definition;
-            Identity = identity;
-            LoadedSet = loadedSet;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
-        }
-
-        public SessionActivityDefinition Definition { get; }
-        public SessionActivityIdentity Identity { get; }
-        public ActivityContentLoadedSet LoadedSet { get; }
-        public string Source { get; }
-        public string Reason { get; }
-
-        public bool IsValid => Definition.IsValid && Identity.IsValid && Identity.Stage == SessionActivityStage.ActivitySetupStarted && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
-    }
-
     internal sealed class ActivitySetupInventoryBuilder
     {
-        public ActivitySetupInventoryBuildResult Build(ActivitySetupInventoryBuildContext context)
+        public ActivitySetupInventoryBuildResult Build(ActivityObjectSetupInventoryPlan plan)
         {
-            if (!context.IsValid)
+            if (!plan.IsValid)
             {
                 return new ActivitySetupInventoryBuildResult(
                     ActivitySetupInventoryBuildResultKind.Failed,
                     default,
-                    context.Source,
-                    context.Reason,
+                    plan.Source,
+                    plan.Reason,
                     "ActivitySetupInventory build context is invalid.");
             }
 
-            ActivitySetupRequirementsAuthoring requirements = context.Definition.ActivityContentProfile != null
-                ? context.Definition.ActivityContentProfile.SetupRequirements
-                : null;
+            ActivitySetupRequirementsAuthoring requirements = plan.SetupRequirements;
 
-            string inventoryId = $"{context.Definition.ActivityId}|{context.Identity.EntrySequence}|activity_setup_inventory";
+            string inventoryId = $"{plan.ActivityId}|{plan.Identity.EntrySequence}|activity_setup_inventory";
 
             ActivitySetupInventory inventory = new(
-                context.Identity,
+                plan.Identity,
                 inventoryId,
-                BuildParticipantRequirements(context, requirements?.ParticipantRequirements),
-                BuildObjectEntryRequirements(context, requirements?.ObjectEntryRequirements),
-                BuildSceneContributorRequirements(context, requirements?.SceneContributorRequirements),
-                BuildPlacementRequirements(context, requirements?.PlacementRequirements),
-                BuildCameraBindingRequirements(context, requirements?.CameraBindingRequirements),
-                BuildInteractionBindingRequirements(context, requirements?.InteractionBindingRequirements),
-                BuildHudBindingRequirements(context, requirements?.HudBindingRequirements),
-                BuildWarmupRequirements(context, requirements?.WarmupRequirements),
-                BuildStateResetRequirements(context, requirements?.StateResetRequirements),
-                BuildReleaseRequirements(context, requirements?.ReleaseRequirements),
-                context.Source,
-                context.Reason);
+                BuildParticipantRequirements(plan, requirements?.ParticipantRequirements),
+                BuildObjectEntryRequirements(plan, requirements?.ObjectEntryRequirements),
+                BuildSceneContributorRequirements(plan, requirements?.SceneContributorRequirements),
+                BuildPlacementRequirements(plan, requirements?.PlacementRequirements),
+                BuildCameraBindingRequirements(plan, requirements?.CameraBindingRequirements),
+                BuildInteractionBindingRequirements(plan, requirements?.InteractionBindingRequirements),
+                BuildHudBindingRequirements(plan, requirements?.HudBindingRequirements),
+                BuildWarmupRequirements(plan, requirements?.WarmupRequirements),
+                BuildStateResetRequirements(plan, requirements?.StateResetRequirements),
+                BuildReleaseRequirements(plan, requirements?.ReleaseRequirements),
+                plan.Source,
+                plan.Reason);
 
             if (!inventory.IsValid)
             {
                 return new ActivitySetupInventoryBuildResult(
                     ActivitySetupInventoryBuildResultKind.Failed,
                     inventory,
-                    context.Source,
-                    context.Reason,
-                    $"ActivitySetupInventory built invalid inventory for activityId='{context.Definition.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
+                    plan.Source,
+                    plan.Reason,
+                    $"ActivitySetupInventory built invalid inventory for activityId='{plan.ActivityId}' entrySequence='{plan.Identity.EntrySequence}'.");
             }
 
             ActivitySetupInventoryBuildResultKind kind = inventory.HasRequirements
@@ -89,10 +57,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ? $"ActivitySetupInventory built requirements='{inventory.TotalRequirementCount}'."
                 : "ActivitySetupInventory skipped because no setup requirements were declared.";
 
-            return new ActivitySetupInventoryBuildResult(kind, inventory, context.Source, context.Reason, message);
+            return new ActivitySetupInventoryBuildResult(kind, inventory, plan.Source, plan.Reason, message);
         }
 
-        private static IReadOnlyList<ParticipantRequirement> BuildParticipantRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityParticipantRequirementAuthoring> entries)
+        private static IReadOnlyList<ParticipantRequirement> BuildParticipantRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityParticipantRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -103,14 +71,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityParticipantRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Participant requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.Participant, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Participant, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new ParticipantRequirement(requirement, entry.ParticipantKind, entry.SessionParticipantId, entry.ExpectedSessionRole, entry.PlacementRequirementId));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<ObjectEntryRequirement> BuildObjectEntryRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityObjectEntryRequirementAuthoring> entries)
+        private static IReadOnlyList<ObjectEntryRequirement> BuildObjectEntryRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityObjectEntryRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -121,14 +89,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityObjectEntryRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Object entry requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.ObjectEntry, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.ObjectEntry, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new ObjectEntryRequirement(requirement, entry.ObjectEntryKind, entry.ObjectId, entry.ObjectTypeId, entry.PlacementRequirementId));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<SceneContributorRequirement> BuildSceneContributorRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivitySceneContributorRequirementAuthoring> entries)
+        private static IReadOnlyList<SceneContributorRequirement> BuildSceneContributorRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivitySceneContributorRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -139,14 +107,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivitySceneContributorRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Scene contributor requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.SceneContributor, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.SceneContributor, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new SceneContributorRequirement(requirement, entry.ContributorId, entry.ContributorRole, entry.SceneName));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<PlacementRequirement> BuildPlacementRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityPlacementRequirementAuthoring> entries)
+        private static IReadOnlyList<PlacementRequirement> BuildPlacementRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityPlacementRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -157,14 +125,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityPlacementRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Placement requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.Placement, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Placement, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new PlacementRequirement(requirement, entry.PlacementKind, entry.TargetId, entry.MarkerId, entry.SceneName));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<CameraBindingRequirement> BuildCameraBindingRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityCameraBindingRequirementAuthoring> entries)
+        private static IReadOnlyList<CameraBindingRequirement> BuildCameraBindingRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityCameraBindingRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -175,14 +143,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityCameraBindingRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Camera binding requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.CameraBinding, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.CameraBinding, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new CameraBindingRequirement(requirement, entry.CameraBindingKind, entry.BindingId, entry.TargetId, entry.ProfileId));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<InteractionBindingRequirement> BuildInteractionBindingRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityInteractionBindingRequirementAuthoring> entries)
+        private static IReadOnlyList<InteractionBindingRequirement> BuildInteractionBindingRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityInteractionBindingRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -193,14 +161,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityInteractionBindingRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Interaction binding requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.InteractionBinding, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.InteractionBinding, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new InteractionBindingRequirement(requirement, entry.InteractionBindingKind, entry.BindingId, entry.TargetId, entry.ProfileId));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<HudBindingRequirement> BuildHudBindingRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityHudBindingRequirementAuthoring> entries)
+        private static IReadOnlyList<HudBindingRequirement> BuildHudBindingRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityHudBindingRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -211,14 +179,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityHudBindingRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Hud binding requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.HudBinding, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.HudBinding, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new HudBindingRequirement(requirement, entry.HudBindingKind, entry.BindingId, entry.TargetId, entry.ProfileId));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<WarmupRequirement> BuildWarmupRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityWarmupRequirementAuthoring> entries)
+        private static IReadOnlyList<WarmupRequirement> BuildWarmupRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityWarmupRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -229,14 +197,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityWarmupRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Warmup requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.Warmup, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Warmup, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new WarmupRequirement(requirement, entry.WarmupKind, entry.TargetId, entry.ProfileId));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<StateResetRequirement> BuildStateResetRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityStateResetRequirementAuthoring> entries)
+        private static IReadOnlyList<StateResetRequirement> BuildStateResetRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityStateResetRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -247,14 +215,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityStateResetRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"State reset requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.StateReset, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.StateReset, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new StateResetRequirement(requirement, entry.TargetId, entry.ResetGroups));
             }
 
             return requirements;
         }
 
-        private static IReadOnlyList<ReleaseRequirement> BuildReleaseRequirements(ActivitySetupInventoryBuildContext context, IReadOnlyList<ActivityReleaseRequirementAuthoring> entries)
+        private static IReadOnlyList<ReleaseRequirement> BuildReleaseRequirements(ActivityObjectSetupInventoryPlan plan, IReadOnlyList<ActivityReleaseRequirementAuthoring> entries)
         {
             if (entries == null || entries.Count == 0)
             {
@@ -265,7 +233,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             for (int index = 0; index < entries.Count; index++)
             {
                 ActivityReleaseRequirementAuthoring entry = entries[index] ?? throw new InvalidOperationException($"Release requirement at index '{index}' cannot be null.");
-                ActivitySetupRequirement requirement = BuildBaseRequirement(context, ActivitySetupSubplanKind.Release, entry.RequirementId, entry.Requiredness);
+                ActivitySetupRequirement requirement = BuildBaseRequirement(plan, ActivitySetupSubplanKind.Release, entry.RequirementId, entry.Requiredness);
                 requirements.Add(new ReleaseRequirement(requirement, entry.ReleaseKind, entry.TargetId, entry.PolicyId));
             }
 
@@ -273,19 +241,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
         private static ActivitySetupRequirement BuildBaseRequirement(
-            ActivitySetupInventoryBuildContext context,
+            ActivityObjectSetupInventoryPlan plan,
             ActivitySetupSubplanKind subplanKind,
             string requirementId,
             ActivitySetupRequirementRequiredness requiredness)
         {
             return new ActivitySetupRequirement(
-                context.Identity,
+                plan.Identity,
                 subplanKind,
                 requirementId,
                 requiredness,
                 ActivitySetupRequirementStatus.Planned,
-                context.Source,
-                context.Reason);
+                plan.Source,
+                plan.Reason);
         }
     }
 

@@ -17,7 +17,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityObjectContributorDiscoveryResult Execute(
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
-            IActivityEntryIdentityRuntimeBridge identityBridge,
             IActivityEntryFactRuntimeBridge factBridge,
             IActivityEntryLogRuntimeBridge logBridge,
             IActivityEntryPreparationRuntimeBridge preparationBridge,
@@ -30,23 +29,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity discoveryIdentity = identityBridge.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            identityBridge.SetCurrentIdentity(discoveryIdentity, SessionActivityStage.ActivitySetupStarted);
+            SessionActivityIdentity discoveryIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             factBridge.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted,
                 discoveryIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object contributor discovery started.");
+                $"'{command.Identity.ActivityId}' activity object contributor discovery started.");
             factBridge.EmitSnapshot(
                 snapshots,
                 "activity_object_contributor_discovery_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object contributor discovery started.");
+                $"'{command.Identity.ActivityId}' activity object contributor discovery started.");
             logBridge.LogEntryOwnerEvent(
                 "ActivityEntryObjectContributorDiscoveryStarted",
                 discoveryIdentity,
@@ -54,7 +51,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 "owner='ActivityEntryPipeline' block='object_contributor_discovery'");
 
-            if (!HasLoadedSetForCurrentEntry(loadedSet, definition, entrySequence, command.Identity) || !loadedSet.HasScenes)
+            if (!HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) || !loadedSet.HasScenes)
             {
                 preparationBridge.ClearCurrentActivityObjectContributorDiscoveryResult();
                 factBridge.EmitFact(
@@ -63,13 +60,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
+                    $"'{command.Identity.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "activity_object_contributor_discovery_skipped_no_content",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
+                    $"'{command.Identity.ActivityId}' activity object contributor discovery skipped reason='no_content_loaded_set'.");
                 logBridge.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoverySkipped",
                     discoveryIdentity,
@@ -94,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (!scene.IsValid() || !scene.isLoaded)
                     {
                         throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' content scene '{record.SceneName}' is not loaded for object contributor discovery.");
+                            $"Activity '{command.Identity.ActivityId}' content scene '{record.SceneName}' is not loaded for object contributor discovery.");
                     }
 
                     AppendContributorsFromSceneOrFail(reports, scene, loadedSet, record, command.Source, command.Reason);
@@ -110,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (!result.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"Activity '{definition.ActivityId}' produced invalid ActivityObjectContributorDiscoveryResult.");
+                        $"Activity '{command.Identity.ActivityId}' produced invalid ActivityObjectContributorDiscoveryResult.");
                 }
 
                 bridge.SetCurrentActivityObjectContributorDiscoveryResult(result);
@@ -124,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         discoveryIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' contributor discovered contentProfileId='{report.ContentProfileId}' sceneName='{report.SceneName}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroups='{FormatActivityStateResetGroups(report.SupportedResetGroups)}' releaseKinds='{FormatReleaseKinds(report.SupportedReleaseKinds)}'.");
+                        $"'{command.Identity.ActivityId}' contributor discovered contentProfileId='{report.ContentProfileId}' sceneName='{report.SceneName}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroups='{FormatActivityStateResetGroups(report.SupportedResetGroups)}' releaseKinds='{FormatReleaseKinds(report.SupportedReleaseKinds)}'.");
                 }
 
                 factBridge.EmitFact(
@@ -133,13 +130,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
+                    $"'{command.Identity.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "activity_object_contributor_discovery_completed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
+                    $"'{command.Identity.ActivityId}' activity object contributor discovery completed discovered='{reports.Count}' contentProfileId='{loadedSet.ContentProfileId}'.");
                 logBridge.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoveryCompleted",
                     discoveryIdentity,
@@ -157,13 +154,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     discoveryIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
+                    $"'{command.Identity.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "activity_object_contributor_discovery_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
+                    $"'{command.Identity.ActivityId}' activity object contributor discovery failed error='{exception.Message}'.");
                 logBridge.LogEntryOwnerEvent(
                     "ActivityEntryObjectContributorDiscoveryFailed",
                     discoveryIdentity,
@@ -222,21 +219,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
         }
 
-        private static bool HasLoadedSetForCurrentEntry(
-            ActivityContentLoadedSet loadedSet,
-            SessionActivityDefinition definition,
-            int entrySequence,
-            SessionActivityIdentity identity)
-        {
-            return loadedSet.IsValid &&
-                   loadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
-                   string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                   loadedSet.Identity.EntrySequence == entrySequence;
-        }
-
         private static string FormatActivityStateResetGroups(IReadOnlyList<ActivityStateResetGroup> resetGroups)
         {
             if (resetGroups == null || resetGroups.Count == 0)
@@ -262,7 +244,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static void Execute(
             ActivityEntryObjectSetupCommand command,
-            ActivityContentLoadedSet loadedSet,
             ActivitySetupInventoryBuilder builder,
             ActivitySetupInventoryValidator validator,
             IActivityEntryRuntimeBridge endpoint,
@@ -275,10 +256,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity setupIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            SessionActivityIdentity buildStartedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryBuildStarted, entrySequence);
+            SessionActivityIdentity buildStartedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryBuildStarted);
             endpoint.SetCurrentIdentity(buildStartedIdentity, SessionActivityStage.ActivitySetupInventoryBuildStarted);
             endpoint.EmitFact(
                 facts,
@@ -286,25 +265,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 buildStartedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory build started.");
+                $"'{command.ActivityId}' activity setup inventory build started.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_setup_inventory_build_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory build started.");
+                $"'{command.ActivityId}' activity setup inventory build started.");
 
-            ActivitySetupInventoryBuildContext buildContext = new(
-                definition,
-                setupIdentity,
-                loadedSet,
-                command.Source,
-                command.Reason);
-
-            ActivitySetupInventoryBuildResult buildResult = builder.Build(buildContext);
+            ActivitySetupInventoryBuildResult buildResult = builder.Build(command.Plan);
             if (buildResult.IsFailed || !buildResult.IsValid)
             {
-                SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidationFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
                 endpoint.EmitFact(
                     facts,
@@ -312,22 +284,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
+                    $"'{command.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "activity_setup_inventory_build_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
+                    $"'{command.ActivityId}' activity setup inventory build failed. message='{buildResult.Message}'.");
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActivityEntryPipeline][ActivitySetupInventory] Build failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' message='{buildResult.Message}'.");
+                    $"[FATAL][Config][ActivityEntryPipeline][ActivitySetupInventory] Build failed activityId='{command.ActivityId}' entrySequence='{entrySequence}' message='{buildResult.Message}'.");
             }
 
             bridge.SetCurrentActivitySetupInventory(buildResult.Inventory);
 
             if (buildResult.IsSkipped)
             {
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements, entrySequence);
+                SessionActivityIdentity skippedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivitySetupInventorySkippedNoRequirements);
                 endpoint.EmitFact(
                     facts,
@@ -335,17 +307,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     skippedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory skipped because no requirements were declared. inventoryId='{buildResult.Inventory.InventoryId}'.");
+                    $"'{command.ActivityId}' activity setup inventory skipped because no requirements were declared. inventoryId='{buildResult.Inventory.InventoryId}'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "activity_setup_inventory_skipped_no_requirements",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory skipped because no requirements were declared.");
+                    $"'{command.ActivityId}' activity setup inventory skipped because no requirements were declared.");
             }
             else
             {
-                SessionActivityIdentity builtIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryBuilt, entrySequence);
+                SessionActivityIdentity builtIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryBuilt);
                 endpoint.SetCurrentIdentity(builtIdentity, SessionActivityStage.ActivitySetupInventoryBuilt);
                 endpoint.EmitFact(
                     facts,
@@ -353,19 +325,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     builtIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory built inventoryId='{buildResult.Inventory.InventoryId}' totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
+                    $"'{command.ActivityId}' activity setup inventory built inventoryId='{buildResult.Inventory.InventoryId}' totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "activity_setup_inventory_built",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory built totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
+                    $"'{command.ActivityId}' activity setup inventory built totalRequirements='{buildResult.Inventory.TotalRequirementCount}'.");
             }
 
             ActivitySetupInventoryValidationResult validationResult = validator.Validate(buildResult.Inventory, command.Source, command.Reason);
             if (validationResult.IsFailed || !validationResult.IsValid)
             {
-                SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidationFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivitySetupInventoryValidationFailed);
                 endpoint.EmitFact(
                     facts,
@@ -373,18 +345,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}' message='{validationResult.Message}'.");
+                    $"'{command.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}' message='{validationResult.Message}'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "activity_setup_inventory_validation_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}'.");
+                    $"'{command.ActivityId}' activity setup inventory validation failed errors='{validationResult.Errors.Count}'.");
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][ActivityEntryPipeline][ActivitySetupInventory] Validation failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' errors='{string.Join(" | ", validationResult.Errors)}'.");
+                    $"[FATAL][Config][ActivityEntryPipeline][ActivitySetupInventory] Validation failed activityId='{command.ActivityId}' entrySequence='{entrySequence}' errors='{string.Join(" | ", validationResult.Errors)}'.");
             }
 
-            SessionActivityIdentity validatedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupInventoryValidated, entrySequence);
+            SessionActivityIdentity validatedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupInventoryValidated);
             endpoint.SetCurrentIdentity(validatedIdentity, SessionActivityStage.ActivitySetupInventoryValidated);
             endpoint.EmitFact(
                 facts,
@@ -392,13 +364,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 validatedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory validated inventoryId='{validationResult.Inventory.InventoryId}' totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
+                $"'{command.ActivityId}' activity setup inventory validated inventoryId='{validationResult.Inventory.InventoryId}' totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_setup_inventory_validated",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity setup inventory validated totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
+                $"'{command.ActivityId}' activity setup inventory validated totalRequirements='{validationResult.Inventory.TotalRequirementCount}' skipped='{validationResult.SkippedRequirementIds.Count}'.");
         }
     }
 
@@ -416,9 +388,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity validationIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            SessionActivityIdentity validationIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             endpoint.SetCurrentIdentity(validationIdentity, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
                 facts,
@@ -426,9 +397,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 validationIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot contract validation started.");
+                $"'{command.Identity.ActivityId}' activity object snapshot contract validation started.");
 
-            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence, validationIdentity) ||
+            if (!IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, validationIdentity) ||
                 discoveryResult.Reports.Count == 0)
             {
                 endpoint.EmitFact(
@@ -437,7 +408,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     validationIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='0' skippedCount='0' failedCount='0' targetIds='<none>' providerPaths='<none>' restoreEndpointPaths='<none>' targetTransformPaths='<none>' mismatchReason='<none>'.");
+                    $"'{command.Identity.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='0' skippedCount='0' failedCount='0' targetIds='<none>' providerPaths='<none>' restoreEndpointPaths='<none>' targetTransformPaths='<none>' mismatchReason='<none>'.");
                 return;
             }
 
@@ -453,14 +424,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!IsReportForCurrentEntry(report, definition, entrySequence, validationIdentity))
+                if (!IsReportForCurrentEntryForIdentity(report, command.Identity, entrySequence, validationIdentity))
                 {
                     continue;
                 }
 
                 targetIds.Add(report.TargetId);
                 bool required = report.Requiredness == ActivitySetupRequirementRequiredness.Required;
-                GameObject targetObject = ResolveContributorObjectOrFail(loadedSet, definition, report);
+                GameObject targetObject = ResolveContributorObjectOrFailForActivityId(loadedSet, command.Identity.ActivityId, report);
                 IActivityObjectSnapshotProvider[] providers = ResolveObjectSnapshotProviders(targetObject);
                 IActivityObjectSnapshotRestoreEndpoint[] restoreEndpoints = ResolveObjectSnapshotRestoreEndpoints(targetObject);
 
@@ -533,7 +504,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         validationIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot contract validated targetId='{report.TargetId}' requiredness='{report.Requiredness}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='{providerTargetTransformPath}'.");
+                        $"'{command.Identity.ActivityId}' activity object snapshot contract validated targetId='{report.TargetId}' requiredness='{report.Requiredness}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='{providerTargetTransformPath}'.");
                     continue;
                 }
 
@@ -546,7 +517,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         validationIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot contract skipped optional targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='snapshot_capability_not_declared_optional' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='<none>'.");
+                        $"'{command.Identity.ActivityId}' activity object snapshot contract skipped optional targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='snapshot_capability_not_declared_optional' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' targetTransformPath='<none>'.");
                     continue;
                 }
 
@@ -566,9 +537,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     validationIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot contract failed targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
+                    $"'{command.Identity.ActivityId}' activity object snapshot contract failed targetId='{report.TargetId}' requiredness='{report.Requiredness}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
                 throw new InvalidOperationException(
-                    $"snapshot_contract_validation_failed: activityId='{definition.ActivityId}' targetId='{report.TargetId}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
+                    $"snapshot_contract_validation_failed: activityId='{command.Identity.ActivityId}' targetId='{report.TargetId}' reason='{failureReason}' providerPath='{providerPath}' restoreEndpointPath='{restorePath}' providerTargetTransformPath='{providerTargetTransformPath}' restoreTargetTransformPath='{restoreTargetTransformPath}'.");
             }
 
             endpoint.EmitFact(
@@ -577,7 +548,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 validationIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='{validatedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' targetIds='{JoinValues(targetIds)}' providerPaths='{JoinValues(providerPaths)}' restoreEndpointPaths='{JoinValues(restoreEndpointPaths)}' targetTransformPaths='{JoinValues(targetTransformPaths)}' mismatchReason='{mismatchReason}'.");
+                $"'{command.Identity.ActivityId}' activity object snapshot contract validation completed validationStarted='true' validatedCount='{validatedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' targetIds='{JoinValues(targetIds)}' providerPaths='{JoinValues(providerPaths)}' restoreEndpointPaths='{JoinValues(restoreEndpointPaths)}' targetTransformPaths='{JoinValues(targetTransformPaths)}' mismatchReason='{mismatchReason}'.");
         }
     }
 
@@ -598,9 +569,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity previewIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            SessionActivityIdentity previewIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             endpoint.SetCurrentIdentity(previewIdentity, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
                 facts,
@@ -608,13 +578,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
             EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewStarted,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
 
-            bool hasDiscoveryForCurrentEntry = IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence, previewIdentity);
+            bool hasDiscoveryForCurrentEntry = IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, previewIdentity);
             bool hasActorTargets = actorTargets != null && actorTargets.Count > 0;
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
             {
@@ -625,11 +595,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     previewIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                    $"'{command.Identity.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{coordinator.ActivityObjectScannerId}'.");
                 EmitEntryCapabilityInventoryLog(
                     SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
                     previewIdentity,
-                    $"'{definition.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                    $"'{command.Identity.ActivityId}' activity capability inventory preview skipped reason='no_capability_sources' entrySequence='{entrySequence}' scannerId='{coordinator.ActivityObjectScannerId}'.");
                 return default;
             }
 
@@ -651,11 +621,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
             EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryValidationStarted,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory validation started entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' scannerId='{coordinator.ActivityObjectScannerId}'.");
 
             SessionActivityFactKind validationOutcomeKind = validationResult.Status switch
             {
@@ -666,7 +636,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             };
 
             string validationOutcomeMessage =
-                $"'{definition.ActivityId}' activity capability inventory validation outcome status='{validationResult.Status}' entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.";
+                $"'{command.Identity.ActivityId}' activity capability inventory validation outcome status='{validationResult.Status}' entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.";
             endpoint.EmitFact(
                 facts,
                 validationOutcomeKind,
@@ -682,11 +652,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
             EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryValidationCompleted,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory validation completed status='{validationResult.Status}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
 
             endpoint.EmitFact(
                 facts,
@@ -694,17 +664,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 previewIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
             EmitEntryCapabilityInventoryLog(
                 SessionActivityFactKind.ActivityCapabilityInventoryPreviewObserved,
                 previewIdentity,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_capability_inventory_preview_observed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
+                $"'{command.Identity.ActivityId}' activity capability inventory preview observed entrySequence='{entrySequence}' inventorySignature='{inventory.Id.Signature}' ownerCount='{inventory.OwnerCount}' capabilityCount='{inventory.CapabilityCount}' capabilityKinds='{capabilityKindsSummary}' unresolvedReports='{buildResult.UnresolvedReportCount}' issueCount='{validationResult.IssueCount}' warningCount='{validationResult.WarningCount}' errorCount='{validationResult.ErrorCount}' issueCodes='{validationIssueCodes}' scannerId='{coordinator.ActivityObjectScannerId}'.");
 
             return buildResult;
         }
@@ -735,7 +705,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             SessionActivityIdentity resetIdentity = command.Identity;
             int entrySequence = resetIdentity.EntrySequence;
             endpoint.SetCurrentIdentity(resetIdentity, SessionActivityStage.ActivitySetupStarted);
@@ -745,15 +714,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 resetIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' object reset started.");
+                $"'{command.ActivityId}' object reset started.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "object_reset_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' object reset started.");
+                $"'{command.ActivityId}' object reset started.");
 
-            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence, resetIdentity))
+            if (!IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, resetIdentity, entrySequence, resetIdentity))
             {
                 endpoint.EmitFact(
                     facts,
@@ -761,13 +730,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     resetIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_contributors_current_entry'.");
+                    $"'{command.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_contributors_current_entry'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "object_reset_completed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_contributors_current_entry'.");
+                    $"'{command.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_contributors_current_entry'.");
                 return;
             }
 
@@ -779,13 +748,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     resetIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_reports_for_current_entry'.");
+                    $"'{command.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_reports_for_current_entry'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "object_reset_completed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_reports_for_current_entry'.");
+                    $"'{command.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.NoCommands}' completionReason='no_reports_for_current_entry'.");
                 return;
             }
 
@@ -795,7 +764,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int failedCount = 0;
             int noSupportedGroupsCount = 0;
             int reportEvaluatedCount = 0;
-            bool hasRequiredContributor = HasRequiredResetContributor(discoveryResult, definition, entrySequence);
+            bool hasRequiredContributor = HasRequiredResetContributor(discoveryResult, resetIdentity);
             bool hasValidResetInventory =
                 inventory.IsValid &&
                 validation.IsValid &&
@@ -814,9 +783,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         resetIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}'.");
+                        $"'{command.ActivityId}' object reset failed reason='required_reset_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}'.");
                     throw new InvalidOperationException(
-                        $"required_reset_inventory_missing_or_invalid: activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                        $"required_reset_inventory_missing_or_invalid: activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
                 }
 
                 endpoint.EmitFact(
@@ -825,20 +794,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     resetIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.InventoryInvalidOrStale}' completionReason='inventory_stale_or_invalid'.");
+                    $"'{command.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.InventoryInvalidOrStale}' completionReason='inventory_stale_or_invalid'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "object_reset_completed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.InventoryInvalidOrStale}' completionReason='inventory_stale_or_invalid'.");
+                    $"'{command.ActivityId}' object reset completed commandCount='0' appliedCount='0' skippedCount='0' failedCount='0' completionKind='{ActivityResetCompletionKind.InventoryInvalidOrStale}' completionReason='inventory_stale_or_invalid'.");
                 return;
             }
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!IsReportForCurrentEntry(report, definition, entrySequence, resetIdentity))
+                if (!IsReportForCurrentEntryForIdentity(report, resetIdentity, entrySequence, resetIdentity))
                 {
                     continue;
                 }
@@ -854,7 +823,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         resetIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' object reset skipped targetId='{report.TargetId}' reason='no_supported_reset_groups'.");
+                        $"'{command.ActivityId}' object reset skipped targetId='{report.TargetId}' reason='no_supported_reset_groups'.");
                     continue;
                 }
 
@@ -865,7 +834,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (resetGroup == ActivityStateResetGroup.Unknown)
                     {
                         throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' reset group cannot be Unknown targetId='{report.TargetId}'.");
+                            $"Activity '{command.ActivityId}' reset group cannot be Unknown targetId='{report.TargetId}'.");
                     }
 
                     ActivityObjectResetCommand resetCommand = new(
@@ -880,7 +849,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (!resetCommand.IsValid)
                     {
                         throw new InvalidOperationException(
-                            $"Activity '{definition.ActivityId}' produced invalid object reset command targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
+                            $"Activity '{command.ActivityId}' produced invalid object reset command targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
                     }
 
                     commandCount += 1;
@@ -890,10 +859,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         resetIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
+                        $"'{command.ActivityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
 
                     ActivityObjectResetResult result = ExecuteObjectResetCommand(resetCommand, endpoints);
-                    if (!IsObjectResetResultForCurrentEntry(result, definition, entrySequence, resetIdentity))
+                    if (!IsObjectResetResultForCurrentEntry(result, resetIdentity, entrySequence, resetIdentity))
                     {
                         failedCount += 1;
                         endpoint.EmitFact(
@@ -902,9 +871,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             resetIdentity,
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='stale_or_foreign_reset_result'.");
+                        $"'{command.ActivityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='stale_or_foreign_reset_result'.");
                         throw new InvalidOperationException(
-                            $"stale_or_foreign_reset_result: activityId='{definition.ActivityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
+                            $"stale_or_foreign_reset_result: activityId='{command.ActivityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
                     }
 
                     if (result.IsApplied)
@@ -916,7 +885,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             resetIdentity,
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' object reset applied targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
+                            $"'{command.ActivityId}' object reset applied targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
                         continue;
                     }
 
@@ -929,7 +898,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             resetIdentity,
                             command.Source,
                             command.Reason,
-                            $"'{definition.ActivityId}' object reset skipped optional targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
+                            $"'{command.ActivityId}' object reset skipped optional targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
                         continue;
                     }
 
@@ -940,9 +909,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         resetIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
+                        $"'{command.ActivityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
                     throw new InvalidOperationException(
-                        $"object_reset_failed: activityId='{definition.ActivityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
+                        $"object_reset_failed: activityId='{command.ActivityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
                 }
             }
 
@@ -979,19 +948,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 finalCompletionReason = "no_commands";
             }
 
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ObjectResetCompleted,
-                resetIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}'.");
+                endpoint.EmitFact(
+                    facts,
+                    SessionActivityFactKind.ObjectResetCompleted,
+                    resetIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"'{command.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "object_reset_completed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}'.");
+                $"'{command.ActivityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}'.");
         }
     }
 
@@ -1012,9 +981,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity restoreIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            SessionActivityIdentity restoreIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActivitySetupStarted);
             endpoint.SetCurrentIdentity(restoreIdentity, SessionActivityStage.ActivitySetupStarted);
             endpoint.EmitFact(
                 facts,
@@ -1022,7 +990,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 restoreIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot restore started.");
+                $"'{command.ActivityId}' activity object snapshot restore started.");
 
             if (!TryResolveRouteLoadedSnapshotPayload(endpoint.SessionId, out LoadedSessionActivitySnapshotPayload loadedPayload, out string payloadFailureReason))
             {
@@ -1032,18 +1000,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='no_loaded_payload' failureReason='{payloadFailureReason}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore skipped reason='no_loaded_payload' failureReason='{payloadFailureReason}'.");
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='false' payloadObjectCount='0' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
+                    $"'{command.ActivityId}' activity object snapshot restore completed payloadAvailable='false' payloadObjectCount='0' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
                 return;
             }
 
-            if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, endpoint.SessionId, definition))
+            if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, endpoint.SessionId, command.ActivityId))
             {
                 endpoint.EmitFact(
                     facts,
@@ -1051,12 +1019,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='payload_foreign_or_stale' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore failed reason='payload_foreign_or_stale' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
                 throw new InvalidOperationException(
-                    $"payload_foreign_or_stale: activityId='{definition.ActivityId}' entrySequence='{entrySequence}' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
+                    $"payload_foreign_or_stale: activityId='{command.ActivityId}' entrySequence='{entrySequence}' payloadSessionStateId='{loadedPayload.SessionStateId}' payloadActivityId='{loadedPayload.ActivityId}' payloadSourceEntrySequence='{loadedPayload.SourceEntrySequence}'.");
             }
 
-            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, definition, entrySequence, restoreIdentity) ||
+            if (!IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, restoreIdentity) ||
                 discoveryResult.Reports.Count == 0)
             {
                 endpoint.EmitFact(
@@ -1065,14 +1033,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
+                    $"'{command.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='0' restoredCount='0' restoreFailed='false'.");
                 return;
             }
 
@@ -1097,15 +1065,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore failed reason='restore_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{inventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{validation.IsValid.ToString().ToLowerInvariant()}'.");
                 throw new InvalidOperationException(
-                    $"restore_inventory_missing_or_invalid: activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
+                    $"restore_inventory_missing_or_invalid: activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
             }
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!IsReportForCurrentEntry(report, definition, entrySequence, restoreIdentity))
+                if (!IsReportForCurrentEntryForIdentity(report, restoreIdentity, entrySequence, restoreIdentity))
                 {
                     continue;
                 }
@@ -1136,7 +1104,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason);
 
                 ActivityObjectSnapshotRestoreResult result = ExecuteObjectSnapshotRestoreCommand(restoreCommand, endpoints, report);
-                if (!IsObjectSnapshotRestoreResultForCurrentEntry(result, definition, entrySequence, restoreIdentity, endpoint))
+                if (!IsObjectSnapshotRestoreResultForCurrentEntry(result, restoreIdentity, entrySequence, restoreIdentity))
                 {
                     endpoint.EmitFact(
                         facts,
@@ -1144,9 +1112,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         restoreIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_result_invalid_or_failed_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                        $"'{command.ActivityId}' activity object snapshot restore failed reason='restore_result_invalid_or_failed_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
                     throw new InvalidOperationException(
-                        $"restore_result_invalid_or_failed_required: activityId='{definition.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                        $"restore_result_invalid_or_failed_required: activityId='{command.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
                 }
 
                 if (result.IsRestored)
@@ -1158,7 +1126,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         restoreIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot restore applied targetId='{report.TargetId}' coordinateSpace='{ToCoordinateSpaceToken(restoreCommand.CoordinateSpace)}' payloadPosition='({payloadObject.PositionX:0.###},{payloadObject.PositionY:0.###},{payloadObject.PositionZ:0.###})' beforePosition='({result.BeforePositionX:0.###},{result.BeforePositionY:0.###},{result.BeforePositionZ:0.###})' afterPosition='({result.AfterPositionX:0.###},{result.AfterPositionY:0.###},{result.AfterPositionZ:0.###})' restoreVerified='{result.RestoreVerified.ToString().ToLowerInvariant()}' hasTransformPayload='true' detail='{result.Detail}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore applied targetId='{report.TargetId}' coordinateSpace='{ToCoordinateSpaceToken(restoreCommand.CoordinateSpace)}' payloadPosition='({payloadObject.PositionX:0.###},{payloadObject.PositionY:0.###},{payloadObject.PositionZ:0.###})' beforePosition='({result.BeforePositionX:0.###},{result.BeforePositionY:0.###},{result.BeforePositionZ:0.###})' afterPosition='({result.AfterPositionX:0.###},{result.AfterPositionY:0.###},{result.AfterPositionZ:0.###})' restoreVerified='{result.RestoreVerified.ToString().ToLowerInvariant()}' hasTransformPayload='true' detail='{result.Detail}'.");
                     continue;
                 }
 
@@ -1170,7 +1138,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         restoreIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' activity object snapshot restore skipped optional targetId='{report.TargetId}' reason='{result.Detail}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore skipped optional targetId='{report.TargetId}' reason='{result.Detail}'.");
                     continue;
                 }
 
@@ -1181,9 +1149,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore failed reason='restore_endpoint_missing_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore failed reason='restore_endpoint_missing_required' targetId='{report.TargetId}' detail='{result.Detail}'.");
                 throw new InvalidOperationException(
-                    $"restore_endpoint_missing_required: activityId='{definition.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
+                    $"restore_endpoint_missing_required: activityId='{command.ActivityId}' targetId='{report.TargetId}' detail='{result.Detail}'.");
             }
 
             if (matchedTargetCount == 0)
@@ -1194,7 +1162,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore skipped reason='payload_has_no_matching_target_for_entry' payloadObjectCount='{loadedPayload.Objects.Count}'.");
             }
 
             endpoint.EmitFact(
@@ -1203,7 +1171,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 restoreIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='{matchedTargetCount}' restoredCount='{restoredCount}' targetIds='{JoinValues(matchedTargetIds)}' appliedTargetIds='{JoinValues(matchedTargetIds)}' failedTargetIds='<none>' coordinateSpace='world_transform' restoreVerified='{(!restoreFailed && restoredCount == matchedTargetCount).ToString().ToLowerInvariant()}' restoreFailed='{restoreFailed.ToString().ToLowerInvariant()}'.");
+                $"'{command.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='{matchedTargetCount}' restoredCount='{restoredCount}' targetIds='{JoinValues(matchedTargetIds)}' appliedTargetIds='{JoinValues(matchedTargetIds)}' failedTargetIds='<none>' coordinateSpace='world_transform' restoreVerified='{(!restoreFailed && restoredCount == matchedTargetCount).ToString().ToLowerInvariant()}' restoreFailed='{restoreFailed.ToString().ToLowerInvariant()}'.");
         }
 
         private static bool TryResolveRouteLoadedSnapshotPayload(
@@ -1233,52 +1201,157 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static bool IsLoadedSnapshotPayloadForCurrentActivity(
             LoadedSessionActivitySnapshotPayload loadedPayload,
             string sessionId,
-            SessionActivityDefinition definition)
+            string activityId)
         {
             return loadedPayload.IsValid &&
                    string.Equals(loadedPayload.SchemaId, RouteActivitySnapshotSchemaId, StringComparison.Ordinal) &&
                    string.Equals(loadedPayload.SessionStateId, sessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedPayload.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   string.Equals(loadedPayload.ActivityId, activityId, StringComparison.Ordinal) &&
                    loadedPayload.SourceEntrySequence > 0;
         }
     }
 
     internal static class ActivityEntryObjectSetupStageUtility
     {
+        public static SessionActivityIdentity BuildIdentityFromCommandIdentity(
+            SessionActivityIdentity identity,
+            SessionActivityStage stage)
+        {
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("SessionActivityIdentity is invalid.");
+            }
+
+            return new SessionActivityIdentity(
+                identity.PipelineId,
+                identity.SessionId,
+                identity.ActivityId,
+                identity.ActivityOrdinal,
+                identity.EntrySequence,
+                stage,
+                identity.Source);
+        }
+
+        public static bool HasLoadedSetForCurrentEntry(
+            ActivityContentLoadedSet loadedSet,
+            SessionActivityIdentity identity,
+            int entrySequence)
+        {
+            return loadedSet.IsValid &&
+                   loadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
+                   string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   loadedSet.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                   loadedSet.Identity.EntrySequence == entrySequence;
+        }
+
+        public static bool IsDiscoveryResultForCurrentEntryForIdentity(
+            ActivityObjectContributorDiscoveryResult result,
+            SessionActivityIdentity identity,
+            int entrySequence,
+            SessionActivityIdentity currentIdentity)
+        {
+            return result.IsValid &&
+                   result.Identity.IsValid &&
+                   string.Equals(result.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                   result.Identity.EntrySequence == entrySequence;
+        }
+
+        public static bool IsReportForCurrentEntryForIdentity(
+            ActivityObjectContributionReport report,
+            SessionActivityIdentity identity,
+            int entrySequence,
+            SessionActivityIdentity currentIdentity)
+        {
+            return report.IsValid &&
+                   report.Identity.IsValid &&
+                   string.Equals(report.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                   report.Identity.EntrySequence == entrySequence;
+        }
+
+        public static GameObject ResolveContributorObjectOrFailForActivityId(
+            ActivityContentLoadedSet loadedSet,
+            string activityId,
+            ActivityObjectContributionReport report)
+        {
+            for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
+            {
+                ActivityContentLoadedSceneRecord sceneRecord = loadedSet.Scenes[sceneIndex];
+                if (!sceneRecord.IsValid || !string.Equals(sceneRecord.SceneName, report.SceneName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Scene scene = SceneManager.GetSceneByName(sceneRecord.SceneName);
+                if (!scene.IsValid() || !scene.isLoaded)
+                {
+                    continue;
+                }
+
+                GameObject[] roots = scene.GetRootGameObjects();
+                for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+                {
+                    ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
+                    for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
+                    {
+                        ActivityObjectContributor contributor = contributors[contributorIndex];
+                        if (contributor == null)
+                        {
+                            continue;
+                        }
+
+                        if (!string.Equals(contributor.TargetId, report.TargetId, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        return contributor.gameObject;
+                    }
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"Activity '{activityId}' could not resolve contributor object for targetId='{report.TargetId}' sceneName='{report.SceneName}'.");
+        }
+
         public static bool IsDiscoveryResultForCurrentEntry(
             ActivityObjectContributorDiscoveryResult result,
-            SessionActivityDefinition definition,
-            int entrySequence,
-            SessionActivityIdentity identity)
+            SessionActivityIdentity identity,
+            int entrySequence)
         {
             return result.IsValid &&
                    result.Identity.IsValid &&
                    string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    result.Identity.EntrySequence == entrySequence;
         }
 
         public static bool IsReportForCurrentEntry(
             ActivityObjectContributionReport report,
-            SessionActivityDefinition definition,
-            int entrySequence,
-            SessionActivityIdentity identity)
+            SessionActivityIdentity identity,
+            int entrySequence)
         {
             return report.IsValid &&
                    report.Identity.IsValid &&
                    string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    report.Identity.EntrySequence == entrySequence;
         }
 
         public static bool HasRequiredResetContributor(
             ActivityObjectContributorDiscoveryResult discoveryResult,
-            SessionActivityDefinition definition,
-            int entrySequence)
+            SessionActivityIdentity identity)
         {
             if (!discoveryResult.IsValid || discoveryResult.Reports == null)
             {
@@ -1293,9 +1366,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) ||
-                    report.Identity.ActivityOrdinal != definition.ActivityOrdinal ||
-                    report.Identity.EntrySequence != entrySequence)
+                if (!string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) ||
+                    report.Identity.ActivityOrdinal != identity.ActivityOrdinal ||
+                    report.Identity.EntrySequence != identity.EntrySequence)
                 {
                     continue;
                 }
@@ -1459,65 +1532,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static bool IsObjectResetResultForCurrentEntry(
             ActivityObjectResetResult result,
-            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
             int entrySequence,
-            SessionActivityIdentity identity)
+            SessionActivityIdentity currentIdentity)
         {
             SessionActivityIdentity resultIdentity = result.Command.Identity;
             return result.IsValid &&
                    resultIdentity.IsValid &&
-                   string.Equals(resultIdentity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(resultIdentity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(resultIdentity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   resultIdentity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(resultIdentity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(resultIdentity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(resultIdentity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   resultIdentity.ActivityOrdinal == identity.ActivityOrdinal &&
                    resultIdentity.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
-        }
-
-        public static GameObject ResolveContributorObjectOrFail(
-            ActivityContentLoadedSet loadedSet,
-            SessionActivityDefinition definition,
-            ActivityObjectContributionReport report)
-        {
-            for (int sceneIndex = 0; sceneIndex < loadedSet.Scenes.Count; sceneIndex++)
-            {
-                ActivityContentLoadedSceneRecord sceneRecord = loadedSet.Scenes[sceneIndex];
-                if (!sceneRecord.IsValid || !string.Equals(sceneRecord.SceneName, report.SceneName, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                Scene scene = SceneManager.GetSceneByName(sceneRecord.SceneName);
-                if (!scene.IsValid() || !scene.isLoaded)
-                {
-                    continue;
-                }
-
-                GameObject[] roots = scene.GetRootGameObjects();
-                for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
-                {
-                    ActivityObjectContributor[] contributors = roots[rootIndex].GetComponentsInChildren<ActivityObjectContributor>(true);
-                    for (int contributorIndex = 0; contributorIndex < contributors.Length; contributorIndex++)
-                    {
-                        ActivityObjectContributor contributor = contributors[contributorIndex];
-                        if (contributor == null)
-                        {
-                            continue;
-                        }
-
-                        if (!string.Equals(contributor.TargetId, report.TargetId, StringComparison.Ordinal))
-                        {
-                            continue;
-                        }
-
-                        return contributor.gameObject;
-                    }
-                }
-            }
-
-            throw new InvalidOperationException(
-                $"Activity '{definition.ActivityId}' could not resolve contributor object for targetId='{report.TargetId}' sceneName='{report.SceneName}'.");
         }
 
         public static IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProviders(GameObject targetObject)
@@ -1725,18 +1753,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static bool IsObjectSnapshotRestoreResultForCurrentEntry(
             ActivityObjectSnapshotRestoreResult result,
-            SessionActivityDefinition definition,
-            int entrySequence,
             SessionActivityIdentity identity,
-            IActivityEntryRuntimeBridge endpoint)
+            int entrySequence,
+            SessionActivityIdentity currentIdentity)
         {
             ActivityObjectSnapshotRestoreCommand command = result.Command;
             return result.IsValid &&
                    command.Identity.IsValid &&
-                   string.Equals(command.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(command.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(command.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   command.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(command.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(command.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(command.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   command.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    command.Identity.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(command.TargetId);
         }

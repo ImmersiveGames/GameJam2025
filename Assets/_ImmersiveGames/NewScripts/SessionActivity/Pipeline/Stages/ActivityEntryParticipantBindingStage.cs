@@ -52,6 +52,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             string reason,
             string status);
         void BeginPlayerActorActivityScope(SessionActivityIdentity identity);
+        bool TryGetActivePlayerActorIdentities(
+            SessionActivityIdentity identity,
+            out IReadOnlyList<PlayerActorIdentityRecord> activeActors);
+        IReadOnlyList<PlayerActivityParticipantBinding> GetRetainedPlayerExitBindings(SessionActivityIdentity identity);
         bool TryGetRetainedPlayerActorForParticipant(
             SessionActivityIdentity identity,
             PlayerSessionParticipantId participantId,
@@ -148,7 +152,170 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IReadOnlyList<ParticipantRequirement> participantRequirements = inventory.ParticipantRequirements;
             if (participantRequirements == null || participantRequirements.Count == 0)
             {
+                PlayerSessionParticipationContext retainedSessionParticipationContext = bridge.ResolveSessionParticipationContextOrFail(
+                    command.ActivityId,
+                    command.ActivityOrdinal,
+                    command.Source,
+                    command.Reason,
+                    facts,
+                    snapshots,
+                    entrySequence);
+                IReadOnlyList<PlayerActorIdentityRecord> activeActors = Array.Empty<PlayerActorIdentityRecord>();
+                if (bridge.TryGetActivePlayerActorIdentities(command.Identity, out IReadOnlyList<PlayerActorIdentityRecord> resolvedActiveActors) &&
+                    resolvedActiveActors != null &&
+                    resolvedActiveActors.Count > 0)
+                {
+                    activeActors = resolvedActiveActors;
+                }
+
+                IReadOnlyList<PlayerActivityParticipantBinding> retainedExitBindings = bridge.GetRetainedPlayerExitBindings(command.Identity) ??
+                    Array.Empty<PlayerActivityParticipantBinding>();
+                DebugUtility.Log(
+                    typeof(ActivityEntryParticipantBindingStage),
+                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingDiagnostics' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' participantRequirements='0' sessionParticipationContext='present' sessionParticipationRevision='{retainedSessionParticipationContext.Revision}' sessionParticipants='{retainedSessionParticipationContext.ParticipantCount}' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Info);
+
+                string retainedBindingSource = activeActors.Count > 0
+                    ? "active_player_actor_identities"
+                    : "player_exit_bindings";
+                List<PlayerActivityParticipantBinding> retainedParticipants = new(activeActors.Count);
+                List<ActivityEntryParticipantBindingResolvedRecord> retainedResolvedParticipants = new(activeActors.Count);
+                for (int index = 0; index < activeActors.Count; index++)
+                {
+                    PlayerActorIdentityRecord activeActor = activeActors[index];
+                    if (!activeActor.IsValid)
+                    {
+                        DebugUtility.Log(
+                            typeof(ActivityEntryParticipantBindingStage),
+                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='invalid_active_actor_identity' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Warning);
+                        continue;
+                    }
+
+                    if (!activeActor.ParticipantBinding.IsValid)
+                    {
+                        DebugUtility.Log(
+                            typeof(ActivityEntryParticipantBindingStage),
+                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='invalid_active_actor_binding' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' actorScope='{activeActor.ParticipantBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Warning);
+                        continue;
+                    }
+
+                    if (!activeActor.ParticipantBinding.RequiresPlayerActor &&
+                        !activeActor.ParticipantBinding.RequiresPlayerInput)
+                    {
+                        DebugUtility.Log(
+                            typeof(ActivityEntryParticipantBindingStage),
+                            $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='non_player_binding' requirementId='{activeActor.ParticipantBinding.RequirementId}' participantId='{FormatSessionParticipantId(activeActor.ParticipantId)}' playerSlotId='{activeActor.PlayerSlotId}' actorId='{activeActor.ActorId}' actorScope='{activeActor.ParticipantBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                            DebugUtility.Colors.Warning);
+                        continue;
+                    }
+
+                    PlayerActivityParticipantBinding retainedParticipant = activeActor.ParticipantBinding;
+                    retainedParticipants.Add(retainedParticipant);
+                    retainedResolvedParticipants.Add(new ActivityEntryParticipantBindingResolvedRecord(
+                        retainedParticipant.RequirementId.Value,
+                        ActivityParticipantRequirementKind.ControllablePlayer,
+                        retainedParticipant,
+                        required: true));
+                }
+
+                if (retainedParticipants.Count == 0 && activeActors.Count == 0 && retainedExitBindings.Count > 0)
+                {
+                    for (int index = 0; index < retainedExitBindings.Count; index++)
+                    {
+                        PlayerActivityParticipantBinding retainedExitBinding = retainedExitBindings[index];
+                        if (!retainedExitBinding.IsValid)
+                        {
+                            DebugUtility.Log(
+                                typeof(ActivityEntryParticipantBindingStage),
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='invalid_binding' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                DebugUtility.Colors.Warning);
+                            continue;
+                        }
+
+                        if (!retainedExitBinding.RequiresPlayerActor && !retainedExitBinding.RequiresPlayerInput)
+                        {
+                            DebugUtility.Log(
+                                typeof(ActivityEntryParticipantBindingStage),
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='non_player_binding' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                DebugUtility.Colors.Warning);
+                            continue;
+                        }
+
+                        if (retainedExitBinding.ActorScope != ActorScope.SessionScoped)
+                        {
+                            DebugUtility.Log(
+                                typeof(ActivityEntryParticipantBindingStage),
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='non_session_scoped_binding' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                DebugUtility.Colors.Warning);
+                            continue;
+                        }
+
+                        if (!bridge.TryGetSessionScopedPlayerActorForParticipant(command.Identity, retainedExitBinding, out PlayerActorRuntimeHandle retainedHandle) ||
+                            !retainedHandle.IsValid)
+                        {
+                            DebugUtility.Log(
+                                typeof(ActivityEntryParticipantBindingStage),
+                                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingRejected' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' reason='session_scoped_handle_missing' requirementId='{retainedExitBinding.RequirementId}' participantId='{FormatSessionParticipantId(retainedExitBinding.ParticipantId)}' playerSlotId='{retainedExitBinding.PlayerSlotId}' actorId='{retainedExitBinding.ActorId}' actorScope='{retainedExitBinding.ActorScope}' source='{command.Source}' reason='{command.Reason}'.",
+                                DebugUtility.Colors.Warning);
+                            continue;
+                        }
+
+                        bridge.RegisterRetainedPlayerActorParticipation(command.Identity, retainedHandle);
+                        PlayerActivityParticipantBinding promotedBinding = retainedHandle.ParticipantBinding;
+                        retainedParticipants.Add(promotedBinding);
+                        retainedResolvedParticipants.Add(new ActivityEntryParticipantBindingResolvedRecord(
+                            promotedBinding.RequirementId.Value,
+                            ActivityParticipantRequirementKind.ControllablePlayer,
+                            promotedBinding,
+                            required: true));
+                    }
+                }
+
+                if (retainedParticipants.Count > 0)
+                {
+                    DebugUtility.Log(
+                        typeof(ActivityEntryParticipantBindingStage),
+                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingChosen' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' retainedBindingSource='{retainedBindingSource}' sessionParticipationContext='present' sessionParticipationRevision='{retainedSessionParticipationContext.Revision}' sessionParticipants='{retainedSessionParticipationContext.ParticipantCount}' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' resolvedParticipants='{retainedParticipants.Count}' finalStatus='ResolvedFromRetainedSessionScopedActor' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Success);
+                    SessionActivityIdentity completedAfterRetentionIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingCompleted);
+                    bridge.StoreActivityParticipationContext(
+                        command.ActivityId,
+                        completedAfterRetentionIdentity,
+                        retainedParticipants,
+                        command.Source,
+                        command.Reason,
+                        "ResolvedFromRetainedSessionScopedActor");
+                    endpoint.SetCurrentIdentity(completedAfterRetentionIdentity, SessionActivityStage.ActivityParticipantBindingCompleted);
+                    endpoint.EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantBindingCompleted,
+                        completedAfterRetentionIdentity,
+                        command.Source,
+                        command.Reason,
+                        $"'{command.ActivityId}' participant binding completed resolved='{retainedParticipants.Count}' skipped='0' totalRequirements='0' status='ResolvedFromRetainedSessionScopedActor'.");
+                    endpoint.EmitSnapshot(
+                        snapshots,
+                        "activity_participant_binding_completed",
+                        command.Source,
+                        command.Reason,
+                        $"'{command.ActivityId}' participant binding completed resolved='{retainedParticipants.Count}' skipped='0' totalRequirements='0' status='ResolvedFromRetainedSessionScopedActor'.");
+                    return new ActivityEntryParticipantBindingResult(
+                        completedAfterRetentionIdentity,
+                        totalRequirements: 0,
+                        requiredRequirements: 0,
+                        resolvedRequirements: retainedParticipants.Count,
+                        skippedRequirements: 0,
+                        requiredResolvedRequirements: 0,
+                        resolvedParticipants: retainedResolvedParticipants);
+                }
+
                 SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements);
+                DebugUtility.Log(
+                    typeof(ActivityEntryParticipantBindingStage),
+                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantRetainedBindingSkipped' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' participantRequirements='0' sessionParticipationContext='not_resolved' activePlayerActorIdentities='{activeActors.Count}' playerExitBindings='{retainedExitBindings.Count}' finalStatus='SkippedNoRequirements' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityParticipantBindingSkippedNoRequirements);
                 endpoint.EmitFact(
                     facts,

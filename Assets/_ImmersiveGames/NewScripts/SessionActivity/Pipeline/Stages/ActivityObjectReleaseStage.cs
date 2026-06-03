@@ -11,23 +11,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal readonly struct ActivityObjectReleaseStageCommand
     {
         public ActivityObjectReleaseStageCommand(
-            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
             SessionActivityCommand command,
             int entrySequence)
         {
-            Definition = definition;
+            Identity = identity;
             Command = command;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
         }
 
-        public SessionActivityDefinition Definition { get; }
+        public SessionActivityIdentity Identity { get; }
         public SessionActivityCommand Command { get; }
         public int EntrySequence { get; }
         public string Source => Command.Source;
         public string Reason => Command.Reason;
 
         public bool IsValid =>
-            Definition.IsValid &&
+            Identity.IsValid &&
             Command.Identity.IsValid &&
             EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(Source);
@@ -72,6 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityObjectReleaseStageResult Execute(
             ActivityObjectReleaseStageCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityObjectExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
@@ -87,7 +88,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityDefinition definition = command.Definition;
+            SessionActivityIdentity identity = command.Identity;
             int entrySequence = command.EntrySequence;
             ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
             SessionActivityIdentity releaseIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseStarted, entrySequence);
@@ -111,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{definition.ActivityId}' object release started.");
 
             if (!discoveryResult.IsValid ||
-                !IsDiscoveryResultForCurrentEntry(discoveryResult, releaseIdentity, definition, entrySequence) ||
+                !IsDiscoveryResultForCurrentEntry(discoveryResult, releaseIdentity, entrySequence) ||
                 discoveryResult.Reports.Count == 0)
             {
                 SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
@@ -175,7 +176,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, releaseIdentity, definition, entrySequence))
+                if (!report.IsValid || !IsReportForCurrentEntry(report, releaseIdentity, entrySequence))
                 {
                     continue;
                 }
@@ -239,7 +240,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             $"Activity '{definition.ActivityId}' object release returned invalid result targetId='{report.TargetId}' releaseKind='{releaseKind}'.");
                     }
 
-                    if (!IsObjectReleaseResultAcceptedForIssuedCommand(result, releaseCommand, definition, entrySequence, releaseIdentity))
+                    if (!IsObjectReleaseResultAcceptedForIssuedCommand(result, releaseCommand, entrySequence, releaseIdentity))
                     {
                         SessionActivityIdentity rejectedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseRejectedForeignOrStale, entrySequence);
                         endpoint.SetCurrentIdentity(rejectedIdentity, SessionActivityStage.ObjectReleaseRejectedForeignOrStale);
@@ -436,11 +437,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static bool IsObjectReleaseResultAcceptedForIssuedCommand(
             ActivityObjectReleaseResult result,
             ActivityObjectReleaseCommand issuedCommand,
-            SessionActivityDefinition definition,
             int entrySequence,
             SessionActivityIdentity releaseIdentity)
         {
-            return IsObjectReleaseResultForCurrentEntry(result, definition, entrySequence, releaseIdentity) &&
+            return IsObjectReleaseResultForCurrentEntry(result, entrySequence, releaseIdentity) &&
                    issuedCommand.IsValid &&
                    string.Equals(result.Command.TargetId, issuedCommand.TargetId, StringComparison.Ordinal) &&
                    result.Command.ReleaseKind == issuedCommand.ReleaseKind;
@@ -448,7 +448,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static bool IsObjectReleaseResultForCurrentEntry(
             ActivityObjectReleaseResult result,
-            SessionActivityDefinition definition,
             int entrySequence,
             SessionActivityIdentity releaseIdentity)
         {
@@ -458,8 +457,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    releaseIdentity.IsValid &&
                    string.Equals(identity.PipelineId, releaseIdentity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(identity.SessionId, releaseIdentity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(identity.ActivityId, releaseIdentity.ActivityId, StringComparison.Ordinal) &&
+                   identity.ActivityOrdinal == releaseIdentity.ActivityOrdinal &&
                    identity.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ReleaseKind != ActivityReleaseRequirementKind.Unknown;
@@ -468,7 +467,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static bool IsDiscoveryResultForCurrentEntry(
             ActivityObjectContributorDiscoveryResult result,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             return result.IsValid &&
@@ -476,15 +474,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    identity.IsValid &&
                    string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
             ActivityObjectContributionReport report,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             return report.IsValid &&
@@ -492,8 +489,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    identity.IsValid &&
                    string.Equals(report.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(report.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   report.ActivityOrdinal == definition.ActivityOrdinal &&
+                   string.Equals(report.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   report.ActivityOrdinal == identity.ActivityOrdinal &&
                    report.EntrySequence == entrySequence;
         }
 

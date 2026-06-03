@@ -28,6 +28,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public int ActivePlayerParticipantBindingCount => _activePlayerParticipantBindingsByActorId.Count;
         public bool HasActorInventoryFeedResult => _currentActorInventoryFeedResult.IsValid;
 
+        public IReadOnlyList<PlayerActivityParticipantBinding> GetActivePlayerParticipantBindings()
+        {
+            List<PlayerActivityParticipantBinding> bindings = new(_activePlayerParticipantBindingsByActorId.Count);
+            foreach (KeyValuePair<ActorId, PlayerActivityParticipantBinding> pair in _activePlayerParticipantBindingsByActorId)
+            {
+                if (pair.Value.IsValid)
+                {
+                    bindings.Add(pair.Value);
+                }
+            }
+
+            return bindings;
+        }
+
         public bool TryGetActivePresentationHandle(
             ActorPresentationEndpointReference presentationReference,
             out ActorPresentationRuntimeHandle handle)

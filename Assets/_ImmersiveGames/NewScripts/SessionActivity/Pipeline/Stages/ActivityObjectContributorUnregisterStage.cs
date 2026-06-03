@@ -10,23 +10,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal readonly struct ActivityObjectContributorUnregisterStageCommand
     {
         public ActivityObjectContributorUnregisterStageCommand(
-            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
             SessionActivityCommand command,
             int entrySequence)
         {
-            Definition = definition;
+            Identity = identity;
             Command = command;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
         }
 
-        public SessionActivityDefinition Definition { get; }
+        public SessionActivityIdentity Identity { get; }
         public SessionActivityCommand Command { get; }
         public int EntrySequence { get; }
         public string Source => Command.Source;
         public string Reason => Command.Reason;
 
         public bool IsValid =>
-            Definition.IsValid &&
+            Identity.IsValid &&
             Command.Identity.IsValid &&
             EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(Source);
@@ -60,6 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityObjectContributorUnregisterStageResult Execute(
             ActivityObjectContributorUnregisterStageCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityObjectExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
@@ -75,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityDefinition definition = command.Definition;
+            SessionActivityIdentity identity = command.Identity;
             int entrySequence = command.EntrySequence;
             SessionActivityIdentity unregisterStartedIdentity = endpoint.BuildIdentity(
                 definition,
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     reason: "no_discovery_result");
             }
 
-            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, unregisterStartedIdentity, definition, entrySequence))
+            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, unregisterStartedIdentity, entrySequence))
             {
                 SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(
                     definition,
@@ -176,7 +177,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, unregisterStartedIdentity, definition, entrySequence))
+                if (!report.IsValid || !IsReportForCurrentEntry(report, unregisterStartedIdentity, entrySequence))
                 {
                     continue;
                 }
@@ -204,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool skipped = !hasCurrentEntryContributors;
             if (skipped)
             {
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+            SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
                     definition,
                     SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors,
                     entrySequence);
@@ -253,28 +254,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         private static bool IsDiscoveryResultForCurrentEntry(
             ActivityObjectContributorDiscoveryResult result,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             return result.IsValid &&
                    identity.IsValid &&
                    string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
                    result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
             ActivityObjectContributionReport report,
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             int entrySequence)
         {
             return report.IsValid &&
                    identity.IsValid &&
                    string.Equals(report.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
                    string.Equals(report.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   string.Equals(report.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   report.ActivityOrdinal == identity.ActivityOrdinal &&
                    report.EntrySequence == entrySequence;
         }
     }

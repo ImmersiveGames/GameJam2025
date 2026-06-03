@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -28,9 +29,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryActorInventoryStage requires a scene actor registry.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity startedIdentity = identityBridge.BuildIdentity(definition, SessionActivityStage.ActorSceneDiscoveryStarted, entrySequence);
+            SessionActivityIdentity startedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryStarted);
             identityBridge.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorSceneDiscoveryStarted);
             factBridge.EmitFact(
                 facts,
@@ -38,13 +38,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' actor scene discovery started owner='ActivityEntryPipeline'.");
+                $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryPipeline'.");
             factBridge.EmitSnapshot(
                 snapshots,
                 "actor_scene_discovery_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' actor scene discovery started owner='ActivityEntryPipeline'.");
+                $"'{command.ActivityId}' actor scene discovery started owner='ActivityEntryPipeline'.");
             logBridge.LogEntryOwnerEvent(
                 "ActivityEntryActorSceneDiscoveryStarted",
                 startedIdentity,
@@ -54,9 +54,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             try
             {
-                bool canDiscoverFromLoadedSet = HasLoadedSetForCurrentEntry(loadedSet, definition, entrySequence, command.Identity) && loadedSet.HasScenes;
+                bool canDiscoverFromLoadedSet = HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) && loadedSet.HasScenes;
                 ActorSceneDiscoveryStageResult discovery = ActorSceneDiscoveryStage.Execute(
-                    definition,
+                    command.ActivityId,
                     startedIdentity,
                     loadedSet,
                     canDiscoverFromLoadedSet,
@@ -64,7 +64,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 if (!discovery.HasAuthorizedSource)
                 {
-                    SessionActivityIdentity skippedIdentity = identityBridge.BuildIdentity(definition, SessionActivityStage.ActorSceneDiscoverySkipped, entrySequence);
+                    SessionActivityIdentity skippedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoverySkipped);
                     identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorSceneDiscoverySkipped);
                     factBridge.EmitFact(
                         facts,
@@ -72,13 +72,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         skippedIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryPipeline'.");
+                        $"'{command.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryPipeline'.");
                     factBridge.EmitSnapshot(
                         snapshots,
                         "actor_scene_discovery_skipped",
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryPipeline'.");
+                        $"'{command.ActivityId}' actor scene discovery skipped reason='no_authorized_source' owner='ActivityEntryPipeline'.");
                     logBridge.LogEntryOwnerEvent(
                         "ActivityEntryActorSceneDiscoverySkipped",
                         skippedIdentity,
@@ -87,7 +87,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         "owner='ActivityEntryPipeline' block='actor_scene_discovery' reason='no_authorized_source'");
                 }
 
-                SessionActivityIdentity completedIdentity = identityBridge.BuildIdentity(definition, SessionActivityStage.ActorSceneDiscoveryCompleted, entrySequence);
+                SessionActivityIdentity completedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryCompleted);
                 identityBridge.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActorSceneDiscoveryCompleted);
                 factBridge.EmitFact(
                     facts,
@@ -95,13 +95,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     completedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryPipeline'.");
+                    $"'{command.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryPipeline'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "actor_scene_discovery_completed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryPipeline'.");
+                    $"'{command.ActivityId}' actor scene discovery completed discovered='{discovery.DiscoveredCount}' authorizedSource='{discovery.HasAuthorizedSource}' owner='ActivityEntryPipeline'.");
                 logBridge.LogEntryOwnerEvent(
                     "ActivityEntryActorSceneDiscoveryCompleted",
                     completedIdentity,
@@ -113,7 +113,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
             catch (Exception exception)
             {
-                SessionActivityIdentity failedIdentity = identityBridge.BuildIdentity(definition, SessionActivityStage.ActorSceneDiscoveryFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = BuildIdentityFromCommandIdentity(command.Identity, SessionActivityStage.ActorSceneDiscoveryFailed);
                 identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActorSceneDiscoveryFailed);
                 factBridge.EmitFact(
                     facts,
@@ -121,13 +121,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryPipeline'.");
+                    $"'{command.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryPipeline'.");
                 factBridge.EmitSnapshot(
                     snapshots,
                     "actor_scene_discovery_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryPipeline'.");
+                    $"'{command.ActivityId}' actor scene discovery failed reason='{exception.Message}' owner='ActivityEntryPipeline'.");
                 logBridge.LogEntryOwnerEvent(
                     "ActivityEntryActorSceneDiscoveryFailed",
                     failedIdentity,
@@ -216,15 +216,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static bool HasLoadedSetForCurrentEntry(
             ActivityContentLoadedSet loadedSet,
-            SessionActivityDefinition definition,
-            int entrySequence,
-            SessionActivityIdentity setupIdentity)
+            SessionActivityIdentity identity,
+            int entrySequence)
         {
             return loadedSet.IsValid &&
                    loadedSet.Identity.IsValid &&
-                   string.Equals(loadedSet.Identity.PipelineId, setupIdentity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.SessionId, setupIdentity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
                    loadedSet.Identity.EntrySequence == entrySequence;
         }
     }

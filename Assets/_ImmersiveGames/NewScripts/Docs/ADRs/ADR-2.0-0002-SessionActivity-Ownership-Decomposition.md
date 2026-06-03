@@ -1150,87 +1150,285 @@ Commands não carregam Stage, Boundary, Adapter, Func<T>, Action, executor gené
 Commands carregam payload runtime resolvido e identity tipada.
 ```
 
+##### Checkpoint SA-12-AUDIT — Commands/contracts hygiene
 
-##### Checkpoint `SA-12 — Command/contract hygiene`
+Status: `AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH`.
 
-Status geral: `PARTIAL / IN PROGRESS`.
-
-Fechamentos congelados até este checkpoint:
+A auditoria estática de `SA-12` confirmou que não havia blocker de executor/delegate nos commands auditados:
 
 ```text
-SA-12-AUDIT — AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH
-SA-12B/C   — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12D     — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12E     — CLOSED / PASS funcional + PASS arquitetural do corte
+sem Action
+sem Func<T>
+sem adapters embutidos nos commands
+sem delegates de execução
+sem SessionActivityRuntimeState embutido nos commands
+```
+
+O débito restante foi classificado como higiene de contrato:
+
+```text
+commands carregando authoring asset inteiro;
+wrappers internos carregando Stage/Boundary;
+commands duplicando PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence quando SessionActivityIdentity já era a fonte do ciclo;
+ActorAttributeCommand ainda usando strings livres para identidades runtime.
+```
+
+Conclusão:
+
+```text
+SA-12 não exige pipeline novo.
+SA-12 não exige redesenhar lifecycle macro.
+SA-12 deve ser resolvido por cortes pequenos de command hygiene.
+```
+
+##### Checkpoint SA-12B/C — Command boundary + identity duplication cleanup
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Escopo fechado:
+
+```text
+ActivityObjectContributorUnregisterStageCommand
+ActivityObjectResetCommand
+ActivityObjectReleaseCommand
+ActivityObjectSnapshotRestoreCommand
+ActivityContentSceneUnloadCommand
+```
+
+Correções aplicadas:
+
+```text
+ActivityObjectContributorUnregisterStageCommand não carrega mais SessionActivityStage Stage.
+ActivityObjectContributorUnregisterStage constrói suas identities locais internamente.
+Não há fallback do wrapper para ActivityContentReleaseCompleted.
+ActivityObjectResetCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityObjectReleaseCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityObjectSnapshotRestoreCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityContentSceneUnloadCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+Consumers passaram a usar command.Identity como fonte única do ciclo.
+```
+
+##### Checkpoint SA-12D — ActorAttributeCommand typed identity
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Escopo fechado:
+
+```text
+ActorAttributeCommand
+produtores de ActorAttributeCommand
+consumidores de ActorAttributeCommand
+logs/facts de setup/release de ActorAttribute
+```
+
+Correções aplicadas:
+
+```text
+ActorAttributeCommand não carrega mais string PipelineIdentity.
+ActorAttributeCommand não carrega mais string ActivityIdentity.
+ActorAttributeCommand não carrega mais string ActorInstanceId.
+ActorAttributeCommand carrega SessionActivityIdentity como identidade tipada do ciclo.
+ActorAttributeCommand carrega ActorInstanceRuntimeId como identidade funcional runtime do actor.
+Call sites foram migrados para o shape tipado.
+Logs podem imprimir ToString()/Value apenas como observabilidade, não como lookup funcional.
+```
+
+##### Checkpoint SA-12E — ActivityContent runtime scene reference
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Escopo fechado:
+
+```text
+ActivityEntryContentLoadCommand
+ActivityContentLoadPlan
+ActivityContentLoadPlanScene
+ActivityContentLoadedSceneRecord
+ActivityContentSceneUnloadDispatchStage
+call sites de content load/unload
+```
+
+Correções aplicadas:
+
+```text
+ActivityEntryContentLoadCommand não carrega mais SessionActivityDefinition.
+ActivityEntryContentLoadCommand passou a carregar ActivityContentLoadPlan como payload runtime resolvido.
+ActivityContentLoadPlan contém Identity, ActivityId, ActivityOrdinal, ActivityContentMode, ActivityContentProfileId, Scenes, Source e Reason.
+ActivityContentLoadPlanScene carrega runtime scene reference mínima para load.
+ActivityContentLoadedSceneRecord não carrega mais SceneKeyAsset autoral como fonte de unload.
+ActivityContentSceneUnloadDispatchStage passou a operar por ActivityContentSceneRuntimeReference.
+activity_01 preserva content load com loadedScenes='1'.
+activity_02 preserva no-content/skip explícito sem fallback para Route Scene.
+```
+
+Observação de escopo:
+
+```text
+O corte excedeu o mínimo inicialmente previsto para SA-12F2 porque também removeu SceneKeyAsset de ActivityContentLoadedSceneRecord e ajustou unload/object setup para runtime reference.
+A expansão foi aceita porque permaneceu dentro da mesma fronteira arquitetural: ActivityContent runtime payload.
+```
+
+##### Checkpoint SA-12F — Reduce SessionActivityDefinition from ActivityEntry commands
+
+Status: `PARTIAL / IN PROGRESS`.
+
+Subcortes validados até este checkpoint:
+
+```text
 SA-12F1A/B — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F2    — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F3A   — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F3B   — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F3C   — CLOSED / PASS funcional + PASS arquitetural do command boundary
+SA-12F4A   — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F4B   — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F4C   — CLOSED / PASS funcional + PASS arquitetural do corte
 ```
 
-Resumo dos cortes fechados:
-
-| Corte | Fechamento | Evidência/decisão |
-|---|---|---|
-| `SA-12B/C` | `CLOSED / PASS` | `ActivityObjectContributorUnregisterStageCommand` não carrega mais `SessionActivityStage`; object/reset/release/restore/unload commands não duplicam identidade de ciclo já presente em `SessionActivityIdentity`. |
-| `SA-12D` | `CLOSED / PASS` | `ActorAttributeCommand` passou a carregar `SessionActivityIdentity` e `ActorInstanceRuntimeId`, sem strings livres `PipelineIdentity`, `ActivityIdentity` ou `ActorInstanceId` como lookup funcional. |
-| `SA-12E` | `CLOSED / PASS` | `ActivityContentSceneLoadCommand` e `ActivityContentSceneUnloadCommand` não carregam mais `SceneKeyAsset`; usam referência runtime mínima resolvida antes do command. |
-| `SA-12F1A/B` | `CLOSED / PASS` | `PrepareEntry` usa command estreito sem `SessionActivityDefinition`; `ActivityResetCommand` usa referência mínima de reset, sem `SessionActivityDefinition`. |
-
-Evidência aceita para `SA-12F1A/B`:
+Escopo fechado:
 
 ```text
-ActivityEntryPreparationStarted/Completed preservados.
-ActivityObjectResetQaApplied em activity_01 / ActivityRunning.
-ActorResetQaApplied em activity_01 / ActivityRunning.
-RestartCurrentActivity PASS no smoke macro anterior.
-Activity01ToActivity02 PASS no smoke macro anterior.
-RouteExitBackToMenu PASS no smoke macro anterior.
-Sem FATAL, Exception, route_transition_failed, foreign/stale indevido ou checkpointStatus='Failed'.
+ActivityEntryContentLoadCommand foi reduzido para ActivityContentLoadPlan.
+PlayerInput/Permission/Movement/Camera binding commands deixaram de carregar SessionActivityDefinition quando já possuíam payload resolvido.
+ActorPresentation/ActorAttribute setup commands deixaram de carregar SessionActivityDefinition.
+ActivityEntryParticipantBindingCommand passou a carregar ActivityParticipantBindingPlan.
+ActivityEntryObjectSetupCommand deixou de carregar SessionActivityDefinition após separação de ActivityObjectSetupInventoryPlan e ActivityObjectResetRestorePlan.
+ActivitySetupInventoryBuilder passou a consumir ActivityObjectSetupInventoryPlan.
+Reset/restore do object setup passaram a consumir ActivityObjectResetRestorePlan.
 ```
 
-Pendências restantes de `SA-12`:
+Notas de arquitetura:
 
 ```text
-SA-12F2 — Remover SessionActivityDefinition de ActivityEntryContentLoad*Command com payload/plan mínimo de content load.
-SA-12F3 — Remover SessionActivityDefinition dos commands de setup/binding que já usam payload resolvido.
-SA-12F4 — Limpeza final de stage commands internos de exit/release, se a auditoria pós-F2/F3 ainda encontrar contaminação.
+ActivityParticipantBindingPlan ficou intencionalmente estreito e fecha o command boundary, mas não representa decomposição completa de participant requirements/materialization/placement.
+ActivityObjectSetupInventoryPlan é payload de setup inventory.
+ActivityObjectResetRestorePlan é payload de reset/snapshot restore.
+ActivityEntryObjectSetupCommand não usa mais SessionActivityDefinition como carrier runtime.
 ```
 
-##### Débito registrado — `ACTOR-RESET-QA-SESSION-SCOPED-RESOLUTION`
-
-Status: `OPEN / MEDIUM DEBT`.
-
-O smoke complementar de `SA-12F1A/B` validou `ActorResetQaApplied` em `activity_01` / `ActivityRunning`. Porém, o smoke anterior mostrou rejeição do QA reset quando executado em `activity_02` / no-content, apesar do `PlayerActor` ser `SessionScoped` e permanecer materializado/visível.
-
-Decisão:
+Evidência funcional aceita para os subcortes:
 
 ```text
-ActivityContent ausente não implica PlayerActor session-scoped ausente.
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActivityEntryPreparationStarted/Completed preservados
+ActivityEntryContentLoadStarted/Completed preservados
+ActivityContentSceneUnloadDispatched preservado
+ActivityContentReleaseCompleted preservado
+ActivityEntryParticipantBindingCompleted preservado
+ActivityEntryPlayerInputBindingCompleted preservado
+ActivityEntryPermissionTargetPreparationCompleted preservado
+MovementBindingCompleted preservado
+CameraBindingCompleted preservado
+ActorPresentationSetupCompleted preservado
+ActorAttributeSetupCompleted preservado
+ActivityCapabilityInventoryValidationPassed preservado
+ActivityCapabilityInventoryPreviewObserved preservado
+ActivityObjectReset preservado como PassedApplied em activity_01 e PassedNoCommands em activity_02
 ```
 
-Problema registrado:
+##### Checkpoint SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — retained PlayerActor movement in no-content activity
+
+Status: `CLOSED / PASS funcional + PASS arquitetural parcial`.
+
+Problema fechado:
 
 ```text
-QaResetCurrentPlayerActor não deve depender exclusivamente de ActivityContent ou ActivityParticipation local quando há PlayerActor SessionScoped persistente. Em activity_02/no-content, se o PlayerActor session-scoped permanece materializado e visível, o QA reset deve resolver por ActorInstanceRuntimeId/session actor binding, ou rejeitar com motivo mais preciso indicando ausência de active ActivityParticipation binding, não ausência do player actor.
+Ao transicionar de activity_01 para activity_02, o PlayerActor SessionScoped permanecia visível/materializado, mas movement não funcionava.
+activity_02 é no-content, mas ActivityContent ausente não implica PlayerActor ausente nem perda automática de movement/control.
 ```
 
-Classificação arquitetural:
-
-| Pergunta | Resposta |
-|---|---|
-| Owner correto | Actor reset canônico deve resolver por Actor/ActorInstance runtime reference; QA deve chamar command/stage canônico. |
-| Categoria | `QA command resolution` + `ActorInstanceRuntimeId/session-scoped actor lookup`. |
-| Comportamento final ou bridge | Débito de fronteira; não bloquear `SA-12F1A/B`. |
-| Compat necessária | Não. Corrigir em corte próprio, sem fallback textual. |
-| Sintoma ou fronteira | Fronteira de resolução QA/player-specific ainda local demais. |
-| Owner duplicado | Risco de Activity local/binding atual competir com store session-scoped do Actor. |
-
-Critério futuro de fechamento:
+Causas confirmadas durante os cortes:
 
 ```text
-QaResetCurrentPlayerActor resolve PlayerActor SessionScoped persistente por ActorInstanceRuntimeId/session actor binding, inclusive quando ActivityContent é no-content.
-Se a Activity atual não possui ActivityParticipation binding ativo, a rejeição deve explicitar esse motivo sem declarar ausência do PlayerActor materializado.
-Sem fallback por PlayerActorId/string concatenada.
-Sem resolver por primeiro PlayerActor encontrado.
-Smoke deve demonstrar activity_01 Applied e activity_02 comportamento correto conforme policy definida.
+ActivityParticipationContext de activity_02 era gravado vazio quando não havia participant requirements próprios.
+O retained player binding existia no ActivityActorExitRuntimeState, mas era rejeitado por validação de scope incorreta para ActorScope.SessionScoped.
+O capability inventory de activity_02 projetava apenas PresentationEndpoint e não projetava PermissionTarget/movement receiver do PlayerActor retido.
+```
+
+Correções aceitas:
+
+```text
+ActivityEntryParticipantBindingStage passou a promover retained player binding para ActivityParticipationContext current-entry quando a activity não possui participant requirements próprios, mas há PlayerActor SessionScoped válido.
+A validação passou a aceitar ActorInstanceRuntimeId SessionScoped atravessando activities sem rebadgear o runtime id para activity scope.
+ActivityEntryPipeline passou a ter ActivityParticipationContext com activityParticipants='1' em activity_02.
+PlayerInputBinding passou a bindar o player em activity_02.
+MovementBinding passou a encontrar target em activity_02.
+ActivityCapabilityInventory passou a receber a capability surface funcional do PlayerActor SessionScoped retido antes da PermissionTargetPreparation.
+PermissionTargetPreparation passou a registrar receiver para activity_02.
+ActivityGameplayControl Allowed passou a ser aplicado ao PlayerMovementPermissionReceiver de activity_02.
+MovementControlEnabled voltou a ocorrer em activity_02.
+```
+
+Evidência aceita:
+
+```text
+LoadingCompleted
+LoadingHidden
+ActivityParticipantRetainedBindingChosen
+ActivityParticipationContextPrepared activityParticipants='1' status='ResolvedFromRetainedSessionScopedActor'
+ActivityEntryPlayerInputBindingCompleted totalBound='1' skipped='False'
+ActivityCapabilityInventoryPreviewObserved contendo PermissionTarget
+ActivityEntryPermissionTargetPreparationCompleted receivers='1' skipped='False'
+PlayerMovementBound
+MovementBindingCompleted totalBound='1'
+ActivityCapabilityPermissionPublished state='Allowed' activityId='activity_02'
+PlayerMovementPermissionApplied state='Allowed' activityId='activity_02'
+MovementControlEnabled activityId='activity_02' affectedActors='1'
+Activity01ToActivity02 checkpointStatus='Passed'
+activity02ReachedRunning='true'
+activity_02 no-content preservado
+ActivityObjectReset checkpointStatus='PassedNoCommands'
+```
+
+Débito aceito:
+
+```text
+SA-12F-MOV-H1 — Retained PlayerActor target projection ownership hygiene.
+Status: OPEN / MEDIUM DEBT.
+
+Parte da projeção de ActorTargets para capability inventory ficou em SessionActivityPipeline como bridge técnica:
+- ResolvePlayerActorCapabilityTargetsForCurrentEntry(...)
+- AddPlayerActorCapabilityTargetsFromParticipationContext(...)
+- TryResolvePlayerActorHandleForCapabilityInventory(...)
+
+A auditoria classificou o shape como PASS funcional / PASS arquitetural parcial porque não há writer duplicado de inventory, fallback por string, first-player fallback, branch player/nonplayer novo ou lifecycle/policy sendo decidido fora do owner.
+Mesmo assim, o owner conceitual final da projeção deve ser ActivityEntryPipeline / ActivityEntryActorInventoryStage / helper específico de entry.
+```
+
+Critério futuro para fechar o débito:
+
+```text
+Mover a projeção de PlayerActor SessionScoped retido para helper/bridge do ActivityEntryPipeline ou ActivityEntryActorInventoryStage.
+Preservar o mesmo smoke funcional de activity_02.
+Não reconstruir inventory em consumidor posterior.
+Não criar fallback por string, first actor, first player ou registry tardio.
+Manter ActivityCapabilityInventory como snapshot/índice runtime passivo com writer único por lifecycle.
+```
+
+##### Pendências restantes de SA-12
+
+```text
+SA-12F5 — auditoria/correção final dos resíduos de SessionActivityDefinition em ActivityEntryCommand, content-load completion/failure, ActorParticipationEnterCommand e ActivityContentReleaseFinalizationStageCommand.
+SA-12F-MOV-H1 — hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
+```
+
+Critério para os próximos cortes:
+
+```text
+Não reabrir SA-12E salvo regressão explícita.
+Não reabrir o blocker funcional de movement em activity_02 salvo regressão de smoke.
+Resolver SA-12F5 por cortes pequenos de residual command hygiene.
+Tratar SA-12F-MOV-H1 como hygiene futuro, não blocker funcional.
+Não criar compat/fallback paralelo.
+Não criar pipeline novo.
+Preservar smoke macro completo.
 ```
 
 ---
@@ -1277,7 +1475,14 @@ DONE  SA-10   Permission identity separation
       SA-11A  Entry state/context extraction
 DONE  SA-11B  Fact recorder hygiene
 
-PART  SA-12   Command/contract hygiene — SA-12B/C, SA-12D, SA-12E e SA-12F1A/B fechados; SA-12F2+ pendente
+PEND  SA-12   Command/contract hygiene — partial
+DONE  SA-12B/C Command boundary + identity duplication cleanup
+DONE  SA-12D  ActorAttributeCommand typed identity
+DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
+PART  SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
+DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — PASS funcional / PASS arquitetural parcial
+PEND  SA-12F5 residual SessionActivityDefinition command hygiene
+DEBT  SA-12F-MOV-H1 Retained PlayerActor target projection ownership hygiene
 ```
 
 ## Critério global de viabilidade Base 2.0

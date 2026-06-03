@@ -28,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static ActivityEntryActorParticipationEnterResult ExecuteEnter(
             ActivityEntryActorParticipationEnterCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             IActivityEntryActorInventoryRuntimeBridge actorInventoryBridge,
             IActivityEntryActorParticipationRuntimeBridge participationBridge,
@@ -54,7 +55,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(participationBridge));
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
             SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterStarted, entrySequence);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorParticipationEnterStarted);

@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
 
@@ -44,27 +45,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal >= 0 &&
+            string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -180,24 +185,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryContentLoadCompletionCommand(
             SessionActivityIdentity activeIdentity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             SessionActivityPendingOperation operation,
             string source,
             string reason)
         {
             ActiveIdentity = activeIdentity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal;
             Operation = operation;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity ActiveIdentity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public SessionActivityPendingOperation Operation { get; }
         public string Source { get; }
         public string Reason { get; }
-        public bool IsValid => ActiveIdentity.IsValid && Definition.IsValid && Operation.IsValid && !string.IsNullOrWhiteSpace(Source);
+        public bool IsValid =>
+            ActiveIdentity.IsValid &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            Operation.IsValid &&
+            string.Equals(ActiveIdentity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            ActiveIdentity.ActivityOrdinal == ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
         {
@@ -209,14 +224,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryContentLoadFailureCommand(
             SessionActivityIdentity activeIdentity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             SessionActivityPendingOperation operation,
             string source,
             string reason,
             string error)
         {
             ActiveIdentity = activeIdentity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal;
             Operation = operation;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -224,12 +241,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
 
         public SessionActivityIdentity ActiveIdentity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public SessionActivityPendingOperation Operation { get; }
         public string Source { get; }
         public string Reason { get; }
         public string Error { get; }
-        public bool IsValid => ActiveIdentity.IsValid && Definition.IsValid && Operation.IsValid && !string.IsNullOrWhiteSpace(Source);
+        public bool IsValid =>
+            ActiveIdentity.IsValid &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            Operation.IsValid &&
+            string.Equals(ActiveIdentity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            ActiveIdentity.ActivityOrdinal == ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
         {
@@ -260,31 +285,109 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 
-    public readonly struct ActivityEntryObjectSetupCommand
+    public readonly struct ActivityObjectSetupInventoryPlan
     {
-        public ActivityEntryObjectSetupCommand(
+        public ActivityObjectSetupInventoryPlan(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
+            ActivitySetupRequirementsAuthoring setupRequirements,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            SetupRequirements = setupRequirements;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public ActivitySetupRequirementsAuthoring SetupRequirements { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    public readonly struct ActivityEntryObjectSetupCommand
+    {
+        public ActivityEntryObjectSetupCommand(
+            SessionActivityIdentity identity,
+            ActivityObjectSetupInventoryPlan setupInventoryPlan,
+            ActivityObjectResetRestorePlan resetRestorePlan)
+        {
+            Identity = identity;
+            SetupInventoryPlan = setupInventoryPlan;
+            ResetRestorePlan = resetRestorePlan;
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public ActivityObjectSetupInventoryPlan SetupInventoryPlan { get; }
+        public ActivityObjectResetRestorePlan ResetRestorePlan { get; }
+        public ActivityObjectSetupInventoryPlan Plan => SetupInventoryPlan;
+        public string ActivityId => SetupInventoryPlan.ActivityId;
+        public int ActivityOrdinal => SetupInventoryPlan.ActivityOrdinal;
+        public string Source => SetupInventoryPlan.Source;
+        public string Reason => SetupInventoryPlan.Reason;
+        public ActivitySetupRequirementsAuthoring SetupRequirements => SetupInventoryPlan.SetupRequirements;
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            SetupInventoryPlan.IsValid &&
+            ResetRestorePlan.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            string.Equals(Identity.ActivityId, SetupInventoryPlan.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == SetupInventoryPlan.ActivityOrdinal &&
+            string.Equals(Identity.ActivityId, ResetRestorePlan.ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ResetRestorePlan.ActivityOrdinal &&
+            string.Equals(SetupInventoryPlan.ActivityId, ResetRestorePlan.ActivityId, StringComparison.Ordinal) &&
+            SetupInventoryPlan.ActivityOrdinal == ResetRestorePlan.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(Source);
+    }
+
+    public readonly struct ActivityObjectResetRestorePlan
+    {
+        public ActivityObjectResetRestorePlan(
+            SessionActivityIdentity identity,
+            string activityId,
+            int activityOrdinal,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -455,27 +558,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryActorParticipationEnterCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -1210,6 +1317,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityEntryPreparationResult PrepareEntry(ActivityEntryPreparationCommand command);
         ActivityEntrySetupReadinessResult ExecuteSetupAndReadiness(
             ActivityEntryCommand command,
+            SessionActivityDefinition definition,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryContentLoadResult BeginContentLoad(
@@ -1218,6 +1326,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryContentLoadResult CompleteContentLoad(
             ActivityEntryContentLoadCompletionCommand command,
+            SessionActivityDefinition definition,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteSetupInfrastructure(
@@ -1242,6 +1351,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryActorParticipationEnterResult ExecuteActorParticipationEnter(
             ActivityEntryActorParticipationEnterCommand command,
+            SessionActivityDefinition definition,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryPlayerInputBindingResult ExecutePlayerInputBinding(
@@ -1260,7 +1370,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityEntryCameraBindingCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
-        void FailContentLoad(ActivityEntryContentLoadFailureCommand command, List<SessionActivityFact> facts);
+        void FailContentLoad(ActivityEntryContentLoadFailureCommand command, SessionActivityDefinition definition, List<SessionActivityFact> facts);
         void ResetState();
     }
 }

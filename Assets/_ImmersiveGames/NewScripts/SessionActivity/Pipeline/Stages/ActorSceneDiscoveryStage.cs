@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal static class ActorSceneDiscoveryStage
     {
         public static ActorSceneDiscoveryStageResult Execute(
-            SessionActivityDefinition definition,
+            string activityId,
             SessionActivityIdentity identity,
             ActivityContentLoadedSet loadedSet,
             bool canDiscoverFromLoadedSet,
@@ -60,7 +60,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     Scene contentScene = SceneManager.GetSceneByName(record.SceneName);
                     if (!contentScene.IsValid() || !contentScene.isLoaded)
                     {
-                        throw new InvalidOperationException($"Actor scene discovery requires loaded scene='{record.SceneName}' activityId='{definition.ActivityId}'.");
+                        throw new InvalidOperationException($"Actor scene discovery requires loaded scene='{record.SceneName}' activityId='{activityId}'.");
                     }
 
                     DiscoverInScene(identity, contentScene, ActorSourceKind.ActivityContent, ActorScope.ActivityScoped, registry, discovered);

@@ -12,23 +12,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal readonly struct ActivityHandoffRuntimeResetStageCommand
     {
         public ActivityHandoffRuntimeResetStageCommand(
-            SessionActivityDefinition initialDefinition,
+            SessionActivityIdentity initialIdentity,
             int entrySequence,
             string triggerSource,
             string triggerReason)
         {
-            InitialDefinition = initialDefinition;
+            InitialIdentity = initialIdentity;
             EntrySequence = entrySequence;
             TriggerSource = Normalize(triggerSource);
             TriggerReason = Normalize(triggerReason);
         }
 
-        public SessionActivityDefinition InitialDefinition { get; }
+        public SessionActivityIdentity InitialIdentity { get; }
         public int EntrySequence { get; }
         public string TriggerSource { get; }
         public string TriggerReason { get; }
 
-        public bool IsValid => InitialDefinition.IsValid && EntrySequence > 0;
+        public bool IsValid => InitialIdentity.IsValid && EntrySequence > 0;
 
         private static string Normalize(string value)
         {
@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ReleaseSessionScopedActors(command, sessionActorRuntimeStore);
             activityPlayerActorRegistry.ClearAllRouteScopedIndexes();
             activitySceneActorRegistry.ClearAllRouteRetained();
-            activityActorExitRuntimeState.ClearAll(command.InitialDefinition.ActivityId, command.EntrySequence, Owner, ResetReason);
+            activityActorExitRuntimeState.ClearAll(command.InitialIdentity.ActivityId, command.EntrySequence, Owner, ResetReason);
 
             Log("ActivityHandoffRuntimeResetCompleted", command, DebugUtility.Colors.Success);
         }
@@ -76,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         {
             DebugUtility.Log(
                 typeof(ActivityHandoffRuntimeResetStage),
-                $"[OBS][ActivityHandoffRuntimeResetStage] event='{Normalize(eventName)}' owner='{Owner}' activityId='{Normalize(command.InitialDefinition.ActivityId)}' entrySequence='{command.EntrySequence}' triggerSource='{Normalize(command.TriggerSource)}' triggerReason='{Normalize(command.TriggerReason)}' resetReason='{ResetReason}'.",
+                $"[OBS][ActivityHandoffRuntimeResetStage] event='{Normalize(eventName)}' owner='{Owner}' activityId='{Normalize(command.InitialIdentity.ActivityId)}' entrySequence='{command.EntrySequence}' triggerSource='{Normalize(command.TriggerSource)}' triggerReason='{Normalize(command.TriggerReason)}' resetReason='{ResetReason}'.",
                 color);
         }
 
@@ -112,7 +112,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 SessionActorRuntimeEntry entry = entries[index];
                 DebugUtility.LogVerbose(typeof(ActivityHandoffRuntimeResetStage),
-                    $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='{Owner}' activityId='{Normalize(command.InitialDefinition.ActivityId)}' entrySequence='{command.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{Normalize(command.TriggerSource)}' reason='{Normalize(command.TriggerReason)}'.",
+                    $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='{Owner}' activityId='{Normalize(command.InitialIdentity.ActivityId)}' entrySequence='{command.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' decision='Release' source='{Normalize(command.TriggerSource)}' reason='{Normalize(command.TriggerReason)}'.",
                     DebugUtility.Colors.Info);
                 if (entry.Instance != null)
                 {
@@ -121,7 +121,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 sessionActorRuntimeStore.Remove(entry.ActorInstanceRuntimeId);
                 DebugUtility.LogVerbose(typeof(ActivityHandoffRuntimeResetStage),
-                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='{Owner}' activityId='{Normalize(command.InitialDefinition.ActivityId)}' entrySequence='{command.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{Normalize(command.TriggerSource)}' reason='{Normalize(command.TriggerReason)}'.",
+                    $"[OBS][ActorLifetime] event='ActorLifetimeReleased' owner='{Owner}' activityId='{Normalize(command.InitialIdentity.ActivityId)}' entrySequence='{command.EntrySequence}' trigger='SessionReset' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' source='{Normalize(command.TriggerSource)}' reason='{Normalize(command.TriggerReason)}'.",
                     DebugUtility.Colors.Success);
             }
         }

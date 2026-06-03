@@ -17,20 +17,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal readonly struct ActivityExitActorTeardownCommand
     {
         public ActivityExitActorTeardownCommand(
-            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
             SessionActivityCommand command,
             int entrySequence,
             SessionActivityPipeline.ActorPresentationReleaseRail releaseRail,
             ActorInstanceId targetActorInstanceRuntimeId = default)
         {
-            Definition = definition;
+            Identity = identity;
             Command = command;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
             ReleaseRail = releaseRail;
             TargetActorInstanceRuntimeId = targetActorInstanceRuntimeId;
         }
 
-        public SessionActivityDefinition Definition { get; }
+        public SessionActivityIdentity Identity { get; }
         public SessionActivityCommand Command { get; }
         public int EntrySequence { get; }
         public SessionActivityPipeline.ActorPresentationReleaseRail ReleaseRail { get; }
@@ -40,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public string Reason => Command.Reason;
 
         public bool IsValid =>
-            Definition.IsValid &&
+            Identity.IsValid &&
             EntrySequence > 0 &&
             ReleaseRail != SessionActivityPipeline.ActorPresentationReleaseRail.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
@@ -83,6 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityExitActorTeardownResult Execute(
             ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
@@ -110,9 +111,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(bridge));
             }
 
-            ExecuteActorPresentationRelease(command, endpoint, runtimeState, bridge, facts, snapshots);
-            ExecuteActorAttributeRelease(command, endpoint, runtimeState, bridge, facts, snapshots);
-            SessionActivityIdentity completedIdentity = ExecuteActorParticipationExit(command, endpoint, runtimeState, bridge, sessionActorRuntimeStore, facts, snapshots);
+            ExecuteActorPresentationRelease(command, definition, endpoint, runtimeState, bridge, facts, snapshots);
+            ExecuteActorAttributeRelease(command, definition, endpoint, runtimeState, bridge, facts, snapshots);
+            SessionActivityIdentity completedIdentity = ExecuteActorParticipationExit(command, definition, endpoint, runtimeState, bridge, sessionActorRuntimeStore, facts, snapshots);
 
             return new ActivityExitActorTeardownResult(
                 completed: true,
@@ -122,6 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static void ExecuteActorPresentationRelease(
             ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
@@ -133,7 +135,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityExitActorTeardownCommand is invalid for ActorPresentation release.");
             }
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             SessionActivityPipeline.ActorPresentationReleaseRail rail = command.ReleaseRail;
             ActorInstanceId targetActorInstanceRuntimeId = command.TargetActorInstanceRuntimeId;
@@ -225,13 +226,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static void ExecuteActorAttributeRelease(
             ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseStarted, entrySequence);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorAttributeReleaseStarted);
@@ -328,6 +329,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         public static SessionActivityIdentity ExecuteActorParticipationExit(
             ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
             IActivityExitActorTeardownRuntimeBridge bridge,
@@ -335,7 +337,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             ActorLifetimeTrigger lifetimeTrigger = ResolveLifetimeTrigger(command.ReleaseRail);
             SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationExitStarted, entrySequence);
@@ -425,7 +426,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (exitedPlayerActors.Count > 0)
             {
-                ExecutePlayerActorParticipationExit(command, endpoint, bridge, facts, snapshots, startedIdentity, exitedPlayerActors);
+                ExecutePlayerActorParticipationExit(command, definition, endpoint, bridge, facts, snapshots, startedIdentity, exitedPlayerActors);
             }
 
             if (exited == 0)
@@ -501,9 +502,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity,
                 command.Source,
                 command.Reason,
-                $"'{command.Definition.ActivityId}' actor lifetime decision resolved actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}' decision='{decision}'.");
+                $"'{command.Identity.ActivityId}' actor lifetime decision resolved actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}' decision='{decision}'.");
             DebugUtility.LogVerbose<SessionActivityPipeline>(
-                $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='{command.Definition.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}' decision='{decision}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='{command.Identity.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}' decision='{decision}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             if (decision == ActorLifetimeDecision.Retain)
@@ -514,7 +515,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     identity,
                     command.Source,
                     command.Reason,
-                    $"'{command.Definition.ActivityId}' actor lifetime retained actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}'.");
+                    $"'{command.Identity.ActivityId}' actor lifetime retained actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}'.");
                 return;
             }
 
@@ -524,7 +525,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity,
                 command.Source,
                 command.Reason,
-                $"'{command.Definition.ActivityId}' actor lifetime released actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}'.");
+                $"'{command.Identity.ActivityId}' actor lifetime released actorId='{entry.ActorId}' actorInstanceRuntimeId='{entry.ActorInstanceRuntimeId}' actorScope='{entry.ActorScope}' trigger='{trigger}'.");
         }
 
         private static void EmitActorLifetimeDecision(
@@ -542,9 +543,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity,
                 command.Source,
                 command.Reason,
-                $"'{command.Definition.ActivityId}' actor lifetime decision resolved actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}' decision='{decision}'.");
+                $"'{command.Identity.ActivityId}' actor lifetime decision resolved actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}' decision='{decision}'.");
             DebugUtility.LogVerbose<SessionActivityPipeline>(
-                $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='{command.Definition.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}' decision='{decision}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='{command.Identity.ActivityId}' entrySequence='{command.EntrySequence}' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}' decision='{decision}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
             if (decision == ActorLifetimeDecision.Retain)
@@ -555,7 +556,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     identity,
                     command.Source,
                     command.Reason,
-                    $"'{command.Definition.ActivityId}' actor lifetime retained actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}'.");
+                    $"'{command.Identity.ActivityId}' actor lifetime retained actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}'.");
                 return;
             }
 
@@ -565,7 +566,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity,
                 command.Source,
                 command.Reason,
-                $"'{command.Definition.ActivityId}' actor lifetime released actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}'.");
+                $"'{command.Identity.ActivityId}' actor lifetime released actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorScope='{instance.Scope}' trigger='{trigger}'.");
         }
 
         private static string ResolveActorScopeLabel(ActorInstanceId actorInstanceRuntimeId)
@@ -611,6 +612,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
         private static void ExecutePlayerActorParticipationExit(
             ActivityExitActorTeardownCommand command,
+            SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
@@ -618,7 +620,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity stageStartedIdentity,
             IReadOnlyList<PlayerActorIdentityRecord> exitedPlayerActors)
         {
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             IReadOnlyList<PlayerActorIdentityRecord> actors = exitedPlayerActors ?? Array.Empty<PlayerActorIdentityRecord>();
             if (actors.Count == 0)
