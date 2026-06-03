@@ -1120,11 +1120,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 IActivityObjectSnapshotRestoreEndpoint[] endpoints = ResolveObjectSnapshotRestoreEndpointsFromInventory(inventory, report);
                 ActivityObjectSnapshotRestoreCommand restoreCommand = new(
                     restoreIdentity,
-                    endpoint.PipelineId,
-                    endpoint.SessionId,
-                    definition.ActivityId,
-                    definition.ActivityOrdinal,
-                    entrySequence,
                     report.TargetId,
                     ActivityObjectSnapshotCoordinateSpace.WorldTransform,
                     payloadObject.PositionX,
@@ -1476,11 +1471,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    string.Equals(resultIdentity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    resultIdentity.ActivityOrdinal == definition.ActivityOrdinal &&
                    resultIdentity.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Command.ActivityOrdinal == definition.ActivityOrdinal &&
-                   result.Command.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Command.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
         }
@@ -1748,11 +1738,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    string.Equals(command.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    command.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    command.Identity.EntrySequence == entrySequence &&
-                   string.Equals(command.PipelineId, endpoint.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(command.SessionStateId, endpoint.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   command.ActivityOrdinal == definition.ActivityOrdinal &&
-                   command.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(command.TargetId);
         }
 

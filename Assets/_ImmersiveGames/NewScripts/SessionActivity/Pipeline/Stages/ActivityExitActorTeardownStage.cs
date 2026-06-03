@@ -262,7 +262,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     string actorId = capabilityState.ActorId;
-                    if (!capabilityState.Endpoint.TryRelease(capabilityState.PipelineIdentity, capabilityState.ActivityIdentity, out ActorAttributeReleaseResult releaseResult))
+                    if (!capabilityState.Endpoint.TryRelease(startedIdentity, out ActorAttributeReleaseResult releaseResult))
                     {
                         failedCount += 1;
                         SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReleaseFailed, entrySequence);
@@ -688,6 +688,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' player actor participation exit stage completed.");
+            endpoint.SetCurrentIdentity(stageCompletedIdentity, SessionActivityStage.PlayerActorParticipationExitStageCompleted);
             endpoint.EmitSnapshot(
                 snapshots,
                 "player_actor_participation_exit_stage_completed",

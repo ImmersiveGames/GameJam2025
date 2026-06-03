@@ -1,12 +1,14 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     [Serializable]
     public readonly struct ActorAttributeChangedFact
     {
-        public string PipelineIdentity { get; }
-        public string ActivityIdentity { get; }
-        public string ActorInstanceId { get; }
+        public SessionActivityIdentity ActivityIdentity { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorAttributeId AttributeId { get; }
         public string AttributeStableId { get; }
         public ActorAttributeOperation Operation { get; }
@@ -21,9 +23,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         public bool Changed => Math.Abs(NewValue - PreviousValue) > float.Epsilon;
 
         public ActorAttributeChangedFact(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             string attributeStableId,
             ActorAttributeOperation operation,
@@ -35,9 +36,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             string source,
             string reason)
         {
-            PipelineIdentity = pipelineIdentity ?? string.Empty;
-            ActivityIdentity = activityIdentity ?? string.Empty;
-            ActorInstanceId = actorInstanceId ?? string.Empty;
+            ActivityIdentity = activityIdentity;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             AttributeId = attributeId;
             AttributeStableId = attributeStableId ?? string.Empty;
             Operation = operation;

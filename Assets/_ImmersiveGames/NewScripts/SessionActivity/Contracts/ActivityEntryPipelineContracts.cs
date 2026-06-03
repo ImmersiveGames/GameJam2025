@@ -991,9 +991,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         void StoreActiveActorAttributeCapability(
             SessionActivityIdentity identity,
             ActorAttributeEndpointReference attributeReference,
-            ActorAttributeEndpoint endpoint,
-            string pipelineIdentity,
-            string activityIdentity);
+            ActorAttributeEndpoint endpoint);
         void RemoveActiveActorAttributeCapability(ActorInstanceId actorInstanceRuntimeId);
     }
 

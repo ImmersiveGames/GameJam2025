@@ -960,7 +960,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActorAttributeChangedFact fact = result.Fact;
                 Debug.Log(
-                    $"[OBS][SessionActivityPipeline][Host][ActorAttributeFact] operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceId='{fact.ActorInstanceId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineIdentity='{fact.PipelineIdentity}'");
+                    $"[OBS][SessionActivityPipeline][Host][ActorAttributeFact] operation='{fact.Operation}' actorId='{Normalize(actorId)}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' clamped='{fact.Clamped}' activityIdentity='{fact.ActivityIdentity}' pipelineId='{fact.ActivityIdentity.PipelineId}'");
             }
 
             return applied;

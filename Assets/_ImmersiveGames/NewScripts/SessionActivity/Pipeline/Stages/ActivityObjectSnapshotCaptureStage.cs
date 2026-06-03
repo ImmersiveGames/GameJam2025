@@ -96,8 +96,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
-            SessionActivityIdentity captureIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.Deactivation, entrySequence);
-            endpoint.SetCurrentIdentity(captureIdentity, SessionActivityStage.Deactivation);
+            SessionActivityIdentity captureIdentity = endpoint.BuildIdentity(
+                definition,
+                SessionActivityStage.ActivityObjectSnapshotCaptureStarted,
+                entrySequence);
+            endpoint.SetCurrentIdentity(captureIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureStarted);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectSnapshotCaptureStarted,
@@ -116,6 +119,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 $"'{definition.ActivityId}' activity object snapshot capture started.");
 
+            SessionActivityIdentity completedIdentity;
             if (!discoveryResult.IsValid ||
                 !IsDiscoveryResultForCurrentEntry(discoveryResult, captureIdentity, definition, entrySequence) ||
                 discoveryResult.Reports.Count == 0)
@@ -128,17 +132,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     entrySequence,
                     "ActivityObjectSnapshotCaptureStage",
                     "activity_object_snapshot_capture_skipped_no_discovery");
+                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotCaptureSkippedNoProviders,
-                    captureIdentity,
+                    skippedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object snapshot capture skipped reason='no_discovery_result'.");
+                completedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectSnapshotCaptureCompleted,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureCompleted);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotCaptureCompleted,
-                    captureIdentity,
+                    completedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='0' targetIds='<none>' hasTransformPayload='false'.");
@@ -154,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='0'.");
                 return new ActivityObjectSnapshotCaptureStageResult(
                     completed: true,
-                    identity: captureIdentity,
+                    identity: completedIdentity,
                     capturedCount: 0,
                     failedCount: 0,
                     hasTransformPayload: false,
@@ -185,12 +199,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
+                SessionActivityIdentity failedIdentity;
                 if (!hasValidSnapshotInventory)
                 {
+                    failedIdentity = endpoint.BuildIdentity(
+                        definition,
+                        SessionActivityStage.ActivityObjectSnapshotCaptureFailed,
+                        entrySequence);
+                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureFailed);
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
-                        captureIdentity,
+                        failedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' activity object snapshot capture failed targetId='{report.TargetId}' contentProfileId='{report.ContentProfileId}' reason='snapshot_inventory_missing_or_invalid'.");
@@ -205,10 +225,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 IActivityObjectSnapshotProvider[] providers = ResolveObjectSnapshotProvidersFromInventory(snapshotInventory, report);
                 if (providers.Length == 0)
                 {
+                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                        definition,
+                        SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders,
+                        entrySequence);
+                    endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders);
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureSkippedNoProviders,
-                        captureIdentity,
+                        skippedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' activity object snapshot capture skipped targetId='{report.TargetId}' contentProfileId='{report.ContentProfileId}' reason='no_snapshot_providers'.");
@@ -223,6 +248,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason);
                 if (!captureCommand.IsValid)
                 {
+                    failedIdentity = endpoint.BuildIdentity(
+                        definition,
+                        SessionActivityStage.ActivityObjectSnapshotCaptureFailed,
+                        entrySequence);
+                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureFailed);
                     failedCount += 1;
                     if (string.IsNullOrWhiteSpace(captureFailureDetail))
                     {
@@ -231,7 +261,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
-                        captureIdentity,
+                        failedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' activity object snapshot capture failed targetId='{report.TargetId}' contentProfileId='{report.ContentProfileId}' reason='invalid_capture_command'.");
@@ -241,6 +271,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 ActivityObjectSnapshotCaptureResult captureResult = ExecuteObjectSnapshotCaptureCommand(captureCommand, providers);
                 if (!captureResult.IsValid || !IsObjectSnapshotCaptureResultForCurrentEntry(captureResult, captureIdentity, definition, entrySequence))
                 {
+                    failedIdentity = endpoint.BuildIdentity(
+                        definition,
+                        SessionActivityStage.ActivityObjectSnapshotCaptureFailed,
+                        entrySequence);
+                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureFailed);
                     failedCount += 1;
                     if (string.IsNullOrWhiteSpace(captureFailureDetail))
                     {
@@ -249,7 +284,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
-                        captureIdentity,
+                        failedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' activity object snapshot capture failed targetId='{report.TargetId}' contentProfileId='{report.ContentProfileId}' reason='invalid_or_foreign_capture_result'.");
@@ -258,6 +293,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 if (captureResult.IsCaptured)
                 {
+                    SessionActivityIdentity capturedIdentity = endpoint.BuildIdentity(
+                        definition,
+                        SessionActivityStage.ActivityObjectSnapshotCaptured,
+                        entrySequence);
+                    endpoint.SetCurrentIdentity(capturedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptured);
                     capturedCount += 1;
                     hasTransformPayload |= captureResult.HasTransformPayload;
                     capturedTargetIds.Add(captureResult.Command.TargetId);
@@ -278,7 +318,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptured,
-                        captureIdentity,
+                        capturedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' activity object snapshot captured targetId='{captureResult.Command.TargetId}' contentProfileId='{captureResult.Command.ContentProfileId}' coordinateSpace='{ToCoordinateSpaceToken(snapshotData.CoordinateSpace)}' hasTransformPayload='{captureResult.HasTransformPayload.ToString().ToLowerInvariant()}' capturedPosition='({snapshotData.PositionX:0.###},{snapshotData.PositionY:0.###},{snapshotData.PositionZ:0.###})' position='({snapshotData.PositionX:0.###},{snapshotData.PositionY:0.###},{snapshotData.PositionZ:0.###})' rotation='({snapshotData.RotationX:0.###},{snapshotData.RotationY:0.###},{snapshotData.RotationZ:0.###},{snapshotData.RotationW:0.###})' scale='({snapshotData.ScaleX:0.###},{snapshotData.ScaleY:0.###},{snapshotData.ScaleZ:0.###})' detail='{captureResult.Detail}'.");
@@ -287,10 +327,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 if (captureResult.IsSkippedOptional)
                 {
+                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                        definition,
+                        SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders,
+                        entrySequence);
+                    endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureSkippedNoProviders);
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptureSkippedNoProviders,
-                        captureIdentity,
+                        skippedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' activity object snapshot capture skipped targetId='{captureResult.Command.TargetId}' contentProfileId='{captureResult.Command.ContentProfileId}' reason='{captureResult.Detail}'.");
@@ -304,10 +349,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         ? "snapshot_capture_failed"
                         : Normalize(captureResult.Detail);
                 }
+                failedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectSnapshotCaptureFailed,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureFailed);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed,
-                    captureIdentity,
+                    failedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object snapshot capture failed targetId='{captureResult.Command.TargetId}' contentProfileId='{captureResult.Command.ContentProfileId}' reason='{captureResult.Detail}'.");
@@ -349,10 +399,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     "activity_object_snapshot_capture_completed");
             }
 
+            completedIdentity = endpoint.BuildIdentity(
+                definition,
+                SessionActivityStage.ActivityObjectSnapshotCaptureCompleted,
+                entrySequence);
+            endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityObjectSnapshotCaptureCompleted);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectSnapshotCaptureCompleted,
-                captureIdentity,
+                completedIdentity,
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");

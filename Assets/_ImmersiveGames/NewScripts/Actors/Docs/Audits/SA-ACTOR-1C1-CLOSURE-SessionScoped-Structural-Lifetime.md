@@ -2,7 +2,7 @@
 
 ## Status
 
-CLOSED / PASS funcional.
+CLOSED / PASS funcional + PASS arquitetural do corte.
 
 ## Objetivo
 
@@ -24,7 +24,7 @@ ComponentScope/CapabilityPolicy decide lifetime de cada componente/capability.
 | Responsabilidade | Owner |
 |---|---|
 | Slot/seleção/participação do player | PlayerParticipation / SessionOperational |
-| Scope do player materializado | PlayerSetDefinition.Entry.actorScope |
+| Scope do player materializado | PlayerParticipation / OperationalPlayerParticipationStage, invariant `SessionScoped` |
 | Materialização/reuso do Actor | ActivityEntryPipeline |
 | Store/root session-owned | SessionActorRuntimeStore como índice técnico + adapter/root runtime |
 | Teardown estrutural do Actor | SessionActivityPipeline / ActivityExitActorTeardownStage / SessionReset |
@@ -36,13 +36,17 @@ ComponentScope/CapabilityPolicy decide lifetime de cada componente/capability.
 ```text
 H1/H2 — Placement por fontes autorizadas da ActivityEntry.
 H3 — Runtime metadata do PlayerActor vem do binding.
-H4 — actorScope do Player vem de PlayerSetDefinition.Entry.actorScope.
+H4 — actorScope do Player saiu do prefab e passou ao fluxo de PlayerParticipation/PlayerSet durante a transição.
 H5 — Placement owner restaurado para SessionScoped.
 H6 — RouteExit emite decisão para SessionScoped em store.
 H7A — ComponentLifetime observability + redução local de logs.
 H7B — SessionReset libera SessionScoped estrutural.
 H7B1 — ExitToMenu chama SessionReset canônico.
 H7B2 — SessionReset pós-RouteExit terminal permitido.
+H8A — Player scope invariant cleanup; PlayerSetDefinition não expõe actorScope.
+H8C1 — Materialization seed resolution por PlayerSlotId.
+H8C2 — SessionParticipantId derivado de PlayerSlotId.
+H8C3 — ActorId do player default movido para PlayerSetDefinitionEntry; ActorDefinitionAsset deixa de ser owner de ActorId.
 ```
 
 ## Smoke aceito
@@ -81,8 +85,12 @@ visual pós-BackToMenu correto
 
 ```text
 PlayerActor prefab não decide ActorScope runtime.
-PlayerSetDefinition.Entry.actorScope é a fonte de scope do player materializado.
+PlayerParticipation é a fonte do scope estrutural do player materializado: sempre ActorScope.SessionScoped.
 SessionActorRuntimeStore não decide lifecycle.
+PlayerSetDefinitionEntry.actorId é o ActorId default do participante, não da ActorDefinition.
+ActorDefinitionAsset identifica archetype/definition; não é owner de ActorId do player participante.
+SessionParticipantId é derivado de PlayerSlotId e não depende de ordem de lista.
+Materialization seed resolution usa PlayerSlotId, não ActorDefinitionId.
 RouteExit genérico não libera SessionScoped.
 ExitToMenu encerra sessão e libera SessionScoped via SessionReset.
 SessionReset pós-ClosedForRouteExit não reabre Activity lifecycle.

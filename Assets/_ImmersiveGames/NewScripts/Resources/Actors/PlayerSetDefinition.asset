@@ -15,11 +15,11 @@ MonoBehaviour:
   entries:
   - playerSlotId: player.slot.1
     playerSelectionId: selection.player.slot.1.default
+    actorId: actor.player.primary
     actorDefinition: {fileID: 11400000, guid: 7292c1ea08b65d54eb20a8a2559655d9, type: 2}
-    actorScope: 3
     required: 1
   - playerSlotId: player.slot.2
     playerSelectionId: selection.player.slot.2.default
+    actorId: actor.player.supporting.2
     actorDefinition: {fileID: 11400000, guid: 2f8647a3ec8a89445a0b9253caa657fb, type: 2}
-    actorScope: 3
     required: 0

@@ -72,8 +72,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
             else
             {
-                string pipelineIdentity = startedIdentity.PipelineId;
-                string activityIdentity = BuildActorAttributeActivityIdentity(startedIdentity);
                 for (int index = 0; index < attributeReferences.Count; index++)
                 {
                     ActorAttributeEndpointReference attributeReference = attributeReferences[index];
@@ -101,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         throw new InvalidOperationException($"[FATAL][ActivityEntryActorAttributeStage][ActorAttributeSetup] Missing ActorAttributeProfileAsset actorId='{attributeReference.ActorId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}'.");
                     }
 
-                    if (!attributeEndpoint.TryInitialize(attributeReference.ActorId, pipelineIdentity, activityIdentity, out ActorAttributeSetupResult setupResult))
+                    if (!attributeEndpoint.TryInitialize(new Actors.Foundation.ActorInstanceRuntimeId(attributeReference.ActorInstanceRuntimeId.Value), startedIdentity, out ActorAttributeSetupResult setupResult))
                     {
                         failedCount += 1;
                         SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeSetupFailed, entrySequence);
@@ -125,9 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     bridge.StoreActiveActorAttributeCapability(
                         startedIdentity,
                         attributeReference,
-                        attributeEndpoint,
-                        pipelineIdentity,
-                        activityIdentity);
+                        attributeEndpoint);
 
                     SessionActivityIdentity readyIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorAttributeReady, entrySequence);
                     endpoint.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActorAttributeReady);

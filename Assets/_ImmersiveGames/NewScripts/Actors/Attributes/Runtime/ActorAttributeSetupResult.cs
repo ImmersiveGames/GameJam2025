@@ -1,11 +1,13 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     [Serializable]
     public readonly struct ActorAttributeSetupResult
     {
         public ActorAttributeSetupOutcome Outcome { get; }
-        public string ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public int AttributeCount { get; }
         public string Reason { get; }
 
@@ -16,39 +18,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
         private ActorAttributeSetupResult(
             ActorAttributeSetupOutcome outcome,
-            string actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             int attributeCount,
             string reason)
         {
             Outcome = outcome;
-            ActorInstanceId = actorInstanceId ?? string.Empty;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             AttributeCount = attributeCount;
             Reason = reason ?? string.Empty;
         }
 
-        public static ActorAttributeSetupResult Ready(string actorInstanceId, int attributeCount)
+        public static ActorAttributeSetupResult Ready(ActorInstanceRuntimeId actorInstanceRuntimeId, int attributeCount)
         {
             return new ActorAttributeSetupResult(
                 ActorAttributeSetupOutcome.Ready,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeCount,
                 string.Empty);
         }
 
-        public static ActorAttributeSetupResult SkippedNoContent(string actorInstanceId, string reason)
+        public static ActorAttributeSetupResult SkippedNoContent(ActorInstanceRuntimeId actorInstanceRuntimeId, string reason)
         {
             return new ActorAttributeSetupResult(
                 ActorAttributeSetupOutcome.SkippedNoContent,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 0,
                 reason);
         }
 
-        public static ActorAttributeSetupResult Fail(string actorInstanceId, string reason)
+        public static ActorAttributeSetupResult Fail(ActorInstanceRuntimeId actorInstanceRuntimeId, string reason)
         {
             return new ActorAttributeSetupResult(
                 ActorAttributeSetupOutcome.Failed,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 0,
                 reason);
         }

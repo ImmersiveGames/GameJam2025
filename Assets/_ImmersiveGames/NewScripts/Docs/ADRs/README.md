@@ -90,6 +90,34 @@ O checkpoint atual aceita como evidência:
 - ADR-2.0-0003 — PlayerParticipation, PlayerSlot, PlayerSelection, SessionParticipation e ActorMaterialization Boundary
 - ADR-2.0-0004 — SA-IDREF Typed Runtime References e PlayerActor Runtime Identity
 
+### Checkpoint SessionActivity Base 2.0 — SA-10 / SA-11B
+
+- `SA-10 — Permission identity separation final`: `CLOSED / DOCUMENTATION ONLY`. Auditoria confirmou que `Permission` usa `ActorInstanceRuntimeId` como target funcional; `PlayerActorId` e `PlayerSlotId` permanecem observabilidade/log/fact/payload.
+- `SA-11B — Fact recorder hygiene`: `CLOSED / PASS funcional + PASS arquitetural do corte`. O smoke mais recente confirmou o ordering correto: cleanup final antes de `ActivityContentReleaseCompleted`, com `pendingReleaseContextPresentAfter='false'`, `loadedSetPresentAfter='false'` e `awaitingContinuationAfter='false'`.
+- `SA-11B-H2 — ActivityContentReleaseCompleted ordering fix`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+- A ausência de `PlayerActorParticipationExitStageCompleted` em alguns smokes permanece aceita como caminho condicional: auditoria estática confirmou que o substage só executa quando `exitedPlayerActors.Count > 0`, e que o patch alinha fact/snapshot quando executado.
+
+
+
+### Checkpoint SessionActivity Base 2.0 — SA-12 command hygiene
+
+- `SA-12 — Commands e contracts finais`: `PARTIAL / IN PROGRESS`.
+- `SA-12-AUDIT`: `AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH`. Auditoria não encontrou `Action`, `Func<T>`, adapters, delegates de execução ou `SessionActivityRuntimeState` embutidos nos commands auditados; o débito é higiene de contract.
+- `SA-12B/C — Command boundary + identity duplication cleanup`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - `ActivityObjectContributorUnregisterStageCommand` não carrega mais `SessionActivityStage Stage`.
+  - `ActivityObjectResetCommand`, `ActivityObjectReleaseCommand`, `ActivityObjectSnapshotRestoreCommand` e `ActivityContentSceneUnloadCommand` não duplicam mais `PipelineId`, `SessionStateId`, `ActivityId`, `ActivityOrdinal` e `EntrySequence` quando `SessionActivityIdentity` já é a fonte do ciclo.
+- `SA-12D — ActorAttributeCommand typed identity`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - `ActorAttributeCommand` passou a carregar `SessionActivityIdentity` e `ActorInstanceRuntimeId`.
+  - Removidos do command contract os campos livres `string PipelineIdentity`, `string ActivityIdentity` e `string ActorInstanceId`.
+  - Smoke preservou `ActorAttributeSetupStarted`, `ActorAttributeProfileResolved`, `ActorAttributeReady`, `ActorAttributeSetupCompleted`, `ActorAttributeReleased` e checkpoints macro.
+- `SA-12E — ActivityContent SceneKeyAsset / runtime scene reference`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - `ActivityContentSceneLoadCommand` e `ActivityContentSceneUnloadCommand` não carregam mais `SceneKeyAsset`.
+  - `ActivityContentSceneRuntimeReference` representa a referência runtime mínima de cena para load/unload.
+  - `SceneKeyAsset` permanece authoring/config e é resolvido antes do command.
+  - Smoke preservou load/unload de ActivityContent, `activity_01` com content, `activity_02` no-content/skip explícito e checkpoints macro.
+- Pendência de `SA-12`: `SA-12F — reduzir SessionActivityDefinition dos ActivityEntry*Command`.
+- `SA-11B` foi revisado com o smoke mais recente e está `CLOSED / PASS funcional + PASS arquitetural do corte`; `SA-12B/C/D` permanece fechamento separado de command hygiene.
+
 ### Checkpoint conceitual Base 2.0
 
 O ADR-2.0-0003 congela que:
@@ -285,7 +313,7 @@ Status: AUDITED / NO RUNTIME CHANGE.
 
 Status: CLOSED / PASS funcional.
 
-- `PlayerSetDefinition.Entry.actorScope` é a fonte autoral do scope do player materializado.
+- `PlayerParticipation` emite `ActorScope.SessionScoped` como invariant para player; `PlayerSetDefinition` não expõe mais `actorScope` editável.
 - `PlayerActor` prefab não é owner de `ActorId`, `ActorScope` ou `ParticipationPolicy` runtime.
 - `ActorScope.SessionScoped` decide lifetime estrutural do Actor, não lifetime automático de `Presentation`, `Attributes`, `Permission`, `Movement`, `Camera` ou outras capabilities.
 - `SessionScoped + ActivityExit => Retain`.
@@ -294,3 +322,14 @@ Status: CLOSED / PASS funcional.
 - `ExitToMenu` chama `SessionReset` canônico após `RouteExit`/save-on-exit.
 - Smoke aceito: sem `FATAL`, sem `Exception`, sem `route_transition_failed`, sem `checkpointStatus='Failed'`; `RestartCurrentActivity`, `Activity01ToActivity02` e `RouteExitBackToMenu` passaram; `SessionResetCompleted sessionActorCount='0'` observado.
 
+
+
+### Checkpoint SA-ACTOR-1C1-H8 — PlayerParticipation identity cleanup
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- H8A removeu `actorScope` editável do `PlayerSetDefinition`; player estrutural vindo de `PlayerParticipation` é sempre `SessionScoped`.
+- H8C1 mudou materialization seed resolution para `PlayerSlotId -> SessionParticipantId`, mantendo `ActorDefinitionId` apenas como consistência de definition/archetype.
+- H8C2 tornou `SessionParticipantId` estável por `PlayerSlotId`, com `participantIdPolicy='PlayerSlotIdDerived'`.
+- H8C3 removeu `ActorId` de `ActorDefinitionAsset` no fluxo de player; `PlayerSetDefinitionEntry.actorId` passou a ser o owner autoral temporário do ActorId default do participante.
+- Confirmado por smoke: `actorIdSource='PlayerSetDefinitionEntry'`, `seedActorIdSource='PlayerSetDefinitionEntry'`, `resolutionKey='PlayerSlotIdToSessionParticipantId'`, `RestartCurrentActivity Passed`, `Activity01ToActivity02 Passed`, `RouteExitBackToMenu Passed`, `SessionResetCompleted sessionActorCount='0'`, sem `FATAL`, `Exception`, `route_transition_failed` ou `checkpointStatus='Failed'`.

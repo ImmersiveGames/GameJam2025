@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             }
 
             DebugUtility.Log(typeof(PlayerParticipationStage),
-                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(snapshot.SeedEntries)}' seedActorScopes='{FormatSeedActorScopes(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
+                $"[OBS][PlayerParticipationStage] pipelineId='{plan.Identity.PipelineId}' sessionId='{plan.Identity.SessionId}' routeIdentity='{plan.Identity.RouteIdentity}' routeOperationId='{plan.Identity.RouteOperationId}' routeSequence='{plan.Identity.RouteSequence}' transitionId='{plan.Identity.TransitionId}' stage='PlayerParticipationStage' outcome='{FormatOutcome(snapshot.Outcome)}' participationKind='{snapshot.ParticipationKind}' source='{plan.Source}' reason='{plan.Reason}' seedEntries='{snapshot.SeedEntriesCount}' requiredSeedEntries='{snapshot.RequiredPlayersCount}' optionalSeedEntries='{snapshot.OptionalPlayersCount}' unmaterializedSeedEntries='{snapshot.NotMaterializedPlayersCount}' requiredMaterializationPending='{snapshot.PendingRequiredPlayersCount}' optionalMaterializationPending='{snapshot.PendingOptionalPlayersCount}' entriesWithPrefab='{snapshot.PlayersWithPrefabCount}' entriesWithoutPrefab='{snapshot.PlayersWithoutPrefabCount}' entriesWithPlacement='{snapshot.PlayersWithPlacementCount}' entriesWithoutPlacement='{snapshot.PlayersWithoutPlacementCount}' seedSlotIds='{FormatSeedSlotIds(snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(snapshot.SeedEntries)}' seedActorIdSource='PlayerSetDefinitionEntry' derivedActorScopes='{FormatSeedActorScopes(snapshot.SeedEntries)}' message='{snapshot.Message}'.",
                 DebugUtility.Colors.Info);
 
             return result;
@@ -93,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     sourceEntry.PlayerSelectionId,
                     sourceEntry.ActorDefinitionId,
                     sourceEntry.ActorId,
-                    sourceEntry.ActorScope,
+                    ActorScope.SessionScoped,
                     sourceEntry.Required,
                     sourceEntry.HasPrefabReference,
                     sourceEntry.PlacementMode,

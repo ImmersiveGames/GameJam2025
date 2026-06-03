@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito / congelado incrementalmente. Último checkpoint: `SA-ACTOR-1C1-H7B2 — PASS funcional` para `ActorScope.SessionScoped` estrutural, `ExitToMenu -> SessionReset` canônico e separação entre lifetime estrutural de Actor e lifetime próprio de componentes/capabilities.
+Aceito / congelado incrementalmente. Último checkpoint: `SA-ACTOR-1C1-H8C3 — PASS funcional + PASS arquitetural do corte`, fechando `ActorScope.SessionScoped` estrutural, `ExitToMenu -> SessionReset` canônico e a limpeza de ownership de `PlayerScope`, `SessionParticipantId`, materialization resolution e `ActorId` do player default.
 
 ## Área
 
@@ -1116,6 +1116,8 @@ Restart cria novo entry context.
 
 #### `SA-11B — Fact recorder hygiene`
 
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`, com a ressalva controlada de que `PlayerActorParticipationExitStageCompleted` é subcaminho condicional.
+
 Critério:
 
 ```text
@@ -1123,6 +1125,93 @@ Fact recorder não decide policy.
 Fact recorder não executa side-effect.
 Logs mantêm owner correto.
 Facts não alteram lifecycle.
+Completed macro só aparece depois do subfluxo real terminar.
+Stage identity observável reflete o owner real do subpasso.
+```
+
+##### Checkpoint SA-11B-H1 — Fact/stage identity hygiene
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Resumo do patch aplicado:
+
+```text
+ActivityObjectSnapshotCaptureStage passou a usar stage identity própria de snapshot capture.
+ActivityObjectReleaseStage passou a usar stage identity própria de object release.
+ActivityObjectContributorUnregisterStage passou a usar stage identity própria de unregister.
+ActivityExitActorTeardownStage ajustou CurrentIdentity antes do snapshot final condicional de PlayerActorParticipationExitStageCompleted.
+Nenhum ActivityExitPipeline novo foi criado.
+Nenhum lifecycle macro foi redesenhado.
+```
+
+Evidência funcional preservada pelo smoke manual:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+```
+
+Lacuna anterior revisada no smoke mais recente:
+
+```text
+O smoke mais recente confirmou ActivityContentReleaseFinalizationCleanupCompleted antes de ActivityContentReleaseCompleted nos fluxos com conteúdo.
+ActivityContentReleaseCompleted passou a sair com pendingReleaseContextPresentAfter='false', loadedSetPresentAfter='false' e awaitingContinuationAfter='false'.
+Portanto o requisito "Completed macro só depois do cleanup final" está satisfeito para os caminhos exercitados.
+```
+
+Conclusão:
+
+```text
+SA-11B-H1 pode ser CLOSED/PASS.
+A correção preservou o smoke macro, corrigiu stage identities de snapshot/release/unregister e fechou o ordering de ActivityContentReleaseCompleted.
+```
+
+##### Nota condicional — PlayerActorParticipationExitStageCompleted
+
+A ausência de `PlayerActorParticipationExitStageCompleted` no smoke não é, por si só, falha do patch. Auditoria estática confirmou que `ExecutePlayerActorParticipationExit(...)` só roda quando `exitedPlayerActors.Count > 0`. Quando o substage roda, o patch alinha fact/snapshot final em `PlayerActorParticipationExitStageCompleted` após `SetCurrentIdentity(...)`.
+
+Se esse substage não roda, o fechamento substituto observável é:
+
+```text
+ActorParticipationExitCompleted
+ActivityRouteExitCompleted ou ClosedForRouteExit conforme o rail
+sem FATAL
+```
+
+Esse ponto fica aceito como evidência estática condicional, mas não substitui a correção pendente do ordering de `ActivityContentReleaseCompleted`.
+
+##### Checkpoint SA-11B-H2 — ActivityContentReleaseCompleted ordering fix
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Evidência validada no smoke mais recente:
+
+```text
+ActivityContentReleaseRuntimeStatePendingContextCleared
+ActivityContentReleaseRuntimeStateAwaitingContinuationChanged
+ActivityContentReleaseFinalizationCleanupCompleted
+ActivityContentReleaseCompleted
+
+pendingReleaseContextPresentAfter='false'
+loadedSetPresentAfter='false'
+awaitingContinuationAfter='false'
+```
+
+Escopo preservado:
+
+```text
+SessionActivityDematerializationCompleted preservado.
+Continuation macro preservada.
+Nenhum ActivityExitPipeline criado.
+Nenhum ActivityContentReleasePipeline criado.
 ```
 
 ---
@@ -1148,6 +1237,225 @@ Regra:
 ```text
 Commands não carregam Stage, Boundary, Adapter, Func<T>, Action, executor genérico, state mutável compartilhado ou ScriptableObject autoral inteiro quando só é necessário payload resolvido.
 Commands carregam payload runtime resolvido e identity tipada.
+```
+
+##### Checkpoint SA-12-AUDIT — Commands/contracts hygiene
+
+Status: `AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH`.
+
+A auditoria estática de `SA-12` confirmou que não havia blocker de executor/delegate nos commands auditados:
+
+```text
+sem Action
+sem Func<T>
+sem adapters embutidos nos commands
+sem delegates de execução
+sem SessionActivityRuntimeState embutido nos commands
+```
+
+O débito restante foi classificado como higiene de contrato:
+
+```text
+commands carregando authoring asset inteiro;
+wrappers internos carregando Stage/Boundary;
+commands duplicando PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence quando SessionActivityIdentity já era a fonte do ciclo;
+ActorAttributeCommand ainda usando strings livres para identidades runtime.
+```
+
+Conclusão:
+
+```text
+SA-12 não exige pipeline novo.
+SA-12 não exige redesenhar lifecycle macro.
+SA-12 deve ser resolvido por cortes pequenos de command hygiene.
+```
+
+##### Checkpoint SA-12B/C — Command boundary + identity duplication cleanup
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Escopo fechado:
+
+```text
+ActivityObjectContributorUnregisterStageCommand
+ActivityObjectResetCommand
+ActivityObjectReleaseCommand
+ActivityObjectSnapshotRestoreCommand
+ActivityContentSceneUnloadCommand
+```
+
+Correções aplicadas:
+
+```text
+ActivityObjectContributorUnregisterStageCommand não carrega mais SessionActivityStage Stage.
+ActivityObjectContributorUnregisterStage constrói suas identities locais internamente.
+Não há fallback do wrapper para ActivityContentReleaseCompleted.
+ActivityObjectResetCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityObjectReleaseCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityObjectSnapshotRestoreCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityContentSceneUnloadCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+Consumers passaram a usar command.Identity como fonte única do ciclo.
+SceneKeyAsset foi preservado neste corte e fica para SA-12E.
+```
+
+Evidência aceita:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActivityObjectReset preservado
+ActivityObjectRelease preservado
+ActivityObjectSnapshotRestore preservado como Passed/Skipped conforme payload
+ActivityObjectContributorUnregisterStarted/Completed com owner/stage próprio
+```
+
+Conclusão arquitetural:
+
+```text
+SA-12B/C removeu boundary/stage de wrapper interno e owner duplicado de lifecycle identity em object/content unload commands.
+O corte não fecha SA-12 inteiro.
+```
+
+##### Checkpoint SA-12D — ActorAttributeCommand typed identity
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Escopo fechado:
+
+```text
+ActorAttributeCommand
+produtores de ActorAttributeCommand
+consumidores de ActorAttributeCommand
+logs/facts de setup/release de ActorAttribute
+```
+
+Correções aplicadas:
+
+```text
+ActorAttributeCommand não carrega mais string PipelineIdentity.
+ActorAttributeCommand não carrega mais string ActivityIdentity.
+ActorAttributeCommand não carrega mais string ActorInstanceId.
+ActorAttributeCommand carrega SessionActivityIdentity como identidade tipada do ciclo.
+ActorAttributeCommand carrega ActorInstanceRuntimeId como identidade funcional runtime do actor.
+Call sites foram migrados para o shape tipado.
+Logs podem imprimir ToString()/Value apenas como observabilidade, não como lookup funcional.
+```
+
+Evidência aceita:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActorAttributeSetupStarted observado
+ActorAttributeProfileResolved observado
+ActorAttributeReady observado
+ActorAttributeSetupCompleted observado
+ActorAttributeReleased observado
+ActorAttribute logs/facts preservam actorInstanceRuntimeId
+```
+
+Observação:
+
+```text
+ActorAttributeState ainda pode manter campo textual interno para snapshot/observabilidade técnica.
+Isso não reabre SA-12D porque o corte fechou o command contract e seus call sites funcionais.
+Qualquer limpeza posterior de state/snapshot de Attributes deve ser corte próprio, não regressão de SA-12D.
+```
+
+
+##### Checkpoint SA-12E — ActivityContent SceneKeyAsset / runtime scene reference
+
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+Escopo fechado:
+
+```text
+ActivityContentSceneLoadCommand
+ActivityContentSceneUnloadCommand
+ActivityContentSceneRuntimeReference
+resolução SceneKeyAsset -> runtime reference antes dos commands
+call sites de load/unload de ActivityContent
+```
+
+Correções aplicadas:
+
+```text
+ActivityContentSceneLoadCommand não carrega mais SceneKeyAsset.
+ActivityContentSceneUnloadCommand não carrega mais SceneKeyAsset.
+ActivityContentSceneRuntimeReference passa a representar a referência runtime mínima de cena para load/unload.
+A referência runtime carrega dados resolvidos como SceneKey e SceneName para execução/logs.
+ActivityEntryPipeline resolve SceneKeyAsset -> ActivityContentSceneRuntimeReference antes do command de load.
+ActivityContentSceneUnloadDispatchStage resolve SceneKeyAsset -> ActivityContentSceneRuntimeReference antes do command de unload.
+ActivityContentSceneUnloadCommand preserva command.Identity como fonte única do ciclo e não reintroduz PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence paralelos.
+SessionActivityDefinition não foi alterado neste corte.
+Não houve Resources.Load, fallback por nome de scene nem compat paralelo.
+```
+
+Evidência aceita:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+ActivityEntryContentLoadStarted preservado
+ActivityEntryContentLoadCompleted preservado
+ActivityContentSceneUnloadDispatched preservado
+ActivityContentReleaseCompleted preservado após cleanup final
+ActivityObjectSnapshotCapture PASS
+ActivityObjectRelease PASS
+ActivityObjectContributorUnregister PASS
+activity_01 carrega ActivityContent normalmente
+activity_02 preserva no-content/skip explícito
+```
+
+Observação de observabilidade:
+
+```text
+O smoke não precisa emitir nomes literais ActivityContentSceneLoadCommandIssued, ActivityContentSceneUnloadCommandIssued ou ActivityContentSceneUnloaded para fechar este corte.
+A evidência aceita é a preservação do comportamento de load/unload, dos checkpoints macro e da ausência de fallback/authoring asset nos command contracts.
+Se for necessário reforçar esses facts literais, isso deve ser tratado como hygiene posterior, não como reabertura de SA-12E.
+```
+
+Conclusão arquitetural:
+
+```text
+SA-12E removeu o vazamento de authoring data SceneKeyAsset dos commands de ActivityContent load/unload.
+SceneKeyAsset permanece válido como authoring/config, mas não atravessa mais o command contract como payload runtime.
+O corte não fecha SA-12 inteiro; o débito restante é SA-12F.
+```
+
+##### Pendências restantes de SA-12
+
+```text
+SA-12F — reduzir SessionActivityDefinition dos ActivityEntry*Command para DTOs runtime mínimos por subfluxo.
+```
+
+Critério para o próximo corte:
+
+```text
+Não reabrir SA-12E.
+Não remover SessionActivityDefinition em bloco único sem auditoria de call sites.
+Não criar DTO genérico amplo que replique SessionActivityDefinition com outro nome.
+Não criar compat/fallback paralelo.
+Não criar pipeline novo.
+Preservar smoke macro completo.
 ```
 
 ---
@@ -1189,12 +1497,16 @@ DONE  SA-6B   Permission target preparation stage
       SA-9A   Host boundary cleanup
       SA-9B   Composition/service locator cleanup
 
-      SA-10   Permission identity separation
+DONE  SA-10   Permission identity separation
 
       SA-11A  Entry state/context extraction
-      SA-11B  Fact recorder hygiene
+DONE  SA-11B  Fact recorder hygiene
 
-      SA-12   Command/contract hygiene
+PEND  SA-12   Command/contract hygiene — partial
+DONE  SA-12B/C Command boundary + identity duplication cleanup
+DONE  SA-12D  ActorAttributeCommand typed identity
+DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
+      SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
 ```
 
 ## Critério global de viabilidade Base 2.0
@@ -4391,7 +4703,7 @@ ComponentScope/CapabilityPolicy decide a sobrevivência de cada componente/capab
 | Decisão | Owner correto |
 |---|---|
 | `PlayerSlot`, seleção e `SessionParticipationContext` | `SessionOperational` / `PlayerParticipation` |
-| `actorScope` do player materializado | `PlayerSetDefinition.Entry.actorScope` -> `PlayerParticipation` |
+| `actorScope` do player materializado | `PlayerParticipation` / `OperationalPlayerParticipationStage`, invariant `SessionScoped` |
 | Materialização/reuso do Actor na Activity | `ActivityEntryPipeline` |
 | Root/store session-owned do Actor estrutural | `SessionActorRuntimeStore` como índice técnico + adapter/root runtime |
 | Lifetime estrutural em `ActivityExit`, `RouteExit`, `SessionReset` | `SessionActivityPipeline` / `ActivityExitActorTeardownStage` / reset stage |
@@ -4413,7 +4725,7 @@ ComponentScope/CapabilityPolicy decide a sobrevivência de cada componente/capab
 ```text
 H1/H2 — Placement resolvido pela ActivityEntry usando fontes autorizadas, não pela scene física do actor persistente.
 H3 — PlayerActor runtime metadata vem do binding/materialization context, não de campos soltos do prefab.
-H4 — actorScope do Player sai do prefab e passa para PlayerSetDefinition.Entry.actorScope.
+H4 — actorScope do Player sai do prefab; shape transitório via PlayerSetDefinition foi superado por H8A.
 H5 — restaura owner correto de placement para SessionScoped.
 H6 — RouteExit também emite decisão explícita para SessionScoped retido no SessionActorRuntimeStore.
 H7A — Observabilidade separa ActorLifetime de ComponentLifetime e reduz logs redundantes locais.
@@ -4498,7 +4810,7 @@ UnloadSceneCompleted scene='SessionActivitySandboxScene'
 
 ```text
 PlayerActor prefab não é owner de ActorId, ActorScope nem ParticipationPolicy runtime.
-PlayerSetDefinition.Entry.actorScope é a fonte autoral do actorScope do player materializado.
+PlayerParticipation é a fonte do actorScope estrutural do player materializado: invariant `SessionScoped`.
 SessionParticipationContext carrega participação resolvida antes do handoff.
 ActivityEntryPipeline materializa/reusa Actor a partir de ActivityParticipantBinding.
 SessionActorRuntimeStore é índice técnico, não owner de lifecycle.
@@ -4524,3 +4836,88 @@ Redução global de logs de InputModes/Loading/Permission.
 
 `SA-ACTOR-1C1` fica fechado como PASS funcional para o objetivo de `ActorScope.SessionScoped` estrutural dentro da decomposição de `SessionActivity` Base 2.0. Novos cortes de components/capabilities devem respeitar a separação: Actor estrutural ≠ componente/capability material.
 
+
+
+---
+
+## Checkpoint SA-ACTOR-1C1-H8 — PlayerParticipation identity cleanup
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+Este checkpoint complementa o fechamento `SA-ACTOR-1C1` e corrige a fronteira entre `PlayerParticipation`, `SessionParticipationContext` e `ActivityEntryPipeline` sem reabrir o lifetime de components/capabilities.
+
+### Decisões congeladas
+
+```text
+Player estrutural vindo de PlayerParticipation é sempre ActorScope.SessionScoped.
+PlayerSetDefinition não expõe mais actorScope editável.
+ActorDefinitionId identifica archetype/definition.
+ActorId identifica o Actor semântico do participante default.
+SessionParticipantId é derivado de PlayerSlotId.
+Materialization seed resolution usa PlayerSlotId, não ActorDefinitionId.
+```
+
+### Ownership final do corte
+
+| Responsabilidade | Owner correto |
+|---|---|
+| Scope estrutural do player | `PlayerParticipation` / `OperationalPlayerParticipationStage`, sempre `SessionScoped` |
+| Slot/assento | `PlayerSlotId` em `PlayerSetDefinitionEntry` / `PlayerParticipation` |
+| Seleção default | `PlayerSelectionId` em `PlayerSetDefinitionEntry` |
+| Definition/archetype | `ActorDefinitionId` em `ActorDefinitionAsset` |
+| Actor semântico do participante default | `PlayerSetDefinitionEntry.actorId` |
+| Participante de sessão | `SessionParticipantId`, derivado de `PlayerSlotId` |
+| Materialização/reuso concreto | `ActivityEntryPipeline` / `ActivityParticipantBinding` / `PlayerActorRuntimeHandle` |
+
+### Cortes fechados
+
+```text
+H8A  — Player scope invariant cleanup.
+H8C1 — PlayerSlot materialization resolution.
+H8C2 — SessionParticipantId by PlayerSlotId.
+H8C3 — Player ActorId owner cleanup.
+```
+
+### Evidência aceita
+
+Smoke canônico completo aceito:
+
+```text
+Boot -> Menu -> Sandbox
+Activity 01 entry
+CompleteActivationWindow
+RestartCurrentActivity
+CompleteActivationWindow
+CompleteCurrentActivity
+Activity 01 -> Activity 02
+BackToMenu / ExitToMenu
+```
+
+Critérios observados:
+
+```text
+sem erro CS
+sem [ERROR]
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+sem invalid_required_placement
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+actorIdSource='PlayerSetDefinitionEntry'
+participantIdPolicy='PlayerSlotIdDerived'
+resolutionKey='PlayerSlotIdToSessionParticipantId'
+SessionResetCompleted sessionActorCount='0'
+```
+
+### Invariantes adicionadas
+
+```text
+ActorDefinitionAsset não é owner do ActorId do player participante.
+PlayerSetDefinitionEntry é owner autoral temporário do ActorId default do player.
+ActorDefinitionId não pode ser usado como chave runtime para reencontrar participante.
+PlayerSlotId é a chave de correlação entre seed de PlayerParticipation e SessionParticipantBinding.
+SessionParticipantId não depende de índice/ordem de lista.
+```

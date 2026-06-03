@@ -22,11 +22,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string reason)
         {
             Identity = identity;
-            PipelineId = Normalize(identity.PipelineId);
-            SessionStateId = Normalize(identity.SessionId);
-            ActivityId = Normalize(identity.ActivityId);
-            ActivityOrdinal = identity.ActivityOrdinal;
-            EntrySequence = identity.EntrySequence;
             TargetId = Normalize(targetId);
             RoleId = Normalize(roleId);
             ContributorKind = contributorKind;
@@ -37,11 +32,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
 
         public SessionActivityIdentity Identity { get; }
-        public string PipelineId { get; }
-        public string SessionStateId { get; }
-        public string ActivityId { get; }
-        public int ActivityOrdinal { get; }
-        public int EntrySequence { get; }
         public string TargetId { get; }
         public string RoleId { get; }
         public ActivityObjectContributorKind ContributorKind { get; }
@@ -55,11 +45,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public bool IsValid =>
             Identity.IsValid &&
-            !string.IsNullOrWhiteSpace(PipelineId) &&
-            !string.IsNullOrWhiteSpace(SessionStateId) &&
-            !string.IsNullOrWhiteSpace(ActivityId) &&
-            ActivityOrdinal > 0 &&
-            EntrySequence > 0 &&
             !string.IsNullOrWhiteSpace(TargetId) &&
             ContributorKind != ActivityObjectContributorKind.Unknown &&
             Requiredness != ActivitySetupRequirementRequiredness.Unknown &&

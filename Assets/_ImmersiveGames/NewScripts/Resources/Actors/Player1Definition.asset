@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Player1Definition
   m_EditorClassIdentifier: 
   actorDefinitionId: actor.definition.player.primary
-  actorId: actor.player.primary
   displayName: Player 01
   actorKind: 1
   prefabReference: {fileID: 100000, guid: b7a6d0f2b8c94f4eb25d01d4e0f9c201, type: 3}

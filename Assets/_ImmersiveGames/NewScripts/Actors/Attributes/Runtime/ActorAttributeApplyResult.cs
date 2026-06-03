@@ -1,11 +1,13 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     [Serializable]
     public readonly struct ActorAttributeApplyResult
     {
         public ActorAttributeApplyOutcome Outcome { get; }
-        public string ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorAttributeId AttributeId { get; }
         public bool HasFact { get; }
         public ActorAttributeChangedFact Fact { get; }
@@ -17,14 +19,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
         private ActorAttributeApplyResult(
             ActorAttributeApplyOutcome outcome,
-            string actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             bool hasFact,
             ActorAttributeChangedFact fact,
             string reason)
         {
             Outcome = outcome;
-            ActorInstanceId = actorInstanceId ?? string.Empty;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             AttributeId = attributeId;
             HasFact = hasFact;
             Fact = fact;
@@ -35,29 +37,29 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         {
             return new ActorAttributeApplyResult(
                 ActorAttributeApplyOutcome.Applied,
-                fact.ActorInstanceId,
+                fact.ActorInstanceRuntimeId,
                 fact.AttributeId,
                 true,
                 fact,
                 string.Empty);
         }
 
-        public static ActorAttributeApplyResult Reject(string actorInstanceId, ActorAttributeId attributeId, string reason)
+        public static ActorAttributeApplyResult Reject(ActorInstanceRuntimeId actorInstanceRuntimeId, ActorAttributeId attributeId, string reason)
         {
             return new ActorAttributeApplyResult(
                 ActorAttributeApplyOutcome.Rejected,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 false,
                 default,
                 reason);
         }
 
-        public static ActorAttributeApplyResult Fail(string actorInstanceId, ActorAttributeId attributeId, string reason)
+        public static ActorAttributeApplyResult Fail(ActorInstanceRuntimeId actorInstanceRuntimeId, ActorAttributeId attributeId, string reason)
         {
             return new ActorAttributeApplyResult(
                 ActorAttributeApplyOutcome.Failed,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 false,
                 default,

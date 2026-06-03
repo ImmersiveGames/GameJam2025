@@ -4,7 +4,7 @@
 
 Accepted / Frozen as Base 2.0 plan.
 
-Checkpoint operacional: `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS funcional + PASS arquitetural do corte após smoke manual. `SA-IDREF-3A` teve regressão em `RouteExit` por confusão entre lookup operacional e identidade observável; `SA-IDREF-3A-H1/H2/H3` está registrado como correção aplicada. O smoke pós-H3 recuperou `RouteExitBackToMenu`, mas este ADR congela o contrato antes de novos cortes de identidade.
+Checkpoint operacional atualizado: `SA-ACTOR-1C1-H8C3 — Player ActorId owner cleanup` está CLOSED / PASS funcional + PASS arquitetural do corte, alinhando `PlayerParticipation` ao contrato SA-IDREF: `PlayerSlotId` correlaciona seed/participant, `SessionParticipantId` é derivado de `PlayerSlotId`, `ActorDefinitionId` identifica archetype/definition, e `ActorId` do player default não vem mais de `ActorDefinitionAsset`.
 
 Este ADR congela o plano `SA-IDREF — Typed Runtime References` e registra os checkpoints aceitos desta frente.
 
@@ -2239,5 +2239,170 @@ Correção aplicada ao plano futuro:
 ```text
 Antes: SA-IDREF-6E — NonPlayer authored ActivityId refs typing
 Agora: SA-IDREF-6E — Actor authored ActivityId refs typing / remove NonPlayer taxonomy residue
+```
+
+
+
+---
+
+## SA-ACTOR-1C1-H8 / SA-IDREF alignment — PlayerParticipation identity cleanup
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Escopo
+
+Este checkpoint não substitui os cortes `SA-IDREF-5*`. Ele registra a convergência específica de `PlayerParticipation`/`PlayerSetDefinition` com o contrato deste ADR.
+
+### Correções aplicadas
+
+```text
+H8A  — Player scope invariant cleanup.
+H8C1 — PlayerSlot materialization resolution.
+H8C2 — SessionParticipantId by PlayerSlotId.
+H8C3 — Player ActorId owner cleanup.
+```
+
+### Antes
+
+```text
+PlayerSetDefinitionEntry podia expor actorScope editável.
+Materialization seed podia reencontrar participant por ActorDefinitionId.
+SessionParticipantId podia depender de ordem/índice.
+ActorDefinitionAsset.ActorId alimentava ActorId do player participante.
+```
+
+### Depois
+
+```text
+PlayerParticipation emite ActorScope.SessionScoped como invariant do domínio Player.
+PlayerSlotId correlaciona seed -> SessionParticipantBinding.
+SessionParticipantId é derivado de PlayerSlotId.
+ActorDefinitionId identifica archetype/definition e valida consistência.
+PlayerSetDefinitionEntry.actorId é o ActorId default do participante.
+ActorDefinitionAsset não é owner de ActorId do participante.
+ActivityEntryPipeline materializa por ActivityParticipantBinding resolvido.
+```
+
+### Matriz de identidade congelada
+
+| Identidade | Owner | Uso permitido | Uso proibido |
+|---|---|---|---|
+| `PlayerSlotId` | `PlayerParticipation` | correlacionar seed/session participant e input slot | substituir `ActorId` ou `ActorInstanceRuntimeId` |
+| `PlayerSelectionId` | `PlayerParticipation` / selection/default policy | representar escolha/default de slot | materializar Actor diretamente |
+| `ActorDefinitionId` | `ActorDefinitionAsset` / selection | identificar archetype/definition e validar consistência | lookup runtime de participant |
+| `ActorId` do player default | `PlayerSetDefinitionEntry` no corte atual | identidade semântica do Actor participante | vir de `ActorDefinitionAsset` como instância runtime |
+| `SessionParticipantId` | `PlayerParticipation` | participante de sessão derivado de `PlayerSlotId` | depender de índice/ordem de lista |
+| `ActorInstanceRuntimeId` | `ActivityEntryPipeline`/materialization | identidade runtime concreta da instância | ser reconstruído por consumers |
+
+### Evidência aceita
+
+O smoke confirmou:
+
+```text
+actorIdSource='PlayerSetDefinitionEntry'
+seedActorIdSource='PlayerSetDefinitionEntry'
+participantIdPolicy='PlayerSlotIdDerived'
+resolutionKey='PlayerSlotIdToSessionParticipantId'
+```
+
+E preservou:
+
+```text
+sem erro CS
+sem [ERROR]
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+SessionResetCompleted sessionActorCount='0'
+```
+
+### Próximos limites
+
+Este checkpoint não converte todos os authoring ids do projeto. Permanecem fora deste corte:
+
+```text
+ActivityObject target/role refs.
+Activity/Profile authoring ids.
+ActorPresentation local slot/profile refs.
+ActorAttribute definition/profile refs.
+Actor authored ActivityId refs e resíduos lexicais NonPlayer.
+```
+
+Esses pontos continuam pertencendo aos cortes `SA-IDREF-6*` já previstos neste ADR.
+
+---
+
+## SA-12D / SA-IDREF alignment — ActorAttributeCommand typed identity
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Escopo
+
+Este checkpoint registra a convergência do command contract de ActorAttribute com o contrato deste ADR.
+Ele não substitui `SA-IDREF-5*` nem fecha os cortes futuros `SA-IDREF-6*`.
+
+### Antes
+
+```text
+ActorAttributeCommand carregava string PipelineIdentity.
+ActorAttributeCommand carregava string ActivityIdentity.
+ActorAttributeCommand carregava string ActorInstanceId.
+```
+
+### Depois
+
+```text
+ActorAttributeCommand carrega SessionActivityIdentity como identidade tipada do ciclo.
+ActorAttributeCommand carrega ActorInstanceRuntimeId como identidade funcional runtime do actor.
+Call sites de setup/release/endpoint foram migrados para o shape tipado.
+Logs podem imprimir texto para observabilidade, mas não usam string como lookup funcional.
+```
+
+### Owner correto
+
+```text
+ActivityEntryPipeline / ActivityEntryActorAttributeStage resolve setup de attributes.
+ActivityExitActorTeardownStage executa release de attributes no exit.
+ActorAttributeCommand transporta payload runtime resolvido + identities tipadas.
+ActorAttributeCommand não decide lifecycle, policy, skip ou failure.
+```
+
+### Evidência aceita
+
+O smoke confirmou:
+
+```text
+ActorAttributeSetupStarted
+ActorAttributeProfileResolved
+ActivityActorExitRuntimeStateAttributeStateStored com actorInstanceRuntimeId
+ActorAttributeReady
+ActorAttributeSetupCompleted
+ActorAttributeReleased com actorInstanceRuntimeId
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+```
+
+### Limite do corte
+
+```text
+ActorAttributeState/snapshot interno ainda pode conter texto técnico para observabilidade/snapshot.
+Isso não reabre SA-12D porque o command contract e os call sites funcionais foram tipados.
+Limpeza posterior de Attribute state/snapshot deve ser corte próprio, não compat paralelo.
+```
+
+### Status de SA-IDREF
+
+```text
+O trilho funcional de command de ActorAttribute não usa mais string livre como identidade runtime.
+ActorInstanceRuntimeId é a identidade runtime funcional observável no setup/release de Attribute.
 ```
 

@@ -90,8 +90,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
             ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
-            SessionActivityIdentity releaseIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivityContentReleaseStarted, entrySequence);
-            endpoint.SetCurrentIdentity(releaseIdentity, SessionActivityStage.ActivityContentReleaseStarted);
+            SessionActivityIdentity releaseIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseStarted, entrySequence);
+            endpoint.SetCurrentIdentity(releaseIdentity, SessionActivityStage.ObjectReleaseStarted);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ObjectReleaseStarted,
@@ -114,10 +114,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 !IsDiscoveryResultForCurrentEntry(discoveryResult, releaseIdentity, definition, entrySequence) ||
                 discoveryResult.Reports.Count == 0)
             {
+                SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
+                endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ObjectReleaseCompleted);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ObjectReleaseCompleted,
-                    releaseIdentity,
+                    completedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' object release completed with no contributors for current entry.");
@@ -133,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' object release completed with no contributors for current entry.");
                 return new ActivityObjectReleaseStageResult(
                     completed: true,
-                    identity: releaseIdentity,
+                    identity: completedIdentity,
                     commandCount: 0,
                     appliedCount: 0,
                     skippedCount: 0,
@@ -157,10 +159,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (!hasValidReleaseInventory)
             {
+                SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseFailed, entrySequence);
+                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ObjectReleaseFailed);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ObjectReleaseFailed,
-                    releaseIdentity,
+                    failedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' object release failed reason='release_inventory_missing_or_invalid' entrySequence='{entrySequence}' inventoryValid='{releaseInventory.IsValid.ToString().ToLowerInvariant()}' validationValid='{releaseInventoryValidation.IsValid.ToString().ToLowerInvariant()}'.");
@@ -179,10 +183,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 if (report.SupportedReleaseKinds == null || report.SupportedReleaseKinds.Count == 0)
                 {
                     skippedCount += 1;
+                    SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseSkippedOptional, entrySequence);
+                    endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ObjectReleaseSkippedOptional);
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ObjectReleaseSkippedOptional,
-                        releaseIdentity,
+                        skippedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' object release skipped targetId='{report.TargetId}' reason='no_supported_release_kinds'.");
@@ -216,10 +222,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     commandCount += 1;
+                    SessionActivityIdentity issuedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCommandIssued, entrySequence);
+                    endpoint.SetCurrentIdentity(issuedIdentity, SessionActivityStage.ObjectReleaseCommandIssued);
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ObjectReleaseCommandIssued,
-                        releaseIdentity,
+                        issuedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' object release command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' releaseKind='{releaseKind}'.");
@@ -233,10 +241,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     if (!IsObjectReleaseResultAcceptedForIssuedCommand(result, releaseCommand, definition, entrySequence, releaseIdentity))
                     {
+                        SessionActivityIdentity rejectedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseRejectedForeignOrStale, entrySequence);
+                        endpoint.SetCurrentIdentity(rejectedIdentity, SessionActivityStage.ObjectReleaseRejectedForeignOrStale);
                         endpoint.EmitFact(
                             facts,
                             SessionActivityFactKind.ObjectReleaseRejectedForeignOrStale,
-                            releaseIdentity,
+                            rejectedIdentity,
                             command.Source,
                             command.Reason,
                             $"'{definition.ActivityId}' object release rejected foreign/stale targetId='{report.TargetId}' releaseKind='{releaseKind}' reason='stale_or_foreign_release_result'.");
@@ -246,10 +256,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (result.IsApplied)
                     {
                         appliedCount += 1;
+                        SessionActivityIdentity appliedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseApplied, entrySequence);
+                        endpoint.SetCurrentIdentity(appliedIdentity, SessionActivityStage.ObjectReleaseApplied);
                         endpoint.EmitFact(
                             facts,
                             SessionActivityFactKind.ObjectReleaseApplied,
-                            releaseIdentity,
+                            appliedIdentity,
                             command.Source,
                             command.Reason,
                             $"'{definition.ActivityId}' object release applied targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' releaseKind='{releaseKind}'.");
@@ -259,10 +271,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (result.IsSkippedOptional)
                     {
                         skippedCount += 1;
+                        SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseSkippedOptional, entrySequence);
+                        endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ObjectReleaseSkippedOptional);
                         endpoint.EmitFact(
                             facts,
                             SessionActivityFactKind.ObjectReleaseSkippedOptional,
-                            releaseIdentity,
+                            skippedIdentity,
                             command.Source,
                             command.Reason,
                             $"'{definition.ActivityId}' object release skipped optional targetId='{report.TargetId}' releaseKind='{releaseKind}' reason='{result.Message}'.");
@@ -270,10 +284,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     failedCount += 1;
+                    SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseFailed, entrySequence);
+                    endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ObjectReleaseFailed);
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ObjectReleaseFailed,
-                        releaseIdentity,
+                        failedIdentity,
                         command.Source,
                         command.Reason,
                         $"'{definition.ActivityId}' object release failed targetId='{report.TargetId}' releaseKind='{releaseKind}' reason='{result.Message}'.");
@@ -282,10 +298,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 }
             }
 
+            SessionActivityIdentity completedIdentityFinal = endpoint.BuildIdentity(definition, SessionActivityStage.ObjectReleaseCompleted, entrySequence);
+            endpoint.SetCurrentIdentity(completedIdentityFinal, SessionActivityStage.ObjectReleaseCompleted);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ObjectReleaseCompleted,
-                releaseIdentity,
+                completedIdentityFinal,
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' object release completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
@@ -301,7 +319,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{definition.ActivityId}' object release completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}'.");
             return new ActivityObjectReleaseStageResult(
                 completed: true,
-                identity: releaseIdentity,
+                identity: completedIdentityFinal,
                 commandCount: commandCount,
                 appliedCount: appliedCount,
                 skippedCount: skippedCount,
@@ -443,11 +461,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                    string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    identity.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Command.ActivityOrdinal == definition.ActivityOrdinal &&
-                   result.Command.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.PipelineId, releaseIdentity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Command.SessionStateId, releaseIdentity.SessionId, StringComparison.Ordinal) &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ReleaseKind != ActivityReleaseRequirementKind.Unknown;
         }

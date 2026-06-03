@@ -27,8 +27,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
         [SerializeField, Tooltip("Canonical authoring definition id. This identifies the ActorDefinition asset/domain, not the runtime actor.")]
         private string actorDefinitionId;
-        [SerializeField, Tooltip("Canonical actor id produced by this definition when used as the default actor seed.")]
-        private string actorId;
         [SerializeField] private string displayName;
         [SerializeField] private ActorDefinitionKind actorKind = ActorDefinitionKind.Unknown;
         [SerializeField] private GameObject prefabReference;
@@ -38,7 +36,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         [SerializeField] private Vector3 localRotation;
 
         public string ActorDefinitionId => Normalize(actorDefinitionId);
-        public string ActorId => Normalize(actorId);
         public string DisplayName => Normalize(displayName);
         public ActorDefinitionKind ActorKind => actorKind;
         public GameObject PrefabReference => prefabReference;
@@ -51,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            EnsureActorIdentityGenerated();
+            EnsureDefinitionIdentityGenerated();
         }
 #endif
 
@@ -63,27 +60,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(ActorId))
-            {
-                errorMessage = $"actorId is required actorDefinitionId='{ActorDefinitionId}'.";
-                return false;
-            }
-
-            if (string.Equals(ActorDefinitionId, ActorId, System.StringComparison.Ordinal))
-            {
-                errorMessage = $"actorDefinitionId and actorId must be distinct actorDefinitionId='{ActorDefinitionId}' actorId='{ActorId}'.";
-                return false;
-            }
-
             if (actorKind == ActorDefinitionKind.Unknown)
             {
-                errorMessage = $"actorKind cannot be Unknown actorDefinitionId='{ActorDefinitionId}' actorId='{ActorId}'.";
+                errorMessage = $"actorKind cannot be Unknown actorDefinitionId='{ActorDefinitionId}'.";
                 return false;
             }
 
             if (!IsValidPlacementMode(placementMode))
             {
-                errorMessage = $"placementMode is invalid actorDefinitionId='{ActorDefinitionId}' actorId='{ActorId}' placementMode='{placementMode}'.";
+                errorMessage = $"placementMode is invalid actorDefinitionId='{ActorDefinitionId}' placementMode='{placementMode}'.";
                 return false;
             }
 
@@ -91,7 +76,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             return true;
         }
 
-        private void EnsureActorIdentityGenerated()
+        private void EnsureDefinitionIdentityGenerated()
         {
             if (string.IsNullOrWhiteSpace(actorDefinitionId))
             {
@@ -99,15 +84,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 if (!string.IsNullOrWhiteSpace(generatedDefinitionId))
                 {
                     actorDefinitionId = generatedDefinitionId.Trim();
-                }
-            }
-
-            if (string.IsNullOrWhiteSpace(actorId))
-            {
-                string generatedActorId = IdFactory.GenerateId(null, "Actor");
-                if (!string.IsNullOrWhiteSpace(generatedActorId))
-                {
-                    actorId = generatedActorId.Trim();
                 }
             }
         }

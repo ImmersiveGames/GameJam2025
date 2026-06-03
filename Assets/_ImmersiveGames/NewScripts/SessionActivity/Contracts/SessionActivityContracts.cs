@@ -176,6 +176,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActorParticipationExitCompleted = 129,
         ActorParticipationExitSkipped = 130,
         ActorParticipationExitFailed = 131,
+        ObjectReleaseStarted = 132,
+        ObjectReleaseCommandIssued = 133,
+        ObjectReleaseApplied = 134,
+        ObjectReleaseSkippedOptional = 135,
+        ObjectReleaseFailed = 136,
+        ObjectReleaseCompleted = 137,
+        ObjectReleaseRejectedForeignOrStale = 138,
+        ActivityObjectContributorUnregisterStarted = 139,
+        ActivityObjectContributorUnregistered = 140,
+        ActivityObjectContributorUnregisterSkippedNoContributors = 141,
+        ActivityObjectContributorUnregisterCompleted = 142,
+        ActivityObjectContributorUnregisterFailed = 143,
+        ActivityObjectSnapshotCaptureStarted = 144,
+        ActivityObjectSnapshotCaptured = 145,
+        ActivityObjectSnapshotCaptureSkippedNoProviders = 146,
+        ActivityObjectSnapshotCaptureFailed = 147,
+        ActivityObjectSnapshotCaptureCompleted = 148,
     }
 
     public enum ActivityExecutionState

@@ -1437,20 +1437,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             SessionActivityIdentity loadingIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityContentSceneLoading, entrySequence);
             _identityBridge.SetCurrentIdentity(loadingIdentity, SessionActivityStage.ActivityContentSceneLoading);
+            ActivityContentSceneRuntimeReference sceneReference = ResolveSceneRuntimeReferenceOrFail(definition, entry, sceneOrdinal);
 
             ActivityContentSceneLoadCommand loadCommand = new(
                 Guid.NewGuid().ToString("N"),
                 loadingIdentity,
                 _pendingContentLoadContext.ContentProfileId,
                 sceneOrdinal,
-                entry.SceneKey,
+                sceneReference,
                 entry.Requiredness,
                 source,
                 reason);
 
             SessionActivityPendingOperation pendingOperation = _contentPendingOperationBridge.BuildActivityContentPendingOperation(definition, entrySequence, loadCommand);
             _contentPendingOperationBridge.SetPendingOperation(pendingOperation);
-            _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentSceneLoadCommandIssued, loadingIdentity, source, reason, $"'{definition.ActivityId}' activity content scene load command issued operationId='{loadCommand.OperationId}' contentProfileId='{loadCommand.ContentProfileId}' sceneOrdinal='{loadCommand.SceneOrdinal}' sceneKey='{loadCommand.SceneKey.name}' sceneName='{loadCommand.SceneName}' requiredness='{loadCommand.Requiredness}'.");
+            _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentSceneLoadCommandIssued, loadingIdentity, source, reason, $"'{definition.ActivityId}' activity content scene load command issued operationId='{loadCommand.OperationId}' contentProfileId='{loadCommand.ContentProfileId}' sceneOrdinal='{loadCommand.SceneOrdinal}' sceneKey='{loadCommand.SceneKey}' sceneName='{loadCommand.SceneName}' requiredness='{loadCommand.Requiredness}'.");
             _factBridge.EmitSnapshot(snapshots, "activity_content_scene_load_command_issued", source, reason, $"'{definition.ActivityId}' activity content scene load command issued operationId='{loadCommand.OperationId}' sceneName='{loadCommand.SceneName}'.");
             _contentPendingOperationBridge.RunActivityContentOperation(pendingOperation, loadCommand);
         }
@@ -1535,6 +1536,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return entry.Requiredness;
+        }
+
+        private static ActivityContentSceneRuntimeReference ResolveSceneRuntimeReferenceOrFail(
+            SessionActivityDefinition definition,
+            ActivityContentSceneEntry entry,
+            int sceneOrdinal)
+        {
+            if (entry == null || entry.SceneKey == null)
+            {
+                throw new InvalidOperationException($"Activity '{definition.ActivityId}' content scene key is missing at ordinal='{sceneOrdinal}'.");
+            }
+
+            ActivityContentSceneRuntimeReference sceneReference = ActivityContentSceneRuntimeReference.FromSceneKeyAsset(entry.SceneKey);
+            if (!sceneReference.IsValid)
+            {
+                throw new InvalidOperationException($"Activity '{definition.ActivityId}' content scene runtime reference is invalid at ordinal='{sceneOrdinal}' asset='{entry.SceneKey.name}'.");
+            }
+
+            return sceneReference;
         }
 
         private Foundation.Platform.SceneReferences.SceneKeyAsset ResolveSceneKeyForCurrentLoadedRecordOrFail(SessionActivityPendingOperation operation)

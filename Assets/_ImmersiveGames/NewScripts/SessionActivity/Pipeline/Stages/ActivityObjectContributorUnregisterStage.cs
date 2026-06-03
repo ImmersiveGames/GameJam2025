@@ -12,19 +12,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public ActivityObjectContributorUnregisterStageCommand(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
-            int entrySequence,
-            SessionActivityStage stage)
+            int entrySequence)
         {
             Definition = definition;
             Command = command;
             EntrySequence = entrySequence < 0 ? 0 : entrySequence;
-            Stage = stage == SessionActivityStage.Unknown ? SessionActivityStage.ActivityContentReleaseCompleted : stage;
         }
 
         public SessionActivityDefinition Definition { get; }
         public SessionActivityCommand Command { get; }
         public int EntrySequence { get; }
-        public SessionActivityStage Stage { get; }
         public string Source => Command.Source;
         public string Reason => Command.Reason;
 
@@ -80,13 +77,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.EntrySequence;
-            SessionActivityIdentity unregisterIdentity = endpoint.BuildIdentity(definition, command.Stage, entrySequence);
-            endpoint.SetCurrentIdentity(unregisterIdentity, command.Stage);
+            SessionActivityIdentity unregisterStartedIdentity = endpoint.BuildIdentity(
+                definition,
+                SessionActivityStage.ActivityObjectContributorUnregisterStarted,
+                entrySequence);
+            endpoint.SetCurrentIdentity(unregisterStartedIdentity, SessionActivityStage.ActivityObjectContributorUnregisterStarted);
 
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectContributorUnregisterStarted,
-                unregisterIdentity,
+                unregisterStartedIdentity,
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object contributor unregister started.");
@@ -105,17 +105,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (!discoveryResult.IsValid || discoveryResult.Reports == null || discoveryResult.Reports.Count == 0)
             {
                 endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
+                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorUnregisterSkippedNoContributors,
-                    unregisterIdentity,
+                    skippedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor unregister skipped reason='no_discovery_result'.");
+                SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectContributorUnregisterCompleted,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityObjectContributorUnregisterCompleted);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorUnregisterCompleted,
-                    unregisterIdentity,
+                    completedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor unregister completed unregisteredCount='0'.");
@@ -131,18 +141,23 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"'{definition.ActivityId}' activity object contributor unregister completed unregisteredCount='0'.");
                 return new ActivityObjectContributorUnregisterStageResult(
                     completed: true,
-                    identity: unregisterIdentity,
+                    identity: completedIdentity,
                     unregisteredCount: 0,
                     skippedNoContributors: true,
                     reason: "no_discovery_result");
             }
 
-            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, unregisterIdentity, definition, entrySequence))
+            if (!IsDiscoveryResultForCurrentEntry(discoveryResult, unregisterStartedIdentity, definition, entrySequence))
             {
+                SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectContributorUnregisterFailed,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityObjectContributorUnregisterFailed);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorUnregisterFailed,
-                    unregisterIdentity,
+                    failedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor unregister failed reason='stale_or_foreign_discovery_result' discoveryIdentity='{discoveryResult.Identity}'.");
@@ -161,17 +176,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
                 ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
-                if (!report.IsValid || !IsReportForCurrentEntry(report, unregisterIdentity, definition, entrySequence))
+                if (!report.IsValid || !IsReportForCurrentEntry(report, unregisterStartedIdentity, definition, entrySequence))
                 {
                     continue;
                 }
 
                 hasCurrentEntryContributors = true;
                 unregisteredCount += 1;
+                SessionActivityIdentity unregisteredIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectContributorUnregistered,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(unregisteredIdentity, SessionActivityStage.ActivityObjectContributorUnregistered);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorUnregistered,
-                    unregisterIdentity,
+                    unregisteredIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor unregistered contentProfileId='{report.ContentProfileId}' targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}'.");
@@ -184,20 +204,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool skipped = !hasCurrentEntryContributors;
             if (skipped)
             {
+                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                    definition,
+                    SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors,
+                    entrySequence);
+                endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors);
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorUnregisterSkippedNoContributors,
-                    unregisterIdentity,
+                    skippedIdentity,
                     command.Source,
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor unregister skipped reason='no_contributors_for_entry'.");
             }
 
             endpoint.ClearCurrentActivityObjectContributorDiscoveryResult();
+            SessionActivityIdentity completedIdentityFinal = endpoint.BuildIdentity(
+                definition,
+                SessionActivityStage.ActivityObjectContributorUnregisterCompleted,
+                entrySequence);
+            endpoint.SetCurrentIdentity(completedIdentityFinal, SessionActivityStage.ActivityObjectContributorUnregisterCompleted);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActivityObjectContributorUnregisterCompleted,
-                unregisterIdentity,
+                completedIdentityFinal,
                 command.Source,
                 command.Reason,
                 $"'{definition.ActivityId}' activity object contributor unregister completed unregisteredCount='{unregisteredCount}'.");
@@ -214,7 +244,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             return new ActivityObjectContributorUnregisterStageResult(
                 completed: true,
-                identity: unregisterIdentity,
+                identity: completedIdentityFinal,
                 unregisteredCount: unregisteredCount,
                 skippedNoContributors: skipped,
                 reason: skipped ? "no_contributors_for_entry" : "completed");

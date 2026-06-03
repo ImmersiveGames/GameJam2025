@@ -19,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 PlayerSelectionId playerSelectionId,
                 ActorDefinitionId actorDefinitionId,
                 ActorId actorId,
-                ActorScope actorScope,
                 bool required,
                 ActorDefinitionAsset actorDefinition)
             {
@@ -27,7 +26,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 PlayerSelectionId = playerSelectionId;
                 ActorDefinitionId = actorDefinitionId;
                 ActorId = actorId;
-                ActorScope = actorScope;
                 Required = required;
                 ActorDefinition = actorDefinition;
             }
@@ -36,7 +34,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
             public PlayerSelectionId PlayerSelectionId { get; }
             public ActorDefinitionId ActorDefinitionId { get; }
             public ActorId ActorId { get; }
-            public ActorScope ActorScope { get; }
             public bool Required { get; }
             public ActorDefinitionAsset ActorDefinition { get; }
             public GameObject Prefab => ActorDefinition != null ? ActorDefinition.PrefabReference : null;
@@ -49,7 +46,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 PlayerSelectionId.IsValid &&
                 ActorDefinitionId.IsValid &&
                 ActorId.IsValid &&
-                ActorScope != ActorScope.Unknown &&
                 ActorDefinition != null;
         }
 
@@ -58,16 +54,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         {
             [SerializeField] private string playerSlotId;
             [SerializeField] private string playerSelectionId;
+            [SerializeField] private string actorId;
             [SerializeField] private ActorDefinitionAsset actorDefinition;
-            [SerializeField] private ActorScope actorScope;
             [SerializeField] private bool required;
 
             public PlayerSlotId PlayerSlotId => new(Normalize(playerSlotId));
             public PlayerSelectionId PlayerSelectionId => new(Normalize(playerSelectionId));
+            public ActorId ActorId => new(Normalize(actorId));
             public ActorDefinitionAsset ActorDefinition => actorDefinition;
             public ActorDefinitionId ActorDefinitionId => new(actorDefinition != null ? actorDefinition.ActorDefinitionId : string.Empty);
-            public ActorId ActorId => new(actorDefinition != null ? actorDefinition.ActorId : string.Empty);
-            public ActorScope ActorScope => actorScope;
             public bool HasPrefabReference => actorDefinition != null && actorDefinition.PrefabReference != null;
             public ActorPlacementMode PlacementMode => actorDefinition != null ? actorDefinition.PlacementMode : ActorPlacementMode.None;
             public bool HasPlacementPlan => actorDefinition != null && actorDefinition.HasPlacementPlan;
@@ -120,7 +115,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
                 if (actorDefinition.ActorKind != ActorDefinitionKind.Player)
                 {
-                    errorMessage = $"entries[{i}].actorDefinition.actorKind must be Player for PlayerParticipation seed. playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinition.ActorDefinitionId}' actorId='{actorDefinition.ActorId}' actorKind='{actorDefinition.ActorKind}'.";
+                    errorMessage = $"entries[{i}].actorDefinition.actorKind must be Player for PlayerParticipation seed. playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinition.ActorDefinitionId}' actorKind='{actorDefinition.ActorKind}'.";
                     return false;
                 }
 
@@ -134,13 +129,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
                 if (!actorId.IsValid)
                 {
-                    errorMessage = $"entries[{i}].actorDefinition.actorId is required playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}'.";
-                    return false;
-                }
-
-                if (entries[i].ActorScope == ActorScope.Unknown)
-                {
-                    errorMessage = $"entries[{i}].actorScope is required playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}' actorId='{actorId}'.";
+                    errorMessage = $"entries[{i}].actorId is required playerSlotId='{playerSlotId}' actorDefinitionId='{actorDefinitionId}'.";
                     return false;
                 }
 
@@ -199,7 +188,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     entries[i].PlayerSelectionId,
                     entries[i].ActorDefinitionId,
                     entries[i].ActorId,
-                    entries[i].ActorScope,
                     entries[i].Required,
                     entries[i].HasPrefabReference,
                     entries[i].PlacementMode,
@@ -231,7 +219,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                     entries[i].PlayerSelectionId,
                     entries[i].ActorDefinitionId,
                     entries[i].ActorId,
-                    entries[i].ActorScope,
                     entries[i].Required,
                     entries[i].ActorDefinition));
             }

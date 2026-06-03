@@ -98,12 +98,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"Activity content loaded scene record is invalid at index='{nextSceneIndex}'.");
             }
 
+            ActivityContentSceneRuntimeReference sceneReference = ActivityContentSceneRuntimeReference.FromSceneKeyAsset(record.SceneKey);
+            if (!sceneReference.IsValid)
+            {
+                throw new InvalidOperationException(
+                    $"Activity content scene runtime reference is invalid for scene='{record.SceneName}' index='{nextSceneIndex}'.");
+            }
+
             ActivityContentSceneUnloadCommand unloadCommand = new ActivityContentSceneUnloadCommand(
                 Guid.NewGuid().ToString("N"),
                 record.Identity,
                 record.ContentProfileId,
                 record.SceneOrdinal,
-                record.SceneKey,
+                sceneReference,
                 record.Requiredness,
                 command.Source,
                 command.Reason,
@@ -177,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 entrySequence,
                 SessionActivityPendingWindowKind.None,
                 SessionActivityPendingOperationKind.ActivityContentSceneUnload,
-                command.SceneKey != null ? command.SceneKey.name : string.Empty,
+                command.SceneKey,
                 command.SceneName,
                 command.Source,
                 command.Reason);

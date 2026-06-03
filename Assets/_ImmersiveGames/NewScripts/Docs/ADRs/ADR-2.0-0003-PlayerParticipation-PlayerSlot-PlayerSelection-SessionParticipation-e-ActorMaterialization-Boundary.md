@@ -2,7 +2,7 @@
 
 ## Status
 
-Aceito / congelado incrementalmente. Último checkpoint relacionado: `SA-ACTOR-1C1-H7B2 — PASS funcional`, confirmando que `PlayerParticipation` entrega `ActorScope.SessionScoped` por `PlayerSetDefinition.Entry.actorScope` e que `ActivityEntryPipeline` materializa o Actor sem usar o prefab como owner de scope/participation policy.
+Aceito / congelado incrementalmente. Último checkpoint relacionado: `SA-ACTOR-1C1-H8C3 — PASS funcional + PASS arquitetural do corte`, confirmando que `PlayerParticipation` entrega `ActorScope.SessionScoped` como invariant do domínio, que `SessionParticipantId` é derivado de `PlayerSlotId`, que materialization resolution usa `PlayerSlotId`, e que o `ActorId` do player default não vem mais de `ActorDefinitionAsset`.
 
 ## Área
 
@@ -967,7 +967,7 @@ Nenhum patch em `Camera`, `Movement`, `Permission`, `ActorDiscovery` ou `PlayerA
 
 ## Checkpoint SA-ACTOR-1C1 — Player actorScope authoring e materialization boundary
 
-Status: `CLOSED / PASS funcional`.
+Status: `CLOSED / PASS funcional`; superseded parcialmente por `SA-ACTOR-1C1-H8A`, que removeu `actorScope` editável do `PlayerSetDefinition` e congelou `PlayerParticipation => ActorScope.SessionScoped`.
 
 ### Decisão adicionada
 
@@ -979,11 +979,11 @@ ActorScope
 ParticipationPolicy
 ```
 
-O owner correto é:
+O owner correto após H8A é:
 
 ```text
-PlayerSetDefinition.Entry.actorScope
-  -> OperationalPlayerParticipationStage
+PlayerParticipation / OperationalPlayerParticipationStage
+  -> ActorScope.SessionScoped invariant
   -> SessionParticipationContext / SessionParticipantBinding
   -> ActivityParticipantBinding
   -> ActivityEntryPipeline / PlayerActorMaterializationAdapter
@@ -1010,7 +1010,7 @@ Portanto, usar o prefab `PlayerActor` como owner de `ActorScope` reintroduz owne
 ### Invariantes congeladas
 
 ```text
-PlayerSetDefinition.Entry.actorScope é obrigatório para player participation seed.
+PlayerSetDefinition não expõe actorScope; player participation seed recebe ActorScope.SessionScoped por policy invariável.
 OperationalPlayerParticipationStage não hardcoda RouteScoped.
 PlayerActorMaterializationAdapter não lê ActorScope do prefab como fonte normativa.
 PlayerActor runtime recebe metadata resolvida via BindRuntimeMetadata ou equivalente.
@@ -1021,7 +1021,7 @@ Scene-authored actors continuam usando authoring local descoberto via scan.
 ### Smoke aceito
 
 ```text
-SessionParticipationContextPrepared ... participant.primary_player ... scope='SessionScoped'
+SessionParticipationContextPrepared ... participantId='participant.player.slot.1' ... scope='SessionScoped'
 ActorMaterializationPlanEntryResolved ... actorScope='SessionScoped'
 ActivityParticipantActorMaterialized ... actorScope='SessionScoped'
 ActorPresentationPlanResolved ... actorInstanceRuntimeId='...|session|Actor|actor.player.primary|SessionScoped'
@@ -1040,3 +1040,90 @@ sem route_transition_failed
 
 `PlayerParticipation` não decide quando uma sessão termina. `SessionOperationalPipeline` detecta que o destino `FrontendMenu` encerra sessão, e `SessionActivityPipeline` executa `SessionReset` após `RouteExit`/save-on-exit para liberar actors `SessionScoped` estruturais.
 
+
+
+---
+
+## Checkpoint SA-ACTOR-1C1-H8 — PlayerParticipation / PlayerSet identity cleanup
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Problema corrigido
+
+Após o fechamento do lifetime estrutural `SessionScoped`, a frente de PlayerParticipation ainda carregava três riscos de identidade:
+
+```text
+1. actorScope editável no PlayerSetDefinition para um Player que deve ser sempre SessionScoped.
+2. materialization seed resolution por ActorDefinitionId.
+3. SessionParticipantId derivado de índice/lista.
+4. ActorId do player vindo de ActorDefinitionAsset.
+```
+
+Esses riscos misturavam domínios que este ADR separa:
+
+```text
+PlayerSlotId != SessionParticipantId
+PlayerSelectionId != ActorDefinitionId
+ActorDefinitionId != ActorId
+ActorId != ActorInstanceRuntimeId
+```
+
+### Decisão atualizada
+
+```text
+PlayerSetDefinitionEntry:
+  playerSlotId
+  playerSelectionId
+  actorId
+  actorDefinition
+  required
+
+Derivado/resolvido pelo runtime:
+  actorScope = SessionScoped
+  sessionParticipantId = participant.{playerSlotId}
+  actorMaterializationPlan resolutionKey = PlayerSlotIdToSessionParticipantId
+```
+
+`ActorDefinitionAsset` fica restrito a:
+
+```text
+ActorDefinitionId
+prefab/reference técnica
+metadata/defaults de definition
+```
+
+Ele não é owner do `ActorId` semântico do player participante.
+
+### Regras normativas adicionadas
+
+```text
+Player estrutural vindo de PlayerParticipation não tem opção autoral de ActorScope.
+PlayerSetDefinitionEntry.actorId é o ActorId default do participante, não da definition.
+ActorDefinitionId só valida consistência de archetype/selection; não é chave runtime de participant.
+SessionParticipantId deve ser estável por PlayerSlotId, não por ordem de lista.
+ActivityEntryPipeline recebe ActivityParticipantBinding já resolvido; não reinterpreta PlayerSelection nem PlayerSet.
+```
+
+### Evidência aceita
+
+O smoke confirmou:
+
+```text
+actorIdSource='PlayerSetDefinitionEntry'
+seedActorIdSource='PlayerSetDefinitionEntry'
+participantIdPolicy='PlayerSlotIdDerived'
+sessionParticipantIds='participant.player.slot.1, participant.player.slot.2'
+resolutionKey='PlayerSlotIdToSessionParticipantId'
+SessionScoped + ExitToMenu/SessionReset => Release
+```
+
+Sem regressão em:
+
+```text
+RestartCurrentActivity
+Activity01ToActivity02
+RouteExitBackToMenu
+MovementBinding
+CameraBinding
+SessionResetCompleted sessionActorCount='0'
+```

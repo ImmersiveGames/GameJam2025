@@ -113,12 +113,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 }
 
                 SessionParticipantBinding participant = ResolveSessionParticipantForMaterializationSeedOrFail(entry, sessionParticipationContext);
-                if (participant.ActorScope != entry.ActorScope)
-                {
-                    throw new InvalidOperationException(
-                        $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Actor scope mismatch between PlayerSetDefinition materialization seed and SessionParticipationContext participantId='{participant.ParticipantId}' actorDefinitionId='{participant.ActorDefinitionId}' seedScope='{entry.ActorScope}' participantScope='{participant.ActorScope}'.");
-                }
-
                 materializationPlanEntries.Add(new SessionActivityActorMaterializationPlanEntry(
                     participant.ParticipantId,
                     entry.Required,
@@ -129,7 +123,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     entry.LocalRotation));
 
                 DebugUtility.Log(typeof(SessionActivityOperationalRouteConsumerEntryAdapter),
-                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' actorScope='{participant.ActorScope}' resolutionKey='ActorDefinitionIdToSessionParticipantId'.");
+                    $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='ActorMaterializationPlanEntryResolved' participantId='{participant.ParticipantId}' role='{participant.Role}' playerSlotId='{participant.PlayerSlotId}' actorDefinitionId='{participant.ActorDefinitionId}' actorId='{participant.ActorId}' seedPlayerSlotId='{entry.PlayerSlotId}' seedActorDefinitionId='{entry.ActorDefinitionId}' seedActorId='{entry.ActorId}' actorIdSource='PlayerSetDefinitionEntry' actorScope='{participant.ActorScope}' resolutionKey='PlayerSlotIdToSessionParticipantId'.");
             }
 
             return materializationPlanEntries;
@@ -139,12 +133,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             PlayerSetDefinitionAsset.PlayerActorResolvedEntry entry,
             SessionParticipationContext sessionParticipationContext)
         {
+            var seedPlayerSlotId = entry.PlayerSlotId;
+            if (!seedPlayerSlotId.IsValid)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Actor materialization seed playerSlotId is required.");
+            }
+
             var seedActorDefinitionId = entry.ActorDefinitionId;
             if (!seedActorDefinitionId.IsValid)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Actor materialization seed actorDefinitionId is required.");
             }
 
+            SessionParticipantBinding matchedParticipant = default;
+            int matchCount = 0;
             IReadOnlyList<SessionParticipantBinding> participants = sessionParticipationContext.Participants ?? Array.Empty<SessionParticipantBinding>();
             for (int index = 0; index < participants.Count; index++)
             {
@@ -154,15 +156,34 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     continue;
                 }
 
-                var actorDefinitionId = participant.ActorDefinitionId;
-                if (actorDefinitionId == seedActorDefinitionId)
+                if (participant.PlayerSlotId != seedPlayerSlotId)
                 {
-                    return participant;
+                    continue;
                 }
+
+                matchedParticipant = participant;
+                matchCount++;
             }
 
-            throw new InvalidOperationException(
-                $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for actor materialization seed entry seedActorDefinitionId='{seedActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+            if (matchCount == 0)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Missing SessionParticipantBinding for actor materialization seed entry seedPlayerSlotId='{seedPlayerSlotId}' seedActorDefinitionId='{seedActorDefinitionId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+            }
+
+            if (matchCount > 1)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Duplicate SessionParticipantBinding for actor materialization seed entry seedPlayerSlotId='{seedPlayerSlotId}' routeOperationId='{sessionParticipationContext.RouteOperationId}' matchCount='{matchCount}'.");
+            }
+
+            if (matchedParticipant.ActorDefinitionId != seedActorDefinitionId)
+            {
+                throw new InvalidOperationException(
+                    $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] SessionParticipantBinding actorDefinitionId mismatch for actor materialization seed entry playerSlotId='{seedPlayerSlotId}' seedActorDefinitionId='{seedActorDefinitionId}' participantActorDefinitionId='{matchedParticipant.ActorDefinitionId}' participantId='{matchedParticipant.ParticipantId}' routeOperationId='{sessionParticipationContext.RouteOperationId}'.");
+            }
+
+            return matchedParticipant;
         }
 
         private static string Normalize(string value)

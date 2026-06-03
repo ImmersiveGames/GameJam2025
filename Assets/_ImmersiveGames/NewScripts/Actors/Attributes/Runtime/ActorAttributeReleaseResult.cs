@@ -1,11 +1,13 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     [Serializable]
     public readonly struct ActorAttributeReleaseResult
     {
         public ActorAttributeReleaseOutcome Outcome { get; }
-        public string ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public int ReleasedAttributeCount { get; }
         public string Reason { get; }
 
@@ -17,48 +19,48 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
         private ActorAttributeReleaseResult(
             ActorAttributeReleaseOutcome outcome,
-            string actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             int releasedAttributeCount,
             string reason)
         {
             Outcome = outcome;
-            ActorInstanceId = actorInstanceId ?? string.Empty;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ReleasedAttributeCount = releasedAttributeCount;
             Reason = reason ?? string.Empty;
         }
 
-        public static ActorAttributeReleaseResult ReleasedResult(string actorInstanceId, int releasedAttributeCount)
+        public static ActorAttributeReleaseResult ReleasedResult(ActorInstanceRuntimeId actorInstanceRuntimeId, int releasedAttributeCount)
         {
             return new ActorAttributeReleaseResult(
                 ActorAttributeReleaseOutcome.Released,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 releasedAttributeCount,
                 string.Empty);
         }
 
-        public static ActorAttributeReleaseResult Skipped(string actorInstanceId, string reason)
+        public static ActorAttributeReleaseResult Skipped(ActorInstanceRuntimeId actorInstanceRuntimeId, string reason)
         {
             return new ActorAttributeReleaseResult(
                 ActorAttributeReleaseOutcome.SkippedNoContent,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 0,
                 reason);
         }
 
-        public static ActorAttributeReleaseResult Reject(string actorInstanceId, string reason)
+        public static ActorAttributeReleaseResult Reject(ActorInstanceRuntimeId actorInstanceRuntimeId, string reason)
         {
             return new ActorAttributeReleaseResult(
                 ActorAttributeReleaseOutcome.Rejected,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 0,
                 reason);
         }
 
-        public static ActorAttributeReleaseResult Fail(string actorInstanceId, string reason)
+        public static ActorAttributeReleaseResult Fail(ActorInstanceRuntimeId actorInstanceRuntimeId, string reason)
         {
             return new ActorAttributeReleaseResult(
                 ActorAttributeReleaseOutcome.Failed,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 0,
                 reason);
         }

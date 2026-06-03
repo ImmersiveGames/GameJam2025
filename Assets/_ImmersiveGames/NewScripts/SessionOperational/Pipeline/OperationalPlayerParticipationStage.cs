@@ -220,6 +220,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             List<PlayerSlotReservation> slotReservations = new(seedEntries.Count);
             List<PlayerSelection> selections = new(seedEntries.Count);
             List<SessionParticipantBinding> participants = new(seedEntries.Count);
+            HashSet<PlayerSlotId> observedSlotIds = new();
+            HashSet<SessionParticipantId> observedParticipantIds = new();
 
             for (int i = 0; i < seedEntries.Count; i++)
             {
@@ -233,8 +235,20 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 PlayerSelectionId selectionId = entry.PlayerSelectionId;
                 ActorDefinitionId actorDefinitionId = entry.ActorDefinitionId;
                 ActorId actorId = entry.ActorId;
-                SessionParticipantId participantId = ResolveParticipantId(entry, i);
+                SessionParticipantId participantId = ResolveParticipantId(slotId);
                 SessionParticipantRole role = ResolveParticipantRole(entry, i);
+
+                if (!observedSlotIds.Add(slotId))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Duplicate PlayerSlotId while building SessionParticipationContext playerSlotId='{slotId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}'.");
+                }
+
+                if (!observedParticipantIds.Add(participantId))
+                {
+                    throw new InvalidOperationException(
+                        $"[FATAL][Config][SessionOperationalPipeline][PlayerParticipation] Duplicate SessionParticipantId while building SessionParticipationContext participantId='{participantId}' playerSlotId='{slotId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}'.");
+                }
 
                 slotReservations.Add(new PlayerSlotReservation(
                     slotId,
@@ -260,7 +274,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     selectionId,
                     actorDefinitionId,
                     actorId,
-                    entry.ActorScope,
+                    ActorScope.SessionScoped,
                     ActorMaterializationPolicyKind.ReuseExistingIfAvailable,
                     entry.Required,
                     true,
@@ -281,14 +295,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.Reason);
         }
 
-        private static SessionParticipantId ResolveParticipantId(PlayerParticipationSeedEntry entry, int index)
+        private static SessionParticipantId ResolveParticipantId(PlayerSlotId slotId)
         {
-            if (index == 0 && entry.Required)
+            if (!slotId.IsValid)
             {
-                return new SessionParticipantId("participant.primary_player");
+                return default;
             }
 
-            return new SessionParticipantId($"participant.player.{index + 1}");
+            return new SessionParticipantId($"participant.{slotId}");
         }
 
         private static SessionParticipantRole ResolveParticipantRole(PlayerParticipationSeedEntry entry, int index)
@@ -483,7 +497,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionParticipationContext context)
         {
             DebugUtility.Log(typeof(OperationalPlayerParticipationStage),
-                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationSeedResolved' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' seedOutcome='{FormatPlayerParticipationOutcome(result)}' seedSlotIds='{FormatSeedSlotIds(result.Snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(result.Snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(result.Snapshot.SeedEntries)}' seedActorScopes='{FormatSeedActorScopes(result.Snapshot.SeedEntries)}' sessionParticipantIds='{FormatSessionParticipantIds(context.Participants)}'.",
+                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='PlayerParticipationSeedResolved' pipelineId='{identity.PipelineId}' sessionId='{identity.SessionId}' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' source='{command.Source}' reason='{command.Reason}' seedOutcome='{FormatPlayerParticipationOutcome(result)}' seedSlotIds='{FormatSeedSlotIds(result.Snapshot.SeedEntries)}' seedActorDefinitionIds='{FormatSeedActorDefinitionIds(result.Snapshot.SeedEntries)}' seedActorIds='{FormatSeedActorIds(result.Snapshot.SeedEntries)}' actorIdSource='PlayerSetDefinitionEntry' derivedActorScopes='{FormatSeedActorScopes(result.Snapshot.SeedEntries)}' sessionParticipantIds='{FormatSessionParticipantIds(context.Participants)}' participantIdPolicy='PlayerSlotIdDerived'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -502,7 +516,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionParticipationContext context)
         {
             DebugUtility.Log(typeof(OperationalPlayerParticipationStage),
-                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='SessionParticipationContextPrepared' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' requirementKind='{context.RequirementKind}' runtimeJoinPolicy='{context.RuntimeJoinPolicy}' slotReservationCount='{context.SlotReservationCount}' selectionCount='{context.SelectionCount}' participantCount='{context.ParticipantCount}' materializationOwner='ActivityEntryPipeline' inputInstanceRequiredBeforeHandoff='false' source='{command.Source}' reason='{command.Reason}' slots=\"{FormatSlotReservations(context.SlotReservations)}\" selections=\"{FormatSelections(context.Selections)}\" participants=\"{FormatParticipants(context.Participants)}\".",
+                $"[OBS][SessionOperationalPipeline][PlayerParticipation] event='SessionParticipationContextPrepared' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' requirementKind='{context.RequirementKind}' runtimeJoinPolicy='{context.RuntimeJoinPolicy}' slotReservationCount='{context.SlotReservationCount}' selectionCount='{context.SelectionCount}' participantCount='{context.ParticipantCount}' materializationOwner='ActivityEntryPipeline' actorIdSource='PlayerSetDefinitionEntry' inputInstanceRequiredBeforeHandoff='false' source='{command.Source}' reason='{command.Reason}' slots=\"{FormatSlotReservations(context.SlotReservations)}\" selections=\"{FormatSelections(context.Selections)}\" participants=\"{FormatParticipants(context.Participants)}\" participantIdPolicy='PlayerSlotIdDerived'.",
                 DebugUtility.Colors.Info);
         }
 

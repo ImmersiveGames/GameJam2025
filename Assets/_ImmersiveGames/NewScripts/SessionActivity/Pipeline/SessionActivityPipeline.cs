@@ -257,29 +257,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             public ActorAttributeCapabilityState(
                 ActorInstanceId actorInstanceRuntimeId,
                 string actorId,
-                ActorAttributeEndpoint endpoint,
-                string pipelineIdentity,
-                string activityIdentity)
+                ActorAttributeEndpoint endpoint)
             {
                 ActorInstanceRuntimeId = actorInstanceRuntimeId;
                 ActorId = Normalize(actorId);
                 Endpoint = endpoint;
-                PipelineIdentity = Normalize(pipelineIdentity);
-                ActivityIdentity = Normalize(activityIdentity);
             }
 
             public ActorInstanceId ActorInstanceRuntimeId { get; }
             public string ActorId { get; }
             public ActorAttributeEndpoint Endpoint { get; }
-            public string PipelineIdentity { get; }
-            public string ActivityIdentity { get; }
             public bool IsValid =>
                 ActorInstanceRuntimeId.IsValid &&
                 !string.IsNullOrWhiteSpace(ActorId) &&
                 Endpoint != null &&
-                Endpoint.IsInitialized &&
-                !string.IsNullOrWhiteSpace(PipelineIdentity) &&
-                !string.IsNullOrWhiteSpace(ActivityIdentity);
+                Endpoint.IsInitialized;
         }
 
         private readonly struct PendingInternalActivityTransition
@@ -1205,7 +1197,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 entrySequence,
                 SessionActivityPendingWindowKind.None,
                 SessionActivityPendingOperationKind.ActivityContentSceneLoad,
-                command.SceneKey != null ? command.SceneKey.name : string.Empty,
+                command.SceneKey,
                 command.SceneName,
                 command.Source,
                 command.Reason);
@@ -1873,7 +1865,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityStage stage)
         {
             ActivityObjectContributorUnregisterStage.Execute(
-                new ActivityObjectContributorUnregisterStageCommand(definition, command, entrySequence, stage),
+                new ActivityObjectContributorUnregisterStageCommand(definition, command, entrySequence),
                 this,
                 _activityObjectExitRuntimeState,
                 facts,
@@ -3914,9 +3906,8 @@ private void EmitActorPresentationReleaseGenericStage(
         }
 
         private static ActorAttributeCommand BuildActorAttributeCommand(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             ActorAttributeOperation operation,
             float amount,
@@ -3926,12 +3917,12 @@ private void EmitActorPresentationReleaseGenericStage(
         {
             return operation switch
             {
-                ActorAttributeOperation.Set => ActorAttributeCommand.Set(pipelineIdentity, activityIdentity, actorInstanceId, attributeId, setValue, source, reason),
-                ActorAttributeOperation.Add => ActorAttributeCommand.Add(pipelineIdentity, activityIdentity, actorInstanceId, attributeId, amount, source, reason),
-                ActorAttributeOperation.Subtract => ActorAttributeCommand.Subtract(pipelineIdentity, activityIdentity, actorInstanceId, attributeId, amount, source, reason),
-                ActorAttributeOperation.ResetToInitial => ActorAttributeCommand.ResetToInitial(pipelineIdentity, activityIdentity, actorInstanceId, attributeId, source, reason),
-                ActorAttributeOperation.RestoreToMax => ActorAttributeCommand.RestoreToMax(pipelineIdentity, activityIdentity, actorInstanceId, attributeId, source, reason),
-                _ => new ActorAttributeCommand(pipelineIdentity, activityIdentity, actorInstanceId, attributeId, operation, amount, setValue, source, reason)
+                ActorAttributeOperation.Set => ActorAttributeCommand.Set(activityIdentity, actorInstanceRuntimeId, attributeId, setValue, source, reason),
+                ActorAttributeOperation.Add => ActorAttributeCommand.Add(activityIdentity, actorInstanceRuntimeId, attributeId, amount, source, reason),
+                ActorAttributeOperation.Subtract => ActorAttributeCommand.Subtract(activityIdentity, actorInstanceRuntimeId, attributeId, amount, source, reason),
+                ActorAttributeOperation.ResetToInitial => ActorAttributeCommand.ResetToInitial(activityIdentity, actorInstanceRuntimeId, attributeId, source, reason),
+                ActorAttributeOperation.RestoreToMax => ActorAttributeCommand.RestoreToMax(activityIdentity, actorInstanceRuntimeId, attributeId, source, reason),
+                _ => new ActorAttributeCommand(activityIdentity, actorInstanceRuntimeId, attributeId, operation, amount, setValue, source, reason)
             };
         }
 
@@ -4464,43 +4455,44 @@ private void EmitActorPresentationReleaseGenericStage(
 
             if (!_state.CurrentIdentity.IsValid || !commandIdentity.IsValid || !IsSameActivityCycle(commandIdentity, _state.CurrentIdentity))
             {
-                result = ActorAttributeApplyResult.Reject(normalizedActorId, runtimeAttributeId, "stale_or_foreign_activity_identity");
+                result = ActorAttributeApplyResult.Reject(default, runtimeAttributeId, "stale_or_foreign_activity_identity");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(normalizedActorId))
             {
-                result = ActorAttributeApplyResult.Reject(string.Empty, runtimeAttributeId, "actor_id_missing");
+                result = ActorAttributeApplyResult.Reject(default, runtimeAttributeId, "actor_id_missing");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
             if (!TryResolveActorInstanceIdForActor(commandIdentity, normalizedActorId, normalizedSource, normalizedReason, out ActorInstanceId actorInstanceId))
             {
-                result = ActorAttributeApplyResult.Reject(normalizedActorId, runtimeAttributeId, "actor_attribute_target_not_found");
+                result = ActorAttributeApplyResult.Reject(default, runtimeAttributeId, "actor_attribute_target_not_found");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
+            ActorInstanceRuntimeId actorInstanceRuntimeId = new(actorInstanceId.Value);
+
             if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(actorInstanceId, out ActorAttributeCapabilityState capabilityState) || !capabilityState.IsValid)
             {
-                result = ActorAttributeApplyResult.Reject(normalizedActorId, runtimeAttributeId, "actor_attribute_capability_not_ready");
+                result = ActorAttributeApplyResult.Reject(actorInstanceRuntimeId, runtimeAttributeId, "actor_attribute_capability_not_ready");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
             if (!runtimeAttributeId.IsValid || !capabilityState.Endpoint.TryGetState(runtimeAttributeId, out _))
             {
-                result = ActorAttributeApplyResult.Reject(normalizedActorId, runtimeAttributeId, "actor_attribute_not_found");
+                result = ActorAttributeApplyResult.Reject(actorInstanceRuntimeId, runtimeAttributeId, "actor_attribute_not_found");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
             ActorAttributeCommand command = BuildActorAttributeCommand(
-                capabilityState.PipelineIdentity,
-                capabilityState.ActivityIdentity,
-                normalizedActorId,
+                commandIdentity,
+                actorInstanceRuntimeId,
                 runtimeAttributeId,
                 operation,
                 amount,
@@ -4517,14 +4509,14 @@ private void EmitActorPresentationReleaseGenericStage(
 
             if (!result.HasFact)
             {
-                result = ActorAttributeApplyResult.Fail(normalizedActorId, runtimeAttributeId, "attribute_changed_fact_missing");
+                result = ActorAttributeApplyResult.Fail(actorInstanceRuntimeId, runtimeAttributeId, "attribute_changed_fact_missing");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
             ActorAttributeChangedFact fact = result.Fact;
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Actor] event='ActorAttributeChanged' activityId='{activityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceId='{fact.ActorInstanceId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                $"[OBS][SessionActivityPipeline][Actor] event='ActorAttributeChanged' activityId='{activityId}' entrySequence='{entrySequence}' actorId='{normalizedActorId}' actorInstanceRuntimeId='{fact.ActorInstanceRuntimeId}' attributeId='{fact.AttributeId}' previousValue='{fact.PreviousValue:0.###}' newValue='{fact.NewValue:0.###}' operation='{fact.Operation}' clamped='{fact.Clamped}' source='{normalizedSource}' reason='{normalizedReason}'.",
                 DebugUtility.Colors.Success);
             return true;
         }
@@ -4891,11 +4883,6 @@ private void EmitActorPresentationReleaseGenericStage(
                    string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    identity.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Command.ActivityOrdinal == definition.ActivityOrdinal &&
-                   result.Command.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Command.SessionStateId, _sessionId, StringComparison.Ordinal) &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
         }
@@ -5146,11 +5133,6 @@ private void EmitActorPresentationReleaseGenericStage(
                    string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    identity.EntrySequence == entrySequence &&
-                   string.Equals(command.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(command.SessionStateId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   command.ActivityOrdinal == definition.ActivityOrdinal &&
-                   command.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(command.TargetId);
         }
 
@@ -5233,11 +5215,6 @@ private void EmitActorPresentationReleaseGenericStage(
                    string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    identity.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Command.ActivityOrdinal == definition.ActivityOrdinal &&
-                   result.Command.EntrySequence == entrySequence &&
-                   string.Equals(result.Command.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Command.SessionStateId, _sessionId, StringComparison.Ordinal) &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ReleaseKind != ActivityReleaseRequirementKind.Unknown;
         }
@@ -8718,9 +8695,7 @@ private bool TryBuildActivityParticipantBinding(
         void IActivityEntryActorAttributeRuntimeBridge.StoreActiveActorAttributeCapability(
             SessionActivityIdentity identity,
             ActorAttributeEndpointReference attributeReference,
-            ActorAttributeEndpoint endpoint,
-            string pipelineIdentity,
-            string activityIdentity)
+            ActorAttributeEndpoint endpoint)
         {
             if (attributeReference == null || !attributeReference.IsValid || endpoint == null)
             {
@@ -8731,9 +8706,7 @@ private bool TryBuildActivityParticipantBinding(
                 new ActorAttributeCapabilityState(
                     attributeReference.ActorInstanceRuntimeId,
                     attributeReference.ActorId,
-                    endpoint,
-                    pipelineIdentity,
-                    activityIdentity),
+                    endpoint),
                 identity.ActivityId,
                 identity.EntrySequence,
                 "ActivityEntryActorAttributeStage",

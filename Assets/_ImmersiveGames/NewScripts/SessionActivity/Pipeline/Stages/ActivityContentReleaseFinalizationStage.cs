@@ -121,38 +121,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 awaitingAfter: awaitingBefore,
                 DebugUtility.Colors.Info);
 
-            endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityContentReleaseCompleted);
-            endpoint.EmitFact(
-                facts,
-                SessionActivityFactKind.ActivityContentReleaseCompleted,
-                completedIdentity,
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
-            LogFinalizationEvent(
-                "ActivityContentReleaseCompleted",
-                command,
-                loadedSetPresentBefore,
-                pendingContextPresentBefore,
-                awaitingBefore,
-                loadedSetPresentAfter: loadedSetPresentBefore,
-                pendingContextPresentAfter: pendingContextPresentBefore,
-                awaitingAfter: awaitingBefore,
-                DebugUtility.Colors.Success);
-            endpoint.LogPhaseBoundary(
-                "SessionActivityDematerializationCompleted",
-                completedIdentity,
-                command.Source,
-                command.Reason,
-                completed: true,
-                detail: $"phase='dematerialization' scenes='{command.ReleasedSceneCount}' status='{command.Status}' skippedNoContent='{ToLowerInvariant(command.SkippedNoContent)}'");
-            endpoint.EmitSnapshot(
-                snapshots,
-                "activity_content_release_completed",
-                command.Source,
-                command.Reason,
-                $"'{definition.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
-
             LogFinalizationEvent(
                 "ActivityContentReleaseFinalizationCleanupStarted",
                 command,
@@ -168,8 +136,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 new ActivityObjectContributorUnregisterStageCommand(
                     definition,
                     command.Command,
-                    entrySequence,
-                    SessionActivityStage.ActivityContentReleaseCompleted),
+                    entrySequence),
                 endpoint,
                 objectExitRuntimeState,
                 facts,
@@ -193,6 +160,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 pendingContextPresentAfter,
                 awaitingAfter,
                 DebugUtility.Colors.Success);
+
+            endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityContentReleaseCompleted);
+            endpoint.EmitFact(
+                facts,
+                SessionActivityFactKind.ActivityContentReleaseCompleted,
+                completedIdentity,
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
+            LogFinalizationEvent(
+                "ActivityContentReleaseCompleted",
+                command,
+                loadedSetPresentBefore,
+                pendingContextPresentBefore,
+                awaitingBefore,
+                loadedSetPresentAfter,
+                pendingContextPresentAfter,
+                awaitingAfter,
+                DebugUtility.Colors.Success);
+            endpoint.LogPhaseBoundary(
+                "SessionActivityDematerializationCompleted",
+                completedIdentity,
+                command.Source,
+                command.Reason,
+                completed: true,
+                detail: $"phase='dematerialization' scenes='{command.ReleasedSceneCount}' status='{command.Status}' skippedNoContent='{ToLowerInvariant(command.SkippedNoContent)}'");
+            endpoint.EmitSnapshot(
+                snapshots,
+                "activity_content_release_completed",
+                command.Source,
+                command.Reason,
+                $"'{definition.ActivityId}' activity content release completed scenes='{command.ReleasedSceneCount}' status='{command.Status}'.");
+
             LogFinalizationEvent(
                 "ActivityContentReleaseFinalizationCompleted",
                 command,

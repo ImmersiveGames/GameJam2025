@@ -1,12 +1,14 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 {
     [Serializable]
     public readonly struct ActorAttributeCommand
     {
-        public string PipelineIdentity { get; }
-        public string ActivityIdentity { get; }
-        public string ActorInstanceId { get; }
+        public SessionActivityIdentity ActivityIdentity { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorAttributeId AttributeId { get; }
         public ActorAttributeOperation Operation { get; }
         public float Amount { get; }
@@ -14,12 +16,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasValidTarget => AttributeId.IsValid && !string.IsNullOrWhiteSpace(ActorInstanceId);
+        public bool HasValidTarget => ActivityIdentity.IsValid && AttributeId.IsValid && ActorInstanceRuntimeId.IsValid;
 
         public ActorAttributeCommand(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             ActorAttributeOperation operation,
             float amount,
@@ -27,9 +28,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             string source,
             string reason)
         {
-            PipelineIdentity = pipelineIdentity ?? string.Empty;
-            ActivityIdentity = activityIdentity ?? string.Empty;
-            ActorInstanceId = actorInstanceId ?? string.Empty;
+            ActivityIdentity = activityIdentity;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             AttributeId = attributeId;
             Operation = operation;
             Amount = amount;
@@ -39,18 +39,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         }
 
         public static ActorAttributeCommand Set(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             float value,
             string source,
             string reason)
         {
             return new ActorAttributeCommand(
-                pipelineIdentity,
                 activityIdentity,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 ActorAttributeOperation.Set,
                 0f,
@@ -60,18 +58,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         }
 
         public static ActorAttributeCommand Add(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             float amount,
             string source,
             string reason)
         {
             return new ActorAttributeCommand(
-                pipelineIdentity,
                 activityIdentity,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 ActorAttributeOperation.Add,
                 amount,
@@ -81,18 +77,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         }
 
         public static ActorAttributeCommand Subtract(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             float amount,
             string source,
             string reason)
         {
             return new ActorAttributeCommand(
-                pipelineIdentity,
                 activityIdentity,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 ActorAttributeOperation.Subtract,
                 amount,
@@ -102,17 +96,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         }
 
         public static ActorAttributeCommand ResetToInitial(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             string source,
             string reason)
         {
             return new ActorAttributeCommand(
-                pipelineIdentity,
                 activityIdentity,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 ActorAttributeOperation.ResetToInitial,
                 0f,
@@ -122,17 +114,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
         }
 
         public static ActorAttributeCommand RestoreToMax(
-            string pipelineIdentity,
-            string activityIdentity,
-            string actorInstanceId,
+            SessionActivityIdentity activityIdentity,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorAttributeId attributeId,
             string source,
             string reason)
         {
             return new ActorAttributeCommand(
-                pipelineIdentity,
                 activityIdentity,
-                actorInstanceId,
+                actorInstanceRuntimeId,
                 attributeId,
                 ActorAttributeOperation.RestoreToMax,
                 0f,
