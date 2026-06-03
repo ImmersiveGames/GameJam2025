@@ -1184,7 +1184,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         }
 
         private SessionActivityPendingOperation BuildActivityContentPendingOperation(
-            SessionActivityDefinition definition,
+            ActivityContentLoadPlan plan,
             int entrySequence,
             ActivityContentSceneLoadCommand command)
         {
@@ -1192,8 +1192,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.OperationId,
                 _state.PipelineId,
                 _state.SessionId,
-                definition.ActivityId,
-                definition.ActivityOrdinal,
+                plan.ActivityId,
+                plan.ActivityOrdinal,
                 entrySequence,
                 SessionActivityPendingWindowKind.None,
                 SessionActivityPendingOperationKind.ActivityContentSceneLoad,
@@ -3351,6 +3351,75 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             ExecuteDeactivationWindowAdditiveSceneLoad(current, command, facts, snapshots, currentEntrySequence);
         }
 
+        private static ActivityContentLoadPlan BuildActivityContentLoadPlan(
+            SessionActivityDefinition definition,
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            if (!definition.IsValid)
+            {
+                throw new InvalidOperationException("SessionActivityDefinition is invalid while building ActivityContentLoadPlan.");
+            }
+
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("Activity setup identity is invalid while building ActivityContentLoadPlan.");
+            }
+
+            if (definition.ActivityContentMode == ActivityContentMode.None)
+            {
+                return new ActivityContentLoadPlan(
+                    identity,
+                    definition.ActivityId,
+                    definition.ActivityOrdinal,
+                    definition.ActivityContentMode,
+                    string.Empty,
+                    Array.Empty<ActivityContentLoadPlanScene>(),
+                    source,
+                    reason);
+            }
+
+            if (definition.ActivityContentMode != ActivityContentMode.Profile)
+            {
+                throw new InvalidOperationException($"Activity '{definition.ActivityId}' has unsupported ActivityContentMode='{definition.ActivityContentMode}' while building ActivityContentLoadPlan.");
+            }
+
+            ActivityContentProfileAsset profile = definition.ActivityContentProfile;
+            if (profile == null)
+            {
+                throw new InvalidOperationException($"Activity '{definition.ActivityId}' requires ActivityContentProfile when ActivityContentMode=Profile.");
+            }
+
+            profile.ValidateOrThrow($"SessionActivityPipeline:{definition.ActivityId}");
+
+            IReadOnlyList<ActivityContentSceneEntry> entries = profile.ContentScenes ?? Array.Empty<ActivityContentSceneEntry>();
+            List<ActivityContentLoadPlanScene> scenes = new(entries.Count);
+            for (int index = 0; index < entries.Count; index++)
+            {
+                ActivityContentSceneEntry entry = entries[index];
+                if (entry == null)
+                {
+                    throw new InvalidOperationException($"Activity '{definition.ActivityId}' has null content scene entry at index '{index}'.");
+                }
+
+                scenes.Add(new ActivityContentLoadPlanScene(
+                    index + 1,
+                    ActivityContentSceneRuntimeReference.FromSceneKeyAsset(entry.SceneKey),
+                    entry.Requiredness));
+            }
+
+            return new ActivityContentLoadPlan(
+                identity,
+                definition.ActivityId,
+                definition.ActivityOrdinal,
+                definition.ActivityContentMode,
+                profile.ContentProfileId,
+                scenes,
+                source,
+                reason);
+        }
+
         private void EnterActivity(SessionActivityDefinition definition, SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots, int entrySequence)
         {
             if (!definition.IsValid)
@@ -3359,9 +3428,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityIdentity setupBoundaryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
-            ActivityEntryCommand entryCommand = new(
+            ActivityEntryPreparationCommand entryCommand = new(
                 setupBoundaryIdentity,
-                definition,
                 command.Source,
                 command.Reason);
             ActivityEntryPreparationResult entryResult = _activityEntryPipeline.PrepareEntry(entryCommand);
@@ -3370,12 +3438,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline failed entry preparation. kind='{entryResult.Kind}' reason='{entryResult.Reason}' identity='{entryResult.Identity}'.");
             }
 
+            ActivityContentLoadPlan contentLoadPlan = BuildActivityContentLoadPlan(
+                definition,
+                setupBoundaryIdentity,
+                command.Source,
+                command.Reason);
             ActivityEntryContentLoadResult contentLoadResult = _activityEntryPipeline.BeginContentLoad(
-                new ActivityEntryContentLoadCommand(
-                    setupBoundaryIdentity,
-                    definition,
-                    command.Source,
-                    command.Reason),
+                new ActivityEntryContentLoadCommand(contentLoadPlan),
                 facts,
                 snapshots);
             if (!contentLoadResult.IsValid)
@@ -4734,14 +4803,20 @@ private void EmitActorPresentationReleaseGenericStage(
             try
             {
                 resetResult = ActivityResetStage.Execute(
-                    new ActivityResetCommand(commandIdentity, definition, normalizedSource, normalizedReason),
+                    new ActivityResetCommand(
+                        new ActivityResetActivityReference(
+                            commandIdentity,
+                            definition.ActivityId,
+                            definition.ActivityOrdinal),
+                        normalizedSource,
+                        normalizedReason),
                     new ActivityResetContext(discoveryResult, inventory, validation),
-                    IsDiscoveryResultForCurrentEntry,
-                    IsReportForCurrentEntry,
-                    Stages.ActivityEntryObjectSetupStageUtility.HasRequiredResetContributor,
+                    IsDiscoveryResultForCurrentResetEntry,
+                    IsReportForCurrentResetEntry,
+                    HasRequiredResetContributorForCurrentResetEntry,
                     Stages.ActivityEntryObjectSetupStageUtility.ResolveObjectResetEndpointsFromInventory,
                     Stages.ActivityEntryObjectSetupStageUtility.ExecuteObjectResetCommand,
-                    IsObjectResetResultForCurrentEntry,
+                    IsObjectResetResultForCurrentResetEntry,
                     (kind, message) => DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][QA][ObjectResetStage] fact='{kind}' detail='{message}' source='{normalizedSource}' reason='{normalizedReason}'.", DebugUtility.Colors.Info),
                     (snapshotKind, message) => DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][QA][ObjectResetStage] snapshot='{snapshotKind}' detail='{message}' source='{normalizedSource}' reason='{normalizedReason}'.", DebugUtility.Colors.Info));
             }
@@ -4882,6 +4957,24 @@ private void EmitActorPresentationReleaseGenericStage(
                    string.Equals(identity.SessionId, _sessionId, StringComparison.Ordinal) &&
                    string.Equals(identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   identity.EntrySequence == entrySequence &&
+                   !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
+                   result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
+        }
+
+        private bool IsObjectResetResultForCurrentResetEntry(
+            ActivityObjectResetResult result,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence)
+        {
+            SessionActivityIdentity identity = result.Command.Identity;
+            return result.IsValid &&
+                   identity.IsValid &&
+                   string.Equals(identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                   identity.ActivityOrdinal == activityOrdinal &&
                    identity.EntrySequence == entrySequence &&
                    !string.IsNullOrWhiteSpace(result.Command.TargetId) &&
                    result.Command.ResetGroup != ActivityStateResetGroup.Unknown;
@@ -5245,6 +5338,21 @@ private void EmitActorPresentationReleaseGenericStage(
                    result.Identity.EntrySequence == entrySequence;
         }
 
+        private bool IsDiscoveryResultForCurrentResetEntry(
+            ActivityObjectContributorDiscoveryResult result,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence)
+        {
+            return result.IsValid &&
+                   result.Identity.IsValid &&
+                   string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == activityOrdinal &&
+                   result.Identity.EntrySequence == entrySequence;
+        }
+
         private bool IsReportForCurrentEntry(
             ActivityObjectContributionReport report,
             SessionActivityDefinition definition,
@@ -5257,6 +5365,51 @@ private void EmitActorPresentationReleaseGenericStage(
                    string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                    report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
                    report.Identity.EntrySequence == entrySequence;
+        }
+
+        private bool IsReportForCurrentResetEntry(
+            ActivityObjectContributionReport report,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence)
+        {
+            return report.IsValid &&
+                   report.Identity.IsValid &&
+                   string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == activityOrdinal &&
+                   report.Identity.EntrySequence == entrySequence;
+        }
+
+        private bool HasRequiredResetContributorForCurrentResetEntry(
+            ActivityObjectContributorDiscoveryResult result,
+            string activityId,
+            int activityOrdinal,
+            int entrySequence)
+        {
+            if (!IsDiscoveryResultForCurrentResetEntry(result, activityId, activityOrdinal, entrySequence) || result.Reports.Count == 0)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < result.Reports.Count; index++)
+            {
+                ActivityObjectContributionReport report = result.Reports[index];
+                if (!IsReportForCurrentResetEntry(report, activityId, activityOrdinal, entrySequence))
+                {
+                    continue;
+                }
+
+                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required &&
+                    report.SupportedResetGroups != null &&
+                    report.SupportedResetGroups.Count > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private GameObject ResolveContributorObjectOrFail(SessionActivityDefinition definition, ActivityObjectContributionReport report)
@@ -6535,6 +6688,23 @@ private void EmitActorPresentationReleaseGenericStage(
                 "SessionActivityPipeline");
         }
 
+        private SessionActivityIdentity BuildIdentity(string activityId, int activityOrdinal, SessionActivityStage stage, int entrySequence)
+        {
+            if (string.IsNullOrWhiteSpace(activityId))
+            {
+                throw new InvalidOperationException("Activity id is invalid.");
+            }
+
+            return new SessionActivityIdentity(
+                PipelineId,
+                _sessionId,
+                activityId,
+                activityOrdinal,
+                entrySequence,
+                stage,
+                "SessionActivityPipeline");
+        }
+
         private static void EnsureSupportedActivationWindowOrFail(SessionActivityDefinition definition)
         {
             if (definition.ActivationWindowMode == ActivityWindowMode.None ||
@@ -7288,7 +7458,8 @@ private void EmitActorPresentationReleaseGenericStage(
         }
 
         private PlayerSessionParticipationContext ResolveSessionParticipationContextOrFail(
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             SessionActivityCommand command,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots,
@@ -7297,7 +7468,7 @@ private void EmitActorPresentationReleaseGenericStage(
             PlayerSessionParticipationContext context = _lastSessionParticipationContext;
             if (context == null || !context.IsValid)
             {
-                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = BuildIdentity(activityId, activityOrdinal, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
                 _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
                 EmitFact(
                     facts,
@@ -7305,20 +7476,20 @@ private void EmitActorPresentationReleaseGenericStage(
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant binding failed missing SessionParticipationContext sessionStateId='{_sessionId}'.");
+                    $"'{activityId}' participant binding failed missing SessionParticipationContext sessionStateId='{_sessionId}'.");
                 EmitSnapshot(
                     snapshots,
                     "activity_participant_binding_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant binding failed missing SessionParticipationContext.");
+                    $"'{activityId}' participant binding failed missing SessionParticipationContext.");
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Missing valid SessionParticipationContext activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sessionStateId='{_sessionId}'.");
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Missing valid SessionParticipationContext activityId='{activityId}' entrySequence='{entrySequence}' sessionStateId='{_sessionId}'.");
             }
 
             if (context.HasSessionId && !string.Equals(context.SessionId, _sessionId, StringComparison.Ordinal))
             {
-                SessionActivityIdentity failedIdentity = BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = BuildIdentity(activityId, activityOrdinal, SessionActivityStage.ActivityParticipantBindingFailed, entrySequence);
                 _state.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantBindingFailed);
                 EmitFact(
                     facts,
@@ -7326,15 +7497,15 @@ private void EmitActorPresentationReleaseGenericStage(
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant binding failed foreign SessionParticipationContext sessionStateId='{_sessionId}' contextSessionId='{context.SessionId}'.");
+                    $"'{activityId}' participant binding failed foreign SessionParticipationContext sessionStateId='{_sessionId}' contextSessionId='{context.SessionId}'.");
                 EmitSnapshot(
                     snapshots,
                     "activity_participant_binding_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' participant binding failed foreign SessionParticipationContext.");
+                    $"'{activityId}' participant binding failed foreign SessionParticipationContext.");
                 throw new InvalidOperationException(
-                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Foreign SessionParticipationContext activityId='{definition.ActivityId}' entrySequence='{entrySequence}' sessionStateId='{_sessionId}' contextSessionId='{context.SessionId}'.");
+                    $"[FATAL][Config][SessionActivityPipeline][ParticipantBinding] Foreign SessionParticipationContext activityId='{activityId}' entrySequence='{entrySequence}' sessionStateId='{_sessionId}' contextSessionId='{context.SessionId}'.");
             }
 
             return context;
@@ -7343,7 +7514,7 @@ private void EmitActorPresentationReleaseGenericStage(
 
 
         private void StoreActivityParticipationContext(
-            SessionActivityDefinition definition,
+            string activityId,
             SessionActivityIdentity identity,
             IReadOnlyList<PlayerActivityParticipantBinding> participants,
             string source,
@@ -7359,7 +7530,7 @@ private void EmitActorPresentationReleaseGenericStage(
             _lastActivityParticipationContext = context;
             _activityActorExitRuntimeState.StoreActivityParticipationContext(
                 context,
-                definition.ActivityId,
+                activityId,
                 identity.EntrySequence,
                 source,
                 reason);
@@ -7371,9 +7542,9 @@ private void EmitActorPresentationReleaseGenericStage(
             int activityParticipants = context.ParticipantCount;
             string bindings = FormatActivityParticipantBindings(safeParticipants);
             _state.AppendTrace(
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] ActivityParticipationContextPrepared activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' sessionParticipationContext='{sessionParticipationState}' sessionParticipationRevision='{sessionRevision}' activityParticipants='{activityParticipants}' status='{status}' source='{source}' reason='{reason}'.");
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] ActivityParticipationContextPrepared activityId='{activityId}' entrySequence='{identity.EntrySequence}' sessionParticipationContext='{sessionParticipationState}' sessionParticipationRevision='{sessionRevision}' activityParticipants='{activityParticipants}' status='{status}' source='{source}' reason='{reason}'.");
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationContextPrepared' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' sessionParticipationContext='{sessionParticipationState}' sessionParticipationRevision='{sessionRevision}' sessionParticipants='{sessionParticipants}' activityParticipationContext='{(context.IsValid ? "present" : "invalid")}' activityParticipants='{activityParticipants}' status='{status}' materializationOwner='ActivityEntryPipeline' inputBindingOwner='ActivityEntryPipeline' bindings=\"{bindings}\" source='{source}' reason='{reason}'.",
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationContextPrepared' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' stage='{identity.Stage}' sessionParticipationContext='{sessionParticipationState}' sessionParticipationRevision='{sessionRevision}' sessionParticipants='{sessionParticipants}' activityParticipationContext='{(context.IsValid ? "present" : "invalid")}' activityParticipants='{activityParticipants}' status='{status}' materializationOwner='ActivityEntryPipeline' inputBindingOwner='ActivityEntryPipeline' bindings=\"{bindings}\" source='{source}' reason='{reason}'.",
                 context.IsValid ? DebugUtility.Colors.Info : DebugUtility.Colors.Warning);
         }
 
@@ -7480,7 +7651,7 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         private void LogActivityParticipationBindingSkipped(
-            SessionActivityDefinition definition,
+            string activityId,
             SessionActivityIdentity identity,
             string requirementId,
             PlayerSessionParticipantId participantId,
@@ -7489,7 +7660,7 @@ private bool TryBuildActivityParticipantBinding(
             string reason)
         {
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Warning);
         }
 
@@ -8006,11 +8177,11 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         SessionActivityPendingOperation IActivityEntryContentPendingOperationRuntimeBridge.BuildActivityContentPendingOperation(
-            SessionActivityDefinition definition,
+            ActivityContentLoadPlan plan,
             int entrySequence,
             ActivityContentSceneLoadCommand command)
         {
-            return BuildActivityContentPendingOperation(definition, entrySequence, command);
+            return BuildActivityContentPendingOperation(plan, entrySequence, command);
         }
 
         void IActivityEntryContentPendingOperationRuntimeBridge.SetPendingOperation(SessionActivityPendingOperation operation)
@@ -8141,7 +8312,8 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         PlayerSessionParticipationContext IActivityEntryParticipantBindingRuntimeBridge.ResolveSessionParticipationContextOrFail(
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             string source,
             string reason,
             List<SessionActivityFact> facts,
@@ -8150,10 +8322,10 @@ private bool TryBuildActivityParticipantBinding(
         {
             SessionActivityCommand command = new(
                 SessionActivityCommandKind.StartActivity,
-                BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingStarted, entrySequence),
+                BuildIdentity(activityId, activityOrdinal, SessionActivityStage.ActivityParticipantBindingStarted, entrySequence),
                 source,
                 reason);
-            return ResolveSessionParticipationContextOrFail(definition, command, facts, snapshots, entrySequence);
+            return ResolveSessionParticipationContextOrFail(activityId, activityOrdinal, command, facts, snapshots, entrySequence);
         }
 
         IReadOnlyList<SessionActivityActorMaterializationPlanEntry> IActivityEntryParticipantBindingRuntimeBridge.GetActorMaterializationPlanEntries()
@@ -8172,7 +8344,7 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         void IActivityEntryParticipantBindingRuntimeBridge.LogActivityParticipationBindingSkipped(
-            SessionActivityDefinition definition,
+            string activityId,
             SessionActivityIdentity identity,
             string requirementId,
             PlayerSessionParticipantId participantId,
@@ -8180,18 +8352,18 @@ private bool TryBuildActivityParticipantBinding(
             string source,
             string reason)
         {
-            LogActivityParticipationBindingSkipped(definition, identity, requirementId, participantId, skipReason, source, reason);
+            LogActivityParticipationBindingSkipped(activityId, identity, requirementId, participantId, skipReason, source, reason);
         }
 
         void IActivityEntryParticipantBindingRuntimeBridge.StoreActivityParticipationContext(
-            SessionActivityDefinition definition,
+            string activityId,
             SessionActivityIdentity identity,
             IReadOnlyList<PlayerActivityParticipantBinding> participants,
             string source,
             string reason,
             string status)
         {
-            StoreActivityParticipationContext(definition, identity, participants, source, reason, status);
+            StoreActivityParticipationContext(activityId, identity, participants, source, reason, status);
         }
 
         void IActivityEntryParticipantBindingRuntimeBridge.BeginPlayerActorActivityScope(SessionActivityIdentity identity)
@@ -8667,22 +8839,24 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         void IActivityEntryActorPresentationRuntimeBridge.ReleaseActorPresentationBeforeRematerialization(
-            ActivityEntryActorPresentationSetupCommand command,
+            SessionActivityIdentity identity,
+            string source,
+            string reason,
             ActorInstanceId actorInstanceRuntimeId,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
             SessionActivityCommand releaseCommand = new(
                 SessionActivityCommandKind.StartActivity,
-                command.Identity,
-                command.Source,
-                command.Reason);
+                identity,
+                source,
+                reason);
             EmitActorPresentationReleaseGenericStage(
-                command.Definition,
+                _state.CurrentDefinition,
                 releaseCommand,
                 facts,
                 snapshots,
-                command.Identity.EntrySequence,
+                identity.EntrySequence,
                 ActorPresentationReleaseRail.BeforeRematerialization,
                 actorInstanceRuntimeId);
         }

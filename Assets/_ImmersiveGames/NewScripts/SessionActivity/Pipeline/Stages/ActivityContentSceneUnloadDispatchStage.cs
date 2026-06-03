@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"Activity content loaded scene record is invalid at index='{nextSceneIndex}'.");
             }
 
-            ActivityContentSceneRuntimeReference sceneReference = ActivityContentSceneRuntimeReference.FromSceneKeyAsset(record.SceneKey);
+            ActivityContentSceneRuntimeReference sceneReference = record.SceneReference;
             if (!sceneReference.IsValid)
             {
                 throw new InvalidOperationException(

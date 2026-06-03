@@ -22,53 +22,53 @@
 
 <color=#A8DEED>[INFO] [AudioInstaller] [OBS][Audio][Config] AudioDefaults seed resolved via PreferencesRuntimeConfigGroup/RuntimeConfigRegistry. asset='AudioDefaults'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioInstaller] [Audio][BOOT] AudioDefaultsAsset registered. asset='AudioDefaults'. (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [AudioInstaller] [Audio][BOOT] AudioDefaultsAsset registered. asset='AudioDefaults'. (@ 3.59s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioInstaller] [Audio][BOOT] IAudioSettingsService registered from AudioDefaultsAsset. (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [AudioInstaller] [Audio][BOOT] IAudioSettingsService registered from AudioDefaultsAsset. (@ 3.59s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioInstaller] [Audio][BOOT] IAudioRoutingResolver registered. (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [AudioInstaller] [Audio][BOOT] IAudioRoutingResolver registered. (@ 3.59s)</color>
 
 <color=#A8DEED>[INFO] [AudioInstaller] [Audio] Module installer concluido.</color>
 
-<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] ISaveBackend registered (PlayerPrefsSaveBackend). (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] ISaveBackend registered (PlayerPrefsSaveBackend). (@ 3.59s)</color>
 
-<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] SaveCoreService registered. (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] SaveCoreService registered. (@ 3.59s)</color>
 
 <color=#A8DEED>[INFO] [SaveInstaller] [OBS][Save][BootstrapStateInit] Initializing CurrentState from SaveConfigAsset defaults profile='default' slot='save'.</color>
 
-<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] ISaveService already registered. (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] ISaveService already registered. (@ 3.59s)</color>
 
-<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] ISaveStateService already registered. (@ 3.56s)</color>
+<color=#A8DEED>[VERBOSE] [SaveInstaller] [Save][BOOT] ISaveStateService already registered. (@ 3.59s)</color>
 
 <color=#A8DEED>[INFO] [SaveInstaller] [Save] Module installer concluded. backend='PlayerPrefsSaveBackend' profile='default' slot='save' schemaVersion='1'.</color>
 
-<color=#A8DEED>[VERBOSE] [InputModesInstaller] [OBS][InputModes][Installer] Canonical IInputModeService registered playerMap='Player' menuMap='UI'. (@ 3.57s)</color>
+<color=#A8DEED>[VERBOSE] [InputModesInstaller] [OBS][InputModes][Installer] Canonical IInputModeService registered playerMap='Player' menuMap='UI'. (@ 3.60s)</color>
 
 <color=#A8DEED>[INFO] [InputModesInstaller] [InputModes] Module installer concluido.</color>
 
 <color=#A8DEED>[INFO] [CameraPresentationBootstrapComposer] [OBS][CameraPresentation][Composer] installer concluded.</color>
 
-<color=#A8DEED>[VERBOSE] [StartupRequestEmitter] [OBS][SessionOperationalPipeline][StartupRequest] emitter ensured in canonical bootstrap. (@ 3.57s)</color>
+<color=#A8DEED>[VERBOSE] [StartupRequestEmitter] [OBS][SessionOperationalPipeline][StartupRequest] emitter ensured in canonical bootstrap. (@ 3.60s)</color>
 
 <color=#A8DEED>[INFO] [StartupRouteEmitter] [OBS][SessionOperationalPipeline][StartupRoute] emitter registered for canonical startup rail.</color>
 
 <color=#A8DEED>[INFO] [SessionOperationalRuntimeComposer] [OBS][SessionOperationalPipeline][Composer] SessionOperationalRuntime installer concluded.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioListenerRuntimeHost] [Audio][Listener] Runtime host created. host='NewScripts_AudioListenerRuntime'. (@ 3.58s)</color>
+<color=#A8DEED>[VERBOSE] [AudioListenerRuntimeHost] [Audio][Listener] Runtime host created. host='NewScripts_AudioListenerRuntime'. (@ 3.61s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioRuntimeComposer] [Audio][BOOT] Canonical AudioListener runtime host ensured. (@ 3.58s)</color>
+<color=#A8DEED>[VERBOSE] [AudioRuntimeComposer] [Audio][BOOT] Canonical AudioListener runtime host ensured. (@ 3.61s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BOOT] IAudioBgmService runtime created (F3, single-channel global BGM). (@ 3.58s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BOOT] IAudioBgmService runtime created (F3, single-channel global BGM). (@ 3.61s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioRuntimeComposer] [Audio][BOOT] IAudioBgmService registered (F3 BGM runtime). (@ 3.58s)</color>
+<color=#A8DEED>[VERBOSE] [AudioRuntimeComposer] [Audio][BOOT] IAudioBgmService registered (F3 BGM runtime). (@ 3.61s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioGlobalSfxService] [Audio][BOOT] IGlobalAudioService runtime created (F4/F5 direct + pooled). (@ 3.58s)</color>
+<color=#A8DEED>[VERBOSE] [AudioGlobalSfxService] [Audio][BOOT] IGlobalAudioService runtime created (F4/F5 direct + pooled). (@ 3.61s)</color>
 
-<color=#A8DEED>[VERBOSE] [AudioRuntimeComposer] [Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime). (@ 3.58s)</color>
+<color=#A8DEED>[VERBOSE] [AudioRuntimeComposer] [Audio][BOOT] IGlobalAudioService registered (F4/F5 direct + pooled SFX runtime). (@ 3.61s)</color>
 
 <color=#A8DEED>[INFO] [AudioRuntimeComposer] [Audio] Runtime composition concluida.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionOperationalInputModeAdapter] [OBS][InputModes][Adapter] registered source='SessionOperationalPipeline' target='InputModeRequestEvent'. (@ 3.59s)</color>
+<color=#A8DEED>[VERBOSE] [SessionOperationalInputModeAdapter] [OBS][InputModes][Adapter] registered source='SessionOperationalPipeline' target='InputModeRequestEvent'. (@ 3.61s)</color>
 
 <color=#A8DEED>[INFO] [InputModesRuntimeComposer] [OBS][InputModes][Pipeline] adapter='SessionOperationalInputModeAdapter' registered for canonical input modes.</color>
 
@@ -140,15 +140,15 @@
 
 <color=#A8DEED>[INFO] [SceneCompositionExecutor] [OBS][SceneComposition] LoadSceneStarted scene='FadeScene'.</color>
 
-[VERBOSE] [FadeController] [Fade] Awake - CanvasGroup: OK (@ 5.29s)
+[VERBOSE] [FadeController] [Fade] Awake - CanvasGroup: OK (@ 5.35s)
 
-[VERBOSE] [FadeController] [Fade] Canvas sorting configurado. isRootCanvas=True, overrideSorting=False, sortingOrder=11000 (@ 5.29s)
+[VERBOSE] [FadeController] [Fade] Canvas sorting configurado. isRootCanvas=True, overrideSorting=False, sortingOrder=11000 (@ 5.35s)
 
 <color=#A8DEED>[INFO] [SceneCompositionExecutor] [OBS][SceneComposition] LoadSceneCompleted scene='FadeScene'.</color>
 
 <color=#A8DEED>[INFO] [SceneCompositionExecutor] [OBS][SceneComposition] LoadSceneStarted scene='LoadingHudScene'.</color>
 
-<color=#4CAF50>[VERBOSE] [LoadingHudController] [OBS][Loading] LoadingHudRoot ready root='LoadingHudRoot' canvas='LoadingHudRoot' hasText=True hasSpinner=True. (@ 5.36s)</color>
+<color=#4CAF50>[VERBOSE] [LoadingHudController] [OBS][Loading] LoadingHudRoot ready root='LoadingHudRoot' canvas='LoadingHudRoot' hasText=True hasSpinner=True. (@ 5.45s)</color>
 
 <color=#A8DEED>[INFO] [SceneCompositionExecutor] [OBS][SceneComposition] LoadSceneCompleted scene='LoadingHudScene'.</color>
 
@@ -178,9 +178,9 @@
 
 <color=#A8DEED>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeInStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='StartupRouteEmitter' reason='boot_start_plan_requested' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeIn|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested'.</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeIn|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=1 dur=0,5 (@ 5.40s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeIn|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=1 dur=0,5 (@ 5.49s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeIn|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=1 (@ 5.83s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeIn|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=1 (@ 5.91s)
 
 <color=#4CAF50>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeInCompleted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='StartupRouteEmitter' reason='boot_start_plan_requested' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeIn|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested'.</color>
 
@@ -304,7 +304,7 @@
 
 <color=#A8DEED>[INFO] [AudioAdapter] [OBS][SessionOperationalAudio][AudioAdapter] playStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Startup' stopPreviousRouteAudio='True' source='StartupRouteEmitter' reason='boot_start_plan_requested' cueType='AudioBgmCueAsset' cue='AudioBgmCue_Startup'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn start token=1 cue='AudioBgmCue_Startup' requested=-1 effective=1 reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|1:route-boot-menu|MenuScene|1|sandbox'. (@ 6.30s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn start token=1 cue='AudioBgmCue_Startup' requested=-1 effective=1 reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|1:route-boot-menu|MenuScene|1|sandbox'. (@ 6.40s)</color>
 
 <color=#4CAF50>[INFO] [AudioAdapter] [OBS][SessionOperationalAudio][AudioAdapter] playSubmitted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Startup' stopPreviousRouteAudio='True' source='StartupRouteEmitter' reason='boot_start_plan_requested' cueType='AudioBgmCueAsset' cue='AudioBgmCue_Startup'.</color>
 
@@ -314,9 +314,9 @@
 
 <color=#A8DEED>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeOutStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='StartupRouteEmitter' reason='boot_start_plan_requested' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeOut|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested'.</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeOut|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=0 dur=0,5 (@ 6.30s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeOut|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=0 dur=0,5 (@ 6.40s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeOut|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=0 (@ 6.42s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeOut|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested' targetAlpha=0 (@ 6.48s)
 
 <color=#4CAF50>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeOutCompleted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='StartupRouteEmitter' reason='boot_start_plan_requested' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|1|route-boot-menu|MenuScene|1|sandbox|1|fadeOut|Profile|DefaultTransitionProfile|StartupRouteEmitter|boot_start_plan_requested'.</color>
 
@@ -326,7 +326,7 @@
 
 <color=#4CAF50>[INFO] [OperationalRouteCompletionStage] [OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|1' transitionId='route-boot-menu|MenuScene|1|sandbox' routeSequence='1' correlationId='route-boot-menu|MenuScene|1' message='boot_start_plan_requested' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='StartupRouteEmitter' reason='boot_start_plan_requested'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn complete token=1 cue='AudioBgmCue_Startup' configured=1 elapsed=1 elapsedMode='coroutine_unscaled' queuedAt=6,297 runtimeStartAt=6,297 detail='normal' reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|1:route-boot-menu|MenuScene|1|sandbox'. (@ 6.92s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn complete token=1 cue='AudioBgmCue_Startup' configured=1 elapsed=1 elapsedMode='coroutine_unscaled' queuedAt=6,397 runtimeStartAt=6,397 detail='normal' reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|1:route-boot-menu|MenuScene|1|sandbox'. (@ 6.98s)</color>
 
 <color=#A8DEED>[INFO] [OperationalRouteSetupStage] [OBS][SessionOperationalPipeline][Route] unload='previous_route_owned_scenes_applied' previousRouteIdentity='route-boot-menu' currentRouteIdentity='route-menu-gameplay' previousRouteSequence='1' previousRouteActiveSceneKey='MenuScene' previousRouteOwnedSceneKeys=[MenuScene] autoScenesToUnload=[MenuScene] explicitScenesToUnload=[<none>] finalScenesToUnload=[MenuScene].</color>
 
@@ -362,9 +362,9 @@
 
 <color=#A8DEED>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeInStarted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' fadeScene='FadeScene' contextSignature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton'.</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=1 dur=0,5 (@ 8.56s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=1 dur=0,5 (@ 9.16s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=1 (@ 9.04s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=1 (@ 9.65s)
 
 <color=#4CAF50>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeInCompleted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' fadeScene='FadeScene' contextSignature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton'.</color>
 
@@ -582,7 +582,7 @@
 
 <color=#A8DEED>[INFO] [OperationalConsumerEntryAndReadinessStage] [OBS][SessionOperationalPipeline][ConsumerReadiness] OperationalRouteConsumerReadinessAwaitStarted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' consumerIdentity='SessionActivitySandboxSession' expectedRouteOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton'.</color>
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneLoading' entrySequence='1' activity='activity_01' pendingOperation='ActivityContentSceneLoad/1e79c8483b0a4e7098d6cd7255243e58/None' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneLoading' entrySequence='1' activity='activity_01' pendingOperation='ActivityContentSceneLoad/bc59a58096f1445bb9246985c1727491/None' handoff='<none>'
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseRuntimeState] [OBS][ActivityContentReleaseRuntimeState] event='ActivityContentReleaseRuntimeStateLoadedSetStored' owner='ActivityContentReleaseRuntimeState' activityId='activity_01' entrySequence='1' hasLoadedSetBefore='false' hasLoadedSetAfter='true' hasPendingContextBefore='false' hasPendingContextAfter='false' awaitingContinuationBefore='false' awaitingContinuationAfter='false' source='ActivityEntryContentLoadedSetStore' reason='activity_content_loaded_set_ready'.</color>
 
@@ -654,7 +654,7 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateStored' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='ActivityEntryActorPresentationStage' reason='store_active_actor_presentation' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' hadBefore='false' presentationStateCount='1' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='npc.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 10.16s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='npc.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 10.78s)</color>
 
 <color=#A8DEED>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationPlanResolved' activityId='activity_01' entrySequence='1' owner='ActivityEntryPipeline' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorKind='Actor' actorRole='SceneAuthoredNonPlayer' actorScope='RouteScoped' profileId='actor.presentation.npc.rota' componentPath='NPC_Route_Generic' mode='Planned' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton'.</color>
 
@@ -664,7 +664,7 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateStored' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='ActivityEntryActorPresentationStage' reason='store_active_actor_presentation' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' hadBefore='false' presentationStateCount='2' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='npc.route.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 10.16s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='npc.route.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 10.79s)</color>
 
 <color=#A8DEED>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationPlanResolved' activityId='activity_01' entrySequence='1' owner='ActivityEntryPipeline' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorKind='Player' actorRole='PrimaryPlayer' actorScope='SessionScoped' profileId='actor.presentation.player.sandbox' componentPath='__SessionActorsRuntimeRoot::SessionActivitySandboxSession/PlayerActor::player.slot.1::SessionActivitySandboxSession|actor.player.primary' mode='Planned' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton'.</color>
 
@@ -674,7 +674,7 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateStored' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='ActivityEntryActorPresentationStage' reason='store_active_actor_presentation' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' hadBefore='false' presentationStateCount='3' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSyncSkipped' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='actor.player.primary' source='ActivityEntryActorPresentationStage' reason='actor_not_registered_in_presentation_registry'. (@ 10.16s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSyncSkipped' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='actor.player.primary' source='ActivityEntryActorPresentationStage' reason='actor_not_registered_in_presentation_registry'. (@ 10.79s)</color>
 
 <color=#4CAF50>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationSetupCompleted' activityId='activity_01' entrySequence='1' owner='ActivityEntryPipeline' total='3' resolved='3' materialized='3' retained='0' skipped='0' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton'.</color>
 
@@ -786,7 +786,7 @@
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectSnapshotRestore' checkpointStatus='Skipped' activityId='activity_01' entrySequence='1' payloadAvailable='false' payloadObjectCount='0' matchedTargetCount='0' restoredCount='0' targetIds='<none>' appliedTargetIds='<none>' failedTargetIds='<none>' coordinateSpace='world_transform' captureTargetTransformPath='<none>' restoreTargetTransformPath='<none>' snapshotRestoreTargetTransformMismatch='false' mismatchReason='<none>' payloadPosition='<none>' beforePosition='<none>' afterPosition='<none>' restoreVerified='false' restoreCompleted='true' restoreFailed='false'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneLoadStarted' entrySequence='1' activity='activity_01' pendingOperation='ActivationWindowSceneLoad/6c44841396bd46439e997374c77422ca/ActivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneLoadStarted' entrySequence='1' activity='activity_01' pendingOperation='ActivationWindowSceneLoad/9382996327f24e6cb5bb24d95c2046c3/ActivationWindow' handoff='<none>'
 
 <color=#4CAF50>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityMaterializationCompleted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='1' stage='ActivationWindowReady' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton'. phase='materialization' readiness='activation_window_ready'</color>
 
@@ -802,11 +802,11 @@
 
 <color=#A8DEED>[INFO] [OperationalRouteAudioStage] [OBS][SessionOperationalPipeline][Audio] RouteRevealAudioStarted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Alternate' stopPreviousRouteAudio='True' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' cueType='AudioBgmCueAsset'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] StopImmediate reason='route_audio:stop_previous_route_audio:route-menu-gameplay|SessionActivitySandboxScene|2:route-menu-gameplay|SessionActivitySandboxScene|2|sandbox'. (@ 10.48s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] StopImmediate reason='route_audio:stop_previous_route_audio:route-menu-gameplay|SessionActivitySandboxScene|2:route-menu-gameplay|SessionActivitySandboxScene|2|sandbox'. (@ 11.10s)</color>
 
 <color=#A8DEED>[INFO] [AudioAdapter] [OBS][SessionOperationalAudio][AudioAdapter] playStarted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Alternate' stopPreviousRouteAudio='True' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' cueType='AudioBgmCueAsset' cue='AudioBgmCue_Alternate'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn start token=2 cue='AudioBgmCue_Alternate' requested=-1 effective=1 reason='route_audio:AudioBgmCueAsset:route-menu-gameplay|SessionActivitySandboxScene|2:route-menu-gameplay|SessionActivitySandboxScene|2|sandbox'. (@ 10.67s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn start token=2 cue='AudioBgmCue_Alternate' requested=-1 effective=1 reason='route_audio:AudioBgmCueAsset:route-menu-gameplay|SessionActivitySandboxScene|2:route-menu-gameplay|SessionActivitySandboxScene|2|sandbox'. (@ 11.29s)</color>
 
 <color=#4CAF50>[INFO] [AudioAdapter] [OBS][SessionOperationalAudio][AudioAdapter] playSubmitted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Alternate' stopPreviousRouteAudio='True' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' cueType='AudioBgmCueAsset' cue='AudioBgmCue_Alternate'.</color>
 
@@ -816,9 +816,9 @@
 
 <color=#A8DEED>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeOutStarted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' fadeScene='FadeScene' contextSignature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton'.</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=0 dur=0,5 (@ 10.67s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=0 dur=0,5 (@ 11.29s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=0 (@ 10.89s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton' targetAlpha=0 (@ 11.52s)
 
 <color=#4CAF50>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeOutCompleted routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton' fadeScene='FadeScene' contextSignature='route-menu-gameplay|route-menu-gameplay|SessionActivitySandboxScene|2|route-menu-gameplay|SessionActivitySandboxScene|2|sandbox|2|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|Frontend/RouteButton'.</color>
 
@@ -828,13 +828,13 @@
 
 <color=#4CAF50>[INFO] [OperationalRouteCompletionStage] [OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='route-menu-gameplay' routeOperationId='route-menu-gameplay|SessionActivitySandboxScene|2' transitionId='route-menu-gameplay|SessionActivitySandboxScene|2|sandbox' routeSequence='2' correlationId='route-menu-gameplay|SessionActivitySandboxScene|2' message='Frontend/RouteButton' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='Frontend/RouteButton'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn complete token=2 cue='AudioBgmCue_Alternate' configured=1 elapsed=1 elapsedMode='coroutine_unscaled' queuedAt=10,669 runtimeStartAt=10,669 detail='normal' reason='route_audio:AudioBgmCueAsset:route-menu-gameplay|SessionActivitySandboxScene|2:route-menu-gameplay|SessionActivitySandboxScene|2|sandbox'. (@ 11.39s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn complete token=2 cue='AudioBgmCue_Alternate' configured=1 elapsed=1 elapsedMode='coroutine_unscaled' queuedAt=11,293 runtimeStartAt=11,293 detail='normal' reason='route_audio:AudioBgmCueAsset:route-menu-gameplay|SessionActivitySandboxScene|2:route-menu-gameplay|SessionActivitySandboxScene|2|sandbox'. (@ 12.02s)</color>
 
 [OBS][SessionActivityPipeline][Host] action='CompleteActivationWindow' outcomeKind='Started' reason='' entrySequence='1' executionState='Stopped' gateState='sessionBlocked='False', sessionIdentity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', activityBlocked='False', activityIdentity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', lastFact='kind='Unknown', identity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', source='', reason='', message=''', lastSnapshot='commandKind='Unknown', commandIdentity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', sessionBlocked='False', sessionIdentity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', activityBlocked='False', activityIdentity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', lastFact='kind='Unknown', identity='pipelineId='', sessionStateId='', activityId='', activityOrdinal='0', entrySequence='0', stage='Unknown', source='', reason=''', source='', reason='', message=''', source='', reason='', message=''''
 
 [OBS][SessionActivityPipeline][Host] factsCount='97' snapshotsCount='62' traceCount='200'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneUnloadStarted' entrySequence='1' activity='activity_01' pendingOperation='ActivationWindowSceneUnload/ec8bd1107fbd4193a7913ce3ef50400c/ActivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneUnloadStarted' entrySequence='1' activity='activity_01' pendingOperation='ActivationWindowSceneUnload/6862b0de3fc84db1b34e2ff554a4add8/ActivationWindow' handoff='<none>'
 
 <color=#A8DEED>[INFO] [ActivityCapabilityPermissionRuntime] [OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionPublished' permissionId='ActivityGameplayControl' state='Allowed' receiverId='runtime.unbound' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' playerActorId='SessionActivitySandboxSession|actor.player.primary' playerSlotId='player.slot.1' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='1' source='SessionActivityHost/QA/CompleteActivationWindow' reason='SessionActivityHost/QA/CompleteActivationWindow|activity_running_entered'</color>
 
@@ -856,7 +856,7 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' removed='true' presentationStateCount='2' attributeStateCount='2' participationRecordCount='3'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 15.38s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='1' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 14.77s)</color>
 
 <color=#A8DEED>[INFO] [ActivityExitActorTeardownStage] [OBS][ComponentLifetime] event='ActorPresentationRetained' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' componentKind='ActorPresentation' componentLifetimePolicy='ReleaseOnRouteExit' releaseTrigger='ActivityExit' releaseDecision='Retain' reason='policy_mismatch' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'.</color>
 
@@ -872,17 +872,17 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' removed='true' presentationStateCount='2' attributeStateCount='0' participationRecordCount='2'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'. (@ 15.39s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'. (@ 14.78s)</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePlayerExitContextResolved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='ActivityActorExitRuntimeState' reason='active_binding_by_actor_id' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' playerExitBindingCount='1' resolution='active_binding'.</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' removed='true' presentationStateCount='2' attributeStateCount='0' participationRecordCount='1'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' actorScope='ActivityScoped' trigger='ActivityExit' decision='Release' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'. (@ 15.39s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|Actor|npc.generic.01|ActivityScoped' actorScope='ActivityScoped' trigger='ActivityExit' decision='Release' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'. (@ 14.78s)</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='1' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' removed='true' presentationStateCount='2' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'. (@ 15.39s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='1' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'. (@ 14.78s)</color>
 
 <color=#A8DEED>[INFO] [ActivityCapabilityPermissionRuntime] [OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionPublished' permissionId='ActivityGameplayControl' state='Unbound' receiverId='runtime.unbound' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' playerActorId='SessionActivitySandboxSession|actor.player.primary' playerSlotId='player.slot.1' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='1' source='SessionActivityHost/QA/RestartCurrentActivity' reason='SessionActivityHost/QA/RestartCurrentActivity'</color>
 
@@ -900,7 +900,7 @@
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='RestartCurrentActivity' checkpointStatus='Waiting' failedCriterion='<none>' fromActivity='activity_01' toActivity='activity_01' fromEntrySequence='1' toEntrySequence='2' releaseStarted='false' releaseCompleted='false' releaseSceneName='<none>' releaseStatus='<none>' releaseSceneIsLoadedAfterRelease='false' newEntryStarted='false' newEntryReachedActivationWindowReady='false' newEntryReachedActivityRunning='false'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneLoadStarted' entrySequence='1' activity='activity_01' pendingOperation='DeactivationWindowSceneLoad/9b012b983253475c87dad3b3f872f371/DeactivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneLoadStarted' entrySequence='1' activity='activity_01' pendingOperation='DeactivationWindowSceneLoad/bccdf6644fb4498cae4f4e648b1e2dac/DeactivationWindow' handoff='<none>'
 
 [OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowReady' entrySequence='1' activity='activity_01' pendingOperation='<none>' handoff='<none>'
 
@@ -908,7 +908,7 @@
 
 [OBS][SessionActivityPipeline][Host] factsCount='133' snapshotsCount='90' traceCount='264'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneUnloadStarted' entrySequence='1' activity='activity_01' pendingOperation='DeactivationWindowSceneUnload/de8237d5519a473bbe898cce3197a7a3/DeactivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneUnloadStarted' entrySequence='1' activity='activity_01' pendingOperation='DeactivationWindowSceneUnload/66575120c0ad431e9d34bb03a0ca78a3/DeactivationWindow' handoff='<none>'
 
 <color=#A8DEED>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityDematerializationStarted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='1' stage='ActivityContentReleaseStarted' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. phase='dematerialization'</color>
 
@@ -928,7 +928,7 @@
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseRuntimeState] [OBS][ActivityContentReleaseRuntimeState] event='ActivityContentReleaseRuntimeStateAwaitingContinuationChanged' owner='ActivityContentReleaseRuntimeState' activityId='activity_01' entrySequence='1' hasLoadedSetBefore='true' hasLoadedSetAfter='true' hasPendingContextBefore='true' hasPendingContextAfter='true' awaitingContinuationBefore='false' awaitingContinuationAfter='true' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
-<color=#A8DEED>[INFO] [ActivityContentSceneUnloadDispatchStage] [OBS][ActivityContentSceneUnloadDispatchStage] event='ActivityContentSceneUnloadDispatched' owner='ActivityContentSceneUnloadDispatchStage' activityId='activity_01' entrySequence='1' sceneIndex='0' sceneName='ActivityScene01' operationId='0b0eaa259749415695950ac769fed69d' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
+<color=#A8DEED>[INFO] [ActivityContentSceneUnloadDispatchStage] [OBS][ActivityContentSceneUnloadDispatchStage] event='ActivityContentSceneUnloadDispatched' owner='ActivityContentSceneUnloadDispatchStage' activityId='activity_01' entrySequence='1' sceneIndex='0' sceneName='ActivityScene01' operationId='31232564227c47878b5e4cd0f9b7670f' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='RestartCurrentActivity' checkpointStatus='Waiting' failedCriterion='<none>' fromActivity='activity_01' toActivity='activity_01' fromEntrySequence='1' toEntrySequence='2' releaseStarted='true' releaseCompleted='false' releaseSceneName='<none>' releaseStatus='<none>' releaseSceneIsLoadedAfterRelease='false' newEntryStarted='false' newEntryReachedActivationWindowReady='false' newEntryReachedActivityRunning='false'
 
@@ -936,7 +936,7 @@
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectRelease' checkpointStatus='Passed' activityId='activity_01' entrySequence='1' releaseStarted='true' commandCount='1' appliedCount='1' skippedCount='0' failedCount='0' targetIds='test_object_01' releaseKinds='UnloadActivityContentScene' releaseCompleted='true'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneUnloading' entrySequence='1' activity='activity_01' pendingOperation='ActivityContentSceneUnload/0b0eaa259749415695950ac769fed69d/None' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneUnloading' entrySequence='1' activity='activity_01' pendingOperation='ActivityContentSceneUnload/31232564227c47878b5e4cd0f9b7670f/None' handoff='<none>'
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseFinalizationStage] [OBS][ActivityContentReleaseFinalizationStage] event='ActivityContentReleaseFinalizationStarted' owner='ActivityContentReleaseFinalizationStage' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='1' stage='ActivityContentReleaseCompleted' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow' completionKind='Completed' status='Unloaded' loadedSceneCount='1' releasedSceneCount='1' skippedNoContent='false' pendingReleaseContextPresentBefore='true' pendingReleaseContextPresentAfter='true' loadedSetPresentBefore='true' loadedSetPresentAfter='true' awaitingContinuationBefore='true' awaitingContinuationAfter='true' continuationKind='RestartCurrentActivity'.</color>
 
@@ -994,7 +994,7 @@
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectContributorUnregister' checkpointStatus='Passed' activityId='activity_01' entrySequence='1' unregisterStarted='true' unregisteredCount='1' skippedNoContributors='false' unregisterCompleted='true' unregisterFailed='false' targetIds='test_object_01'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneLoading' entrySequence='2' activity='activity_01' pendingOperation='ActivityContentSceneLoad/0829c5159a844cbb9d5be9a7a5d3f77f/None' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneLoading' entrySequence='2' activity='activity_01' pendingOperation='ActivityContentSceneLoad/8e08a884906b40b3aa85bd090b39ee9f/None' handoff='<none>'
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseRuntimeState] [OBS][ActivityContentReleaseRuntimeState] event='ActivityContentReleaseRuntimeStateLoadedSetStored' owner='ActivityContentReleaseRuntimeState' activityId='activity_01' entrySequence='2' hasLoadedSetBefore='false' hasLoadedSetAfter='true' hasPendingContextBefore='false' hasPendingContextAfter='false' awaitingContinuationBefore='false' awaitingContinuationAfter='false' source='ActivityEntryContentLoadedSetStore' reason='activity_content_loaded_set_ready'.</color>
 
@@ -1066,7 +1066,7 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateStored' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='2' source='ActivityEntryActorPresentationStage' reason='store_active_actor_presentation' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' hadBefore='false' presentationStateCount='3' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='npc.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 16.63s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='npc.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 16.32s)</color>
 
 <color=#A8DEED>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationPlanResolved' activityId='activity_01' entrySequence='2' owner='ActivityEntryPipeline' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorKind='Actor' actorRole='SceneAuthoredNonPlayer' actorScope='RouteScoped' profileId='actor.presentation.npc.rota' componentPath='NPC_Route_Generic' mode='Planned' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
@@ -1074,7 +1074,7 @@
 
 <color=#4CAF50>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationReady' activityId='activity_01' entrySequence='2' owner='ActivityEntryPipeline' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorKind='Actor' actorRole='SceneAuthoredNonPlayer' actorScope='RouteScoped' profileId='actor.presentation.npc.rota' mode='Retained' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='npc.route.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 16.63s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='npc.route.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 16.32s)</color>
 
 <color=#A8DEED>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationPlanResolved' activityId='activity_01' entrySequence='2' owner='ActivityEntryPipeline' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorKind='Player' actorRole='PrimaryPlayer' actorScope='SessionScoped' profileId='actor.presentation.player.sandbox' componentPath='__SessionActorsRuntimeRoot::SessionActivitySandboxSession/PlayerActor::player.slot.1::SessionActivitySandboxSession|actor.player.primary' mode='Planned' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
@@ -1082,7 +1082,7 @@
 
 <color=#4CAF50>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationReady' activityId='activity_01' entrySequence='2' owner='ActivityEntryPipeline' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorKind='Player' actorRole='PrimaryPlayer' actorScope='SessionScoped' profileId='actor.presentation.player.sandbox' mode='Retained' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSyncSkipped' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='actor.player.primary' source='ActivityEntryActorPresentationStage' reason='actor_not_registered_in_presentation_registry'. (@ 16.63s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSyncSkipped' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='actor.player.primary' source='ActivityEntryActorPresentationStage' reason='actor_not_registered_in_presentation_registry'. (@ 16.32s)</color>
 
 <color=#4CAF50>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationSetupCompleted' activityId='activity_01' entrySequence='2' owner='ActivityEntryPipeline' total='3' resolved='3' materialized='1' retained='2' skipped='0' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
@@ -1192,7 +1192,7 @@
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectSnapshotRestore' checkpointStatus='Skipped' activityId='activity_01' entrySequence='2' payloadAvailable='false' payloadObjectCount='0' matchedTargetCount='0' restoredCount='0' targetIds='<none>' appliedTargetIds='<none>' failedTargetIds='<none>' coordinateSpace='world_transform' captureTargetTransformPath='<none>' restoreTargetTransformPath='<none>' snapshotRestoreTargetTransformMismatch='false' mismatchReason='<none>' payloadPosition='<none>' beforePosition='<none>' afterPosition='<none>' restoreVerified='false' restoreCompleted='true' restoreFailed='false'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneLoadStarted' entrySequence='2' activity='activity_01' pendingOperation='ActivationWindowSceneLoad/6f3fbd07326c4c97959758082f7b096b/ActivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneLoadStarted' entrySequence='2' activity='activity_01' pendingOperation='ActivationWindowSceneLoad/8acf181b130547f8adf76977d83fe317/ActivationWindow' handoff='<none>'
 
 <color=#4CAF50>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityMaterializationCompleted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='2' stage='ActivationWindowReady' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. phase='materialization' readiness='activation_window_ready'</color>
 
@@ -1206,7 +1206,7 @@
 
 [OBS][SessionActivityPipeline][Host] factsCount='247' snapshotsCount='163' traceCount='489'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneUnloadStarted' entrySequence='2' activity='activity_01' pendingOperation='ActivationWindowSceneUnload/73a4ebfd78664ef98cc17270b509137a/ActivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivationWindowAdditiveSceneUnloadStarted' entrySequence='2' activity='activity_01' pendingOperation='ActivationWindowSceneUnload/f6392affae2144ed8ff1e05610a8b395/ActivationWindow' handoff='<none>'
 
 <color=#A8DEED>[INFO] [ActivityCapabilityPermissionRuntime] [OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionPublished' permissionId='ActivityGameplayControl' state='Allowed' receiverId='runtime.unbound' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' playerActorId='SessionActivitySandboxSession|actor.player.primary' playerSlotId='player.slot.1' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='2' source='SessionActivityHost/QA/CompleteActivationWindow' reason='SessionActivityHost/QA/CompleteActivationWindow|activity_running_entered'</color>
 
@@ -1240,7 +1240,7 @@
 
 [OBS][SessionActivityPipeline][Host] factsCount='256' snapshotsCount='172' traceCount='507'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneLoadStarted' entrySequence='2' activity='activity_01' pendingOperation='DeactivationWindowSceneLoad/484b3c1e030443c493e1fa4ce9435807/DeactivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneLoadStarted' entrySequence='2' activity='activity_01' pendingOperation='DeactivationWindowSceneLoad/bea27fd902954e65becde9864318298c/DeactivationWindow' handoff='<none>'
 
 [OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowReady' entrySequence='2' activity='activity_01' pendingOperation='<none>' handoff='<none>'
 
@@ -1248,15 +1248,15 @@
 
 [OBS][SessionActivityPipeline][Host] factsCount='260' snapshotsCount='176' traceCount='515'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneUnloadStarted' entrySequence='2' activity='activity_01' pendingOperation='DeactivationWindowSceneUnload/73684aacc2754491a428d1b7da5d949e/DeactivationWindow' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='DeactivationWindowAdditiveSceneUnloadStarted' entrySequence='2' activity='activity_01' pendingOperation='DeactivationWindowSceneUnload/1301faaf06174ba392844508bfa70ef8/DeactivationWindow' handoff='<none>'
 
 <color=#A8DEED>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityTransitionBlackoutStarted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='2' stage='Deactivation' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. transitionMode='CutWithCurtain'</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|2|Deactivation|activity_transition_close|SessionActivityHost/QA/CompleteDeactivationWindow|SessionActivityHost/QA/CompleteDeactivationWindow' targetAlpha=1 dur=0,5 (@ 21.09s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|2|Deactivation|activity_transition_close|SessionActivityHost/QA/CompleteDeactivationWindow|SessionActivityHost/QA/CompleteDeactivationWindow' targetAlpha=1 dur=0,5 (@ 20.87s)
 
 [OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='Deactivation' entrySequence='2' activity='activity_01' pendingOperation='<none>' handoff='<none>'
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|2|Deactivation|activity_transition_close|SessionActivityHost/QA/CompleteDeactivationWindow|SessionActivityHost/QA/CompleteDeactivationWindow' targetAlpha=1 (@ 21.45s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|1|2|Deactivation|activity_transition_close|SessionActivityHost/QA/CompleteDeactivationWindow|SessionActivityHost/QA/CompleteDeactivationWindow' targetAlpha=1 (@ 21.22s)
 
 <color=#4CAF50>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityTransitionBlackoutCompleted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='2' stage='Deactivation' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. transitionMode='CutWithCurtain'</color>
 
@@ -1264,7 +1264,7 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='2' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' removed='true' presentationStateCount='2' attributeStateCount='2' participationRecordCount='3'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 21.46s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_01' entrySequence='2' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 21.22s)</color>
 
 <color=#A8DEED>[INFO] [ActivityExitActorTeardownStage] [OBS][ComponentLifetime] event='ActorPresentationRetained' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' componentKind='ActorPresentation' componentLifetimePolicy='ReleaseOnRouteExit' releaseTrigger='ActivityExit' releaseDecision='Retain' reason='policy_mismatch' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
@@ -1280,17 +1280,17 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='2' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' removed='true' presentationStateCount='2' attributeStateCount='0' participationRecordCount='2'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. (@ 21.46s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. (@ 21.22s)</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePlayerExitContextResolved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='2' source='ActivityActorExitRuntimeState' reason='active_binding_by_actor_id' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' playerExitBindingCount='1' resolution='active_binding'.</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='2' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' removed='true' presentationStateCount='2' attributeStateCount='0' participationRecordCount='1'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' actorScope='ActivityScoped' trigger='ActivityExit' decision='Release' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. (@ 21.46s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='npc.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_01|2|Actor|npc.generic.01|ActivityScoped' actorScope='ActivityScoped' trigger='ActivityExit' decision='Release' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. (@ 21.22s)</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_01' entrySequence='2' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' removed='true' presentationStateCount='2' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. (@ 21.46s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_01' entrySequence='2' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' trigger='ActivityExit' decision='Retain' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'. (@ 21.22s)</color>
 
 <color=#A8DEED>[INFO] [ActivityCapabilityPermissionRuntime] [OBS][ActivityCapabilityPermission] event='ActivityCapabilityPermissionPublished' permissionId='ActivityGameplayControl' state='Unbound' receiverId='runtime.unbound' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' playerActorId='SessionActivitySandboxSession|actor.player.primary' playerSlotId='player.slot.1' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='2' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'</color>
 
@@ -1320,7 +1320,7 @@
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseRuntimeState] [OBS][ActivityContentReleaseRuntimeState] event='ActivityContentReleaseRuntimeStateAwaitingContinuationChanged' owner='ActivityContentReleaseRuntimeState' activityId='activity_01' entrySequence='2' hasLoadedSetBefore='true' hasLoadedSetAfter='true' hasPendingContextBefore='true' hasPendingContextAfter='true' awaitingContinuationBefore='false' awaitingContinuationAfter='true' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
-<color=#A8DEED>[INFO] [ActivityContentSceneUnloadDispatchStage] [OBS][ActivityContentSceneUnloadDispatchStage] event='ActivityContentSceneUnloadDispatched' owner='ActivityContentSceneUnloadDispatchStage' activityId='activity_01' entrySequence='2' sceneIndex='0' sceneName='ActivityScene01' operationId='519878dd287146b188f1491abcb02ace' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
+<color=#A8DEED>[INFO] [ActivityContentSceneUnloadDispatchStage] [OBS][ActivityContentSceneUnloadDispatchStage] event='ActivityContentSceneUnloadDispatched' owner='ActivityContentSceneUnloadDispatchStage' activityId='activity_01' entrySequence='2' sceneIndex='0' sceneName='ActivityScene01' operationId='da4ce65ecf6c4b119c99a902e079997b' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow'.</color>
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='Activity01ToActivity02' checkpointStatus='Waiting' failedCriterion='<none>' fromActivity='activity_01' toActivity='activity_02' fromEntrySequence='2' toEntrySequence='0' releaseStarted='true' releaseCompleted='false' releaseSceneName='<none>' releaseStatus='<none>' releaseSceneIsLoadedAfterRelease='false' activity02ReachedRunning='false' activity02SkipNoRequirementsObserved='false' participantCommandsForActivity02Observed='false'
 
@@ -1328,7 +1328,7 @@
 
 [OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectRelease' checkpointStatus='Passed' activityId='activity_01' entrySequence='2' releaseStarted='true' commandCount='1' appliedCount='1' skippedCount='0' failedCount='0' targetIds='test_object_01' releaseKinds='UnloadActivityContentScene' releaseCompleted='true'
 
-[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneUnloading' entrySequence='2' activity='activity_01' pendingOperation='ActivityContentSceneUnload/519878dd287146b188f1491abcb02ace/None' handoff='<none>'
+[OBS][SessionActivityPipeline][Host][StateObservedChanged] stage='ActivityContentSceneUnloading' entrySequence='2' activity='activity_01' pendingOperation='ActivityContentSceneUnload/da4ce65ecf6c4b119c99a902e079997b/None' handoff='<none>'
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseFinalizationStage] [OBS][ActivityContentReleaseFinalizationStage] event='ActivityContentReleaseFinalizationStarted' owner='ActivityContentReleaseFinalizationStage' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_01' entrySequence='2' stage='ActivityContentReleaseCompleted' source='SessionActivityHost/QA/CompleteDeactivationWindow' reason='SessionActivityHost/QA/CompleteDeactivationWindow' completionKind='Completed' status='Unloaded' loadedSceneCount='1' releasedSceneCount='1' skippedNoContent='false' pendingReleaseContextPresentBefore='true' pendingReleaseContextPresentAfter='true' loadedSetPresentBefore='true' loadedSetPresentAfter='true' awaitingContinuationBefore='true' awaitingContinuationAfter='true' continuationKind='NextActivity'.</color>
 
@@ -1438,7 +1438,7 @@
 
 <color=#4CAF50>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationReady' activityId='activity_02' entrySequence='3' owner='ActivityEntryPipeline' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorKind='Actor' actorRole='SceneAuthoredNonPlayer' actorScope='RouteScoped' profileId='actor.presentation.npc.rota' mode='Retained' source='SessionActivityPipeline/Policy/AutoContinue' reason='activity_transition_policy_auto_continue'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_02' entrySequence='3' actorId='npc.route.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 21.57s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='activity_02' entrySequence='3' actorId='npc.route.generic.01' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'. (@ 21.34s)</color>
 
 <color=#4CAF50>[INFO] [ActivityEntryActorPresentationStage] [OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationSetupCompleted' activityId='activity_02' entrySequence='3' owner='ActivityEntryPipeline' total='1' resolved='1' materialized='0' retained='1' skipped='0' source='SessionActivityPipeline/Policy/AutoContinue' reason='activity_transition_policy_auto_continue'.</color>
 
@@ -1520,9 +1520,9 @@
 
 <color=#A8DEED>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityRevealStarted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_02' entrySequence='3' stage='ActivityRunning' source='SessionActivityPipeline/Policy/AutoContinue' reason='activity_transition_policy_auto_continue'. transitionMode='CutWithCurtain' nextActivity='activity_02'</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_02|2|3|ActivityRunning|activity_transition_open|SessionActivityPipeline/Policy/AutoContinue|activity_transition_policy_auto_continue' targetAlpha=0 dur=0,5 (@ 21.72s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_02|2|3|ActivityRunning|activity_transition_open|SessionActivityPipeline/Policy/AutoContinue|activity_transition_policy_auto_continue' targetAlpha=0 dur=0,5 (@ 21.48s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_02|2|3|ActivityRunning|activity_transition_open|SessionActivityPipeline/Policy/AutoContinue|activity_transition_policy_auto_continue' targetAlpha=0 (@ 22.21s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|activity_02|2|3|ActivityRunning|activity_transition_open|SessionActivityPipeline/Policy/AutoContinue|activity_transition_policy_auto_continue' targetAlpha=0 (@ 21.98s)
 
 <color=#4CAF50>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][Phase] SessionActivityRevealCompleted pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_02' entrySequence='3' stage='ActivityRunning' source='SessionActivityPipeline/Policy/AutoContinue' reason='activity_transition_policy_auto_continue'. transitionMode='CutWithCurtain' nextActivity='activity_02'</color>
 
@@ -1568,9 +1568,9 @@
 
 <color=#A8DEED>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeInStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu'.</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=1 dur=0,5 (@ 25.70s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=1 dur=0,5 (@ 27.40s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=1 (@ 26.19s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=1 (@ 27.87s)
 
 <color=#4CAF50>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeInCompleted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeIn|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu'.</color>
 
@@ -1596,19 +1596,19 @@
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_02' entrySequence='3' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' removed='true' presentationStateCount='1' attributeStateCount='0' participationRecordCount='1'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_02' entrySequence='3' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 26.19s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_02' entrySequence='3' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 27.88s)</color>
 
 <color=#4CAF50>[INFO] [ActivityExitActorTeardownStage] [OBS][ComponentLifetime] event='ActorPresentationReleased' owner='ActivityExitActorTeardownStage' activityId='activity_02' entrySequence='3' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' componentKind='ActorPresentation' componentLifetimePolicy='ReleaseOnRouteExit' releaseTrigger='RouteExit' releaseDecision='Release' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'.</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStatePresentationStateRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_02' entrySequence='3' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' removed='true' presentationStateCount='0' attributeStateCount='0' participationRecordCount='1'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_02' entrySequence='3' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 26.19s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='activity_02' entrySequence='3' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'. (@ 27.88s)</color>
 
 <color=#A8DEED>[INFO] [ActivityActorExitRuntimeState] [OBS][ActivityActorExitRuntimeState] event='ActivityActorExitRuntimeStateParticipationRecordRemoved' owner='ActivityActorExitRuntimeState' activityId='activity_02' entrySequence='3' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' removed='true' presentationStateCount='0' attributeStateCount='0' participationRecordCount='0'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_02' entrySequence='3' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' trigger='RouteExit' decision='Release' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 26.19s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_02' entrySequence='3' actorId='npc.route.generic.01' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|route|Actor|npc.route.generic.01|RouteScoped' actorScope='RouteScoped' trigger='RouteExit' decision='Release' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 27.88s)</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_02' entrySequence='3' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' trigger='RouteExit' decision='Retain' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 26.19s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='ActivityExitActorTeardownStage' activityId='activity_02' entrySequence='3' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' trigger='RouteExit' decision='Retain' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 27.88s)</color>
 
 <color=#4CAF50>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][ExitOrderingPolicy] event='RouteExitActorTeardownAfterDeactivationCompleted' scenario='RouteExitFromActivityRunning' policyId='activity.exit.ordering.route_exit_from_activity_running.v1' activityId='activity_02' entrySequence='3' result='_ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityExitActorTeardownResult' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'.</color>
 
@@ -1690,9 +1690,9 @@
 
 <color=#A8DEED>[INFO] [SessionActivityPipeline] [OBS][SessionActivityPipeline][SessionReset] event='SessionResetStarted' pipelineId='SessionActivityPipeline.Base11.Sandbox' sessionStateId='SessionActivitySandboxSession' activityId='activity_02' entrySequence='3' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' sessionActorCount='1'.</color>
 
-<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='SessionActivityPipeline' trigger='SessionReset' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' decision='Release' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 26.20s)</color>
+<color=#A8DEED>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeDecisionResolved' owner='SessionActivityPipeline' trigger='SessionReset' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' decision='Release' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 27.89s)</color>
 
-<color=#4CAF50>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeReleased' owner='SessionActivityPipeline' trigger='SessionReset' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 26.21s)</color>
+<color=#4CAF50>[VERBOSE] [SessionActivityPipeline] [OBS][ActorLifetime] event='ActorLifetimeReleased' owner='SessionActivityPipeline' trigger='SessionReset' actorId='actor.player.primary' actorInstanceRuntimeId='SessionActivityPipeline.Base11.Sandbox|SessionActivitySandboxSession|session|Actor|actor.player.primary|SessionScoped' actorScope='SessionScoped' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'. (@ 27.89s)</color>
 
 <color=#A8DEED>[INFO] [ActivityContentReleaseRuntimeState] [OBS][ActivityContentReleaseRuntimeState] event='ActivityContentReleaseRuntimeStateLoadedSetCleared' owner='ActivityContentReleaseRuntimeState' activityId='activity_02' entrySequence='3' hasLoadedSetBefore='false' hasLoadedSetAfter='false' hasPendingContextBefore='false' hasPendingContextAfter='false' awaitingContinuationBefore='false' awaitingContinuationAfter='false' source='SessionActivityPipeline' reason='session_reset'.</color>
 
@@ -1812,11 +1812,11 @@
 
 <color=#A8DEED>[INFO] [OperationalRouteAudioStage] [OBS][SessionOperationalPipeline][Audio] RouteRevealAudioStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Startup' stopPreviousRouteAudio='True' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' cueType='AudioBgmCueAsset'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] StopImmediate reason='route_audio:stop_previous_route_audio:route-boot-menu|MenuScene|3:route-boot-menu|MenuScene|3|sandbox'. (@ 26.37s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] StopImmediate reason='route_audio:stop_previous_route_audio:route-boot-menu|MenuScene|3:route-boot-menu|MenuScene|3|sandbox'. (@ 28.07s)</color>
 
 <color=#A8DEED>[INFO] [AudioAdapter] [OBS][SessionOperationalAudio][AudioAdapter] playStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Startup' stopPreviousRouteAudio='True' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' cueType='AudioBgmCueAsset' cue='AudioBgmCue_Startup'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn start token=3 cue='AudioBgmCue_Startup' requested=-1 effective=1 reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|3:route-boot-menu|MenuScene|3|sandbox'. (@ 26.37s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn start token=3 cue='AudioBgmCue_Startup' requested=-1 effective=1 reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|3:route-boot-menu|MenuScene|3|sandbox'. (@ 28.07s)</color>
 
 <color=#4CAF50>[INFO] [AudioAdapter] [OBS][SessionOperationalAudio][AudioAdapter] playSubmitted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' routeAudioMode='Cue' routeAudioTiming='BeforeFadeOut' routeAudioCue='AudioBgmCue_Startup' stopPreviousRouteAudio='True' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' cueType='AudioBgmCueAsset' cue='AudioBgmCue_Startup'.</color>
 
@@ -1826,9 +1826,9 @@
 
 <color=#A8DEED>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeOutStarted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu'.</color>
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=0 dur=0,5 (@ 26.37s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeStart signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=0 dur=0,5 (@ 28.07s)
 
-[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=0 (@ 26.83s)
+[VERBOSE] [FadeController] [OBS][Fade] FadeComplete signature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu' targetAlpha=0 (@ 28.53s)
 
 <color=#4CAF50>[INFO] [FadeAdapter] [OBS][SessionOperationalFade][Adapter] fadeOutCompleted routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='BackToMenu' fadeScene='FadeScene' contextSignature='route-boot-menu|route-boot-menu|MenuScene|3|route-boot-menu|MenuScene|3|sandbox|3|fadeOut|Profile|DefaultTransitionProfile|SessionOperationalRouteButtonBinder|BackToMenu'.</color>
 
@@ -1838,5 +1838,5 @@
 
 <color=#4CAF50>[INFO] [OperationalRouteCompletionStage] [OBS][SessionOperationalPipeline][Transition] fact='OperationalRouteCompleted' routeIdentity='route-boot-menu' routeOperationId='route-boot-menu|MenuScene|3' transitionId='route-boot-menu|MenuScene|3|sandbox' routeSequence='3' correlationId='route-boot-menu|MenuScene|3' message='BackToMenu' transitionMode='Profile' transitionProfile='DefaultTransitionProfile' source='SessionOperationalRouteButtonBinder' reason='BackToMenu'.</color>
 
-<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn complete token=3 cue='AudioBgmCue_Startup' configured=1 elapsed=1 elapsedMode='coroutine_unscaled' queuedAt=26,374 runtimeStartAt=26,374 detail='normal' reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|3:route-boot-menu|MenuScene|3|sandbox'. (@ 27.32s)</color>
+<color=#A8DEED>[VERBOSE] [AudioBgmService] [Audio][BGM] FadeIn complete token=3 cue='AudioBgmCue_Startup' configured=1 elapsed=1 elapsedMode='coroutine_unscaled' queuedAt=28,072 runtimeStartAt=28,072 detail='normal' reason='route_audio:AudioBgmCueAsset:route-boot-menu|MenuScene|3:route-boot-menu|MenuScene|3|sandbox'. (@ 29.03s)</color>
 

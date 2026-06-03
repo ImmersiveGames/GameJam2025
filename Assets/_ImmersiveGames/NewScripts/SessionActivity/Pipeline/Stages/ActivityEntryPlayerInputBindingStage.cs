@@ -26,9 +26,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityDefinition definition = command.Definition;
             int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerInputBindingStarted, entrySequence);
+            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.PlayerInputBindingStarted);
             endpoint.EmitFact(
                 facts,
@@ -36,19 +35,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' player input binding started.");
+                $"'{command.ActivityId}' player input binding started.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "player_input_binding_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' player input binding started.");
+                $"'{command.ActivityId}' player input binding started.");
 
             List<PlayerInputBindingRequirement> requirements = BuildRequirements(startedIdentity, command);
             int requiredCount = CountRequired(requirements);
             if (requiredCount <= 0)
             {
-                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput, entrySequence);
+                SessionActivityIdentity skippedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput);
                 endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.PlayerInputBindingSkippedNoRequiredInput);
                 endpoint.EmitFact(
                     facts,
@@ -56,15 +55,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     skippedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
+                    $"'{command.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "player_input_binding_skipped_no_required_input",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
+                    $"'{command.ActivityId}' player input binding skipped because no required controllable participant was resolved.");
 
-                SessionActivityIdentity completedAfterSkipIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerInputBindingCompleted, entrySequence);
+                SessionActivityIdentity completedAfterSkipIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingCompleted);
                 endpoint.SetCurrentIdentity(completedAfterSkipIdentity, SessionActivityStage.PlayerInputBindingCompleted);
                 endpoint.EmitFact(
                     facts,
@@ -72,13 +71,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     completedAfterSkipIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding completed with skip.");
+                    $"'{command.ActivityId}' player input binding completed with skip.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "player_input_binding_completed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding completed with skip.");
+                    $"'{command.ActivityId}' player input binding completed with skip.");
                 return new ActivityEntryPlayerInputBindingResult(
                     completed: true,
                     completedAfterSkipIdentity,
@@ -98,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding command issued requirementId='{requirement.RequirementId}' playerSlotId='{requirement.PlayerSlotId}' actorId='{requirement.ActorId}' required='{requirement.Required}'.");
+                    $"'{command.ActivityId}' player input binding command issued requirementId='{requirement.RequirementId}' playerSlotId='{requirement.PlayerSlotId}' actorId='{requirement.ActorId}' required='{requirement.Required}'.");
             }
 
             PlayerInputBindingCommand bindingCommand = new(startedIdentity, requirements, command.Source, command.Reason);
@@ -119,7 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 PlayerInputBindingRecord record = records[index];
                 if (!record.IsValid)
                 {
-                    SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                    SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingFailed);
                     endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
                     endpoint.EmitFact(
                         facts,
@@ -127,14 +126,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         failedIdentity,
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
+                        $"'{command.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
                     endpoint.EmitSnapshot(
                         snapshots,
                         "player_input_binding_failed",
                         command.Source,
                         command.Reason,
-                        $"'{definition.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
-                    throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][PlayerInputBinding] Invalid binding record activityId='{definition.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
+                        $"'{command.ActivityId}' player input binding failed because adapter produced invalid record index='{index}'.");
+                    throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][PlayerInputBinding] Invalid binding record activityId='{command.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
                 }
 
                 if (record.Requirement.Required)
@@ -148,12 +147,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input bound requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' observedInput='{record.ObservedInputId}'.");
+                    $"'{command.ActivityId}' player input bound requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' observedInput='{record.ObservedInputId}'.");
             }
 
             if (requiredBoundCount < requiredCount)
             {
-                SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerInputBindingFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingFailed);
                 endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.PlayerInputBindingFailed);
                 endpoint.EmitFact(
                     facts,
@@ -161,17 +160,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     failedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                    $"'{command.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "player_input_binding_failed",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
-                throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][PlayerInputBinding] Required binding incomplete activityId='{definition.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                    $"'{command.ActivityId}' player input binding failed requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
+                throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][PlayerInputBinding] Required binding incomplete activityId='{command.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
             }
 
-            SessionActivityIdentity completedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.PlayerInputBindingCompleted, entrySequence);
+            SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.PlayerInputBindingCompleted);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.PlayerInputBindingCompleted);
             endpoint.EmitFact(
                 facts,
@@ -179,13 +178,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 completedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
+                $"'{command.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "player_input_binding_completed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
+                $"'{command.ActivityId}' player input binding completed requiredBound='{requiredBoundCount}' required='{requiredCount}' totalBound='{records.Count}'.");
 
             return new ActivityEntryPlayerInputBindingResult(
                 completed: true,
@@ -221,6 +220,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             return requirements;
+        }
+
+        private static SessionActivityIdentity BuildIdentity(
+            ActivityEntryPlayerInputBindingCommand command,
+            SessionActivityStage stage)
+        {
+            return new SessionActivityIdentity(
+                command.Identity.PipelineId,
+                command.Identity.SessionId,
+                command.ActivityId,
+                command.ActivityOrdinal,
+                command.Identity.EntrySequence,
+                stage,
+                command.Source);
         }
 
         private static int CountRequired(IReadOnlyList<PlayerInputBindingRequirement> requirements)

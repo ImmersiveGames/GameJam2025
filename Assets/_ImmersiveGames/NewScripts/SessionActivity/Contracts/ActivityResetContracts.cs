@@ -2,6 +2,35 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
+    public readonly struct ActivityResetActivityReference
+    {
+        public ActivityResetActivityReference(
+            SessionActivityIdentity identity,
+            string activityId,
+            int activityOrdinal)
+        {
+            Identity = identity;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            ActivityOrdinal > 0 &&
+            string.Equals(Identity.ActivityId, ActivityId, System.StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ActivityOrdinal;
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public enum ActivityResetCompletionKind
     {
         Unknown = 0,
@@ -16,25 +45,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public readonly struct ActivityResetCommand
     {
         public ActivityResetCommand(
-            SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            ActivityResetActivityReference activity,
             string source,
             string reason)
         {
-            Identity = identity;
-            Definition = definition;
+            Activity = activity;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
-        public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public ActivityResetActivityReference Activity { get; }
+        public SessionActivityIdentity Identity => Activity.Identity;
+        public string ActivityId => Activity.ActivityId;
+        public int ActivityOrdinal => Activity.ActivityOrdinal;
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Definition.IsValid &&
+            Activity.IsValid &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)

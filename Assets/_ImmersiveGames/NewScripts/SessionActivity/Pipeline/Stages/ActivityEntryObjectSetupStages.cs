@@ -200,7 +200,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     ActivityObjectContributionReport report = new(
                         loadedSet.Identity,
                         loadedSet.ContentProfileId,
-                        record.SceneKey,
+                        null,
                         contentScene.name,
                         contributor.TargetId,
                         contributor.RoleId,

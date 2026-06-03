@@ -26,9 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
-            SessionActivityDefinition definition = command.Definition;
-            int entrySequence = command.Identity.EntrySequence;
-            SessionActivityIdentity startedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.ActivitySetupStarted);
 
             endpoint.EmitFact(
                 facts,
@@ -36,13 +34,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' permission target preparation started registerReceivers='{command.RegisterReceivers}'.");
+                $"'{command.ActivityId}' permission target preparation started registerReceivers='{command.RegisterReceivers}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "permission_target_preparation_started",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' permission target preparation started registerReceivers='{command.RegisterReceivers}'.");
+                $"'{command.ActivityId}' permission target preparation started registerReceivers='{command.RegisterReceivers}'.");
 
             bridge.BeginPermissionScope(startedIdentity);
 
@@ -56,13 +54,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' permission target preparation skipped because capability inventory is empty.");
+                    $"'{command.ActivityId}' permission target preparation skipped because capability inventory is empty.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "permission_target_preparation_skipped_no_inventory",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' permission target preparation skipped because capability inventory is empty.");
+                    $"'{command.ActivityId}' permission target preparation skipped because capability inventory is empty.");
                 return new ActivityEntryPermissionTargetPreparationResult(
                     completed: true,
                     startedIdentity,
@@ -71,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     reason: "no_capability_inventory");
             }
 
-            IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers = ResolvePermissionReceivers(inventory, startedIdentity, definition.ActivityId);
+            IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers = ResolvePermissionReceivers(inventory, startedIdentity, command.ActivityId);
             if (receivers.Count == 0)
             {
                 bridge.ReplacePermissionReceivers(Array.Empty<ActivityCapabilityPermissionReceiverReference>());
@@ -81,13 +79,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' permission target preparation skipped because no permission receivers were discovered.");
+                    $"'{command.ActivityId}' permission target preparation skipped because no permission receivers were discovered.");
                 endpoint.EmitSnapshot(
                     snapshots,
                     "permission_target_preparation_skipped_no_receivers",
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' permission target preparation skipped because no permission receivers were discovered.");
+                    $"'{command.ActivityId}' permission target preparation skipped because no permission receivers were discovered.");
                 return new ActivityEntryPermissionTargetPreparationResult(
                     completed: true,
                     startedIdentity,
@@ -110,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     startedIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{definition.ActivityId}' permission receiver resolved receiverId='{receiver.ReceiverId}' actorId='{receiver.ActorId}' actorInstanceRuntimeId='{receiver.ActorInstanceRuntimeId}' playerActorId='{receiver.PlayerActorId}' playerSlotId='{receiver.PlayerSlotId}'.");
+                    $"'{command.ActivityId}' permission receiver resolved receiverId='{receiver.ReceiverId}' actorId='{receiver.ActorId}' actorInstanceRuntimeId='{receiver.ActorInstanceRuntimeId}' playerActorId='{receiver.PlayerActorId}' playerSlotId='{receiver.PlayerSlotId}'.");
             }
 
             endpoint.EmitFact(
@@ -119,13 +117,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 startedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' permission target preparation completed receivers='{receivers.Count}' registered='{command.RegisterReceivers}'.");
+                $"'{command.ActivityId}' permission target preparation completed receivers='{receivers.Count}' registered='{command.RegisterReceivers}'.");
             endpoint.EmitSnapshot(
                 snapshots,
                 "permission_target_preparation_completed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' permission target preparation completed receivers='{receivers.Count}' registered='{command.RegisterReceivers}'.");
+                $"'{command.ActivityId}' permission target preparation completed receivers='{receivers.Count}' registered='{command.RegisterReceivers}'.");
 
             return new ActivityEntryPermissionTargetPreparationResult(
                 completed: true,
@@ -133,6 +131,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 receiverCount: receivers.Count,
                 skipped: false,
                 reason: command.RegisterReceivers ? "receivers_registered" : "receivers_resolved");
+        }
+
+        private static SessionActivityIdentity BuildIdentity(
+            ActivityEntryPermissionTargetPreparationCommand command,
+            SessionActivityStage stage)
+        {
+            return new SessionActivityIdentity(
+                command.Identity.PipelineId,
+                command.Identity.SessionId,
+                command.ActivityId,
+                command.ActivityOrdinal,
+                command.Identity.EntrySequence,
+                stage,
+                command.Source);
         }
 
         private static IReadOnlyList<ActivityCapabilityPermissionReceiverReference> ResolvePermissionReceivers(

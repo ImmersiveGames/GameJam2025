@@ -13,6 +13,33 @@ using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipatio
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
+    public readonly struct ActivityEntryPreparationCommand
+    {
+        public ActivityEntryPreparationCommand(
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public readonly struct ActivityEntryCommand
     {
         public ActivityEntryCommand(
@@ -132,28 +159,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public readonly struct ActivityEntryContentLoadCommand
     {
-        public ActivityEntryContentLoadCommand(
-            SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
-            string source,
-            string reason)
+        public ActivityEntryContentLoadCommand(ActivityContentLoadPlan plan)
         {
-            Identity = identity;
-            Definition = definition;
-            Source = Normalize(source);
-            Reason = Normalize(reason);
+            Plan = plan;
         }
 
-        public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
-        public string Source { get; }
-        public string Reason { get; }
-        public bool IsValid => Identity.IsValid && Definition.IsValid && !string.IsNullOrWhiteSpace(Source);
-
-        private static string Normalize(string value)
-        {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        }
+        public ActivityContentLoadPlan Plan { get; }
+        public SessionActivityIdentity Identity => Plan.Identity;
+        public string ActivityId => Plan.ActivityId;
+        public int ActivityOrdinal => Plan.ActivityOrdinal;
+        public ActivityContentMode ActivityContentMode => Plan.ActivityContentMode;
+        public string ActivityContentProfileId => Plan.ActivityContentProfileId;
+        public IReadOnlyList<ActivityContentLoadPlanScene> Scenes => Plan.Scenes;
+        public string Source => Plan.Source;
+        public string Reason => Plan.Reason;
+        public bool IsValid => Plan.IsValid;
     }
 
     public readonly struct ActivityEntryContentLoadCompletionCommand
@@ -302,27 +322,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryActorPresentationSetupCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -374,27 +388,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryActorAttributeSetupCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -547,30 +555,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryPlayerInputBindingCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             IReadOnlyList<ActivityEntryPlayerInputBindingReference> participantBindings,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             ParticipantBindings = participantBindings ?? Array.Empty<ActivityEntryPlayerInputBindingReference>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public IReadOnlyList<ActivityEntryPlayerInputBindingReference> ParticipantBindings { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            Identity.ActivityId == ActivityId &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             ParticipantBindings != null &&
             !string.IsNullOrWhiteSpace(Source);
 
@@ -621,30 +632,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryPermissionTargetPreparationCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             bool registerReceivers,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             RegisterReceivers = registerReceivers;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public bool RegisterReceivers { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            Identity.ActivityId == ActivityId &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -717,30 +731,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryMovementBindingCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             IReadOnlyList<ActivityEntryMovementBindingReference> participantBindings,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             ParticipantBindings = participantBindings ?? Array.Empty<ActivityEntryMovementBindingReference>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public IReadOnlyList<ActivityEntryMovementBindingReference> ParticipantBindings { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            Identity.ActivityId == ActivityId &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             ParticipantBindings != null &&
             !string.IsNullOrWhiteSpace(Source);
 
@@ -796,27 +813,30 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryCameraBindingCommand(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            Identity.ActivityId == ActivityId &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -890,7 +910,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityEntryContentPendingOperationRuntimeBridge
     {
         SessionActivityPendingOperation BuildActivityContentPendingOperation(
-            SessionActivityDefinition definition,
+            ActivityContentLoadPlan plan,
             int entrySequence,
             ActivityContentSceneLoadCommand command);
         void SetPendingOperation(SessionActivityPendingOperation operation);
@@ -1009,37 +1029,56 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
 
 
-    public readonly struct ActivityEntryParticipantBindingCommand
+    public readonly struct ActivityParticipantBindingPlan
     {
-        public ActivityEntryParticipantBindingCommand(
+        public ActivityParticipantBindingPlan(
             SessionActivityIdentity identity,
-            SessionActivityDefinition definition,
+            string activityId,
+            int activityOrdinal,
             string source,
             string reason)
         {
             Identity = identity;
-            Definition = definition;
+            ActivityId = Normalize(activityId);
+            ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
-        public SessionActivityDefinition Definition { get; }
+        public string ActivityId { get; }
+        public int ActivityOrdinal { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
-            Definition.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
-            string.Equals(Identity.ActivityId, Definition.ActivityId, StringComparison.Ordinal) &&
-            Identity.ActivityOrdinal == Definition.ActivityOrdinal &&
+            !string.IsNullOrWhiteSpace(ActivityId) &&
+            string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
+            Identity.ActivityOrdinal == ActivityOrdinal &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
+    }
+
+    public readonly struct ActivityEntryParticipantBindingCommand
+    {
+        public ActivityEntryParticipantBindingCommand(ActivityParticipantBindingPlan plan)
+        {
+            Plan = plan;
+        }
+
+        public ActivityParticipantBindingPlan Plan { get; }
+        public SessionActivityIdentity Identity => Plan.Identity;
+        public string ActivityId => Plan.ActivityId;
+        public int ActivityOrdinal => Plan.ActivityOrdinal;
+        public string Source => Plan.Source;
+        public string Reason => Plan.Reason;
+        public bool IsValid => Plan.IsValid;
     }
 
     public readonly struct ActivityEntryParticipantBindingResolvedRecord
@@ -1158,7 +1197,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActorPresentationEndpointReference presentationReference,
             ActorPresentationRuntimeHandle handle);
         void ReleaseActorPresentationBeforeRematerialization(
-            ActivityEntryActorPresentationSetupCommand command,
+            SessionActivityIdentity identity,
+            string source,
+            string reason,
             ActorInstanceId actorInstanceRuntimeId,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
@@ -1166,7 +1207,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryPipeline
     {
-        ActivityEntryPreparationResult PrepareEntry(ActivityEntryCommand command);
+        ActivityEntryPreparationResult PrepareEntry(ActivityEntryPreparationCommand command);
         ActivityEntrySetupReadinessResult ExecuteSetupAndReadiness(
             ActivityEntryCommand command,
             List<SessionActivityFact> facts,

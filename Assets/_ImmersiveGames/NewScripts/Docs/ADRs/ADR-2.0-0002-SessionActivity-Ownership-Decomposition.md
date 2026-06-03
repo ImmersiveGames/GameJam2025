@@ -1116,8 +1116,6 @@ Restart cria novo entry context.
 
 #### `SA-11B — Fact recorder hygiene`
 
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`, com a ressalva controlada de que `PlayerActorParticipationExitStageCompleted` é subcaminho condicional.
-
 Critério:
 
 ```text
@@ -1125,93 +1123,6 @@ Fact recorder não decide policy.
 Fact recorder não executa side-effect.
 Logs mantêm owner correto.
 Facts não alteram lifecycle.
-Completed macro só aparece depois do subfluxo real terminar.
-Stage identity observável reflete o owner real do subpasso.
-```
-
-##### Checkpoint SA-11B-H1 — Fact/stage identity hygiene
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
-
-Resumo do patch aplicado:
-
-```text
-ActivityObjectSnapshotCaptureStage passou a usar stage identity própria de snapshot capture.
-ActivityObjectReleaseStage passou a usar stage identity própria de object release.
-ActivityObjectContributorUnregisterStage passou a usar stage identity própria de unregister.
-ActivityExitActorTeardownStage ajustou CurrentIdentity antes do snapshot final condicional de PlayerActorParticipationExitStageCompleted.
-Nenhum ActivityExitPipeline novo foi criado.
-Nenhum lifecycle macro foi redesenhado.
-```
-
-Evidência funcional preservada pelo smoke manual:
-
-```text
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem checkpointStatus='Failed'
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
-ActivityObjectSnapshotCapture PASS
-ActivityObjectRelease PASS
-ActivityObjectContributorUnregister PASS
-```
-
-Lacuna anterior revisada no smoke mais recente:
-
-```text
-O smoke mais recente confirmou ActivityContentReleaseFinalizationCleanupCompleted antes de ActivityContentReleaseCompleted nos fluxos com conteúdo.
-ActivityContentReleaseCompleted passou a sair com pendingReleaseContextPresentAfter='false', loadedSetPresentAfter='false' e awaitingContinuationAfter='false'.
-Portanto o requisito "Completed macro só depois do cleanup final" está satisfeito para os caminhos exercitados.
-```
-
-Conclusão:
-
-```text
-SA-11B-H1 pode ser CLOSED/PASS.
-A correção preservou o smoke macro, corrigiu stage identities de snapshot/release/unregister e fechou o ordering de ActivityContentReleaseCompleted.
-```
-
-##### Nota condicional — PlayerActorParticipationExitStageCompleted
-
-A ausência de `PlayerActorParticipationExitStageCompleted` no smoke não é, por si só, falha do patch. Auditoria estática confirmou que `ExecutePlayerActorParticipationExit(...)` só roda quando `exitedPlayerActors.Count > 0`. Quando o substage roda, o patch alinha fact/snapshot final em `PlayerActorParticipationExitStageCompleted` após `SetCurrentIdentity(...)`.
-
-Se esse substage não roda, o fechamento substituto observável é:
-
-```text
-ActorParticipationExitCompleted
-ActivityRouteExitCompleted ou ClosedForRouteExit conforme o rail
-sem FATAL
-```
-
-Esse ponto fica aceito como evidência estática condicional, mas não substitui a correção pendente do ordering de `ActivityContentReleaseCompleted`.
-
-##### Checkpoint SA-11B-H2 — ActivityContentReleaseCompleted ordering fix
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
-
-Evidência validada no smoke mais recente:
-
-```text
-ActivityContentReleaseRuntimeStatePendingContextCleared
-ActivityContentReleaseRuntimeStateAwaitingContinuationChanged
-ActivityContentReleaseFinalizationCleanupCompleted
-ActivityContentReleaseCompleted
-
-pendingReleaseContextPresentAfter='false'
-loadedSetPresentAfter='false'
-awaitingContinuationAfter='false'
-```
-
-Escopo preservado:
-
-```text
-SessionActivityDematerializationCompleted preservado.
-Continuation macro preservada.
-Nenhum ActivityExitPipeline criado.
-Nenhum ActivityContentReleasePipeline criado.
 ```
 
 ---
@@ -1239,223 +1150,87 @@ Commands não carregam Stage, Boundary, Adapter, Func<T>, Action, executor gené
 Commands carregam payload runtime resolvido e identity tipada.
 ```
 
-##### Checkpoint SA-12-AUDIT — Commands/contracts hygiene
 
-Status: `AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH`.
+##### Checkpoint `SA-12 — Command/contract hygiene`
 
-A auditoria estática de `SA-12` confirmou que não havia blocker de executor/delegate nos commands auditados:
+Status geral: `PARTIAL / IN PROGRESS`.
+
+Fechamentos congelados até este checkpoint:
 
 ```text
-sem Action
-sem Func<T>
-sem adapters embutidos nos commands
-sem delegates de execução
-sem SessionActivityRuntimeState embutido nos commands
+SA-12-AUDIT — AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH
+SA-12B/C   — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12D     — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12E     — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F1A/B — CLOSED / PASS funcional + PASS arquitetural do corte
 ```
 
-O débito restante foi classificado como higiene de contrato:
+Resumo dos cortes fechados:
+
+| Corte | Fechamento | Evidência/decisão |
+|---|---|---|
+| `SA-12B/C` | `CLOSED / PASS` | `ActivityObjectContributorUnregisterStageCommand` não carrega mais `SessionActivityStage`; object/reset/release/restore/unload commands não duplicam identidade de ciclo já presente em `SessionActivityIdentity`. |
+| `SA-12D` | `CLOSED / PASS` | `ActorAttributeCommand` passou a carregar `SessionActivityIdentity` e `ActorInstanceRuntimeId`, sem strings livres `PipelineIdentity`, `ActivityIdentity` ou `ActorInstanceId` como lookup funcional. |
+| `SA-12E` | `CLOSED / PASS` | `ActivityContentSceneLoadCommand` e `ActivityContentSceneUnloadCommand` não carregam mais `SceneKeyAsset`; usam referência runtime mínima resolvida antes do command. |
+| `SA-12F1A/B` | `CLOSED / PASS` | `PrepareEntry` usa command estreito sem `SessionActivityDefinition`; `ActivityResetCommand` usa referência mínima de reset, sem `SessionActivityDefinition`. |
+
+Evidência aceita para `SA-12F1A/B`:
 
 ```text
-commands carregando authoring asset inteiro;
-wrappers internos carregando Stage/Boundary;
-commands duplicando PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence quando SessionActivityIdentity já era a fonte do ciclo;
-ActorAttributeCommand ainda usando strings livres para identidades runtime.
+ActivityEntryPreparationStarted/Completed preservados.
+ActivityObjectResetQaApplied em activity_01 / ActivityRunning.
+ActorResetQaApplied em activity_01 / ActivityRunning.
+RestartCurrentActivity PASS no smoke macro anterior.
+Activity01ToActivity02 PASS no smoke macro anterior.
+RouteExitBackToMenu PASS no smoke macro anterior.
+Sem FATAL, Exception, route_transition_failed, foreign/stale indevido ou checkpointStatus='Failed'.
 ```
 
-Conclusão:
+Pendências restantes de `SA-12`:
 
 ```text
-SA-12 não exige pipeline novo.
-SA-12 não exige redesenhar lifecycle macro.
-SA-12 deve ser resolvido por cortes pequenos de command hygiene.
+SA-12F2 — Remover SessionActivityDefinition de ActivityEntryContentLoad*Command com payload/plan mínimo de content load.
+SA-12F3 — Remover SessionActivityDefinition dos commands de setup/binding que já usam payload resolvido.
+SA-12F4 — Limpeza final de stage commands internos de exit/release, se a auditoria pós-F2/F3 ainda encontrar contaminação.
 ```
 
-##### Checkpoint SA-12B/C — Command boundary + identity duplication cleanup
+##### Débito registrado — `ACTOR-RESET-QA-SESSION-SCOPED-RESOLUTION`
 
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+Status: `OPEN / MEDIUM DEBT`.
 
-Escopo fechado:
+O smoke complementar de `SA-12F1A/B` validou `ActorResetQaApplied` em `activity_01` / `ActivityRunning`. Porém, o smoke anterior mostrou rejeição do QA reset quando executado em `activity_02` / no-content, apesar do `PlayerActor` ser `SessionScoped` e permanecer materializado/visível.
+
+Decisão:
 
 ```text
-ActivityObjectContributorUnregisterStageCommand
-ActivityObjectResetCommand
-ActivityObjectReleaseCommand
-ActivityObjectSnapshotRestoreCommand
-ActivityContentSceneUnloadCommand
+ActivityContent ausente não implica PlayerActor session-scoped ausente.
 ```
 
-Correções aplicadas:
+Problema registrado:
 
 ```text
-ActivityObjectContributorUnregisterStageCommand não carrega mais SessionActivityStage Stage.
-ActivityObjectContributorUnregisterStage constrói suas identities locais internamente.
-Não há fallback do wrapper para ActivityContentReleaseCompleted.
-ActivityObjectResetCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-ActivityObjectReleaseCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-ActivityObjectSnapshotRestoreCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-ActivityContentSceneUnloadCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-Consumers passaram a usar command.Identity como fonte única do ciclo.
-SceneKeyAsset foi preservado neste corte e fica para SA-12E.
+QaResetCurrentPlayerActor não deve depender exclusivamente de ActivityContent ou ActivityParticipation local quando há PlayerActor SessionScoped persistente. Em activity_02/no-content, se o PlayerActor session-scoped permanece materializado e visível, o QA reset deve resolver por ActorInstanceRuntimeId/session actor binding, ou rejeitar com motivo mais preciso indicando ausência de active ActivityParticipation binding, não ausência do player actor.
 ```
 
-Evidência aceita:
+Classificação arquitetural:
+
+| Pergunta | Resposta |
+|---|---|
+| Owner correto | Actor reset canônico deve resolver por Actor/ActorInstance runtime reference; QA deve chamar command/stage canônico. |
+| Categoria | `QA command resolution` + `ActorInstanceRuntimeId/session-scoped actor lookup`. |
+| Comportamento final ou bridge | Débito de fronteira; não bloquear `SA-12F1A/B`. |
+| Compat necessária | Não. Corrigir em corte próprio, sem fallback textual. |
+| Sintoma ou fronteira | Fronteira de resolução QA/player-specific ainda local demais. |
+| Owner duplicado | Risco de Activity local/binding atual competir com store session-scoped do Actor. |
+
+Critério futuro de fechamento:
 
 ```text
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem foreign/stale indevido
-sem checkpointStatus='Failed'
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
-ActivityObjectReset preservado
-ActivityObjectRelease preservado
-ActivityObjectSnapshotRestore preservado como Passed/Skipped conforme payload
-ActivityObjectContributorUnregisterStarted/Completed com owner/stage próprio
-```
-
-Conclusão arquitetural:
-
-```text
-SA-12B/C removeu boundary/stage de wrapper interno e owner duplicado de lifecycle identity em object/content unload commands.
-O corte não fecha SA-12 inteiro.
-```
-
-##### Checkpoint SA-12D — ActorAttributeCommand typed identity
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
-
-Escopo fechado:
-
-```text
-ActorAttributeCommand
-produtores de ActorAttributeCommand
-consumidores de ActorAttributeCommand
-logs/facts de setup/release de ActorAttribute
-```
-
-Correções aplicadas:
-
-```text
-ActorAttributeCommand não carrega mais string PipelineIdentity.
-ActorAttributeCommand não carrega mais string ActivityIdentity.
-ActorAttributeCommand não carrega mais string ActorInstanceId.
-ActorAttributeCommand carrega SessionActivityIdentity como identidade tipada do ciclo.
-ActorAttributeCommand carrega ActorInstanceRuntimeId como identidade funcional runtime do actor.
-Call sites foram migrados para o shape tipado.
-Logs podem imprimir ToString()/Value apenas como observabilidade, não como lookup funcional.
-```
-
-Evidência aceita:
-
-```text
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem foreign/stale indevido
-sem checkpointStatus='Failed'
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
-ActorAttributeSetupStarted observado
-ActorAttributeProfileResolved observado
-ActorAttributeReady observado
-ActorAttributeSetupCompleted observado
-ActorAttributeReleased observado
-ActorAttribute logs/facts preservam actorInstanceRuntimeId
-```
-
-Observação:
-
-```text
-ActorAttributeState ainda pode manter campo textual interno para snapshot/observabilidade técnica.
-Isso não reabre SA-12D porque o corte fechou o command contract e seus call sites funcionais.
-Qualquer limpeza posterior de state/snapshot de Attributes deve ser corte próprio, não regressão de SA-12D.
-```
-
-
-##### Checkpoint SA-12E — ActivityContent SceneKeyAsset / runtime scene reference
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
-
-Escopo fechado:
-
-```text
-ActivityContentSceneLoadCommand
-ActivityContentSceneUnloadCommand
-ActivityContentSceneRuntimeReference
-resolução SceneKeyAsset -> runtime reference antes dos commands
-call sites de load/unload de ActivityContent
-```
-
-Correções aplicadas:
-
-```text
-ActivityContentSceneLoadCommand não carrega mais SceneKeyAsset.
-ActivityContentSceneUnloadCommand não carrega mais SceneKeyAsset.
-ActivityContentSceneRuntimeReference passa a representar a referência runtime mínima de cena para load/unload.
-A referência runtime carrega dados resolvidos como SceneKey e SceneName para execução/logs.
-ActivityEntryPipeline resolve SceneKeyAsset -> ActivityContentSceneRuntimeReference antes do command de load.
-ActivityContentSceneUnloadDispatchStage resolve SceneKeyAsset -> ActivityContentSceneRuntimeReference antes do command de unload.
-ActivityContentSceneUnloadCommand preserva command.Identity como fonte única do ciclo e não reintroduz PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence paralelos.
-SessionActivityDefinition não foi alterado neste corte.
-Não houve Resources.Load, fallback por nome de scene nem compat paralelo.
-```
-
-Evidência aceita:
-
-```text
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem foreign/stale indevido
-sem checkpointStatus='Failed'
-RestartCurrentActivity PASS
-Activity01ToActivity02 PASS
-RouteExitBackToMenu PASS
-ActivityEntryContentLoadStarted preservado
-ActivityEntryContentLoadCompleted preservado
-ActivityContentSceneUnloadDispatched preservado
-ActivityContentReleaseCompleted preservado após cleanup final
-ActivityObjectSnapshotCapture PASS
-ActivityObjectRelease PASS
-ActivityObjectContributorUnregister PASS
-activity_01 carrega ActivityContent normalmente
-activity_02 preserva no-content/skip explícito
-```
-
-Observação de observabilidade:
-
-```text
-O smoke não precisa emitir nomes literais ActivityContentSceneLoadCommandIssued, ActivityContentSceneUnloadCommandIssued ou ActivityContentSceneUnloaded para fechar este corte.
-A evidência aceita é a preservação do comportamento de load/unload, dos checkpoints macro e da ausência de fallback/authoring asset nos command contracts.
-Se for necessário reforçar esses facts literais, isso deve ser tratado como hygiene posterior, não como reabertura de SA-12E.
-```
-
-Conclusão arquitetural:
-
-```text
-SA-12E removeu o vazamento de authoring data SceneKeyAsset dos commands de ActivityContent load/unload.
-SceneKeyAsset permanece válido como authoring/config, mas não atravessa mais o command contract como payload runtime.
-O corte não fecha SA-12 inteiro; o débito restante é SA-12F.
-```
-
-##### Pendências restantes de SA-12
-
-```text
-SA-12F — reduzir SessionActivityDefinition dos ActivityEntry*Command para DTOs runtime mínimos por subfluxo.
-```
-
-Critério para o próximo corte:
-
-```text
-Não reabrir SA-12E.
-Não remover SessionActivityDefinition em bloco único sem auditoria de call sites.
-Não criar DTO genérico amplo que replique SessionActivityDefinition com outro nome.
-Não criar compat/fallback paralelo.
-Não criar pipeline novo.
-Preservar smoke macro completo.
+QaResetCurrentPlayerActor resolve PlayerActor SessionScoped persistente por ActorInstanceRuntimeId/session actor binding, inclusive quando ActivityContent é no-content.
+Se a Activity atual não possui ActivityParticipation binding ativo, a rejeição deve explicitar esse motivo sem declarar ausência do PlayerActor materializado.
+Sem fallback por PlayerActorId/string concatenada.
+Sem resolver por primeiro PlayerActor encontrado.
+Smoke deve demonstrar activity_01 Applied e activity_02 comportamento correto conforme policy definida.
 ```
 
 ---
@@ -1502,11 +1277,7 @@ DONE  SA-10   Permission identity separation
       SA-11A  Entry state/context extraction
 DONE  SA-11B  Fact recorder hygiene
 
-PEND  SA-12   Command/contract hygiene — partial
-DONE  SA-12B/C Command boundary + identity duplication cleanup
-DONE  SA-12D  ActorAttributeCommand typed identity
-DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
-      SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
+PART  SA-12   Command/contract hygiene — SA-12B/C, SA-12D, SA-12E e SA-12F1A/B fechados; SA-12F2+ pendente
 ```
 
 ## Critério global de viabilidade Base 2.0
@@ -4269,7 +4040,42 @@ Não criar ActivityExitPipeline.
 
 ## SA-7H2-H2 — ActivityContentSceneUnloadDispatchBridgeReduction
 
-Status: `Applied / Pending smoke`.
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Resultado do smoke — 2026-06-02
+
+Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
+
+Evidência aceita:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityContentReleaseRuntimeStateLoadedSetStored observado
+ActivityContentReleaseRuntimeStatePendingContextStored observado
+ActivityContentReleaseRuntimeStateAwaitingContinuationChanged observado
+ActivityContentSceneUnloadDispatchStage preservado
+pendingOperation ActivityContentSceneUnload preservado
+ActivityContentReleaseFinalizationStage preservado
+ActivityContentReleaseContinuationResolved/Started/Completed preservado
+ActivityObjectSnapshotCapture Passed
+ActivityObjectRelease Passed
+ActivityObjectContributorUnregister Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+Decisão:
+
+```text
+SA-7H2-H2 fechado como PASS funcional + PASS arquitetural do corte.
+A redução da bridge de dispatch de unload não regrediu restart, transition, route-exit, snapshot/release/unregister nem continuation macro.
+```
 
 ### Decisão aplicada
 
@@ -4348,10 +4154,42 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-
 ## SA-7H2-H3 — ActivityContentReleaseFinalizationBridgeReduction
 
-Status: `Applied / Pending smoke`.
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Resultado do smoke — 2026-06-02
+
+Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
+
+Evidência aceita:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityContentReleaseFinalizationStage preservado
+ActivityContentReleaseCompleted preservado
+SessionActivityDematerializationCompleted preservado
+ActivityContentReleaseFinalizationCleanupStarted preservado
+ActivityContentReleaseFinalizationCleanupCompleted preservado
+ActivityContentReleaseFinalizationCompleted preservado
+ActivityObjectContributorUnregisterStarted/Completed preservado
+ActivityContentReleaseContinuationResolved/Started/Completed preservado
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+Decisão:
+
+```text
+SA-7H2-H3 fechado como PASS funcional + PASS arquitetural do corte.
+A remoção da finalization bridge não transformou ActivityContentReleaseFinalizationStage em owner de lifecycle macro; a continuation permanece no SessionActivityPipeline.
+```
 
 ### Decisão aplicada
 
@@ -4414,10 +4252,41 @@ Manager/coordinator novo não foi criado.
 `ActivityContentReleaseFinalizationStage` ainda usa `IActivityEntryRuntimeEndpoint.ClearCurrentActivityContentLoadedSet()` para limpar o loaded set espelhado em `SessionActivityRuntimeState`, enquanto `ActivityContentReleaseRuntimeState` permanece dono do state técnico de release async.
 
 Isso não move lifecycle e não reintroduz a bridge de finalization.
-
 ## SA-7H3A — ActivityObjectExitRuntimeState
 
-Status: `Applied / Pending smoke`.
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Resultado do smoke — 2026-06-02
+
+Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
+
+Evidência aceita:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityObjectExitRuntimeState* observado
+ActivityObjectSnapshotCaptureStage preservado
+ActivityObjectReleaseStage preservado
+ActivityObjectContributorUnregisterStage preservado
+ActivityObjectSnapshotCapture Passed
+ActivityObjectRelease Passed
+ActivityObjectContributorUnregister Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+Decisão:
+
+```text
+SA-7H3A fechado como PASS funcional + PASS arquitetural do corte.
+ActivityObjectExitRuntimeState ficou validado como owner técnico de state de object exit, sem assumir lifecycle, save ou continuation macro.
+```
 
 ### Decisão aplicada
 
@@ -4488,10 +4357,39 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-
 ## SA-7H3B — ActivityObjectSnapshotCaptureBridgeReduction
 
-Status: `Applied / Pending smoke`.
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Resultado do smoke — 2026-06-02
+
+Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
+
+Evidência aceita:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityObjectSnapshotCaptureStage preservado
+ActivityObjectSnapshotCaptureStarted observado
+ActivityObjectSnapshotCaptureCompleted observado
+ActivityObjectExitRuntimeStateSnapshotPayloadStored observado
+ActivityObjectSnapshotCapture Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+Decisão:
+
+```text
+SA-7H3B fechado como PASS funcional + PASS arquitetural do corte.
+ActivityObjectSnapshotCaptureStage passou a usar ActivityObjectExitRuntimeState como state técnico direto sem reintroduzir bridge ativa ou mover RouteActivitySave.
+```
 
 ### Decisão aplicada
 
@@ -4547,10 +4445,42 @@ ActivityExitPipeline não foi criado.
 Manager/coordinator novo não foi criado.
 ```
 
-
 ## SA-7H3C-D — ActivityObjectReleaseAndContributorUnregisterBridgeReduction
 
-Status: `Applied / Pending smoke`.
+Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+
+### Resultado do smoke — 2026-06-02
+
+Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
+
+Evidência aceita:
+
+```text
+sem erros CS
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+ActivityObjectReleaseStage preservado
+ActivityObjectReleaseStarted observado
+ActivityObjectReleaseCompleted observado
+ActivityObjectContributorUnregisterStage preservado
+ActivityObjectContributorUnregisterStarted observado
+ActivityObjectContributorUnregisterCompleted observado
+ActivityObjectRelease Passed
+ActivityObjectContributorUnregister Passed
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+Decisão:
+
+```text
+SA-7H3C-D fechado como PASS funcional + PASS arquitetural do corte.
+ActivityObjectReleaseStage e ActivityObjectContributorUnregisterStage usam ActivityObjectExitRuntimeState diretamente e permanecem stages determinísticos; RouteActivitySave, callback async e continuation macro não foram movidos.
+```
 
 ### Decisão aplicada
 
@@ -4617,7 +4547,6 @@ Restart / next activity / route-exit / deactivation continuation não foram movi
 ActivityExitPipeline não foi criado.
 Manager/coordinator novo não foi criado.
 ```
-
 ## SA-7H4A-Big — ActivityActorExitRuntimeState + bridge slimming
 
 Status: `Applied / Pending smoke`.
