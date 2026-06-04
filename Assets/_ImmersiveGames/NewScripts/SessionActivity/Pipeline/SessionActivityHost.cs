@@ -4,8 +4,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
@@ -34,7 +32,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private SessionActivityPipeline _pipeline;
         private string _lastObservedStateToken = string.Empty;
         private float _nextObserveAt;
-        private bool _globalsRegistered;
 
         public event Action StateObservedChanged;
 
@@ -53,27 +50,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityHost requires activityCatalog.");
             }
 
-            _catalog = activityCatalog.BuildRuntimeCatalog();
-            UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
-            UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
-            UnityActivityContentSceneReleaseAdapter activityContentSceneReleaseAdapter = new();
-            _pipeline = new SessionActivityPipeline(
-                _catalog,
-                sessionStateId,
-                new PauseOverlayAdapter(),
-                new InputModeAdapter(),
-                new SessionActivityTransitionAdapter(),
-                new SessionActivityTransitionLoadingAdapter(),
-                windowSceneAdapter,
-                new UnitySessionActivityPendingOperationRunner(windowSceneAdapter, activityContentSceneAdapter, activityContentSceneReleaseAdapter));
-            RegisterGlobal(_catalog);
-            RegisterGlobal(_pipeline);
-            RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
-            RegisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
-            RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
-            RegisterGlobal<ISessionActivityVisualReadinessBoundary>(this);
-            _globalsRegistered = true;
-            Debug.Log(BuildHostBanner());
+            SessionActivityCompositionInstaller installer = GetOrCreateCompositionInstaller();
+            installer.Compose(this, activityCatalog.BuildRuntimeCatalog(), sessionStateId);
         }
 
         private void Start()
@@ -98,18 +76,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityStage stage = _pipeline.State.CurrentStage;
-            if (stage == SessionActivityStage.Deactivation || stage == SessionActivityStage.Completed || stage == SessionActivityStage.ClosedForRouteExit)
+            if (stage == SessionActivityStage.Deactivation ||
+                stage == SessionActivityStage.Completed ||
+                stage == SessionActivityStage.ClosedForRouteExit ||
+                _pipeline.ActiveRailKind == SessionActivityRailKind.ActivityRouteExitRail)
             {
                 return;
             }
 
             throw new InvalidOperationException(
                 $"[FATAL][Lifecycle][SessionActivityPipeline][Host] SessionActivityRouteExitWithoutCanonicalDeactivation sessionStateId='{sessionStateId}' stage='{stage}' activityId='{_pipeline.State.CurrentDefinition.ActivityId}' reason='route_exit_or_scene_unload_requires_explicit_activity_closure_before_unload'.");
-        }
-
-        private void OnDestroy()
-        {
-            UnregisterGlobalsIfNeeded();
         }
 
         private void Update()
@@ -717,6 +693,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return Application.isEditor || Debug.isDebugBuild;
         }
 
+        private SessionActivityCompositionInstaller GetOrCreateCompositionInstaller()
+        {
+            SessionActivityCompositionInstaller installer = GetComponent<SessionActivityCompositionInstaller>();
+            if (installer != null)
+            {
+                return installer;
+            }
+
+            return gameObject.AddComponent<SessionActivityCompositionInstaller>();
+        }
+
+        internal void BindComposition(SessionActivityCatalog catalog, SessionActivityPipeline pipeline)
+        {
+            _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+            _pipeline = pipeline ?? throw new ArgumentNullException(nameof(pipeline));
+            Debug.Log(BuildHostBanner());
+        }
+
 
         private static string ResolveSceneLoaded(string sceneName)
         {
@@ -993,60 +987,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return $"inventoryId='{inventory.InventoryId}', totalRequirements='{inventory.TotalRequirementCount}'";
-        }
-
-        private static void RegisterGlobal<T>(T instance) where T : class
-        {
-            if (instance == null)
-            {
-                throw new ArgumentNullException(nameof(instance));
-            }
-
-            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
-            {
-                if (!ReferenceEquals(existing, instance))
-                {
-                    throw new InvalidOperationException($"Global dependency '{typeof(T).Name}' is already registered with a different instance.");
-                }
-
-                return;
-            }
-
-            DependencyManager.Provider.RegisterGlobal(instance);
-        }
-
-        private void UnregisterGlobalsIfNeeded()
-        {
-            if (!_globalsRegistered)
-            {
-                return;
-            }
-
-            if (_catalog != null)
-            {
-                UnregisterGlobal(_catalog);
-            }
-
-            if (_pipeline != null)
-            {
-                UnregisterGlobal(_pipeline);
-                UnregisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
-                UnregisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
-            }
-
-            UnregisterGlobal<ISessionActivityRouteExitTeardownBoundary>(this);
-            UnregisterGlobal<ISessionActivityVisualReadinessBoundary>(this);
-            _globalsRegistered = false;
-        }
-
-        private static void UnregisterGlobal<T>(T instance) where T : class
-        {
-            if (instance == null)
-            {
-                return;
-            }
-
-            DependencyManager.Provider.UnregisterGlobal(instance);
         }
     }
 }

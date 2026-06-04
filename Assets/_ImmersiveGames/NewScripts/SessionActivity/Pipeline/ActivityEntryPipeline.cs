@@ -4,11 +4,13 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Adapters;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -36,14 +38,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         // Ponte transitória SA-7B0: mantida apenas para stages ainda não migrados
         // para bridges menores. O ActivityEntryPipeline usa os campos de domínio abaixo
         // nos pontos já normalizados deste corte.
-        private readonly IActivityEntryRuntimeBridge _runtimeBridge;
+        private readonly IActivityEntryObjectSetupRuntimeBridge _runtimeBridge;
         private readonly IActivityEntryIdentityRuntimeBridge _identityBridge;
         private readonly IActivityEntryFactRuntimeBridge _factBridge;
         private readonly IActivityEntryContentLoadedSetRuntimeBridge _contentLoadedSetBridge;
         private readonly IActivityEntryContentPendingOperationRuntimeBridge _contentPendingOperationBridge;
         private readonly IActivityEntryLogRuntimeBridge _logBridge;
         private readonly IActivityEntryPreparationRuntimeBridge _preparationBridge;
-        private readonly IActivityEntryObjectSetupRuntimeBridge _objectSetupBridge;
         private readonly IActivityEntryActorInventoryRuntimeBridge _actorInventoryBridge;
         private readonly IActivityEntryActorPresentationRuntimeBridge _actorPresentationBridge;
         private readonly IActivityEntryActorAttributeRuntimeBridge _actorAttributeBridge;
@@ -52,6 +53,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IActivityEntryPermissionTargetRuntimeBridge _permissionTargetBridge;
         private readonly IActivityEntryMovementBindingRuntimeBridge _movementBindingBridge;
         private readonly IActivityEntryCameraBindingRuntimeBridge _cameraBindingBridge;
+        private readonly IActivityCameraPreparationExecutor _activityCameraPreparationExecutor;
         private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
@@ -63,15 +65,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private PendingContentLoadContext _pendingContentLoadContext;
 
         public ActivityEntryPipeline(
-            IActivityEntryRuntimeBridge endpoint,
-            IActivityEntryObjectSetupRuntimeBridge objectSetupBridge,
+            IActivityEntryObjectSetupRuntimeBridge endpoint,
             IActivityEntryActorInventoryRuntimeBridge actorInventoryBridge,
             IActivityEntryActorPresentationRuntimeBridge actorPresentationBridge,
             IActivityEntryActorAttributeRuntimeBridge actorAttributeBridge,
             IActivityEntryActorParticipationRuntimeBridge actorParticipationBridge,
             IActivityEntryPermissionTargetRuntimeBridge permissionTargetBridge,
             IActivityEntryMovementBindingRuntimeBridge movementBindingBridge,
-            IActivityEntryCameraBindingRuntimeBridge cameraBindingBridge)
+            IActivityEntryCameraBindingRuntimeBridge cameraBindingBridge,
+            IActivityCameraPreparationExecutor activityCameraPreparationExecutor)
         {
             if (endpoint == null)
             {
@@ -91,7 +93,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _participantBindingBridge = participantBindingBridge;
-            _objectSetupBridge = objectSetupBridge ?? throw new ArgumentNullException(nameof(objectSetupBridge));
             _actorInventoryBridge = actorInventoryBridge ?? throw new ArgumentNullException(nameof(actorInventoryBridge));
             _actorPresentationBridge = actorPresentationBridge ?? throw new ArgumentNullException(nameof(actorPresentationBridge));
             _actorAttributeBridge = actorAttributeBridge ?? throw new ArgumentNullException(nameof(actorAttributeBridge));
@@ -99,6 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _permissionTargetBridge = permissionTargetBridge ?? throw new ArgumentNullException(nameof(permissionTargetBridge));
             _movementBindingBridge = movementBindingBridge ?? throw new ArgumentNullException(nameof(movementBindingBridge));
             _cameraBindingBridge = cameraBindingBridge ?? throw new ArgumentNullException(nameof(cameraBindingBridge));
+            _activityCameraPreparationExecutor = activityCameraPreparationExecutor ?? throw new ArgumentNullException(nameof(activityCameraPreparationExecutor));
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _playerInputBindingAdapter = new PlayerInputBindingAdapter();
@@ -107,19 +109,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
         }
 
-        public ActivityEntryPreparationResult PrepareEntry(ActivityEntryPreparationCommand command)
+        public ActivityEntryPreparationResult PrepareEntry(
+            ActivityEntryPreparationCommand command,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext = default)
         {
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("ActivityEntryPreparationCommand is invalid.");
             }
 
+            string loadedSnapshotPayloadState = loadedSnapshotPayloadContext.HasPayload ? "true" : "false";
+            int loadedSnapshotPayloadObjectCount = loadedSnapshotPayloadContext.HasPayload
+                ? loadedSnapshotPayloadContext.Payload.Objects.Count
+                : 0;
+            string loadedSnapshotPayloadSourceActivityId = loadedSnapshotPayloadContext.HasPayload
+                ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId)
+                : "<none>";
+            int loadedSnapshotPayloadSourceEntrySequence = loadedSnapshotPayloadContext.HasPayload
+                ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence
+                : 0;
+
             _logBridge.LogEntryOwnerEvent(
                 "ActivityEntryPipelineStarted",
                 command.Identity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' bridgeReduction='runtime_bridge_domain_split' stageBridgeSplit='content_object_actor_inventory' runtimeStateStoreSplit='content_preparation_store_sources' objectActorStoreSourceSplit='stage_owned_store_sources' contentPendingOperationSplit='loaded_set_store_pending_operation_dispatch'");
+                $"owner='ActivityEntryPipeline' bridgeReduction='runtime_bridge_domain_split' stageBridgeSplit='content_object_actor_inventory' runtimeStateStoreSplit='content_preparation_store_sources' objectActorStoreSourceSplit='stage_owned_store_sources' contentPendingOperationSplit='loaded_set_store_pending_operation_dispatch' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadObjectCount='{loadedSnapshotPayloadObjectCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'");
             _logBridge.LogEntryOwnerEvent(
                 "ActivityEntryPreparationStarted",
                 command.Identity,
@@ -159,6 +174,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         public ActivityEntrySetupReadinessResult ExecuteSetupAndReadiness(
             ActivityEntryCommand command,
             SessionActivityDefinition definition,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -253,6 +269,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 ActivityEntryObjectSetupResult capabilityObjectSetupResult = ExecuteCapabilityObjectSetup(
                     objectSetupCommand,
+                    loadedSnapshotPayloadContext,
                     facts,
                     snapshots);
                 if (!capabilityObjectSetupResult.Completed || !capabilityObjectSetupResult.IsValid)
@@ -828,7 +845,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                ActivityContentLoadedSet loadedSet = _objectSetupBridge.GetCurrentActivityContentLoadedSet();
+                ActivityContentLoadedSet loadedSet = _runtimeBridge.GetCurrentActivityContentLoadedSet();
                 ActivityEntryActorInventoryStage.ExecuteSceneDiscovery(
                     command,
                     loadedSet,
@@ -845,7 +862,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _factBridge,
                     _logBridge,
                     _preparationBridge,
-                    _objectSetupBridge,
+                    _runtimeBridge,
                     facts,
                     snapshots);
 
@@ -854,14 +871,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _activitySetupInventoryBuilder,
                     _activitySetupInventoryValidator,
                     _runtimeBridge,
-                    _objectSetupBridge,
+                    _runtimeBridge,
                     facts,
                     snapshots);
 
                 ActivityEntryObjectSnapshotContractValidationStage.Execute(
                     command,
                     loadedSet,
-                    _objectSetupBridge.GetCurrentActivityObjectContributorDiscoveryResult(),
+                    _runtimeBridge.GetCurrentActivityObjectContributorDiscoveryResult(),
                     _runtimeBridge,
                     facts);
 
@@ -936,6 +953,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
             ActivityEntryObjectSetupCommand command,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -953,7 +971,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                ActivityObjectContributorDiscoveryResult discoveryResult = _objectSetupBridge.GetCurrentActivityObjectContributorDiscoveryResult();
+                ActivityObjectContributorDiscoveryResult discoveryResult = _runtimeBridge.GetCurrentActivityObjectContributorDiscoveryResult();
                 ActorInventoryFeedResult actorInventoryFeed = ActivityEntryActorInventoryStage.ExecuteActorInventoryFeed(
                     command,
                     _logBridge,
@@ -966,7 +984,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     actorTargets,
                     _activityCapabilityInventoryCoordinator,
                     _runtimeBridge,
-                    _objectSetupBridge,
+                    _runtimeBridge,
                     facts,
                     snapshots);
 
@@ -979,12 +997,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     facts,
                     snapshots);
 
+                string restorePayloadState = loadedSnapshotPayloadContext.HasPayload ? "true" : "false";
+                int restorePayloadObjectCount = loadedSnapshotPayloadContext.HasPayload
+                    ? loadedSnapshotPayloadContext.Payload.Objects.Count
+                    : 0;
+                string restorePayloadSourceActivityId = loadedSnapshotPayloadContext.HasPayload
+                    ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId)
+                    : "<none>";
+                int restorePayloadSourceEntrySequence = loadedSnapshotPayloadContext.HasPayload
+                    ? loadedSnapshotPayloadContext.Payload.SourceEntrySequence
+                    : 0;
+                _logBridge.LogEntryOwnerEvent(
+                    "ActivityEntrySnapshotRestoreReady",
+                    command.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='capability_inventory_object_state' loadedSnapshotPayload='{restorePayloadState}' loadedSnapshotPayloadObjectCount='{restorePayloadObjectCount}' loadedSnapshotPayloadSourceActivityId='{restorePayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{restorePayloadSourceEntrySequence}'");
                 ActivityEntryObjectSnapshotRestoreStage.Execute(
                     command,
                     discoveryResult,
                     buildResult.Inventory,
                     buildResult.Validation,
                     _runtimeBridge,
+                    loadedSnapshotPayloadContext,
                     facts);
 
                 _logBridge.LogEntryOwnerEvent(
@@ -1310,6 +1345,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("ActivityEntryCameraBindingCommand is invalid.");
             }
 
+            if (_activityCameraPreparationExecutor == null)
+            {
+                throw new InvalidOperationException("ActivityEntryPipeline camera preparation executor is not configured.");
+            }
+
             _logBridge.LogEntryOwnerEvent(
                 "ActivityEntryCameraBindingStarted",
                 command.Identity,
@@ -1323,6 +1363,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command,
                     _runtimeBridge,
                     _cameraBindingBridge,
+                    _activityCameraPreparationExecutor,
                     facts,
                     snapshots);
 

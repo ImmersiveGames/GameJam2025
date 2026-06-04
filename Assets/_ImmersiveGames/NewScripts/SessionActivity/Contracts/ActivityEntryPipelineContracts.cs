@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeR
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
 using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
@@ -419,6 +420,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
+    }
+
+    public readonly struct ActivityEntryObjectSnapshotRestorePayloadContext
+    {
+        public ActivityEntryObjectSnapshotRestorePayloadContext(LoadedSessionActivitySnapshotPayload payload)
+        {
+            Payload = payload;
+        }
+
+        public LoadedSessionActivitySnapshotPayload Payload { get; }
+        public bool HasPayload => Payload.IsValid;
+        public bool IsValid => HasPayload;
     }
 
 
@@ -1088,7 +1101,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     // Bridge transitoria SA-3B0: expõe apenas state técnico canônico e actor scan targets
     // enquanto o subfluxo é transferido do SessionActivityPipeline para o ActivityEntryPipeline.
-    public interface IActivityEntryObjectSetupRuntimeBridge
+    public interface IActivityEntryObjectSetupRuntimeBridge :
+        IActivityEntryRuntimeBridge
     {
         ActivityContentLoadedSet GetCurrentActivityContentLoadedSet();
         ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult();
@@ -1286,7 +1300,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity identity,
             PlayerActivityParticipantBinding binding,
             out PlayerActorRuntimeHandle handle);
-        bool TryGetActivityCameraPreparationExecutor(out IActivityCameraPreparationExecutor executor);
     }
 
 
@@ -1332,10 +1345,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation);
         void ClearCurrentActivityCapabilityInventoryPreview();
-        ActivityEntryPreparationResult PrepareEntry(ActivityEntryPreparationCommand command);
+        ActivityEntryPreparationResult PrepareEntry(
+            ActivityEntryPreparationCommand command,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext = default);
         ActivityEntrySetupReadinessResult ExecuteSetupAndReadiness(
             ActivityEntryCommand command,
             SessionActivityDefinition definition,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryContentLoadResult BeginContentLoad(
@@ -1357,6 +1373,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
             ActivityEntryObjectSetupCommand command,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryActorPresentationSetupResult ExecuteActorPresentationSetup(

@@ -1006,13 +1006,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionActivityIdentity toIdentity,
             string nextActivityId,
             string source,
-            string reason)
+            string reason,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext = default)
         {
             FromIdentity = fromIdentity;
             ToIdentity = toIdentity;
             NextActivityId = Normalize(nextActivityId);
             Source = Normalize(source);
             Reason = Normalize(reason);
+            LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
         }
 
         public SessionActivityIdentity FromIdentity { get; }
@@ -1020,6 +1022,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string NextActivityId { get; }
         public string Source { get; }
         public string Reason { get; }
+        public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
+        public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
 
         public bool IsValid =>
             FromIdentity.IsValid &&
@@ -1029,7 +1033,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
         public override string ToString()
         {
-            return $"from='{FromIdentity}', to='{ToIdentity}', nextActivityId='{NextActivityId}', source='{Source}', reason='{Reason}'";
+            return $"from='{FromIdentity}', to='{ToIdentity}', nextActivityId='{NextActivityId}', source='{Source}', reason='{Reason}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
 
         private static string Normalize(string value)

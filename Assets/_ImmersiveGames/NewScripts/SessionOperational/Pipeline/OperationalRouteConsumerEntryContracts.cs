@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 {
@@ -23,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string sessionStateId,
             SessionParticipationContext sessionParticipationContext,
             IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> actorMaterializationSeedEntries,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             bool hasRouteFadeProfile,
             SceneTransitionProfile routeFadeProfile,
             bool hasRouteLoadingProfile,
@@ -33,6 +35,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionStateId = Normalize(sessionStateId);
             SessionParticipationContext = sessionParticipationContext;
             ActorMaterializationSeedEntries = actorMaterializationSeedEntries ?? Array.Empty<PlayerSetDefinitionAsset.PlayerActorResolvedEntry>();
+            LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
             HasRouteFadeProfile = hasRouteFadeProfile;
             RouteFadeProfile = routeFadeProfile;
             HasRouteLoadingProfile = hasRouteLoadingProfile;
@@ -45,6 +48,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public SessionParticipationContext SessionParticipationContext { get; }
         public bool HasSessionParticipationContext => SessionParticipationContext != null && SessionParticipationContext.IsValid;
         public IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> ActorMaterializationSeedEntries { get; }
+        public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
+        public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
         public bool HasRouteFadeProfile { get; }
         public SceneTransitionProfile RouteFadeProfile { get; }
         public bool HasRouteLoadingProfile { get; }

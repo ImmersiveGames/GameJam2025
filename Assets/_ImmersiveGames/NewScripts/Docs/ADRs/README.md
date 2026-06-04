@@ -90,9 +90,18 @@ O checkpoint atual aceita como evidência:
 - ADR-2.0-0003 — PlayerParticipation, PlayerSlot, PlayerSelection, SessionParticipation e ActorMaterialization Boundary
 - ADR-2.0-0004 — SA-IDREF Typed Runtime References e PlayerActor Runtime Identity
 
-### Checkpoint SessionActivity Base 2.0 — SA-10 / SA-11B
+### Checkpoint SessionActivity Base 2.0 — SA-10 / SA-11A / SA-11B / ActivityContent runtime state
 
 - `SA-10 — Permission identity separation final`: `CLOSED / DOCUMENTATION ONLY`. Auditoria confirmou que `Permission` usa `ActorInstanceRuntimeId` como target funcional; `PlayerActorId` e `PlayerSlotId` permanecem observabilidade/log/fact/payload.
+- `SA-11A — ActivityEntry state/context extraction`: `CLOSED / PASS arquitetural do ownership de entry`.
+  - `ActivityParticipationContext` tem owner em `ActivityParticipationRuntimeState`, hospedado pelo `ActivityEntryPipeline`.
+  - `ActivitySetupInventory`, `ActivityCapabilityInventoryPreview`, validation, contributor discovery result e actor inventory feed têm owner em `ActivityEntryInventoryRuntimeState`.
+  - Mirrors residuais de entry sem consumer técnico foram removidos de `SessionActivityRuntimeState`.
+- `SA-CONTENT-REL-1/2 — ActivityContent loaded set ownership normalization`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - `ActivityContentRuntimeState` é o único owner canônico do loaded set vivo.
+  - `ActivityContentReleaseRuntimeState` mantém apenas `PendingReleaseContext` e `IsAwaitingContinuation`.
+  - Restart, next activity, route-exit, snapshot-before-release e `activity_02` no-content foram preservados.
+  - Checkpoints antigos que citam `ActivityContentReleaseRuntimeStateLoadedSet*` permanecem apenas como evidência histórica do shape anterior; não são o contrato runtime atual.
 - `SA-11B — Fact recorder hygiene`: `CLOSED / PASS funcional + PASS arquitetural do corte`. O smoke mais recente confirmou o ordering correto: cleanup final antes de `ActivityContentReleaseCompleted`, com `pendingReleaseContextPresentAfter='false'`, `loadedSetPresentAfter='false'` e `awaitingContinuationAfter='false'`.
 - `SA-11B-H2 — ActivityContentReleaseCompleted ordering fix`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 - A ausência de `PlayerActorParticipationExitStageCompleted` em alguns smokes permanece aceita como caminho condicional: auditoria estática confirmou que o substage só executa quando `exitedPlayerActors.Count > 0`, e que o patch alinha fact/snapshot quando executado.
@@ -101,8 +110,8 @@ O checkpoint atual aceita como evidência:
 
 ### Checkpoint SessionActivity Base 2.0 — SA-12 command hygiene
 
-- `SA-12 — Commands e contracts finais`: `PARTIAL / IN PROGRESS`.
-- `SA-12-AUDIT`: `AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH`. Auditoria não encontrou `Action`, `Func<T>`, adapters, delegates de execução ou `SessionActivityRuntimeState` embutidos nos commands auditados; o débito é higiene de contract.
+- `SA-12 — Commands e contracts finais`: `CLOSED / PASS arquitetural do command hygiene`.
+- `SA-12-AUDIT`: `CLOSED / RESOLVED BY FOLLOW-UP PATCHES`. A auditoria não encontrou `Action`, `Func<T>`, adapters, delegates de execução ou `SessionActivityRuntimeState` embutidos nos commands auditados; os resíduos de contract hygiene foram fechados pelos cortes seguintes.
 - `SA-12B/C — Command boundary + identity duplication cleanup`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
   - `ActivityObjectContributorUnregisterStageCommand` não carrega mais `SessionActivityStage Stage`.
   - `ActivityObjectResetCommand`, `ActivityObjectReleaseCommand`, `ActivityObjectSnapshotRestoreCommand` e `ActivityContentSceneUnloadCommand` não duplicam mais `PipelineId`, `SessionStateId`, `ActivityId`, `ActivityOrdinal` e `EntrySequence` quando `SessionActivityIdentity` já é a fonte do ciclo.
@@ -114,10 +123,13 @@ O checkpoint atual aceita como evidência:
   - `ActivityEntryContentLoadCommand` passou a carregar `ActivityContentLoadPlan`.
   - `ActivityContentLoadedSceneRecord` e unload passaram a operar por runtime scene reference, sem `SceneKeyAsset` como payload runtime.
   - `activity_01` preserva `loadedScenes='1'`; `activity_02` preserva no-content/skip explícito.
-- `SA-12F — Reduce SessionActivityDefinition from ActivityEntry*Command`: `PARTIAL / IN PROGRESS`.
+- `SA-12F — Reduce SessionActivityDefinition from ActivityEntry*Command`: `CLOSED / PASS arquitetural do corte`.
   - Fechados: `SA-12F1A/B`, `SA-12F2`, `SA-12F3A`, `SA-12F3B`, `SA-12F3C`, `SA-12F4A`, `SA-12F4B`, `SA-12F4C`.
   - `ActivityEntryContentLoadCommand`, binding commands, ActorPresentation/ActorAttribute setup commands, ParticipantBinding e ObjectSetup deixaram de carregar `SessionActivityDefinition` nos subfluxos tratados.
   - `ActivityEntryObjectSetupCommand` foi dividido entre `ActivityObjectSetupInventoryPlan` e `ActivityObjectResetRestorePlan` e não carrega mais `SessionActivityDefinition`.
+- `SA-12F5 — residual SessionActivityDefinition command hygiene`: `CLOSED / PASS arquitetural do command hygiene`.
+  - `SessionActivityDefinition` foi removido dos últimos runtime commands que ainda o carregavam como carrier.
+  - Usos restantes em fronteiras explícitas de stage não são payload de command.
 - `SA-12F-BLOCKER-MOVEMENT-ACTIVITY02`: `CLOSED / PASS funcional + PASS arquitetural parcial`.
   - Loading voltou a completar/esconder.
   - `activity_02` preserva no-content, mas projeta o `PlayerActor SessionScoped` retido para `ActivityParticipationContext`, capability inventory, PermissionTarget, PlayerInput, MovementBinding e MovementControl.
@@ -126,8 +138,8 @@ O checkpoint atual aceita como evidência:
   - A projection bridge concreta saiu de `SessionActivityPipeline` e passou para `ActivityEntryActorInventoryStage`.
   - `ActivityEntryCapabilityInventoryPreviewStage` continua writer do snapshot de inventory.
   - `activity_02` preserva no-content com `PlayerActor SessionScoped` retido funcional: `ActivityParticipantRetainedBindingChosen`, `ActivityParticipationContextPrepared activityParticipants='1'`, `ActivityEntryPermissionTargetPreparationCompleted receivers='1'`, `PlayerMovementPermissionApplied state='Allowed'`, `MovementControlEnabled activityId='activity_02' affectedActors='1'`, `Activity01ToActivity02 PASS`.
-- Pendência de `SA-12`: `SA-12F5 — residual SessionActivityDefinition command hygiene`.
-- `SA-11B` segue `CLOSED / PASS funcional + PASS arquitetural do corte`; `SA-12` permanece parcial até fechamento de `SA-12F5`.
+- `SA-12` não possui pendência runtime aberta conhecida após `SA-12F5` e `SA-12F-MOV-H1`; não reabrir salvo regressão explícita.
+- `SA-11A`, `SA-11B`, `SA-CONTENT-REL-1/2` e `SA-12` seguem fechados nos limites documentados.
 
 ### Checkpoint conceitual Base 2.0
 
@@ -152,7 +164,7 @@ O ADR-2.0-0004 congela que:
 - `SA-IDREF-2H5 — Centralizar PlayerActorId no PlayerActorRuntimeHandle / Registry` está CLOSED / PASS após smoke manual.
 - `SA-IDREF-3A-H1/H2/H3` registrou a regressão e congelou a separação entre lookup operacional e identidade observável.
 - `PlayerActorId` permanece exposto em `PlayerActorIdentityRecord` / `PlayerActorRuntimeHandle` como identidade observável, mas não é chave operacional primária de lookup runtime.
-- `PlayerInputBindingStage` não fabrica `PlayerActorId`; consumers usam binding/handle.
+- `PlayerInputBindingStage` e `ActivityEntryMovementBindingStage` não fabricam `PlayerActorId`; consumers usam binding/handle. O shim morto `PlayerMovementBindingStage` foi removido.
 - Nenhum corte `SA-IDREF` futuro é PASS sem smoke/log.
 - `SA-IDREF-4A — Camera target by ActorInstanceRuntimeId` está CLOSED / PASS após smoke manual.
 - `SA-IDREF-4B — Permission identity audit` está AUDITED / NO RUNTIME CHANGE.

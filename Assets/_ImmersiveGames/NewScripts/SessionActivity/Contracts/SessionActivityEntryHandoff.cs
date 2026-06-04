@@ -130,6 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionParticipationContext sessionParticipationContext,
             IReadOnlyList<SessionActivityActorMaterializationPlanEntry> actorMaterializationPlanEntries,
             SessionActivityRouteTransitionContext routeTransitionContext,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             string source,
             string reason)
         {
@@ -140,6 +141,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             SessionParticipationContext = sessionParticipationContext;
             ActorMaterializationPlanEntries = actorMaterializationPlanEntries ?? Array.Empty<SessionActivityActorMaterializationPlanEntry>();
             RouteTransitionContext = routeTransitionContext;
+            LoadedSnapshotPayloadContext = loadedSnapshotPayloadContext;
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -151,6 +153,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionParticipationContext SessionParticipationContext { get; }
         public IReadOnlyList<SessionActivityActorMaterializationPlanEntry> ActorMaterializationPlanEntries { get; }
         public SessionActivityRouteTransitionContext RouteTransitionContext { get; }
+        public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -160,6 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int SessionParticipationSelectionCount => SessionParticipationContext?.SelectionCount ?? 0;
         public int SessionParticipationParticipantCount => SessionParticipationContext?.ParticipantCount ?? 0;
         public int ActorMaterializationPlanEntryCount => CountMaterializationPlanEntries(ActorMaterializationPlanEntries);
+        public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;
 
         public bool HasResolvedActivity =>
             !string.IsNullOrWhiteSpace(ActivityId) &&
@@ -186,6 +190,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                    SessionParticipationRevision == other.SessionParticipationRevision &&
                    ActorMaterializationPlanEntryCount == other.ActorMaterializationPlanEntryCount &&
                    RouteTransitionContext.Equals(other.RouteTransitionContext) &&
+                   LoadedSnapshotPayloadContext.HasPayload == other.LoadedSnapshotPayloadContext.HasPayload &&
                    string.Equals(Source, other.Source, StringComparison.Ordinal) &&
                    string.Equals(Reason, other.Reason, StringComparison.Ordinal);
         }
@@ -207,6 +212,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                 hashCode = (hashCode * 397) ^ SessionParticipationRevision;
                 hashCode = (hashCode * 397) ^ ActorMaterializationPlanEntryCount;
                 hashCode = (hashCode * 397) ^ RouteTransitionContext.GetHashCode();
+                hashCode = (hashCode * 397) ^ (LoadedSnapshotPayloadContext.HasPayload ? 1 : 0);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Source ?? string.Empty);
                 hashCode = (hashCode * 397) ^ StringComparer.Ordinal.GetHashCode(Reason ?? string.Empty);
                 return hashCode;
@@ -226,7 +232,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                     ? $"activityId='<first-catalog>', activityOrdinal='0', entrySequence='{EntrySequence}'"
                     : "activityId='<first-catalog>', activityOrdinal='0', entrySequence='<pipeline-allocated>'";
 
-            return $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}'";
+            return $"{activity}, sessionStateId='{SessionStateId}', routeOperationId='{SessionParticipationContext.RouteOperationId}', sessionParticipationContext='present', sessionParticipationRevision='{SessionParticipationRevision}', sessionParticipants='{SessionParticipationParticipantCount}', actorMaterializationPlanEntries='{ActorMaterializationPlanEntryCount}', loadedSnapshotPayload='{(HasLoadedSnapshotPayloadContext ? "present" : "absent")}'";
         }
 
         public static bool operator ==(SessionActivityEntryHandoff left, SessionActivityEntryHandoff right) => left.Equals(right);
@@ -257,7 +263,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
     }
 }
-
 
 
 

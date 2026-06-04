@@ -6,6 +6,14 @@
 - Este documento descreve o que **existe hoje** e o que **ainda nao e contrato final**.
 - `Run Pipeline / Deactivation / Continuity` permanece direção macro futura da Base 1.1, mas não é pendência ativa deste sandbox enquanto não houver run concreta.
 
+## Base 2.0 checkpoints
+- `SA-9B` foi fechado como cleanup local de composition/service locator.
+- `SessionActivityHost`, `SessionActivityPipeline` e `ActivityEntryObjectSetupStages` nao usam mais `DependencyManager.Provider` no caminho ativo de `SessionActivity`.
+- `IActivityCameraPreparationExecutor` nao passa mais por `SessionActivityPipeline` nem por `TryGet` de bridge.
+- `ActivityEntryPipeline` recebe `IActivityCameraPreparationExecutor` por construtor.
+- O seam restante `BindEntryPipeline(...)` nao pertence mais ao escopo de `SA-9B`; ele fica registrado como debito proprio de `SA-13`.
+- `SA-13` cobre a decomposicao do runtime surface de `Entry` para permitir construcao sem ciclo entre `SessionActivityPipeline` e `ActivityEntryPipeline`.
+
 ## Entrada canonica
 1. `SessionOperationalPipeline` prepara o handoff.
 2. `SessionOperationalPipeline` emite `SessionActivityEntryHandoff`.

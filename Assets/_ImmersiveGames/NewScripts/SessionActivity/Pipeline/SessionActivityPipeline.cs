@@ -15,10 +15,8 @@ using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
-using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Transitions;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
@@ -68,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly SessionActorRuntimeStore _sessionActorRuntimeStore;
         private readonly ActivityActorExitRuntimeState _activityActorExitRuntimeState = new();
         private readonly IActivityCapabilityPermissionRuntime _permissionRuntime;
-        private readonly IActivityEntryPipeline _activityEntryPipeline;
+        private ActivityEntryPipeline _activityEntryPipeline;
         private readonly string _sessionId;
         private PendingNavigationTransition _pendingNavigationTransition;
         private SessionActivityRouteTransitionContext _routeTransitionContext;
@@ -459,7 +457,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _movementBindingAdapter = new MovementBindingAdapter(_permissionRuntime);
             _playerMovementControlAdapter = new PlayerMovementControlAdapter(_permissionRuntime);
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
-            _activityEntryPipeline = new ActivityEntryPipeline(this, this, this, this, this, this, this, this, this);
             _sessionId = Normalize(sessionStateId);
 
             if (string.IsNullOrWhiteSpace(_sessionId))
@@ -472,6 +469,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public SessionActivityRuntimeState State => _state;
         public SessionActivityCatalog Catalog => _catalog;
+        public ActivityEntryPipeline EntryPipeline => _activityEntryPipeline ?? throw new InvalidOperationException("ActivityEntryPipeline is not bound.");
+
+        internal void BindEntryPipeline(ActivityEntryPipeline activityEntryPipeline)
+        {
+            if (activityEntryPipeline == null)
+            {
+                throw new ArgumentNullException(nameof(activityEntryPipeline));
+            }
+
+            if (_activityEntryPipeline != null)
+            {
+                if (ReferenceEquals(_activityEntryPipeline, activityEntryPipeline))
+                {
+                    return;
+                }
+
+                throw new InvalidOperationException("ActivityEntryPipeline is already bound.");
+            }
+
+            _activityEntryPipeline = activityEntryPipeline;
+        }
         public ActivityExecutionBlockingState GateState => _sessionActivitySimulationGate.State;
         public bool AwaitingContinuationAfterActivityContentRelease => _activityContentReleaseRuntimeState.IsAwaitingContinuation;
         public int PendingActivityContentReleaseEntrySequence => _activityContentReleaseRuntimeState.HasPendingReleaseContext
@@ -783,6 +801,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentIdentity(activationIdentity, SessionActivityStage.ActivityActivationStarted);
             _state.MarkStarted();
             _routeTransitionContext = handoff.RouteTransitionContext;
+            SessionActivityIdentity setupBoundaryIdentity = BuildIdentity(initialDefinition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            SessionActivityHandoff stateHandoff = new(
+                activationIdentity,
+                setupBoundaryIdentity,
+                initialDefinition.ActivityId,
+                source,
+                reason,
+                handoff.LoadedSnapshotPayloadContext);
+            _state.SetHandoff(stateHandoff);
             if (!handoff.HasResolvedActivity)
             {
                 _state.AppendTrace($"[OBS][SessionActivityPipeline] FirstCatalogActivityResolved activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' handoff='{handoff}' source='{source}' reason='{reason}'");
@@ -790,12 +817,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff handoff='{handoff}' source='{source}' reason='{reason}'");
             _state.AppendTrace($"[OBS][SessionActivityPipeline] SessionActivityEntryHandoffAccepted handoff='{handoff}' source='{source}' reason='{reason}'");
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' actorMaterializationPlanEntries='{handoff.ActorMaterializationPlanEntryCount}'.",
+                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' actorMaterializationPlanEntries='{handoff.ActorMaterializationPlanEntryCount}' loadedSnapshotPayload='{(handoff.HasLoadedSnapshotPayloadContext ? "present" : "absent")}' loadedSnapshotPayloadObjectCount='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.Objects.Count : 0)}' loadedSnapshotPayloadSourceActivityId='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.ActivityId : "<none>")}' loadedSnapshotPayloadSourceEntrySequence='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.SourceEntrySequence : 0)}'.",
                 DebugUtility.Colors.Success);
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "SessionActivityPipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
 
-            EnterActivity(initialDefinition, command, emittedFacts, emittedSnapshots, entrySequence);
+            EnterActivity(initialDefinition, command, handoff, emittedFacts, emittedSnapshots, entrySequence);
 
             SessionActivityCommandResult result = new(
                 SessionActivityCommandResultKind.Started,
@@ -2195,7 +2222,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             EmitFact(facts, SessionActivityFactKind.PipelineStarted, activationIdentity, command.Source, command.Reason, "SessionActivityPipeline started.");
             EmitSnapshot(snapshots, "pipeline_started", command.Source, command.Reason, "Pipeline started.");
 
-            EnterActivity(firstDefinition, command, facts, snapshots, entrySequence);
+            EnterActivity(firstDefinition, command, default, facts, snapshots, entrySequence);
         }
 
         private Task EmitCompleteActivationWindowAsync(SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots)
@@ -2989,7 +3016,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.SetCurrentDefinition(restart.Activity);
             _pendingRestartCompletionActivityId = restart.Activity.ActivityId;
             _pendingRestartCompletionEntrySequence = restart.NextEntrySequence;
-            EnterActivity(restart.Activity, command, facts, snapshots, restart.NextEntrySequence);
+            EnterActivity(restart.Activity, command, default, facts, snapshots, restart.NextEntrySequence);
             CompleteActivityContentReleaseContinuationIfStarted(
                 continuationStarted,
                 continuationTelemetry,
@@ -3037,7 +3064,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.ClearHandoff();
             _state.SetCurrentDefinition(next);
             await ApplyPendingTransitionBeforeNextEntryIfNeededAsync(_state.CurrentIdentity, command.Source, command.Reason);
-            EnterActivity(next, command, facts, snapshots, nextEntrySequence);
+            EnterActivity(next, command, default, facts, snapshots, nextEntrySequence);
             await ApplyPendingTransitionRevealIfNeededAsync(next, command, facts, snapshots);
         }
 
@@ -3245,7 +3272,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason);
         }
 
-        private void EnterActivity(SessionActivityDefinition definition, SessionActivityCommand command, List<SessionActivityFact> facts, List<SessionActivitySnapshot> snapshots, int entrySequence)
+        private void EnterActivity(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            SessionActivityEntryHandoff handoff,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
         {
             if (!definition.IsValid)
             {
@@ -3257,7 +3290,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 setupBoundaryIdentity,
                 command.Source,
                 command.Reason);
-            ActivityEntryPreparationResult entryResult = _activityEntryPipeline.PrepareEntry(entryCommand);
+            ActivityEntryPreparationResult entryResult = _activityEntryPipeline.PrepareEntry(
+                entryCommand,
+                handoff.LoadedSnapshotPayloadContext);
             if (entryResult.Kind != ActivityEntryPreparationResultKind.Prepared || !entryResult.IsValid)
             {
                 throw new InvalidOperationException($"ActivityEntryPipeline failed entry preparation. kind='{entryResult.Kind}' reason='{entryResult.Reason}' identity='{entryResult.Identity}'.");
@@ -3290,6 +3325,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Source,
                     command.Reason),
                 definition,
+                handoff.LoadedSnapshotPayloadContext,
                 facts,
                 snapshots);
             if (setupReadinessResult.Kind != ActivityEntrySetupReadinessResultKind.Completed || !setupReadinessResult.IsValid)
@@ -3347,6 +3383,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             SessionActivityIdentity setupBoundaryIdentity = BuildIdentity(definition, SessionActivityStage.ActivitySetupStarted, entrySequence);
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext =
+                _state.CurrentHandoff.HasLoadedSnapshotPayloadContext
+                    ? _state.CurrentHandoff.LoadedSnapshotPayloadContext
+                    : default;
             ActivityEntrySetupReadinessResult setupReadinessResult = _activityEntryPipeline.ExecuteSetupAndReadiness(
                 new ActivityEntryCommand(
                     setupBoundaryIdentity,
@@ -3355,6 +3395,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Source,
                     command.Reason),
                 definition,
+                loadedSnapshotPayloadContext,
                 facts,
                 snapshots);
             if (setupReadinessResult.Kind != ActivityEntrySetupReadinessResultKind.Completed || !setupReadinessResult.IsValid)
@@ -8597,15 +8638,6 @@ private bool TryBuildActivityParticipantBinding(
                 return false;
             }
         }
-
-        bool IActivityEntryCameraBindingRuntimeBridge.TryGetActivityCameraPreparationExecutor(out IActivityCameraPreparationExecutor executor)
-        {
-            return DependencyManager.Provider.TryGetGlobal<IActivityCameraPreparationExecutor>(out executor) && executor != null;
-        }
-
-
-
-
 
         ActorPresentationResult IActivityExitActorTeardownRuntimeBridge.ReleaseActorPresentation(ActorPresentationRuntimeHandle handle, string source, string reason)
         {

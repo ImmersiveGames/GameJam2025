@@ -1,0 +1,199 @@
+using System;
+using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
+using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using UnityEngine;
+
+namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
+{
+    [DisallowMultipleComponent]
+    [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Composition Installer")]
+    public sealed class SessionActivityCompositionInstaller : MonoBehaviour
+    {
+        private SessionActivityHost _host;
+        private SessionActivityCatalog _catalog;
+        private SessionActivityPipeline _pipeline;
+        private bool _globalsRegistered;
+
+        public void Compose(
+            SessionActivityHost host,
+            SessionActivityCatalog catalog,
+            string sessionStateId)
+        {
+            if (host == null)
+            {
+                throw new ArgumentNullException(nameof(host));
+            }
+
+            if (catalog == null)
+            {
+                throw new ArgumentNullException(nameof(catalog));
+            }
+
+            if (string.IsNullOrWhiteSpace(sessionStateId))
+            {
+                throw new ArgumentException("sessionStateId is required.", nameof(sessionStateId));
+            }
+
+            if (_pipeline != null)
+            {
+                throw new InvalidOperationException("SessionActivityCompositionInstaller was already composed.");
+            }
+
+            EnsureDependencyManagerOrFail();
+            IActivityCameraPreparationExecutor activityCameraPreparationExecutor = ResolveActivityCameraPreparationExecutorOrFail();
+
+            UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
+            UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
+            UnityActivityContentSceneReleaseAdapter activityContentSceneReleaseAdapter = new();
+
+            _host = host;
+            _catalog = catalog;
+            _pipeline = new SessionActivityPipeline(
+                _catalog,
+                sessionStateId,
+                new PauseOverlayAdapter(),
+                new InputModeAdapter(),
+                new SessionActivityTransitionAdapter(),
+                new SessionActivityTransitionLoadingAdapter(),
+                windowSceneAdapter,
+                new UnitySessionActivityPendingOperationRunner(
+                    windowSceneAdapter,
+                    activityContentSceneAdapter,
+                    activityContentSceneReleaseAdapter));
+
+            ActivityEntryPipeline activityEntryPipeline = new ActivityEntryPipeline(
+                _pipeline,
+                _pipeline,
+                _pipeline,
+                _pipeline,
+                _pipeline,
+                _pipeline,
+                _pipeline,
+                _pipeline,
+                activityCameraPreparationExecutor);
+            _pipeline.BindEntryPipeline(activityEntryPipeline);
+
+            _globalsRegistered = true;
+            try
+            {
+                RegisterGlobalsOrFail();
+                _host.BindComposition(_catalog, _pipeline);
+            }
+            catch
+            {
+                UnregisterGlobalsIfNeeded();
+                throw;
+            }
+
+            DebugUtility.Log(typeof(SessionActivityCompositionInstaller),
+                $"[OBS][SessionActivityPipeline][Installer] composition completed sessionStateId='{sessionStateId}' catalog='{_catalog.Summary}'.",
+                DebugUtility.Colors.Info);
+        }
+
+        private void OnDestroy()
+        {
+            if (!DependencyManager.HasInstance)
+            {
+                _globalsRegistered = false;
+                return;
+            }
+
+            UnregisterGlobalsIfNeeded();
+        }
+
+        private static void EnsureDependencyManagerOrFail()
+        {
+            if (DependencyManager.HasInstance)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] DependencyManager instance is required before composing SessionActivity.");
+        }
+
+        private IActivityCameraPreparationExecutor ResolveActivityCameraPreparationExecutorOrFail()
+        {
+            if (DependencyManager.Provider.TryGetGlobal<IActivityCameraPreparationExecutor>(out var executor) &&
+                executor != null)
+            {
+                return executor;
+            }
+
+            throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] Required dependency missing type='IActivityCameraPreparationExecutor'.");
+        }
+
+        private void RegisterGlobalsOrFail()
+        {
+            RegisterGlobal(_catalog);
+            RegisterGlobal(_pipeline);
+            RegisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
+            RegisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
+            RegisterGlobal<ISessionActivityRouteExitTeardownBoundary>(_host);
+            RegisterGlobal<ISessionActivityVisualReadinessBoundary>(_host);
+        }
+
+        private static void RegisterGlobal<T>(T instance) where T : class
+        {
+            if (instance == null)
+            {
+                throw new ArgumentNullException(nameof(instance));
+            }
+
+            if (DependencyManager.Provider.TryGetGlobal<T>(out var existing) && existing != null)
+            {
+                if (!ReferenceEquals(existing, instance))
+                {
+                    throw new InvalidOperationException($"Global dependency '{typeof(T).Name}' is already registered with a different instance.");
+                }
+
+                return;
+            }
+
+            DependencyManager.Provider.RegisterGlobal(instance);
+        }
+
+        private void UnregisterGlobalsIfNeeded()
+        {
+            if (!_globalsRegistered)
+            {
+                return;
+            }
+
+            if (_catalog != null)
+            {
+                UnregisterGlobal(_catalog);
+            }
+
+            if (_pipeline != null)
+            {
+                UnregisterGlobal(_pipeline);
+                UnregisterGlobal<ISessionActivityEntryHandoffReceiver>(_pipeline);
+                UnregisterGlobal<ISessionActivitySnapshotPayloadProvider>(_pipeline);
+            }
+
+            if (_host != null)
+            {
+                UnregisterGlobal<ISessionActivityRouteExitTeardownBoundary>(_host);
+                UnregisterGlobal<ISessionActivityVisualReadinessBoundary>(_host);
+            }
+
+            _globalsRegistered = false;
+        }
+
+        private static void UnregisterGlobal<T>(T instance) where T : class
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            DependencyManager.Provider.UnregisterGlobal(instance);
+        }
+    }
+}

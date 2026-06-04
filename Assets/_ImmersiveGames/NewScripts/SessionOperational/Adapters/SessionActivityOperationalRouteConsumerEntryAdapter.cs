@@ -52,6 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     request.RouteFadeProfile,
                     request.HasRouteLoadingProfile && request.RouteLoadingProfile != null,
                     request.RouteLoadingProfile),
+                request.LoadedSnapshotPayloadContext,
                 request.Source,
                 request.Reason);
 

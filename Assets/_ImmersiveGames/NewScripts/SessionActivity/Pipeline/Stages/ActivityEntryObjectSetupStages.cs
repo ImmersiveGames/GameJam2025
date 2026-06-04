@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -246,7 +245,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivitySetupInventoryBuilder builder,
             ActivitySetupInventoryValidator validator,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryObjectSetupRuntimeBridge endpoint,
             IActivityEntryObjectSetupRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -380,7 +379,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
             ActivityObjectContributorDiscoveryResult discoveryResult,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryObjectSetupRuntimeBridge endpoint,
             List<SessionActivityFact> facts)
         {
             if (!command.IsValid)
@@ -559,7 +558,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             IReadOnlyList<ActorScanTarget> actorTargets,
             ActivityCapabilityInventoryCoordinator coordinator,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryObjectSetupRuntimeBridge endpoint,
             IActivityEntryObjectSetupRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -696,7 +695,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryObjectSetupRuntimeBridge endpoint,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -973,7 +972,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
-            IActivityEntryRuntimeBridge endpoint,
+            IActivityEntryObjectSetupRuntimeBridge endpoint,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts)
         {
             if (!command.IsValid)
@@ -992,7 +992,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 $"'{command.ActivityId}' activity object snapshot restore started.");
 
-            if (!TryResolveRouteLoadedSnapshotPayload(endpoint.SessionId, out LoadedSessionActivitySnapshotPayload loadedPayload, out string payloadFailureReason))
+            if (!loadedSnapshotPayloadContext.HasPayload)
             {
                 endpoint.EmitFact(
                     facts,
@@ -1000,7 +1000,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     restoreIdentity,
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' activity object snapshot restore skipped reason='no_loaded_payload' failureReason='{payloadFailureReason}'.");
+                    $"'{command.ActivityId}' activity object snapshot restore skipped reason='no_loaded_payload'.");
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted,
@@ -1011,7 +1011,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return;
             }
 
-            if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, endpoint.SessionId, command.ActivityId))
+            LoadedSessionActivitySnapshotPayload loadedPayload = loadedSnapshotPayloadContext.Payload;
+
+            if (!IsLoadedSnapshotPayloadForCurrentActivity(loadedPayload, command.Identity.SessionId, command.ActivityId))
             {
                 endpoint.EmitFact(
                     facts,
@@ -1172,30 +1174,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Source,
                 command.Reason,
                 $"'{command.ActivityId}' activity object snapshot restore completed payloadAvailable='true' payloadObjectCount='{loadedPayload.Objects.Count}' matchedTargetCount='{matchedTargetCount}' restoredCount='{restoredCount}' targetIds='{JoinValues(matchedTargetIds)}' appliedTargetIds='{JoinValues(matchedTargetIds)}' failedTargetIds='<none>' coordinateSpace='world_transform' restoreVerified='{(!restoreFailed && restoredCount == matchedTargetCount).ToString().ToLowerInvariant()}' restoreFailed='{restoreFailed.ToString().ToLowerInvariant()}'.");
-        }
-
-        private static bool TryResolveRouteLoadedSnapshotPayload(
-            string sessionId,
-            out LoadedSessionActivitySnapshotPayload loadedPayload,
-            out string failureReason)
-        {
-            loadedPayload = default;
-            if (!DependencyManager.Provider.TryGetGlobal<IRouteActivityLoadedSnapshotPayloadProvider>(out var payloadProvider) ||
-                payloadProvider == null)
-            {
-                failureReason = "no_loaded_payload_provider";
-                return false;
-            }
-
-            bool resolved = payloadProvider.TryGetPendingLoadedSnapshotPayload(sessionId, out loadedPayload, out failureReason);
-            if (!resolved || !loadedPayload.IsValid)
-            {
-                loadedPayload = default;
-                return false;
-            }
-
-            failureReason = "resolved";
-            return true;
         }
 
         private static bool IsLoadedSnapshotPayloadForCurrentActivity(

@@ -575,6 +575,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                         $"[FATAL][SessionOperationalPipeline][RouteActivitySave] OperationalRouteActivitySaveLoadOnEnterStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{loadOnEnterResult.Kind}' reason='{loadOnEnterResult.Reason}' detail='{loadOnEnterResult.Detail}'.");
                 }
 
+                ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext =
+                    loadOnEnterResult.LoadedSnapshotPayloadContext;
+
                 OperationalInputPreparationResult inputPreparationResult = _inputPreparationStage.Execute(
                     BuildInputPreparationCommand(
                         runtimeModeConfig,
@@ -632,6 +635,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     BuildConsumerEntryAndReadinessCommand(
                         command,
                         loadingCommand,
+                        loadedSnapshotPayloadContext,
                         routeIdentity,
                         routeOperationId,
                         transitionId,
@@ -1512,6 +1516,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         private OperationalConsumerEntryAndReadinessCommand BuildConsumerEntryAndReadinessCommand(
             SessionOperationalRouteCommand command,
             SessionOperationalLoadingCommand loadingCommand,
+            ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             string routeIdentity,
             string routeOperationId,
             string transitionId,
@@ -1522,6 +1527,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return new OperationalConsumerEntryAndReadinessCommand(
                 command,
                 loadingCommand,
+                loadedSnapshotPayloadContext,
                 routeIdentity,
                 routeOperationId,
                 transitionId,

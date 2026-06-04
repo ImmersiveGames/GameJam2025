@@ -17,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryCameraBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
             IActivityEntryCameraBindingRuntimeBridge bridge,
+            IActivityCameraPreparationExecutor cameraExecutor,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -27,6 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
+            cameraExecutor = cameraExecutor ?? throw new ArgumentNullException(nameof(cameraExecutor));
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
@@ -110,14 +112,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 typeof(ActivityEntryCameraBindingStage),
                 $"[OBS][ActivityEntryPipeline][CameraBinding] event='PlayerCameraEndpointResolved' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' playerSlotId='{selectedCameraTarget.PlayerSlotId}' playerActorId='{selectedCameraTarget.PlayerActorId}' capabilityId='{selectedCameraTarget.CapabilityId}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
-
-            if (!bridge.TryGetActivityCameraPreparationExecutor(out IActivityCameraPreparationExecutor cameraExecutor) || cameraExecutor == null)
-            {
-                SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.CameraBindingFailed);
-                endpoint.SetCurrentIdentity(failedIdentity, SessionActivityStage.CameraBindingFailed);
-                endpoint.EmitFact(facts, SessionActivityFactKind.CameraBindingFailed, failedIdentity, command.Source, command.Reason, $"'{command.ActivityId}' camera binding failed reason='activity_camera_preparation_executor_missing'.");
-                throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][CameraBinding] IActivityCameraPreparationExecutor missing activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
-            }
 
             ActivityCameraRebindTargetsCommand rebindCommand = new(startedIdentity.SessionId, selectedCameraTarget.TrackingTarget, selectedCameraTarget.LookAtTarget, command.Source, command.Reason);
             if (!cameraExecutor.TryRebindTargets(rebindCommand, out ActivityCameraRebindTargetsResult rebindResult, out string rebindReason) || rebindResult is not { Success: true })
