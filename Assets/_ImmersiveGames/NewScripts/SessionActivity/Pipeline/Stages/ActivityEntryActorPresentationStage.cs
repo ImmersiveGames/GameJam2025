@@ -15,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityEntryActorPresentationSetupResult Execute(
             ActivityEntryActorPresentationSetupCommand command,
             IActivityEntryRuntimeBridge endpoint,
+            ActivityCapabilityInventory inventory,
             IActivityEntryActorPresentationRuntimeBridge bridge,
             ActorPresentationPlanResolver planResolver,
             IActorPresentationMaterializationAdapter materializationAdapter,
@@ -53,7 +54,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.EmitSnapshot(snapshots, "actor_presentation_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation setup started.");
             DebugUtility.Log(typeof(ActivityEntryActorPresentationStage), $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationSetupFromInventoryStarted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}' mode='InventoryReferences'.", DebugUtility.Colors.Info);
 
-            ActivityCapabilityInventory inventory = bridge.GetCurrentActivityCapabilityInventoryPreview();
             if (!inventory.IsValid ||
                 !string.Equals(inventory.Id.PipelineId, startedIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(inventory.Id.SessionStateId, startedIdentity.SessionId, StringComparison.Ordinal) ||

@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
@@ -142,16 +143,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActorInventoryFeedResult ExecuteActorInventoryFeed(
             ActivityEntryObjectSetupCommand command,
             IActivityEntryLogRuntimeBridge logBridge,
-            IActivityEntryActorInventoryRuntimeBridge bridge)
+            ActivityParticipationContext participationContext,
+            ActivitySceneActorRegistry sceneActorRegistry,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
+            ActivityEntryInventoryRuntimeState inventoryState)
         {
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
-            ActivitySceneActorRegistry sceneActorRegistry = bridge.GetActivitySceneActorRegistry();
-            ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
-            SessionActorRuntimeStore sessionActorRuntimeStore = bridge.GetSessionActorRuntimeStore();
             if (sceneActorRegistry == null)
             {
                 throw new InvalidOperationException("ActivityEntryActorInventoryStage requires scene actor registry.");
@@ -162,6 +164,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityEntryActorInventoryStage requires player actor registry.");
             }
 
+            if (sessionActorRuntimeStore == null)
+            {
+                throw new InvalidOperationException("ActivityEntryActorInventoryStage requires session actor runtime store.");
+            }
+
             SessionActivityIdentity identity = command.Identity;
             logBridge.LogEntryOwnerEvent(
                 "ActivityEntryActorInventoryFeedStarted",
@@ -170,7 +177,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason,
                 "owner='ActivityEntryPipeline' block='actor_inventory_feed'");
 
-            IReadOnlyList<PlayerActorIdentityRecord> playerActors = ResolvePlayerActorCapabilityTargetsForCurrentEntry(bridge, identity);
+            IReadOnlyList<PlayerActorIdentityRecord> playerActors = ResolvePlayerActorCapabilityTargetsForCurrentEntry(
+                participationContext,
+                playerActorRegistry,
+                sessionActorRuntimeStore,
+                identity);
             IReadOnlyList<SceneAuthoredActorRuntimeEntry> sceneActors = ResolveActiveSceneActors(sceneActorRegistry, identity);
             IActivityActorInstanceSource[] actorSources =
             {
@@ -191,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][ActorInventoryFeed] Invalid feed result activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}'.");
             }
 
-            bridge.SetCurrentActorInventoryFeedResult(result);
+            inventoryState.SetCurrentActorInventoryFeedResult(result);
             logBridge.LogEntryOwnerEvent(
                 "ActivityEntryActorInventoryFeedCompleted",
                 identity,
@@ -202,25 +213,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
 
         internal static IReadOnlyList<PlayerActorIdentityRecord> ResolvePlayerActorCapabilityTargetsForCurrentEntry(
-            IActivityEntryActorInventoryRuntimeBridge bridge,
+            ActivityParticipationContext participationContext,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             SessionActivityIdentity identity)
         {
-            if (bridge == null)
-            {
-                throw new ArgumentNullException(nameof(bridge));
-            }
-
             List<PlayerActorIdentityRecord> resolved = new();
             HashSet<SessionParticipantId> resolvedParticipantIds = new();
 
-            ActivityParticipationContext participationContext = bridge.GetCurrentActivityParticipationContext();
             if (participationContext != null &&
                 participationContext.IsValid &&
                 participationContext.Participants != null &&
                 participationContext.Participants.Count > 0)
             {
                 AddPlayerActorCapabilityTargetsFromParticipationContext(
-                    bridge,
+                    playerActorRegistry,
+                    sessionActorRuntimeStore,
                     identity,
                     participationContext.Participants,
                     resolved,
@@ -232,7 +240,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return resolved;
             }
 
-            ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
             if (playerActorRegistry != null &&
                 playerActorRegistry.TryGetActiveActorIdentities(identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
                 activeActors != null &&
@@ -245,13 +252,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
 
         private static void AddPlayerActorCapabilityTargetsFromParticipationContext(
-            IActivityEntryActorInventoryRuntimeBridge bridge,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             SessionActivityIdentity identity,
             IReadOnlyList<ActivityParticipantBinding> participants,
             List<PlayerActorIdentityRecord> resolved,
             HashSet<SessionParticipantId> resolvedParticipantIds)
         {
-            if (!identity.IsValid || bridge == null || participants == null || resolved == null || resolvedParticipantIds == null)
+            if (!identity.IsValid || playerActorRegistry == null || sessionActorRuntimeStore == null || participants == null || resolved == null || resolvedParticipantIds == null)
             {
                 return;
             }
@@ -264,7 +272,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!TryResolvePlayerActorHandleForCapabilityInventory(bridge, identity, participant, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolvePlayerActorHandleForCapabilityInventory(playerActorRegistry, sessionActorRuntimeStore, identity, participant, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     continue;
                 }
@@ -279,18 +287,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         }
 
         private static bool TryResolvePlayerActorHandleForCapabilityInventory(
-            IActivityEntryActorInventoryRuntimeBridge bridge,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            SessionActorRuntimeStore sessionActorRuntimeStore,
             SessionActivityIdentity identity,
             ActivityParticipantBinding participant,
             out PlayerActorRuntimeHandle handle)
         {
             handle = default;
-            if (bridge == null || !identity.IsValid || !participant.IsValid || !participant.RequiresPlayerActor)
+            if (!identity.IsValid || !participant.IsValid || !participant.RequiresPlayerActor)
             {
                 return false;
             }
 
-            ActivityPlayerActorRegistry playerActorRegistry = bridge.GetActivityPlayerActorRegistry();
             if (playerActorRegistry != null &&
                 playerActorRegistry.TryResolveHandleForParticipant(identity, participant.ParticipantId, out handle) &&
                 handle.IsValid)
@@ -298,7 +306,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return true;
             }
 
-            SessionActorRuntimeStore sessionActorRuntimeStore = bridge.GetSessionActorRuntimeStore();
             if (sessionActorRuntimeStore != null &&
                 sessionActorRuntimeStore.TryGetByParticipantId(identity, participant.ParticipantId, out SessionActorRuntimeEntry entry) &&
                 entry.IsValid)

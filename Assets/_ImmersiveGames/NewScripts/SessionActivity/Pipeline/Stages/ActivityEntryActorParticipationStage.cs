@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -30,7 +31,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryActorParticipationEnterCommand command,
             SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
-            IActivityEntryActorInventoryRuntimeBridge actorInventoryBridge,
+            ActorInventoryFeedResult feedResult,
+            ActivityActorExitRuntimeState runtimeState,
             IActivityEntryActorParticipationRuntimeBridge participationBridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -45,14 +47,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(endpoint));
             }
 
-            if (actorInventoryBridge == null)
-            {
-                throw new ArgumentNullException(nameof(actorInventoryBridge));
-            }
-
             if (participationBridge == null)
             {
                 throw new ArgumentNullException(nameof(participationBridge));
+            }
+
+            if (runtimeState == null)
+            {
+                throw new ArgumentNullException(nameof(runtimeState));
             }
 
             int entrySequence = command.Identity.EntrySequence;
@@ -62,7 +64,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.EmitSnapshot(snapshots, "actor_participation_enter_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation enter started.");
             DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"[OBS][ActivityEntryPipeline][ActorParticipation] event='ActorParticipationEnterStarted' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Info);
 
-            ActorInventoryFeedResult feedResult = actorInventoryBridge.GetCurrentActorInventoryFeedResult();
             if (!feedResult.IsValid || !IsSameActivityCycle(feedResult.Identity, startedIdentity))
             {
                 SessionActivityIdentity failedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorParticipationEnterFailed, entrySequence);
@@ -116,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     throw new InvalidOperationException($"[FATAL][ActivityEntryActorParticipationStage][ActorParticipationEnter] readiness failed actorId='{instance.ActorId}' reason='{actorResult.ReasonCode}'.");
                 }
 
-                participationBridge.StoreActiveActorParticipation(instance.ActorInstanceId);
+                runtimeState.StoreActiveActorParticipation(instance.ActorInstanceId, definition.ActivityId, entrySequence, "ActivityEntryActorParticipationStage", "store_active_actor_participation");
                 endpoint.EmitFact(facts, SessionActivityFactKind.ActorParticipationEntered, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor participation entered actorId='{instance.ActorId}' actorRole='{instance.Role}' actorScope='{instance.Scope}'.");
                 endpoint.EmitSnapshot(snapshots, "actor_participation_entered", command.Source, command.Reason, $"'{definition.ActivityId}' actor participation entered actorId='{instance.ActorId}'.");
                 DebugUtility.Log(typeof(ActivityEntryActorParticipationStage), $"[OBS][ActivityEntryPipeline][ActorParticipation] event='ActorParticipationEntered' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' actorId='{instance.ActorId}' actorInstanceRuntimeId='{instance.ActorInstanceId}' actorRole='{instance.Role}' actorScope='{instance.Scope}' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);

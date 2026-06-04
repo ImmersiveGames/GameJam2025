@@ -4,6 +4,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -18,8 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityContentLoadedSet loadedSet,
             IActivityEntryFactRuntimeBridge factBridge,
             IActivityEntryLogRuntimeBridge logBridge,
-            IActivityEntryPreparationRuntimeBridge preparationBridge,
-            IActivityEntryObjectSetupRuntimeBridge bridge,
+            ActivityEntryInventoryRuntimeState inventoryState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (!HasLoadedSetForCurrentEntry(loadedSet, command.Identity, entrySequence) || !loadedSet.HasScenes)
             {
-                preparationBridge.ClearCurrentActivityObjectContributorDiscoveryResult();
+                inventoryState.ClearCurrentActivityObjectContributorDiscoveryResult();
                 factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent,
@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         $"Activity '{command.Identity.ActivityId}' produced invalid ActivityObjectContributorDiscoveryResult.");
                 }
 
-                bridge.SetCurrentActivityObjectContributorDiscoveryResult(result);
+                inventoryState.SetCurrentActivityObjectContributorDiscoveryResult(result);
 
                 for (int reportIndex = 0; reportIndex < reports.Count; reportIndex++)
                 {
@@ -146,7 +146,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
             catch (Exception exception)
             {
-                preparationBridge.ClearCurrentActivityObjectContributorDiscoveryResult();
+                inventoryState.ClearCurrentActivityObjectContributorDiscoveryResult();
                 factBridge.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed,
@@ -245,8 +245,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivitySetupInventoryBuilder builder,
             ActivitySetupInventoryValidator validator,
-            IActivityEntryObjectSetupRuntimeBridge endpoint,
-            IActivityEntryObjectSetupRuntimeBridge bridge,
+            IActivityEntryRuntimeBridge endpoint,
+            ActivityEntryInventoryRuntimeState inventoryState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -294,7 +294,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"[FATAL][Config][ActivityEntryPipeline][ActivitySetupInventory] Build failed activityId='{command.ActivityId}' entrySequence='{entrySequence}' message='{buildResult.Message}'.");
             }
 
-            bridge.SetCurrentActivitySetupInventory(buildResult.Inventory);
+            inventoryState.SetCurrentActivitySetupInventory(buildResult.Inventory);
 
             if (buildResult.IsSkipped)
             {
@@ -558,8 +558,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             IReadOnlyList<ActorScanTarget> actorTargets,
             ActivityCapabilityInventoryCoordinator coordinator,
-            IActivityEntryObjectSetupRuntimeBridge endpoint,
-            IActivityEntryObjectSetupRuntimeBridge bridge,
+            IActivityEntryRuntimeBridge endpoint,
+            ActivityEntryInventoryRuntimeState inventoryState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -587,7 +587,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool hasActorTargets = actorTargets != null && actorTargets.Count > 0;
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
             {
-                bridge.ClearCurrentActivityCapabilityInventoryPreview();
+                inventoryState.ClearCurrentActivityCapabilityInventoryPreview();
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.ActivityCapabilityInventoryPreviewSkippedNoDiscovery,
@@ -611,7 +611,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityCapabilityInventory inventory = buildResult.Inventory;
             ActivityCapabilityInventoryValidationResult validationResult = buildResult.Validation;
             string capabilityKindsSummary = FormatCapabilityKindsSummary(inventory.Capabilities);
-            bridge.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
+            inventoryState.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
             string validationIssueCodes = FormatValidationIssueCodes(validationResult.Issues);
 
             endpoint.EmitFact(

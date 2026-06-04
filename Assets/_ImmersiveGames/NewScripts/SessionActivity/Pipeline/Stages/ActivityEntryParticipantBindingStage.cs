@@ -20,7 +20,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal interface IActivityEntryParticipantBindingRuntimeBridge
     {
-        ActivitySetupInventory GetCurrentActivitySetupInventory();
         PlayerSessionParticipationContext ResolveSessionParticipationContextOrFail(
             string activityId,
             int activityOrdinal,
@@ -84,6 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityEntryParticipantBindingResult Execute(
             ActivityEntryParticipantBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
+            ActivitySetupInventory inventory,
             IActivityEntryParticipantBindingRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -104,7 +104,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             int entrySequence = command.Identity.EntrySequence;
-            ActivitySetupInventory inventory = bridge.GetCurrentActivitySetupInventory();
             SessionActivityIdentity startedIdentity = BuildIdentity(command, SessionActivityStage.ActivityParticipantBindingStarted);
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActivityParticipantBindingStarted);
             endpoint.EmitFact(

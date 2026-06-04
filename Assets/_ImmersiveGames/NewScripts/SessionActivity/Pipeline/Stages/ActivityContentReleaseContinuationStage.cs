@@ -4,7 +4,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
     internal static class ActivityContentReleaseContinuationStage
     {
-        public const string Owner = "ActivityContentReleaseContinuationStage";
+        public const string Owner = "SessionActivityPipeline";
 
         public static void LogEvent(string message, bool completed)
         {

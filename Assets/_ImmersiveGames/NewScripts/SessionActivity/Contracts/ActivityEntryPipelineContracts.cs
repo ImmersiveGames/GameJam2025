@@ -1066,9 +1066,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryPreparationRuntimeBridge
     {
-        void ClearCurrentActivityObjectContributorDiscoveryResult();
-        void ClearCurrentActivitySetupInventory();
-        void ClearCurrentActorInventoryFeedResult();
         void ResetMovementControlStateForEntry();
         void BeginActivityActorScope(SessionActivityIdentity identity);
         void ClearActiveActorParticipations(string activityId, int entrySequence, string source, string reason);
@@ -1105,46 +1102,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         IActivityEntryRuntimeBridge
     {
         ActivityContentLoadedSet GetCurrentActivityContentLoadedSet();
-        ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult();
-        void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result);
-        void SetCurrentActivitySetupInventory(ActivitySetupInventory inventory);
-        void SetCurrentActivityCapabilityInventoryPreview(
-            ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation);
-        void ClearCurrentActivityCapabilityInventoryPreview();
     }
 
     public interface IActivityEntryActorInventoryRuntimeBridge
     {
-        ActivitySceneActorRegistry GetActivitySceneActorRegistry();
-        ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
-        SessionActorRuntimeStore GetSessionActorRuntimeStore();
-        PlayerActivityParticipationContext GetCurrentActivityParticipationContext();
-        ActorInventoryFeedResult GetCurrentActorInventoryFeedResult();
-        void SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result);
-        void ClearCurrentActorInventoryFeedResult();
     }
-
-
-
-    public interface IActivityEntryActorAttributeRuntimeBridge
-    {
-        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
-        void StoreActiveActorAttributeCapability(
-            SessionActivityIdentity identity,
-            ActorAttributeEndpointReference attributeReference,
-            ActorAttributeEndpoint endpoint);
-        void RemoveActiveActorAttributeCapability(ActorInstanceId actorInstanceRuntimeId);
-    }
-
-
-
     public interface IActivityEntryActorParticipationRuntimeBridge
     {
         ActorParticipationReadinessEvaluation EvaluateActorParticipationReadiness(
             SessionActivityIdentity identity,
             ActorInstanceRecord instance);
-        void StoreActiveActorParticipation(ActorInstanceId actorInstanceRuntimeId);
     }
 
 
@@ -1274,7 +1241,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryPermissionTargetRuntimeBridge
     {
-        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
         void BeginPermissionScope(SessionActivityIdentity identity);
         void ReplacePermissionReceivers(IReadOnlyList<ActivityCapabilityPermissionReceiverReference> receivers);
     }
@@ -1282,20 +1248,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryMovementBindingRuntimeBridge
     {
-        ActivityPlayerActorRegistry GetActivityPlayerActorRegistry();
-        IMovementBindingAdapter GetMovementBindingAdapter();
         IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargets(SessionActivityIdentity identity);
         void SetMovementControlTargets(IReadOnlyList<PlayerActorIdentityRecord> targets, bool enableAllowed);
     }
 
     public interface IActivityEntryCameraBindingRuntimeBridge
     {
-        ActivitySetupInventory GetCurrentActivitySetupInventory();
-        bool TryGetCurrentActivityCapabilityInventory(
-            SessionActivityIdentity identity,
-            out ActivityCapabilityInventory inventory,
-            out ActivityCapabilityInventoryValidationResult validation);
-        IReadOnlyList<PlayerActivityParticipantBinding> GetActivityParticipantBindings();
         bool TryResolvePlayerActorHandle(
             SessionActivityIdentity identity,
             PlayerActivityParticipantBinding binding,
@@ -1305,7 +1263,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public interface IActivityEntryActorPresentationRuntimeBridge
     {
-        ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview();
         bool TryGetActiveActorPresentationHandle(
             ActorPresentationEndpointReference presentationReference,
             out ActorPresentationRuntimeHandle handle);

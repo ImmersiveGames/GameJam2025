@@ -74,9 +74,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline,
                 _pipeline,
                 _pipeline,
-                _pipeline,
-                _pipeline,
-                activityCameraPreparationExecutor);
+                _pipeline.EntryActorSceneRegistry,
+                _pipeline.EntryActorPlayerRegistry,
+                _pipeline.EntrySessionActorRuntimeStore,
+                _pipeline.EntryMovementBindingAdapter,
+                activityCameraPreparationExecutor,
+                _pipeline.ActivityActorExitRuntimeState);
             _pipeline.BindEntryPipeline(activityEntryPipeline);
 
             _globalsRegistered = true;

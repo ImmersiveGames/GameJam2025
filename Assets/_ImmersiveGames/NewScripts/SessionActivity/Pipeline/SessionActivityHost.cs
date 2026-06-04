@@ -980,7 +980,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "<none>";
             }
 
-            ActivitySetupInventory inventory = _pipeline.GetCurrentActivitySetupInventory();
+            ActivitySetupInventory inventory = _pipeline.EntryPipeline.GetCurrentActivitySetupInventory();
             if (!inventory.IsValid || string.IsNullOrWhiteSpace(inventory.InventoryId))
             {
                 return "<none>";

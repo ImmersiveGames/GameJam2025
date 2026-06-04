@@ -12,6 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityEntryPermissionTargetPreparationResult Execute(
             ActivityEntryPermissionTargetPreparationCommand command,
             IActivityEntryRuntimeBridge endpoint,
+            ActivityCapabilityInventory inventory,
             IActivityEntryPermissionTargetRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -44,7 +45,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             bridge.BeginPermissionScope(startedIdentity);
 
-            ActivityCapabilityInventory inventory = bridge.GetCurrentActivityCapabilityInventoryPreview();
             if (!inventory.IsValid || !inventory.HasCapabilities)
             {
                 bridge.ReplacePermissionReceivers(Array.Empty<ActivityCapabilityPermissionReceiverReference>());

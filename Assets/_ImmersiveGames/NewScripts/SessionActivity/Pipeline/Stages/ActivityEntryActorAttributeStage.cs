@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -14,7 +15,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityEntryActorAttributeSetupResult Execute(
             ActivityEntryActorAttributeSetupCommand command,
             IActivityEntryRuntimeBridge endpoint,
-            IActivityEntryActorAttributeRuntimeBridge bridge,
+            ActivityCapabilityInventory inventory,
+            ActivityActorExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -28,9 +30,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(endpoint));
             }
 
-            if (bridge == null)
+            if (runtimeState == null)
             {
-                throw new ArgumentNullException(nameof(bridge));
+                throw new ArgumentNullException(nameof(runtimeState));
             }
 
             int entrySequence = command.Identity.EntrySequence;
@@ -40,7 +42,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_started", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup started.");
             DebugUtility.Log(typeof(ActivityEntryActorAttributeStage), $"[OBS][ActivityEntryPipeline][ActorAttribute] event='ActorAttributeSetupStarted' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}' mode='InventoryReferences'.", DebugUtility.Colors.Info);
 
-            ActivityCapabilityInventory inventory = bridge.GetCurrentActivityCapabilityInventoryPreview();
             if (!inventory.IsValid ||
                 !string.Equals(inventory.Id.PipelineId, startedIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(inventory.Id.SessionStateId, startedIdentity.SessionId, StringComparison.Ordinal) ||
@@ -115,14 +116,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         endpoint.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActorAttributeSetupSkipped);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorAttributeSetupSkipped, skippedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped actorId='{attributeReference.ActorId}' actorKind='{attributeReference.ActorKind}' reason='{setupResult.Reason}'.");
                         endpoint.EmitSnapshot(snapshots, "actor_attribute_setup_skipped", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor attribute setup skipped actorId='{attributeReference.ActorId}' reason='{setupResult.Reason}'.");
-                        bridge.RemoveActiveActorAttributeCapability(attributeReference.ActorInstanceRuntimeId);
+                        runtimeState.RemoveActiveActorAttributeCapability(
+                            attributeReference.ActorInstanceRuntimeId,
+                            startedIdentity.ActivityId,
+                            entrySequence,
+                            "ActivityEntryActorAttributeStage",
+                            "remove_active_actor_attribute_capability");
                         continue;
                     }
 
-                    bridge.StoreActiveActorAttributeCapability(
-                        startedIdentity,
-                        attributeReference,
-                        attributeEndpoint);
+                    runtimeState.StoreActiveActorAttributeCapability(
+                        new SessionActivityPipeline.ActorAttributeCapabilityState(
+                            attributeReference.ActorInstanceRuntimeId,
+                            attributeReference.ActorId,
+                            attributeEndpoint),
+                        startedIdentity.ActivityId,
+                        entrySequence,
+                        "ActivityEntryActorAttributeStage",
+                        "store_active_actor_attribute_capability");
 
                     SessionActivityIdentity readyIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeReady);
                     endpoint.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActorAttributeReady);

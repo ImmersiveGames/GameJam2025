@@ -41,7 +41,7 @@ using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
-    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeBridge, IActivityEntryObjectSetupRuntimeBridge, IActivityEntryParticipantBindingRuntimeBridge, IActivityEntryActorInventoryRuntimeBridge, IActivityEntryActorPresentationRuntimeBridge, IActivityEntryActorAttributeRuntimeBridge, IActivityEntryActorParticipationRuntimeBridge, IActivityEntryPermissionTargetRuntimeBridge, IActivityEntryMovementBindingRuntimeBridge, IActivityEntryCameraBindingRuntimeBridge, IActivityExitActorTeardownRuntimeBridge
+    public sealed class SessionActivityPipeline : ISessionActivityEntryHandoffReceiver, ISessionActivityPendingOperationCallback, ISessionActivitySnapshotPayloadProvider, IActivityEntryRuntimeBridge, IActivityEntryObjectSetupRuntimeBridge, IActivityEntryParticipantBindingRuntimeBridge, IActivityEntryActorPresentationRuntimeBridge, IActivityEntryActorParticipationRuntimeBridge, IActivityEntryPermissionTargetRuntimeBridge, IActivityEntryMovementBindingRuntimeBridge, IActivityEntryCameraBindingRuntimeBridge, IActivityExitActorTeardownRuntimeBridge
     {
         private const string PipelineId = "SessionActivityPipeline.Base11.Sandbox";
         private const string RouteActivitySnapshotSchemaId = "progression.route_activity.object_snapshot.v1";
@@ -500,24 +500,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             : "<none>";
         public string SessionId => _sessionId;
         public SessionActivityRailKind ActiveRailKind => _activeRailKind;
+        internal ActivityActorExitRuntimeState ActivityActorExitRuntimeState => _activityActorExitRuntimeState;
+        internal ActivitySceneActorRegistry EntryActorSceneRegistry => _activitySceneActorRegistry;
+        internal ActivityPlayerActorRegistry EntryActorPlayerRegistry => _activityPlayerActorRegistry;
+        internal SessionActorRuntimeStore EntrySessionActorRuntimeStore => _sessionActorRuntimeStore;
+        internal IMovementBindingAdapter EntryMovementBindingAdapter => _movementBindingAdapter;
         public ActivityContentLoadedSet GetCurrentActivityContentLoadedSet()
         {
             return _activityContentRuntimeState.CurrentLoadedSet;
-        }
-
-        public ActivitySetupInventory GetCurrentActivitySetupInventory()
-        {
-            return _activityEntryPipeline.GetCurrentActivitySetupInventory();
-        }
-
-        public ActivityCapabilityInventory GetCurrentActivityCapabilityInventoryPreview()
-        {
-            return _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
-        }
-
-        public ActivityCapabilityInventoryValidationResult GetCurrentActivityCapabilityInventoryPreviewValidation()
-        {
-            return _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreviewValidation();
         }
 
         string IActivityEntryPipelineBoundary.PipelineId => PipelineId;
@@ -1471,6 +1461,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continuationKind: telemetry.ContinuationKind),
                 definition,
                 this,
+                _activityEntryPipeline,
                 _activityContentRuntimeState,
                 _activityContentReleaseRuntimeState,
                 _activityObjectExitRuntimeState,
@@ -1694,7 +1685,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             string normalizedEventName = Normalize(eventName);
             string message =
-                $"[OBS][ActivityContentReleaseContinuationStage][ActivityContentReleaseContinuation] event='{normalizedEventName}' owner='{ActivityContentReleaseContinuationStage.Owner}' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{telemetry.Definition.ActivityId}' entrySequence='{telemetry.EntrySequence}' stage='{_state.CurrentStage}' source='{telemetry.Source}' reason='{telemetry.Reason}' continuationKind='{telemetry.ContinuationKind}' continuationTargetActivityId='{(string.IsNullOrWhiteSpace(telemetry.ContinuationTargetActivityId) ? "<none>" : telemetry.ContinuationTargetActivityId)}' continuationTargetEntrySequence='{telemetry.ContinuationTargetEntrySequence}' hasPendingRestartTransition='{telemetry.HasPendingRestartTransition.ToString().ToLowerInvariant()}' hasPendingRouteExit='{telemetry.HasPendingRouteExit.ToString().ToLowerInvariant()}' hasNextActivity='{telemetry.HasNextActivity.ToString().ToLowerInvariant()}' routeExitRequested='{telemetry.RouteExitRequested.ToString().ToLowerInvariant()}' deactivationCompleted='{telemetry.DeactivationCompleted.ToString().ToLowerInvariant()}' activityCompletionRequested='{telemetry.ActivityCompletionRequested.ToString().ToLowerInvariant()}' releaseStatus='{telemetry.ReleaseStatus}' skippedNoContent='{telemetry.SkippedNoContent.ToString().ToLowerInvariant()}' loadedSceneCount='{telemetry.LoadedSceneCount}' releasedSceneCount='{telemetry.ReleasedSceneCount}' previousStage='{telemetry.PreviousStage}' nextStage='{telemetry.NextStage}'.";
+                $"[OBS][SessionActivityPipeline][ActivityContentReleaseContinuation] event='{normalizedEventName}' owner='{ActivityContentReleaseContinuationStage.Owner}' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{telemetry.Definition.ActivityId}' entrySequence='{telemetry.EntrySequence}' stage='{_state.CurrentStage}' source='{telemetry.Source}' reason='{telemetry.Reason}' continuationKind='{telemetry.ContinuationKind}' continuationTargetActivityId='{(string.IsNullOrWhiteSpace(telemetry.ContinuationTargetActivityId) ? "<none>" : telemetry.ContinuationTargetActivityId)}' continuationTargetEntrySequence='{telemetry.ContinuationTargetEntrySequence}' hasPendingRestartTransition='{telemetry.HasPendingRestartTransition.ToString().ToLowerInvariant()}' hasPendingRouteExit='{telemetry.HasPendingRouteExit.ToString().ToLowerInvariant()}' hasNextActivity='{telemetry.HasNextActivity.ToString().ToLowerInvariant()}' routeExitRequested='{telemetry.RouteExitRequested.ToString().ToLowerInvariant()}' deactivationCompleted='{telemetry.DeactivationCompleted.ToString().ToLowerInvariant()}' activityCompletionRequested='{telemetry.ActivityCompletionRequested.ToString().ToLowerInvariant()}' releaseStatus='{telemetry.ReleaseStatus}' skippedNoContent='{telemetry.SkippedNoContent.ToString().ToLowerInvariant()}' loadedSceneCount='{telemetry.LoadedSceneCount}' releasedSceneCount='{telemetry.ReleasedSceneCount}' previousStage='{telemetry.PreviousStage}' nextStage='{telemetry.NextStage}'.";
 
             ActivityContentReleaseContinuationStage.LogEvent(
                 message,
@@ -1715,6 +1706,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new ActivityObjectContributorUnregisterStageCommand(command.Identity, command, entrySequence),
                 definition,
                 this,
+                _activityEntryPipeline,
                 _activityObjectExitRuntimeState,
                 facts,
                 snapshots);
@@ -4493,7 +4485,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             IReadOnlyList<PlayerActorIdentityRecord> targets = ActivityEntryActorInventoryStage.ResolvePlayerActorCapabilityTargetsForCurrentEntry(
-                (IActivityEntryActorInventoryRuntimeBridge)this,
+                _activityEntryPipeline.GetCurrentActivityParticipationContext(),
+                _activityPlayerActorRegistry,
+                _sessionActorRuntimeStore,
                 commandIdentity);
             if (targets == null || targets.Count == 0)
             {
@@ -8063,31 +8057,6 @@ private bool TryBuildActivityParticipantBinding(
             _activityContentRuntimeState.ClearCurrentLoadedSet(_state.CurrentDefinition.ActivityId, _state.CurrentEntrySequence, "ActivityEntryContentLoadedSetStore", "clear_current_activity_content_loaded_set");
         }
 
-        void IActivityEntryPreparationRuntimeBridge.ClearCurrentActivityObjectContributorDiscoveryResult()
-        {
-            _activityEntryPipeline.ClearCurrentActivityObjectContributorDiscoveryResult();
-            _activityObjectExitRuntimeState.ClearContributorDiscoveryResult(
-                _state.CurrentDefinition.ActivityId,
-                _state.CurrentEntrySequence,
-                "ActivityEntryPreparationRuntimeBridge",
-                "clear_current_activity_object_contributor_discovery_result");
-        }
-
-        void IActivityEntryPreparationRuntimeBridge.ClearCurrentActivitySetupInventory()
-        {
-            _activityEntryPipeline.ClearCurrentActivitySetupInventory();
-        }
-
-        void IActivityEntryPreparationRuntimeBridge.ClearCurrentActorInventoryFeedResult()
-        {
-            _activityEntryPipeline.ClearCurrentActorInventoryFeedResult();
-            _activityActorExitRuntimeState.ClearActorInventoryFeedResult(
-                _state.CurrentDefinition.ActivityId,
-                _state.CurrentEntrySequence,
-                "ActivityEntryPreparationRuntimeBridge",
-                "clear_current_actor_inventory_feed_result");
-        }
-
         void IActivityEntryPreparationRuntimeBridge.ResetMovementControlStateForEntry()
         {
             _movementControlTargetsForCurrentEntry = Array.Empty<PlayerActorIdentityRecord>();
@@ -8124,56 +8093,6 @@ private bool TryBuildActivityParticipantBinding(
         ActivityContentLoadedSet IActivityEntryObjectSetupRuntimeBridge.GetCurrentActivityContentLoadedSet()
         {
             return _activityContentRuntimeState.CurrentLoadedSet;
-        }
-
-        ActivityObjectContributorDiscoveryResult IActivityEntryObjectSetupRuntimeBridge.GetCurrentActivityObjectContributorDiscoveryResult()
-        {
-            return _activityEntryPipeline.GetCurrentActivityObjectContributorDiscoveryResult();
-        }
-
-        void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result)
-        {
-            _activityEntryPipeline.SetCurrentActivityObjectContributorDiscoveryResult(result);
-            _activityObjectExitRuntimeState.StoreContributorDiscoveryResult(
-                result,
-                result.IsValid ? result.Identity.ActivityId : _state.CurrentDefinition.ActivityId,
-                result.IsValid ? result.Identity.EntrySequence : _state.CurrentEntrySequence,
-                "ActivityEntryObjectContributorDiscoveryStage",
-                "activity_object_contributor_discovery_result_stored");
-        }
-
-        void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivitySetupInventory(ActivitySetupInventory inventory)
-        {
-            _activityEntryPipeline.SetCurrentActivitySetupInventory(inventory);
-        }
-
-        void IActivityEntryObjectSetupRuntimeBridge.SetCurrentActivityCapabilityInventoryPreview(
-            ActivityCapabilityInventory inventory,
-            ActivityCapabilityInventoryValidationResult validation)
-        {
-            _activityObjectExitRuntimeState.StoreInventoryPreview(
-                inventory,
-                validation,
-                inventory.IsValid ? inventory.Id.ActivityId : _state.CurrentDefinition.ActivityId,
-                inventory.IsValid ? inventory.Id.EntrySequence : _state.CurrentEntrySequence,
-                "ActivityEntryCapabilityInventoryPreviewStage",
-                "activity_capability_inventory_preview_stored");
-            _activityEntryPipeline.SetCurrentActivityCapabilityInventoryPreview(inventory, validation);
-        }
-
-        void IActivityEntryObjectSetupRuntimeBridge.ClearCurrentActivityCapabilityInventoryPreview()
-        {
-            _activityObjectExitRuntimeState.ClearInventoryState(
-                _state.CurrentDefinition.ActivityId,
-                _state.CurrentEntrySequence,
-                "ActivityEntryCapabilityInventoryPreviewStage",
-                "activity_capability_inventory_preview_cleared");
-            _activityEntryPipeline.ClearCurrentActivityCapabilityInventoryPreview();
-        }
-
-        ActivitySetupInventory IActivityEntryParticipantBindingRuntimeBridge.GetCurrentActivitySetupInventory()
-        {
-            return _activityEntryPipeline.GetCurrentActivitySetupInventory();
         }
 
         PlayerSessionParticipationContext IActivityEntryParticipantBindingRuntimeBridge.ResolveSessionParticipationContextOrFail(
@@ -8478,31 +8397,6 @@ private bool TryBuildActivityParticipantBinding(
                 : $"{current},{value}";
         }
 
-        ActivitySceneActorRegistry IActivityEntryActorInventoryRuntimeBridge.GetActivitySceneActorRegistry()
-        {
-            return _activitySceneActorRegistry;
-        }
-
-        ActivityPlayerActorRegistry IActivityEntryActorInventoryRuntimeBridge.GetActivityPlayerActorRegistry()
-        {
-            return _activityPlayerActorRegistry;
-        }
-
-        SessionActorRuntimeStore IActivityEntryActorInventoryRuntimeBridge.GetSessionActorRuntimeStore()
-        {
-            return _sessionActorRuntimeStore;
-        }
-
-        PlayerActivityParticipationContext IActivityEntryActorInventoryRuntimeBridge.GetCurrentActivityParticipationContext()
-        {
-            return _activityEntryPipeline.GetCurrentActivityParticipationContext();
-        }
-
-        ActorInventoryFeedResult IActivityEntryActorInventoryRuntimeBridge.GetCurrentActorInventoryFeedResult()
-        {
-            return _activityEntryPipeline.GetCurrentActorInventoryFeedResult();
-        }
-
         private void TrackSessionScopedHandle(PlayerActorRuntimeHandle handle)
         {
             SessionActorRuntimeEntry entry = SessionActorRuntimeStore.FromPlayerHandle(handle);
@@ -8512,33 +8406,6 @@ private bool TryBuildActivityParticipantBinding(
             }
         }
 
-        void IActivityEntryActorInventoryRuntimeBridge.SetCurrentActorInventoryFeedResult(ActorInventoryFeedResult result)
-        {
-            _activityEntryPipeline.SetCurrentActorInventoryFeedResult(result);
-            _activityActorExitRuntimeState.StoreActorInventoryFeedResult(
-                result,
-                result.Identity.ActivityId,
-                result.Identity.EntrySequence,
-                "ActivityEntryActorInventoryStage",
-                "actor_inventory_feed_result_stored");
-        }
-
-        void IActivityEntryActorInventoryRuntimeBridge.ClearCurrentActorInventoryFeedResult()
-        {
-            SessionActivityIdentity currentIdentity = _state.CurrentIdentity;
-            _activityEntryPipeline.ClearCurrentActorInventoryFeedResult();
-            _activityActorExitRuntimeState.ClearActorInventoryFeedResult(
-                currentIdentity.ActivityId,
-                currentIdentity.EntrySequence,
-                "ActivityEntryActorInventoryStage",
-                "clear_current_actor_inventory_feed_result");
-        }
-
-
-        ActivityCapabilityInventory IActivityEntryPermissionTargetRuntimeBridge.GetCurrentActivityCapabilityInventoryPreview()
-        {
-            return _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
-        }
 
         void IActivityEntryPermissionTargetRuntimeBridge.BeginPermissionScope(SessionActivityIdentity identity)
         {
@@ -8559,16 +8426,6 @@ private bool TryBuildActivityParticipantBinding(
             _permissionRuntime.ReplaceReceivers(receivers ?? Array.Empty<ActivityCapabilityPermissionReceiverReference>());
         }
 
-        ActivityPlayerActorRegistry IActivityEntryMovementBindingRuntimeBridge.GetActivityPlayerActorRegistry()
-        {
-            return _activityPlayerActorRegistry;
-        }
-
-        IMovementBindingAdapter IActivityEntryMovementBindingRuntimeBridge.GetMovementBindingAdapter()
-        {
-            return _movementBindingAdapter;
-        }
-
         IReadOnlyList<PlayerActorIdentityRecord> IActivityEntryMovementBindingRuntimeBridge.ResolveRetainedMovementTargets(SessionActivityIdentity identity)
         {
             return ResolveRetainedMovementTargetsOrEmpty(identity);
@@ -8578,42 +8435,6 @@ private bool TryBuildActivityParticipantBinding(
         {
             _movementControlTargetsForCurrentEntry = targets ?? Array.Empty<PlayerActorIdentityRecord>();
             _movementControlEnableAllowedForCurrentEntry = enableAllowed && _movementControlTargetsForCurrentEntry.Count > 0;
-        }
-
-        ActivitySetupInventory IActivityEntryCameraBindingRuntimeBridge.GetCurrentActivitySetupInventory()
-        {
-            return _activityEntryPipeline.GetCurrentActivitySetupInventory();
-        }
-
-        bool IActivityEntryCameraBindingRuntimeBridge.TryGetCurrentActivityCapabilityInventory(
-            SessionActivityIdentity identity,
-            out ActivityCapabilityInventory inventory,
-            out ActivityCapabilityInventoryValidationResult validation)
-        {
-            inventory = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
-            validation = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreviewValidation();
-            return
-                identity.IsValid &&
-                inventory.IsValid &&
-                validation.IsValid &&
-                string.Equals(inventory.Id.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                string.Equals(inventory.Id.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
-                string.Equals(inventory.Id.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                inventory.Id.EntrySequence == identity.EntrySequence;
-        }
-
-        IReadOnlyList<PlayerActivityParticipantBinding> IActivityEntryCameraBindingRuntimeBridge.GetActivityParticipantBindings()
-        {
-            PlayerActivityParticipationContext participationContext = _activityEntryPipeline.GetCurrentActivityParticipationContext();
-            if (participationContext == null ||
-                !participationContext.IsValid ||
-                participationContext.Participants == null ||
-                participationContext.Participants.Count == 0)
-            {
-                return Array.Empty<PlayerActivityParticipantBinding>();
-            }
-
-            return participationContext.Participants;
         }
 
         bool IActivityEntryCameraBindingRuntimeBridge.TryResolvePlayerActorHandle(
@@ -8674,11 +8495,6 @@ private bool TryBuildActivityParticipantBinding(
             return _playerActorParticipationAdapter.Execute(command, identity, _activityPlayerActorRegistry);
         }
 
-        ActivityCapabilityInventory IActivityEntryActorPresentationRuntimeBridge.GetCurrentActivityCapabilityInventoryPreview()
-        {
-            return _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
-        }
-
         bool IActivityEntryActorPresentationRuntimeBridge.TryGetActiveActorPresentationHandle(
             ActorPresentationEndpointReference presentationReference,
             out ActorPresentationRuntimeHandle handle)
@@ -8723,42 +8539,6 @@ private bool TryBuildActivityParticipantBinding(
                 identity.EntrySequence,
                 ActorPresentationReleaseRail.BeforeRematerialization,
                 actorInstanceRuntimeId);
-        }
-
-        ActivityCapabilityInventory IActivityEntryActorAttributeRuntimeBridge.GetCurrentActivityCapabilityInventoryPreview()
-        {
-            return _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
-        }
-
-        void IActivityEntryActorAttributeRuntimeBridge.StoreActiveActorAttributeCapability(
-            SessionActivityIdentity identity,
-            ActorAttributeEndpointReference attributeReference,
-            ActorAttributeEndpoint endpoint)
-        {
-            if (attributeReference == null || !attributeReference.IsValid || endpoint == null)
-            {
-                return;
-            }
-
-            _activityActorExitRuntimeState.StoreActiveActorAttributeCapability(
-                new ActorAttributeCapabilityState(
-                    attributeReference.ActorInstanceRuntimeId,
-                    attributeReference.ActorId,
-                    endpoint),
-                identity.ActivityId,
-                identity.EntrySequence,
-                "ActivityEntryActorAttributeStage",
-                "store_active_actor_attribute_capability");
-        }
-
-        void IActivityEntryActorAttributeRuntimeBridge.RemoveActiveActorAttributeCapability(ActorInstanceId actorInstanceRuntimeId)
-        {
-            if (!actorInstanceRuntimeId.IsValid)
-            {
-                return;
-            }
-
-            _activityActorExitRuntimeState.RemoveActiveActorAttributeCapability(actorInstanceRuntimeId, _state.CurrentDefinition.ActivityId, _state.CurrentEntrySequence, "ActivityEntryActorAttributeStage", "remove_active_actor_attribute_capability");
         }
 
         ActorParticipationReadinessEvaluation IActivityEntryActorParticipationRuntimeBridge.EvaluateActorParticipationReadiness(
@@ -8829,16 +8609,6 @@ private bool TryBuildActivityParticipantBinding(
                 isReady: true,
                 isFailure: false,
                 "ready");
-        }
-
-        void IActivityEntryActorParticipationRuntimeBridge.StoreActiveActorParticipation(ActorInstanceId actorInstanceRuntimeId)
-        {
-            if (!actorInstanceRuntimeId.IsValid)
-            {
-                return;
-            }
-
-            _activityActorExitRuntimeState.StoreActiveActorParticipation(actorInstanceRuntimeId, _state.CurrentDefinition.ActivityId, _state.CurrentEntrySequence, "ActivityEntryActorParticipationStage", "store_active_actor_participation");
         }
 
     }

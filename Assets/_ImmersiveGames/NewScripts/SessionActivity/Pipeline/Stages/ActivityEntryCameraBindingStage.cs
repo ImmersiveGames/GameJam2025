@@ -16,8 +16,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityEntryCameraBindingResult Execute(
             ActivityEntryCameraBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
-            IActivityEntryCameraBindingRuntimeBridge bridge,
             IActivityCameraPreparationExecutor cameraExecutor,
+            ActivitySetupInventory inventory,
+            ActivityCapabilityInventory cameraInventory,
+            ActivityCapabilityInventoryValidationResult validation,
+            IReadOnlyList<PlayerActivityParticipantBinding> participantBindings,
+            IActivityEntryCameraBindingRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -41,12 +45,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"[OBS][ActivityEntryPipeline][CameraBinding] event='CameraBindingStarted' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Info);
 
-            ActivitySetupInventory inventory = bridge.GetCurrentActivitySetupInventory();
             IReadOnlyList<CameraBindingRequirement> cameraRequirements = inventory.CameraBindingRequirements ?? Array.Empty<CameraBindingRequirement>();
-            bool hasValidCameraInventory = bridge.TryGetCurrentActivityCapabilityInventory(
-                startedIdentity,
-                out ActivityCapabilityInventory cameraInventory,
-                out ActivityCapabilityInventoryValidationResult _);
+            bool hasValidCameraInventory =
+                startedIdentity.IsValid &&
+                cameraInventory.IsValid &&
+                validation.IsValid &&
+                string.Equals(cameraInventory.Id.PipelineId, startedIdentity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(cameraInventory.Id.SessionStateId, startedIdentity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(cameraInventory.Id.ActivityId, startedIdentity.ActivityId, StringComparison.Ordinal) &&
+                cameraInventory.Id.EntrySequence == startedIdentity.EntrySequence;
 
             int requiredCameraCount = CountRequiredActivityCameraRequirements(cameraRequirements, out bool hasActivityCameraRequirement);
 
@@ -85,7 +92,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return new ActivityEntryCameraBindingResult(true, skippedIdentity, requiredCameraCount, false, true, "camera_inventory_missing_or_invalid");
             }
 
-            if (!TryResolveCameraTargetReferenceFromInventory(cameraInventory, cameraRequirements, startedIdentity, bridge, out ActivityCameraTargetReference selectedCameraTarget))
+            if (!TryResolveCameraTargetReferenceFromInventory(cameraInventory, cameraRequirements, startedIdentity, bridge, participantBindings, out ActivityCameraTargetReference selectedCameraTarget))
             {
                 if (requiredCameraCount > 0)
                 {
@@ -160,6 +167,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IReadOnlyList<CameraBindingRequirement> cameraRequirements,
             SessionActivityIdentity activeIdentity,
             IActivityEntryCameraBindingRuntimeBridge bridge,
+            IReadOnlyList<PlayerActivityParticipantBinding> participants,
             out ActivityCameraTargetReference selectedCameraTarget)
         {
             selectedCameraTarget = null;
@@ -168,7 +176,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return false;
             }
 
-            IReadOnlyList<PlayerActivityParticipantBinding> participants = bridge.GetActivityParticipantBindings();
             if (participants == null || participants.Count == 0)
             {
                 return false;

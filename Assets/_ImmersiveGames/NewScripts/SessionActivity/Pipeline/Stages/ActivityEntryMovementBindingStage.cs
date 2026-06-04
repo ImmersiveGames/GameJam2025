@@ -11,6 +11,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
         public static ActivityEntryMovementBindingResult Execute(
             ActivityEntryMovementBindingCommand command,
             IActivityEntryRuntimeBridge endpoint,
+            ActivityPlayerActorRegistry playerActorRegistry,
+            IMovementBindingAdapter movementBindingAdapter,
             IActivityEntryMovementBindingRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -22,6 +24,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
             bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
+            playerActorRegistry = playerActorRegistry ?? throw new ArgumentNullException(nameof(playerActorRegistry));
+            movementBindingAdapter = movementBindingAdapter ?? throw new ArgumentNullException(nameof(movementBindingAdapter));
             facts ??= new List<SessionActivityFact>();
             snapshots ??= new List<SessionActivitySnapshot>();
 
@@ -171,10 +175,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][MovementBinding] Invalid binding command activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
             }
 
-            IReadOnlyList<MovementBindingRecord> records = bridge.GetMovementBindingAdapter().Execute(
+            IReadOnlyList<MovementBindingRecord> records = movementBindingAdapter.Execute(
                 bindingCommand,
                 startedIdentity,
-                bridge.GetActivityPlayerActorRegistry());
+                playerActorRegistry);
             if (records == null || records.Count != requirements.Count)
             {
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][MovementBinding] Adapter result mismatch activityId='{command.ActivityId}' entrySequence='{entrySequence}'.");
