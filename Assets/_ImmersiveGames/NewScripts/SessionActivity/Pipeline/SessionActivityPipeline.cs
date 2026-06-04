@@ -166,40 +166,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             RouteExit = 3
         }
 
-        internal readonly struct ActorPresentationCapabilityState
-        {
-            public ActorPresentationCapabilityState(
-                ActorInstanceId actorInstanceRuntimeId,
-                string actorId,
-                ActorPresentationEndpoint endpoint,
-                ActorPresentationRuntimeHandle runtimeHandle,
-                string pipelineIdentity,
-                string activityIdentity)
-            {
-                ActorInstanceRuntimeId = actorInstanceRuntimeId;
-                ActorId = Normalize(actorId);
-                Endpoint = endpoint;
-                RuntimeHandle = runtimeHandle;
-                PipelineIdentity = Normalize(pipelineIdentity);
-                ActivityIdentity = Normalize(activityIdentity);
-            }
-
-            public ActorInstanceId ActorInstanceRuntimeId { get; }
-            public string ActorId { get; }
-            public ActorPresentationEndpoint Endpoint { get; }
-            public ActorPresentationRuntimeHandle RuntimeHandle { get; }
-            public string PipelineIdentity { get; }
-            public string ActivityIdentity { get; }
-            public bool IsValid =>
-                ActorInstanceRuntimeId.IsValid &&
-                !string.IsNullOrWhiteSpace(ActorId) &&
-                Endpoint != null &&
-                RuntimeHandle.IsValid &&
-                !string.IsNullOrWhiteSpace(PipelineIdentity) &&
-                !string.IsNullOrWhiteSpace(ActivityIdentity);
-        }
-
-
         internal enum ActivityParticipantReadinessStageOutcome
         {
             Unknown = 0,
@@ -3673,31 +3639,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return _activityActorExitRuntimeState.TryGetActivePresentationHandle(presentationReference, out handle);
-        }
-
-        private void StoreActivePresentationHandle(
-            SessionActivityIdentity identity,
-            ActorPresentationEndpointReference presentationReference,
-            ActorPresentationRuntimeHandle handle)
-        {
-            if (presentationReference == null || !presentationReference.IsValid || !handle.IsValid)
-            {
-                return;
-            }
-
-            _activityActorExitRuntimeState.StoreActiveActorPresentation(
-                new ActorPresentationCapabilityState(
-                    presentationReference.ActorInstanceRuntimeId,
-                    presentationReference.ActorId,
-                    presentationReference.Endpoint,
-                    handle,
-                    identity.PipelineId,
-                    BuildActorAttributeActivityIdentity(identity)),
-                identity.ActivityId,
-                identity.EntrySequence,
-                "ActivityEntryActorPresentationStage",
-                "store_active_actor_presentation");
-            SyncActorPresentationRegistryHandle(identity, presentationReference, handle);
         }
 
         private void SyncActorPresentationRegistryHandle(
@@ -8465,7 +8406,7 @@ private bool TryBuildActivityParticipantBinding(
             return _actorPresentationMaterializationAdapter.Release(new ActorPresentationReleaseCommand(handle, source, reason));
         }
 
-        void IActivityExitActorTeardownRuntimeBridge.ClearActorPresentationRegistryHandle(SessionActivityIdentity identity, ActorPresentationCapabilityState state)
+        void IActivityExitActorTeardownRuntimeBridge.ClearActorPresentationRegistryHandle(SessionActivityIdentity identity, ActivityActorExitRuntimeState.ActorPresentationCapabilityState state)
         {
             if (!state.IsValid)
             {
@@ -8500,14 +8441,6 @@ private bool TryBuildActivityParticipantBinding(
             out ActorPresentationRuntimeHandle handle)
         {
             return TryGetActivePresentationHandle(presentationReference, out handle);
-        }
-
-        void IActivityEntryActorPresentationRuntimeBridge.StoreActiveActorPresentationHandle(
-            SessionActivityIdentity identity,
-            ActorPresentationEndpointReference presentationReference,
-            ActorPresentationRuntimeHandle handle)
-        {
-            StoreActivePresentationHandle(identity, presentationReference, handle);
         }
 
         void IActivityEntryActorPresentationRuntimeBridge.SyncActiveActorPresentationHandle(
@@ -8575,7 +8508,7 @@ private bool TryBuildActivityParticipantBinding(
 
                 if (profile.IsRequired)
                 {
-                    if (!_activityActorExitRuntimeState.TryGetActivePresentationState(instance.ActorInstanceId, out ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
+                    if (!_activityActorExitRuntimeState.TryGetActivePresentationState(instance.ActorInstanceId, out ActivityActorExitRuntimeState.ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
                     {
                         return new ActorParticipationReadinessEvaluation(
                             isReady: false,

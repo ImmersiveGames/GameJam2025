@@ -72,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     internal interface IActivityExitActorTeardownRuntimeBridge
     {
         ActorPresentationResult ReleaseActorPresentation(ActorPresentationRuntimeHandle handle, string source, string reason);
-        void ClearActorPresentationRegistryHandle(SessionActivityIdentity identity, SessionActivityPipeline.ActorPresentationCapabilityState state);
+        void ClearActorPresentationRegistryHandle(SessionActivityIdentity identity, ActivityActorExitRuntimeState.ActorPresentationCapabilityState state);
 
         IReadOnlyList<PlayerActorParticipationExitRecord> ExecutePlayerActorParticipationExit(
             PlayerActorParticipationExitCommand command,
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             endpoint.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActorPresentationReleaseStarted);
             endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReleaseStarted, startedIdentity, command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release started rail='{rail}' target='{(targetActorInstanceRuntimeId.IsValid ? targetActorInstanceRuntimeId.Value : "all")}'.");
             endpoint.EmitSnapshot(snapshots, "actor_presentation_release_started", command.Source, command.Reason, $"'{definition.ActivityId}' actor presentation release started rail='{rail}'.");
-            IReadOnlyList<SessionActivityPipeline.ActorPresentationCapabilityState> activeStates = runtimeState.ResolveActiveActorPresentationStates(targetActorInstanceRuntimeId);
+            IReadOnlyList<ActivityActorExitRuntimeState.ActorPresentationCapabilityState> activeStates = runtimeState.ResolveActiveActorPresentationStates(targetActorInstanceRuntimeId);
             if (activeStates == null || activeStates.Count == 0)
             {
                 SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(definition, SessionActivityStage.ActorPresentationReleaseSkipped, entrySequence);
@@ -155,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 for (int index = 0; index < activeStates.Count; index++)
                 {
-                    SessionActivityPipeline.ActorPresentationCapabilityState state = activeStates[index];
+                    ActivityActorExitRuntimeState.ActorPresentationCapabilityState state = activeStates[index];
                     ActorPresentationRuntimeHandle handle = state.RuntimeHandle;
                     if (!handle.IsValid)
                     {

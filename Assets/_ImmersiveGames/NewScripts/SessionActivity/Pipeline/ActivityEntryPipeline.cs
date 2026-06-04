@@ -1090,6 +1090,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command,
                     _runtimeBridge,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
+                    _activityActorExitRuntimeState,
                     _actorPresentationBridge,
                     _actorPresentationPlanResolver,
                     _actorPresentationMaterializationAdapter,

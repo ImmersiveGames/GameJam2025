@@ -9,6 +9,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeR
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
@@ -1266,10 +1267,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         bool TryGetActiveActorPresentationHandle(
             ActorPresentationEndpointReference presentationReference,
             out ActorPresentationRuntimeHandle handle);
-        void StoreActiveActorPresentationHandle(
-            SessionActivityIdentity identity,
-            ActorPresentationEndpointReference presentationReference,
-            ActorPresentationRuntimeHandle handle);
         void SyncActiveActorPresentationHandle(
             SessionActivityIdentity identity,
             ActorPresentationEndpointReference presentationReference,

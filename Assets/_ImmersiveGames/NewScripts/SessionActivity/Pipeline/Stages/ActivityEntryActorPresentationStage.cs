@@ -7,6 +7,7 @@ using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryActorPresentationSetupCommand command,
             IActivityEntryRuntimeBridge endpoint,
             ActivityCapabilityInventory inventory,
+            ActivityActorExitRuntimeState runtimeState,
             IActivityEntryActorPresentationRuntimeBridge bridge,
             ActorPresentationPlanResolver planResolver,
             IActorPresentationMaterializationAdapter materializationAdapter,
@@ -35,6 +37,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (bridge == null)
             {
                 throw new ArgumentNullException(nameof(bridge));
+            }
+
+            if (runtimeState == null)
+            {
+                throw new ArgumentNullException(nameof(runtimeState));
             }
 
             if (planResolver == null)
@@ -212,7 +219,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 endpoint.EmitSnapshot(snapshots, "actor_presentation_ready", command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready actorId='{presentationReference.ActorId}' actorKind='{presentationReference.ActorKind}' actorScope='{presentationReference.ActorScope}'.");
                 DebugUtility.Log(typeof(ActivityEntryActorPresentationStage), $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationReady' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' actorId='{presentationReference.ActorId}' actorInstanceRuntimeId='{presentationReference.ActorInstanceRuntimeId}' actorKind='{presentationReference.ActorKind}' actorRole='{presentationReference.ActorRole}' actorScope='{presentationReference.ActorScope}' profileId='{materializationResult.ReadyFact.ResolvedPlan.ProfileId}' mode='Materialized' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
 
-                bridge.StoreActiveActorPresentationHandle(startedIdentity, presentationReference, materializationResult.ReadyFact.RuntimeHandle);
+                StoreActiveActorPresentationMirror(
+                    runtimeState,
+                    startedIdentity,
+                    presentationReference,
+                    materializationResult.ReadyFact.RuntimeHandle);
+                bridge.SyncActiveActorPresentationHandle(startedIdentity, presentationReference, materializationResult.ReadyFact.RuntimeHandle);
                 totalReady += 1;
             }
 
@@ -245,6 +257,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Identity.EntrySequence,
                 stage,
                 command.Source);
+        }
+
+        private static void StoreActiveActorPresentationMirror(
+            ActivityActorExitRuntimeState runtimeState,
+            SessionActivityIdentity identity,
+            ActorPresentationEndpointReference presentationReference,
+            ActorPresentationRuntimeHandle handle)
+        {
+            if (runtimeState == null || presentationReference == null || !presentationReference.IsValid || !handle.IsValid)
+            {
+                return;
+            }
+
+            runtimeState.StoreActiveActorPresentation(
+                new ActivityActorExitRuntimeState.ActorPresentationCapabilityState(
+                    presentationReference.ActorInstanceRuntimeId,
+                    presentationReference.ActorId,
+                    presentationReference.Endpoint,
+                    handle,
+                    identity.PipelineId,
+                    BuildActorAttributeActivityIdentity(identity)),
+                identity.ActivityId,
+                identity.EntrySequence,
+                nameof(ActivityEntryActorPresentationStage),
+                "store_active_actor_presentation");
+        }
+
+        private static string BuildActorAttributeActivityIdentity(SessionActivityIdentity identity)
+        {
+            if (!identity.IsValid)
+            {
+                return string.Empty;
+            }
+
+            return $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.ActivityOrdinal}|{identity.EntrySequence}";
         }
 
         private static IReadOnlyList<ActorPresentationEndpointReference> ResolveActorPresentationReferencesFromInventory(ActivityCapabilityInventory inventory)
