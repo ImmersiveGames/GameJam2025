@@ -3291,6 +3291,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline setup/readiness failed. kind='{setupReadinessResult.Kind}' reason='{setupReadinessResult.Reason}' identity='{setupReadinessResult.Identity}'.");
             }
 
+            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, command.Source, command.Reason);
             EnterActivationFlow(definition, command, facts, snapshots, entrySequence);
         }
 
@@ -3361,7 +3362,51 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline setup/readiness failed. kind='{setupReadinessResult.Kind}' reason='{setupReadinessResult.Reason}' identity='{setupReadinessResult.Identity}'.");
             }
 
+            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, command.Source, command.Reason);
             EnterActivationFlow(definition, command, facts, snapshots, entrySequence);
+        }
+
+        private void SyncActivityObjectExitCorrelation(
+            SessionActivityIdentity identity,
+            string source,
+            string reason)
+        {
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("Activity setup identity is invalid.");
+            }
+
+            string activityId = identity.ActivityId;
+            int entrySequence = identity.EntrySequence;
+
+            _activityObjectExitRuntimeState.ClearAll(
+                activityId,
+                entrySequence,
+                "SessionActivityPipeline",
+                "activity_object_exit_correlation_refresh");
+
+            ActivityObjectContributorDiscoveryResult discoveryResult = _activityEntryPipeline.GetCurrentActivityObjectContributorDiscoveryResult();
+            ActivityCapabilityInventory inventoryPreview = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
+            ActivityCapabilityInventoryValidationResult inventoryValidation = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreviewValidation();
+
+            _activityObjectExitRuntimeState.StoreContributorDiscoveryResult(
+                discoveryResult,
+                activityId,
+                entrySequence,
+                "SessionActivityPipeline",
+                "activity_object_exit_correlation_frozen");
+            _activityObjectExitRuntimeState.StoreInventoryPreview(
+                inventoryPreview,
+                inventoryValidation,
+                activityId,
+                entrySequence,
+                "SessionActivityPipeline",
+                "activity_object_exit_correlation_frozen");
+
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline] event='ActivityObjectExitCorrelationFrozen' owner='SessionActivityPipeline' activityId='{activityId}' entrySequence='{entrySequence}' source='{Normalize(source)}' reason='{Normalize(reason)}' discoveryValid='{discoveryResult.IsValid.ToString().ToLowerInvariant()}' discoveryCount='{(discoveryResult.IsValid ? discoveryResult.Reports.Count : 0)}' inventoryValid='{inventoryPreview.IsValid.ToString().ToLowerInvariant()}' inventoryCapabilityCount='{(inventoryPreview.IsValid ? inventoryPreview.Capabilities.Count : 0)}' inventoryValidationValid='{inventoryValidation.IsValid.ToString().ToLowerInvariant()}'.",
+                DebugUtility.Colors.Info);
         }
 
         private void EmitPredefinedVisualSetupReadyFactIfApplicable(
@@ -3467,38 +3512,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return byId;
-        }
-
-        private bool TryResolveActorInstanceIdForActor(
-            SessionActivityIdentity identity,
-            string actorId,
-            string source,
-            string reason,
-            out ActorInstanceId actorInstanceId)
-        {
-            actorInstanceId = default;
-            if (!identity.IsValid || string.IsNullOrWhiteSpace(actorId))
-            {
-                return false;
-            }
-
-            ActorInventoryFeedResult feedResult = BuildActorInventoryFeedForCurrentEntry(identity, source, reason);
-            for (int index = 0; index < feedResult.ActorInstances.Count; index++)
-            {
-                ActorInstanceRecord instance = feedResult.ActorInstances[index];
-                if (!instance.IsValid)
-                {
-                    continue;
-                }
-
-                if (string.Equals(instance.ActorId, actorId, StringComparison.Ordinal))
-                {
-                    actorInstanceId = instance.ActorInstanceId;
-                    return actorInstanceId.IsValid;
-                }
-            }
-
-            return false;
         }
 
         private bool TryResolveActorInstanceMetadata(
@@ -4336,28 +4349,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            if (!TryResolveActorInstanceIdForActor(commandIdentity, normalizedActorId, normalizedSource, normalizedReason, out ActorInstanceId actorInstanceId))
+            if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(normalizedActorId, out ActorAttributeCapabilityState capabilityState))
             {
-                result = ActorAttributeApplyResult.Reject(default, runtimeAttributeId, "actor_attribute_target_not_found");
+                result = ActorAttributeApplyResult.Reject(default, runtimeAttributeId, "actor_attribute_capability_not_ready");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
 
-            ActorInstanceRuntimeId actorInstanceRuntimeId = new(actorInstanceId.Value);
-
-            if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(actorInstanceId, out ActorAttributeCapabilityState capabilityState) || !capabilityState.IsValid)
-            {
-                result = ActorAttributeApplyResult.Reject(actorInstanceRuntimeId, runtimeAttributeId, "actor_attribute_capability_not_ready");
-                LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
-                return false;
-            }
-
-            if (!runtimeAttributeId.IsValid || !capabilityState.Endpoint.TryGetState(runtimeAttributeId, out _))
-            {
-                result = ActorAttributeApplyResult.Reject(actorInstanceRuntimeId, runtimeAttributeId, "actor_attribute_not_found");
-                LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
-                return false;
-            }
+            ActorInstanceRuntimeId actorInstanceRuntimeId = new(capabilityState.ActorInstanceRuntimeId.Value);
 
             ActorAttributeCommand command = BuildActorAttributeCommand(
                 commandIdentity,

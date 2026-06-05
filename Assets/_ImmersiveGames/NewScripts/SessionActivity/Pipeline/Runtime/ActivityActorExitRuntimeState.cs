@@ -184,6 +184,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                    state.IsValid;
         }
 
+        public bool TryGetActiveActorAttributeCapability(
+            string actorId,
+            out SessionActivityPipeline.ActorAttributeCapabilityState state)
+        {
+            state = default;
+            string normalizedActorId = string.IsNullOrWhiteSpace(actorId) ? string.Empty : actorId.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedActorId))
+            {
+                return false;
+            }
+
+            foreach (SessionActivityPipeline.ActorAttributeCapabilityState candidate in _activeActorAttributeCapabilitiesByActorInstanceId.Values)
+            {
+                if (!candidate.IsValid ||
+                    !string.Equals(candidate.ActorId, normalizedActorId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                state = candidate;
+                return true;
+            }
+
+            return false;
+        }
+
         public void StoreActiveActorAttributeCapability(
             SessionActivityPipeline.ActorAttributeCapabilityState state,
             string activityId,
