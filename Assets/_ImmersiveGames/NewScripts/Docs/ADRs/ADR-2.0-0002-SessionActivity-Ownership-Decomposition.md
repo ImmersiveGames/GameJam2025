@@ -919,8 +919,6 @@ Não mudar reaction local.
 
 #### `SA-6C — Movement binding stage`
 
-Status: `CLOSED / PASS funcional + PASS arquitetural do caminho ativo`. O shim morto `PlayerMovementBindingStage` foi removido; o owner ativo é `ActivityEntryMovementBindingStage`.
-
 Objetivo: mover movement binding para stage real.
 
 Critério:
@@ -933,8 +931,6 @@ Pipeline não chama controller diretamente para lifecycle fino.
 ```
 
 #### `SA-6D — Camera binding stage`
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`. O owner ativo é `ActivityEntryCameraBindingStage`.
 
 Objetivo: mover camera target binding para stage real.
 
@@ -1014,8 +1010,6 @@ Não criar pipeline por simetria estética.
 
 #### `SA-8B — ActivityObjectRelease / SnapshotCapture stage cleanup`
 
-Status: `CLOSED / PASS arquitetural do caminho ativo + cleanup dead helper removed`. O helper morto `EmitObjectReleaseStageCore(...)` foi removido; o fluxo canônico permanece nos stages de snapshot/release/unregister.
-
 Critério:
 
 ```text
@@ -1026,8 +1020,6 @@ No-content = skip explícito.
 ```
 
 #### `SA-8C — Actor release/participation exit cleanup`
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`. O owner ativo é `ActivityExitActorTeardownStage`, sem rail global player/nonplayer.
 
 Critério:
 
@@ -1101,39 +1093,17 @@ Logs expõem os domínios separados.
 
 #### `SA-11A — ActivityEntry state/context extraction`
 
-Status: `CLOSED / PASS arquitetural do ownership de entry`.
-
 Objetivo: reduzir o uso de `SessionActivityRuntimeState` como saco global para entry.
 
-Escopo fechado:
+Escopo:
 
 ```text
-ActivityParticipationContext
-ActivitySetupInventory
-ActivityCapabilityInventoryPreview
-ActivityCapabilityInventoryPreviewValidation
-ActivityObjectContributorDiscoveryResult
-ActorInventoryFeedResult
-```
-
-Ownership final:
-
-```text
-ActivityEntryPipeline hospeda o state canônico da entry.
-ActivityParticipationRuntimeState é owner do ActivityParticipationContext.
-ActivityEntryInventoryRuntimeState é owner dos snapshots de setup/inventory/discovery/feed.
-SessionActivityRuntimeState mantém apenas state macro legítimo, como CurrentDefinition, CurrentEntrySequence e CurrentPendingOperation.
-ActivityObjectExitRuntimeState e ActivityActorExitRuntimeState podem manter caches técnicos de saída quando exigidos por consumers concretos.
-```
-
-Cortes fechados:
-
-```text
-SA-11A1 — ActivityParticipationContext ownership extraction.
-SA-11A2 — Activity setup inventory + capability inventory preview ownership extraction.
-SA-11A3 — Entry inventory input state extraction.
-SA-11A4 — Remaining entry state ownership audit.
-SA-11A5 — Residual entry mirror cleanup.
+ActivityEntryContext
+ActivityEntrySnapshot
+ActivityEntryRuntimeState
+Entry-local loaded content
+Entry-local inventory
+Entry-local setup result
 ```
 
 Critério:
@@ -1142,7 +1112,6 @@ Critério:
 State da entry não vaza como global mutável sem owner.
 Foreign/stale continua protegido.
 Restart cria novo entry context.
-SessionActivityRuntimeState não mantém mirror de entry sem consumer técnico comprovado.
 ```
 
 #### `SA-11B — Fact recorder hygiene`
@@ -1156,50 +1125,11 @@ Logs mantêm owner correto.
 Facts não alteram lifecycle.
 ```
 
-#### `SA-CONTENT-REL-1/2 — ActivityContent loaded set ownership normalization`
-
-Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
-
-Problema fechado:
-
-```text
-CurrentActivityContentLoadedSet estava dividido entre SessionActivityRuntimeState e ActivityContentReleaseRuntimeState.
-O loaded set é state vivo do lifecycle de ActivityContent: nasce no content load, alimenta setup/readiness e contributor resolution, e depois participa da release.
-Não pertence ao macro state do SessionActivityPipeline nem exclusivamente ao release async.
-```
-
-Ownership final:
-
-```text
-ActivityContentRuntimeState é o único owner canônico do loaded set vivo.
-ActivityContentReleaseRuntimeState mantém apenas PendingReleaseContext e IsAwaitingContinuation.
-SessionActivityPipeline continua owner da ordem macro de load, readiness, release e continuation, sem armazenar loaded set concreto.
-ActivityContentSceneUnloadDispatchStage e ActivityContentReleaseFinalizationStage consomem/limpam o store canônico.
-SessionActivityHost e SessionActivityDebugPanel observam o mesmo store canônico.
-```
-
-Evidência aceita:
-
-```text
-ActivityContentRuntimeStateLoadedSetStored após content load.
-ActivityContentRuntimeStateLoadedSetCleared após release finalization.
-ActivityContentReleaseRuntimeStatePendingContextStored/Cleared preservado.
-ActivityContentReleaseRuntimeStateAwaitingContinuationChanged preservado.
-Snapshot capture ocorre antes de object release.
-RestartCurrentActivity PASS.
-Activity01ToActivity02 PASS.
-RouteExitBackToMenu PASS.
-activity_02 no-content preservado.
-sem FATAL, Exception, route_transition_failed, foreign/stale indevido ou checkpointStatus='Failed'.
-```
-
 ---
 
 ### Fase J — Contract/command hygiene
 
 #### `SA-12 — Commands e contracts finais`
-
-Status: `CLOSED / PASS arquitetural do command hygiene`.
 
 Auditar e limpar:
 
@@ -1457,85 +1387,47 @@ activity_02 no-content preservado
 ActivityObjectReset checkpointStatus='PassedNoCommands'
 ```
 
-Débito histórico fechado:
+Débito aceito:
 
 ```text
 SA-12F-MOV-H1 — Retained PlayerActor target projection ownership hygiene.
-Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+Status: OPEN / MEDIUM DEBT.
+
+Parte da projeção de ActorTargets para capability inventory ficou em SessionActivityPipeline como bridge técnica:
+- ResolvePlayerActorCapabilityTargetsForCurrentEntry(...)
+- AddPlayerActorCapabilityTargetsFromParticipationContext(...)
+- TryResolvePlayerActorHandleForCapabilityInventory(...)
+
+A auditoria classificou o shape como PASS funcional / PASS arquitetural parcial porque não há writer duplicado de inventory, fallback por string, first-player fallback, branch player/nonplayer novo ou lifecycle/policy sendo decidido fora do owner.
+Mesmo assim, o owner conceitual final da projeção deve ser ActivityEntryPipeline / ActivityEntryActorInventoryStage / helper específico de entry.
 ```
 
-Problema fechado:
+Critério futuro para fechar o débito:
 
 ```text
-O blocker funcional de movement em activity_02 já estava resolvido, mas a projeção de PlayerActor SessionScoped retido para ActorTargets/capability inventory ainda estava como bridge técnica no SessionActivityPipeline.
-Esse ownership pertencia ao fluxo de entry/inventory, não ao macro pipeline.
+Mover a projeção de PlayerActor SessionScoped retido para helper/bridge do ActivityEntryPipeline ou ActivityEntryActorInventoryStage.
+Preservar o mesmo smoke funcional de activity_02.
+Não reconstruir inventory em consumidor posterior.
+Não criar fallback por string, first actor, first player ou registry tardio.
+Manter ActivityCapabilityInventory como snapshot/índice runtime passivo com writer único por lifecycle.
 ```
 
-Correções aceitas:
+##### Pendências restantes de SA-12
 
 ```text
-A projeção de PlayerActor SessionScoped retido foi movida para ActivityEntryActorInventoryStage.
-SessionActivityPipeline deixou de executar a projeção concreta.
-IActivityEntryActorInventoryRuntimeBridge permaneceu apenas como bridge técnica mínima para expor ActivityParticipationContext/registries/runtime store já existentes.
-ActivityEntryCapabilityInventoryPreviewStage continuou como writer do snapshot de inventory.
-ActivityCapabilityInventory permaneceu snapshot/índice runtime passivo com writer único por lifecycle.
-Não foi criado pipeline novo.
-Não foi criado manager/coordinator genérico.
-Não houve fallback por string, first actor, first player, FindObjectOfType, GameObject name, scene name ou registry tardio.
+SA-12F5 — auditoria/correção final dos resíduos de SessionActivityDefinition em ActivityEntryCommand, content-load completion/failure, ActorParticipationEnterCommand e ActivityContentReleaseFinalizationStageCommand.
+SA-12F-MOV-H1 — hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
 ```
 
-Evidência de smoke aceita:
+Critério para os próximos cortes:
 
 ```text
-sem FATAL
-sem Exception
-sem route_transition_failed
-sem foreign/stale indevido
-sem checkpointStatus='Failed'
-LoadingCompleted
-LoadingHidden
-ActivityParticipantRetainedBindingChosen
-ActivityParticipationContextPrepared activityParticipants='1'
-ActivityEntryPlayerInputBindingCompleted totalBound='1' skipped='False'
-ActivityCapabilityInventoryPreviewObserved contendo PermissionTarget
-ActivityEntryPermissionTargetPreparationCompleted receivers='1' skipped='False'
-PlayerMovementBound
-MovementBindingCompleted totalBound='1'
-ActivityCapabilityPermissionPublished state='Allowed' activityId='activity_02'
-PlayerMovementPermissionApplied state='Allowed' activityId='activity_02'
-MovementControlEnabled activityId='activity_02' affectedActors='1'
-Activity01ToActivity02 PASS
-RestartCurrentActivity PASS
-RouteExitBackToMenu PASS
-activity_02 no-content preservado
-ActivityObjectReset PassedNoCommands em activity_02
-```
-
-Conclusão arquitetural:
-
-```text
-SA-12F-MOV-H1 removeu a bridge de projeção concreta do SessionActivityPipeline e colocou o ownership da projeção no owner correto de entry/inventory.
-O corte fecha a hygiene de ownership sem reabrir o blocker funcional de activity_02.
-SA-12F e SA-12 ficam fechados após SA-12F5; usages restantes de `SessionActivityDefinition` em fronteiras explícitas de stage não são command carrier runtime.
-```
-
-##### Fechamento final de SA-12
-
-```text
-SA-12F5 — CLOSED / PASS arquitetural do command hygiene.
-SessionActivityDefinition foi removido dos últimos runtime commands que ainda o carregavam como carrier.
-Usos restantes em Execute(..., SessionActivityDefinition definition, ...) são fronteiras explícitas de stage, não payload de command.
-Smokes macro subsequentes preservaram restart, next activity, route-exit, activity_02 no-content e release.
-```
-
-Critério para cortes futuros:
-
-```text
-Não reabrir SA-12E, SA-12F5 ou SA-12F-MOV-H1 salvo regressão explícita.
+Não reabrir SA-12E salvo regressão explícita.
 Não reabrir o blocker funcional de movement em activity_02 salvo regressão de smoke.
+Resolver SA-12F5 por cortes pequenos de residual command hygiene.
+Tratar SA-12F-MOV-H1 como hygiene futuro, não blocker funcional.
 Não criar compat/fallback paralelo.
 Não criar pipeline novo.
-Commands carregam payload runtime resolvido, não authoring assets inteiros como carrier.
 Preservar smoke macro completo.
 ```
 
@@ -1566,33 +1458,31 @@ DONE  SA-5D   ActorParticipation enter stage
 
 DONE  SA-6A   PlayerInput binding stage
 DONE  SA-6B   Permission target preparation stage
-DONE  SA-6C   Movement binding stage
-DONE  SA-6D   Camera binding stage
+      SA-6C   Movement binding stage
+      SA-6D   Camera binding stage
 
       SA-7    EntryReadinessResult final
 
       SA-8A   Exit/Release ownership audit
-DONE  SA-8B   ObjectRelease/SnapshotCapture cleanup
-DONE  SA-8C   Actor release/participation exit cleanup
+      SA-8B   ObjectRelease/SnapshotCapture cleanup
+      SA-8C   Actor release/participation exit cleanup
 
       SA-9A   Host boundary cleanup
-DONE  SA-9B   Composition/service locator cleanup local
-      SA-13   Entry Runtime Surface Decomposition
+      SA-9B   Composition/service locator cleanup
 
 DONE  SA-10   Permission identity separation
 
-DONE  SA-11A  Entry state/context extraction
+      SA-11A  Entry state/context extraction
 DONE  SA-11B  Fact recorder hygiene
-DONE  SA-CONTENT-REL-1/2 ActivityContent loaded set ownership normalization
 
-DONE  SA-12   Command/contract hygiene
+PEND  SA-12   Command/contract hygiene — partial
 DONE  SA-12B/C Command boundary + identity duplication cleanup
 DONE  SA-12D  ActorAttributeCommand typed identity
 DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
-DONE  SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
+PART  SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
 DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — PASS funcional / PASS arquitetural parcial
-DONE  SA-12F5 residual SessionActivityDefinition command hygiene
-DONE  SA-12F-MOV-H1 Retained PlayerActor target projection ownership hygiene
+PEND  SA-12F5 residual SessionActivityDefinition command hygiene
+DEBT  SA-12F-MOV-H1 Retained PlayerActor target projection ownership hygiene
 ```
 
 ## Critério global de viabilidade Base 2.0
@@ -1617,26 +1507,6 @@ Sem trilho paralelo novo.
 Sem compat desnecessária.
 Smoke completo PASS.
 ```
-
-## SA-13 — Entry Runtime Surface Decomposition
-
-Debito registrado a partir do fechamento local de `SA-9B`.
-
-Objetivo:
-- separar o runtime surface de entry do `SessionActivityPipeline`;
-- reduzir `IActivityEntry*RuntimeBridge` agregados;
-- permitir construcao sem ciclo entre `SessionActivityPipeline` e `ActivityEntryPipeline`;
-- manter `SessionActivityPipeline` como owner macro lifecycle;
-- manter `ActivityEntryPipeline` como owner de entry lifecycle.
-
-Escopo:
-- `BindEntryPipeline(...)` continua transitorio enquanto o runtime surface nao for explicitado;
-- nenhum lookup tardio ou service locator deve voltar ao caminho ativo;
-- nenhum fallback silencioso deve ser reintroduzido.
-
-Classificacao:
-- `BindEntryPipeline(...)`: `TRANSITIONAL_BRIDGE` / `REAL_DEBT_MEDIUM` / `DEFER_TO_SA-13`.
-- `SA-9B3C2`: `AUDITED / NO_SMALL_PATCH`.
 
 ## Smoke global mínimo
 
@@ -3572,7 +3442,7 @@ SessionActivityPipeline
    -> preserva SessionActivityDematerializationCompleted
    -> emite ActivityContentReleaseFinalizationCleanupStarted
    -> chama ActivityObjectContributorUnregisterStage
-   -> limpa o loaded set canônico de ActivityContent
+   -> limpa CurrentActivityContentLoadedSet
    -> limpa PendingActivityContentReleaseContext
    -> limpa awaiting continuation flag
    -> emite ActivityContentReleaseFinalizationCleanupCompleted
@@ -4246,8 +4116,6 @@ RouteExitBackToMenu Passed
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-Nota normativa: o shape desta seção é histórico e foi superado por `SA-CONTENT-REL-2`. `CurrentLoadedSet` não pertence mais ao `ActivityContentReleaseRuntimeState`; o owner atual do loaded set vivo é `ActivityContentRuntimeState`.
-
 ### Decisão aplicada
 
 Criado `ActivityContentReleaseRuntimeState` para concentrar o state técnico de release async de ActivityContent:
@@ -4272,7 +4140,7 @@ ActivityContentReleaseFinalizationStage continua stage de finalization.
 ```text
 Criado NewScripts/SessionActivity/Pipeline/Runtime/ActivityContentReleaseRuntimeState.cs.
 SessionActivityPipeline passa a delegar pending release context e awaiting flag ao runtime state.
-Set/Clear de CurrentActivityContentLoadedSet passou a espelhar o state técnico no runtime state neste corte histórico; `SA-CONTENT-REL-2` removeu esse espelho.
+Set/Clear de CurrentActivityContentLoadedSet passa a espelhar o state técnico no runtime state.
 Bridges existentes continuam como camada transitória, mas agora leem/limpam o runtime state em vez de fields soltos do pipeline.
 ```
 
@@ -4378,8 +4246,6 @@ Não criar ActivityExitPipeline.
 ## SA-7H2-H2 — ActivityContentSceneUnloadDispatchBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
-
-Nota histórica: os eventos `ActivityContentReleaseRuntimeStateLoadedSet*` citados neste smoke pertencem ao shape anterior e não são mais observabilidade normativa após `SA-CONTENT-REL-2`.
 
 ### Resultado do smoke — 2026-06-02
 
@@ -4586,18 +4452,11 @@ ActivityExitPipeline não foi criado.
 Manager/coordinator novo não foi criado.
 ```
 
-### Observação histórica — superada por SA-CONTENT-REL-2
+### Observação
 
-O shape descrito abaixo foi removido:
+`ActivityContentReleaseFinalizationStage` ainda usa `IActivityEntryRuntimeEndpoint.ClearCurrentActivityContentLoadedSet()` para limpar o loaded set espelhado em `SessionActivityRuntimeState`, enquanto `ActivityContentReleaseRuntimeState` permanece dono do state técnico de release async.
 
-```text
-SessionActivityRuntimeState não mantém mais CurrentActivityContentLoadedSet.
-ActivityContentReleaseRuntimeState não mantém mais CurrentLoadedSet.
-ActivityContentRuntimeState é o único owner canônico do loaded set vivo.
-ActivityContentReleaseFinalizationStage limpa o store canônico no momento correto.
-```
-
-A continuation macro permanece no `SessionActivityPipeline`; `ActivityContentReleaseRuntimeState` permanece restrito a `PendingReleaseContext` e `IsAwaitingContinuation`.
+Isso não move lifecycle e não reintroduz a bridge de finalization.
 ## SA-7H3A — ActivityObjectExitRuntimeState
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
@@ -5196,3 +5055,231 @@ ActorDefinitionId não pode ser usado como chave runtime para reencontrar partic
 PlayerSlotId é a chave de correlação entre seed de PlayerParticipation e SessionParticipantBinding.
 SessionParticipantId não depende de índice/ordem de lista.
 ```
+
+
+---
+
+## SA-13C1 — ActorAttribute command execution owner extraction
+
+Status: `CLOSED / PASS funcional do command path + PASS arquitetural parcial`.
+
+### Decisão
+
+`TryApplyActorAttributeCommand` deixou de executar lógica interna de `ActorAttributes` dentro do `SessionActivityPipeline`.
+
+```text
+SessionActivityPipeline
+-> valida o ciclo atual e normaliza o pedido
+-> resolve a capability ativa por correlação atual
+-> monta ActorAttributeCommand
+-> delega execução para ActorAttributeEndpoint.TryApplyCommand(...)
+```
+
+### Owner preservado
+
+```text
+SessionActivityPipeline continua dono do momento/orquestração do QA/runtime command.
+ActorAttributeEndpoint é o owner da execução concreta do command de atributo.
+ActivityActorExitRuntimeState continua correlation store técnico para capabilities ativas.
+```
+
+### Escopo aplicado
+
+```text
+Removida do SessionActivityPipeline a aplicação direta do command no endpoint.
+Removida a resolução auxiliar morta TryResolveActorInstanceIdForActor(...).
+Reutilizado ActorAttributeEndpoint.TryApplyCommand(...).
+Adicionado lookup mínimo de capability ativa por actorId no ActivityActorExitRuntimeState.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+ActorPresentation não foi alterado.
+ActorParticipation não foi alterado.
+Movement/Camera/Permission não foram alterados.
+ActivityObject não foi alterado neste corte.
+Content release, restart, next activity, route-exit e save/load não foram alterados.
+Não foi criado manager/coordinator/facade novo.
+```
+
+### Evidência aceita
+
+Smoke manual confirmou o command path de attribute:
+
+```text
+ActorAttributeCommandRequested operation='Subtract'
+ActorAttributeChanged previousValue='100' newValue='90'
+QaSubtractActorAttribute outcomeKind='Applied'
+ActorAttributeCommandRequested operation='Add'
+ActorAttributeChanged previousValue='90' newValue='95'
+QaAddActorAttribute outcomeKind='Applied'
+```
+
+Smoke macro preservado:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+### Débito residual controlado
+
+```text
+SessionActivityPipeline ainda resolve a capability ativa por actorId via correlation state.
+Isso é aceito como passo intermediário; execução concreta já pertence ao ActorAttributeEndpoint.
+```
+
+---
+
+## SA-13C-OBJ1-FIX — ActivityObject exit correlation mirror
+
+Status: `CLOSED / PASS funcional + PASS arquitetural parcial`.
+
+### Problema corrigido
+
+A auditoria `SA-13C-OBJ1` classificou a causa como `EXIT_CORRELATION_MISSING`.
+
+O estado de objeto nascia corretamente no entry:
+
+```text
+ActivityObjectContributorDiscoveryResult
+ActivityCapabilityInventory preview
+ActivityCapabilityInventoryValidationResult
+```
+
+Mas não era congelado no `ActivityObjectExitRuntimeState` antes dos stages de saída. Como consequência, estes stages viam zero targets:
+
+```text
+ActivityObjectSnapshotCaptureStage
+ActivityObjectReleaseStage
+ActivityObjectContributorUnregisterStage
+```
+
+E o save-on-exit recebia payload ausente:
+
+```text
+RouteActivitySaveSnapshotPayload payloadResolved='false' failureReason='snapshot_payload_missing'
+```
+
+### Decisão aplicada
+
+Após `ExecuteSetupAndReadiness(...)` concluir com sucesso e antes de `EnterActivationFlow(...)`, o pipeline congela a correlação de saída para `ActivityObject`.
+
+Pontos aplicados:
+
+```text
+EnterActivity(...)
+ContinueAfterActivityContentLoadedSetReady(...)
+```
+
+### States copiados
+
+```text
+ActivityObjectContributorDiscoveryResult
+ActivityCapabilityInventory preview
+ActivityCapabilityInventoryValidationResult
+```
+
+`ActivitySetupInventory` não foi copiado porque os stages de exit não o consomem no shape atual.
+
+### Métodos usados
+
+```text
+ActivityObjectExitRuntimeState.ClearAll(...)
+ActivityObjectExitRuntimeState.StoreContributorDiscoveryResult(...)
+ActivityObjectExitRuntimeState.StoreInventoryPreview(...)
+```
+
+Nenhum método novo foi criado no exit state.
+
+### Owner preservado
+
+```text
+ActivityEntryPipeline continua owner da produção do object setup/inventory.
+ActivityObjectExitRuntimeState é o correlation store técnico para snapshot/release/unregister.
+SessionActivityPipeline continua owner de ordering/lifecycle do boundary macro.
+ActivityObjectSnapshotCaptureStage, ActivityObjectReleaseStage e ActivityObjectContributorUnregisterStage continuam stages determinísticos.
+RouteActivitySave continua consumidor de payload capturado; não decide discovery/release/unregister.
+```
+
+### Escopo explicitamente não alterado
+
+```text
+Não houve reconstrução no exit.
+Não houve lookup por cena no exit.
+Não houve fallback silencioso.
+activity_02 no-content não foi alterada.
+ActorAttribute, ActorPresentation, ActorParticipation, Movement, Camera, Permission e content release continuation não foram alterados.
+Save backend e policy de RouteActivitySave não foram alterados.
+```
+
+### Evidência aceita
+
+O smoke mostrou congelamento correto da correlação:
+
+```text
+ActivityObjectExitCorrelationFrozen discoveryValid='true' discoveryCount='1' inventoryValid='true' inventoryCapabilityCount='11' inventoryValidationValid='true'
+ActivityObjectExitRuntimeStateContributorDiscoveryStored discoveredCount='1'
+ActivityObjectExitRuntimeStateInventoryPreviewStored inventoryCapabilityCount='11'
+```
+
+`activity_01` voltou a capturar, liberar e desregistrar `test_object_01`:
+
+```text
+ActivityObjectSnapshotCapture checkpointStatus='Passed' capturedCount='1' targetIds='test_object_01'
+ActivityObjectRelease checkpointStatus='Passed' commandCount='1' appliedCount='1' targetIds='test_object_01'
+ActivityObjectContributorUnregister checkpointStatus='Passed' unregisteredCount='1' targetIds='test_object_01'
+```
+
+Após restart, o mesmo comportamento permaneceu válido para `entrySequence='2'`.
+
+`activity_02` preservou o no-content explícito:
+
+```text
+ActivityObjectSnapshotCapture checkpointStatus='Passed' capturedCount='0' targetIds='<none>'
+ActivityObjectRelease checkpointStatus='Passed' commandCount='0' targetIds='<none>'
+ActivityObjectContributorUnregister checkpointStatus='Passed' unregisteredCount='0' skippedNoContributors='true'
+```
+
+Smoke macro preservado:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem foreign/stale indevido
+sem checkpointStatus='Failed'
+RestartCurrentActivity Passed
+Activity01ToActivity02 Passed
+RouteExitBackToMenu Passed
+```
+
+### Débito residual controlado
+
+A cópia foi implementada no `SessionActivityPipeline` como boundary macro após `ExecuteSetupAndReadiness(...)`.
+
+Aceito neste corte porque:
+
+```text
+SessionActivityPipeline não executa discovery, reset, snapshot, release ou unregister.
+SessionActivityPipeline apenas congela a correlação entry->exit no boundary entre setup e activation.
+Os stages de exit continuam lendo do ActivityObjectExitRuntimeState.
+```
+
+Shape final desejado para corte futuro:
+
+```text
+ActivityEntryPipeline produz e congela ActivityObject exit correlation diretamente.
+SessionActivityPipeline apenas orquestra o boundary macro.
+```
+
+### Watchlist
+
+`RouteActivitySave` ainda exige smoke próprio para payload útil quando o route-exit/salve-on-exit ocorrer após uma activity com payload capturado ou quando a policy passar a preservar o último payload útil. No smoke aceito, `BackToMenu` ocorreu a partir de `activity_02`, que é no-content, portanto `RouteActivitySave` não foi fechado como payload útil final.
+

@@ -1267,10 +1267,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         bool TryGetActiveActorPresentationHandle(
             ActorPresentationEndpointReference presentationReference,
             out ActorPresentationRuntimeHandle handle);
-        void SyncActiveActorPresentationHandle(
-            SessionActivityIdentity identity,
-            ActorPresentationEndpointReference presentationReference,
-            ActorPresentationRuntimeHandle handle);
         void ReleaseActorPresentationBeforeRematerialization(
             SessionActivityIdentity identity,
             string source,

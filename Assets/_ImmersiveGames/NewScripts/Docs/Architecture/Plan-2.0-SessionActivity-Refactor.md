@@ -389,3 +389,62 @@ owner correto visível nos logs
 sem fallback silencioso
 sem trilho paralelo novo
 ```
+
+
+## Addendum SA-13C — Module Port Ownership / Object Correlation
+
+### SA-13C1 — ActorAttribute command execution owner extraction
+
+Status: CLOSED.
+
+Ganho:
+
+```text
+Remove execução concreta de ActorAttributes do SessionActivityPipeline.
+Reusa ActorAttributeEndpoint.TryApplyCommand(...).
+```
+
+Risco residual:
+
+```text
+Pipeline ainda resolve capability ativa por actorId via correlation state.
+Aceito como passo intermediário.
+```
+
+### SA-13C-OBJ1-FIX — ActivityObject exit correlation mirror
+
+Status: CLOSED.
+
+Ganho:
+
+```text
+ActivityObjectSnapshotCapture/Release/Unregister voltam a consumir test_object_01 em activity_01.
+ActivityObjectExitRuntimeState passa a receber discovery + inventory preview + validation antes do exit.
+```
+
+Risco residual:
+
+```text
+Freeze entry->exit ainda é feito no SessionActivityPipeline como boundary macro.
+Shape futuro desejado: ActivityEntryPipeline congelar a correlação diretamente.
+RouteActivitySave payload útil ainda exige smoke próprio.
+```
+
+### Próximos cortes recomendados
+
+```text
+SA-13C2 — ActorPresentation registry projection ownership audit/fix.
+SA-13C3 — Movement retained/control bridge audit.
+SA-13C4 — Permission runtime surface audit.
+SA-13C5 — ActivityObject correlation localization cleanup, se necessário.
+SA-13C-SAVE1 — RouteActivitySave useful payload smoke/audit.
+```
+
+Regra para próximos cortes:
+
+```text
+Não remover mais carriers método-a-método sem classificar módulo, lifetime, owner e risco.
+Não mexer em RouteActivitySave sem smoke que exercite payload útil.
+Não mover continuation macro para runtime state/stage.
+```
+

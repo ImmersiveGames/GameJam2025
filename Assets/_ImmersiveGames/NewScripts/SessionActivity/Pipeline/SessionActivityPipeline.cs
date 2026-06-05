@@ -2510,6 +2510,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 definition,
                 this,
                 _activityActorExitRuntimeState,
+                _activitySceneActorRegistry,
                 this,
                 _sessionActorRuntimeStore,
                 facts,
@@ -3654,33 +3655,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return _activityActorExitRuntimeState.TryGetActivePresentationHandle(presentationReference, out handle);
         }
 
-        private void SyncActorPresentationRegistryHandle(
-            SessionActivityIdentity identity,
-            ActorPresentationEndpointReference presentationReference,
-            ActorPresentationRuntimeHandle handle)
-        {
-            if (!identity.IsValid || presentationReference == null || !presentationReference.IsValid || !handle.IsValid)
-            {
-                return;
-            }
-
-            try
-            {
-                _activitySceneActorRegistry.SetPresentationHandle(identity, presentationReference.ActorId, handle);
-                DebugUtility.LogVerbose<SessionActivityPipeline>(
-                    $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' actorId='{Normalize(presentationReference.ActorId)}' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'.",
-                    DebugUtility.Colors.Info);
-            }
-            catch (InvalidOperationException)
-            {
-                DebugUtility.LogVerbose<SessionActivityPipeline>(
-                    $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSyncSkipped' owner='ActivitySceneActorRegistry' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' actorId='{Normalize(presentationReference.ActorId)}' source='ActivityEntryActorPresentationStage' reason='actor_not_registered_in_presentation_registry'.",
-                    DebugUtility.Colors.Info);
-            }
-        }
-
-
-
         private void EmitActorPresentationReleaseGenericStage(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
@@ -3695,6 +3669,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 definition,
                 this,
                 _activityActorExitRuntimeState,
+                _activitySceneActorRegistry,
                 this,
                 facts,
                 snapshots);
@@ -8405,29 +8380,6 @@ private bool TryBuildActivityParticipantBinding(
             return _actorPresentationMaterializationAdapter.Release(new ActorPresentationReleaseCommand(handle, source, reason));
         }
 
-        void IActivityExitActorTeardownRuntimeBridge.ClearActorPresentationRegistryHandle(SessionActivityIdentity identity, ActivityActorExitRuntimeState.ActorPresentationCapabilityState state)
-        {
-            if (!state.IsValid)
-            {
-                return;
-            }
-
-            try
-            {
-                _activitySceneActorRegistry.ClearPresentationHandle(identity, state.ActorId);
-                DebugUtility.LogVerbose<SessionActivityPipeline>(
-                    $"[OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'.",
-                    DebugUtility.Colors.Info);
-            }
-            catch (InvalidOperationException)
-            {
-                DebugUtility.LogVerbose<SessionActivityPipeline>(
-                    $"[OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearSkipped' owner='ActivitySceneActorRegistry' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' source='ActivityExitActorTeardownStage' reason='actor_not_registered_in_presentation_registry'.",
-                    DebugUtility.Colors.Info);
-            }
-        }
-
-
         IReadOnlyList<PlayerActorParticipationExitRecord> IActivityExitActorTeardownRuntimeBridge.ExecutePlayerActorParticipationExit(
             PlayerActorParticipationExitCommand command,
             SessionActivityIdentity identity)
@@ -8440,14 +8392,6 @@ private bool TryBuildActivityParticipantBinding(
             out ActorPresentationRuntimeHandle handle)
         {
             return TryGetActivePresentationHandle(presentationReference, out handle);
-        }
-
-        void IActivityEntryActorPresentationRuntimeBridge.SyncActiveActorPresentationHandle(
-            SessionActivityIdentity identity,
-            ActorPresentationEndpointReference presentationReference,
-            ActorPresentationRuntimeHandle handle)
-        {
-            SyncActorPresentationRegistryHandle(identity, presentationReference, handle);
         }
 
         void IActivityEntryActorPresentationRuntimeBridge.ReleaseActorPresentationBeforeRematerialization(
