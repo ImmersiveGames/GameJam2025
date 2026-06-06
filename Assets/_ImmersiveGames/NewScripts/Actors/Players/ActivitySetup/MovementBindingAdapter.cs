@@ -2,12 +2,11 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
-using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class MovementBindingAdapter : IMovementBindingAdapter
@@ -72,21 +71,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorInstanceRuntimeId.");
                 }
 
-                GameObject actorInstance = actorHandle.Instance;
                 if (actorHandle.PlayerSlotId != requirement.PlayerSlotId || actorHandle.ActorId != requirement.ActorId)
                 {
                     throw new InvalidOperationException($"stale_or_foreign_movement_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' actorId='{requirement.ActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
                 }
 
-                PlayerInput input = ResolveBoundPlayerInputOrFail(actorInstance, requirement);
-                PlayerMoveInputReader reader = ResolveSingleComponentOrFail<PlayerMoveInputReader>(actorInstance, requirement, "PlayerMoveInputReader");
-                PlayerMovementController controller = ResolveSingleComponentOrFail<PlayerMovementController>(actorInstance, requirement, "PlayerMovementController");
+                ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
+                IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
+                IActorMovementEndpoint movementEndpoint = capabilitySurface.ActorMovementEndpoint ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing IActorMovementEndpoint.");
+                if (movementEndpoint is not IActorCommandSink commandSink)
+                {
+                    throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' movement endpoint does not implement IActorCommandSink.");
+                }
 
-                reader.Bind(input);
-                reader.SetInputEnabled(false);
-                reader.ClearInput();
-                controller.BindReaderOrFail(reader);
+                if (!commandHub.IsPrepared)
+                {
+                    throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' actor command hub is not prepared.");
+                }
 
+                if (!commandHub.HasBinding(
+                    ActorCommandSourceKind.PlayerInput,
+                    ActorCommandValueKind.Move,
+                    ActorCommandTriggerKind.Continuous) &&
+                    !commandHub.HasBinding(
+                        ActorCommandSourceKind.PlayerInput,
+                        ActorCommandValueKind.Move,
+                        ActorCommandTriggerKind.ValueChanged))
+                {
+                    throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing active Move binding on ActorCommandSourceHub.");
+                }
+
+                commandHub.BindCommandSink(ActorCommandValueKind.Move, commandSink);
+
+                GameObject actorInstance = actorHandle.Instance;
                 PlayerActorMovementBindingState bindingState = actorInstance.GetComponent<PlayerActorMovementBindingState>();
                 if (bindingState == null)
                 {
@@ -97,49 +114,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     activeIdentity,
                     requirement.PlayerSlotId,
                     playerActorId,
-                    bindEndpointType: nameof(PlayerMovementController));
+                    bindEndpointType: movementEndpoint.GetType().Name);
 
                 records.Add(new MovementBindingRecord(
                     requirement,
                     actorHandle.ActorIdentity,
                     bound: true,
-                    observedEndpoint: $"{controller.GetType().Name}|reader={reader.GetType().Name}|playerInput={input.name}|controlEnabled=false"));
+                    observedEndpoint: $"{movementEndpoint.GetType().Name}|hub={commandHub.GetType().Name}|hubPrepared={commandHub.IsPrepared}|hubBound=true|controlEnabled=false"));
             }
 
             return records;
-        }
-
-        private static PlayerInput ResolveBoundPlayerInputOrFail(GameObject actorInstance, MovementBindingRequirement requirement)
-        {
-            PlayerInput[] inputs = actorInstance.GetComponentsInChildren<PlayerInput>(includeInactive: true);
-            if (inputs == null || inputs.Length == 0)
-            {
-                throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' sem PlayerInput.");
-            }
-
-            if (inputs.Length > 1)
-            {
-                throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' possui multiplos PlayerInput sem endpoint explicito.");
-            }
-
-            return inputs[0] ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' PlayerInput invalido.");
-        }
-
-        private static T ResolveSingleComponentOrFail<T>(GameObject actorInstance, MovementBindingRequirement requirement, string componentLabel)
-            where T : Component
-        {
-            T[] found = actorInstance.GetComponentsInChildren<T>(includeInactive: true);
-            if (found == null || found.Length == 0)
-            {
-                throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' sem {componentLabel}.");
-            }
-
-            if (found.Length > 1)
-            {
-                throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' possui multiplos {componentLabel} sem endpoint explicito.");
-            }
-
-            return found[0] ?? throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' {componentLabel} invalido.");
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)

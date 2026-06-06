@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class PlayerMovementControlAdapter : IPlayerMovementControlAdapter
@@ -75,10 +73,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement control failed: actorId='{actor.ActorId}' participantId='{actor.ParticipantId}' missing ActorInstanceRuntimeId.");
                 }
 
-                GameObject actorInstance = handle.Instance;
-
-                PlayerMoveInputReader reader = ResolveSingleComponentOrFail<PlayerMoveInputReader>(actorInstance, actor, "PlayerMoveInputReader");
-                PlayerMovementController controller = ResolveSingleComponentOrFail<PlayerMovementController>(actorInstance, actor, "PlayerMovementController");
+                ActorCapabilitySurface capabilitySurface = handle.CapabilitySurface ?? throw new InvalidOperationException($"Movement control failed: actor not found capability surface for playerActorId='{actor.PlayerActorId}'.");
+                IActorMovementEndpoint movementEndpoint = capabilitySurface.ActorMovementEndpoint ?? throw new InvalidOperationException($"Movement control failed: actor not found movement endpoint for playerActorId='{actor.PlayerActorId}'.");
 
                 ActivityCapabilityPermissionState permissionState = command.Enable
                     ? ActivityCapabilityPermissionState.Allowed
@@ -105,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement control permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' playerActorId='{actor.PlayerActorId}'.");
                 }
 
-                records.Add(new MovementControlRecord(actor, command.Enable, $"{controller.GetType().Name}|reader={reader.GetType().Name}"));
+                records.Add(new MovementControlRecord(actor, command.Enable, movementEndpoint.GetType().Name));
             }
 
             return records;
@@ -124,23 +120,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                    outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
                    outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
                    outcomeKind == PermissionOutcomeKind.Failed;
-        }
-
-        private static T ResolveSingleComponentOrFail<T>(GameObject actorInstance, PlayerActorIdentityRecord actor, string componentLabel)
-            where T : Component
-        {
-            T[] found = actorInstance.GetComponentsInChildren<T>(includeInactive: true);
-            if (found == null || found.Length == 0)
-            {
-                throw new InvalidOperationException($"Movement control failed: playerActorId='{actor.PlayerActorId}' slotId='{actor.PlayerSlotId}' sem {componentLabel}.");
-            }
-
-            if (found.Length > 1)
-            {
-                throw new InvalidOperationException($"Movement control failed: playerActorId='{actor.PlayerActorId}' slotId='{actor.PlayerSlotId}' possui multiplos {componentLabel} sem endpoint explicito.");
-            }
-
-            return found[0] ?? throw new InvalidOperationException($"Movement control failed: playerActorId='{actor.PlayerActorId}' slotId='{actor.PlayerSlotId}' {componentLabel} invalido.");
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)

@@ -1,21 +1,22 @@
-using UnityEngine;
+using System;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     [DisallowMultipleComponent]
-    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint
+    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint, IActorCommandSink
     {
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 5f;
         [SerializeField] private float rotationSpeed = 360f;
         [SerializeField] private float inputDeadzone = 0.1f;
         [SerializeField] private bool useFixedUpdateForPhysics = true;
-        [SerializeField] private PlayerMoveInputReader inputReader;
 
         private CharacterController _characterController;
         private Rigidbody _rigidbody;
         private bool _movementEnabled;
+        private Vector2 _moveInput;
 
         public Transform Transform => transform;
         public bool IsMovementEnabled => _movementEnabled;
@@ -32,8 +33,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             // Fail-safe local: garante bloqueio técnico ao desabilitar o objeto.
             // O lifecycle de controle continua sendo decidido pelo pipeline.
             _movementEnabled = false;
-            inputReader?.SetInputEnabled(false);
-            inputReader?.ClearInput();
+            _moveInput = Vector2.zero;
             HaltHorizontalVelocity();
         }
 
@@ -57,38 +57,47 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             TickMovement(Time.fixedDeltaTime);
         }
 
-        public void BindReaderOrFail(PlayerMoveInputReader reader)
-        {
-            if (reader == null)
-            {
-                throw new System.InvalidOperationException("PlayerMovementController.BindReaderOrFail requer reader valido.");
-            }
-
-            inputReader = reader;
-        }
-
         public void SetMovementEnabled(bool enabled)
         {
             _movementEnabled = enabled;
-            if (inputReader != null)
-            {
-                inputReader.SetInputEnabled(enabled);
-                if (!enabled)
-                {
-                    inputReader.ClearInput();
-                }
-            }
 
             if (!enabled)
             {
+                _moveInput = Vector2.zero;
                 HaltHorizontalVelocity();
             }
         }
 
         public void ClearMovementState()
         {
-            inputReader?.ClearInput();
+            _moveInput = Vector2.zero;
             HaltHorizontalVelocity();
+        }
+
+        public ActorCommandDispatchResult AcceptCommand(ActorCommandEnvelope command)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("PlayerMovementController received invalid actor command envelope.");
+            }
+
+            if (command.CommandId.SourceKind != ActorCommandSourceKind.PlayerInput ||
+                command.CommandId.ValueKind != ActorCommandValueKind.Move ||
+                (command.CommandId.TriggerKind != ActorCommandTriggerKind.Continuous &&
+                    command.CommandId.TriggerKind != ActorCommandTriggerKind.ValueChanged) ||
+                command.Value.ValueKind != ActorCommandValueKind.Move)
+            {
+                return ActorCommandDispatchResult.RejectedUnsupportedCommand(
+                    $"movement_endpoint_has_no_sink_for_source='{command.CommandId.SourceKind}' value='{command.CommandId.ValueKind}' trigger='{command.CommandId.TriggerKind}'.");
+            }
+
+            if (!_movementEnabled)
+            {
+                return ActorCommandDispatchResult.RejectedInactive("movement_endpoint_inactive");
+            }
+
+            _moveInput = command.Value.Vector2Value;
+            return ActorCommandDispatchResult.Accepted("movement_command_applied");
         }
 
         private void TickMovement(float deltaTime)
@@ -99,12 +108,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            if (inputReader == null || !inputReader.IsBound)
+            Vector2 input = _moveInput;
+            if (input == Vector2.zero)
             {
-                throw new System.InvalidOperationException("PlayerMovementController requer PlayerMoveInputReader bound antes de simular movimento.");
+                HaltHorizontalVelocity();
+                return;
             }
 
-            Vector2 input = inputReader.MoveInput;
             if (input.sqrMagnitude < inputDeadzone * inputDeadzone)
             {
                 HaltHorizontalVelocity();
@@ -168,21 +178,5 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             _rigidbody.angularVelocity = Vector3.zero;
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        public void QA_SetMoveInput(Vector2 move)
-        {
-            if (inputReader == null)
-            {
-                throw new System.InvalidOperationException("PlayerMovementController.QA_SetMoveInput requer reader configurado.");
-            }
-
-            inputReader.QA_SetMoveInput(move);
-        }
-
-        public void QA_ClearInputs()
-        {
-            inputReader?.QA_ClearInputs();
-        }
-#endif
     }
 }

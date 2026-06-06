@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         private IActorCameraTargetEndpoint actorCameraTargetEndpoint;
         private IActorMovementEndpoint actorMovementEndpoint;
         private IActorPermissionReceiver actorPermissionReceiver;
-        private IActorIntentSource actorIntentSource;
+        private IActorCommandSourceHub actorCommandSourceHub;
 
         public ActorPresentationEndpoint PresentationEndpoint
         {
@@ -80,16 +80,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
         }
 
-        public IActorIntentSource ActorIntentSource
+        public IActorCommandSourceHub ActorCommandSourceHub
         {
             get
             {
-                if (actorIntentSource == null)
+                if (actorCommandSourceHub == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorIntentSource;
+                return actorCommandSourceHub;
             }
         }
 
@@ -101,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             actorCameraTargetEndpoint = ResolveSingleInterfaceInActorRoot<IActorCameraTargetEndpoint>(actorRoot);
             actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
             actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
-            actorIntentSource = ResolveSingleInterfaceInActorRoot<IActorIntentSource>(actorRoot);
+            actorCommandSourceHub = ResolveSingleInterfaceInActorRoot<IActorCommandSourceHub>(actorRoot);
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)
@@ -148,6 +148,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 return null;
             }
 
+            if (endpoints.Length > 1)
+            {
+                throw new InvalidOperationException($"{nameof(ActorCapabilitySurface)} found multiple {typeof(TEndpoint).Name} components in actor root '{actorRoot.name}'.");
+            }
+
             return endpoints[0];
         }
 
@@ -160,15 +165,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
 
             MonoBehaviour[] components = actorRoot.GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
+            TEndpoint foundEndpoint = null;
             for (int index = 0; index < components.Length; index++)
             {
-                if (components[index] is TEndpoint endpoint)
+                if (components[index] is TEndpoint candidate)
                 {
-                    return endpoint;
+                    if (foundEndpoint != null)
+                    {
+                        throw new InvalidOperationException($"{nameof(ActorCapabilitySurface)} found multiple {typeof(TEndpoint).Name} components in actor root '{actorRoot.name}'.");
+                    }
+
+                    foundEndpoint = candidate;
                 }
             }
 
-            return null;
+            return foundEndpoint;
         }
 
         private void OnValidate()

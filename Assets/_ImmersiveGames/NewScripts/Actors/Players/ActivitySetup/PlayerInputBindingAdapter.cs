@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
@@ -67,11 +68,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 PlayerInputResolution resolution = ResolvePlayerInputFromActorOrFail(actorInstance, requirement, _canonicalActionsAsset);
                 PlayerInput resolvedInput = resolution.PlayerInput;
+
+                ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
+                IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
+
                 PlayerActorInputBindingState bindingState = actorInstance.GetComponent<PlayerActorInputBindingState>();
                 if (bindingState == null)
                 {
                     bindingState = actorInstance.AddComponent<PlayerActorInputBindingState>();
                 }
+
+                commandHub.PrepareInputBindings(
+                    resolvedInput,
+                    $"PlayerInputBindingAdapter|source={requirement.Source}|reason={requirement.Reason}");
 
                 bindingState.Bind(
                     activeIdentity,
