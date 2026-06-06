@@ -99,27 +99,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     playerActorId,
                     bindEndpointType: nameof(PlayerMovementController));
 
-                ActivityCapabilityPermissionCommand permissionCommand = new(
-                    ActivityCapabilityPermissionId.ActivityGameplayControl,
-                    ActivityCapabilityPermissionScope.Actor,
-                    ActivityCapabilityPermissionState.Blocked,
-                    activeIdentity.PipelineId,
-                    activeIdentity.SessionId,
-                    activeIdentity.ActivityId,
-                    activeIdentity.EntrySequence,
-                    requirement.ActorId,
-                    actorInstanceRuntimeId,
-                    playerActorId,
-                    requirement.PlayerSlotId,
-                    command.Source,
-                    command.Reason);
-
-                ActivityCapabilityPermissionFact fact = _permissionRuntime.Publish(permissionCommand);
-                if (IsRejected(fact))
-                {
-                    throw new InvalidOperationException($"Movement binding permission publish rejected outcomeKind='{fact.OutcomeKind}' outcome='{fact.OutcomeCode}' actorId='{requirement.ActorId}'.");
-                }
-
                 records.Add(new MovementBindingRecord(
                     requirement,
                     actorHandle.ActorIdentity,
@@ -128,21 +107,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             return records;
-        }
-
-        private static bool IsRejected(ActivityCapabilityPermissionFact fact)
-        {
-            return fact.IsValid &&
-                IsRejected(fact.OutcomeKind);
-        }
-
-        private static bool IsRejected(PermissionOutcomeKind outcomeKind)
-        {
-            return outcomeKind == PermissionOutcomeKind.RejectedInvalidCommand ||
-                   outcomeKind == PermissionOutcomeKind.RejectedForeignIdentity ||
-                   outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
-                   outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
-                   outcomeKind == PermissionOutcomeKind.Failed;
         }
 
         private static PlayerInput ResolveBoundPlayerInputOrFail(GameObject actorInstance, MovementBindingRequirement requirement)

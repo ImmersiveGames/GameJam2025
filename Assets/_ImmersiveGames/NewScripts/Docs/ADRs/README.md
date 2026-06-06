@@ -7,6 +7,18 @@ Base 1.2 não substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
 
 ---
 
+## SA-16A closure
+
+- `SA-16A` - `Movement / GameplayControl / Reset / Save boundary`: `CLOSED`.
+- `SA-16A1` - `Initial Movement Blocked state ownership cleanup`: `PASS funcional + PASS arquitetural do corte`.
+- `SA-16A2` - `MovementTransient reset endpoint support`: `PASS funcional + PASS arquitetural do corte`.
+- `MovementBindingAdapter` deixou de publicar gate state.
+- `ActivityEntryMovementBindingStage` continua publicando o `Blocked` inicial.
+- `PlayerActorDefaultResetEndpoint` passou a suportar `MovementTransient`.
+- `Movement` continua fora de Save/Snapshot.
+- Nao houve alteracao em gate/permission/control.
+- Nao houve fallback global, first player, lookup textual ou cruzamento indevido de identidades.
+
 ## ADRs ativos
 
 - ADR-1.2-0004 — ActorAttributes como ActorCapability

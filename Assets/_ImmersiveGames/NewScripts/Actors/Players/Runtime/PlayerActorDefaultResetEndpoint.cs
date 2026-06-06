@@ -1,15 +1,19 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement;
 using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 {
     [DisallowMultipleComponent]
     public sealed class PlayerActorDefaultResetEndpoint : MonoBehaviour, IActorResetEndpoint
     {
+        [SerializeField] private PlayerMovementController movementController;
+
         public bool Supports(ActorResetGroup group)
         {
             return group == ActorResetGroup.Placement ||
-                group == ActorResetGroup.ActivityParticipation;
+                group == ActorResetGroup.ActivityParticipation ||
+                group == ActorResetGroup.MovementTransient;
         }
 
         public void ApplyReset(ActorResetContext context)
@@ -45,6 +49,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 }
 
                 participation.MarkActiveInActivity(context.PipelineIdentity);
+                return;
+            }
+
+            if (context.Group == ActorResetGroup.MovementTransient)
+            {
+                if (movementController == null)
+                {
+                    throw new InvalidOperationException(
+                        $"MovementTransient reset requires PlayerMovementController on player actorId='{context.Actor.ActorId}'.");
+                }
+
+                movementController.ClearMovementState();
             }
         }
     }

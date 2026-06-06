@@ -214,6 +214,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     requiredBoundCount += 1;
                 }
 
+                boundTargets.Add(new PlayerActorIdentityRecord(
+                    startedIdentity,
+                    record.Requirement.ParticipantBinding,
+                    record.ActorIdentity.PlayerActorId));
+            }
+
+            bridge.SetMovementControlTargets(boundTargets, enableAllowed: true);
+            if (boundTargets.Count > 0)
+            {
+                bridge.PublishInitialMovementControlBlocked(
+                    startedIdentity,
+                    boundTargets,
+                    command.Source,
+                    command.Reason,
+                    facts,
+                    snapshots);
+            }
+
+            for (int index = 0; index < records.Count; index++)
+            {
+                MovementBindingRecord record = records[index];
                 endpoint.EmitFact(
                     facts,
                     SessionActivityFactKind.PlayerMovementBound,
@@ -225,11 +246,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     typeof(ActivityEntryMovementBindingStage),
                     $"[OBS][ActivityEntryPipeline][MovementBinding] event='PlayerMovementBound' activityId='{command.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' requirementId='{record.Requirement.RequirementId}' playerSlotId='{record.Requirement.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' endpoint='{record.ObservedEndpoint}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Success);
-
-                boundTargets.Add(new PlayerActorIdentityRecord(
-                    startedIdentity,
-                    record.Requirement.ParticipantBinding,
-                    record.ActorIdentity.PlayerActorId));
             }
 
             if (requiredBoundCount < requiredCount)
@@ -252,7 +268,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][MovementBinding] Required binding incomplete activityId='{command.ActivityId}' entrySequence='{entrySequence}' requiredBound='{requiredBoundCount}' required='{requiredCount}'.");
             }
 
-            bridge.SetMovementControlTargets(boundTargets, enableAllowed: true);
             SessionActivityIdentity completedIdentity = BuildIdentity(command, SessionActivityStage.MovementBindingCompleted);
             endpoint.SetCurrentIdentity(completedIdentity, SessionActivityStage.MovementBindingCompleted);
             endpoint.EmitFact(

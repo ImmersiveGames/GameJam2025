@@ -418,3 +418,34 @@ owner correto visível nos logs
 sem fallback silencioso
 sem trilho paralelo novo
 ```
+## SA-16A - Movement / GameplayControl / Reset / Save boundary
+
+### Status
+
+SA-16A: CLOSED.
+SA-16A1: PASS funcional + PASS arquitetural do corte.
+SA-16A2: PASS funcional + PASS arquitetural do corte.
+
+### Registro
+
+- `MovementBindingAdapter` deixou de publicar gate state e ficou como preparation/binding tecnico.
+- `ActivityEntryMovementBindingStage` continua como owner da publicacao inicial de `Blocked` antes de `ActivityRunning`.
+- `ActivityCapabilityPermissionRuntime` continua aplicando command/fact/snapshot e notificando receivers.
+- `PlayerMovementPermissionReceiver` continua sendo reaction local.
+- `PlayerActorDefaultResetEndpoint` passou a suportar `MovementTransient` via `PlayerMovementController.ClearMovementState()`.
+- `Movement` continua fora de Save/Snapshot e fora de lifecycle macro.
+- `ActivityEntryParticipantBindingStage` continua dono do mapping `RuntimeTransient -> MovementTransient`.
+- `ActorResetAdapter` continua sendo o executor canonico de reset.
+
+### Invariantes registradas
+
+- Movement e uma capability local de Actor.
+- MovementBinding e stage de ActivityEntryPipeline.
+- Gate/control nao pertence ao MovementController.
+- Movement pode expor endpoint bloqueavel/reagivel e reset transitorio.
+- Movement nao e save contributor por padrao.
+- Save so consome snapshot provider explicito.
+- Reset nao e Save.
+- Reset nao decide lifecycle.
+- Receiver local reage; nao decide policy.
+- Pipeline decide macro lifecycle; nao manipula componente de Movement diretamente.

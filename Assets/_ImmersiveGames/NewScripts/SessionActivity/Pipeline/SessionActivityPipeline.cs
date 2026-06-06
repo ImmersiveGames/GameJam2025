@@ -3765,6 +3765,62 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 left.CycleKey == right.CycleKey;
         }
 
+        private void EmitInitialMovementControlBlocked(
+            SessionActivityIdentity identity,
+            IReadOnlyList<PlayerActorIdentityRecord> targets,
+            string source,
+            string reason,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("Initial movement control block identity is invalid.");
+            }
+
+            if (targets == null || targets.Count == 0)
+            {
+                return;
+            }
+
+            IReadOnlyList<MovementControlRecord> records = PlayerMovementControlStage.Execute(
+                identity,
+                targets,
+                enable: false,
+                _playerMovementControlAdapter,
+                _activityPlayerActorRegistry,
+                source,
+                reason);
+
+            for (int index = 0; index < records.Count; index++)
+            {
+                MovementControlRecord record = records[index];
+                if (!record.IsValid)
+                {
+                    throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][MovementControl] Invalid initial block record activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' index='{index}'.");
+                }
+
+                EmitFact(
+                    facts,
+                    SessionActivityFactKind.MovementControlDisabled,
+                    identity,
+                    source,
+                    reason,
+                    $"'{identity.ActivityId}' movement control state changed controlEnabled='false' playerSlotId='{record.ActorIdentity.PlayerSlotId}' playerActorId='{record.ActorIdentity.PlayerActorId}' endpoint='{record.ObservedEndpoint}'.");
+            }
+
+            EmitSnapshot(
+                snapshots,
+                "movement_control_disabled",
+                source,
+                reason,
+                $"'{identity.ActivityId}' movement control state changed controlEnabled='false' affectedActors='{records.Count}'.");
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][MovementControl] event='MovementControlDisabled' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' controlEnabled='false' affectedActors='{records.Count}' source='{source}' reason='{reason}'.",
+                DebugUtility.Colors.Warning);
+        }
+
         private void EmitMovementControlEnableAtRunning(
             SessionActivityDefinition definition,
             SessionActivityCommand command,
@@ -8316,6 +8372,33 @@ private bool TryBuildActivityParticipantBinding(
         {
             _movementControlTargetsForCurrentEntry = targets ?? Array.Empty<PlayerActorIdentityRecord>();
             _movementControlEnableAllowedForCurrentEntry = enableAllowed && _movementControlTargetsForCurrentEntry.Count > 0;
+        }
+
+        void IActivityEntryMovementBindingRuntimeBridge.PublishInitialMovementControlBlocked(
+            SessionActivityIdentity identity,
+            IReadOnlyList<PlayerActorIdentityRecord> targets,
+            string source,
+            string reason,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("Initial movement control block identity is invalid.");
+            }
+
+            if (targets == null || targets.Count == 0)
+            {
+                return;
+            }
+
+            EmitInitialMovementControlBlocked(
+                identity,
+                targets,
+                source,
+                reason,
+                facts,
+                snapshots);
         }
 
         bool IActivityEntryCameraBindingRuntimeBridge.TryResolvePlayerActorHandle(

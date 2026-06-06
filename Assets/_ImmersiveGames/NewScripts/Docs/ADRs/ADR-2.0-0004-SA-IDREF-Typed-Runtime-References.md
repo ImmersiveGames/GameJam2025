@@ -2405,4 +2405,31 @@ Limpeza posterior de Attribute state/snapshot deve ser corte próprio, não comp
 O trilho funcional de command de ActorAttribute não usa mais string livre como identidade runtime.
 ActorInstanceRuntimeId é a identidade runtime funcional observável no setup/release de Attribute.
 ```
+## SA-16A - Movement / GameplayControl / Reset / Save boundary closure
 
+Status: CLOSED.
+
+- SA-16A1 confirmou que MovementBindingAdapter nao publica mais gate state e permanece como preparation/binding tecnico.
+- SA-16A1 preserva ActivityEntryMovementBindingStage como owner da publicacao inicial de Blocked.
+- SA-16A1 nao altera ActivityCapabilityPermissionRuntime nem PlayerMovementPermissionReceiver.
+- SA-16A2 confirmou que PlayerActorDefaultResetEndpoint suporta MovementTransient por via local e fail-fast.
+- SA-16A2 confirma que MovementTransient limpa apenas estado runtime/transitorio local via PlayerMovementController.ClearMovementState().
+- Movement continua fora de Save/Snapshot.
+- Nao houve alteracao em gate/permission/control.
+- Nao houve fallback global, first player, lookup textual ou cruzamento indevido de identidades.
+- ActivityEntryParticipantBindingStage continua dono do mapping RuntimeTransient -> MovementTransient.
+- ActorResetAdapter continua sendo o executor canonico de reset.
+
+### Invariantes registradas
+
+- Movement e capability local de Actor.
+- MovementBinding e stage de ActivityEntryPipeline.
+- Gate/control nao pertence ao MovementController.
+- Movement pode registrar endpoint bloqueavel/reagivel.
+- Movement pode expor reset transitorio.
+- Movement nao e save contributor por padrao.
+- Save so consome snapshot provider explicito.
+- Reset nao e Save.
+- Reset nao decide lifecycle.
+- Receiver local reage; nao decide policy.
+- Pipeline decide macro lifecycle; nao manipula componente de Movement diretamente.

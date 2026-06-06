@@ -1291,6 +1291,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargets(SessionActivityIdentity identity);
         void SetMovementControlTargets(IReadOnlyList<PlayerActorIdentityRecord> targets, bool enableAllowed);
+        void PublishInitialMovementControlBlocked(
+            SessionActivityIdentity identity,
+            IReadOnlyList<PlayerActorIdentityRecord> targets,
+            string source,
+            string reason,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots);
     }
 
     public interface IActivityEntryCameraBindingRuntimeBridge
