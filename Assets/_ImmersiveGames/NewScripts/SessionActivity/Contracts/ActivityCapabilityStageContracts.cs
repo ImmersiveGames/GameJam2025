@@ -4,7 +4,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         Unknown = 0,
         ActorPresentation = 1,
-        NonPlayerActor = 2,
         ActorAttributes = 3,
         ActivityObject = 4,
         PlayerActor = 5,

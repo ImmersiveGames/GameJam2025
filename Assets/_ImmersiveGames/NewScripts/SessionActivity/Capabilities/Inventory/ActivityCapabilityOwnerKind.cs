@@ -4,7 +4,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     {
         Unknown = 0,
         PlayerActor = 1,
-        NonPlayerActor = 2,
         ActivityObject = 3,
         SceneContributor = 4,
         Unsupported = 5,

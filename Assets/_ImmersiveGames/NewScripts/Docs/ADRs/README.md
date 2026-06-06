@@ -404,3 +404,12 @@ Status: CLOSED / PASS funcional + PASS arquitetural parcial.
 - `RouteActivitySave` permanece em watchlist para payload Ãºtil quando o save-on-exit ocorrer apÃ³s activity com snapshot capturado.
 
 
+## SA-16F closure
+
+- `SA-16F` - `Route/session save contributor inventory audit`: `CLOSED / Backlog controlado`.
+  - The active `RouteActivitySave` flow remains limited to `CurrentActivityObjectSnapshot`.
+  - `SessionActivityPipeline` provides the payload via `ISessionActivitySnapshotPayloadProvider`.
+  - `ActivityObjectExitRuntimeState` remains the technical store for the payload.
+  - `SaveRuntime` continues to execute technical storage only.
+  - No real route-scoped or session-scoped save contributors exist yet.
+  - Do not create generic save-contributor infrastructure until a real capability and a clear owner exist.

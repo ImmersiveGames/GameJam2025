@@ -539,3 +539,12 @@ NÃ£o criar LastUsefulActivityPayload como fallback.
 NÃ£o criar scene scan para contributors.
 Route/session contributors futuros exigem registry/inventory canÃ´nico prÃ³prio.
 ```
+## SA-16F closure
+
+- `SA-16F` - `Route/session save contributor inventory audit`: `CLOSED / Backlog controlado`.
+  - The active `RouteActivitySave` flow remains limited to `CurrentActivityObjectSnapshot`.
+  - `SessionActivityPipeline` provides the payload via `ISessionActivitySnapshotPayloadProvider`.
+  - `ActivityObjectExitRuntimeState` remains the technical store for the payload.
+  - `SaveRuntime` continues to execute technical storage only.
+  - No real route-scoped or session-scoped save contributors exist yet.
+  - Do not create generic save-contributor infrastructure until a real capability and a clear owner exist.
