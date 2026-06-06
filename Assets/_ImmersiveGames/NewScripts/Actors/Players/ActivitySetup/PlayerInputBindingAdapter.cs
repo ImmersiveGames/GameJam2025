@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -12,6 +11,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 {
     public sealed class PlayerInputBindingAdapter : IPlayerInputBindingAdapter
     {
+        private readonly InputActionAsset _canonicalActionsAsset;
+
+        public PlayerInputBindingAdapter(InputActionAsset canonicalActionsAsset)
+        {
+            _canonicalActionsAsset = canonicalActionsAsset ?? throw new ArgumentNullException(nameof(canonicalActionsAsset));
+        }
+
         public IReadOnlyList<PlayerInputBindingRecord> Execute(
             PlayerInputBindingCommand command,
             SessionActivityIdentity activeIdentity,
@@ -59,8 +65,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"stale_or_foreign_player_input_binding_requirement: handle mismatch participantId='{requirement.ParticipantId}' actorId='{requirement.ActorId}' playerSlotId='{requirement.PlayerSlotId}'.");
                 }
 
-                InputActionAsset canonicalActionsAsset = ResolveCanonicalActionsAssetOrFail();
-                PlayerInputResolution resolution = ResolvePlayerInputFromActorOrFail(actorInstance, requirement, canonicalActionsAsset);
+                PlayerInputResolution resolution = ResolvePlayerInputFromActorOrFail(actorInstance, requirement, _canonicalActionsAsset);
                 PlayerInput resolvedInput = resolution.PlayerInput;
                 PlayerActorInputBindingState bindingState = actorInstance.GetComponent<PlayerActorInputBindingState>();
                 if (bindingState == null)
@@ -84,27 +89,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             return records;
-        }
-
-        private static InputActionAsset ResolveCanonicalActionsAssetOrFail()
-        {
-            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
-            {
-                throw new InvalidOperationException("PlayerInput binding failed: RuntimeConfigRegistry snapshot ausente.");
-            }
-
-            InputActionAsset asset = snapshot.InputModesRuntime?.UiActionsAsset;
-            if (asset == null)
-            {
-                throw new InvalidOperationException("PlayerInput binding failed: InputModesRuntime.UiActionsAsset canonico ausente.");
-            }
-
-            if (asset.FindActionMap(InputModesDefaults.PlayerActionMapName, throwIfNotFound: false) == null)
-            {
-                throw new InvalidOperationException($"PlayerInput binding failed: InputModesRuntime.UiActionsAsset canonico sem ActionMap '{InputModesDefaults.PlayerActionMapName}'.");
-            }
-
-            return asset;
         }
 
         private static PlayerInputResolution ResolvePlayerInputFromActorOrFail(

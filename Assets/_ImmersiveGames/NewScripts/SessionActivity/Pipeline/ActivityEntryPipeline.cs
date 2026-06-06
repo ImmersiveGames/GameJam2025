@@ -11,6 +11,7 @@ using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
+using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -60,6 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
+        private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
         private readonly ActivityCapabilityInventoryCoordinator _activityCapabilityInventoryCoordinator;
@@ -79,6 +81,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActorRuntimeStore sessionActorRuntimeStore,
             IMovementBindingAdapter movementBindingAdapter,
             IActivityCameraPreparationExecutor activityCameraPreparationExecutor,
+            InputActionAsset canonicalPlayerInputActionsAsset,
             ActivityActorExitRuntimeState activityActorExitRuntimeState)
         {
             if (endpoint == null)
@@ -109,10 +112,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _sessionActorRuntimeStore = sessionActorRuntimeStore ?? throw new ArgumentNullException(nameof(sessionActorRuntimeStore));
             _movementBindingAdapter = movementBindingAdapter ?? throw new ArgumentNullException(nameof(movementBindingAdapter));
             _activityCameraPreparationExecutor = activityCameraPreparationExecutor ?? throw new ArgumentNullException(nameof(activityCameraPreparationExecutor));
+            _canonicalPlayerInputActionsAsset = canonicalPlayerInputActionsAsset ?? throw new ArgumentNullException(nameof(canonicalPlayerInputActionsAsset));
             _activityActorExitRuntimeState = activityActorExitRuntimeState ?? throw new ArgumentNullException(nameof(activityActorExitRuntimeState));
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
-            _playerInputBindingAdapter = new PlayerInputBindingAdapter();
+            _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
             _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();

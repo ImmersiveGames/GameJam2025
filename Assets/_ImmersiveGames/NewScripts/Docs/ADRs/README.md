@@ -44,6 +44,13 @@ Base 1.2 nÃ£o substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
 
 - `SA-16B` - `ActivityContent async release completion boundary`: `CLOSED`.
 - `SA-16B1` - `ActivityContent unload callback boundary cleanup`: `PASS funcional + PASS arquitetural do corte`.
+- `SA-16C` - `PendingOperation callback contract`: `CLOSED`.
+- `SA-16C1` - `PendingOperation window unload callback boundary cleanup`: `PASS funcional + PASS arquitetural do corte`.
+- `SA-16C2` - `PendingOperation kind contract cleanup`: `PASS funcional + PASS arquitetural do corte`.
+- `SA-16D` - `PlayerInput canonical actions explicit composition`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - `SessionActivityCompositionInstaller` resolve e valida o `InputActionAsset` canonico.
+  - `ActivityEntryPipeline` recebe o asset por construtor e instancia o `PlayerInputBindingAdapter` com dependencia explicita.
+  - `PlayerInputBindingAdapter` nao consulta mais `RuntimeConfigRegistry` e apenas aplica/rebinda o `PlayerInput`.
 ---
 
 ## Checkpoint atual

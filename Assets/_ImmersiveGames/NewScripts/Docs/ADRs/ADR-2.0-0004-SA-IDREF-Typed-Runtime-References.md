@@ -2433,3 +2433,58 @@ Status: CLOSED.
 - Reset nao decide lifecycle.
 - Receiver local reage; nao decide policy.
 - Pipeline decide macro lifecycle; nao manipula componente de Movement diretamente.
+
+## SA-16D - PlayerInput canonical actions explicit composition
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- `SessionActivityCompositionInstaller` resolve e valida o `InputActionAsset` canonico antes de montar a `SessionActivity`.
+- `ActivityEntryPipeline` recebe o asset canonico por construtor e instancia `PlayerInputBindingAdapter` com dependencia explicita.
+- `PlayerInputBindingAdapter` nao consulta mais `RuntimeConfigRegistry`; ele apenas aplica/rebinda o `PlayerInput` com o asset resolvido.
+- `SessionActivityPipeline` nao mantem mais instancia morta de `PlayerInputBindingAdapter`.
+- `PlayerInputManager` nao foi alterado.
+- Nao houve config duplicada no prefab.
+- Nao houve alteracao em lifecycle, Movement, PermissionRuntime, InputModes global, PlayerParticipation, Camera, Save, Reset, Presentation ou Attributes.
+
+### Ownership final
+
+```text
+Composition root resolve e valida config obrigatoria.
+ActivityEntryPipeline decide quando executar binding.
+PlayerInputBindingAdapter e adapter puro de aplicacao/rebind.
+InputModes continua dono de mode/action map global.
+Unity PlayerInput / PlayerInputManager continuam componentes Unity-owned, usados apenas por API publica/suportada.
+```
+
+### Invariantes finais
+
+```text
+PlayerInputBindingAdapter nao consulta RuntimeConfigRegistry.
+Adapter nao resolve config global.
+Adapter recebe payload runtime resolvido.
+Ausencia de config obrigatoria e erro na composicao, nao fallback silencioso no adapter.
+Nao duplicar action asset no prefab.
+Nao criar PlayerInputManager paralelo.
+Nao usar Resources.Load.
+Nao usar reflection.
+Nao acessar internals/campos privados da Unity.
+Nao alterar generated input actions.
+Nao misturar PlayerInput binding com Movement gate/control.
+ActivityEntryPipeline continua dono do binding timing.
+InputModes continua dono do input mode global.
+PlayerParticipation continua dono da participacao/slots; Activity materializa/binda.
+```
+
+### Evidencia aceita
+
+```text
+PlayerInputActionsReboundToCanonical preservado.
+ActivityEntryPlayerInputBindingCompleted preservado.
+MovementBindingCompleted preservado.
+PlayerMovementPermissionApplied preservado com Blocked, Allowed e Unbound.
+Movimento funcional em activity_01 e activity_02.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
+```

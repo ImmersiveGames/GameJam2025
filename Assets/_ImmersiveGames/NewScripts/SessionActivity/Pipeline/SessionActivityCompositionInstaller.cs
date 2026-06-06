@@ -3,11 +3,14 @@ using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
+using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
@@ -47,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             EnsureDependencyManagerOrFail();
             IActivityCameraPreparationExecutor activityCameraPreparationExecutor = ResolveActivityCameraPreparationExecutorOrFail();
+            InputActionAsset canonicalPlayerInputActionsAsset = ResolveCanonicalPlayerInputActionsAssetOrFail();
 
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
@@ -79,6 +83,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline.EntrySessionActorRuntimeStore,
                 _pipeline.EntryMovementBindingAdapter,
                 activityCameraPreparationExecutor,
+                canonicalPlayerInputActionsAsset,
                 _pipeline.ActivityActorExitRuntimeState);
             _pipeline.BindEntryPipeline(activityEntryPipeline);
 
@@ -129,6 +134,40 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] Required dependency missing type='IActivityCameraPreparationExecutor'.");
+        }
+
+        private static InputActionAsset ResolveCanonicalPlayerInputActionsAssetOrFail()
+        {
+            if (!RuntimeConfigRegistry.TryGetSnapshot(out IRuntimeConfigSnapshotReadOnly snapshot) || snapshot == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry snapshot obrigatorio ausente para PlayerInput canonical actions.");
+            }
+
+            IInputModesRuntimeConfigGroupReadOnly inputModesRuntime = snapshot.InputModesRuntime
+                ?? throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: snapshot.InputModesRuntime obrigatorio ausente.");
+
+            if (inputModesRuntime.OperationalInputRuntimeProfile == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: operationalInputRuntimeProfile obrigatorio ausente.");
+            }
+
+            if (string.IsNullOrWhiteSpace(inputModesRuntime.OperationalInputRuntimeProfileId))
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: operationalInputRuntimeProfile.profileId obrigatorio ausente.");
+            }
+
+            InputActionAsset canonicalActionsAsset = inputModesRuntime.UiActionsAsset;
+            if (canonicalActionsAsset == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: uiActionsAsset canonico obrigatorio ausente.");
+            }
+
+            if (canonicalActionsAsset.FindActionMap(InputModesDefaults.PlayerActionMapName, throwIfNotFound: false) == null)
+            {
+                throw new InvalidOperationException($"[FATAL][Config][SessionActivityPipeline] RuntimeConfigRegistry invariant breach: uiActionsAsset canonico sem ActionMap '{InputModesDefaults.PlayerActionMapName}'.");
+            }
+
+            return canonicalActionsAsset;
         }
 
         private void RegisterGlobalsOrFail()

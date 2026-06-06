@@ -515,7 +515,7 @@ IActivityEntryContentRuntimeBridge aggregate cleanup
 
 - Consolidated current status: `SA-14E - SessionActivity decomposition closure matrix CLOSED / AUDITED`.
 - Treat older roadmap blocks as historical traceability, not active status.
-- Keep current future debts limited to: PlayerInput explicit injection, ActivityCameraAnchorHost explicit composition, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
+- Keep current future debts limited to: ActivityCameraAnchorHost explicit composition, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
 - Do not reopen Movement or ActivityContent without regression evidence.
 - Do not create fallback for old payloads or add `ActivityExitPipeline` / `ActivityContentReleasePipeline` only for symmetry.
 
@@ -557,7 +557,6 @@ FUTURE_CLEANUP_LOW:
 FUTURE_CLEANUP_MEDIUM:
   IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
-  PlayerInput canonical actions explicit injection
   ActivityCameraAnchorHost explicit composition
 
 DO_NOT_REOPEN_WITHOUT_REGRESSION:

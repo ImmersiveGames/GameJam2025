@@ -50,10 +50,17 @@ SA-16B confirmou que o release de ActivityContent continua async apenas por side
 CompleteActivityContentSceneUnloadOperation foi reduzido ao callback tecnico de completion.
 ContinueAfterActivityContentUnloadCompletionAsync(...) permaneceu no SessionActivityPipeline como continuation macro explicita.
 Nao houve criacao de ActivityContentReleasePipeline ou ActivityExitPipeline.
+SA-16C confirmou que PendingOperation permanece state tecnico e que CompletePendingOperation foi limpo nos unloads de ActivationWindow e DeactivationWindow.
+SessionActivityPendingOperationKind ficou restrito a operacoes async reais pendentes.
+SA-16D confirmou que PlayerInput canonical actions explicit composition resolve o asset canonico na composition root, injeta ate o ActivityEntryPipeline e remove o lookup global do PlayerInputBindingAdapter.
 ```
 
 SA-16B  ActivityContent async release completion boundary â€” CLOSED.
 SA-16B1 ActivityContent unload callback boundary cleanup â€” PASS funcional + PASS arquitetural do corte.
+SA-16C  PendingOperation callback contract â€” CLOSED.
+SA-16C1 PendingOperation window unload callback boundary cleanup â€” PASS funcional + PASS arquitetural do corte.
+SA-16C2 PendingOperation kind contract cleanup â€” PASS funcional + PASS arquitetural do corte.
+SA-16D  PlayerInput canonical actions explicit composition â€” CLOSED / PASS funcional + PASS arquitetural do corte.
 
 Ownership consolidado:
 

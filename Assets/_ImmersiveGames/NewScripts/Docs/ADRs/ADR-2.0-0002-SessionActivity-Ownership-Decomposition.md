@@ -4317,6 +4317,86 @@ SA-16B1: PASS funcional + PASS arquitetural do corte.
 Debito residual controlado: ContinueAfterActivityContentUnloadCompletionAsync(...) ainda retorna Task sem await direto para preservar timing/semantica anterior; nao expandir esse padrao.
 ```
 
+## SA-16C â€” PendingOperation callback contract
+
+Status: `CLOSED`.
+
+### Fechamento SA-16C1
+
+`SA-16C1 â€” PendingOperation window unload callback boundary cleanup` concluido com `PASS funcional + PASS arquitetural do corte`.
+
+### Fechamento SA-16C2
+
+`SA-16C2 â€” PendingOperation kind contract cleanup` concluido com `PASS funcional + PASS arquitetural do corte`.
+
+### Resultado consolidado
+
+```text
+Auditoria confirmou que PendingOperation e runtime state tecnico continuam corretos.
+PendingOperation existe para tracking de operationId, activityId, entrySequence, stale/foreign validation, completion/failure e limpeza de pending state.
+CompletePendingOperation foi reduzido ao callback tecnico para activation/deactivation window unload.
+ContinueAfterActivationWindowSceneUnloadCompletion(...) e ContinueAfterDeactivationWindowSceneUnloadCompletion(...) concentram a continuation explicita no proprio SessionActivityPipeline.
+SessionActivityPendingOperationKind passou a representar apenas operacoes async reais pendentes.
+Valores sintéticos de command/completion foram removidos do contrato de pending operation e permanecem no contrato correto de command, quando aplicavel.
+SessionActivityPipeline continua sendo o unico owner de macro lifecycle/continuation.
+PendingActivityContentReleaseContext continua sendo state tecnico, nao owner de lifecycle.
+No-content release continua skip explicito, nao erro.
+No-window continua skip explicito, nao fallback silencioso.
+Nao houve alteracao em Save, Reset, Movement, Camera, Presentation ou Attributes.
+```
+
+### Invariantes registradas
+
+```text
+Async completion nao decide lifecycle.
+Callback tecnico nao e owner de continuation.
+PendingOperation e runtime state tecnico.
+PendingOperationKind representa apenas operacoes async pendentes reais.
+Pending operation nao representa comando de usuario, completion manual ou continuation macro.
+Pending operation existe para tracking, completion e stale/foreign validation.
+SessionActivityPipeline e o owner unico de macro lifecycle/continuation.
+Stages executam passos deterministicos.
+Adapters executam side-effects.
+Runtime state nao decide policy/lifecycle.
+```
+
+### Smoke registrado
+
+```text
+Sem FATAL.
+Sem Exception.
+Sem route_transition_failed.
+Sem foreign/stale indevido.
+Sem checkpointStatus='Failed'.
+Sem error CS.
+ActivityContentUnloadCompletionTechnicalCompleted observado.
+ActivityContentUnloadCompletionContinuationStarted observado.
+ActivityContentUnloadCompletionContinuationCompleted observado.
+ActivationWindowSceneUnloadContinuationStarted observado.
+ActivationWindowSceneUnloadContinuationCompleted observado.
+DeactivationWindowSceneUnloadContinuationStarted observado.
+DeactivationWindowSceneUnloadContinuationCompleted observado.
+ActivityContentSceneUnloadDispatched preservado.
+ActivityContentReleaseFinalizationStarted preservado.
+ActivityContentReleaseCompleted preservado.
+SkippedNoContent preservado para activity_02.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
+```
+
+### Fechamento final
+
+```text
+SA-16B: CLOSED.
+SA-16B1: PASS funcional + PASS arquitetural do corte.
+SA-16C: CLOSED.
+SA-16C1: PASS funcional + PASS arquitetural do corte.
+SA-16C2: PASS funcional + PASS arquitetural do corte.
+Debito residual controlado: helpers explicitos de continuation permanecem dentro do SessionActivityPipeline; nao expandir callbacks tecnicos com branches de lifecycle.
+```
+
 ## SA-7H2-H2 â€” ActivityContentSceneUnloadDispatchBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
@@ -5404,7 +5484,6 @@ Nao criar fallback silencioso para payload antigo sem policy explicita.
 ### DÃƒÂ©bitos futuros registrados
 
 ```text
-PlayerInput canonical actions explicit injection.
 ActivityCameraAnchorHost explicit composition.
 RouteActivitySave policy gap: current completed activity vs last useful snapshot payload.
 Movement retained/control surface defer high risk.
@@ -5456,7 +5535,6 @@ SA-14C - CLOSED / AUDITED
 ### Debitos futuros
 
 ```text
-PlayerInput canonical actions explicit injection
 ActivityCameraAnchorHost explicit composition
 RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 Movement retained/control surface defer high risk
@@ -5517,7 +5595,6 @@ FUTURE_CLEANUP_LOW:
 FUTURE_CLEANUP_MEDIUM:
   IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
-  PlayerInput canonical actions explicit injection
   ActivityCameraAnchorHost explicit composition
 
 DO_NOT_REOPEN_WITHOUT_REGRESSION:
@@ -5630,3 +5707,64 @@ Status: CLOSED.
 - Reset nao decide lifecycle.
 - Receiver local reage; nao decide policy.
 - Pipeline decide macro lifecycle; nao manipula componente de Movement diretamente.
+
+## SA-16D - PlayerInput canonical actions explicit composition
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Fechamento consolidado
+
+```text
+SessionActivityCompositionInstaller resolve e valida o InputActionAsset canonico.
+ActivityEntryPipeline recebe o asset canonico por construtor.
+ActivityEntryPipeline instancia PlayerInputBindingAdapter com dependencia explicita.
+PlayerInputBindingAdapter nao consulta RuntimeConfigRegistry.
+PlayerInputBindingAdapter apenas aplica/rebinda o PlayerInput usando o asset resolvido.
+SessionActivityPipeline nao mantem mais instancia morta de PlayerInputBindingAdapter.
+PlayerInputManager nao foi alterado.
+Nao houve config duplicada no prefab.
+Nao houve alteracao em lifecycle, Movement, PermissionRuntime, InputModes global, PlayerParticipation, Camera, Save, Reset, Presentation ou Attributes.
+```
+
+### Ownership final
+
+```text
+Composition root resolve e valida config obrigatoria.
+ActivityEntryPipeline decide quando executar binding.
+PlayerInputBindingAdapter e adapter puro de aplicacao/rebind.
+InputModes continua dono de mode/action map global.
+Unity PlayerInput / PlayerInputManager continuam componentes Unity-owned, usados apenas por API publica/suportada.
+```
+
+### Invariantes finais
+
+```text
+PlayerInputBindingAdapter nao consulta RuntimeConfigRegistry.
+Adapter nao resolve config global.
+Adapter recebe payload runtime resolvido.
+Ausencia de config obrigatoria e erro na composicao, nao fallback silencioso no adapter.
+Nao duplicar action asset no prefab.
+Nao criar PlayerInputManager paralelo.
+Nao usar Resources.Load.
+Nao usar reflection.
+Nao acessar internals/campos privados da Unity.
+Nao alterar generated input actions.
+Nao misturar PlayerInput binding com Movement gate/control.
+ActivityEntryPipeline continua dono do binding timing.
+InputModes continua dono do input mode global.
+PlayerParticipation continua dono da participacao/slots; Activity materializa/binda.
+```
+
+### Evidencia aceita
+
+```text
+PlayerInputActionsReboundToCanonical preservado.
+ActivityEntryPlayerInputBindingCompleted preservado.
+MovementBindingCompleted preservado.
+PlayerMovementPermissionApplied preservado com Blocked, Allowed e Unbound.
+Movimento funcional em activity_01 e activity_02.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
+```

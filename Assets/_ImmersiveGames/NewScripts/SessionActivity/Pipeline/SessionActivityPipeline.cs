@@ -57,7 +57,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly IPlayerActorMaterializationAdapter _playerActorMaterializationAdapter;
         private readonly IPlayerActorParticipationAdapter _playerActorParticipationAdapter;
         private readonly IActorResetAdapter _actorResetAdapter;
-        private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
         private readonly IMovementBindingAdapter _movementBindingAdapter;
         private readonly IPlayerMovementControlAdapter _playerMovementControlAdapter;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
@@ -419,7 +418,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _sessionActorRuntimeStore = new SessionActorRuntimeStore();
             _actorResetAdapter = new ActorResetAdapter(
                 new PlayerActorResetEndpointResolver(_activityPlayerActorRegistry, _sessionActorRuntimeStore));
-            _playerInputBindingAdapter = new PlayerInputBindingAdapter();
             _movementBindingAdapter = new MovementBindingAdapter(_permissionRuntime);
             _playerMovementControlAdapter = new PlayerMovementControlAdapter(_permissionRuntime);
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
