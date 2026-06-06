@@ -193,6 +193,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         ActivityObjectSnapshotCaptureSkippedNoProviders = 146,
         ActivityObjectSnapshotCaptureFailed = 147,
         ActivityObjectSnapshotCaptureCompleted = 148,
+        ActorCommandBindingStarted = 149,
+        ActorCommandBindingSkippedNoRequiredCapability = 150,
+        ActorCommandBindingCompleted = 151,
     }
 
     public enum ActivityExecutionState

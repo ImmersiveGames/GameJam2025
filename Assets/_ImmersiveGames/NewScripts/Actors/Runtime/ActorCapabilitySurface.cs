@@ -14,6 +14,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         private IActorMovementEndpoint actorMovementEndpoint;
         private IActorPermissionReceiver actorPermissionReceiver;
         private IActorCommandSourceHub actorCommandSourceHub;
+        private IActorProjectileEmitterEndpoint actorProjectileEmitterEndpoint;
 
         public ActorPresentationEndpoint PresentationEndpoint
         {
@@ -93,6 +94,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
         }
 
+        public IActorProjectileEmitterEndpoint ActorProjectileEmitterEndpoint
+        {
+            get
+            {
+                if (actorProjectileEmitterEndpoint == null)
+                {
+                    RefreshFromLocalActorRoot();
+                }
+
+                return actorProjectileEmitterEndpoint;
+            }
+        }
+
         public void RefreshFromLocalActorRoot()
         {
             Transform actorRoot = ResolveActorRootTransform();
@@ -102,6 +116,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
             actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
             actorCommandSourceHub = ResolveSingleInterfaceInActorRoot<IActorCommandSourceHub>(actorRoot);
+            actorProjectileEmitterEndpoint = ResolveSingleInterfaceInActorRoot<IActorProjectileEmitterEndpoint>(actorRoot);
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)

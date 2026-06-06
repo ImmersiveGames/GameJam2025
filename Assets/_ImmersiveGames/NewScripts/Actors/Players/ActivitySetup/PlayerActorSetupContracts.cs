@@ -345,6 +345,131 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             ActivityPlayerActorRegistry registry);
     }
 
+    public readonly struct ActorCommandBindingReference
+    {
+        public ActorCommandBindingReference(
+            string requirementId,
+            ActivityParticipantRequirementKind participantKind,
+            ActivityParticipantBinding participantBinding,
+            bool required)
+        {
+            RequirementId = Normalize(requirementId);
+            ParticipantKind = participantKind;
+            ParticipantBinding = participantBinding;
+            Required = required;
+        }
+
+        public string RequirementId { get; }
+        public ActivityParticipantRequirementKind ParticipantKind { get; }
+        public ActivityParticipantBinding ParticipantBinding { get; }
+        public bool Required { get; }
+
+        public bool IsValid =>
+            !string.IsNullOrWhiteSpace(RequirementId) &&
+            ParticipantKind != ActivityParticipantRequirementKind.Unknown &&
+            ParticipantBinding.IsValid;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public readonly struct ActorCommandBindingCommand
+    {
+        public ActorCommandBindingCommand(
+            SessionActivityIdentity pipelineIdentity,
+            IReadOnlyList<ActorCommandBindingReference> bindings,
+            string source,
+            string reason)
+        {
+            PipelineIdentity = pipelineIdentity;
+            Bindings = bindings ?? Array.Empty<ActorCommandBindingReference>();
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity PipelineIdentity { get; }
+        public IReadOnlyList<ActorCommandBindingReference> Bindings { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid => PipelineIdentity.IsValid && Bindings != null && !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public readonly struct ActorCommandBindingRecord
+    {
+        public ActorCommandBindingRecord(
+            ActorCommandBindingReference requirement,
+            PlayerActorIdentityRecord actorIdentity,
+            bool bound,
+            string observedEndpoint)
+        {
+            Requirement = requirement;
+            ActorIdentity = actorIdentity;
+            Bound = bound;
+            ObservedEndpoint = Normalize(observedEndpoint);
+        }
+
+        public ActorCommandBindingReference Requirement { get; }
+        public PlayerActorIdentityRecord ActorIdentity { get; }
+        public bool Bound { get; }
+        public string ObservedEndpoint { get; }
+        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedEndpoint);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    public interface IActorCommandBindingAdapter
+    {
+        IReadOnlyList<ActorCommandBindingRecord> Execute(
+            ActorCommandBindingCommand command,
+            SessionActivityIdentity activeIdentity,
+            ActivityPlayerActorRegistry registry);
+    }
+
+    public readonly struct ActorCommandBindingResult
+    {
+        public ActorCommandBindingResult(
+            SessionActivityIdentity identity,
+            int totalRequirements,
+            int requiredRequirements,
+            int requiredBoundCount,
+            int totalBoundCount,
+            int skippedCount,
+            bool skipped,
+            string reason)
+        {
+            Identity = identity;
+            TotalRequirements = totalRequirements < 0 ? 0 : totalRequirements;
+            RequiredRequirements = requiredRequirements < 0 ? 0 : requiredRequirements;
+            RequiredBoundCount = requiredBoundCount < 0 ? 0 : requiredBoundCount;
+            TotalBoundCount = totalBoundCount < 0 ? 0 : totalBoundCount;
+            SkippedCount = skippedCount < 0 ? 0 : skippedCount;
+            Skipped = skipped;
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public int TotalRequirements { get; }
+        public int RequiredRequirements { get; }
+        public int RequiredBoundCount { get; }
+        public int TotalBoundCount { get; }
+        public int SkippedCount { get; }
+        public bool Skipped { get; }
+        public string Reason { get; }
+
+        public bool Completed => Identity.IsValid;
+        public bool IsValid =>
+            Completed &&
+            RequiredRequirements >= 0 &&
+            RequiredBoundCount >= 0 &&
+            RequiredBoundCount <= RequiredRequirements &&
+            TotalBoundCount >= 0 &&
+            SkippedCount >= 0;
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public readonly struct MovementBindingRequirement
     {
         public MovementBindingRequirement(

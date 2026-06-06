@@ -61,6 +61,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private readonly ActorPresentationPlanResolver _actorPresentationPlanResolver;
         private readonly IActorPresentationMaterializationAdapter _actorPresentationMaterializationAdapter;
         private readonly IPlayerInputBindingAdapter _playerInputBindingAdapter;
+        private readonly IActorCommandBindingAdapter _actorCommandBindingAdapter;
         private readonly InputActionAsset _canonicalPlayerInputActionsAsset;
         private readonly ActivitySetupInventoryBuilder _activitySetupInventoryBuilder;
         private readonly ActivitySetupInventoryValidator _activitySetupInventoryValidator;
@@ -117,6 +118,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _actorPresentationPlanResolver = new ActorPresentationPlanResolver();
             _actorPresentationMaterializationAdapter = new UnityActorPresentationMaterializationAdapter();
             _playerInputBindingAdapter = new PlayerInputBindingAdapter(_canonicalPlayerInputActionsAsset);
+            _actorCommandBindingAdapter = new ActorCommandBindingAdapter();
             _activitySetupInventoryBuilder = new ActivitySetupInventoryBuilder();
             _activitySetupInventoryValidator = new ActivitySetupInventoryValidator();
             _activityCapabilityInventoryCoordinator = new ActivityCapabilityInventoryCoordinator();
@@ -345,6 +347,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 if (!playerInputBindingResult.Completed || !playerInputBindingResult.IsValid)
                 {
                     throw new InvalidOperationException($"ActivityEntryPipeline player input binding failed. reason='{playerInputBindingResult.Reason}' identity='{playerInputBindingResult.Identity}'.");
+                }
+
+                ActorCommandBindingResult actorCommandBindingResult = ExecuteActorCommandBinding(
+                    new ActorCommandBindingCommand(
+                        setupStartedIdentity,
+                        BuildActorCommandBindingReferences(participantBindingResult),
+                        command.Source,
+                        command.Reason),
+                    facts,
+                    snapshots);
+                if (!actorCommandBindingResult.Completed || !actorCommandBindingResult.IsValid)
+                {
+                    throw new InvalidOperationException($"ActivityEntryPipeline actor command binding failed. reason='{actorCommandBindingResult.Reason}' identity='{actorCommandBindingResult.Identity}'.");
                 }
 
                 ActivityEntryPermissionTargetPreparationResult permissionTargetPreparationResult = ExecutePermissionTargetPreparation(
@@ -976,6 +991,53 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
+        public ActorCommandBindingResult ExecuteActorCommandBinding(
+            ActorCommandBindingCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots)
+        {
+            if (!command.IsValid)
+            {
+                throw new InvalidOperationException("ActorCommandBindingCommand is invalid.");
+            }
+
+            _logBridge.LogEntryOwnerEvent(
+                "ActivityEntryActorCommandBindingStarted",
+                command.PipelineIdentity,
+                command.Source,
+                command.Reason,
+                "owner='ActivityEntryPipeline' block='actor_command_binding'");
+
+            try
+            {
+                ActorCommandBindingResult result = ActivityEntryActorCommandBindingStage.Execute(
+                    command,
+                    _runtimeBridge,
+                    _actorCommandBindingAdapter,
+                    _activityPlayerActorRegistry,
+                    facts,
+                    snapshots);
+
+                _logBridge.LogEntryOwnerEvent(
+                    "ActivityEntryActorCommandBindingCompleted",
+                    result.Identity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_command_binding' total='{result.TotalRequirements}' required='{result.RequiredRequirements}' requiredBound='{result.RequiredBoundCount}' totalBound='{result.TotalBoundCount}' skipped='{result.SkippedCount}'");
+                return result;
+            }
+            catch (Exception exception)
+            {
+                _logBridge.LogEntryOwnerEvent(
+                    "ActivityEntryActorCommandBindingFailed",
+                    command.PipelineIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityEntryPipeline' block='actor_command_binding' error='{exception.Message}'");
+                throw;
+            }
+        }
+
         public ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
             ActivityEntryObjectSetupCommand command,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
@@ -1458,6 +1520,39 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 references.Add(new ActivityEntryPlayerInputBindingReference(
+                    resolved.RequirementId,
+                    resolved.ParticipantKind,
+                    resolved.ParticipantBinding,
+                    resolved.Required));
+            }
+
+            return references;
+        }
+
+        private static IReadOnlyList<ActorCommandBindingReference> BuildActorCommandBindingReferences(
+            ActivityEntryParticipantBindingResult participantBindingResult)
+        {
+            if (!participantBindingResult.IsValid)
+            {
+                return Array.Empty<ActorCommandBindingReference>();
+            }
+
+            IReadOnlyList<ActivityEntryParticipantBindingResolvedRecord> resolvedParticipants = participantBindingResult.ResolvedParticipants;
+            if (resolvedParticipants == null || resolvedParticipants.Count == 0)
+            {
+                return Array.Empty<ActorCommandBindingReference>();
+            }
+
+            List<ActorCommandBindingReference> references = new(resolvedParticipants.Count);
+            for (int index = 0; index < resolvedParticipants.Count; index++)
+            {
+                ActivityEntryParticipantBindingResolvedRecord resolved = resolvedParticipants[index];
+                if (!resolved.IsValid || !resolved.ParticipantBinding.RequiresPlayerInput)
+                {
+                    continue;
+                }
+
+                references.Add(new ActorCommandBindingReference(
                     resolved.RequirementId,
                     resolved.ParticipantKind,
                     resolved.ParticipantBinding,

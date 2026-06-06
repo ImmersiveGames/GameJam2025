@@ -485,6 +485,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
             if (!dispatchResult.IsAccepted)
             {
+                if (dispatchResult.Status == ActorCommandDispatchStatus.RejectedInactive)
+                {
+                    DebugUtility.Log(
+                        typeof(PlayerActorCommandInputHub),
+                        $"[OBS][ActorCommandHub] event='ActorCommandDispatchIgnored' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='endpoint_inactive'.",
+                        DebugUtility.Colors.Info);
+                    return;
+                }
+
                 if (descriptor.Required)
                 {
                     throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{descriptor.ResolveBindingId()}' has no executable sink: '{dispatchResult.Status}' reason='{dispatchResult.Reason}'.");

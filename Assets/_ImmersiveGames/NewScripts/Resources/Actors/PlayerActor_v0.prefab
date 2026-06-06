@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 555555555555555555}
   - component: {fileID: 2835148354476443585}
   - component: {fileID: 909090909090909091}
+  - component: {fileID: 777777777777777777}
   m_Layer: 0
   m_Name: PlayerActor_v0
   m_TagString: Untagged
@@ -247,6 +248,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movementController: {fileID: 8906509120750850877}
+--- !u!114 &777777777777777777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fca8bf78d7d4b4ab4e3fbe757f9c4d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0

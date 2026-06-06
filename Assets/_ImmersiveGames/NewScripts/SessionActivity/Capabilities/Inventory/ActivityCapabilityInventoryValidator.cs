@@ -151,6 +151,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                    capabilityKind == ActivityCapabilityKind.ReleaseEndpoint ||
                    capabilityKind == ActivityCapabilityKind.PermissionTarget ||
                    capabilityKind == ActivityCapabilityKind.AttributeEndpoint ||
+                   capabilityKind == ActivityCapabilityKind.ProjectileEmitter ||
                    capabilityKind == ActivityCapabilityKind.PresentationEndpoint ||
                    capabilityKind == ActivityCapabilityKind.CameraTarget;
         }
@@ -169,6 +170,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityCapabilityKind.AttributeEndpoint => runtimeReference is ActorAttributeEndpointReference attributeReference &&
                                                             attributeReference.Endpoint != null &&
                                                             !string.IsNullOrWhiteSpace(attributeReference.ActorId),
+                ActivityCapabilityKind.ProjectileEmitter => runtimeReference is ActorProjectileEmitterEndpointReference projectileReference &&
+                                                             projectileReference.Endpoint != null &&
+                                                             !string.IsNullOrWhiteSpace(projectileReference.ActorId),
                 ActivityCapabilityKind.PresentationEndpoint => runtimeReference is ActorPresentationEndpointReference presentationReference &&
                                                                presentationReference.Endpoint != null &&
                                                                !string.IsNullOrWhiteSpace(presentationReference.ActorId),
