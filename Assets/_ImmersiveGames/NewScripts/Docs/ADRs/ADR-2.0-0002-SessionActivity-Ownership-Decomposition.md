@@ -4245,6 +4245,78 @@ NÃ£o criar ActivityContentReleasePipeline.
 NÃ£o criar ActivityExitPipeline.
 ```
 
+## SA-16B â€” ActivityContent async release completion boundary
+
+Status: `CLOSED`.
+
+### Fechamento SA-16B1
+
+`SA-16B1 â€” ActivityContent unload callback boundary cleanup` concluÃ­do com `PASS funcional + PASS arquitetural do corte`.
+
+### Resultado consolidado
+
+```text
+Auditoria confirmou que ActivityContent release Ã© async tÃ©cnico por causa do unload Unity.
+O release continua sequencial/cascata no lifecycle macro.
+O problema identificado era boundary interno: CompleteActivityContentSceneUnloadOperation misturava completion tÃ©cnica com macro continuation.
+NÃ£o havia justificativa para criar ActivityContentReleasePipeline ou ActivityExitPipeline.
+CompleteActivityContentSceneUnloadOperation foi reduzido ao papel de callback tÃ©cnico.
+O callback tÃ©cnico valida completion, rejeita stale/foreign, consome pending operation, registra completion tÃ©cnica e delega a continuaÃ§Ã£o.
+A macro continuation foi movida para mÃ©todo explÃ­cito do prÃ³prio SessionActivityPipeline: ContinueAfterActivityContentUnloadCompletionAsync(...).
+Esse mÃ©todo concentra prÃ³ximo scene unload, finalizaÃ§Ã£o e branch final para CompleteRouteExitClosure, StartPendingRestartEntry e ContinueAfterDeactivationAsync.
+SessionActivityPipeline continua sendo o Ãºnico owner de macro continuation.
+ActivityContentReleaseRuntimeState continua sendo runtime state tÃ©cnico.
+ActivityContentReleaseFinalizationStage continua stage puro de cleanup/finalization.
+ActivityContentReleaseContinuationStage, quando citado, continua facade/log e nÃ£o pipeline novo.
+NÃ£o foi criado manager/coordinator/processor.
+NÃ£o houve alteraÃ§Ã£o em Save, Reset, Movement, Camera, Presentation ou Attributes.
+```
+
+### Invariantes registradas
+
+```text
+ActivityContent release pode ser async, mas apenas por side-effect Unity.
+Async completion nÃ£o decide lifecycle.
+Callback tÃ©cnico nÃ£o Ã© owner de continuation.
+PendingOperation existe para completion tracking e stale/foreign validation.
+PendingActivityContentReleaseContext Ã© state tÃ©cnico, nÃ£o owner de lifecycle.
+No-content release Ã© skip explÃ­cito, nÃ£o erro.
+Release nÃ£o decide save.
+Release nÃ£o decide reset.
+Release nÃ£o decide route transition.
+SessionActivityPipeline Ã© o Ãºnico owner de macro continuation.
+Stages executam passos determinÃ­sticos; adapters executam side-effects; runtime state nÃ£o decide policy/lifecycle.
+```
+
+### Smoke registrado
+
+```text
+Sem FATAL.
+Sem Exception.
+Sem route_transition_failed.
+Sem foreign/stale indevido.
+Sem checkpointStatus='Failed'.
+ActivityContentUnloadCompletionTechnicalCompleted observado.
+ActivityContentUnloadCompletionContinuationStarted observado.
+ActivityContentUnloadCompletionContinuationCompleted observado.
+ActivityContentSceneUnloadDispatched preservado.
+ActivityContentReleaseFinalizationStarted preservado.
+ActivityContentReleaseCompleted preservado.
+SkippedNoContent preservado para activity_02.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
+```
+
+### Fechamento final
+
+```text
+SA-16B: CLOSED.
+SA-16B1: PASS funcional + PASS arquitetural do corte.
+Debito residual controlado: ContinueAfterActivityContentUnloadCompletionAsync(...) ainda retorna Task sem await direto para preservar timing/semantica anterior; nao expandir esse padrao.
+```
+
 ## SA-7H2-H2 â€” ActivityContentSceneUnloadDispatchBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.

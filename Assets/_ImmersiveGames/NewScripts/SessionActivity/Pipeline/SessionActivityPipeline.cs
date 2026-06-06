@@ -1730,7 +1730,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.ActivationWindowAdditiveSceneUnloaded);
                     EmitFact(facts, SessionActivityFactKind.ActivationWindowAdditiveSceneUnloaded, unloadedIdentity, source, reason, $"'{definition.ActivityId}' activation additive scene unloaded. scene='{operation.SceneName}'.");
                     EmitSnapshot(snapshots, "activation_window_additive_scene_unloaded", source, reason, $"'{definition.ActivityId}' activation additive scene unloaded. scene='{operation.SceneName}'.");
-                    EnterRunning(definition, syntheticCommand, facts, snapshots, entrySequence);
+                    ContinueAfterActivationWindowSceneUnloadCompletion(
+                        definition,
+                        syntheticCommand,
+                        facts,
+                        snapshots,
+                        entrySequence);
                     break;
                 }
                 case SessionActivityPendingOperationKind.DeactivationWindowSceneLoad:
@@ -1752,25 +1757,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _state.SetCurrentIdentity(unloadedIdentity, SessionActivityStage.DeactivationWindowAdditiveSceneUnloaded);
                     EmitFact(facts, SessionActivityFactKind.DeactivationWindowAdditiveSceneUnloaded, unloadedIdentity, source, reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{operation.SceneName}'.");
                     EmitSnapshot(snapshots, "deactivation_window_additive_scene_unloaded", source, reason, $"'{definition.ActivityId}' deactivation additive scene unloaded. scene='{operation.SceneName}'.");
-
-                    if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail)
-                    {
-                        FinalizeDeactivationForRouteExit(definition, syntheticCommand, facts, snapshots, entrySequence);
-                    }
-                    else if (_pendingRestartTransition.IsValid)
-                    {
-                        _ = FinalizePendingRestartTransition(
-                            definition,
-                            syntheticCommand,
-                            facts,
-                            snapshots,
-                            entrySequence);
-                    }
-                    else
-                    {
-                        _ = FinalizeDeactivationAndContinuation(definition, syntheticCommand, facts, snapshots, entrySequence);
-                    }
-
+                    ContinueAfterDeactivationWindowSceneUnloadCompletion(
+                        definition,
+                        syntheticCommand,
+                        facts,
+                        snapshots,
+                        entrySequence);
                     break;
                 }
                 case SessionActivityPendingOperationKind.ActivityContentSceneLoad:
@@ -1799,6 +1791,62 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 default:
                     throw new InvalidOperationException($"Unsupported pending operation completion kind '{operation.OperationKind}'.");
             }
+        }
+
+        private void ContinueAfterActivationWindowSceneUnloadCompletion(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][PendingOperation] event='ActivationWindowSceneUnloadContinuationStarted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                DebugUtility.Colors.Info);
+
+            EnterRunning(definition, command, facts, snapshots, entrySequence);
+
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][PendingOperation] event='ActivationWindowSceneUnloadContinuationCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                DebugUtility.Colors.Success);
+        }
+
+        private void ContinueAfterDeactivationWindowSceneUnloadCompletion(
+            SessionActivityDefinition definition,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            int entrySequence)
+        {
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][PendingOperation] event='DeactivationWindowSceneUnloadContinuationStarted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                DebugUtility.Colors.Info);
+
+            if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail)
+            {
+                FinalizeDeactivationForRouteExit(definition, command, facts, snapshots, entrySequence);
+            }
+            else if (_pendingRestartTransition.IsValid)
+            {
+                _ = FinalizePendingRestartTransition(
+                    definition,
+                    command,
+                    facts,
+                    snapshots,
+                    entrySequence);
+            }
+            else
+            {
+                _ = FinalizeDeactivationAndContinuation(definition, command, facts, snapshots, entrySequence);
+            }
+
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][PendingOperation] event='DeactivationWindowSceneUnloadContinuationCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}'.",
+                DebugUtility.Colors.Success);
         }
 
         public void FailPendingOperation(SessionActivityPendingOperation operation, string source, string reason, string error)

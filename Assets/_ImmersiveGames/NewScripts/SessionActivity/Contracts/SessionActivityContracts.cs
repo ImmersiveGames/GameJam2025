@@ -482,10 +482,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public enum SessionActivityPendingOperationKind
     {
         Unknown = 0,
-        CompleteActivationWindow = 1,
-        CompleteCurrentActivity = 2,
-        CompleteDeactivationWindow = 3,
-        ContinueToNextActivity = 4,
         ActivationWindowSceneLoad = 10,
         ActivationWindowSceneUnload = 11,
         DeactivationWindowSceneLoad = 12,
