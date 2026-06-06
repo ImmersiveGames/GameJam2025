@@ -122,9 +122,9 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
-                    RouteActivitySaveSnapshotFailureKind.NoCurrentActivity,
-                    RouteActivitySaveSkipKind.Unknown,
-                    "no_activity_identity",
+                    RouteActivitySaveSnapshotFailureKind.NoSessionActivity,
+                    RouteActivitySaveSkipKind.NoSessionActivity,
+                    "no_session_activity",
                     false,
                     "activity identity obrigatoria ausente para save-on-exit.");
             }
@@ -146,11 +146,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             {
                 return new RouteActivitySaveSaveResult(
                     RouteActivitySaveSaveOutcomeKind.Skipped,
-                    RouteActivitySaveSnapshotFailureKind.SnapshotPayloadMissing,
-                    RouteActivitySaveSkipKind.NoSnapshotPayload,
-                    "no_activity_snapshot",
+                    RouteActivitySaveSnapshotFailureKind.SnapshotPayloadExpectedButMissing,
+                    RouteActivitySaveSkipKind.SnapshotPayloadExpectedButMissing,
+                    "snapshot_payload_expected_but_missing",
                     false,
-                    "activity snapshot payload obrigatorio ausente para save-on-exit.");
+                    "activity snapshot payload esperado mas ausente para save-on-exit.");
             }
 
             var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);

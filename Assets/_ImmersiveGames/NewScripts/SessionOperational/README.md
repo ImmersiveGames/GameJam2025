@@ -367,6 +367,17 @@ Dependências opcionais/condicionais:
 
 Regra: dependência obrigatória ausente deve gerar erro explícito. Não usar fallback silencioso para mascarar falta de runtime.
 
+`RouteActivitySavePolicy` é explícita e hoje está limitada ao scope canônico `CurrentActivityObjectSnapshot`. Se o snapshot não existir porque não há contributors de atividade, o pipeline registra reason explícita; não há fallback para payload antigo nem varredura de cena.
+SA-15C fechou o save-on-exit com a taxonomia funcional abaixo:
+
+```text
+contributorScopePolicy='CurrentActivityObjectSnapshot'
+contributorResolutionKind='no_activity_content_contributors' ou 'no_save_contributors'
+skipKind='NoActivityContentContributors' ou 'NoSaveContributors'
+skipReason='no_activity_content_contributors' ou 'no_save_contributors'
+SnapshotPayloadExpectedButMissing reservado apenas para contributors esperados com payload ausente
+```
+
 ---
 
 ## 11. Como integrar um novo módulo ao SessionOperational
@@ -506,6 +517,11 @@ Nem todo skip é erro. Skips esperados:
 | `ActivityCameraPresentationReleasePreviousSkipped skipReason='no_active_activity_camera_binding'` | Nenhuma activity camera ativa anterior. |
 | `RouteCameraPresentationReleasePreviousSkipped skipReason='no_active_route_camera_binding'` | Nenhuma route camera ativa anterior. |
 | `RouteActivitySaveSaveSkipped skipKind='NoPreviousRoute'` | Primeira rota ou rota anterior inexistente. |
+| `RouteActivitySaveSaveSkipped skipKind='NoSessionActivity'` | A rota anterior não tinha SessionActivity ativa para snapshot/save. |
+| `RouteActivitySaveSaveSkipped skipKind='NoActivityContentContributors'` | A activity ativa não expôs contributors de ActivityContent para snapshot/save. |
+| `RouteActivitySaveSaveSkipped skipKind='NoSaveContributors'` | Não há contributors aplicáveis para snapshot/save no scope funcional atual. |
+| `RouteActivitySaveSaveSkipped skipKind='NoSessionSaveContributors'` | Não há provider canônico de snapshot disponível para a session activity. |
+| `RouteActivitySaveSaveSkipped skipKind='SnapshotPayloadExpectedButMissing'` | Havia contributors esperados, mas o payload não foi produzido. |
 | `RouteActivitySaveLoadSkipped skipKind='DisabledByRoute'` | Rota não usa load-on-enter. |
 | `RouteCameraPresentationSkipped reason='activity_camera_has_priority'` | Rota `SessionActivityEntry`; ActivityCamera deve assumir prioridade. |
 | `ActivityCameraPresentationStageSkipped reason='not_session_activity_entry_handoff'` | Rota frontend/menu sem handoff para activity. |
@@ -651,4 +667,3 @@ Não significa que toda Base 2.0 está finalizada.
 Não significa que SessionActivity já foi migrado.
 Não autoriza novas extrações por tamanho.
 ```
-

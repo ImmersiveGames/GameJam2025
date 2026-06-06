@@ -312,6 +312,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     previousCompletedRoute.RouteSequence,
                     previousCompletedRoute.ActiveSceneKey,
                     previousCompletedRoute.SaveActivityOnExit,
+                    previousCompletedRoute.ContributorScopePolicy,
                     previousCompletedRoute.ActivityIdentity,
                     BuildActivitySaveKey(previousCompletedRoute.ActivityIdentity),
                     previousCompletedRoute.RouteOwnedLoadedSceneKeys,

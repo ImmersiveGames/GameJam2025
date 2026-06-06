@@ -287,6 +287,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline capability object setup failed. reason='{capabilityObjectSetupResult.Reason}' identity='{capabilityObjectSetupResult.Identity}'.");
                 }
 
+                ActivityObjectExitCorrelationBundle exitCorrelation = BuildActivityObjectExitCorrelationBundle();
+
                 ActivityEntryActorPresentationSetupResult actorPresentationSetupResult = ExecuteActorPresentationSetup(
                     new ActivityEntryActorPresentationSetupCommand(
                         setupStartedIdentity,
@@ -406,7 +408,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return new ActivityEntrySetupReadinessResult(
                     ActivityEntrySetupReadinessResultKind.Completed,
                     completedIdentity,
-                    "setup_readiness_completed");
+                    "setup_readiness_completed",
+                    exitCorrelation);
             }
             catch (Exception exception)
             {
@@ -418,6 +421,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     $"owner='ActivityEntryPipeline' block='setup_readiness_orchestration' resultKind='Failed' error='{exception.Message}'");
                 throw;
             }
+        }
+
+        private ActivityObjectExitCorrelationBundle BuildActivityObjectExitCorrelationBundle()
+        {
+            return new ActivityObjectExitCorrelationBundle(
+                _activityInventoryRuntimeState.CurrentActivityObjectContributorDiscoveryResult,
+                _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
+                _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation);
         }
 
         private void BeginActivitySetupReadiness(

@@ -131,13 +131,42 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         RejectedStaleOrForeign = 4
     }
 
+    public readonly struct ActivityObjectExitCorrelationBundle
+    {
+        public static ActivityObjectExitCorrelationBundle Empty => default;
+
+        public ActivityObjectExitCorrelationBundle(
+            ActivityObjectContributorDiscoveryResult contributorDiscoveryResult,
+            ActivityCapabilityInventory inventoryPreview,
+            ActivityCapabilityInventoryValidationResult inventoryPreviewValidation)
+        {
+            ContributorDiscoveryResult = contributorDiscoveryResult;
+            InventoryPreview = inventoryPreview;
+            InventoryPreviewValidation = inventoryPreviewValidation;
+        }
+
+        public ActivityObjectContributorDiscoveryResult ContributorDiscoveryResult { get; }
+        public ActivityCapabilityInventory InventoryPreview { get; }
+        public ActivityCapabilityInventoryValidationResult InventoryPreviewValidation { get; }
+
+        public bool HasContributorDiscoveryResult => ContributorDiscoveryResult.IsValid;
+        public bool HasInventoryPreview => InventoryPreview.IsValid;
+        public bool HasInventoryPreviewValidation => InventoryPreviewValidation.IsValid;
+        public bool HasAnyData => HasContributorDiscoveryResult || HasInventoryPreview || HasInventoryPreviewValidation;
+        public bool IsEmpty => !HasAnyData;
+    }
+
     public readonly struct ActivityEntrySetupReadinessResult
     {
         public ActivityEntrySetupReadinessResult(
             bool completed,
             SessionActivityIdentity identity,
             string reason)
-            : this(completed ? ActivityEntrySetupReadinessResultKind.Completed : ActivityEntrySetupReadinessResultKind.Failed, identity, reason)
+            : this(
+                completed ? ActivityEntrySetupReadinessResultKind.Completed : ActivityEntrySetupReadinessResultKind.Failed,
+                identity,
+                reason,
+                ActivityObjectExitCorrelationBundle.Empty)
         {
         }
 
@@ -145,10 +174,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityEntrySetupReadinessResultKind kind,
             SessionActivityIdentity identity,
             string reason)
+            : this(kind, identity, reason, ActivityObjectExitCorrelationBundle.Empty)
+        {
+        }
+
+        public ActivityEntrySetupReadinessResult(
+            ActivityEntrySetupReadinessResultKind kind,
+            SessionActivityIdentity identity,
+            string reason,
+            ActivityObjectExitCorrelationBundle exitCorrelation)
         {
             Kind = kind;
             Identity = identity;
             Reason = Normalize(reason);
+            ExitCorrelation = exitCorrelation;
         }
 
         public ActivityEntrySetupReadinessResultKind Kind { get; }
@@ -156,6 +195,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsTerminalSuccess => Kind == ActivityEntrySetupReadinessResultKind.Completed || Kind == ActivityEntrySetupReadinessResultKind.SkippedNoContent;
         public SessionActivityIdentity Identity { get; }
         public string Reason { get; }
+        public ActivityObjectExitCorrelationBundle ExitCorrelation { get; }
 
         public bool IsValid => Kind != ActivityEntrySetupReadinessResultKind.Unknown && Identity.IsValid && !string.IsNullOrWhiteSpace(Reason);
 

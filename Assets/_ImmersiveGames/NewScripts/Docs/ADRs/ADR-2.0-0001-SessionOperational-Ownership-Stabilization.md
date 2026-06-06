@@ -12,6 +12,7 @@ SessionOperational Camera Presentation Normalization — PASS funcional + PASS a
 SessionOperational Audio + HandoffExit Ownership Normalization — PASS funcional + PASS arquitetural parcial
 SessionOperational PlayerPreparation Endpoint Normalization — PASS funcional + PASS arquitetural parcial
 SessionOperational suspicious ownership normalization — CLOSED with no known blocking ownership debt
+SessionActivity Base 2.0 frozen checkpoint — SA-14E / SA-14B1 last runtime validated cut
 ```
 
 Escopo do congelamento:
@@ -418,6 +419,7 @@ PlayerPreparationStage.Execute encapsulado no domínio Actors.Semantic.Preparati
 seguir decomposição do SessionOperational apenas com auditoria/matriz quando houver mudança de fronteira;
 não reabrir PlayerPreparation sem regressão factual ou nova evidência arquitetural;
 não reabrir Camera/Audio/HandoffExit sem regressão factual ou nova evidência arquitetural.
+Próxima frente runtime deve ser escolhida fora de SessionActivity salvo regressão concreta.
 ```
 
 Condição: qualquer frente nova deve obedecer este ADR antes de patch. Se houver dúvida de owner, fazer auditoria/matriz primeiro.
@@ -516,3 +518,24 @@ PlayerPreparation stage-to-stage foi removido do caminho operacional; o shape ac
 ```
 
 Este ADR é a trava normativa para retomar a decomposição do `SessionOperationalPipeline` sem reintroduzir seams, bridges genéricas ou deslocamento de responsabilidade. Camera Presentation, Audio, HandoffExit e PlayerPreparation ficam congelados como normalizações aceitas em nível arquitetural parcial.
+### SA-15C â€” RouteActivitySave contributor scope normalization
+
+Status:
+
+```text
+CLOSED / PASS funcional + PASS arquitetural parcial
+```
+
+Regra normativa:
+
+```text
+RouteActivitySaveContributorScopePolicy Ã© a policy normativa de save-on-exit.
+CurrentActivityObjectSnapshot Ã© o scope funcional ativo hoje.
+CurrentRouteSaveContributors e RouteAndActivitySaveContributors existem como contrato/policy futura, sem infraestrutura ativa.
+ActivityContent == null nÃ£o significa no-save; significa apenas ausÃªncia de contributors de ActivityContent.
+activity_02 no-content deve classificar como NoActivityContentContributors / no_activity_content_contributors.
+SnapshotPayloadExpectedButMissing fica reservado para contributors esperados com payload ausente.
+NÃ£o criar LastUsefulActivityPayload como fallback.
+NÃ£o criar scene scan para contributors.
+Route/session contributors futuros exigem registry/inventory canÃ´nico prÃ³prio.
+```

@@ -1,38 +1,40 @@
-# ADR-2.0-0002 — SessionActivity Ownership Decomposition e ActivityEntryPipeline
+﻿# ADR-2.0-0002 â€” SessionActivity Ownership Decomposition e ActivityEntryPipeline
 
 ## Status
 
-Aceito / congelado incrementalmente. Último checkpoint: `SA-ACTOR-1C1-H8C3 — PASS funcional + PASS arquitetural do corte`, fechando `ActorScope.SessionScoped` estrutural, `ExitToMenu -> SessionReset` canônico e a limpeza de ownership de `PlayerScope`, `SessionParticipantId`, materialization resolution e `ActorId` do player default.
+Aceito / congelado incrementalmente.
+Ultimo checkpoint real consolidado: `SA-14B1 - ActivityObject exit correlation explicit entry result CLOSED / PASS funcional + PASS arquitetural do corte`.
+O estado superior agora reflete o fechamento funcional/documental de SA-14B1 e nao deve contradizer os cortes posteriores ja registrados neste ADR.
 
-## Área
+## Ãrea
 
 `SessionActivity` / `ActivityEntryPipeline` / `RouteExit teardown` / `ActivityCapability` / `Actor participation`
 
 ## Contexto
 
-A auditoria de `SessionActivity` identificou que o fluxo ainda não atende ao objetivo da Base 2.0. O problema principal não é apenas tamanho de arquivo: o `SessionActivityPipeline` concentra decisões e execução de lifecycle, transition, content load/release, snapshot, route-exit teardown, visual readiness, actor setup, capability setup e permission handling.
+A auditoria de `SessionActivity` identificou que o fluxo ainda nÃ£o atende ao objetivo da Base 2.0. O problema principal nÃ£o Ã© apenas tamanho de arquivo: o `SessionActivityPipeline` concentra decisÃµes e execuÃ§Ã£o de lifecycle, transition, content load/release, snapshot, route-exit teardown, visual readiness, actor setup, capability setup e permission handling.
 
-A auditoria também identificou que `ActivityEntryPipeline` existe apenas como contrato/boundary, sem pipeline concreto, e que o lifecycle de `RouteExit teardown` possui owner duplicado entre `SessionActivityHost` e `SessionActivityPipeline`.
+A auditoria tambÃ©m identificou que `ActivityEntryPipeline` existe apenas como contrato/boundary, sem pipeline concreto, e que o lifecycle de `RouteExit teardown` possui owner duplicado entre `SessionActivityHost` e `SessionActivityPipeline`.
 
-Base 2.0 não deve transformar um pipeline grande em outro componente grande. A regra anti-deslocamento do `SessionOperational` passa a valer também para `SessionActivity`: nenhuma extração é aceita apenas para reduzir tamanho; toda extração precisa ter owner, categoria e critério de aceite.
+Base 2.0 nÃ£o deve transformar um pipeline grande em outro componente grande. A regra anti-deslocamento do `SessionOperational` passa a valer tambÃ©m para `SessionActivity`: nenhuma extraÃ§Ã£o Ã© aceita apenas para reduzir tamanho; toda extraÃ§Ã£o precisa ter owner, categoria e critÃ©rio de aceite.
 
 ## Problema
 
 O estado atual gera estes riscos:
 
 1. `SessionActivityPipeline` permanece como god object.
-2. `ActivityEntryPipeline` ainda não é owner real do entry lifecycle.
-3. `RouteExit teardown` tem decisão/estado duplicados entre Host e Pipeline.
-4. `SessionActivityHost` mistura boundary externo, decisão de flow e registro global via service locator.
-5. Duplicação de listas/policies de stages pode gerar branch drift.
-6. Permission target mistura domínios de identidade (`PlayerActorId`, `PlayerSlotId`, receiver técnico) em um mesmo campo.
+2. `ActivityEntryPipeline` ainda nÃ£o Ã© owner real do entry lifecycle.
+3. `RouteExit teardown` tem decisÃ£o/estado duplicados entre Host e Pipeline.
+4. `SessionActivityHost` mistura boundary externo, decisÃ£o de flow e registro global via service locator.
+5. DuplicaÃ§Ã£o de listas/policies de stages pode gerar branch drift.
+6. Permission target mistura domÃ­nios de identidade (`PlayerActorId`, `PlayerSlotId`, receiver tÃ©cnico) em um mesmo campo.
 7. QA/hardcodes podem continuar mascarando contrato real.
 
-## Decisão
+## DecisÃ£o
 
 ### 1. `SessionActivityPipeline` permanece como owner macro
 
-`SessionActivityPipeline` é owner de:
+`SessionActivityPipeline` Ã© owner de:
 
 ```text
 session activity lifecycle macro
@@ -40,12 +42,12 @@ activity-to-activity transition policy
 restart current activity lifecycle
 route-exit handoff recebido do SessionOperational
 ordem macro Entry -> ActivationWindow -> ActivityRunning -> Completion -> DeactivationWindow -> Exit/Next
-proteção foreign/stale da sessão ativa
+proteÃ§Ã£o foreign/stale da sessÃ£o ativa
 ```
 
 Ele pode chamar pipelines/stages concretos explicitamente.
 
-Ele não deve executar diretamente:
+Ele nÃ£o deve executar diretamente:
 
 ```text
 ActivityContent load/prepare/release
@@ -60,9 +62,9 @@ Unity side-effects
 
 ### 2. `ActivityEntryPipeline` vira pipeline concreto
 
-`ActivityEntryPipeline` é owner do lifecycle determinístico de uma `ActivityEntry`.
+`ActivityEntryPipeline` Ã© owner do lifecycle determinÃ­stico de uma `ActivityEntry`.
 
-Ele recebe um comando de entrada com payload runtime já resolvido:
+Ele recebe um comando de entrada com payload runtime jÃ¡ resolvido:
 
 ```text
 ActivityEntryCommand
@@ -74,7 +76,7 @@ ActivityEntryCommand
 - Activity asset/profile resolvido
 - ActivityContentProfile resolvido quando houver
 - Player/Actor participation context resolvido
-- Route-scoped context necessário
+- Route-scoped context necessÃ¡rio
 ```
 
 Ele produz resultado/facts:
@@ -88,7 +90,7 @@ ActivityEntryResult
 - BlockedByRequiredCapability
 ```
 
-Ele é owner de:
+Ele Ã© owner de:
 
 ```text
 ActivityContent prepare/load readiness
@@ -102,23 +104,23 @@ Permission target discovery/preparation
 Entry readiness antes de ActivationWindow/ActivityRunning
 ```
 
-Ele não decide:
+Ele nÃ£o decide:
 
 ```text
-qual é a próxima Activity
+qual Ã© a prÃ³xima Activity
 quando a Activity termina
-quando a ActivationWindow é completada pelo usuário/QA
-quando a DeactivationWindow é completada
+quando a ActivationWindow Ã© completada pelo usuÃ¡rio/QA
+quando a DeactivationWindow Ã© completada
 quando a rota troca
 save/progression global
 route operation lifecycle
 ```
 
-### 3. `RouteExit teardown` deve ter owner único
+### 3. `RouteExit teardown` deve ter owner Ãºnico
 
 `SessionActivityPipeline` decide o lifecycle de teardown de activity para `RouteExit`.
 
-`SessionActivityHost` deve ser endpoint/delegador externo, não owner de decisão.
+`SessionActivityHost` deve ser endpoint/delegador externo, nÃ£o owner de decisÃ£o.
 
 Permitido ao Host:
 
@@ -126,7 +128,7 @@ Permitido ao Host:
 expor boundary para SessionOperational
 encaminhar request para SessionActivityPipeline
 aguardar resultado publicado pelo pipeline
-validar ausência/presença mínima de pipeline ativo
+validar ausÃªncia/presenÃ§a mÃ­nima de pipeline ativo
 retornar result externo
 ```
 
@@ -134,15 +136,15 @@ Proibido ao Host:
 
 ```text
 classificar stage de teardown como policy final
-manter lista própria divergente de stages
-avançar lifecycle de route-exit por conta própria
+manter lista prÃ³pria divergente de stages
+avanÃ§ar lifecycle de route-exit por conta prÃ³pria
 registrar estado como fonte de verdade de teardown
 executar side-effects de teardown
 ```
 
-### 4. Policies devem ser únicas e explícitas
+### 4. Policies devem ser Ãºnicas e explÃ­citas
 
-Duplicações como `IsRouteExitTransitStage` e `IsDeactivationTransitionStage` devem convergir para policy única quando fizerem parte do mesmo domínio de decisão.
+DuplicaÃ§Ãµes como `IsRouteExitTransitStage` e `IsDeactivationTransitionStage` devem convergir para policy Ãºnica quando fizerem parte do mesmo domÃ­nio de decisÃ£o.
 
 Policy classifica:
 
@@ -155,11 +157,11 @@ required/optional capability
 stage allowed/blocked
 ```
 
-Policy não executa side-effect.
+Policy nÃ£o executa side-effect.
 
-### 5. Commands não carregam infraestrutura
+### 5. Commands nÃ£o carregam infraestrutura
 
-Commands de Base 2.0 não podem carregar:
+Commands de Base 2.0 nÃ£o podem carregar:
 
 ```text
 Stage
@@ -167,26 +169,26 @@ Boundary
 Adapter
 Func<T>
 Action
-MonoBehaviour executor genérico
-state mutável compartilhado
-ScriptableObject autoral inteiro quando só é necessário payload resolvido
+MonoBehaviour executor genÃ©rico
+state mutÃ¡vel compartilhado
+ScriptableObject autoral inteiro quando sÃ³ Ã© necessÃ¡rio payload resolvido
 ```
 
 Commands carregam payload runtime resolvido.
 
-### 6. Facts não executam side-effects
+### 6. Facts nÃ£o executam side-effects
 
-Facts registram o que aconteceu. Não podem:
+Facts registram o que aconteceu. NÃ£o podem:
 
 ```text
 chamar EventBus
 chamar adapter
 alterar lifecycle
 criar command operacional
-resolver próxima stage
+resolver prÃ³xima stage
 ```
 
-### 7. Adapters executam side-effects, não lifecycle
+### 7. Adapters executam side-effects, nÃ£o lifecycle
 
 Adapters podem executar side-effects Unity comandados por pipeline/stage:
 
@@ -198,38 +200,38 @@ apply/reset endpoint local
 capture/restore snapshot local
 ```
 
-Adapters não decidem:
+Adapters nÃ£o decidem:
 
 ```text
 next activity
 route exit
 required vs optional
-fallback de configuração obrigatória
+fallback de configuraÃ§Ã£o obrigatÃ³ria
 entry lifecycle
 policy de stage order
 ```
 
-### 8. Permission identity precisa separar domínios
+### 8. Permission identity precisa separar domÃ­nios
 
-O débito de `targetId` deve ser tratado como identidade ambígua.
+O dÃ©bito de `targetId` deve ser tratado como identidade ambÃ­gua.
 
-Separação alvo:
+SeparaÃ§Ã£o alvo:
 
 ```text
 ActorInstanceRuntimeId / ActorId: identidade do actor runtime
-PlayerActorId: identidade semântica de player actor
+PlayerActorId: identidade semÃ¢ntica de player actor
 PlayerSlotId: slot/entrada do jogador
-ReceiverId: identidade técnica do receiver local
+ReceiverId: identidade tÃ©cnica do receiver local
 PermissionTargetId: identidade do alvo de permission, sem misturar slot/actor/receiver
 ```
 
-Enquanto o receiver atual for player-specific, o contrato pode continuar carregando `PlayerActorId` e `PlayerSlotId`, mas não deve comparar domínios diferentes como fallback.
+Enquanto o receiver atual for player-specific, o contrato pode continuar carregando `PlayerActorId` e `PlayerSlotId`, mas nÃ£o deve comparar domÃ­nios diferentes como fallback.
 
 ### 9. Actor convergence continua normativa
 
-`PlayerActor` e `NonPlayerActor` não devem voltar a virar rails paralelos permanentes.
+`PlayerActor` e `NonPlayerActor` nÃ£o devem voltar a virar rails paralelos permanentes.
 
-`ActivityEntryPipeline` deve consumir o shape já aceito de:
+`ActivityEntryPipeline` deve consumir o shape jÃ¡ aceito de:
 
 ```text
 ActorScanTarget
@@ -243,50 +245,50 @@ PermissionTarget
 ActorReset contract
 ```
 
-Variação concreta de actor deve aparecer como typed policy/capability/endpoint, não como branch global `player/nonplayer` no pipeline.
+VariaÃ§Ã£o concreta de actor deve aparecer como typed policy/capability/endpoint, nÃ£o como branch global `player/nonplayer` no pipeline.
 
-#### Guarda corretiva pós-auditoria SA-5
+#### Guarda corretiva pÃ³s-auditoria SA-5
 
-A tentativa de criar um corte específico de `NonPlayerActorDiscovery` como owner de entry foi classificada como premissa arquitetural errada.
+A tentativa de criar um corte especÃ­fico de `NonPlayerActorDiscovery` como owner de entry foi classificada como premissa arquitetural errada.
 
 Regra normativa:
 
 ```text
-Actor é a única entrada arquitetural para discovery/readiness/setup de actors.
-PlayerActor, NonPlayerActor e outros tipos concretos podem existir como especializações, metadata, endpoint, authoring ou fonte transitória.
-Essas especializações não podem definir cortes, stages ou lifecycle rails próprios no ActivityEntryPipeline.
+Actor Ã© a Ãºnica entrada arquitetural para discovery/readiness/setup de actors.
+PlayerActor, NonPlayerActor e outros tipos concretos podem existir como especializaÃ§Ãµes, metadata, endpoint, authoring ou fonte transitÃ³ria.
+Essas especializaÃ§Ãµes nÃ£o podem definir cortes, stages ou lifecycle rails prÃ³prios no ActivityEntryPipeline.
 ```
 
-Nomes transitórios existentes no código, como `NonPlayerActorDiscovery`, só podem permanecer enquanto forem fontes/adapters para um contrato canônico de `ActorDiscovery`/`ActorInventoryFeed`. Eles não podem ser promovidos a owner final nem usados como precedente para novos cortes.
+Nomes transitÃ³rios existentes no cÃ³digo, como `NonPlayerActorDiscovery`, sÃ³ podem permanecer enquanto forem fontes/adapters para um contrato canÃ´nico de `ActorDiscovery`/`ActorInventoryFeed`. Eles nÃ£o podem ser promovidos a owner final nem usados como precedente para novos cortes.
 
 ### 10. Sem compatibility rails novos
 
-Não criar:
+NÃ£o criar:
 
 ```text
 ActivityEntryPipeline paralelo opcional
-manager/coordinator genérico para esconder pipeline novo
+manager/coordinator genÃ©rico para esconder pipeline novo
 fallback para caminho antigo quando o novo falhar
 alias/compat permanente para stages ou results antigos
 bridge stage-to-stage como owner final
 ```
 
-Extração transitória só é aceita quando:
+ExtraÃ§Ã£o transitÃ³ria sÃ³ Ã© aceita quando:
 
 ```text
 for curta
 for documentada
-não tiver dois owners ativos
-não criar fallback silencioso
+nÃ£o tiver dois owners ativos
+nÃ£o criar fallback silencioso
 remover ou substituir o caminho antigo no mesmo corte ou em corte imediatamente seguinte
 ```
 
 
-### 11. Observabilidade não pode antecipar lifecycle
+### 11. Observabilidade nÃ£o pode antecipar lifecycle
 
-Logs, facts, snapshots e traces precisam representar o lifecycle real, não apenas a etapa recém-extraída.
+Logs, facts, snapshots e traces precisam representar o lifecycle real, nÃ£o apenas a etapa recÃ©m-extraÃ­da.
 
-É proibido emitir evento com semântica de conclusão total quando apenas um subpasso terminou.
+Ã‰ proibido emitir evento com semÃ¢ntica de conclusÃ£o total quando apenas um subpasso terminou.
 
 Exemplo proibido:
 
@@ -310,58 +312,58 @@ ActivityEntryPipelineCompleted somente quando o entry lifecycle inteiro terminar
 Regra normativa:
 
 ```text
-O nome do fact/log deve corresponder ao escopo realmente concluído.
-Completed de pipeline inteiro só pode ser emitido quando o pipeline inteiro terminou.
-Completed de stage/subpasso deve carregar o nome do stage/subpasso, não do pipeline pai.
+O nome do fact/log deve corresponder ao escopo realmente concluÃ­do.
+Completed de pipeline inteiro sÃ³ pode ser emitido quando o pipeline inteiro terminou.
+Completed de stage/subpasso deve carregar o nome do stage/subpasso, nÃ£o do pipeline pai.
 ```
 
-Essa regra vale mesmo quando o smoke funcional passa. Smoke sem erro não valida semântica de ownership.
+Essa regra vale mesmo quando o smoke funcional passa. Smoke sem erro nÃ£o valida semÃ¢ntica de ownership.
 
-### 12. Snapshots/índices runtime têm writer canônico único
+### 12. Snapshots/Ã­ndices runtime tÃªm writer canÃ´nico Ãºnico
 
-Snapshots e índices runtime passivos, como `ActivityCapabilityInventoryPreview`, não podem ter múltiplos writers tardios.
+Snapshots e Ã­ndices runtime passivos, como `ActivityCapabilityInventoryPreview`, nÃ£o podem ter mÃºltiplos writers tardios.
 
-O owner correto do inventory de entry é o `ActivityEntryPipeline` ou o stage canônico chamado por ele.
+O owner correto do inventory de entry Ã© o `ActivityEntryPipeline` ou o stage canÃ´nico chamado por ele.
 
-Stages posteriores devem consumir o inventory resolvido. Eles não podem reconstruir e sobrescrever o mesmo state canônico para satisfazer uma necessidade local.
+Stages posteriores devem consumir o inventory resolvido. Eles nÃ£o podem reconstruir e sobrescrever o mesmo state canÃ´nico para satisfazer uma necessidade local.
 
 Proibido:
 
 ```text
 MovementBinding reconstruir ActivityCapabilityInventoryPreview e gravar CurrentActivityCapabilityInventoryPreview.
 CameraBinding reconstruir ActivityCapabilityInventoryPreview e gravar CurrentActivityCapabilityInventoryPreview.
-Actor/Object setup reconstruir inventory canônico para esconder ausência de capability.
+Actor/Object setup reconstruir inventory canÃ´nico para esconder ausÃªncia de capability.
 ```
 
 Permitido:
 
 ```text
-MovementBinding consultar o inventory canônico da entry.
-CameraBinding consultar o inventory canônico da entry.
-Actor/Object setup consultar o inventory canônico da entry.
+MovementBinding consultar o inventory canÃ´nico da entry.
+CameraBinding consultar o inventory canÃ´nico da entry.
+Actor/Object setup consultar o inventory canÃ´nico da entry.
 Stage falhar explicitamente quando o inventory esperado estiver ausente, stale, foreign ou incompleto.
 ```
 
-Se um stage posterior precisa de capability ausente no inventory canônico, a correção deve ocorrer no owner do inventory, não por rebuild local.
+Se um stage posterior precisa de capability ausente no inventory canÃ´nico, a correÃ§Ã£o deve ocorrer no owner do inventory, nÃ£o por rebuild local.
 
 Regra normativa:
 
 ```text
-Um snapshot runtime canônico tem um writer ativo por lifecycle.
-Consumidores não podem virar writers para corrigir falta local.
-Rebuild local só é permitido como diagnóstico temporário, documentado e removido no mesmo corte ou no corte imediatamente seguinte.
+Um snapshot runtime canÃ´nico tem um writer ativo por lifecycle.
+Consumidores nÃ£o podem virar writers para corrigir falta local.
+Rebuild local sÃ³ Ã© permitido como diagnÃ³stico temporÃ¡rio, documentado e removido no mesmo corte ou no corte imediatamente seguinte.
 ```
 
-### 13. Correção funcional não basta quando a fronteira continua ambígua
+### 13. CorreÃ§Ã£o funcional nÃ£o basta quando a fronteira continua ambÃ­gua
 
-Um corte pode passar no smoke e ainda assim não ser aceito como PASS arquitetural final se:
+Um corte pode passar no smoke e ainda assim nÃ£o ser aceito como PASS arquitetural final se:
 
 ```text
-o owner correto não estiver visível;
-o log/fact declarar conclusão mais ampla do que ocorreu;
-um state canônico tiver múltiplos writers;
+o owner correto nÃ£o estiver visÃ­vel;
+o log/fact declarar conclusÃ£o mais ampla do que ocorreu;
+um state canÃ´nico tiver mÃºltiplos writers;
 um consumidor posterior reconstruir dados que deveriam vir do owner anterior;
-a correção esconder falta de contrato com fallback local.
+a correÃ§Ã£o esconder falta de contrato com fallback local.
 ```
 
 Nesses casos, o corte pode ser classificado apenas como:
@@ -372,34 +374,34 @@ PASS arquitetural parcial
 PENDING hygiene/ownership normalization
 ```
 
-A normalização deve ser feita antes de migrar o próximo bloco dependente.
+A normalizaÃ§Ã£o deve ser feita antes de migrar o prÃ³ximo bloco dependente.
 
 ## Ownership final por categoria
 
-| Categoria | Owner correto | Observação |
+| Categoria | Owner correto | ObservaÃ§Ã£o |
 |---|---|---|
 | Session activity macro lifecycle | `SessionActivityPipeline` | Ordem macro, handoff, next/restart/route-exit |
 | Activity entry lifecycle | `ActivityEntryPipeline` | Content/setup/readiness/bindings por entry |
-| Activity transition policy | `SessionActivityPipeline` + policy dedicada | Decide next/restart/complete, não side-effect |
-| RouteExit teardown lifecycle | `SessionActivityPipeline` | Host delega, não decide |
+| Activity transition policy | `SessionActivityPipeline` + policy dedicada | Decide next/restart/complete, nÃ£o side-effect |
+| RouteExit teardown lifecycle | `SessionActivityPipeline` | Host delega, nÃ£o decide |
 | ActivityContent side-effects | Adapter/stage de content | Pipeline comanda, adapter executa |
 | Actor/Object setup | Entry stages | Sem rails player/nonplayer paralelos permanentes |
-| Actor capability behavior local | Endpoint local | Endpoint reage, não decide lifecycle global |
+| Actor capability behavior local | Endpoint local | Endpoint reage, nÃ£o decide lifecycle global |
 | Permission reaction concreta | Receiver local | Pipeline publica state; receiver aplica localmente |
 | Facts/traces | Recorder/fact emitter | Registro apenas |
-| Composition/global registry | Composition root/installer | Não no Host como lifecycle owner |
+| Composition/global registry | Composition root/installer | NÃ£o no Host como lifecycle owner |
 | QA probes | Endpoints QA isolados | Nunca owner final de lifecycle |
 
-## Plano normativo consolidado de refatoração
+## Plano normativo consolidado de refatoraÃ§Ã£o
 
-Este plano substitui a sequência inicial genérica. Ele é parte normativa deste ADR e deve guiar a implementação de `SessionActivity` Base 2.0.
+Este plano substitui a sequÃªncia inicial genÃ©rica. Ele Ã© parte normativa deste ADR e deve guiar a implementaÃ§Ã£o de `SessionActivity` Base 2.0.
 
-A regra principal é:
+A regra principal Ã©:
 
 ```text
-SessionActivityPipeline mantém lifecycle macro, transition, restart, route-exit e handoffs.
-ActivityEntryPipeline vira owner real do lifecycle determinístico da entry.
-Stages executam passos determinísticos.
+SessionActivityPipeline mantÃ©m lifecycle macro, transition, restart, route-exit e handoffs.
+ActivityEntryPipeline vira owner real do lifecycle determinÃ­stico da entry.
+Stages executam passos determinÃ­sticos.
 Policies classificam skip/failure/required/optional/stale/foreign.
 Commands carregam payload runtime resolvido.
 Facts registram o que ocorreu.
@@ -407,69 +409,69 @@ Adapters executam side-effects.
 Endpoints reagem localmente.
 ```
 
-Nenhum corte deve ser aceito apenas por reduzir tamanho de arquivo. Um corte só é válido se remover responsabilidade concreta do owner errado, atribuir owner correto, remover ou tornar inacessível o caminho antigo equivalente, não criar fallback e preservar smoke/log.
+Nenhum corte deve ser aceito apenas por reduzir tamanho de arquivo. Um corte sÃ³ Ã© vÃ¡lido se remover responsabilidade concreta do owner errado, atribuir owner correto, remover ou tornar inacessÃ­vel o caminho antigo equivalente, nÃ£o criar fallback e preservar smoke/log.
 
-### Estado já fechado
+### Estado jÃ¡ fechado
 
 | Corte | Status normativo | Resultado |
 |---|---|---|
 | `SA-0` | Fechado | ADR/plano inicial criados. |
-| `SA-1` | Fechado | `RouteExit teardown` com owner único no `SessionActivityPipeline`; Host delega. |
+| `SA-1` | Fechado | `RouteExit teardown` com owner Ãºnico no `SessionActivityPipeline`; Host delega. |
 | `SA-2` | Fechado | `ActivityEntryPipeline` concreto criado. |
-| `SA-2B` | Fechado | Owner `ActivityEntryPipeline` visível nos logs. |
+| `SA-2B` | Fechado | Owner `ActivityEntryPipeline` visÃ­vel nos logs. |
 | `SA-3A` | Fechado | `ActivityContent load/prepare/readiness` movido para `ActivityEntryPipeline`. |
-| `SA-3A-H1` | Fechado | Corrigida observabilidade prematura de `ActivityEntryPipelineCompleted`; `ActivityEntryPreparationAccepted` substitui conclusão falsa. |
+| `SA-3A-H1` | Fechado | Corrigida observabilidade prematura de `ActivityEntryPipelineCompleted`; `ActivityEntryPreparationAccepted` substitui conclusÃ£o falsa. |
 
-### Estado ainda problemático
+### Estado ainda problemÃ¡tico
 
-Mesmo após `SA-3A-H1`, o código ainda não atende ao desenho final do ADR porque:
+Mesmo apÃ³s `SA-3A-H1`, o cÃ³digo ainda nÃ£o atende ao desenho final do ADR porque:
 
 ```text
-ActivityEntryPipeline ainda não é owner real de setup/readiness completo.
+ActivityEntryPipeline ainda nÃ£o Ã© owner real de setup/readiness completo.
 EmitNominalActivitySetup ainda concentra setup real no SessionActivityPipeline.
 ObjectReset/ObjectRestore ainda pertencem ao miolo de entry e dependem de ordem correta com Inventory.
-ActivityObjectEntryStage interno ainda é wrapper/fachada se apenas chamar métodos Core do SessionActivityPipeline.
-IActivityEntryRuntimeEndpoint ainda é bridge transitória e não pode crescer como fachada permanente.
+ActivityObjectEntryStage interno ainda Ã© wrapper/fachada se apenas chamar mÃ©todos Core do SessionActivityPipeline.
+IActivityEntryRuntimeEndpoint ainda Ã© bridge transitÃ³ria e nÃ£o pode crescer como fachada permanente.
 ```
 
 ### Regra de replanejamento
 
-O plano original `SA-3 = ActivityContent + Inventory` foi refinado pela auditoria consolidada. O próximo passo não é mover apenas `ActivityCapabilityInventory` isoladamente. Antes, deve-se corrigir a ordem e o ownership do subfluxo mínimo que torna o inventory canônico útil para os consumidores.
+O plano original `SA-3 = ActivityContent + Inventory` foi refinado pela auditoria consolidada. O prÃ³ximo passo nÃ£o Ã© mover apenas `ActivityCapabilityInventory` isoladamente. Antes, deve-se corrigir a ordem e o ownership do subfluxo mÃ­nimo que torna o inventory canÃ´nico Ãºtil para os consumidores.
 
 ---
 
 
 
-### Corte corretivo aplicado localmente — SA-5A0 + SA-5A1
+### Corte corretivo aplicado localmente â€” SA-5A0 + SA-5A1
 
 Status: implementado neste pacote, **pendente de smoke/log**.
 
 Objetivo:
 
 ```text
-Interromper regressão de Actor rails e isolar mistura de identidade antes de continuar ActorDiscovery genérico.
+Interromper regressÃ£o de Actor rails e isolar mistura de identidade antes de continuar ActorDiscovery genÃ©rico.
 ```
 
-Decisões aplicadas:
+DecisÃµes aplicadas:
 
 ```text
-SA-5A0 — Actor rail regression stopper
-- Actor é a única entrada arquitetural para discovery/readiness/setup.
-- PlayerActor/NonPlayerActor permanecem tipos concretos, mas não podem definir stage/corte/rail final.
-- Fontes transitórias podem alimentar ActorInventoryFeed/ActorScanTarget.
-- README de SessionActivity recebeu guarda anti-regressão explícita.
+SA-5A0 â€” Actor rail regression stopper
+- Actor Ã© a Ãºnica entrada arquitetural para discovery/readiness/setup.
+- PlayerActor/NonPlayerActor permanecem tipos concretos, mas nÃ£o podem definir stage/corte/rail final.
+- Fontes transitÃ³rias podem alimentar ActorInventoryFeed/ActorScanTarget.
+- README de SessionActivity recebeu guarda anti-regressÃ£o explÃ­cita.
 
-SA-5A1 — Identity quarantine
-- PlayerActorMaterializationAdapter não pode mais definir ActorId a partir de PlayerSlotId.
-- ActorId do PlayerActor materializado passa a ser o PlayerActorId semântico.
-- Permission command expõe TargetActorId em vez de TargetId ambíguo.
+SA-5A1 â€” Identity quarantine
+- PlayerActorMaterializationAdapter nÃ£o pode mais definir ActorId a partir de PlayerSlotId.
+- ActorId do PlayerActor materializado passa a ser o PlayerActorId semÃ¢ntico.
+- Permission command expÃµe TargetActorId em vez de TargetId ambÃ­guo.
 - Permission binding/reference exige TargetActorId quando scope=Actor.
-- PlayerMovementPermissionReceiver só aceita TargetActorId == PlayerActorId.
+- PlayerMovementPermissionReceiver sÃ³ aceita TargetActorId == PlayerActorId.
 - PlayerSlotId e ReceiverId deixam de ser fallback de matching de alvo.
 - Camera requirement matching deixa de aceitar PlayerSlotId como alias de TargetId.
 ```
 
-Não congelar como PASS sem smoke contendo:
+NÃ£o congelar como PASS sem smoke contendo:
 
 ```text
 sem FATAL
@@ -478,51 +480,51 @@ sem route_transition_failed
 sem foreign/stale indevido
 MovementControlEnabled em ActivityRunning
 MovementControlDisabled em completion/route-exit
-sem PermissionTargetIdentityUnresolved em cenário válido
+sem PermissionTargetIdentityUnresolved em cenÃ¡rio vÃ¡lido
 sem fallback TargetActorId == PlayerSlotId
 sem fallback TargetActorId == ReceiverId
-ActorId, PlayerActorId e PlayerSlotId observáveis como domínios separados
+ActorId, PlayerActorId e PlayerSlotId observÃ¡veis como domÃ­nios separados
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
 
-### Corte de normalização aplicado — SA-5A0-H1
+### Corte de normalizaÃ§Ã£o aplicado â€” SA-5A0-H1
 
 Status: **CLOSED / PASS funcional + PASS arquitetural do corte**.
 
 Objetivo:
 
 ```text
-Normalizar a base lexical/arquitetural antes da auditoria SA-5A para não iniciar ActorDiscovery/ActorReadiness com a leitura torta de rails PlayerActor/NonPlayerActor.
+Normalizar a base lexical/arquitetural antes da auditoria SA-5A para nÃ£o iniciar ActorDiscovery/ActorReadiness com a leitura torta de rails PlayerActor/NonPlayerActor.
 ```
 
-Decisões aplicadas:
+DecisÃµes aplicadas:
 
 ```text
 - `NonPlayerActorDiscoveryStage` foi renomeado para `ActorSceneDiscoveryStage`.
-- O método de emissão passou de `EmitNonPlayerActorDiscoveryStage` para `EmitActorSceneDiscoveryStage`.
-- Os facts/stages de discovery de cena passaram de `NonPlayerActorDiscovery*` para `ActorSceneDiscovery*`, preservando os valores numéricos dos enums.
-- `NonPlayerActor` permanece como componente/fonte concreta scene-authored, mas não como nome do stage/corte/owner arquitetural.
+- O mÃ©todo de emissÃ£o passou de `EmitNonPlayerActorDiscoveryStage` para `EmitActorSceneDiscoveryStage`.
+- Os facts/stages de discovery de cena passaram de `NonPlayerActorDiscovery*` para `ActorSceneDiscovery*`, preservando os valores numÃ©ricos dos enums.
+- `NonPlayerActor` permanece como componente/fonte concreta scene-authored, mas nÃ£o como nome do stage/corte/owner arquitetural.
 - `PlayerActorReadinessStage` foi renomeado para `ActivityParticipantReadinessStage`.
-- Os facts/stages de readiness passaram de `PlayerActorReadiness*` para `ActivityParticipantReadiness*`, preservando os valores numéricos dos enums.
-- Entries antigas e não usadas `NonPlayerActorPresentation*` foram removidas dos contratos para não sugerir rail paralelo de presentation.
-- `NonPlayerActorDiscoveryRecord` não usado foi removido dos contratos concretos.
+- Os facts/stages de readiness passaram de `PlayerActorReadiness*` para `ActivityParticipantReadiness*`, preservando os valores numÃ©ricos dos enums.
+- Entries antigas e nÃ£o usadas `NonPlayerActorPresentation*` foram removidas dos contratos para nÃ£o sugerir rail paralelo de presentation.
+- `NonPlayerActorDiscoveryRecord` nÃ£o usado foi removido dos contratos concretos.
 ```
 
 Fronteira preservada:
 
 ```text
-- Não move ActorPresentation.
-- Não move ActorAttributes.
-- Não move ActorParticipation.
-- Não altera Camera, Permission, Movement, Reset, Release, Deactivation ou RouteExit.
-- Não altera a semântica de activity_01/activity_02.
-- Não cria stage final para PlayerActor ou NonPlayerActor.
+- NÃ£o move ActorPresentation.
+- NÃ£o move ActorAttributes.
+- NÃ£o move ActorParticipation.
+- NÃ£o altera Camera, Permission, Movement, Reset, Release, Deactivation ou RouteExit.
+- NÃ£o altera a semÃ¢ntica de activity_01/activity_02.
+- NÃ£o cria stage final para PlayerActor ou NonPlayerActor.
 ```
 
-Critério de aceite:
+CritÃ©rio de aceite:
 
 ```text
 sem erros CS
@@ -545,12 +547,12 @@ RouteExitBackToMenu PASS
 
 ### Resultado do smoke SA-5A0-H1
 
-Smoke manual validado após aplicação do pacote.
+Smoke manual validado apÃ³s aplicaÃ§Ã£o do pacote.
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
-sem erros CS observáveis pelo smoke no Editor
+sem erros CS observÃ¡veis pelo smoke no Editor
 sem FATAL
 sem Exception
 sem route_transition_failed
@@ -567,30 +569,30 @@ ActorResetQaApplied preservado
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-activity_01 preserva cenário com conteúdo/contributors
-activity_02 preserva cenário negativo/no-content com skip explícito e PassedNoCommands
+activity_01 preserva cenÃ¡rio com conteÃºdo/contributors
+activity_02 preserva cenÃ¡rio negativo/no-content com skip explÃ­cito e PassedNoCommands
 ```
 
 Nota de observabilidade:
 
 ```text
-O smoke não emite facts literais chamados ActorSceneDiscovery ou ActivityParticipantReadiness.
-Neste corte, o aceite arquitetural é restrito à normalização lexical/contratual confirmada por compile/smoke e pela ausência dos nomes antigos de stage no log.
-Adicionar facts explícitos para ActorSceneDiscovery/ActivityParticipantReadiness pode ser tratado como hygiene futura, sem bloquear este PASS.
+O smoke nÃ£o emite facts literais chamados ActorSceneDiscovery ou ActivityParticipantReadiness.
+Neste corte, o aceite arquitetural Ã© restrito Ã  normalizaÃ§Ã£o lexical/contratual confirmada por compile/smoke e pela ausÃªncia dos nomes antigos de stage no log.
+Adicionar facts explÃ­citos para ActorSceneDiscovery/ActivityParticipantReadiness pode ser tratado como hygiene futura, sem bloquear este PASS.
 ```
 
 
-Após esse smoke, a auditoria `SA-5A — ActorDiscovery / ActorReadiness ownership audit` pode começar sobre uma base menos contaminada por nomes de rails concretos.
+ApÃ³s esse smoke, a auditoria `SA-5A â€” ActorDiscovery / ActorReadiness ownership audit` pode comeÃ§ar sobre uma base menos contaminada por nomes de rails concretos.
 
 ---
 
 ## Roadmap normativo por fases
 
-### Fase A — Consolidar entry lifecycle real
+### Fase A â€” Consolidar entry lifecycle real
 
-#### `SA-3B0 — Entry Setup Pre-Inventory Ownership / Ordering Correction`
+#### `SA-3B0 â€” Entry Setup Pre-Inventory Ownership / Ordering Correction`
 
-Objetivo: mover para `ActivityEntryPipeline` o primeiro bloco real de setup que hoje impede o inventory canônico de nascer na ordem correta.
+Objetivo: mover para `ActivityEntryPipeline` o primeiro bloco real de setup que hoje impede o inventory canÃ´nico de nascer na ordem correta.
 
 Escopo permitido:
 
@@ -600,7 +602,7 @@ ObjectSnapshotContractValidation
 ObjectReset
 ObjectRestore
 ActivityCapabilityInventoryPreview
-QA reset ligado a esse caminho canônico
+QA reset ligado a esse caminho canÃ´nico
 ```
 
 Escopo proibido neste corte:
@@ -616,22 +618,22 @@ Permission identity cleanup
 Release / Deactivation / RouteExit
 ```
 
-Critério arquitetural:
+CritÃ©rio arquitetural:
 
 ```text
 ActivityEntryPipeline owna o subfluxo.
-SessionActivityPipeline não executa diretamente esse bloco.
-ObjectReset não reconstrói inventory local.
-ObjectRestore não depende de preview vazio/antigo.
-QA reset chama caminho canônico, não trilho paralelo.
-Inventory canônico nasce antes dos consumidores desse bloco.
-ActivityObjectEntryStage interno não é expandido como fachada.
-IActivityEntryRuntimeEndpoint não cresce como owner remoto do god pipeline.
+SessionActivityPipeline nÃ£o executa diretamente esse bloco.
+ObjectReset nÃ£o reconstrÃ³i inventory local.
+ObjectRestore nÃ£o depende de preview vazio/antigo.
+QA reset chama caminho canÃ´nico, nÃ£o trilho paralelo.
+Inventory canÃ´nico nasce antes dos consumidores desse bloco.
+ActivityObjectEntryStage interno nÃ£o Ã© expandido como fachada.
+IActivityEntryRuntimeEndpoint nÃ£o cresce como owner remoto do god pipeline.
 ```
 
-#### `SA-3B1 — ActivityCapabilityInventory ownership final`
+#### `SA-3B1 â€” ActivityCapabilityInventory ownership final`
 
-Objetivo: completar a migração do `ActivityCapabilityInventory` para owner real no `ActivityEntryPipeline` ou em stage canônico chamado por ele.
+Objetivo: completar a migraÃ§Ã£o do `ActivityCapabilityInventory` para owner real no `ActivityEntryPipeline` ou em stage canÃ´nico chamado por ele.
 
 Escopo:
 
@@ -647,44 +649,44 @@ CurrentActivityCapabilityInventoryPreview write/clear/read contract
 Regras:
 
 ```text
-ActivityCapabilityInventory é snapshot/índice runtime passivo.
-Ele não decide lifecycle.
-Ele tem writer único por lifecycle.
-Consumidores não podem reconstruí-lo para corrigir falta local.
-Não confundir ActivityCapabilityInventory com ActivitySetupInventory.
+ActivityCapabilityInventory Ã© snapshot/Ã­ndice runtime passivo.
+Ele nÃ£o decide lifecycle.
+Ele tem writer Ãºnico por lifecycle.
+Consumidores nÃ£o podem reconstruÃ­-lo para corrigir falta local.
+NÃ£o confundir ActivityCapabilityInventory com ActivitySetupInventory.
 ```
 
 ---
 
-### Fase B — Transformar setup de objetos em entry stages reais
+### Fase B â€” Transformar setup de objetos em entry stages reais
 
-#### `SA-4A — ActivityObjectEntryStage real / auditoria`
+#### `SA-4A â€” ActivityObjectEntryStage real / auditoria`
 
-Resultado da auditoria pós `SA-3B0` + `SA-3B1`:
+Resultado da auditoria pÃ³s `SA-3B0` + `SA-3B1`:
 
 ```text
-SA-3B0 já transferiu para ActivityEntryPipeline o subfluxo:
+SA-3B0 jÃ¡ transferiu para ActivityEntryPipeline o subfluxo:
 - ActivitySetupInventory;
 - ObjectSnapshotContractValidation;
 - ActivityCapabilityInventoryPreview;
 - ObjectReset;
 - ObjectRestore.
 
-Portanto, SA-4A não deve recriar ActivityObjectEntryStage do zero.
-O débito real restante é ActivityObjectContributorDiscovery ainda nascer no SessionActivityPipeline.
+Portanto, SA-4A nÃ£o deve recriar ActivityObjectEntryStage do zero.
+O dÃ©bito real restante Ã© ActivityObjectContributorDiscovery ainda nascer no SessionActivityPipeline.
 ```
 
-Decisão normativa:
+DecisÃ£o normativa:
 
 ```text
-SA-4A deve ser reinterpretado como sequência pequena de cleanup, começando por SA-4A0.
-Não reabrir reset/restore/inventory sem evidência de regressão.
-Não criar stage paralelo para o que SA-3B0 já moveu.
+SA-4A deve ser reinterpretado como sequÃªncia pequena de cleanup, comeÃ§ando por SA-4A0.
+NÃ£o reabrir reset/restore/inventory sem evidÃªncia de regressÃ£o.
+NÃ£o criar stage paralelo para o que SA-3B0 jÃ¡ moveu.
 ```
 
-#### `SA-4A0 — ActivityObjectContributorDiscoveryStage real`
+#### `SA-4A0 â€” ActivityObjectContributorDiscoveryStage real`
 
-Objetivo: mover `ActivityObjectContributorDiscovery` para stage real chamado pelo `ActivityEntryPipeline`, removendo execução concreta do `SessionActivityPipeline`.
+Objetivo: mover `ActivityObjectContributorDiscovery` para stage real chamado pelo `ActivityEntryPipeline`, removendo execuÃ§Ã£o concreta do `SessionActivityPipeline`.
 
 Escopo:
 
@@ -706,51 +708,51 @@ ActivityEntryPipeline -> ActivityEntryObjectContributorDiscoveryStage
 Regras:
 
 ```text
-SessionActivityPipeline não chama DiscoverActivityObjectContributorsOrSkipCore.
+SessionActivityPipeline nÃ£o chama DiscoverActivityObjectContributorsOrSkipCore.
 ActivityEntryPipeline chama ActivityEntryObjectContributorDiscoveryStage antes de ActivitySetupInventory.
-Discovery result tem writer único por entry.
+Discovery result tem writer Ãºnico por entry.
 ActivitySetupInventory e SnapshotContractValidation consomem discovery result produzido no mesmo owner.
 Sem fallback para discovery antigo.
 Sem bridge grande nova.
-A bridge transitória só pode expor setter técnico de CurrentActivityObjectContributorDiscoveryResult.
+A bridge transitÃ³ria sÃ³ pode expor setter tÃ©cnico de CurrentActivityObjectContributorDiscoveryResult.
 ```
 
-Critério de aceite:
+CritÃ©rio de aceite:
 
 ```text
 ActivityObjectContributorDiscovery facts preservados.
 ActivityObjectContributorDiscovery checkpoint preservado.
-SessionActivityPipeline perde execução direta de discovery.
-ActivityEntryPipeline é owner do stage.
-Sem alteração de ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, Movement, Camera, Release, Deactivation ou RouteExit.
+SessionActivityPipeline perde execuÃ§Ã£o direta de discovery.
+ActivityEntryPipeline Ã© owner do stage.
+Sem alteraÃ§Ã£o de ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, Movement, Camera, Release, Deactivation ou RouteExit.
 ```
 
 ---
 
-#### `SA-4B — ActivityObjectSnapshot/Reset/Restore cleanup`
+#### `SA-4B â€” ActivityObjectSnapshot/Reset/Restore cleanup`
 
 Objetivo: separar snapshot/reset/restore em commands/facts/adapters claros.
 
-Critério:
+CritÃ©rio:
 
 ```text
-Reset obrigatório ausente = fail-fast.
-Reset opcional ausente = skip explícito.
+Reset obrigatÃ³rio ausente = fail-fast.
+Reset opcional ausente = skip explÃ­cito.
 ResetAll cego proibido.
-Snapshot restore não decide lifecycle.
-Facts não executam side-effects.
-Adapters/endpoints executam aplicação local.
+Snapshot restore nÃ£o decide lifecycle.
+Facts nÃ£o executam side-effects.
+Adapters/endpoints executam aplicaÃ§Ã£o local.
 ```
 
 ---
 
-### Fase C — Actor setup por entry
+### Fase C â€” Actor setup por entry
 
-#### `SA-5A — ActorDiscovery / ActorReadiness ownership audit`
+#### `SA-5A â€” ActorDiscovery / ActorReadiness ownership audit`
 
-Objetivo: auditar e redesenhar o setup de actors para garantir que `Actor` seja a única entrada arquitetural de lifecycle/readiness no `ActivityEntryPipeline`.
+Objetivo: auditar e redesenhar o setup de actors para garantir que `Actor` seja a Ãºnica entrada arquitetural de lifecycle/readiness no `ActivityEntryPipeline`.
 
-Escopo canônico:
+Escopo canÃ´nico:
 
 ```text
 ActorDiscovery
@@ -769,71 +771,71 @@ Fora do escopo como trilho arquitetural:
 PlayerActor readiness como subcorte separado
 NonPlayerActor discovery como subcorte separado
 branch global player/nonplayer
-stage de lifecycle nomeado por especialização concreta de Actor
+stage de lifecycle nomeado por especializaÃ§Ã£o concreta de Actor
 ```
 
-Critério:
+CritÃ©rio:
 
 ```text
-Actor é a única raiz de entrada para discovery/readiness.
-PlayerActor, NonPlayerActor e especializações futuras são tipos/metadata/endpoints locais, não owners de lifecycle.
-Fontes transitórias com nomes antigos podem alimentar ActorInventoryFeed, mas não definir stage/corte/owner canônico.
+Actor Ã© a Ãºnica raiz de entrada para discovery/readiness.
+PlayerActor, NonPlayerActor e especializaÃ§Ãµes futuras sÃ£o tipos/metadata/endpoints locais, nÃ£o owners de lifecycle.
+Fontes transitÃ³rias com nomes antigos podem alimentar ActorInventoryFeed, mas nÃ£o definir stage/corte/owner canÃ´nico.
 Sem comparar ActorId, PlayerActorId, ActorInstanceRuntimeId e PlayerSlotId como equivalentes.
-Variação concreta de actor aparece como typed policy/capability/endpoint, nunca como branch global player/nonplayer no pipeline.
+VariaÃ§Ã£o concreta de actor aparece como typed policy/capability/endpoint, nunca como branch global player/nonplayer no pipeline.
 ```
 
-Decisão corretiva:
+DecisÃ£o corretiva:
 
 ```text
-Qualquer corte chamado NonPlayerActorDiscovery, PlayerActorReadiness ou equivalente deve ser rejeitado antes de implementação.
-O próximo corte autorizado nesta área é auditoria/correção de ActorDiscovery genérico.
+Qualquer corte chamado NonPlayerActorDiscovery, PlayerActorReadiness ou equivalente deve ser rejeitado antes de implementaÃ§Ã£o.
+O prÃ³ximo corte autorizado nesta Ã¡rea Ã© auditoria/correÃ§Ã£o de ActorDiscovery genÃ©rico.
 ```
 
-#### `SA-5B — ActorPresentation setup stage`
+#### `SA-5B â€” ActorPresentation setup stage`
 
-Objetivo: mover `ActorPresentation` setup para stage real de entry, sem transformar `ActivityEntryPipeline.cs` em novo monólito.
+Objetivo: mover `ActorPresentation` setup para stage real de entry, sem transformar `ActivityEntryPipeline.cs` em novo monÃ³lito.
 
-Formulação correta:
+FormulaÃ§Ã£o correta:
 
 ```text
 ActivityEntryPipeline ordena/chama o stage.
-ActivityEntryActorPresentationStage executa o setup determinístico.
+ActivityEntryActorPresentationStage executa o setup determinÃ­stico.
 Policies classificam retain/materialize/skip/fail.
 Adapters/endpoints executam side-effects.
 SessionActivityPipeline perde o bloco concreto de presentation setup.
 ```
 
-Critério:
+CritÃ©rio:
 
 ```text
-Retention policy explícita.
+Retention policy explÃ­cita.
 Materialization em adapter.
-Stage não decide next activity.
-Presentation obrigatória ausente falha explicitamente.
+Stage nÃ£o decide next activity.
+Presentation obrigatÃ³ria ausente falha explicitamente.
 Sem fallback silencioso.
-ActivityEntryPipeline não recebe loop grande de Presentation.
-SessionActivityPipeline perde mais lógica concreta do que ganha.
+ActivityEntryPipeline nÃ£o recebe loop grande de Presentation.
+SessionActivityPipeline perde mais lÃ³gica concreta do que ganha.
 Release ActivityExit/RouteExit fica fora deste corte.
 ```
 
-#### `SA-5C — ActorAttributes setup stage`
+#### `SA-5C â€” ActorAttributes setup stage`
 
 Objetivo: mover setup de attributes para stage real de entry.
 
-Critério:
+CritÃ©rio:
 
 ```text
-Attributes são capability local.
+Attributes sÃ£o capability local.
 Pipeline/stage prepara/descobre.
-Reação local não vira command global quando for ação local.
+ReaÃ§Ã£o local nÃ£o vira command global quando for aÃ§Ã£o local.
 ```
 
 
-##### Status pós-smoke — SA-5C
+##### Status pÃ³s-smoke â€” SA-5C
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-Evidência validada no smoke:
+EvidÃªncia validada no smoke:
 
 ```text
 sem erros CS
@@ -855,99 +857,99 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-Conclusão arquitetural:
+ConclusÃ£o arquitetural:
 
 ```text
 ActorAttributes setup saiu do caminho concreto do SessionActivityPipeline.
 ActivityEntryPipeline ficou como owner de ordem/lifecycle da entry.
-ActivityEntryActorAttributeStage executa o setup determinístico de attributes.
-SessionActivityPipeline ainda mantém lifecycle macro e ainda possui débitos posteriores em ActorParticipation/Input/Movement/Camera.
-IActivityEntryActorAttributeRuntimeBridge permanece transitória e não pode crescer como manager/coordinator.
+ActivityEntryActorAttributeStage executa o setup determinÃ­stico de attributes.
+SessionActivityPipeline ainda mantÃ©m lifecycle macro e ainda possui dÃ©bitos posteriores em ActorParticipation/Input/Movement/Camera.
+IActivityEntryActorAttributeRuntimeBridge permanece transitÃ³ria e nÃ£o pode crescer como manager/coordinator.
 ```
 
-Débitos remanescentes não bloqueantes deste corte:
+DÃ©bitos remanescentes nÃ£o bloqueantes deste corte:
 
 ```text
 ActorParticipationEnter ainda executa no SessionActivityPipeline.
-PlayerInput, Movement e Camera ainda serão avaliados em cortes próprios.
-ActorAttribute release ainda fica fora do escopo do SA-5C e será tratado em exit/release decomposition.
+PlayerInput, Movement e Camera ainda serÃ£o avaliados em cortes prÃ³prios.
+ActorAttribute release ainda fica fora do escopo do SA-5C e serÃ¡ tratado em exit/release decomposition.
 ```
 
-#### `SA-5D — ActorParticipation enter stage`
+#### `SA-5D â€” ActorParticipation enter stage`
 
 Objetivo: mover participation enter/readiness para stage real.
 
-Critério:
+CritÃ©rio:
 
 ```text
-Participation context explícito.
-Ausência obrigatória fail-fast.
-Ausência opcional skip explícito.
+Participation context explÃ­cito.
+AusÃªncia obrigatÃ³ria fail-fast.
+AusÃªncia opcional skip explÃ­cito.
 Sem branch global player/nonplayer.
 ```
 
 ---
 
-### Fase D — Input, Permission, Movement e Camera
+### Fase D â€” Input, Permission, Movement e Camera
 
-#### `SA-6A — PlayerInput binding stage`
+#### `SA-6A â€” PlayerInput binding stage`
 
 Objetivo: mover `PlayerInputBinding` para stage real de entry.
 
-Critério:
+CritÃ©rio:
 
 ```text
-Usa asset canônico já resolvido.
-Não cria configuração duplicada no prefab.
-Não mexe no OperationalInputRuntime.
-Binding é preparation; enable/disable pertence a permission/lifecycle apropriado.
+Usa asset canÃ´nico jÃ¡ resolvido.
+NÃ£o cria configuraÃ§Ã£o duplicada no prefab.
+NÃ£o mexe no OperationalInputRuntime.
+Binding Ã© preparation; enable/disable pertence a permission/lifecycle apropriado.
 ```
 
-#### `SA-6B — Permission target preparation stage`
+#### `SA-6B â€” Permission target preparation stage`
 
 Objetivo: preparar permission targets como entry stage, sem redesenhar toda identity no mesmo corte.
 
-Critério:
+CritÃ©rio:
 
 ```text
-PermissionTarget discovery explícito.
-Receiver registration explícito.
-Initial state Blocked/Unbound explícito.
-Não misturar PlayerActorId, PlayerSlotId, ReceiverId e PermissionTargetId.
-Não mudar reaction local.
+PermissionTarget discovery explÃ­cito.
+Receiver registration explÃ­cito.
+Initial state Blocked/Unbound explÃ­cito.
+NÃ£o misturar PlayerActorId, PlayerSlotId, ReceiverId e PermissionTargetId.
+NÃ£o mudar reaction local.
 ```
 
-#### `SA-6C — Movement binding stage`
+#### `SA-6C â€” Movement binding stage`
 
 Objetivo: mover movement binding para stage real.
 
-Critério:
+CritÃ©rio:
 
 ```text
 Binding prepara.
 Permission/runtime habilita ou bloqueia.
 Receiver aplica localmente.
-Pipeline não chama controller diretamente para lifecycle fino.
+Pipeline nÃ£o chama controller diretamente para lifecycle fino.
 ```
 
-#### `SA-6D — Camera binding stage`
+#### `SA-6D â€” Camera binding stage`
 
 Objetivo: mover camera target binding para stage real.
 
-Critério:
+CritÃ©rio:
 
 ```text
-Camera consome capability inventory canônico.
-Camera não reconstrói inventory.
+Camera consome capability inventory canÃ´nico.
+Camera nÃ£o reconstrÃ³i inventory.
 Activity camera identity correta.
 Skip/no-content preservado em activity_02.
 ```
 
 ---
 
-### Fase E — Entry readiness boundary final
+### Fase E â€” Entry readiness boundary final
 
-#### `SA-7 — EntryReadinessResult e handoff limpo para macro pipeline`
+#### `SA-7 â€” EntryReadinessResult e handoff limpo para macro pipeline`
 
 Objetivo: fazer `ActivityEntryPipeline` retornar resultado final de readiness completo para `SessionActivityPipeline`.
 
@@ -961,22 +963,22 @@ ActivityEntryResult.RejectedStaleOrForeign
 ActivityEntryResult.BlockedByRequiredCapability
 ```
 
-Critério:
+CritÃ©rio:
 
 ```text
 ActivityEntryPipeline decide readiness da entry.
-SessionActivityPipeline decide apenas o próximo macro passo: ActivationWindow ou fail/abort.
-SessionActivityPipeline não executa setup residual.
-ActivityEntryPipeline tem início/fim semanticamente corretos.
-ActivityEntryPipelineCompleted só aparece quando a entry realmente terminou.
+SessionActivityPipeline decide apenas o prÃ³ximo macro passo: ActivationWindow ou fail/abort.
+SessionActivityPipeline nÃ£o executa setup residual.
+ActivityEntryPipeline tem inÃ­cio/fim semanticamente corretos.
+ActivityEntryPipelineCompleted sÃ³ aparece quando a entry realmente terminou.
 ActivationWindow continua fora do ActivityEntryPipeline.
 ```
 
 ---
 
-### Fase F — Exit, release e dematerialization
+### Fase F â€” Exit, release e dematerialization
 
-#### `SA-8A — Exit/Release ownership audit`
+#### `SA-8A â€” Exit/Release ownership audit`
 
 Objetivo: decidir se precisa de `ActivityExitPipeline` ou se stages de exit chamados pelo `SessionActivityPipeline` bastam.
 
@@ -994,76 +996,76 @@ DeactivationWindow ordering
 RouteExit ordering
 ```
 
-Decisão possível A:
+DecisÃ£o possÃ­vel A:
 
 ```text
-SessionActivityPipeline mantém macro exit lifecycle.
+SessionActivityPipeline mantÃ©m macro exit lifecycle.
 Exit stages executam release/dematerialization.
 ```
 
-Decisão possível B:
+DecisÃ£o possÃ­vel B:
 
 ```text
-Criar ActivityExitPipeline somente se houver lifecycle determinístico próprio suficientemente grande.
-Não criar pipeline por simetria estética.
+Criar ActivityExitPipeline somente se houver lifecycle determinÃ­stico prÃ³prio suficientemente grande.
+NÃ£o criar pipeline por simetria estÃ©tica.
 ```
 
-#### `SA-8B — ActivityObjectRelease / SnapshotCapture stage cleanup`
+#### `SA-8B â€” ActivityObjectRelease / SnapshotCapture stage cleanup`
 
-Critério:
+CritÃ©rio:
 
 ```text
 Snapshot capture antes de release.
-Release command explícito.
-Unregister depois do release aplicável.
-No-content = skip explícito.
+Release command explÃ­cito.
+Unregister depois do release aplicÃ¡vel.
+No-content = skip explÃ­cito.
 ```
 
-#### `SA-8C — Actor release/participation exit cleanup`
+#### `SA-8C â€” Actor release/participation exit cleanup`
 
-Critério:
+CritÃ©rio:
 
 ```text
 RouteScoped pode reter por policy.
 ActivityScoped libera por ActivityExit.
-RouteExit libera o que é route-scoped quando aplicável.
+RouteExit libera o que Ã© route-scoped quando aplicÃ¡vel.
 Sem rail player/nonplayer paralelo.
 ```
 
 ---
 
-### Fase G — Host, composition e boundaries
+### Fase G â€” Host, composition e boundaries
 
-#### `SA-9A — SessionActivityHost boundary cleanup`
+#### `SA-9A â€” SessionActivityHost boundary cleanup`
 
-Objetivo: reduzir `SessionActivityHost` para boundary/endpoint externo, não lifecycle owner.
+Objetivo: reduzir `SessionActivityHost` para boundary/endpoint externo, nÃ£o lifecycle owner.
 
-Critério:
+CritÃ©rio:
 
 ```text
-Host não classifica lifecycle.
-Host não executa side-effects de teardown.
-Host não vira registry tardio.
-QA chama comandos/stages canônicos.
+Host nÃ£o classifica lifecycle.
+Host nÃ£o executa side-effects de teardown.
+Host nÃ£o vira registry tardio.
+QA chama comandos/stages canÃ´nicos.
 ```
 
-#### `SA-9B — Composition / service locator cleanup`
+#### `SA-9B â€” Composition / service locator cleanup`
 
-Critério:
+CritÃ©rio:
 
 ```text
-Composition root registra dependências.
-Pipeline não usa DependencyManager.Provider para lifecycle ativo.
-Host não registra lifecycle como fonte de verdade.
+Composition root registra dependÃªncias.
+Pipeline nÃ£o usa DependencyManager.Provider para lifecycle ativo.
+Host nÃ£o registra lifecycle como fonte de verdade.
 ```
 
 ---
 
-### Fase H — Permission identity final
+### Fase H â€” Permission identity final
 
-#### `SA-10 — Permission identity separation`
+#### `SA-10 â€” Permission identity separation`
 
-Objetivo: resolver o débito de identidade sem misturar domínios.
+Objetivo: resolver o dÃ©bito de identidade sem misturar domÃ­nios.
 
 Escopo:
 
@@ -1077,21 +1079,21 @@ ActorId
 ActivityParticipationContext
 ```
 
-Critério:
+CritÃ©rio:
 
 ```text
-Nenhum fallback comparando domínios diferentes.
-Receiver técnico não vira ActorId.
-PlayerSlotId não vira PlayerActorId.
-PermissionTarget tem identidade própria.
-Logs expõem os domínios separados.
+Nenhum fallback comparando domÃ­nios diferentes.
+Receiver tÃ©cnico nÃ£o vira ActorId.
+PlayerSlotId nÃ£o vira PlayerActorId.
+PermissionTarget tem identidade prÃ³pria.
+Logs expÃµem os domÃ­nios separados.
 ```
 
 ---
 
-### Fase I — State/fact hygiene
+### Fase I â€” State/fact hygiene
 
-#### `SA-11A — ActivityEntry state/context extraction`
+#### `SA-11A â€” ActivityEntry state/context extraction`
 
 Objetivo: reduzir o uso de `SessionActivityRuntimeState` como saco global para entry.
 
@@ -1106,30 +1108,30 @@ Entry-local inventory
 Entry-local setup result
 ```
 
-Critério:
+CritÃ©rio:
 
 ```text
-State da entry não vaza como global mutável sem owner.
+State da entry nÃ£o vaza como global mutÃ¡vel sem owner.
 Foreign/stale continua protegido.
 Restart cria novo entry context.
 ```
 
-#### `SA-11B — Fact recorder hygiene`
+#### `SA-11B â€” Fact recorder hygiene`
 
-Critério:
+CritÃ©rio:
 
 ```text
-Fact recorder não decide policy.
-Fact recorder não executa side-effect.
-Logs mantêm owner correto.
-Facts não alteram lifecycle.
+Fact recorder nÃ£o decide policy.
+Fact recorder nÃ£o executa side-effect.
+Logs mantÃªm owner correto.
+Facts nÃ£o alteram lifecycle.
 ```
 
 ---
 
-### Fase J — Contract/command hygiene
+### Fase J â€” Contract/command hygiene
 
-#### `SA-12 — Commands e contracts finais`
+#### `SA-12 â€” Commands e contracts finais`
 
 Auditar e limpar:
 
@@ -1146,42 +1148,42 @@ Camera/movement/input commands
 Regra:
 
 ```text
-Commands não carregam Stage, Boundary, Adapter, Func<T>, Action, executor genérico, state mutável compartilhado ou ScriptableObject autoral inteiro quando só é necessário payload resolvido.
+Commands nÃ£o carregam Stage, Boundary, Adapter, Func<T>, Action, executor genÃ©rico, state mutÃ¡vel compartilhado ou ScriptableObject autoral inteiro quando sÃ³ Ã© necessÃ¡rio payload resolvido.
 Commands carregam payload runtime resolvido e identity tipada.
 ```
 
-##### Checkpoint SA-12-AUDIT — Commands/contracts hygiene
+##### Checkpoint SA-12-AUDIT â€” Commands/contracts hygiene
 
 Status: `AUDITED / NEEDS SMALL COMMAND HYGIENE PATCH`.
 
-A auditoria estática de `SA-12` confirmou que não havia blocker de executor/delegate nos commands auditados:
+A auditoria estÃ¡tica de `SA-12` confirmou que nÃ£o havia blocker de executor/delegate nos commands auditados:
 
 ```text
 sem Action
 sem Func<T>
 sem adapters embutidos nos commands
-sem delegates de execução
+sem delegates de execuÃ§Ã£o
 sem SessionActivityRuntimeState embutido nos commands
 ```
 
-O débito restante foi classificado como higiene de contrato:
+O dÃ©bito restante foi classificado como higiene de contrato:
 
 ```text
 commands carregando authoring asset inteiro;
 wrappers internos carregando Stage/Boundary;
-commands duplicando PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence quando SessionActivityIdentity já era a fonte do ciclo;
+commands duplicando PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence quando SessionActivityIdentity jÃ¡ era a fonte do ciclo;
 ActorAttributeCommand ainda usando strings livres para identidades runtime.
 ```
 
-Conclusão:
+ConclusÃ£o:
 
 ```text
-SA-12 não exige pipeline novo.
-SA-12 não exige redesenhar lifecycle macro.
+SA-12 nÃ£o exige pipeline novo.
+SA-12 nÃ£o exige redesenhar lifecycle macro.
 SA-12 deve ser resolvido por cortes pequenos de command hygiene.
 ```
 
-##### Checkpoint SA-12B/C — Command boundary + identity duplication cleanup
+##### Checkpoint SA-12B/C â€” Command boundary + identity duplication cleanup
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
@@ -1195,20 +1197,20 @@ ActivityObjectSnapshotRestoreCommand
 ActivityContentSceneUnloadCommand
 ```
 
-Correções aplicadas:
+CorreÃ§Ãµes aplicadas:
 
 ```text
-ActivityObjectContributorUnregisterStageCommand não carrega mais SessionActivityStage Stage.
-ActivityObjectContributorUnregisterStage constrói suas identities locais internamente.
-Não há fallback do wrapper para ActivityContentReleaseCompleted.
-ActivityObjectResetCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-ActivityObjectReleaseCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-ActivityObjectSnapshotRestoreCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-ActivityContentSceneUnloadCommand não duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
-Consumers passaram a usar command.Identity como fonte única do ciclo.
+ActivityObjectContributorUnregisterStageCommand nÃ£o carrega mais SessionActivityStage Stage.
+ActivityObjectContributorUnregisterStage constrÃ³i suas identities locais internamente.
+NÃ£o hÃ¡ fallback do wrapper para ActivityContentReleaseCompleted.
+ActivityObjectResetCommand nÃ£o duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityObjectReleaseCommand nÃ£o duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityObjectSnapshotRestoreCommand nÃ£o duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+ActivityContentSceneUnloadCommand nÃ£o duplica PipelineId/SessionStateId/ActivityId/ActivityOrdinal/EntrySequence.
+Consumers passaram a usar command.Identity como fonte Ãºnica do ciclo.
 ```
 
-##### Checkpoint SA-12D — ActorAttributeCommand typed identity
+##### Checkpoint SA-12D â€” ActorAttributeCommand typed identity
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
@@ -1221,19 +1223,19 @@ consumidores de ActorAttributeCommand
 logs/facts de setup/release de ActorAttribute
 ```
 
-Correções aplicadas:
+CorreÃ§Ãµes aplicadas:
 
 ```text
-ActorAttributeCommand não carrega mais string PipelineIdentity.
-ActorAttributeCommand não carrega mais string ActivityIdentity.
-ActorAttributeCommand não carrega mais string ActorInstanceId.
+ActorAttributeCommand nÃ£o carrega mais string PipelineIdentity.
+ActorAttributeCommand nÃ£o carrega mais string ActivityIdentity.
+ActorAttributeCommand nÃ£o carrega mais string ActorInstanceId.
 ActorAttributeCommand carrega SessionActivityIdentity como identidade tipada do ciclo.
 ActorAttributeCommand carrega ActorInstanceRuntimeId como identidade funcional runtime do actor.
 Call sites foram migrados para o shape tipado.
-Logs podem imprimir ToString()/Value apenas como observabilidade, não como lookup funcional.
+Logs podem imprimir ToString()/Value apenas como observabilidade, nÃ£o como lookup funcional.
 ```
 
-##### Checkpoint SA-12E — ActivityContent runtime scene reference
+##### Checkpoint SA-12E â€” ActivityContent runtime scene reference
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
@@ -1248,51 +1250,51 @@ ActivityContentSceneUnloadDispatchStage
 call sites de content load/unload
 ```
 
-Correções aplicadas:
+CorreÃ§Ãµes aplicadas:
 
 ```text
-ActivityEntryContentLoadCommand não carrega mais SessionActivityDefinition.
+ActivityEntryContentLoadCommand nÃ£o carrega mais SessionActivityDefinition.
 ActivityEntryContentLoadCommand passou a carregar ActivityContentLoadPlan como payload runtime resolvido.
-ActivityContentLoadPlan contém Identity, ActivityId, ActivityOrdinal, ActivityContentMode, ActivityContentProfileId, Scenes, Source e Reason.
-ActivityContentLoadPlanScene carrega runtime scene reference mínima para load.
-ActivityContentLoadedSceneRecord não carrega mais SceneKeyAsset autoral como fonte de unload.
+ActivityContentLoadPlan contÃ©m Identity, ActivityId, ActivityOrdinal, ActivityContentMode, ActivityContentProfileId, Scenes, Source e Reason.
+ActivityContentLoadPlanScene carrega runtime scene reference mÃ­nima para load.
+ActivityContentLoadedSceneRecord nÃ£o carrega mais SceneKeyAsset autoral como fonte de unload.
 ActivityContentSceneUnloadDispatchStage passou a operar por ActivityContentSceneRuntimeReference.
 activity_01 preserva content load com loadedScenes='1'.
-activity_02 preserva no-content/skip explícito sem fallback para Route Scene.
+activity_02 preserva no-content/skip explÃ­cito sem fallback para Route Scene.
 ```
 
-Observação de escopo:
+ObservaÃ§Ã£o de escopo:
 
 ```text
-O corte excedeu o mínimo inicialmente previsto para SA-12F2 porque também removeu SceneKeyAsset de ActivityContentLoadedSceneRecord e ajustou unload/object setup para runtime reference.
-A expansão foi aceita porque permaneceu dentro da mesma fronteira arquitetural: ActivityContent runtime payload.
+O corte excedeu o mÃ­nimo inicialmente previsto para SA-12F2 porque tambÃ©m removeu SceneKeyAsset de ActivityContentLoadedSceneRecord e ajustou unload/object setup para runtime reference.
+A expansÃ£o foi aceita porque permaneceu dentro da mesma fronteira arquitetural: ActivityContent runtime payload.
 ```
 
-##### Checkpoint SA-12F — Reduce SessionActivityDefinition from ActivityEntry commands
+##### Checkpoint SA-12F â€” Reduce SessionActivityDefinition from ActivityEntry commands
 
 Status: `PARTIAL / IN PROGRESS`.
 
-Subcortes validados até este checkpoint:
+Subcortes validados atÃ© este checkpoint:
 
 ```text
-SA-12F1A/B — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F2    — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F3A   — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F3B   — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F3C   — CLOSED / PASS funcional + PASS arquitetural do command boundary
-SA-12F4A   — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F4B   — CLOSED / PASS funcional + PASS arquitetural do corte
-SA-12F4C   — CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F1A/B â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F2    â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F3A   â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F3B   â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F3C   â€” CLOSED / PASS funcional + PASS arquitetural do command boundary
+SA-12F4A   â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F4B   â€” CLOSED / PASS funcional + PASS arquitetural do corte
+SA-12F4C   â€” CLOSED / PASS funcional + PASS arquitetural do corte
 ```
 
 Escopo fechado:
 
 ```text
 ActivityEntryContentLoadCommand foi reduzido para ActivityContentLoadPlan.
-PlayerInput/Permission/Movement/Camera binding commands deixaram de carregar SessionActivityDefinition quando já possuíam payload resolvido.
+PlayerInput/Permission/Movement/Camera binding commands deixaram de carregar SessionActivityDefinition quando jÃ¡ possuÃ­am payload resolvido.
 ActorPresentation/ActorAttribute setup commands deixaram de carregar SessionActivityDefinition.
 ActivityEntryParticipantBindingCommand passou a carregar ActivityParticipantBindingPlan.
-ActivityEntryObjectSetupCommand deixou de carregar SessionActivityDefinition após separação de ActivityObjectSetupInventoryPlan e ActivityObjectResetRestorePlan.
+ActivityEntryObjectSetupCommand deixou de carregar SessionActivityDefinition apÃ³s separaÃ§Ã£o de ActivityObjectSetupInventoryPlan e ActivityObjectResetRestorePlan.
 ActivitySetupInventoryBuilder passou a consumir ActivityObjectSetupInventoryPlan.
 Reset/restore do object setup passaram a consumir ActivityObjectResetRestorePlan.
 ```
@@ -1300,13 +1302,13 @@ Reset/restore do object setup passaram a consumir ActivityObjectResetRestorePlan
 Notas de arquitetura:
 
 ```text
-ActivityParticipantBindingPlan ficou intencionalmente estreito e fecha o command boundary, mas não representa decomposição completa de participant requirements/materialization/placement.
-ActivityObjectSetupInventoryPlan é payload de setup inventory.
-ActivityObjectResetRestorePlan é payload de reset/snapshot restore.
-ActivityEntryObjectSetupCommand não usa mais SessionActivityDefinition como carrier runtime.
+ActivityParticipantBindingPlan ficou intencionalmente estreito e fecha o command boundary, mas nÃ£o representa decomposiÃ§Ã£o completa de participant requirements/materialization/placement.
+ActivityObjectSetupInventoryPlan Ã© payload de setup inventory.
+ActivityObjectResetRestorePlan Ã© payload de reset/snapshot restore.
+ActivityEntryObjectSetupCommand nÃ£o usa mais SessionActivityDefinition como carrier runtime.
 ```
 
-Evidência funcional aceita para os subcortes:
+EvidÃªncia funcional aceita para os subcortes:
 
 ```text
 sem FATAL
@@ -1333,30 +1335,30 @@ ActivityCapabilityInventoryPreviewObserved preservado
 ActivityObjectReset preservado como PassedApplied em activity_01 e PassedNoCommands em activity_02
 ```
 
-##### Checkpoint SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — retained PlayerActor movement in no-content activity
+##### Checkpoint SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 â€” retained PlayerActor movement in no-content activity
 
 Status: `CLOSED / PASS funcional + PASS arquitetural parcial`.
 
 Problema fechado:
 
 ```text
-Ao transicionar de activity_01 para activity_02, o PlayerActor SessionScoped permanecia visível/materializado, mas movement não funcionava.
-activity_02 é no-content, mas ActivityContent ausente não implica PlayerActor ausente nem perda automática de movement/control.
+Ao transicionar de activity_01 para activity_02, o PlayerActor SessionScoped permanecia visÃ­vel/materializado, mas movement nÃ£o funcionava.
+activity_02 Ã© no-content, mas ActivityContent ausente nÃ£o implica PlayerActor ausente nem perda automÃ¡tica de movement/control.
 ```
 
 Causas confirmadas durante os cortes:
 
 ```text
-ActivityParticipationContext de activity_02 era gravado vazio quando não havia participant requirements próprios.
-O retained player binding existia no ActivityActorExitRuntimeState, mas era rejeitado por validação de scope incorreta para ActorScope.SessionScoped.
-O capability inventory de activity_02 projetava apenas PresentationEndpoint e não projetava PermissionTarget/movement receiver do PlayerActor retido.
+ActivityParticipationContext de activity_02 era gravado vazio quando nÃ£o havia participant requirements prÃ³prios.
+O retained player binding existia no ActivityActorExitRuntimeState, mas era rejeitado por validaÃ§Ã£o de scope incorreta para ActorScope.SessionScoped.
+O capability inventory de activity_02 projetava apenas PresentationEndpoint e nÃ£o projetava PermissionTarget/movement receiver do PlayerActor retido.
 ```
 
-Correções aceitas:
+CorreÃ§Ãµes aceitas:
 
 ```text
-ActivityEntryParticipantBindingStage passou a promover retained player binding para ActivityParticipationContext current-entry quando a activity não possui participant requirements próprios, mas há PlayerActor SessionScoped válido.
-A validação passou a aceitar ActorInstanceRuntimeId SessionScoped atravessando activities sem rebadgear o runtime id para activity scope.
+ActivityEntryParticipantBindingStage passou a promover retained player binding para ActivityParticipationContext current-entry quando a activity nÃ£o possui participant requirements prÃ³prios, mas hÃ¡ PlayerActor SessionScoped vÃ¡lido.
+A validaÃ§Ã£o passou a aceitar ActorInstanceRuntimeId SessionScoped atravessando activities sem rebadgear o runtime id para activity scope.
 ActivityEntryPipeline passou a ter ActivityParticipationContext com activityParticipants='1' em activity_02.
 PlayerInputBinding passou a bindar o player em activity_02.
 MovementBinding passou a encontrar target em activity_02.
@@ -1366,7 +1368,7 @@ ActivityGameplayControl Allowed passou a ser aplicado ao PlayerMovementPermissio
 MovementControlEnabled voltou a ocorrer em activity_02.
 ```
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
 LoadingCompleted
@@ -1387,47 +1389,47 @@ activity_02 no-content preservado
 ActivityObjectReset checkpointStatus='PassedNoCommands'
 ```
 
-Débito aceito:
+DÃ©bito aceito:
 
 ```text
-SA-12F-MOV-H1 — Retained PlayerActor target projection ownership hygiene.
+SA-12F-MOV-H1 â€” Retained PlayerActor target projection ownership hygiene.
 Status: OPEN / MEDIUM DEBT.
 
-Parte da projeção de ActorTargets para capability inventory ficou em SessionActivityPipeline como bridge técnica:
+Parte da projeÃ§Ã£o de ActorTargets para capability inventory ficou em SessionActivityPipeline como bridge tÃ©cnica:
 - ResolvePlayerActorCapabilityTargetsForCurrentEntry(...)
 - AddPlayerActorCapabilityTargetsFromParticipationContext(...)
 - TryResolvePlayerActorHandleForCapabilityInventory(...)
 
-A auditoria classificou o shape como PASS funcional / PASS arquitetural parcial porque não há writer duplicado de inventory, fallback por string, first-player fallback, branch player/nonplayer novo ou lifecycle/policy sendo decidido fora do owner.
-Mesmo assim, o owner conceitual final da projeção deve ser ActivityEntryPipeline / ActivityEntryActorInventoryStage / helper específico de entry.
+A auditoria classificou o shape como PASS funcional / PASS arquitetural parcial porque nÃ£o hÃ¡ writer duplicado de inventory, fallback por string, first-player fallback, branch player/nonplayer novo ou lifecycle/policy sendo decidido fora do owner.
+Mesmo assim, o owner conceitual final da projeÃ§Ã£o deve ser ActivityEntryPipeline / ActivityEntryActorInventoryStage / helper especÃ­fico de entry.
 ```
 
-Critério futuro para fechar o débito:
+CritÃ©rio futuro para fechar o dÃ©bito:
 
 ```text
-Mover a projeção de PlayerActor SessionScoped retido para helper/bridge do ActivityEntryPipeline ou ActivityEntryActorInventoryStage.
+Mover a projeÃ§Ã£o de PlayerActor SessionScoped retido para helper/bridge do ActivityEntryPipeline ou ActivityEntryActorInventoryStage.
 Preservar o mesmo smoke funcional de activity_02.
-Não reconstruir inventory em consumidor posterior.
-Não criar fallback por string, first actor, first player ou registry tardio.
-Manter ActivityCapabilityInventory como snapshot/índice runtime passivo com writer único por lifecycle.
+NÃ£o reconstruir inventory em consumidor posterior.
+NÃ£o criar fallback por string, first actor, first player ou registry tardio.
+Manter ActivityCapabilityInventory como snapshot/Ã­ndice runtime passivo com writer Ãºnico por lifecycle.
 ```
 
-##### Pendências restantes de SA-12
+##### PendÃªncias restantes de SA-12
 
 ```text
-SA-12F5 — auditoria/correção final dos resíduos de SessionActivityDefinition em ActivityEntryCommand, content-load completion/failure, ActorParticipationEnterCommand e ActivityContentReleaseFinalizationStageCommand.
-SA-12F-MOV-H1 — hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
+SA-12F5 â€” auditoria/correÃ§Ã£o final dos resÃ­duos de SessionActivityDefinition em ActivityEntryCommand, content-load completion/failure, ActorParticipationEnterCommand e ActivityContentReleaseFinalizationStageCommand.
+SA-12F-MOV-H1 â€” hygiene futuro: mover retained PlayerActor target projection bridge para ActivityEntryPipeline / ActivityEntryActorInventoryStage.
 ```
 
-Critério para os próximos cortes:
+CritÃ©rio para os prÃ³ximos cortes:
 
 ```text
-Não reabrir SA-12E salvo regressão explícita.
-Não reabrir o blocker funcional de movement em activity_02 salvo regressão de smoke.
+NÃ£o reabrir SA-12E salvo regressÃ£o explÃ­cita.
+NÃ£o reabrir o blocker funcional de movement em activity_02 salvo regressÃ£o de smoke.
 Resolver SA-12F5 por cortes pequenos de residual command hygiene.
-Tratar SA-12F-MOV-H1 como hygiene futuro, não blocker funcional.
-Não criar compat/fallback paralelo.
-Não criar pipeline novo.
+Tratar SA-12F-MOV-H1 como hygiene futuro, nÃ£o blocker funcional.
+NÃ£o criar compat/fallback paralelo.
+NÃ£o criar pipeline novo.
 Preservar smoke macro completo.
 ```
 
@@ -1446,7 +1448,7 @@ DONE  SA-3B0  Entry Setup Pre-Inventory Ownership / Ordering Correction
 DONE  SA-3B1  ActivityCapabilityInventory ownership final
 
 DONE  SA-4A0  ActivityObjectContributorDiscoveryStage real
-      SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pós-smoke ainda encontrar wrapper/debt
+      SA-4A1  ActivityObjectEntryStage/API cleanup, se auditoria pÃ³s-smoke ainda encontrar wrapper/debt
       SA-4B   Object snapshot/reset/restore cleanup
 
 DONE  SA-5A0-H1 Actor rail naming normalization before audit
@@ -1475,40 +1477,40 @@ DONE  SA-10   Permission identity separation
       SA-11A  Entry state/context extraction
 DONE  SA-11B  Fact recorder hygiene
 
-PEND  SA-12   Command/contract hygiene — partial
+PEND  SA-12   Command/contract hygiene â€” partial
 DONE  SA-12B/C Command boundary + identity duplication cleanup
 DONE  SA-12D  ActorAttributeCommand typed identity
 DONE  SA-12E  ActivityContent SceneKeyAsset/runtime scene reference
 PART  SA-12F  Reduce SessionActivityDefinition from ActivityEntry*Command
-DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 — PASS funcional / PASS arquitetural parcial
+DONE  SA-12F-BLOCKER-MOVEMENT-ACTIVITY02 â€” PASS funcional / PASS arquitetural parcial
 PEND  SA-12F5 residual SessionActivityDefinition command hygiene
 DEBT  SA-12F-MOV-H1 Retained PlayerActor target projection ownership hygiene
 ```
 
-## Critério global de viabilidade Base 2.0
+## CritÃ©rio global de viabilidade Base 2.0
 
-A refatoração de `SessionActivity` só pode ser considerada viável para Base 2.0 quando:
+A refatoraÃ§Ã£o de `SessionActivity` sÃ³ pode ser considerada viÃ¡vel para Base 2.0 quando:
 
 ```text
-SessionActivityPipeline mantém apenas lifecycle macro, transition, restart, route-exit e handoffs.
-ActivityEntryPipeline é owner real de entry lifecycle.
-ActivityEntryPipeline não é fachada do SessionActivityPipeline.
-ActivityContent, Inventory, Object setup, Actor setup, Input, Movement e Camera têm stages/owners explícitos.
-Release/Exit têm owner claro, com ou sem ActivityExitPipeline.
-Host é boundary/delegador, não owner de lifecycle.
-QA chama caminhos canônicos.
-Commands não carregam infraestrutura.
-Facts não executam side-effects.
-Adapters não decidem lifecycle/policy.
-Snapshots/índices runtime têm writer único por lifecycle.
-Identidades de domínios diferentes não são comparadas como equivalentes.
+SessionActivityPipeline mantÃ©m apenas lifecycle macro, transition, restart, route-exit e handoffs.
+ActivityEntryPipeline Ã© owner real de entry lifecycle.
+ActivityEntryPipeline nÃ£o Ã© fachada do SessionActivityPipeline.
+ActivityContent, Inventory, Object setup, Actor setup, Input, Movement e Camera tÃªm stages/owners explÃ­citos.
+Release/Exit tÃªm owner claro, com ou sem ActivityExitPipeline.
+Host Ã© boundary/delegador, nÃ£o owner de lifecycle.
+QA chama caminhos canÃ´nicos.
+Commands nÃ£o carregam infraestrutura.
+Facts nÃ£o executam side-effects.
+Adapters nÃ£o decidem lifecycle/policy.
+Snapshots/Ã­ndices runtime tÃªm writer Ãºnico por lifecycle.
+Identidades de domÃ­nios diferentes nÃ£o sÃ£o comparadas como equivalentes.
 Sem fallback silencioso.
 Sem trilho paralelo novo.
-Sem compat desnecessária.
+Sem compat desnecessÃ¡ria.
 Smoke completo PASS.
 ```
 
-## Smoke global mínimo
+## Smoke global mÃ­nimo
 
 ```text
 Boot -> Menu
@@ -1530,7 +1532,7 @@ Com checkpoints:
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-ActivityObjectSnapshotCapture PASS quando aplicável
+ActivityObjectSnapshotCapture PASS quando aplicÃ¡vel
 ActivityObjectRelease PASS
 ActivityObjectContributorUnregister PASS
 CameraBindingCompleted preservado
@@ -1542,9 +1544,9 @@ sem route_transition_failed
 sem foreign/stale indevido
 ```
 
-## Critérios de aceite arquitetural
+## CritÃ©rios de aceite arquitetural
 
-Um corte de `SessionActivity` só pode ser aceito como PASS arquitetural quando:
+Um corte de `SessionActivity` sÃ³ pode ser aceito como PASS arquitetural quando:
 
 ```text
 sem FATAL
@@ -1554,24 +1556,24 @@ sem foreign/stale indevido
 sem fallback silencioso
 sem trilho paralelo novo
 sem owner duplicado para o mesmo lifecycle
-Host não decide lifecycle de route-exit
-ActivityEntryPipeline é owner real dos steps migrados
-SessionActivityPipeline mantém lifecycle macro
-stages não viram mini-pipeline
-boundaries não chamam sub-stages
-commands não carregam infraestrutura
-facts não executam side-effects
-adapters não decidem lifecycle/policy
-identidades de domínios diferentes não são comparadas como equivalentes
+Host nÃ£o decide lifecycle de route-exit
+ActivityEntryPipeline Ã© owner real dos steps migrados
+SessionActivityPipeline mantÃ©m lifecycle macro
+stages nÃ£o viram mini-pipeline
+boundaries nÃ£o chamam sub-stages
+commands nÃ£o carregam infraestrutura
+facts nÃ£o executam side-effects
+adapters nÃ£o decidem lifecycle/policy
+identidades de domÃ­nios diferentes nÃ£o sÃ£o comparadas como equivalentes
 logs mostram owner correto do passo executado
-logs/facts não antecipam completed de pipeline antes do lifecycle real
-snapshots/índices runtime canônicos possuem writer único por lifecycle
-consumidores não reconstruem state canônico para corrigir falta local
+logs/facts nÃ£o antecipam completed de pipeline antes do lifecycle real
+snapshots/Ã­ndices runtime canÃ´nicos possuem writer Ãºnico por lifecycle
+consumidores nÃ£o reconstruem state canÃ´nico para corrigir falta local
 ```
 
-## Critérios de smoke mínimos
+## CritÃ©rios de smoke mÃ­nimos
 
-Após cada corte funcional, exigir log/smoke manual com pelo menos:
+ApÃ³s cada corte funcional, exigir log/smoke manual com pelo menos:
 
 ```text
 Boot -> Menu -> Sandbox
@@ -1593,11 +1595,11 @@ sem foreign/stale indevido
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-ActivityEntry owner visível nos logs quando aplicável
-RouteExit teardown com owner único
-ActivityEntryPipelineCompleted não aparece antes do fim real do entry lifecycle
-ActivityContent/Inventory têm owner visível e sem writers duplicados
-ActivityContent/Actor/Input/Movement/Camera sem regressão nos checkpoints existentes
+ActivityEntry owner visÃ­vel nos logs quando aplicÃ¡vel
+RouteExit teardown com owner Ãºnico
+ActivityEntryPipelineCompleted nÃ£o aparece antes do fim real do entry lifecycle
+ActivityContent/Inventory tÃªm owner visÃ­vel e sem writers duplicados
+ActivityContent/Actor/Input/Movement/Camera sem regressÃ£o nos checkpoints existentes
 ```
 
 ## Fora do escopo deste ADR
@@ -1613,14 +1615,14 @@ reescrever SessionOperational novamente
 criar Run Pipeline completo
 ```
 
-## Decisão final proposta
+## DecisÃ£o final proposta
 
-Aceitar este ADR como contrato de decomposição de `SessionActivity` para Base 2.0.
+Aceitar este ADR como contrato de decomposiÃ§Ã£o de `SessionActivity` para Base 2.0.
 
-Implementação só deve começar pelo corte de menor risco:
+ImplementaÃ§Ã£o sÃ³ deve comeÃ§ar pelo corte de menor risco:
 
 ```text
-SA-1 — RouteExit teardown owner unification
+SA-1 â€” RouteExit teardown owner unification
 ```
 
 Nenhum corte deve ser aceito como PASS sem smoke/log.
@@ -1628,7 +1630,7 @@ Nenhum corte deve ser aceito como PASS sem smoke/log.
 
 ---
 
-## Corte aplicado — SA-5A1 ActorInventoryFeed / ActorScanTarget ownership normalization
+## Corte aplicado â€” SA-5A1 ActorInventoryFeed / ActorScanTarget ownership normalization
 
 Status: CLOSED / PASS funcional + PASS arquitetural do corte.
 
@@ -1636,7 +1638,7 @@ Status: CLOSED / PASS funcional + PASS arquitetural do corte.
 
 Mover o ownership efetivo de `ActorSceneDiscovery`, `ActorInventoryFeed` e `ActorScanTarget` para o escopo de `ActivityEntryPipeline`, sem migrar ainda `ActorPresentation`, `ActorAttributes`, `ActorParticipation`, Input, Movement, Camera, Permission, Release, Deactivation ou RouteExit.
 
-### Alterações aplicadas
+### AlteraÃ§Ãµes aplicadas
 
 ```text
 ActivityEntryPipeline agora chama ActivityEntryActorInventoryStage.ExecuteSceneDiscovery durante ExecuteSetupInfrastructure.
@@ -1651,22 +1653,22 @@ ActorSceneDiscoveryStage deixou de retornar tipos nested do SessionActivityPipel
 ### Fronteira preservada
 
 ```text
-PlayerActor e NonPlayerActor continuam apenas como fontes concretas para o feed genérico de Actor.
-ActivityEntryPipeline é o owner do feed/targets da entry.
+PlayerActor e NonPlayerActor continuam apenas como fontes concretas para o feed genÃ©rico de Actor.
+ActivityEntryPipeline Ã© o owner do feed/targets da entry.
 SessionActivityPipeline permanece owner do lifecycle macro.
-ActivityNonPlayerActorRegistry e ActivityPlayerActorRegistry continuam índices técnicos, não owners de lifecycle.
-ActorPresentation, ActorAttributes e ActorParticipation ainda não foram movidos neste corte.
+ActivityNonPlayerActorRegistry e ActivityPlayerActorRegistry continuam Ã­ndices tÃ©cnicos, nÃ£o owners de lifecycle.
+ActorPresentation, ActorAttributes e ActorParticipation ainda nÃ£o foram movidos neste corte.
 ```
 
-### Débito aceito do corte
+### DÃ©bito aceito do corte
 
 ```text
-IActivityEntryActorInventoryRuntimeBridge ainda é bridge transitória para expor registries e targets já existentes ao ActivityEntryPipeline.
-Esse bridge não pode virar owner permanente nem crescer para lifecycle/policy.
-O próximo corte deve continuar reduzindo o SessionActivityPipeline sem criar ActorManager/Coordinator.
+IActivityEntryActorInventoryRuntimeBridge ainda Ã© bridge transitÃ³ria para expor registries e targets jÃ¡ existentes ao ActivityEntryPipeline.
+Esse bridge nÃ£o pode virar owner permanente nem crescer para lifecycle/policy.
+O prÃ³ximo corte deve continuar reduzindo o SessionActivityPipeline sem criar ActorManager/Coordinator.
 ```
 
-### Critério de aceite
+### CritÃ©rio de aceite
 
 ```text
 compilar sem erros CS
@@ -1674,8 +1676,8 @@ sem FATAL
 sem Exception
 sem route_transition_failed
 sem foreign/stale indevido
-ActivityEntryActorSceneDiscoveryStarted/Completed visível com owner ActivityEntryPipeline
-ActivityEntryActorInventoryFeedStarted/Completed visível com owner ActivityEntryPipeline
+ActivityEntryActorSceneDiscoveryStarted/Completed visÃ­vel com owner ActivityEntryPipeline
+ActivityEntryActorInventoryFeedStarted/Completed visÃ­vel com owner ActivityEntryPipeline
 ActivityCapabilityInventoryValidationPassed preservado
 ActorPresentationSetupCompleted preservado
 ActorAttributeSetupCompleted preservado
@@ -1688,7 +1690,7 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-### Smoke / evidência aceita
+### Smoke / evidÃªncia aceita
 
 ```text
 Boot -> Menu -> Sandbox
@@ -1722,26 +1724,26 @@ CameraBindingCompleted preservado
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-activity_02 negativa/no-content preservada com skip explícito e PassedNoCommands
+activity_02 negativa/no-content preservada com skip explÃ­cito e PassedNoCommands
 ```
 
-Decisão: `SA-5A1` está fechado como PASS do corte. O débito restante é mover os consumidores de Actor setup (`ActorPresentation`, `ActorAttributes`, `ActorParticipation`) para stages reais, sem reabrir Feed/ScanTarget.
+DecisÃ£o: `SA-5A1` estÃ¡ fechado como PASS do corte. O dÃ©bito restante Ã© mover os consumidores de Actor setup (`ActorPresentation`, `ActorAttributes`, `ActorParticipation`) para stages reais, sem reabrir Feed/ScanTarget.
 
 ---
 
-## Corte documental — SA-5B0 ActorPresentation Ownership Contradiction Cleanup / Extraction Audit
+## Corte documental â€” SA-5B0 ActorPresentation Ownership Contradiction Cleanup / Extraction Audit
 
 Status: CLOSED / AUDIT + DOCUMENTATION ONLY.
 
 ### Objetivo
 
-Limpar a contradição antes do `SA-5B`: mover `ActorPresentation` para o owner correto não significa adicionar lógica concreta em `ActivityEntryPipeline.cs`.
+Limpar a contradiÃ§Ã£o antes do `SA-5B`: mover `ActorPresentation` para o owner correto nÃ£o significa adicionar lÃ³gica concreta em `ActivityEntryPipeline.cs`.
 
-Decisão normativa:
+DecisÃ£o normativa:
 
 ```text
-ActivityEntryPipeline é owner de ordem/lifecycle da ActivityEntry.
-ActivityEntryActorPresentationStage deve ser o executor determinístico do setup.
+ActivityEntryPipeline Ã© owner de ordem/lifecycle da ActivityEntry.
+ActivityEntryActorPresentationStage deve ser o executor determinÃ­stico do setup.
 Policies classificam retain/materialize/skip/fail.
 Adapters/endpoints executam side-effects.
 SessionActivityPipeline deve perder o bloco concreto de ActorPresentation setup.
@@ -1784,16 +1786,16 @@ emitir facts/snapshots/logs detalhados
 executar release por rail ActivityExit/RouteExit/BeforeRematerialization
 ```
 
-### Decisão
+### DecisÃ£o
 
-`SA-5B` só fica autorizado se for extração real, não redistribuição de monólito.
+`SA-5B` sÃ³ fica autorizado se for extraÃ§Ã£o real, nÃ£o redistribuiÃ§Ã£o de monÃ³lito.
 
 Permitido:
 
 ```text
 Criar ActivityEntryActorPresentationStage ou evoluir ActorPresentationSetupStage para stage real.
 Mover setup from-inventory para stage dedicado.
-Mover helpers de resolve references/retention/store state necessários ao setup.
+Mover helpers de resolve references/retention/store state necessÃ¡rios ao setup.
 Manter facts/logs equivalentes.
 Preservar ActorPresentationSetupCompleted/Materialized/Retained/Ready.
 ```
@@ -1801,31 +1803,31 @@ Preservar ActorPresentationSetupCompleted/Materialized/Retained/Ready.
 Proibido:
 
 ```text
-Não colocar loop/materialization/retention diretamente em ActivityEntryPipeline.cs.
-Não adicionar lógica concreta nova ao SessionActivityPipeline.
-Não mover ActorAttributes.
-Não mover ActorParticipationEnter.
-Não mover release/deactivation/route-exit.
-Não mexer em PlayerInput, Movement, Camera ou Permission.
-Não criar ActorManager/ActorCoordinator.
-Não criar fallback para caminho antigo.
-Não criar branch global Player/NonPlayer.
+NÃ£o colocar loop/materialization/retention diretamente em ActivityEntryPipeline.cs.
+NÃ£o adicionar lÃ³gica concreta nova ao SessionActivityPipeline.
+NÃ£o mover ActorAttributes.
+NÃ£o mover ActorParticipationEnter.
+NÃ£o mover release/deactivation/route-exit.
+NÃ£o mexer em PlayerInput, Movement, Camera ou Permission.
+NÃ£o criar ActorManager/ActorCoordinator.
+NÃ£o criar fallback para caminho antigo.
+NÃ£o criar branch global Player/NonPlayer.
 ```
 
-### Critério de aceite para SA-5B
+### CritÃ©rio de aceite para SA-5B
 
 ```text
-SessionActivityPipeline deve perder mais lógica concreta do que ganhar.
+SessionActivityPipeline deve perder mais lÃ³gica concreta do que ganhar.
 ActivityEntryPipeline deve continuar pequeno: ordem, lifecycle e chamada de stage.
-ActivityEntryActorPresentationStage executa setup determinístico.
-Caminho antigo de setup no SessionActivityPipeline sai ou fica inacessível.
+ActivityEntryActorPresentationStage executa setup determinÃ­stico.
+Caminho antigo de setup no SessionActivityPipeline sai ou fica inacessÃ­vel.
 Sem fallback silencioso.
 Smoke preservado.
 ```
 
 ### Artefato
 
-Relatório detalhado criado em:
+RelatÃ³rio detalhado criado em:
 
 ```text
 NewScripts/Docs/Reports/SA-5B0-ActorPresentation-Ownership-Audit.md
@@ -1833,12 +1835,12 @@ NewScripts/Docs/Reports/SA-5B0-ActorPresentation-Ownership-Audit.md
 
 ---
 
-## SA-5B — ActorPresentation setup stage extraction
+## SA-5B â€” ActorPresentation setup stage extraction
 
 **Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
 **Data:** 2026-05-31
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
 `ActorPresentation` setup deixou de ser executado diretamente pelo `SessionActivityPipeline` e passou a ser executado por stage dedicado da entry:
 
@@ -1847,9 +1849,9 @@ ActivityEntryPipeline.ExecuteActorPresentationSetup
 -> ActivityEntryActorPresentationStage.Execute
 ```
 
-O `ActivityEntryPipeline` permanece como owner de ordem/lifecycle da entry, mas não recebeu o loop concreto de presentation. A execução determinística foi extraída para `ActivityEntryActorPresentationStage`.
+O `ActivityEntryPipeline` permanece como owner de ordem/lifecycle da entry, mas nÃ£o recebeu o loop concreto de presentation. A execuÃ§Ã£o determinÃ­stica foi extraÃ­da para `ActivityEntryActorPresentationStage`.
 
-### Mudança de ownership
+### MudanÃ§a de ownership
 
 Antes:
 
@@ -1875,12 +1877,12 @@ ActivityEntryActorPresentationStage
 -> resolve plan
 -> classify retain/materialize/skip/fail
 -> call presentation adapter
--> store/sync via bridge transitória
+-> store/sync via bridge transitÃ³ria
 ```
 
-### Bridge transitória
+### Bridge transitÃ³ria
 
-Foi criada `IActivityEntryActorPresentationRuntimeBridge` para expor ao stage o mínimo necessário enquanto o estado de presentation ainda não saiu totalmente do `SessionActivityPipeline`:
+Foi criada `IActivityEntryActorPresentationRuntimeBridge` para expor ao stage o mÃ­nimo necessÃ¡rio enquanto o estado de presentation ainda nÃ£o saiu totalmente do `SessionActivityPipeline`:
 
 ```text
 CurrentActivityCapabilityInventoryPreview
@@ -1890,9 +1892,9 @@ SyncActiveActorPresentationHandle
 ReleaseActorPresentationBeforeRematerialization
 ```
 
-Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para Attributes, Participation, Movement ou Camera.
+Essa bridge Ã© transitÃ³ria. Ela nÃ£o deve virar manager/coordinator e nÃ£o deve crescer para Attributes, Participation, Movement ou Camera.
 
-### Evidência de PASS
+### EvidÃªncia de PASS
 
 Smoke validado em 2026-05-31 confirmou:
 
@@ -1919,12 +1921,12 @@ RouteExitBackToMenu PASS
 
 ---
 
-## SA-5C — ActorAttributes setup stage extraction
+## SA-5C â€” ActorAttributes setup stage extraction
 
 **Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
 **Data:** 2026-05-31
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
 `ActorAttributes` setup deixa de ser executado diretamente pelo `SessionActivityPipeline` e passa a ser executado por stage dedicado da entry:
 
@@ -1935,7 +1937,7 @@ ActivityEntryPipeline.ExecuteActorAttributeSetup
 
 O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. O loop concreto de attributes fica em `ActivityEntryActorAttributeStage`.
 
-### Mudança de ownership
+### MudanÃ§a de ownership
 
 Antes:
 
@@ -1962,12 +1964,12 @@ ActivityEntryActorAttributeStage
 -> resolve profile
 -> initialize endpoint
 -> classify ready/skip/fail
--> store active attribute capability via bridge transitória
+-> store active attribute capability via bridge transitÃ³ria
 ```
 
-### Bridge transitória
+### Bridge transitÃ³ria
 
-Foi criada `IActivityEntryActorAttributeRuntimeBridge` para expor ao stage o mínimo necessário enquanto o state de actor attributes ainda não saiu totalmente do `SessionActivityPipeline`:
+Foi criada `IActivityEntryActorAttributeRuntimeBridge` para expor ao stage o mÃ­nimo necessÃ¡rio enquanto o state de actor attributes ainda nÃ£o saiu totalmente do `SessionActivityPipeline`:
 
 ```text
 CurrentActivityCapabilityInventoryPreview
@@ -1975,9 +1977,9 @@ StoreActiveActorAttributeCapability
 RemoveActiveActorAttributeCapability
 ```
 
-Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para Participation, Movement ou Camera.
+Essa bridge Ã© transitÃ³ria. Ela nÃ£o deve virar manager/coordinator e nÃ£o deve crescer para Participation, Movement ou Camera.
 
-### Evidência de PASS
+### EvidÃªncia de PASS
 
 Smoke validado em 2026-05-31 confirmou:
 
@@ -2002,12 +2004,12 @@ RouteExitBackToMenu PASS
 
 ---
 
-## SA-5D — ActorParticipation enter stage extraction
+## SA-5D â€” ActorParticipation enter stage extraction
 
 **Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
 **Data:** 2026-05-31
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
 `ActorParticipationEnter` deixa de ser executado diretamente pelo `SessionActivityPipeline` e passa a ser executado por stage dedicado da entry:
 
@@ -2016,9 +2018,9 @@ ActivityEntryPipeline.ExecuteActorParticipationEnter
 -> ActivityEntryActorParticipationStage.ExecuteEnter
 ```
 
-O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. A execução concreta de participation enter fica em `ActivityEntryActorParticipationStage`.
+O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. A execuÃ§Ã£o concreta de participation enter fica em `ActivityEntryActorParticipationStage`.
 
-### Mudança de ownership
+### MudanÃ§a de ownership
 
 Antes:
 
@@ -2042,24 +2044,24 @@ ActivityEntryPipeline
 
 ActivityEntryActorParticipationStage
 -> consome ActorInventoryFeedResult da entry
--> aplica readiness policy via bridge transitória
+-> aplica readiness policy via bridge transitÃ³ria
 -> classifica entered/skipped/failed
--> registra active participations via bridge transitória
+-> registra active participations via bridge transitÃ³ria
 -> emite ActorReady
 ```
 
-### Bridge transitória
+### Bridge transitÃ³ria
 
-Foi criada `IActivityEntryActorParticipationRuntimeBridge` para expor ao stage o mínimo necessário enquanto o state de participation/readiness ainda não saiu totalmente do `SessionActivityPipeline`:
+Foi criada `IActivityEntryActorParticipationRuntimeBridge` para expor ao stage o mÃ­nimo necessÃ¡rio enquanto o state de participation/readiness ainda nÃ£o saiu totalmente do `SessionActivityPipeline`:
 
 ```text
 EvaluateActorParticipationReadiness
 StoreActiveActorParticipation
 ```
 
-Essa bridge é transitória. Ela não deve virar manager/coordinator e não deve crescer para PlayerInput, Movement ou Camera.
+Essa bridge Ã© transitÃ³ria. Ela nÃ£o deve virar manager/coordinator e nÃ£o deve crescer para PlayerInput, Movement ou Camera.
 
-### Evidência de PASS
+### EvidÃªncia de PASS
 
 Smoke validado em 2026-05-31 confirmou:
 
@@ -2085,29 +2087,29 @@ RouteExitBackToMenu PASS
 Leitura arquitetural:
 
 ```text
-ActorParticipationEnter deixou de ser execução concreta do SessionActivityPipeline.
+ActorParticipationEnter deixou de ser execuÃ§Ã£o concreta do SessionActivityPipeline.
 ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
-ActivityEntryActorParticipationStage passou a executar enter/ready determinístico.
-SessionActivityPipeline preserva lifecycle macro e ainda mantém exits/releases para cortes futuros.
+ActivityEntryActorParticipationStage passou a executar enter/ready determinÃ­stico.
+SessionActivityPipeline preserva lifecycle macro e ainda mantÃ©m exits/releases para cortes futuros.
 ```
 
-Débitos restantes controlados:
+DÃ©bitos restantes controlados:
 
 ```text
-IActivityEntryActorParticipationRuntimeBridge ainda é transitória.
+IActivityEntryActorParticipationRuntimeBridge ainda Ã© transitÃ³ria.
 ActorParticipationExit ainda pertence ao fluxo de Exit/Release.
-PlayerInput, Movement e Camera ainda serão cortes próprios da entry.
+PlayerInput, Movement e Camera ainda serÃ£o cortes prÃ³prios da entry.
 ActorPresentation/ActorAttribute release ainda pertence ao bloco futuro de Exit/Release decomposition.
 ```
 
 ---
 
-## SA-6A — PlayerInput binding stage extraction
+## SA-6A â€” PlayerInput binding stage extraction
 
 **Status:** `CLOSED / PASS funcional + PASS arquitetural do corte`  
 **Data:** 2026-05-31
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
 `PlayerInputBinding` deixa de ser executado diretamente pelo `SessionActivityPipeline` e passa a ser executado por stage dedicado da entry:
 
@@ -2116,9 +2118,9 @@ ActivityEntryPipeline.ExecutePlayerInputBinding
 -> ActivityEntryPlayerInputBindingStage.Execute
 ```
 
-O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. A execução concreta do binding de `PlayerInput` fica em `ActivityEntryPlayerInputBindingStage`.
+O `ActivityEntryPipeline` permanece owner de ordem/lifecycle da entry. Ele apenas chama o stage e valida o resultado. A execuÃ§Ã£o concreta do binding de `PlayerInput` fica em `ActivityEntryPlayerInputBindingStage`.
 
-### Mudança de ownership
+### MudanÃ§a de ownership
 
 Antes:
 
@@ -2135,7 +2137,7 @@ Depois:
 
 ```text
 SessionActivityPipeline
--> passa referências passivas dos participant bindings da entry
+-> passa referÃªncias passivas dos participant bindings da entry
 -> chama ActivityEntryPipeline.ExecutePlayerInputBinding
 
 ActivityEntryPipeline
@@ -2148,23 +2150,23 @@ ActivityEntryPlayerInputBindingStage
 -> emite PlayerInputBindingCommandIssued/PlayerInputBound/PlayerInputBindingCompleted
 ```
 
-### Regra anti-monólito preservada
+### Regra anti-monÃ³lito preservada
 
-O corte não move lógica concreta para dentro do `ActivityEntryPipeline.cs`. O pipeline de entry só ordena e valida resultado; o trabalho concreto fica no stage dedicado.
+O corte nÃ£o move lÃ³gica concreta para dentro do `ActivityEntryPipeline.cs`. O pipeline de entry sÃ³ ordena e valida resultado; o trabalho concreto fica no stage dedicado.
 
-O antigo `PlayerInputBindingStage` foi esvaziado como trilho ativo. O caminho canônico passa a ser `ActivityEntryPlayerInputBindingStage`.
+O antigo `PlayerInputBindingStage` foi esvaziado como trilho ativo. O caminho canÃ´nico passa a ser `ActivityEntryPlayerInputBindingStage`.
 
 ### Escopo preservado
 
 ```text
-Movement não foi alterado.
-Camera não foi alterada.
-Permission não foi alterada.
-Release/Deactivation/RouteExit não foram alterados.
-OperationalInputRuntime não foi alterado.
+Movement nÃ£o foi alterado.
+Camera nÃ£o foi alterada.
+Permission nÃ£o foi alterada.
+Release/Deactivation/RouteExit nÃ£o foram alterados.
+OperationalInputRuntime nÃ£o foi alterado.
 ```
 
-### Critério de smoke validado
+### CritÃ©rio de smoke validado
 
 ```text
 sem erros CS
@@ -2186,16 +2188,16 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-### Evidência do smoke
+### EvidÃªncia do smoke
 
-O smoke manual após o compile hotfix confirmou o novo owner do binding de input na entry:
+O smoke manual apÃ³s o compile hotfix confirmou o novo owner do binding de input na entry:
 
 ```text
 ActivityEntryPlayerInputBindingStarted owner='ActivityEntryPipeline'
 ActivityEntryPlayerInputBindingCompleted owner='ActivityEntryPipeline'
 ```
 
-Também confirmou que o rebinding canônico continuou ativo:
+TambÃ©m confirmou que o rebinding canÃ´nico continuou ativo:
 
 ```text
 PlayerInputActionsReboundToCanonical actorId='actor.player.primary' playerSlotId='player.slot.1'
@@ -2214,38 +2216,38 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-Observação: `PlayerInputBindingCommandIssued` e `PlayerInputBound` permanecem emitidos como `SessionActivityFactKind` pelo stage, mas não aparecem como linhas `OBS` individuais no log manual. Como `ActivityEntryPlayerInputBindingCompleted`, `PlayerInputActionsReboundToCanonical`, `MovementBindingCompleted` e `CameraBindingCompleted` validam o caminho ativo, isso foi classificado como observabilidade interna não bloqueante para este corte. Se a exigência futura for log `OBS` explícito para esses facts, tratar como hygiene local de observabilidade, não como regressão funcional do SA-6A.
+ObservaÃ§Ã£o: `PlayerInputBindingCommandIssued` e `PlayerInputBound` permanecem emitidos como `SessionActivityFactKind` pelo stage, mas nÃ£o aparecem como linhas `OBS` individuais no log manual. Como `ActivityEntryPlayerInputBindingCompleted`, `PlayerInputActionsReboundToCanonical`, `MovementBindingCompleted` e `CameraBindingCompleted` validam o caminho ativo, isso foi classificado como observabilidade interna nÃ£o bloqueante para este corte. Se a exigÃªncia futura for log `OBS` explÃ­cito para esses facts, tratar como hygiene local de observabilidade, nÃ£o como regressÃ£o funcional do SA-6A.
 
 ### Leitura arquitetural
 
 ```text
-PlayerInputBinding deixou de ser execução concreta do SessionActivityPipeline.
+PlayerInputBinding deixou de ser execuÃ§Ã£o concreta do SessionActivityPipeline.
 ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
 ActivityEntryPlayerInputBindingStage executa o trabalho concreto de binding.
 Movement, Camera, Permission, Release, Deactivation e RouteExit permaneceram fora do corte.
 ```
 
-Débitos restantes controlados:
+DÃ©bitos restantes controlados:
 
 ```text
-Movement binding ainda está no SessionActivityPipeline.
-Camera binding ainda está no SessionActivityPipeline.
-Permission target preparation ainda será corte próprio.
-ActivityEntryPlayerInputBindingStage ainda usa bridge/endpoint de entry já existente para emitir facts/snapshots.
+Movement binding ainda estÃ¡ no SessionActivityPipeline.
+Camera binding ainda estÃ¡ no SessionActivityPipeline.
+Permission target preparation ainda serÃ¡ corte prÃ³prio.
+ActivityEntryPlayerInputBindingStage ainda usa bridge/endpoint de entry jÃ¡ existente para emitir facts/snapshots.
 ```
 
 
 ---
 
-## Checkpoint — SA-6B Permission target preparation stage / CLOSED / PASS
+## Checkpoint â€” SA-6B Permission target preparation stage / CLOSED / PASS
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
 ### Objetivo
 
-Extrair a preparação de `PermissionTarget` para stage real da `ActivityEntry`, sem redesenhar toda identity de permission e sem alterar a reação local dos receivers.
+Extrair a preparaÃ§Ã£o de `PermissionTarget` para stage real da `ActivityEntry`, sem redesenhar toda identity de permission e sem alterar a reaÃ§Ã£o local dos receivers.
 
-### Mudança de ownership
+### MudanÃ§a de ownership
 
 Antes:
 
@@ -2269,24 +2271,24 @@ SessionActivityPipeline
       -> ReplaceReceivers
 
 SessionActivityPipeline.EmitMovementBindingStage
--> continua responsável apenas pelo MovementBinding até SA-6C
+-> continua responsÃ¡vel apenas pelo MovementBinding atÃ© SA-6C
 ```
 
-### Regra anti-monólito preservada
+### Regra anti-monÃ³lito preservada
 
-`ActivityEntryPipeline.cs` só ordena e valida resultado. A execução concreta fica em `ActivityEntryPermissionTargetPreparationStage`.
+`ActivityEntryPipeline.cs` sÃ³ ordena e valida resultado. A execuÃ§Ã£o concreta fica em `ActivityEntryPermissionTargetPreparationStage`.
 
 ### Escopo preservado
 
 ```text
-Movement binding não foi movido.
-Camera binding não foi movido.
-Permission reaction local não foi alterada.
-ActivityCapabilityPermissionRuntime não foi redesenhado.
-Release/Deactivation/RouteExit não foram alterados.
+Movement binding nÃ£o foi movido.
+Camera binding nÃ£o foi movido.
+Permission reaction local nÃ£o foi alterada.
+ActivityCapabilityPermissionRuntime nÃ£o foi redesenhado.
+Release/Deactivation/RouteExit nÃ£o foram alterados.
 ```
 
-### Critério de smoke esperado
+### CritÃ©rio de smoke esperado
 
 ```text
 sem erros CS
@@ -2306,14 +2308,14 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-### Débito controlado
+### DÃ©bito controlado
 
-`MovementBinding` ainda está no `SessionActivityPipeline` e será tratado no `SA-6C`. O `SA-6B` apenas separa a preparação dos permission targets para que `MovementBinding` não continue sendo o owner indireto de receiver discovery/registration.
+`MovementBinding` ainda estÃ¡ no `SessionActivityPipeline` e serÃ¡ tratado no `SA-6C`. O `SA-6B` apenas separa a preparaÃ§Ã£o dos permission targets para que `MovementBinding` nÃ£o continue sendo o owner indireto de receiver discovery/registration.
 
 
 ---
 
-## Checkpoint — SA-6C Movement binding stage / CLOSED / PASS
+## Checkpoint â€” SA-6C Movement binding stage / CLOSED / PASS
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
@@ -2321,7 +2323,7 @@ Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
 Extrair o binding concreto de Movement para um stage real da `ActivityEntry`, sem alterar `PermissionRuntime`, reaction local, Camera, Release, Deactivation ou RouteExit.
 
-### Mudança de ownership
+### MudanÃ§a de ownership
 
 Antes:
 
@@ -2343,15 +2345,15 @@ SessionActivityPipeline
       -> monta MovementBindingRequirement
       -> chama MovementBindingAdapter
       -> emite PlayerMovementBound / MovementBindingRetained / MovementBindingCompleted
-      -> grava movement control targets via bridge mínima
+      -> grava movement control targets via bridge mÃ­nima
 
 SessionActivityPipeline
--> continua apenas lifecycle macro e chama CameraBinding após o resultado da entry
+-> continua apenas lifecycle macro e chama CameraBinding apÃ³s o resultado da entry
 ```
 
-### Correções de compile aplicadas antes do smoke
+### CorreÃ§Ãµes de compile aplicadas antes do smoke
 
-O primeiro pacote `SA-6C` exigiu dois hotfixes de compilação antes do smoke:
+O primeiro pacote `SA-6C` exigiu dois hotfixes de compilaÃ§Ã£o antes do smoke:
 
 ```text
 SA-6C-compilefix-movement-binding-stage
@@ -2361,9 +2363,9 @@ SA-6C-compilefix2-movement-binding-references
 - restaurou BuildMovementBindingReferences(...) como helper passivo para montar ActivityEntryMovementBindingReference.
 ```
 
-Esses hotfixes não reintroduziram execução concreta de Movement no `SessionActivityPipeline`.
+Esses hotfixes nÃ£o reintroduziram execuÃ§Ã£o concreta de Movement no `SessionActivityPipeline`.
 
-### Evidência do smoke
+### EvidÃªncia do smoke
 
 O smoke manual confirmou o novo owner do binding de Movement na entry:
 
@@ -2375,7 +2377,7 @@ MovementBindingCompleted owner='ActivityEntryPipeline'
 ActivityEntryMovementBindingCompleted owner='ActivityEntryPipeline'
 ```
 
-Na `activity_02`, que é cenário negativo/no-content, o binding preservou retenção explícita:
+Na `activity_02`, que Ã© cenÃ¡rio negativo/no-content, o binding preservou retenÃ§Ã£o explÃ­cita:
 
 ```text
 MovementBindingStarted activityId='activity_02' owner='ActivityEntryPipeline'
@@ -2414,46 +2416,46 @@ sem checkpointStatus='Failed'
 ### Leitura arquitetural
 
 ```text
-MovementBinding deixou de ser execução concreta do SessionActivityPipeline.
+MovementBinding deixou de ser execuÃ§Ã£o concreta do SessionActivityPipeline.
 ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
 ActivityEntryMovementBindingStage executa o trabalho concreto de binding.
-PermissionRuntime continua command/fact/snapshot e não decide lifecycle.
+PermissionRuntime continua command/fact/snapshot e nÃ£o decide lifecycle.
 PlayerMovementPermissionReceiver continua reaction local.
 Camera, Release, Deactivation e RouteExit permaneceram fora do corte.
 ```
 
-### Regra anti-monólito preservada
+### Regra anti-monÃ³lito preservada
 
-`ActivityEntryPipeline.cs` só ordena e valida resultado. A execução concreta fica em `ActivityEntryMovementBindingStage`. O stage legado `PlayerMovementBindingStage` foi esvaziado para não manter trilho paralelo ativo.
+`ActivityEntryPipeline.cs` sÃ³ ordena e valida resultado. A execuÃ§Ã£o concreta fica em `ActivityEntryMovementBindingStage`. O stage legado `PlayerMovementBindingStage` foi esvaziado para nÃ£o manter trilho paralelo ativo.
 
 ### Escopo preservado
 
 ```text
-PermissionRuntime não foi redesenhado.
+PermissionRuntime nÃ£o foi redesenhado.
 Permission target preparation permanece no SA-6B.
-Camera binding não foi movido.
-MovementControl enable/disable não foi movido.
-Release/Deactivation/RouteExit não foram alterados.
+Camera binding nÃ£o foi movido.
+MovementControl enable/disable nÃ£o foi movido.
+Release/Deactivation/RouteExit nÃ£o foram alterados.
 ```
 
-### Débito controlado
+### DÃ©bito controlado
 
-`IActivityEntryMovementBindingRuntimeBridge` é transitória e expõe apenas registry, adapter e targets de movement control enquanto o state de MovementControl ainda está no `SessionActivityPipeline`. Camera binding permanece como próximo corte.
+`IActivityEntryMovementBindingRuntimeBridge` Ã© transitÃ³ria e expÃµe apenas registry, adapter e targets de movement control enquanto o state de MovementControl ainda estÃ¡ no `SessionActivityPipeline`. Camera binding permanece como prÃ³ximo corte.
 
-## SA-6D — Camera binding stage — CLOSED / PASS funcional + PASS arquitetural do corte
+## SA-6D â€” Camera binding stage â€” CLOSED / PASS funcional + PASS arquitetural do corte
 
 ### Objetivo
 
 Extrair o binding concreto de Camera para um stage real da `ActivityEntry`, sem alterar `CameraPresentation` operacional, ActivityCamera preparation/release, Release, Deactivation ou RouteExit.
 
-### Mudança de ownership validada
+### MudanÃ§a de ownership validada
 
 Antes:
 
 ```text
 SessionActivityPipeline.EmitCameraBindingStage
--> lê ActivitySetupInventory
--> lê ActivityCapabilityInventory
+-> lÃª ActivitySetupInventory
+-> lÃª ActivityCapabilityInventory
 -> resolve CameraTarget por participante/player actor
 -> chama IActivityCameraPreparationExecutor.TryRebindTargets
 -> emite PlayerCameraEndpointResolved / ActivityCameraTargetBound / CameraBindingCompleted
@@ -2470,9 +2472,9 @@ SessionActivityPipeline
       -> emite PlayerCameraEndpointResolved / ActivityCameraTargetBound / CameraBindingCompleted
 ```
 
-### Evidência funcional do smoke
+### EvidÃªncia funcional do smoke
 
-O smoke manual pós-compilefix confirmou:
+O smoke manual pÃ³s-compilefix confirmou:
 
 ```text
 sem FATAL
@@ -2502,7 +2504,7 @@ ActivityCameraTargetBound owner='ActivityEntryPipeline'
 CameraBindingCompleted owner='ActivityEntryPipeline'
 ```
 
-Na `activity_02` negativa/no-content, o skip explícito foi preservado:
+Na `activity_02` negativa/no-content, o skip explÃ­cito foi preservado:
 
 ```text
 ActivityEntryCameraBindingStarted owner='ActivityEntryPipeline'
@@ -2524,39 +2526,39 @@ RouteExitBackToMenu PASS
 ### Leitura arquitetural
 
 ```text
-CameraBinding deixou de ser execução concreta do SessionActivityPipeline.
+CameraBinding deixou de ser execuÃ§Ã£o concreta do SessionActivityPipeline.
 ActivityEntryPipeline manteve ownership de ordem/lifecycle da entry.
 ActivityEntryCameraBindingStage executa o trabalho concreto de binding.
 CameraPresentation operacional continua no owner atual.
-ActivityCamera preparation/release não foi movido.
+ActivityCamera preparation/release nÃ£o foi movido.
 Release, Deactivation e RouteExit permaneceram fora do corte.
 ```
 
-### Regra anti-monólito preservada
+### Regra anti-monÃ³lito preservada
 
-`ActivityEntryPipeline.cs` só ordena e valida resultado. A execução concreta fica em `ActivityEntryCameraBindingStage`. Não foi criado trilho paralelo ativo para camera binding.
+`ActivityEntryPipeline.cs` sÃ³ ordena e valida resultado. A execuÃ§Ã£o concreta fica em `ActivityEntryCameraBindingStage`. NÃ£o foi criado trilho paralelo ativo para camera binding.
 
-### Débito controlado
+### DÃ©bito controlado
 
-`IActivityEntryCameraBindingRuntimeBridge` permanece transitória e expõe apenas inventory, participantes, resolução de handle e `IActivityCameraPreparationExecutor` enquanto `CameraPresentation` e o state de ActivityCamera continuam nos owners atuais.
+`IActivityEntryCameraBindingRuntimeBridge` permanece transitÃ³ria e expÃµe apenas inventory, participantes, resoluÃ§Ã£o de handle e `IActivityCameraPreparationExecutor` enquanto `CameraPresentation` e o state de ActivityCamera continuam nos owners atuais.
 
-## SA-7A — Exit / Release Decomposition Audit — CLOSED / AUDIT ONLY
+## SA-7A â€” Exit / Release Decomposition Audit â€” CLOSED / AUDIT ONLY
 
 ### Contexto
 
-Após os cortes SA-5A1..SA-6D, a entrada da Activity já possui stages explícitos para ActorInventoryFeed, ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, PermissionTargetPreparation, Movement e Camera.
+ApÃ³s os cortes SA-5A1..SA-6D, a entrada da Activity jÃ¡ possui stages explÃ­citos para ActorInventoryFeed, ActorPresentation, ActorAttributes, ActorParticipation, PlayerInput, PermissionTargetPreparation, Movement e Camera.
 
-A saída ainda concentra release, teardown, snapshot e unload dentro do `SessionActivityPipeline`.
+A saÃ­da ainda concentra release, teardown, snapshot e unload dentro do `SessionActivityPipeline`.
 
-### Decisão
+### DecisÃ£o
 
 ```text
-Não criar ActivityExitPipeline agora.
-Manter SessionActivityPipeline como owner macro de saída por enquanto.
-Extrair primeiro stages determinísticos de exit/release chamados pelo SessionActivityPipeline.
+NÃ£o criar ActivityExitPipeline agora.
+Manter SessionActivityPipeline como owner macro de saÃ­da por enquanto.
+Extrair primeiro stages determinÃ­sticos de exit/release chamados pelo SessionActivityPipeline.
 ```
 
-### Razão
+### RazÃ£o
 
 Exit ainda mistura rails e timings diferentes:
 
@@ -2576,14 +2578,14 @@ RouteActivitySave payload
 ClosedForRouteExit
 ```
 
-Criar `ActivityExitPipeline` agora produziria owner duplicado de lifecycle. A extração deve começar por stages sem alterar ordering.
+Criar `ActivityExitPipeline` agora produziria owner duplicado de lifecycle. A extraÃ§Ã£o deve comeÃ§ar por stages sem alterar ordering.
 
 ### Resultado da auditoria
 
-O próximo corte autorizado é:
+O prÃ³ximo corte autorizado Ã©:
 
 ```text
-SA-7B — ActivityExitActorTeardownStage
+SA-7B â€” ActivityExitActorTeardownStage
 ```
 
 Objetivo:
@@ -2593,28 +2595,28 @@ Extrair o teardown de actors para stage dedicado:
 - ActorPresentation release/retain por rail;
 - ActorAttribute release;
 - ActorParticipation exit;
-- player participation exit quando aplicável.
+- player participation exit quando aplicÃ¡vel.
 ```
 
 ### Escopo proibido no SA-7B
 
 ```text
-Não criar ActivityExitPipeline.
-Não mover DeactivationWindow.
-Não mover ActivityContentRelease async.
-Não mover ActivityObject snapshot/release.
-Não mover CompleteRouteExitClosure.
-Não alterar RouteActivitySave.
-Não alterar CameraPresentation operacional release.
-Não alterar PermissionRuntime/reaction local.
-Não criar branch global player/nonplayer.
+NÃ£o criar ActivityExitPipeline.
+NÃ£o mover DeactivationWindow.
+NÃ£o mover ActivityContentRelease async.
+NÃ£o mover ActivityObject snapshot/release.
+NÃ£o mover CompleteRouteExitClosure.
+NÃ£o alterar RouteActivitySave.
+NÃ£o alterar CameraPresentation operacional release.
+NÃ£o alterar PermissionRuntime/reaction local.
+NÃ£o criar branch global player/nonplayer.
 ```
 
-### Critério de aceite do SA-7B
+### CritÃ©rio de aceite do SA-7B
 
 ```text
 SessionActivityPipeline decide quando o teardown roda.
-ActivityExitActorTeardownStage executa o teardown determinístico.
+ActivityExitActorTeardownStage executa o teardown determinÃ­stico.
 ActorPresentationReleased/Skipped preservado.
 ActorAttributeReleased preservado.
 ActorParticipationExited preservado.
@@ -2628,21 +2630,21 @@ RouteExitBackToMenu PASS.
 sem FATAL / Exception / route_transition_failed / foreign/stale.
 ```
 
-### Relatório
+### RelatÃ³rio
 
-Relatório detalhado:
+RelatÃ³rio detalhado:
 
 ```text
 NewScripts/Docs/Reports/SA-7A-Exit-Release-Decomposition-Audit.md
 ```
 
-## SA-7B — ActivityExitActorTeardownStage — CLOSED / PASS funcional + PASS arquitetural do corte
+## SA-7B â€” ActivityExitActorTeardownStage â€” CLOSED / PASS funcional + PASS arquitetural do corte
 
 ### Objetivo
 
-Extrair o teardown concreto de actors da saída da Activity para um stage dedicado, sem criar `ActivityExitPipeline` e sem alterar `DeactivationWindow`, `ActivityContentRelease`, `ActivityObject snapshot/release`, `RouteActivitySave`, `CameraPresentation` operacional ou `RouteExit` macro.
+Extrair o teardown concreto de actors da saÃ­da da Activity para um stage dedicado, sem criar `ActivityExitPipeline` e sem alterar `DeactivationWindow`, `ActivityContentRelease`, `ActivityObject snapshot/release`, `RouteActivitySave`, `CameraPresentation` operacional ou `RouteExit` macro.
 
-### Mudança de ownership aplicada
+### MudanÃ§a de ownership aplicada
 
 Antes:
 
@@ -2651,7 +2653,7 @@ SessionActivityPipeline
 -> EmitActorPresentationReleaseGenericStage
 -> EmitActorAttributeReleaseFromInventoryStage
 -> EmitActorParticipationExitFromInventoryStage
--> PlayerActorParticipationExit quando aplicável
+-> PlayerActorParticipationExit quando aplicÃ¡vel
 ```
 
 Depois:
@@ -2663,33 +2665,33 @@ SessionActivityPipeline
    -> ActorPresentation release/retain por rail
    -> ActorAttribute release
    -> ActorParticipation exit
-   -> PlayerActorParticipation exit quando aplicável
+   -> PlayerActorParticipation exit quando aplicÃ¡vel
 ```
 
 ### Regra preservada
 
 ```text
-SessionActivityPipeline continua owner do lifecycle macro de saída.
-ActivityExitActorTeardownStage executa apenas o teardown determinístico de actors.
-Não foi criado ActivityExitPipeline.
+SessionActivityPipeline continua owner do lifecycle macro de saÃ­da.
+ActivityExitActorTeardownStage executa apenas o teardown determinÃ­stico de actors.
+NÃ£o foi criado ActivityExitPipeline.
 ```
 
 ### Escopo preservado
 
 ```text
-DeactivationWindow não foi movida.
-ActivityObjectSnapshotCapture não foi movido.
-ActivityObjectRelease não foi movido.
-ActivityContent scene unload async não foi movido.
-CompleteRouteExitClosure não foi movido.
-RouteActivitySave não foi alterado.
-CameraPresentation operacional release não foi alterado.
-PermissionRuntime/reaction local não foi alterado.
+DeactivationWindow nÃ£o foi movida.
+ActivityObjectSnapshotCapture nÃ£o foi movido.
+ActivityObjectRelease nÃ£o foi movido.
+ActivityContent scene unload async nÃ£o foi movido.
+CompleteRouteExitClosure nÃ£o foi movido.
+RouteActivitySave nÃ£o foi alterado.
+CameraPresentation operacional release nÃ£o foi alterado.
+PermissionRuntime/reaction local nÃ£o foi alterado.
 ```
 
-### Bridge transitória
+### Bridge transitÃ³ria
 
-`IActivityExitActorTeardownRuntimeBridge` foi criada como ponte mínima para o stage acessar state runtime ainda preso no `SessionActivityPipeline`:
+`IActivityExitActorTeardownRuntimeBridge` foi criada como ponte mÃ­nima para o stage acessar state runtime ainda preso no `SessionActivityPipeline`:
 
 ```text
 active ActorPresentation handles
@@ -2699,9 +2701,9 @@ player participant binding resolution
 player actor participation adapter/registry
 ```
 
-Essa bridge é transitória e não deve virar manager/coordinator.
+Essa bridge Ã© transitÃ³ria e nÃ£o deve virar manager/coordinator.
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -2712,7 +2714,7 @@ sem foreign/stale indevido
 ActorPresentationReleaseStarted/Released/Skipped/Completed preservado
 ActorAttributeReleaseStarted/Released/Completed preservado
 ActorParticipationExitStarted/Exited/Completed preservado
-PlayerActorParticipationExit preservado quando aplicável
+PlayerActorParticipationExit preservado quando aplicÃ¡vel
 ActivityObjectSnapshotCapture PASS
 ActivityObjectRelease PASS
 ActivityObjectContributorUnregister PASS
@@ -2721,9 +2723,9 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-### Smoke / evidência
+### Smoke / evidÃªncia
 
-Smoke manual validado após compile fix de `ActorParticipationExitCommand`.
+Smoke manual validado apÃ³s compile fix de `ActorParticipationExitCommand`.
 
 O log confirmou:
 
@@ -2735,7 +2737,7 @@ sem route_transition_failed
 sem foreign/stale indevido
 sem checkpointStatus='Failed'
 
-ActivityExitActorTeardownStage como owner visível do teardown de actors
+ActivityExitActorTeardownStage como owner visÃ­vel do teardown de actors
 ActorPresentationReleaseStarted/Released/Skipped/Completed preservado
 ActorAttributeReleaseStarted/Released/Completed preservado
 ActorParticipationExitStarted/Exited/Completed preservado
@@ -2749,7 +2751,7 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-Evidência funcional relevante:
+EvidÃªncia funcional relevante:
 
 ```text
 ActivityExitActorTeardownStage executa ActorPresentation release no rail ActivityExit e RouteExit.
@@ -2757,17 +2759,17 @@ ActivityExitActorTeardownStage executa ActorAttribute release sem failures.
 ActivityExitActorTeardownStage executa ActorParticipation exit sem failures.
 ActivityObject snapshot/release/unregister continuam no caminho existente e passam.
 ActivityContent scene unload async continua preservado fora do corte.
-RouteExitBackToMenu aplica Menu route após ClosedForRouteExit.
+RouteExitBackToMenu aplica Menu route apÃ³s ClosedForRouteExit.
 ```
 
 ### Status
 
-`SA-7B` está `CLOSED / PASS funcional + PASS arquitetural do corte`.
+`SA-7B` estÃ¡ `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Débito controlado
+### DÃ©bito controlado
 
 ```text
-IActivityExitActorTeardownRuntimeBridge permanece transitória.
+IActivityExitActorTeardownRuntimeBridge permanece transitÃ³ria.
 ActivityObject snapshot/release ainda pertence a corte futuro.
 ActivityContent unload async ainda pertence a corte futuro.
 DeactivationWindow e RouteExit macro continuam ownership do SessionActivityPipeline.
@@ -2775,21 +2777,21 @@ DeactivationWindow e RouteExit macro continuam ownership do SessionActivityPipel
 
 
 
-## SA-7C — ActivityObject Snapshot / Release / Unregister / Content Release Audit
+## SA-7C â€” ActivityObject Snapshot / Release / Unregister / Content Release Audit
 
 Status: `CLOSED / AUDIT ONLY`
 
-### Decisão
+### DecisÃ£o
 
-O SA-7C confirmou que o bloco de objetos da saída não deve ser movido em um único patch.
+O SA-7C confirmou que o bloco de objetos da saÃ­da nÃ£o deve ser movido em um Ãºnico patch.
 
 A ordem segura passa a ser:
 
 ```text
-SA-7D — ActivityObjectSnapshotCaptureStage
-SA-7E — ActivityObjectReleaseStage
-SA-7F — ActivityObjectContributorUnregisterStage
-SA-7G — ActivityContentReleaseAsync audit/extraction
+SA-7D â€” ActivityObjectSnapshotCaptureStage
+SA-7E â€” ActivityObjectReleaseStage
+SA-7F â€” ActivityObjectContributorUnregisterStage
+SA-7G â€” ActivityContentReleaseAsync audit/extraction
 ```
 
 ### Motivo
@@ -2803,20 +2805,20 @@ Contributor unregister limpa discovery/runtime state.
 ActivityContentRelease controla pending operation e scene unload async.
 ```
 
-Mover tudo junto aumentaria risco de regressão em restart, activity transition e route-exit.
+Mover tudo junto aumentaria risco de regressÃ£o em restart, activity transition e route-exit.
 
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída.
-Stages dedicados executam passos determinísticos.
-RouteActivitySave continua consumidor de payload, não owner de snapshot capture.
-SaveRuntime continua persistência, não decide snapshot.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da.
+Stages dedicados executam passos determinÃ­sticos.
+RouteActivitySave continua consumidor de payload, nÃ£o owner de snapshot capture.
+SaveRuntime continua persistÃªncia, nÃ£o decide snapshot.
 ```
 
 ### Bridge identificada
 
-A classe interna `ActivityObjectExitStage` foi classificada como bridge transitória, não stage Base 2.0 real:
+A classe interna `ActivityObjectExitStage` foi classificada como bridge transitÃ³ria, nÃ£o stage Base 2.0 real:
 
 ```text
 CaptureSnapshot -> EmitObjectSnapshotCaptureStageCore
@@ -2824,87 +2826,87 @@ Release -> EmitObjectReleaseStageCore
 UnregisterContributors -> EmitObjectContributorUnregisterStageCore
 ```
 
-Ela deve ser substituída gradualmente por stages reais em arquivos próprios.
+Ela deve ser substituÃ­da gradualmente por stages reais em arquivos prÃ³prios.
 
-### Próximo corte aceito
+### PrÃ³ximo corte aceito
 
-`SA-7D — ActivityObjectSnapshotCaptureStage`.
+`SA-7D â€” ActivityObjectSnapshotCaptureStage`.
 
 Escopo permitido:
 
 ```text
 Extrair snapshot capture para stage dedicado.
-Manter TryGetSnapshotPayloadForSaveOnExit como API pública.
-Registrar payload/failure flags por bridge mínima.
+Manter TryGetSnapshotPayloadForSaveOnExit como API pÃºblica.
+Registrar payload/failure flags por bridge mÃ­nima.
 Preservar facts/checkpoints de ActivityObjectSnapshotCapture.
 ```
 
 Escopo proibido:
 
 ```text
-Não mover ObjectRelease.
-Não mover ContributorUnregister.
-Não mover ActivityContentRelease async.
-Não alterar RouteActivitySave.
-Não criar ActivityExitPipeline.
-Não executar save dentro do stage.
+NÃ£o mover ObjectRelease.
+NÃ£o mover ContributorUnregister.
+NÃ£o mover ActivityContentRelease async.
+NÃ£o alterar RouteActivitySave.
+NÃ£o criar ActivityExitPipeline.
+NÃ£o executar save dentro do stage.
 ```
 
 ### Status
 
-`SA-7C` está `CLOSED / AUDIT ONLY`.
+`SA-7C` estÃ¡ `CLOSED / AUDIT ONLY`.
 
 
-## SA-7D — ActivityObjectSnapshotCaptureStage
+## SA-7D â€” ActivityObjectSnapshotCaptureStage
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`
 
-### Decisão
+### DecisÃ£o
 
-O snapshot capture de objetos da Activity foi extraído do bloco concreto do `SessionActivityPipeline` para um stage dedicado:
+O snapshot capture de objetos da Activity foi extraÃ­do do bloco concreto do `SessionActivityPipeline` para um stage dedicado:
 
 ```text
 SessionActivityPipeline
--> decide quando a saída/dematerialization exige snapshot
+-> decide quando a saÃ­da/dematerialization exige snapshot
 -> ActivityObjectSnapshotCaptureStage
    -> valida discovery/result atual
    -> resolve SnapshotProvider pelo ActivityCapabilityInventory
    -> executa ActivityObjectSnapshotCaptureCommand
-   -> registra payload/failure flags por bridge mínima
+   -> registra payload/failure flags por bridge mÃ­nima
    -> preserva facts/checkpoints de ActivityObjectSnapshotCapture
 ```
 
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída.
-ActivityObjectSnapshotCaptureStage executa apenas o passo determinístico de captura.
-RouteActivitySave continua consumidor do payload; não decide capture.
-SaveRuntime continua backend/executor de persistência; não participa deste stage.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da.
+ActivityObjectSnapshotCaptureStage executa apenas o passo determinÃ­stico de captura.
+RouteActivitySave continua consumidor do payload; nÃ£o decide capture.
+SaveRuntime continua backend/executor de persistÃªncia; nÃ£o participa deste stage.
 ```
 
 ### Escopo aplicado
 
 ```text
 Criado ActivityObjectSnapshotCaptureStage.
-Criada bridge transitória IActivityObjectSnapshotCaptureRuntimeBridge.
+Criada bridge transitÃ³ria IActivityObjectSnapshotCaptureRuntimeBridge.
 EmitObjectSnapshotCaptureStage agora delega ao stage dedicado.
 Removido o caminho ativo EmitObjectSnapshotCaptureStageCore do macro pipeline.
-ActivityObjectExitStage deixou de possuir CaptureSnapshot e permanece só como bridge transitória para Release/Unregister.
+ActivityObjectExitStage deixou de possuir CaptureSnapshot e permanece sÃ³ como bridge transitÃ³ria para Release/Unregister.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-ObjectRelease não foi movido.
-ContributorUnregister não foi movido.
-ActivityContentRelease async não foi movido.
-RouteActivitySave não foi alterado.
-TryGetSnapshotPayloadForSaveOnExit foi preservado como API pública.
-ActivityExitPipeline não foi criado.
+ObjectRelease nÃ£o foi movido.
+ContributorUnregister nÃ£o foi movido.
+ActivityContentRelease async nÃ£o foi movido.
+RouteActivitySave nÃ£o foi alterado.
+TryGetSnapshotPayloadForSaveOnExit foi preservado como API pÃºblica.
+ActivityExitPipeline nÃ£o foi criado.
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -2921,17 +2923,17 @@ ActivityObjectContributorUnregister PASS
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-RouteActivitySave payload continua consumível quando existir snapshot
+RouteActivitySave payload continua consumÃ­vel quando existir snapshot
 ```
 
 ### Status
 
-`SA-7D` está `CLOSED / PASS funcional + PASS arquitetural do corte`.
+`SA-7D` estÃ¡ `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
 
-### Smoke / evidência SA-7D
+### Smoke / evidÃªncia SA-7D
 
-Smoke manual validado após compile. O log confirmou:
+Smoke manual validado apÃ³s compile. O log confirmou:
 
 ```text
 sem erros CS
@@ -2953,7 +2955,7 @@ RouteExitBackToMenu checkpointStatus='Passed'
 RouteActivitySaveSaveOnExitStageCompleted preservado no BackToMenu
 ```
 
-Evidência observada:
+EvidÃªncia observada:
 
 ```text
 ActivityObjectSnapshotCaptureStarted owner='ActivityObjectSnapshotCaptureStage' activityId='activity_01' entrySequence='1'
@@ -2971,36 +2973,36 @@ Activity01ToActivity02 checkpointStatus='Passed'
 RouteExitBackToMenu checkpointStatus='Passed'
 ```
 
-Conclusão arquitetural:
+ConclusÃ£o arquitetural:
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
-ActivityObjectSnapshotCaptureStage executa apenas o passo determinístico de capture.
-RouteActivitySave continua consumidor do payload; não virou owner de snapshot capture.
-ObjectRelease, ContributorUnregister, ActivityContentRelease async, DeactivationWindow e RouteExit não foram movidos.
-Não foi criado ActivityExitPipeline.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization.
+ActivityObjectSnapshotCaptureStage executa apenas o passo determinÃ­stico de capture.
+RouteActivitySave continua consumidor do payload; nÃ£o virou owner de snapshot capture.
+ObjectRelease, ContributorUnregister, ActivityContentRelease async, DeactivationWindow e RouteExit nÃ£o foram movidos.
+NÃ£o foi criado ActivityExitPipeline.
 ```
 
-Débito controlado:
+DÃ©bito controlado:
 
 ```text
-IActivityObjectSnapshotCaptureRuntimeBridge permanece transitória.
+IActivityObjectSnapshotCaptureRuntimeBridge permanece transitÃ³ria.
 ActivityObjectReleaseStage fechado no SA-7E.
 ActivityObjectContributorUnregisterStage fechado no SA-7F.
-ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
+ActivityContentRelease async ainda exige auditoria/extraction prÃ³pria no SA-7G.
 ```
 
-## SA-7E — ActivityObjectReleaseStage
+## SA-7E â€” ActivityObjectReleaseStage
 
 Status: `Applied / Pending smoke`
 
-### Decisão
+### DecisÃ£o
 
-O release de objetos da Activity foi extraído do caminho ativo do `SessionActivityPipeline` para um stage dedicado:
+O release de objetos da Activity foi extraÃ­do do caminho ativo do `SessionActivityPipeline` para um stage dedicado:
 
 ```text
 SessionActivityPipeline
--> decide quando a saída/dematerialization exige release de objetos
+-> decide quando a saÃ­da/dematerialization exige release de objetos
 -> ActivityObjectReleaseStage
    -> valida discovery/result atual
    -> resolve ReleaseEndpoint pelo ActivityCapabilityInventory
@@ -3011,33 +3013,33 @@ SessionActivityPipeline
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída.
-ActivityObjectReleaseStage executa apenas o passo determinístico de release.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da.
+ActivityObjectReleaseStage executa apenas o passo determinÃ­stico de release.
 ActivityContentRelease async continua dono do unload de scenes.
-RouteActivitySave continua consumidor do payload já capturado; não decide release.
+RouteActivitySave continua consumidor do payload jÃ¡ capturado; nÃ£o decide release.
 ```
 
 ### Escopo aplicado
 
 ```text
 Criado ActivityObjectReleaseStage.
-Criada bridge transitória IActivityObjectReleaseRuntimeBridge.
+Criada bridge transitÃ³ria IActivityObjectReleaseRuntimeBridge.
 EmitObjectReleaseStage agora delega ao stage dedicado.
-ActivityObjectExitStage deixa de possuir Release e permanece apenas como bridge transitória para ContributorUnregister.
+ActivityObjectExitStage deixa de possuir Release e permanece apenas como bridge transitÃ³ria para ContributorUnregister.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-ContributorUnregister não foi movido.
-ActivityContentRelease async não foi movido.
-RouteActivitySave não foi alterado.
-ActivityObjectSnapshotCaptureStage não foi alterado.
-DeactivationWindow e RouteExit não foram movidos.
-ActivityExitPipeline não foi criado.
+ContributorUnregister nÃ£o foi movido.
+ActivityContentRelease async nÃ£o foi movido.
+RouteActivitySave nÃ£o foi alterado.
+ActivityObjectSnapshotCaptureStage nÃ£o foi alterado.
+DeactivationWindow e RouteExit nÃ£o foram movidos.
+ActivityExitPipeline nÃ£o foi criado.
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -3059,11 +3061,11 @@ RouteExitBackToMenu PASS
 
 ### Status
 
-`SA-7E` está `CLOSED / PASS funcional + PASS arquitetural do corte`.
+`SA-7E` estÃ¡ `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Evidência de smoke
+### EvidÃªncia de smoke
 
-Smoke manual validado após compile.
+Smoke manual validado apÃ³s compile.
 
 Resultado observado:
 
@@ -3076,7 +3078,7 @@ sem foreign/stale indevido
 sem checkpointStatus='Failed'
 ```
 
-Evidência funcional relevante:
+EvidÃªncia funcional relevante:
 
 ```text
 ActivityObjectSnapshotCaptureStage:
@@ -3102,46 +3104,46 @@ Activity01ToActivity02 checkpointStatus='Passed'
 RouteExitBackToMenu checkpointStatus='Passed'
 ```
 
-Observação de observabilidade:
+ObservaÃ§Ã£o de observabilidade:
 
 ```text
-Não há linha OBS literal ActivityObjectReleaseApplied no smoke.
-A aplicação está confirmada por ActivityObjectReleaseCompleted appliedCount='1'
+NÃ£o hÃ¡ linha OBS literal ActivityObjectReleaseApplied no smoke.
+A aplicaÃ§Ã£o estÃ¡ confirmada por ActivityObjectReleaseCompleted appliedCount='1'
 e pelo checkpoint ActivityObjectRelease checkpointStatus='Passed' appliedCount='1'.
-Se necessário, emitir ActivityObjectReleaseApplied como OBS explícito deve ser hygiene local futuro,
-não bloqueio funcional deste corte.
+Se necessÃ¡rio, emitir ActivityObjectReleaseApplied como OBS explÃ­cito deve ser hygiene local futuro,
+nÃ£o bloqueio funcional deste corte.
 ```
 
-Conclusão arquitetural:
+ConclusÃ£o arquitetural:
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
-ActivityObjectReleaseStage executa apenas o passo determinístico de release.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization.
+ActivityObjectReleaseStage executa apenas o passo determinÃ­stico de release.
 ActivityObjectSnapshotCaptureStage continua separado e executa antes do release.
-ContributorUnregister, ActivityContentRelease async, RouteActivitySave, DeactivationWindow e RouteExit não foram movidos.
-Não foi criado ActivityExitPipeline.
+ContributorUnregister, ActivityContentRelease async, RouteActivitySave, DeactivationWindow e RouteExit nÃ£o foram movidos.
+NÃ£o foi criado ActivityExitPipeline.
 ```
 
-Débito controlado:
+DÃ©bito controlado:
 
 ```text
-IActivityObjectReleaseRuntimeBridge permanece transitória.
+IActivityObjectReleaseRuntimeBridge permanece transitÃ³ria.
 ActivityObjectContributorUnregisterStage fechado no SA-7F.
-ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
+ActivityContentRelease async ainda exige auditoria/extraction prÃ³pria no SA-7G.
 ```
 
 
-## SA-7F — ActivityObjectContributorUnregisterStage
+## SA-7F â€” ActivityObjectContributorUnregisterStage
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Decisão
+### DecisÃ£o
 
-O unregister de contributors de ActivityObject foi extraído do caminho ativo do `SessionActivityPipeline` para um stage dedicado:
+O unregister de contributors de ActivityObject foi extraÃ­do do caminho ativo do `SessionActivityPipeline` para um stage dedicado:
 
 ```text
 SessionActivityPipeline
--> decide quando a saída/dematerialization exige unregister de contributors
+-> decide quando a saÃ­da/dematerialization exige unregister de contributors
 -> ActivityObjectContributorUnregisterStage
    -> valida discovery result da entry
    -> emite ActivityObjectContributorUnregisterStarted
@@ -3153,39 +3155,39 @@ SessionActivityPipeline
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
-ActivityObjectContributorUnregisterStage executa apenas o passo determinístico de unregister.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization.
+ActivityObjectContributorUnregisterStage executa apenas o passo determinÃ­stico de unregister.
 ActivityObjectSnapshotCaptureStage continua separado e executa antes do release.
 ActivityObjectReleaseStage continua separado e executa antes do unregister.
-ActivityContentRelease async continua responsável pelo unload de scenes.
-RouteActivitySave continua consumidor do payload capturado; não decide unregister.
+ActivityContentRelease async continua responsÃ¡vel pelo unload de scenes.
+RouteActivitySave continua consumidor do payload capturado; nÃ£o decide unregister.
 ```
 
 ### Escopo aplicado
 
 ```text
 Criado ActivityObjectContributorUnregisterStage.
-Criada bridge transitória IActivityObjectContributorUnregisterRuntimeBridge.
+Criada bridge transitÃ³ria IActivityObjectContributorUnregisterRuntimeBridge.
 Removido ActivityObjectExitStage do caminho ativo.
 EmitObjectContributorUnregisterStage agora delega ao stage dedicado.
 CurrentActivityObjectContributorDiscoveryResult passa a ser limpo pelo stage dedicado.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-ActivityObjectSnapshotCaptureStage não foi alterado.
-ActivityObjectReleaseStage não foi alterado.
-ActivityContentRelease async não foi movido.
-RouteActivitySave não foi alterado.
-SaveRuntime não foi alterado.
-DeactivationWindow e RouteExit não foram movidos.
-ActivityExitPipeline não foi criado.
+ActivityObjectSnapshotCaptureStage nÃ£o foi alterado.
+ActivityObjectReleaseStage nÃ£o foi alterado.
+ActivityContentRelease async nÃ£o foi movido.
+RouteActivitySave nÃ£o foi alterado.
+SaveRuntime nÃ£o foi alterado.
+DeactivationWindow e RouteExit nÃ£o foram movidos.
+ActivityExitPipeline nÃ£o foi criado.
 ```
 
-### Evidência de smoke
+### EvidÃªncia de smoke
 
-Smoke manual validado após compile.
+Smoke manual validado apÃ³s compile.
 
 Resultado observado:
 
@@ -3198,7 +3200,7 @@ sem foreign/stale indevido
 sem checkpointStatus='Failed'
 ```
 
-Evidência funcional relevante:
+EvidÃªncia funcional relevante:
 
 ```text
 ActivityObjectContributorUnregisterStage:
@@ -3224,31 +3226,31 @@ Activity01ToActivity02 checkpointStatus='Passed'
 RouteExitBackToMenu checkpointStatus='Passed'
 ```
 
-Conclusão arquitetural:
+ConclusÃ£o arquitetural:
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
-ActivityObjectContributorUnregisterStage executa apenas o passo determinístico de unregister.
-Snapshot capture, object release e contributor unregister agora estão separados em stages próprios.
-ActivityContentRelease async, RouteActivitySave, DeactivationWindow e RouteExit não foram movidos.
-Não foi criado ActivityExitPipeline.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization.
+ActivityObjectContributorUnregisterStage executa apenas o passo determinÃ­stico de unregister.
+Snapshot capture, object release e contributor unregister agora estÃ£o separados em stages prÃ³prios.
+ActivityContentRelease async, RouteActivitySave, DeactivationWindow e RouteExit nÃ£o foram movidos.
+NÃ£o foi criado ActivityExitPipeline.
 ```
 
-Débito controlado:
+DÃ©bito controlado:
 
 ```text
-IActivityObjectContributorUnregisterRuntimeBridge permanece transitória.
-ActivityContentRelease async ainda exige auditoria/extraction própria no SA-7G.
+IActivityObjectContributorUnregisterRuntimeBridge permanece transitÃ³ria.
+ActivityContentRelease async ainda exige auditoria/extraction prÃ³pria no SA-7G.
 ```
 
 
-## SA-7G — ActivityContentReleaseAsync audit
+## SA-7G â€” ActivityContentReleaseAsync audit
 
 Status: `CLOSED / AUDIT ONLY`.
 
-### Decisão
+### DecisÃ£o
 
-Não mover `ActivityContentRelease async` inteiro agora.
+NÃ£o mover `ActivityContentRelease async` inteiro agora.
 
 O bloco atual mistura:
 
@@ -3271,26 +3273,26 @@ Mover tudo para um stage/pipeline novo criaria risco de owner duplicado do macro
 ### Owner correto
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
-ActivityContent scene unload dispatch pode virar stage determinístico.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization.
+ActivityContent scene unload dispatch pode virar stage determinÃ­stico.
 UnityActivityContentSceneReleaseAdapter continua adapter de side-effect Unity.
-UnitySessionActivityPendingOperationRunner continua bridge async técnica.
-RouteActivitySave continua consumidor do payload; não decide unload/release.
+UnitySessionActivityPendingOperationRunner continua bridge async tÃ©cnica.
+RouteActivitySave continua consumidor do payload; nÃ£o decide unload/release.
 ```
 
-### Próximo corte recomendado
+### PrÃ³ximo corte recomendado
 
 ```text
-SA-7G1 — ActivityContentSceneUnloadDispatchStage
+SA-7G1 â€” ActivityContentSceneUnloadDispatchStage
 ```
 
-Escopo do próximo corte:
+Escopo do prÃ³ximo corte:
 
 ```text
 Extrair apenas:
-- validação do próximo loaded scene record;
-- criação de ActivityContentSceneUnloadCommand;
-- criação de SessionActivityPendingOperation;
+- validaÃ§Ã£o do prÃ³ximo loaded scene record;
+- criaÃ§Ã£o de ActivityContentSceneUnloadCommand;
+- criaÃ§Ã£o de SessionActivityPendingOperation;
 - SetPendingOperation;
 - ActivityContentSceneUnloadCommandIssued;
 - chamada a RunActivityContentReleaseOperation.
@@ -3299,17 +3301,17 @@ Extrair apenas:
 Fica proibido no `SA-7G1`:
 
 ```text
-Não mover CompleteActivityContentSceneUnloadOperation.
-Não mover FinalizeActivityContentReleaseCompleted.
-Não mover FailPendingOperation.
-Não mover PendingActivityContentReleaseContext.
-Não alterar RouteExit closure.
-Não alterar restart/activity transition/deactivation continuation.
-Não criar ActivityContentReleasePipeline.
-Não criar ActivityExitPipeline.
+NÃ£o mover CompleteActivityContentSceneUnloadOperation.
+NÃ£o mover FinalizeActivityContentReleaseCompleted.
+NÃ£o mover FailPendingOperation.
+NÃ£o mover PendingActivityContentReleaseContext.
+NÃ£o alterar RouteExit closure.
+NÃ£o alterar restart/activity transition/deactivation continuation.
+NÃ£o criar ActivityContentReleasePipeline.
+NÃ£o criar ActivityExitPipeline.
 ```
 
-### Critério de aceite futuro
+### CritÃ©rio de aceite futuro
 
 ```text
 sem erros CS
@@ -3328,26 +3330,26 @@ Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 ```
 
-### Débito documentado
+### DÃ©bito documentado
 
 ```text
-ExecuteNextActivityContentSceneRelease ainda é bridge transitória dentro do SessionActivityPipeline.
+ExecuteNextActivityContentSceneRelease ainda Ã© bridge transitÃ³ria dentro do SessionActivityPipeline.
 CompleteActivityContentSceneUnloadOperation permanece macro continuation owner.
-PendingActivityContentReleaseContext permanece state técnico do macro pipeline.
+PendingActivityContentReleaseContext permanece state tÃ©cnico do macro pipeline.
 ```
 
-## SA-7G1 — ActivityContentSceneUnloadDispatchStage
+## SA-7G1 â€” ActivityContentSceneUnloadDispatchStage
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-O dispatch do unload async de uma scene de `ActivityContent` foi extraído para um stage dedicado:
+O dispatch do unload async de uma scene de `ActivityContent` foi extraÃ­do para um stage dedicado:
 
 ```text
 SessionActivityPipeline
--> mantém PendingActivityContentReleaseContext
--> decide que precisa descarregar a próxima scene
+-> mantÃ©m PendingActivityContentReleaseContext
+-> decide que precisa descarregar a prÃ³xima scene
 -> ActivityContentSceneUnloadDispatchStage
    -> valida LoadedSet e NextSceneIndex
    -> monta ActivityContentSceneUnloadCommand
@@ -3360,41 +3362,41 @@ SessionActivityPipeline
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization.
-ActivityContentSceneUnloadDispatchStage executa apenas o dispatch determinístico do unload de uma scene.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization.
+ActivityContentSceneUnloadDispatchStage executa apenas o dispatch determinÃ­stico do unload de uma scene.
 CompleteActivityContentSceneUnloadOperation continua no SessionActivityPipeline como callback/continuation macro.
 FinalizeActivityContentReleaseCompleted continua no SessionActivityPipeline.
 FailPendingOperation continua no SessionActivityPipeline.
-PendingActivityContentReleaseContext continua state técnico do macro pipeline.
+PendingActivityContentReleaseContext continua state tÃ©cnico do macro pipeline.
 ```
 
 ### Escopo aplicado
 
 ```text
 Criado ActivityContentSceneUnloadDispatchStage.
-Criada bridge transitória IActivityContentSceneUnloadDispatchRuntimeBridge.
+Criada bridge transitÃ³ria IActivityContentSceneUnloadDispatchRuntimeBridge.
 ExecuteNextActivityContentSceneRelease deixou de montar diretamente command/pending operation/runner call.
 ActivityContentSceneUnloadCommandIssued foi preservado pelo stage dedicado.
 Pending operation ActivityContentSceneUnload continua sendo criada antes do runner async.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-Não moveu CompleteActivityContentSceneUnloadOperation.
-Não moveu FinalizeActivityContentReleaseCompleted.
-Não moveu FailPendingOperation.
-Não moveu PendingActivityContentReleaseContext.
-Não alterou UnityActivityContentSceneReleaseAdapter.
-Não alterou UnitySessionActivityPendingOperationRunner.
-Não alterou restart/activity transition/deactivation continuation.
-Não alterou RouteExit closure.
-Não alterou RouteActivitySave.
-Não criou ActivityContentReleasePipeline.
-Não criou ActivityExitPipeline.
+NÃ£o moveu CompleteActivityContentSceneUnloadOperation.
+NÃ£o moveu FinalizeActivityContentReleaseCompleted.
+NÃ£o moveu FailPendingOperation.
+NÃ£o moveu PendingActivityContentReleaseContext.
+NÃ£o alterou UnityActivityContentSceneReleaseAdapter.
+NÃ£o alterou UnitySessionActivityPendingOperationRunner.
+NÃ£o alterou restart/activity transition/deactivation continuation.
+NÃ£o alterou RouteExit closure.
+NÃ£o alterou RouteActivitySave.
+NÃ£o criou ActivityContentReleasePipeline.
+NÃ£o criou ActivityExitPipeline.
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -3414,28 +3416,28 @@ RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 pendingOperation ActivityContentSceneUnload observado nos releases com content
-activity_02 no-content preserva skip explícito
+activity_02 no-content preserva skip explÃ­cito
 ```
 
-### Débito controlado
+### DÃ©bito controlado
 
 ```text
-IActivityContentSceneUnloadDispatchRuntimeBridge é transitória.
+IActivityContentSceneUnloadDispatchRuntimeBridge Ã© transitÃ³ria.
 CompleteActivityContentSceneUnloadOperation ainda concentra continuation macro.
-ActivityContentRelease finalization ainda deve ser auditada antes de qualquer extração futura.
+ActivityContentRelease finalization ainda deve ser auditada antes de qualquer extraÃ§Ã£o futura.
 ```
 
-## SA-7G2A — ActivityContentReleaseFinalizationStage
+## SA-7G2A â€” ActivityContentReleaseFinalizationStage
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-A finalização determinística de `ActivityContentRelease` foi extraída para stage dedicado:
+A finalizaÃ§Ã£o determinÃ­stica de `ActivityContentRelease` foi extraÃ­da para stage dedicado:
 
 ```text
 SessionActivityPipeline
--> decide que o content release chegou ao ponto de finalização
+-> decide que o content release chegou ao ponto de finalizaÃ§Ã£o
 -> ActivityContentReleaseFinalizationStage
    -> emite ActivityContentReleaseFinalizationStarted
    -> preserva ActivityContentReleaseCompleted
@@ -3454,16 +3456,16 @@ SessionActivityPipeline
 
 ```text
 SessionActivityPipeline continua dono do macro lifecycle.
-ActivityContentReleaseFinalizationStage fecha apenas o release determinístico.
+ActivityContentReleaseFinalizationStage fecha apenas o release determinÃ­stico.
 StartPendingRestartEntry permanece no SessionActivityPipeline.
 CompleteRouteExitClosure permanece no SessionActivityPipeline.
 ContinueAfterDeactivationAsync permanece no SessionActivityPipeline.
 NextActivity continuation permanece no SessionActivityPipeline.
 ```
 
-### Observabilidade obrigatória aplicada
+### Observabilidade obrigatÃ³ria aplicada
 
-O corte preserva os nomes canônicos:
+O corte preserva os nomes canÃ´nicos:
 
 ```text
 ActivityContentReleaseCompleted
@@ -3473,7 +3475,7 @@ ActivityObjectContributorUnregistered
 ActivityObjectContributorUnregisterCompleted
 ```
 
-E adiciona os eventos explícitos:
+E adiciona os eventos explÃ­citos:
 
 ```text
 ActivityContentReleaseFinalizationStarted
@@ -3482,7 +3484,7 @@ ActivityContentReleaseFinalizationCleanupCompleted
 ActivityContentReleaseFinalizationCompleted
 ```
 
-Campos observáveis adicionados:
+Campos observÃ¡veis adicionados:
 
 ```text
 owner='ActivityContentReleaseFinalizationStage'
@@ -3507,23 +3509,23 @@ awaitingContinuationAfter
 continuationKind
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-CompleteActivityContentSceneUnloadOperation não foi movido.
-FailPendingOperation não foi movido.
-StartPendingRestartEntry não foi movido.
-CompleteRouteExitClosure não foi movido.
-ContinueAfterDeactivationAsync não foi movido.
-NextActivity continuation não foi movido.
-UnityActivityContentSceneReleaseAdapter não foi alterado.
-UnitySessionActivityPendingOperationRunner não foi alterado.
-RouteActivitySave não foi alterado.
-Não foi criado ActivityContentReleasePipeline.
-Não foi criado ActivityExitPipeline.
+CompleteActivityContentSceneUnloadOperation nÃ£o foi movido.
+FailPendingOperation nÃ£o foi movido.
+StartPendingRestartEntry nÃ£o foi movido.
+CompleteRouteExitClosure nÃ£o foi movido.
+ContinueAfterDeactivationAsync nÃ£o foi movido.
+NextActivity continuation nÃ£o foi movido.
+UnityActivityContentSceneReleaseAdapter nÃ£o foi alterado.
+UnitySessionActivityPendingOperationRunner nÃ£o foi alterado.
+RouteActivitySave nÃ£o foi alterado.
+NÃ£o foi criado ActivityContentReleasePipeline.
+NÃ£o foi criado ActivityExitPipeline.
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -3551,21 +3553,21 @@ ActivityObjectContributorUnregister PASS
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
-activity_02 no-content preserva skip explícito
+activity_02 no-content preserva skip explÃ­cito
 ```
 
 
-## SA-7G2A-H1 — ActivityContentReleaseCompleted observability alias
+## SA-7G2A-H1 â€” ActivityContentReleaseCompleted observability alias
 
 
 
 ### Status
 
-`SA-7G2A-H1` está `CLOSED / PASS funcional + PASS arquitetural do hygiene`.
+`SA-7G2A-H1` estÃ¡ `CLOSED / PASS funcional + PASS arquitetural do hygiene`.
 
-### Evidência de smoke
+### EvidÃªncia de smoke
 
-Smoke manual validado após aplicação do H1.
+Smoke manual validado apÃ³s aplicaÃ§Ã£o do H1.
 
 Resultado observado:
 
@@ -3585,7 +3587,7 @@ event='ActivityContentReleaseCompleted'
 owner='ActivityContentReleaseFinalizationStage'
 ```
 
-O evento aparece nos três caminhos relevantes:
+O evento aparece nos trÃªs caminhos relevantes:
 
 ```text
 RestartCurrentActivity:
@@ -3639,26 +3641,26 @@ Activity01ToActivity02 checkpointStatus='Passed'
 RouteExitBackToMenu checkpointStatus='Passed'
 ```
 
-Conclusão arquitetural:
+ConclusÃ£o arquitetural:
 
 ```text
 O H1 corrigiu somente a observabilidade literal exigida pelo SA-7G2.
-Não houve alteração de lifecycle.
-Não houve alteração de cleanup.
-Não houve alteração de continuation macro.
-Não houve ActivityContentReleasePipeline.
-Não houve ActivityExitPipeline.
-SessionActivityPipeline segue dono da continuação macro.
-ActivityContentReleaseFinalizationStage segue responsável apenas pela finalização determinística.
+NÃ£o houve alteraÃ§Ã£o de lifecycle.
+NÃ£o houve alteraÃ§Ã£o de cleanup.
+NÃ£o houve alteraÃ§Ã£o de continuation macro.
+NÃ£o houve ActivityContentReleasePipeline.
+NÃ£o houve ActivityExitPipeline.
+SessionActivityPipeline segue dono da continuaÃ§Ã£o macro.
+ActivityContentReleaseFinalizationStage segue responsÃ¡vel apenas pela finalizaÃ§Ã£o determinÃ­stica.
 ```
 
 ### Motivo
 
-O smoke de `SA-7G2A` validou funcionalmente o fluxo de finalization, cleanup e continuation, mas a observabilidade literal `event='ActivityContentReleaseCompleted'` não apareceu no log. O nome `ActivityContentReleaseCompleted` aparecia como `stage` e como fact interno, mas não como evento OBS explícito do stage.
+O smoke de `SA-7G2A` validou funcionalmente o fluxo de finalization, cleanup e continuation, mas a observabilidade literal `event='ActivityContentReleaseCompleted'` nÃ£o apareceu no log. O nome `ActivityContentReleaseCompleted` aparecia como `stage` e como fact interno, mas nÃ£o como evento OBS explÃ­cito do stage.
 
-Como `SA-7G2` exigiu observabilidade canônica preservada, este hygiene adiciona um alias/fact OBS explícito sem alterar lifecycle.
+Como `SA-7G2` exigiu observabilidade canÃ´nica preservada, este hygiene adiciona um alias/fact OBS explÃ­cito sem alterar lifecycle.
 
-### Alteração
+### AlteraÃ§Ã£o
 
 `ActivityContentReleaseFinalizationStage` passa a emitir:
 
@@ -3667,7 +3669,7 @@ event='ActivityContentReleaseCompleted'
 owner='ActivityContentReleaseFinalizationStage'
 ```
 
-logo após `SessionActivityFactKind.ActivityContentReleaseCompleted` ser registrado e antes de `SessionActivityDematerializationCompleted`.
+logo apÃ³s `SessionActivityFactKind.ActivityContentReleaseCompleted` ser registrado e antes de `SessionActivityDematerializationCompleted`.
 
 Campos preservados:
 
@@ -3696,15 +3698,15 @@ continuationKind
 ### Escopo
 
 ```text
-Sem alteração de lifecycle.
-Sem alteração de cleanup.
-Sem alteração de continuation macro.
-Sem alteração de RouteExit/Restart/NextActivity.
+Sem alteraÃ§Ã£o de lifecycle.
+Sem alteraÃ§Ã£o de cleanup.
+Sem alteraÃ§Ã£o de continuation macro.
+Sem alteraÃ§Ã£o de RouteExit/Restart/NextActivity.
 Sem novo pipeline.
 Sem fallback.
 ```
 
-### Smoke necessário
+### Smoke necessÃ¡rio
 
 ```text
 sem erros CS
@@ -3721,15 +3723,15 @@ RouteExitBackToMenu PASS
 ```
 
 
-## SA-7G2B — ActivityContentReleaseContinuation audit
+## SA-7G2B â€” ActivityContentReleaseContinuation audit
 
 Status: `CLOSED / AUDIT ONLY`.
 
-### Decisão
+### DecisÃ£o
 
-Não criar `ActivityContentReleaseContinuationStage` ainda.
+NÃ£o criar `ActivityContentReleaseContinuationStage` ainda.
 
-A continuação pós-release ainda é macro lifecycle do `SessionActivityPipeline`.
+A continuaÃ§Ã£o pÃ³s-release ainda Ã© macro lifecycle do `SessionActivityPipeline`.
 
 ### Owner correto
 
@@ -3741,28 +3743,28 @@ SessionActivityPipeline continua dono de:
 - deactivation/complete continuation.
 ```
 
-### Próximo corte recomendado
+### PrÃ³ximo corte recomendado
 
 ```text
-SA-7G2B-H1 — ActivityContentReleaseContinuationObservability
+SA-7G2B-H1 â€” ActivityContentReleaseContinuationObservability
 ```
 
 Escopo:
 
 ```text
-Adicionar fact/OBS explícito para:
+Adicionar fact/OBS explÃ­cito para:
 - ActivityContentReleaseContinuationResolved;
 - ActivityContentReleaseContinuationStarted;
 - ActivityContentReleaseContinuationCompleted.
 ```
 
-Owner obrigatório:
+Owner obrigatÃ³rio:
 
 ```text
 owner='SessionActivityPipeline'
 ```
 
-Campos obrigatórios:
+Campos obrigatÃ³rios:
 
 ```text
 pipelineId
@@ -3792,18 +3794,18 @@ nextStage
 ### Escopo proibido no H1
 
 ```text
-Não criar ActivityContentReleaseContinuationStage.
-Não criar ActivityContentReleasePipeline.
-Não criar ActivityExitPipeline.
-Não mover StartPendingRestartEntry.
-Não mover CompleteRouteExitClosure.
-Não mover ContinueAfterDeactivationAsync.
-Não alterar route-exit handoff.
-Não alterar restart lifecycle.
-Não alterar next activity lifecycle.
+NÃ£o criar ActivityContentReleaseContinuationStage.
+NÃ£o criar ActivityContentReleasePipeline.
+NÃ£o criar ActivityExitPipeline.
+NÃ£o mover StartPendingRestartEntry.
+NÃ£o mover CompleteRouteExitClosure.
+NÃ£o mover ContinueAfterDeactivationAsync.
+NÃ£o alterar route-exit handoff.
+NÃ£o alterar restart lifecycle.
+NÃ£o alterar next activity lifecycle.
 ```
 
-### Critério de aceite futuro
+### CritÃ©rio de aceite futuro
 
 ```text
 sem erros CS
@@ -3813,20 +3815,20 @@ sem route_transition_failed
 sem foreign/stale indevido
 ActivityContentReleaseContinuationResolved aparece
 ActivityContentReleaseContinuationStarted aparece
-ActivityContentReleaseContinuationCompleted aparece quando aplicável
+ActivityContentReleaseContinuationCompleted aparece quando aplicÃ¡vel
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
 owner='SessionActivityPipeline'
 ```
 
-## SA-7G2B-H1 — ActivityContentReleaseContinuationObservability
+## SA-7G2B-H1 â€” ActivityContentReleaseContinuationObservability
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-Observabilidade explícita foi adicionada para a continuação macro pós-`ActivityContentReleaseFinalizationStage`.
+Observabilidade explÃ­cita foi adicionada para a continuaÃ§Ã£o macro pÃ³s-`ActivityContentReleaseFinalizationStage`.
 
 Eventos novos:
 
@@ -3836,7 +3838,7 @@ ActivityContentReleaseContinuationStarted
 ActivityContentReleaseContinuationCompleted
 ```
 
-Owner obrigatório preservado:
+Owner obrigatÃ³rio preservado:
 
 ```text
 owner='SessionActivityPipeline'
@@ -3845,23 +3847,23 @@ owner='SessionActivityPipeline'
 ### Regra arquitetural
 
 ```text
-Pipeline decide a continuação.
-Logs tornam a decisão verificável.
+Pipeline decide a continuaÃ§Ã£o.
+Logs tornam a decisÃ£o verificÃ¡vel.
 ```
 
-O patch não cria `ActivityContentReleaseContinuationStage`, não cria `ActivityContentReleasePipeline` e não cria `ActivityExitPipeline`.
+O patch nÃ£o cria `ActivityContentReleaseContinuationStage`, nÃ£o cria `ActivityContentReleasePipeline` e nÃ£o cria `ActivityExitPipeline`.
 
 ### Escopo aplicado
 
 ```text
-Adicionada telemetry interna transitória ActivityContentReleaseContinuationTelemetry.
-ActivityContentReleaseContinuationResolved é emitido ao final da finalization.
-ActivityContentReleaseContinuationStarted é emitido imediatamente antes da chamada de continuação macro.
-ActivityContentReleaseContinuationCompleted é emitido após a chamada síncrona/delegação aplicável.
-RestartCurrentActivity, NextActivity, RouteExit e CompleteActivity são classificados explicitamente.
+Adicionada telemetry interna transitÃ³ria ActivityContentReleaseContinuationTelemetry.
+ActivityContentReleaseContinuationResolved Ã© emitido ao final da finalization.
+ActivityContentReleaseContinuationStarted Ã© emitido imediatamente antes da chamada de continuaÃ§Ã£o macro.
+ActivityContentReleaseContinuationCompleted Ã© emitido apÃ³s a chamada sÃ­ncrona/delegaÃ§Ã£o aplicÃ¡vel.
+RestartCurrentActivity, NextActivity, RouteExit e CompleteActivity sÃ£o classificados explicitamente.
 ```
 
-### Campos observáveis
+### Campos observÃ¡veis
 
 ```text
 pipelineId
@@ -3888,20 +3890,20 @@ previousStage
 nextStage
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
 StartPendingRestartEntry continua no SessionActivityPipeline.
 CompleteRouteExitClosure continua no SessionActivityPipeline.
 ContinueAfterDeactivationAsync continua no SessionActivityPipeline.
-Route-exit handoff não foi alterado.
-Restart lifecycle não foi alterado.
-Next activity lifecycle não foi alterado.
-ActivityContentReleaseFinalizationStage não foi alterado.
-Unload adapter/runner não foram alterados.
+Route-exit handoff nÃ£o foi alterado.
+Restart lifecycle nÃ£o foi alterado.
+Next activity lifecycle nÃ£o foi alterado.
+ActivityContentReleaseFinalizationStage nÃ£o foi alterado.
+Unload adapter/runner nÃ£o foram alterados.
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -3913,7 +3915,7 @@ sem checkpointStatus='Failed'
 
 ActivityContentReleaseContinuationResolved aparece
 ActivityContentReleaseContinuationStarted aparece
-ActivityContentReleaseContinuationCompleted aparece quando aplicável
+ActivityContentReleaseContinuationCompleted aparece quando aplicÃ¡vel
 
 RestartCurrentActivity:
   continuationKind='RestartCurrentActivity'
@@ -3939,13 +3941,13 @@ RouteExitBackToMenu PASS
 ```
 
 
-## SA-7H — Release/Exit Bridge Debt audit
+## SA-7H â€” Release/Exit Bridge Debt audit
 
 Status: `CLOSED / AUDIT ONLY`.
 
-### Decisão
+### DecisÃ£o
 
-As bridges transitórias criadas nos cortes SA-7B até SA-7G2B-H1 são aceitáveis temporariamente, mas não são contratos finais.
+As bridges transitÃ³rias criadas nos cortes SA-7B atÃ© SA-7G2B-H1 sÃ£o aceitÃ¡veis temporariamente, mas nÃ£o sÃ£o contratos finais.
 
 Bridges auditadas:
 
@@ -3961,25 +3963,25 @@ IActivityContentReleaseFinalizationRuntimeBridge
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do macro lifecycle de saída/dematerialization/continuation.
-Stages dedicados executam passos determinísticos.
-Bridges apenas expõem state temporário ainda preso no pipeline.
+SessionActivityPipeline continua dono do macro lifecycle de saÃ­da/dematerialization/continuation.
+Stages dedicados executam passos determinÃ­sticos.
+Bridges apenas expÃµem state temporÃ¡rio ainda preso no pipeline.
 ```
 
 ### Regra
 
 ```text
-Não expandir bridges.
-Não transformar bridge em manager/coordinator.
-Não expor continuation macro por bridge.
-Não criar ActivityExitPipeline.
-Não criar ActivityContentReleasePipeline.
+NÃ£o expandir bridges.
+NÃ£o transformar bridge em manager/coordinator.
+NÃ£o expor continuation macro por bridge.
+NÃ£o criar ActivityExitPipeline.
+NÃ£o criar ActivityContentReleasePipeline.
 ```
 
-### Próximo corte recomendado
+### PrÃ³ximo corte recomendado
 
 ```text
-SA-7H1 — SessionActivityExitRuntimeState audit/design
+SA-7H1 â€” SessionActivityExitRuntimeState audit/design
 ```
 
 Escopo:
@@ -3995,23 +3997,23 @@ Definir smoke e observabilidade.
 Proibido:
 
 ```text
-Não mover código runtime.
-Não remover bridge ainda.
-Não alterar lifecycle.
-Não criar manager/coordinator.
-Não mover continuation macro.
+NÃ£o mover cÃ³digo runtime.
+NÃ£o remover bridge ainda.
+NÃ£o alterar lifecycle.
+NÃ£o criar manager/coordinator.
+NÃ£o mover continuation macro.
 ```
 
 
-## SA-7H1 — SessionActivityExitRuntimeState audit/design
+## SA-7H1 â€” SessionActivityExitRuntimeState audit/design
 
 Status: `CLOSED / DESIGN ONLY`.
 
-### Decisão
+### DecisÃ£o
 
-Não criar um único `SessionActivityExitRuntimeState` gigante.
+NÃ£o criar um Ãºnico `SessionActivityExitRuntimeState` gigante.
 
-Separação aprovada para próximos cortes:
+SeparaÃ§Ã£o aprovada para prÃ³ximos cortes:
 
 ```text
 ActivityActorExitRuntimeState
@@ -4032,20 +4034,20 @@ SessionActivityPipeline continua dono do macro lifecycle:
 - handoffs.
 ```
 
-Runtime states armazenam state técnico.  
-Runtime states não decidem lifecycle.
+Runtime states armazenam state tÃ©cnico.  
+Runtime states nÃ£o decidem lifecycle.
 
 ### Checkpoint SA-8C-DOC
 
 Status: CLOSED / DOCUMENTED.
 
-- `SA-ACTOR-1B1*` está fechado no trilho Actors.
-- `ActorScope` ficou congelado como fonte canônica de `lifetime/retention/release`.
-- `PlayerActor` e `NonPlayerActor` não são owners de lifetime.
+- `SA-ACTOR-1B1*` estÃ¡ fechado no trilho Actors.
+- `ActorScope` ficou congelado como fonte canÃ´nica de `lifetime/retention/release`.
+- `PlayerActor` e `NonPlayerActor` nÃ£o sÃ£o owners de lifetime.
 - `PlayerParticipation` ficou restrito a `slot/selection/participant`.
-- `ActivityActorExitRuntimeState` ficou classificado como `correlation store` técnico.
-- `ActivityPlayerActorRegistry` ficou classificado como índice técnico puro, sem `Destroy` local.
-- O próximo passo volta para decomposição macro de `SessionActivity`; não abrir `SessionScoped` ainda.
+- `ActivityActorExitRuntimeState` ficou classificado como `correlation store` tÃ©cnico.
+- `ActivityPlayerActorRegistry` ficou classificado como Ã­ndice tÃ©cnico puro, sem `Destroy` local.
+- O prÃ³ximo passo volta para decomposiÃ§Ã£o macro de `SessionActivity`; nÃ£o abrir `SessionScoped` ainda.
 
 ### Mapeamento
 
@@ -4063,37 +4065,37 @@ ActivityContentReleaseRuntimeState:
   IActivityContentReleaseFinalizationRuntimeBridge.
 ```
 
-### Próximo corte recomendado
+### PrÃ³ximo corte recomendado
 
 ```text
-SA-7H2 — ActivityContentReleaseRuntimeState implementation
+SA-7H2 â€” ActivityContentReleaseRuntimeState implementation
 ```
 
 Motivo:
 
 ```text
-É o menor state coeso.
+Ã‰ o menor state coeso.
 Cobre loaded set, pending release context e awaiting flag.
 Reduz duas bridges relacionadas.
-Não toca actor stores.
-Não toca snapshot payload/save.
-Não move continuation macro.
+NÃ£o toca actor stores.
+NÃ£o toca snapshot payload/save.
+NÃ£o move continuation macro.
 ```
 
 ### Proibido no SA-7H2
 
 ```text
-Não mover CompleteActivityContentSceneUnloadOperation.
-Não mover StartPendingRestartEntry.
-Não mover CompleteRouteExitClosure.
-Não mover ContinueAfterDeactivationAsync.
-Não criar manager/coordinator.
-Não criar ActivityExitPipeline.
-Não criar ActivityContentReleasePipeline.
-Não alterar RouteActivitySave.
+NÃ£o mover CompleteActivityContentSceneUnloadOperation.
+NÃ£o mover StartPendingRestartEntry.
+NÃ£o mover CompleteRouteExitClosure.
+NÃ£o mover ContinueAfterDeactivationAsync.
+NÃ£o criar manager/coordinator.
+NÃ£o criar ActivityExitPipeline.
+NÃ£o criar ActivityContentReleasePipeline.
+NÃ£o alterar RouteActivitySave.
 ```
 
-### Critério de aceite futuro
+### CritÃ©rio de aceite futuro
 
 ```text
 sem erros CS
@@ -4112,13 +4114,13 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-## SA-7H2 — ActivityContentReleaseRuntimeState implementation
+## SA-7H2 â€” ActivityContentReleaseRuntimeState implementation
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-Criado `ActivityContentReleaseRuntimeState` para concentrar o state técnico de release async de ActivityContent:
+Criado `ActivityContentReleaseRuntimeState` para concentrar o state tÃ©cnico de release async de ActivityContent:
 
 ```text
 CurrentLoadedSet
@@ -4130,7 +4132,7 @@ IsAwaitingContinuation
 
 ```text
 SessionActivityPipeline continua dono da continuation macro.
-ActivityContentReleaseRuntimeState guarda apenas state técnico.
+ActivityContentReleaseRuntimeState guarda apenas state tÃ©cnico.
 ActivityContentSceneUnloadDispatchStage continua stage de dispatch.
 ActivityContentReleaseFinalizationStage continua stage de finalization.
 ```
@@ -4140,21 +4142,21 @@ ActivityContentReleaseFinalizationStage continua stage de finalization.
 ```text
 Criado NewScripts/SessionActivity/Pipeline/Runtime/ActivityContentReleaseRuntimeState.cs.
 SessionActivityPipeline passa a delegar pending release context e awaiting flag ao runtime state.
-Set/Clear de CurrentActivityContentLoadedSet passa a espelhar o state técnico no runtime state.
-Bridges existentes continuam como camada transitória, mas agora leem/limpam o runtime state em vez de fields soltos do pipeline.
+Set/Clear de CurrentActivityContentLoadedSet passa a espelhar o state tÃ©cnico no runtime state.
+Bridges existentes continuam como camada transitÃ³ria, mas agora leem/limpam o runtime state em vez de fields soltos do pipeline.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-CompleteActivityContentSceneUnloadOperation não foi movido.
-StartPendingRestartEntry não foi movido.
-CompleteRouteExitClosure não foi movido.
-ContinueAfterDeactivationAsync não foi movido.
+CompleteActivityContentSceneUnloadOperation nÃ£o foi movido.
+StartPendingRestartEntry nÃ£o foi movido.
+CompleteRouteExitClosure nÃ£o foi movido.
+ContinueAfterDeactivationAsync nÃ£o foi movido.
 ActivityContentReleaseContinuation* permanece owner='SessionActivityPipeline'.
-RouteActivitySave não foi alterado.
-ActivityExitPipeline não foi criado.
-ActivityContentReleasePipeline não foi criado.
+RouteActivitySave nÃ£o foi alterado.
+ActivityExitPipeline nÃ£o foi criado.
+ActivityContentReleasePipeline nÃ£o foi criado.
 ```
 
 ### Observabilidade nova esperada
@@ -4167,7 +4169,7 @@ ActivityContentReleaseRuntimeStatePendingContextCleared
 ActivityContentReleaseRuntimeStateAwaitingContinuationChanged
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -4189,13 +4191,13 @@ RouteExitBackToMenu Passed
 ```
 
 
-## SA-7H2-H1 — ContentRelease bridge retirement audit
+## SA-7H2-H1 â€” ContentRelease bridge retirement audit
 
 Status: `CLOSED / AUDIT ONLY`.
 
-### Decisão
+### DecisÃ£o
 
-Não remover as duas bridges de `ActivityContentRelease` de uma vez.
+NÃ£o remover as duas bridges de `ActivityContentRelease` de uma vez.
 
 Bridges auditadas:
 
@@ -4208,50 +4210,50 @@ IActivityContentReleaseFinalizationRuntimeBridge
 
 ```text
 IActivityContentSceneUnloadDispatchRuntimeBridge:
-  pode ser reduzida/removida primeiro, desde que ActivityContentSceneUnloadDispatchStage dependa de ActivityContentReleaseRuntimeState e ports explícitos de pending operation/runner.
+  pode ser reduzida/removida primeiro, desde que ActivityContentSceneUnloadDispatchStage dependa de ActivityContentReleaseRuntimeState e ports explÃ­citos de pending operation/runner.
 
 IActivityContentReleaseFinalizationRuntimeBridge:
-  pode ser reduzida/removida depois, desde que ActivityContentReleaseFinalizationStage dependa de ActivityContentReleaseRuntimeState e de ActivityObjectContributorUnregisterStage ou executor explícito.
+  pode ser reduzida/removida depois, desde que ActivityContentReleaseFinalizationStage dependa de ActivityContentReleaseRuntimeState e de ActivityObjectContributorUnregisterStage ou executor explÃ­cito.
 ```
 
-### Próximos cortes recomendados
+### PrÃ³ximos cortes recomendados
 
 ```text
-SA-7H2-H2 — ActivityContentSceneUnloadDispatchBridgeReduction
-SA-7H2-H3 — ActivityContentReleaseFinalizationBridgeReduction
+SA-7H2-H2 â€” ActivityContentSceneUnloadDispatchBridgeReduction
+SA-7H2-H3 â€” ActivityContentReleaseFinalizationBridgeReduction
 ```
 
 ### Owner preservado
 
 ```text
 SessionActivityPipeline continua dono do macro lifecycle e da continuation.
-ActivityContentReleaseRuntimeState guarda state técnico.
-Stages executam passos determinísticos.
-Bridges são transitórias.
+ActivityContentReleaseRuntimeState guarda state tÃ©cnico.
+Stages executam passos determinÃ­sticos.
+Bridges sÃ£o transitÃ³rias.
 ```
 
 ### Proibido
 
 ```text
-Não mover CompleteActivityContentSceneUnloadOperation.
-Não mover FailPendingOperation.
-Não mover StartPendingRestartEntry.
-Não mover CompleteRouteExitClosure.
-Não mover ContinueAfterDeactivationAsync.
-Não alterar RouteActivitySave.
-Não criar ActivityContentReleasePipeline.
-Não criar ActivityExitPipeline.
+NÃ£o mover CompleteActivityContentSceneUnloadOperation.
+NÃ£o mover FailPendingOperation.
+NÃ£o mover StartPendingRestartEntry.
+NÃ£o mover CompleteRouteExitClosure.
+NÃ£o mover ContinueAfterDeactivationAsync.
+NÃ£o alterar RouteActivitySave.
+NÃ£o criar ActivityContentReleasePipeline.
+NÃ£o criar ActivityExitPipeline.
 ```
 
-## SA-7H2-H2 — ActivityContentSceneUnloadDispatchBridgeReduction
+## SA-7H2-H2 â€” ActivityContentSceneUnloadDispatchBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Resultado do smoke — 2026-06-02
+### Resultado do smoke â€” 2026-06-02
 
 Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
 sem erros CS
@@ -4275,22 +4277,22 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-Decisão:
+DecisÃ£o:
 
 ```text
 SA-7H2-H2 fechado como PASS funcional + PASS arquitetural do corte.
-A redução da bridge de dispatch de unload não regrediu restart, transition, route-exit, snapshot/release/unregister nem continuation macro.
+A reduÃ§Ã£o da bridge de dispatch de unload nÃ£o regrediu restart, transition, route-exit, snapshot/release/unregister nem continuation macro.
 ```
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-A bridge transitória de dispatch de unload de `ActivityContent` foi removida do caminho ativo:
+A bridge transitÃ³ria de dispatch de unload de `ActivityContent` foi removida do caminho ativo:
 
 ```text
 IActivityContentSceneUnloadDispatchRuntimeBridge
 ```
 
-O stage passou a depender de contratos explícitos:
+O stage passou a depender de contratos explÃ­citos:
 
 ```text
 ActivityContentReleaseRuntimeState
@@ -4303,38 +4305,38 @@ ISessionActivityPendingOperationCallback
 
 ```text
 SessionActivityPipeline continua dono do callback e da continuation macro.
-ActivityContentReleaseRuntimeState guarda state técnico.
-ActivityContentSceneUnloadDispatchStage executa apenas o dispatch determinístico de unload.
-PendingOperationRunner continua bridge técnica async.
+ActivityContentReleaseRuntimeState guarda state tÃ©cnico.
+ActivityContentSceneUnloadDispatchStage executa apenas o dispatch determinÃ­stico de unload.
+PendingOperationRunner continua bridge tÃ©cnica async.
 UnityActivityContentSceneReleaseAdapter continua adapter de side-effect Unity.
 ```
 
 ### Escopo aplicado
 
 ```text
-ActivityContentSceneUnloadDispatchStage lê PendingActivityContentReleaseContext via ActivityContentReleaseRuntimeState.
-ActivityContentSceneUnloadDispatchStage monta SessionActivityPendingOperation localmente a partir de identity canônica.
+ActivityContentSceneUnloadDispatchStage lÃª PendingActivityContentReleaseContext via ActivityContentReleaseRuntimeState.
+ActivityContentSceneUnloadDispatchStage monta SessionActivityPendingOperation localmente a partir de identity canÃ´nica.
 ActivityContentSceneUnloadDispatchStage chama ISessionActivityPendingOperationRunner.RunActivityContentReleaseOperation diretamente.
 SessionActivityPipeline deixou de implementar IActivityContentSceneUnloadDispatchRuntimeBridge.
-Métodos explícitos da bridge de dispatch foram removidos.
+MÃ©todos explÃ­citos da bridge de dispatch foram removidos.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-CompleteActivityContentSceneUnloadOperation não foi movido.
-FailPendingOperation não foi movido.
-StartPendingRestartEntry não foi movido.
-CompleteRouteExitClosure não foi movido.
-ContinueAfterDeactivationAsync não foi movido.
-ActivityContentReleaseFinalizationStage não foi alterado.
-ActivityObjectContributorUnregisterStage não foi alterado.
-RouteActivitySave não foi alterado.
-Não foi criado ActivityContentReleasePipeline.
-Não foi criado ActivityExitPipeline.
+CompleteActivityContentSceneUnloadOperation nÃ£o foi movido.
+FailPendingOperation nÃ£o foi movido.
+StartPendingRestartEntry nÃ£o foi movido.
+CompleteRouteExitClosure nÃ£o foi movido.
+ContinueAfterDeactivationAsync nÃ£o foi movido.
+ActivityContentReleaseFinalizationStage nÃ£o foi alterado.
+ActivityObjectContributorUnregisterStage nÃ£o foi alterado.
+RouteActivitySave nÃ£o foi alterado.
+NÃ£o foi criado ActivityContentReleasePipeline.
+NÃ£o foi criado ActivityExitPipeline.
 ```
 
-### Critério de smoke
+### CritÃ©rio de smoke
 
 ```text
 sem erros CS
@@ -4359,15 +4361,15 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-## SA-7H2-H3 — ActivityContentReleaseFinalizationBridgeReduction
+## SA-7H2-H3 â€” ActivityContentReleaseFinalizationBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Resultado do smoke — 2026-06-02
+### Resultado do smoke â€” 2026-06-02
 
 Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
 sem erros CS
@@ -4389,14 +4391,14 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-Decisão:
+DecisÃ£o:
 
 ```text
 SA-7H2-H3 fechado como PASS funcional + PASS arquitetural do corte.
-A remoção da finalization bridge não transformou ActivityContentReleaseFinalizationStage em owner de lifecycle macro; a continuation permanece no SessionActivityPipeline.
+A remoÃ§Ã£o da finalization bridge nÃ£o transformou ActivityContentReleaseFinalizationStage em owner de lifecycle macro; a continuation permanece no SessionActivityPipeline.
 ```
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
 `IActivityContentReleaseFinalizationRuntimeBridge` foi removida do caminho ativo de finalization de `ActivityContentRelease`.
 
@@ -4411,9 +4413,9 @@ IActivityEntryRuntimeEndpoint
 ### Owner preservado
 
 ```text
-ActivityContentReleaseRuntimeState guarda state técnico de release async.
-ActivityContentReleaseFinalizationStage executa somente finalization determinística.
-ActivityObjectContributorUnregisterStage continua stage explícito.
+ActivityContentReleaseRuntimeState guarda state tÃ©cnico de release async.
+ActivityContentReleaseFinalizationStage executa somente finalization determinÃ­stica.
+ActivityObjectContributorUnregisterStage continua stage explÃ­cito.
 SessionActivityPipeline continua dono de continuation macro.
 ```
 
@@ -4421,7 +4423,7 @@ SessionActivityPipeline continua dono de continuation macro.
 
 ```text
 IActivityContentReleaseFinalizationRuntimeBridge
-implementações explícitas dessa bridge no SessionActivityPipeline
+implementaÃ§Ãµes explÃ­citas dessa bridge no SessionActivityPipeline
 acesso indireto ao ActivityContentReleaseRuntimeState via bridge
 chamada indireta de unregister via finalization bridge
 ```
@@ -4441,31 +4443,31 @@ ActivityContentReleaseContinuationResolved/Started/Completed preservado
 ### Escopo proibido preservado
 
 ```text
-CompleteActivityContentSceneUnloadOperation não foi movido.
-FailPendingOperation não foi movido.
-StartPendingRestartEntry não foi movido.
-CompleteRouteExitClosure não foi movido.
-ContinueAfterDeactivationAsync não foi movido.
-RouteActivitySave não foi alterado.
-ActivityContentReleasePipeline não foi criado.
-ActivityExitPipeline não foi criado.
-Manager/coordinator novo não foi criado.
+CompleteActivityContentSceneUnloadOperation nÃ£o foi movido.
+FailPendingOperation nÃ£o foi movido.
+StartPendingRestartEntry nÃ£o foi movido.
+CompleteRouteExitClosure nÃ£o foi movido.
+ContinueAfterDeactivationAsync nÃ£o foi movido.
+RouteActivitySave nÃ£o foi alterado.
+ActivityContentReleasePipeline nÃ£o foi criado.
+ActivityExitPipeline nÃ£o foi criado.
+Manager/coordinator novo nÃ£o foi criado.
 ```
 
-### Observação
+### ObservaÃ§Ã£o
 
-`ActivityContentReleaseFinalizationStage` ainda usa `IActivityEntryRuntimeEndpoint.ClearCurrentActivityContentLoadedSet()` para limpar o loaded set espelhado em `SessionActivityRuntimeState`, enquanto `ActivityContentReleaseRuntimeState` permanece dono do state técnico de release async.
+`ActivityContentReleaseFinalizationStage` ainda usa `IActivityEntryRuntimeEndpoint.ClearCurrentActivityContentLoadedSet()` para limpar o loaded set espelhado em `SessionActivityRuntimeState`, enquanto `ActivityContentReleaseRuntimeState` permanece dono do state tÃ©cnico de release async.
 
-Isso não move lifecycle e não reintroduz a bridge de finalization.
-## SA-7H3A — ActivityObjectExitRuntimeState
+Isso nÃ£o move lifecycle e nÃ£o reintroduz a bridge de finalization.
+## SA-7H3A â€” ActivityObjectExitRuntimeState
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Resultado do smoke — 2026-06-02
+### Resultado do smoke â€” 2026-06-02
 
 Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
 sem erros CS
@@ -4486,16 +4488,16 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-Decisão:
+DecisÃ£o:
 
 ```text
 SA-7H3A fechado como PASS funcional + PASS arquitetural do corte.
-ActivityObjectExitRuntimeState ficou validado como owner técnico de state de object exit, sem assumir lifecycle, save ou continuation macro.
+ActivityObjectExitRuntimeState ficou validado como owner tÃ©cnico de state de object exit, sem assumir lifecycle, save ou continuation macro.
 ```
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-`ActivityObjectExitRuntimeState` foi criado como owner técnico do state de object exit:
+`ActivityObjectExitRuntimeState` foi criado como owner tÃ©cnico do state de object exit:
 
 ```text
 CurrentActivityObjectContributorDiscoveryResult
@@ -4515,36 +4517,36 @@ IActivityObjectContributorUnregisterRuntimeBridge passa a ler/limpar via Activit
 ISessionActivitySnapshotPayloadProvider.TryGetSnapshotPayloadForSaveOnExit passa a ler o payload via ActivityObjectExitRuntimeState.
 ```
 
-### Compatibilidade técnica transitória
+### Compatibilidade tÃ©cnica transitÃ³ria
 
 ```text
 As bridges de object exit continuam existindo como facade fina.
-SessionActivityRuntimeState ainda mantém espelho para consumidores de entry que ainda não foram migrados.
-Esse espelho não é owner final e deve ser removido em cortes SA-7H3B/C/D.
+SessionActivityRuntimeState ainda mantÃ©m espelho para consumidores de entry que ainda nÃ£o foram migrados.
+Esse espelho nÃ£o Ã© owner final e deve ser removido em cortes SA-7H3B/C/D.
 ```
 
 ### Owner preservado
 
 ```text
 SessionActivityPipeline continua dono do macro lifecycle.
-ActivityObjectExitRuntimeState guarda state técnico.
-Stages continuam executando passos determinísticos.
+ActivityObjectExitRuntimeState guarda state tÃ©cnico.
+Stages continuam executando passos determinÃ­sticos.
 RouteActivitySave continua consumidor do payload.
 ```
 
 ### Proibido preservado
 
 ```text
-RouteActivitySave não foi movido.
-Save não é executado pelo runtime state.
-ActivityContentRelease não foi movido.
-Callback async não foi movido.
-Continuation macro não foi movida.
-ActivityExitPipeline não foi criado.
-Manager/coordinator novo não foi criado.
+RouteActivitySave nÃ£o foi movido.
+Save nÃ£o Ã© executado pelo runtime state.
+ActivityContentRelease nÃ£o foi movido.
+Callback async nÃ£o foi movido.
+Continuation macro nÃ£o foi movida.
+ActivityExitPipeline nÃ£o foi criado.
+Manager/coordinator novo nÃ£o foi criado.
 ```
 
-### Smoke necessário
+### Smoke necessÃ¡rio
 
 ```text
 sem erros CS
@@ -4562,15 +4564,15 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-## SA-7H3B — ActivityObjectSnapshotCaptureBridgeReduction
+## SA-7H3B â€” ActivityObjectSnapshotCaptureBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Resultado do smoke — 2026-06-02
+### Resultado do smoke â€” 2026-06-02
 
 Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
 sem erros CS
@@ -4589,14 +4591,14 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-Decisão:
+DecisÃ£o:
 
 ```text
 SA-7H3B fechado como PASS funcional + PASS arquitetural do corte.
-ActivityObjectSnapshotCaptureStage passou a usar ActivityObjectExitRuntimeState como state técnico direto sem reintroduzir bridge ativa ou mover RouteActivitySave.
+ActivityObjectSnapshotCaptureStage passou a usar ActivityObjectExitRuntimeState como state tÃ©cnico direto sem reintroduzir bridge ativa ou mover RouteActivitySave.
 ```
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
 `IActivityObjectSnapshotCaptureRuntimeBridge` saiu do caminho ativo.
 
@@ -4611,7 +4613,7 @@ IActivityEntryRuntimeEndpoint
 
 ```text
 ActivityObjectExitRuntimeState guarda discovery/inventory/snapshot payload.
-ActivityObjectSnapshotCaptureStage executa apenas snapshot capture determinístico.
+ActivityObjectSnapshotCaptureStage executa apenas snapshot capture determinÃ­stico.
 SessionActivityPipeline continua dono de ordering/lifecycle/continuation macro.
 RouteActivitySave continua consumidor externo do payload.
 ```
@@ -4620,7 +4622,7 @@ RouteActivitySave continua consumidor externo do payload.
 
 ```text
 IActivityObjectSnapshotCaptureRuntimeBridge
-implementações explícitas dessa bridge no SessionActivityPipeline
+implementaÃ§Ãµes explÃ­citas dessa bridge no SessionActivityPipeline
 acesso indireto ao ActivityObjectExitRuntimeState via bridge de snapshot capture
 ```
 
@@ -4633,32 +4635,32 @@ ActivityObjectSnapshotCaptureStarted preservado.
 ActivityObjectSnapshotCaptureCompleted preservado.
 ActivityObjectExitRuntimeStateSnapshotPayloadStored preservado.
 TryGetSnapshotPayloadForSaveOnExit continua lendo do ActivityObjectExitRuntimeState.
-RouteActivitySave não foi movido.
+RouteActivitySave nÃ£o foi movido.
 ```
 
 ### Escopo proibido preservado
 
 ```text
-RouteActivitySave não foi movido.
-Save não é executado pelo runtime state.
-ObjectRelease não foi alterado.
-ContributorUnregister não foi alterado.
-ActivityContentRelease não foi alterado.
-Callback async não foi movido.
-Restart / next activity / route-exit / deactivation continuation não foram movidos.
-ActivityExitPipeline não foi criado.
-Manager/coordinator novo não foi criado.
+RouteActivitySave nÃ£o foi movido.
+Save nÃ£o Ã© executado pelo runtime state.
+ObjectRelease nÃ£o foi alterado.
+ContributorUnregister nÃ£o foi alterado.
+ActivityContentRelease nÃ£o foi alterado.
+Callback async nÃ£o foi movido.
+Restart / next activity / route-exit / deactivation continuation nÃ£o foram movidos.
+ActivityExitPipeline nÃ£o foi criado.
+Manager/coordinator novo nÃ£o foi criado.
 ```
 
-## SA-7H3C-D — ActivityObjectReleaseAndContributorUnregisterBridgeReduction
+## SA-7H3C-D â€” ActivityObjectReleaseAndContributorUnregisterBridgeReduction
 
 Status: `CLOSED / PASS funcional + PASS arquitetural do corte`.
 
-### Resultado do smoke — 2026-06-02
+### Resultado do smoke â€” 2026-06-02
 
 Smoke manual validado a partir de `FullLog.txt` enviado em 2026-06-02.
 
-Evidência aceita:
+EvidÃªncia aceita:
 
 ```text
 sem erros CS
@@ -4680,16 +4682,16 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-Decisão:
+DecisÃ£o:
 
 ```text
 SA-7H3C-D fechado como PASS funcional + PASS arquitetural do corte.
-ActivityObjectReleaseStage e ActivityObjectContributorUnregisterStage usam ActivityObjectExitRuntimeState diretamente e permanecem stages determinísticos; RouteActivitySave, callback async e continuation macro não foram movidos.
+ActivityObjectReleaseStage e ActivityObjectContributorUnregisterStage usam ActivityObjectExitRuntimeState diretamente e permanecem stages determinÃ­sticos; RouteActivitySave, callback async e continuation macro nÃ£o foram movidos.
 ```
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-As bridges transitórias restantes de object exit saíram do caminho ativo:
+As bridges transitÃ³rias restantes de object exit saÃ­ram do caminho ativo:
 
 ```text
 IActivityObjectReleaseRuntimeBridge
@@ -4714,8 +4716,8 @@ IActivityEntryRuntimeEndpoint
 
 ```text
 ActivityObjectExitRuntimeState guarda discovery/inventory/snapshot payload.
-ActivityObjectReleaseStage executa somente release determinístico.
-ActivityObjectContributorUnregisterStage executa somente unregister determinístico.
+ActivityObjectReleaseStage executa somente release determinÃ­stico.
+ActivityObjectContributorUnregisterStage executa somente unregister determinÃ­stico.
 SessionActivityPipeline continua dono de ordering/lifecycle/continuation macro.
 RouteActivitySave continua consumidor externo do payload.
 ```
@@ -4725,7 +4727,7 @@ RouteActivitySave continua consumidor externo do payload.
 ```text
 IActivityObjectReleaseRuntimeBridge
 IActivityObjectContributorUnregisterRuntimeBridge
-implementações explícitas dessas bridges no SessionActivityPipeline
+implementaÃ§Ãµes explÃ­citas dessas bridges no SessionActivityPipeline
 acesso indireto ao ActivityObjectExitRuntimeState via bridges de release/unregister
 ```
 
@@ -4737,28 +4739,28 @@ ActivityObjectReleaseStarted/Completed preservados.
 ActivityObjectContributorUnregisterStarted/Unregistered/Completed preservados.
 ActivityObjectExitRuntimeStateContributorDiscoveryCleared preservado via IActivityEntryRuntimeEndpoint.
 TryGetSnapshotPayloadForSaveOnExit continua lendo do ActivityObjectExitRuntimeState.
-RouteActivitySave não foi movido.
+RouteActivitySave nÃ£o foi movido.
 ```
 
 ### Escopo proibido preservado
 
 ```text
-RouteActivitySave não foi movido.
-Save não é executado pelo runtime state.
-SnapshotCapture não foi alterado.
-ActivityContentRelease não foi alterado.
-Callback async não foi movido.
-Restart / next activity / route-exit / deactivation continuation não foram movidos.
-ActivityExitPipeline não foi criado.
-Manager/coordinator novo não foi criado.
+RouteActivitySave nÃ£o foi movido.
+Save nÃ£o Ã© executado pelo runtime state.
+SnapshotCapture nÃ£o foi alterado.
+ActivityContentRelease nÃ£o foi alterado.
+Callback async nÃ£o foi movido.
+Restart / next activity / route-exit / deactivation continuation nÃ£o foram movidos.
+ActivityExitPipeline nÃ£o foi criado.
+Manager/coordinator novo nÃ£o foi criado.
 ```
-## SA-7H4A-Big — ActivityActorExitRuntimeState + bridge slimming
+## SA-7H4A-Big â€” ActivityActorExitRuntimeState + bridge slimming
 
 Status: `Applied / Pending smoke`.
 
-### Decisão aplicada
+### DecisÃ£o aplicada
 
-Criado `ActivityActorExitRuntimeState` e movido o state técnico de actor exit para ele:
+Criado `ActivityActorExitRuntimeState` e movido o state tÃ©cnico de actor exit para ele:
 
 ```text
 active actor presentation states
@@ -4766,11 +4768,11 @@ active actor attribute states
 active actor participation records
 ```
 
-`ActivityExitActorTeardownStage` passa a usar `ActivityActorExitRuntimeState` diretamente para leitura/remoção desses records.
+`ActivityExitActorTeardownStage` passa a usar `ActivityActorExitRuntimeState` diretamente para leitura/remoÃ§Ã£o desses records.
 
 ### Bridge preservada como port fino
 
-`IActivityExitActorTeardownRuntimeBridge` permanece apenas para side-effects/adapters e resoluções que ainda não são state puro:
+`IActivityExitActorTeardownRuntimeBridge` permanece apenas para side-effects/adapters e resoluÃ§Ãµes que ainda nÃ£o sÃ£o state puro:
 
 ```text
 ReleaseActorPresentation
@@ -4783,36 +4785,36 @@ ExecutePlayerActorParticipationExit
 ### Escopo preservado
 
 ```text
-Não move lifecycle.
-Não move RouteActivitySave.
-Não move ActivityContentRelease.
-Não move ActivityObjectExit.
-Não cria ActivityExitPipeline.
-Não cria manager/coordinator.
-Não reintroduz Player/NonPlayer como owner.
+NÃ£o move lifecycle.
+NÃ£o move RouteActivitySave.
+NÃ£o move ActivityContentRelease.
+NÃ£o move ActivityObjectExit.
+NÃ£o cria ActivityExitPipeline.
+NÃ£o cria manager/coordinator.
+NÃ£o reintroduz Player/NonPlayer como owner.
 ```
 
 ---
 
-## Checkpoint SA-ACTOR-1C1 — ActorScope.SessionScoped structural lifetime
+## Checkpoint SA-ACTOR-1C1 â€” ActorScope.SessionScoped structural lifetime
 
 Status: `CLOSED / PASS funcional`.
 
 ### Contexto
 
-O corte `SA-ACTOR-1C1` corrigiu uma fronteira de ownership em Actors dentro da Base 2.0: `ActorScope.SessionScoped` não pode ser apenas um enum nem uma configuração local do prefab. O scope precisa produzir identidade runtime, store/root session-owned, regras explícitas de teardown e integração com `ExitToMenu` sem criar trilho `Player/NonPlayer` paralelo.
+O corte `SA-ACTOR-1C1` corrigiu uma fronteira de ownership em Actors dentro da Base 2.0: `ActorScope.SessionScoped` nÃ£o pode ser apenas um enum nem uma configuraÃ§Ã£o local do prefab. O scope precisa produzir identidade runtime, store/root session-owned, regras explÃ­citas de teardown e integraÃ§Ã£o com `ExitToMenu` sem criar trilho `Player/NonPlayer` paralelo.
 
-### Decisão congelada
+### DecisÃ£o congelada
 
 `ActorScope` decide apenas o lifetime estrutural do Actor.
 
 ```text
-ActorScope.SessionScoped => o Actor estrutural sobrevive dentro da sessão.
+ActorScope.SessionScoped => o Actor estrutural sobrevive dentro da sessÃ£o.
 ActorScope.RouteScoped => o Actor estrutural sobrevive dentro da rota.
-ActorScope.ActivityScoped => o Actor estrutural vive só na Activity/entry.
+ActorScope.ActivityScoped => o Actor estrutural vive sÃ³ na Activity/entry.
 ```
 
-`ActorScope.SessionScoped` não arrasta automaticamente:
+`ActorScope.SessionScoped` nÃ£o arrasta automaticamente:
 
 ```text
 ActorPresentation
@@ -4825,24 +4827,24 @@ PlayerInput binding
 qualquer capability/component local
 ```
 
-Esses componentes/capabilities têm policy própria, como `ActivityScoped`, `RouteScoped`, `SessionScoped`, `ReleaseOnActivityExit`, `ReleaseOnRouteExit` ou equivalente local. A separação normativa é:
+Esses componentes/capabilities tÃªm policy prÃ³pria, como `ActivityScoped`, `RouteScoped`, `SessionScoped`, `ReleaseOnActivityExit`, `ReleaseOnRouteExit` ou equivalente local. A separaÃ§Ã£o normativa Ã©:
 
 ```text
-ActorScope decide a sobrevivência estrutural do Actor.
-ComponentScope/CapabilityPolicy decide a sobrevivência de cada componente/capability.
+ActorScope decide a sobrevivÃªncia estrutural do Actor.
+ComponentScope/CapabilityPolicy decide a sobrevivÃªncia de cada componente/capability.
 ```
 
 ### Owner correto
 
-| Decisão | Owner correto |
+| DecisÃ£o | Owner correto |
 |---|---|
-| `PlayerSlot`, seleção e `SessionParticipationContext` | `SessionOperational` / `PlayerParticipation` |
+| `PlayerSlot`, seleÃ§Ã£o e `SessionParticipationContext` | `SessionOperational` / `PlayerParticipation` |
 | `actorScope` do player materializado | `PlayerParticipation` / `OperationalPlayerParticipationStage`, invariant `SessionScoped` |
-| Materialização/reuso do Actor na Activity | `ActivityEntryPipeline` |
-| Root/store session-owned do Actor estrutural | `SessionActorRuntimeStore` como índice técnico + adapter/root runtime |
+| MaterializaÃ§Ã£o/reuso do Actor na Activity | `ActivityEntryPipeline` |
+| Root/store session-owned do Actor estrutural | `SessionActorRuntimeStore` como Ã­ndice tÃ©cnico + adapter/root runtime |
 | Lifetime estrutural em `ActivityExit`, `RouteExit`, `SessionReset` | `SessionActivityPipeline` / `ActivityExitActorTeardownStage` / reset stage |
 | Lifetime de Presentation/Attribute/Permission/Movement/Camera | stages/policies locais das capabilities |
-| Encerramento de sessão ao sair para Menu | `SessionOperationalPipeline` detecta policy de destino; `SessionActivityPipeline` executa reset estrutural |
+| Encerramento de sessÃ£o ao sair para Menu | `SessionOperationalPipeline` detecta policy de destino; `SessionActivityPipeline` executa reset estrutural |
 
 ### Regras de lifetime congeladas
 
@@ -4852,25 +4854,25 @@ ComponentScope/CapabilityPolicy decide a sobrevivência de cada componente/capab
 | `RouteScoped` | `Retain` | `Release` | `Release` |
 | `SessionScoped` | `Retain` | `Retain` | `Release` |
 
-`RouteExit` genérico não libera `SessionScoped`, pois uma troca futura `GameplayRouteA -> GameplayRouteB` deve preservar actors de sessão. `ExitToMenu` encerra a sessão de gameplay e, por isso, executa `SessionReset` depois do teardown/save da rota anterior.
+`RouteExit` genÃ©rico nÃ£o libera `SessionScoped`, pois uma troca futura `GameplayRouteA -> GameplayRouteB` deve preservar actors de sessÃ£o. `ExitToMenu` encerra a sessÃ£o de gameplay e, por isso, executa `SessionReset` depois do teardown/save da rota anterior.
 
 ### Pontos implementados nos cortes H1-H7B2
 
 ```text
-H1/H2 — Placement resolvido pela ActivityEntry usando fontes autorizadas, não pela scene física do actor persistente.
-H3 — PlayerActor runtime metadata vem do binding/materialization context, não de campos soltos do prefab.
-H4 — actorScope do Player sai do prefab; shape transitório via PlayerSetDefinition foi superado por H8A.
-H5 — restaura owner correto de placement para SessionScoped.
-H6 — RouteExit também emite decisão explícita para SessionScoped retido no SessionActorRuntimeStore.
-H7A — Observabilidade separa ActorLifetime de ComponentLifetime e reduz logs redundantes locais.
-H7B — Primitiva SessionReset libera SessionScoped estrutural.
-H7B1 — ExitToMenu chama SessionReset automaticamente após RouteExit/save-on-exit.
-H7B2 — SessionReset pós-RouteExit é permitido mesmo com pipeline terminal em ClosedForRouteExit.
+H1/H2 â€” Placement resolvido pela ActivityEntry usando fontes autorizadas, nÃ£o pela scene fÃ­sica do actor persistente.
+H3 â€” PlayerActor runtime metadata vem do binding/materialization context, nÃ£o de campos soltos do prefab.
+H4 â€” actorScope do Player sai do prefab; shape transitÃ³rio via PlayerSetDefinition foi superado por H8A.
+H5 â€” restaura owner correto de placement para SessionScoped.
+H6 â€” RouteExit tambÃ©m emite decisÃ£o explÃ­cita para SessionScoped retido no SessionActorRuntimeStore.
+H7A â€” Observabilidade separa ActorLifetime de ComponentLifetime e reduz logs redundantes locais.
+H7B â€” Primitiva SessionReset libera SessionScoped estrutural.
+H7B1 â€” ExitToMenu chama SessionReset automaticamente apÃ³s RouteExit/save-on-exit.
+H7B2 â€” SessionReset pÃ³s-RouteExit Ã© permitido mesmo com pipeline terminal em ClosedForRouteExit.
 ```
 
 ### Observabilidade congelada
 
-Logs/facts mínimos esperados:
+Logs/facts mÃ­nimos esperados:
 
 ```text
 ActorLifetimeDecisionResolved actorScope='SessionScoped' trigger='ActivityExit' decision='Retain'
@@ -4880,7 +4882,7 @@ ActorLifetimeReleased actorScope='SessionScoped' trigger='SessionReset'
 SessionResetCompleted sessionActorCount='0'
 ```
 
-Logs de component/capability lifetime devem expor explicitamente que não seguem automaticamente `ActorScope`:
+Logs de component/capability lifetime devem expor explicitamente que nÃ£o seguem automaticamente `ActorScope`:
 
 ```text
 [OBS][ComponentLifetime] event='ActorPresentationRetained|Released'
@@ -4898,9 +4900,9 @@ releaseTrigger='ActivityExit'
 releaseDecision='Release'
 ```
 
-### Evidência de smoke aceita
+### EvidÃªncia de smoke aceita
 
-Smoke canônico usado para fechamento:
+Smoke canÃ´nico usado para fechamento:
 
 ```text
 Boot -> Menu -> Sandbox
@@ -4913,7 +4915,7 @@ Activity 01 -> Activity 02
 BackToMenu / ExitToMenu
 ```
 
-Critérios observados no fechamento:
+CritÃ©rios observados no fechamento:
 
 ```text
 sem erro CS
@@ -4943,16 +4945,16 @@ UnloadSceneCompleted scene='SessionActivitySandboxScene'
 ### Invariantes congeladas
 
 ```text
-PlayerActor prefab não é owner de ActorId, ActorScope nem ParticipationPolicy runtime.
-PlayerParticipation é a fonte do actorScope estrutural do player materializado: invariant `SessionScoped`.
-SessionParticipationContext carrega participação resolvida antes do handoff.
+PlayerActor prefab nÃ£o Ã© owner de ActorId, ActorScope nem ParticipationPolicy runtime.
+PlayerParticipation Ã© a fonte do actorScope estrutural do player materializado: invariant `SessionScoped`.
+SessionParticipationContext carrega participaÃ§Ã£o resolvida antes do handoff.
 ActivityEntryPipeline materializa/reusa Actor a partir de ActivityParticipantBinding.
-SessionActorRuntimeStore é índice técnico, não owner de lifecycle.
-ActivityPlayerActorRegistry e ActivitySceneActorRegistry não decidem lifetime.
-ActorScope não decide lifetime de Presentation/Attribute/Permission/Movement/Camera.
-RouteExit genérico retém SessionScoped.
-ExitToMenu chama SessionReset após RouteExit/save-on-exit.
-SessionReset pode rodar após ClosedForRouteExit sem reabrir Activity lifecycle.
+SessionActorRuntimeStore Ã© Ã­ndice tÃ©cnico, nÃ£o owner de lifecycle.
+ActivityPlayerActorRegistry e ActivitySceneActorRegistry nÃ£o decidem lifetime.
+ActorScope nÃ£o decide lifetime de Presentation/Attribute/Permission/Movement/Camera.
+RouteExit genÃ©rico retÃ©m SessionScoped.
+ExitToMenu chama SessionReset apÃ³s RouteExit/save-on-exit.
+SessionReset pode rodar apÃ³s ClosedForRouteExit sem reabrir Activity lifecycle.
 ```
 
 ### Fora do escopo deste checkpoint
@@ -4961,34 +4963,34 @@ SessionReset pode rodar após ClosedForRouteExit sem reabrir Activity lifecycle.
 Runtime join real.
 Multiplayer/split-screen.
 Progression Save real de actors.
-Policy avançada de PowerUps/Attributes além da observabilidade de ComponentLifetime.
+Policy avanÃ§ada de PowerUps/Attributes alÃ©m da observabilidade de ComponentLifetime.
 Pooling real de ActorPresentation.
-Redução global de logs de InputModes/Loading/Permission.
+ReduÃ§Ã£o global de logs de InputModes/Loading/Permission.
 ```
 
 ### Resultado
 
-`SA-ACTOR-1C1` fica fechado como PASS funcional para o objetivo de `ActorScope.SessionScoped` estrutural dentro da decomposição de `SessionActivity` Base 2.0. Novos cortes de components/capabilities devem respeitar a separação: Actor estrutural ≠ componente/capability material.
+`SA-ACTOR-1C1` fica fechado como PASS funcional para o objetivo de `ActorScope.SessionScoped` estrutural dentro da decomposiÃ§Ã£o de `SessionActivity` Base 2.0. Novos cortes de components/capabilities devem respeitar a separaÃ§Ã£o: Actor estrutural â‰  componente/capability material.
 
 
 
 ---
 
-## Checkpoint SA-ACTOR-1C1-H8 — PlayerParticipation identity cleanup
+## Checkpoint SA-ACTOR-1C1-H8 â€” PlayerParticipation identity cleanup
 
 Status: CLOSED / PASS funcional + PASS arquitetural do corte.
 
 Este checkpoint complementa o fechamento `SA-ACTOR-1C1` e corrige a fronteira entre `PlayerParticipation`, `SessionParticipationContext` e `ActivityEntryPipeline` sem reabrir o lifetime de components/capabilities.
 
-### Decisões congeladas
+### DecisÃµes congeladas
 
 ```text
-Player estrutural vindo de PlayerParticipation é sempre ActorScope.SessionScoped.
-PlayerSetDefinition não expõe mais actorScope editável.
+Player estrutural vindo de PlayerParticipation Ã© sempre ActorScope.SessionScoped.
+PlayerSetDefinition nÃ£o expÃµe mais actorScope editÃ¡vel.
 ActorDefinitionId identifica archetype/definition.
-ActorId identifica o Actor semântico do participante default.
-SessionParticipantId é derivado de PlayerSlotId.
-Materialization seed resolution usa PlayerSlotId, não ActorDefinitionId.
+ActorId identifica o Actor semÃ¢ntico do participante default.
+SessionParticipantId Ã© derivado de PlayerSlotId.
+Materialization seed resolution usa PlayerSlotId, nÃ£o ActorDefinitionId.
 ```
 
 ### Ownership final do corte
@@ -4997,24 +4999,24 @@ Materialization seed resolution usa PlayerSlotId, não ActorDefinitionId.
 |---|---|
 | Scope estrutural do player | `PlayerParticipation` / `OperationalPlayerParticipationStage`, sempre `SessionScoped` |
 | Slot/assento | `PlayerSlotId` em `PlayerSetDefinitionEntry` / `PlayerParticipation` |
-| Seleção default | `PlayerSelectionId` em `PlayerSetDefinitionEntry` |
+| SeleÃ§Ã£o default | `PlayerSelectionId` em `PlayerSetDefinitionEntry` |
 | Definition/archetype | `ActorDefinitionId` em `ActorDefinitionAsset` |
-| Actor semântico do participante default | `PlayerSetDefinitionEntry.actorId` |
-| Participante de sessão | `SessionParticipantId`, derivado de `PlayerSlotId` |
-| Materialização/reuso concreto | `ActivityEntryPipeline` / `ActivityParticipantBinding` / `PlayerActorRuntimeHandle` |
+| Actor semÃ¢ntico do participante default | `PlayerSetDefinitionEntry.actorId` |
+| Participante de sessÃ£o | `SessionParticipantId`, derivado de `PlayerSlotId` |
+| MaterializaÃ§Ã£o/reuso concreto | `ActivityEntryPipeline` / `ActivityParticipantBinding` / `PlayerActorRuntimeHandle` |
 
 ### Cortes fechados
 
 ```text
-H8A  — Player scope invariant cleanup.
-H8C1 — PlayerSlot materialization resolution.
-H8C2 — SessionParticipantId by PlayerSlotId.
-H8C3 — Player ActorId owner cleanup.
+H8A  â€” Player scope invariant cleanup.
+H8C1 â€” PlayerSlot materialization resolution.
+H8C2 â€” SessionParticipantId by PlayerSlotId.
+H8C3 â€” Player ActorId owner cleanup.
 ```
 
-### Evidência aceita
+### EvidÃªncia aceita
 
-Smoke canônico completo aceito:
+Smoke canÃ´nico completo aceito:
 
 ```text
 Boot -> Menu -> Sandbox
@@ -5027,7 +5029,7 @@ Activity 01 -> Activity 02
 BackToMenu / ExitToMenu
 ```
 
-Critérios observados:
+CritÃ©rios observados:
 
 ```text
 sem erro CS
@@ -5049,61 +5051,61 @@ SessionResetCompleted sessionActorCount='0'
 ### Invariantes adicionadas
 
 ```text
-ActorDefinitionAsset não é owner do ActorId do player participante.
-PlayerSetDefinitionEntry é owner autoral temporário do ActorId default do player.
-ActorDefinitionId não pode ser usado como chave runtime para reencontrar participante.
-PlayerSlotId é a chave de correlação entre seed de PlayerParticipation e SessionParticipantBinding.
-SessionParticipantId não depende de índice/ordem de lista.
+ActorDefinitionAsset nÃ£o Ã© owner do ActorId do player participante.
+PlayerSetDefinitionEntry Ã© owner autoral temporÃ¡rio do ActorId default do player.
+ActorDefinitionId nÃ£o pode ser usado como chave runtime para reencontrar participante.
+PlayerSlotId Ã© a chave de correlaÃ§Ã£o entre seed de PlayerParticipation e SessionParticipantBinding.
+SessionParticipantId nÃ£o depende de Ã­ndice/ordem de lista.
 ```
 
 
 ---
 
-## SA-13C1 — ActorAttribute command execution owner extraction
+## SA-13C1 â€” ActorAttribute command execution owner extraction
 
 Status: `CLOSED / PASS funcional do command path + PASS arquitetural parcial`.
 
-### Decisão
+### DecisÃ£o
 
-`TryApplyActorAttributeCommand` deixou de executar lógica interna de `ActorAttributes` dentro do `SessionActivityPipeline`.
+`TryApplyActorAttributeCommand` deixou de executar lÃ³gica interna de `ActorAttributes` dentro do `SessionActivityPipeline`.
 
 ```text
 SessionActivityPipeline
 -> valida o ciclo atual e normaliza o pedido
--> resolve a capability ativa por correlação atual
+-> resolve a capability ativa por correlaÃ§Ã£o atual
 -> monta ActorAttributeCommand
--> delega execução para ActorAttributeEndpoint.TryApplyCommand(...)
+-> delega execuÃ§Ã£o para ActorAttributeEndpoint.TryApplyCommand(...)
 ```
 
 ### Owner preservado
 
 ```text
-SessionActivityPipeline continua dono do momento/orquestração do QA/runtime command.
-ActorAttributeEndpoint é o owner da execução concreta do command de atributo.
-ActivityActorExitRuntimeState continua correlation store técnico para capabilities ativas.
+SessionActivityPipeline continua dono do momento/orquestraÃ§Ã£o do QA/runtime command.
+ActorAttributeEndpoint Ã© o owner da execuÃ§Ã£o concreta do command de atributo.
+ActivityActorExitRuntimeState continua correlation store tÃ©cnico para capabilities ativas.
 ```
 
 ### Escopo aplicado
 
 ```text
-Removida do SessionActivityPipeline a aplicação direta do command no endpoint.
-Removida a resolução auxiliar morta TryResolveActorInstanceIdForActor(...).
+Removida do SessionActivityPipeline a aplicaÃ§Ã£o direta do command no endpoint.
+Removida a resoluÃ§Ã£o auxiliar morta TryResolveActorInstanceIdForActor(...).
 Reutilizado ActorAttributeEndpoint.TryApplyCommand(...).
-Adicionado lookup mínimo de capability ativa por actorId no ActivityActorExitRuntimeState.
+Adicionado lookup mÃ­nimo de capability ativa por actorId no ActivityActorExitRuntimeState.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-ActorPresentation não foi alterado.
-ActorParticipation não foi alterado.
-Movement/Camera/Permission não foram alterados.
-ActivityObject não foi alterado neste corte.
-Content release, restart, next activity, route-exit e save/load não foram alterados.
-Não foi criado manager/coordinator/facade novo.
+ActorPresentation nÃ£o foi alterado.
+ActorParticipation nÃ£o foi alterado.
+Movement/Camera/Permission nÃ£o foram alterados.
+ActivityObject nÃ£o foi alterado neste corte.
+Content release, restart, next activity, route-exit e save/load nÃ£o foram alterados.
+NÃ£o foi criado manager/coordinator/facade novo.
 ```
 
-### Evidência aceita
+### EvidÃªncia aceita
 
 Smoke manual confirmou o command path de attribute:
 
@@ -5128,16 +5130,16 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-### Débito residual controlado
+### DÃ©bito residual controlado
 
 ```text
 SessionActivityPipeline ainda resolve a capability ativa por actorId via correlation state.
-Isso é aceito como passo intermediário; execução concreta já pertence ao ActorAttributeEndpoint.
+Isso Ã© aceito como passo intermediÃ¡rio; execuÃ§Ã£o concreta jÃ¡ pertence ao ActorAttributeEndpoint.
 ```
 
 ---
 
-## SA-13C-OBJ1-FIX — ActivityObject exit correlation mirror
+## SA-13C-OBJ1-FIX â€” ActivityObject exit correlation mirror
 
 Status: `CLOSED / PASS funcional + PASS arquitetural parcial`.
 
@@ -5153,7 +5155,7 @@ ActivityCapabilityInventory preview
 ActivityCapabilityInventoryValidationResult
 ```
 
-Mas não era congelado no `ActivityObjectExitRuntimeState` antes dos stages de saída. Como consequência, estes stages viam zero targets:
+Mas nÃ£o era congelado no `ActivityObjectExitRuntimeState` antes dos stages de saÃ­da. Como consequÃªncia, estes stages viam zero targets:
 
 ```text
 ActivityObjectSnapshotCaptureStage
@@ -5167,9 +5169,22 @@ E o save-on-exit recebia payload ausente:
 RouteActivitySaveSnapshotPayload payloadResolved='false' failureReason='snapshot_payload_missing'
 ```
 
-### Decisão aplicada
+### SA-15C closure
 
-Após `ExecuteSetupAndReadiness(...)` concluir com sucesso e antes de `EnterActivationFlow(...)`, o pipeline congela a correlação de saída para `ActivityObject`.
+```text
+RouteActivitySaveContributorScopePolicy is normative.
+CurrentActivityObjectSnapshot is the only active functional scope.
+CurrentRouteSaveContributors and RouteAndActivitySaveContributors remain future contract/policy only.
+activity_02 no-content now classifies as NoActivityContentContributors / no_activity_content_contributors.
+SnapshotPayloadExpectedButMissing is reserved for expected contributors that failed to produce payload.
+No LastUsefulActivityPayload fallback.
+No scene scan for contributors.
+No backend change.
+```
+
+### DecisÃ£o aplicada
+
+ApÃ³s `ExecuteSetupAndReadiness(...)` concluir com sucesso e antes de `EnterActivationFlow(...)`, o pipeline congela a correlaÃ§Ã£o de saÃ­da para `ActivityObject`.
 
 Pontos aplicados:
 
@@ -5186,9 +5201,9 @@ ActivityCapabilityInventory preview
 ActivityCapabilityInventoryValidationResult
 ```
 
-`ActivitySetupInventory` não foi copiado porque os stages de exit não o consomem no shape atual.
+`ActivitySetupInventory` nÃ£o foi copiado porque os stages de exit nÃ£o o consomem no shape atual.
 
-### Métodos usados
+### MÃ©todos usados
 
 ```text
 ActivityObjectExitRuntimeState.ClearAll(...)
@@ -5196,32 +5211,32 @@ ActivityObjectExitRuntimeState.StoreContributorDiscoveryResult(...)
 ActivityObjectExitRuntimeState.StoreInventoryPreview(...)
 ```
 
-Nenhum método novo foi criado no exit state.
+Nenhum mÃ©todo novo foi criado no exit state.
 
 ### Owner preservado
 
 ```text
-ActivityEntryPipeline continua owner da produção do object setup/inventory.
-ActivityObjectExitRuntimeState é o correlation store técnico para snapshot/release/unregister.
+ActivityEntryPipeline continua owner da produÃ§Ã£o do object setup/inventory.
+ActivityObjectExitRuntimeState Ã© o correlation store tÃ©cnico para snapshot/release/unregister.
 SessionActivityPipeline continua owner de ordering/lifecycle do boundary macro.
-ActivityObjectSnapshotCaptureStage, ActivityObjectReleaseStage e ActivityObjectContributorUnregisterStage continuam stages determinísticos.
-RouteActivitySave continua consumidor de payload capturado; não decide discovery/release/unregister.
+ActivityObjectSnapshotCaptureStage, ActivityObjectReleaseStage e ActivityObjectContributorUnregisterStage continuam stages determinÃ­sticos.
+RouteActivitySave continua consumidor de payload capturado; nÃ£o decide discovery/release/unregister.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-Não houve reconstrução no exit.
-Não houve lookup por cena no exit.
-Não houve fallback silencioso.
-activity_02 no-content não foi alterada.
-ActorAttribute, ActorPresentation, ActorParticipation, Movement, Camera, Permission e content release continuation não foram alterados.
-Save backend e policy de RouteActivitySave não foram alterados.
+NÃ£o houve reconstruÃ§Ã£o no exit.
+NÃ£o houve lookup por cena no exit.
+NÃ£o houve fallback silencioso.
+activity_02 no-content nÃ£o foi alterada.
+ActorAttribute, ActorPresentation, ActorParticipation, Movement, Camera, Permission e content release continuation nÃ£o foram alterados.
+Save backend e policy de RouteActivitySave nÃ£o foram alterados.
 ```
 
-### Evidência aceita
+### EvidÃªncia aceita
 
-O smoke mostrou congelamento correto da correlação:
+O smoke mostrou congelamento correto da correlaÃ§Ã£o:
 
 ```text
 ActivityObjectExitCorrelationFrozen discoveryValid='true' discoveryCount='1' inventoryValid='true' inventoryCapabilityCount='11' inventoryValidationValid='true'
@@ -5237,9 +5252,9 @@ ActivityObjectRelease checkpointStatus='Passed' commandCount='1' appliedCount='1
 ActivityObjectContributorUnregister checkpointStatus='Passed' unregisteredCount='1' targetIds='test_object_01'
 ```
 
-Após restart, o mesmo comportamento permaneceu válido para `entrySequence='2'`.
+ApÃ³s restart, o mesmo comportamento permaneceu vÃ¡lido para `entrySequence='2'`.
 
-`activity_02` preservou o no-content explícito:
+`activity_02` preservou o no-content explÃ­cito:
 
 ```text
 ActivityObjectSnapshotCapture checkpointStatus='Passed' capturedCount='0' targetIds='<none>'
@@ -5260,15 +5275,15 @@ Activity01ToActivity02 Passed
 RouteExitBackToMenu Passed
 ```
 
-### Débito residual controlado
+### DÃ©bito residual controlado
 
-A cópia foi implementada no `SessionActivityPipeline` como boundary macro após `ExecuteSetupAndReadiness(...)`.
+A cÃ³pia foi implementada no `SessionActivityPipeline` como boundary macro apÃ³s `ExecuteSetupAndReadiness(...)`.
 
 Aceito neste corte porque:
 
 ```text
-SessionActivityPipeline não executa discovery, reset, snapshot, release ou unregister.
-SessionActivityPipeline apenas congela a correlação entry->exit no boundary entre setup e activation.
+SessionActivityPipeline nÃ£o executa discovery, reset, snapshot, release ou unregister.
+SessionActivityPipeline apenas congela a correlaÃ§Ã£o entry->exit no boundary entre setup e activation.
 Os stages de exit continuam lendo do ActivityObjectExitRuntimeState.
 ```
 
@@ -5281,5 +5296,228 @@ SessionActivityPipeline apenas orquestra o boundary macro.
 
 ### Watchlist
 
-`RouteActivitySave` ainda exige smoke próprio para payload útil quando o route-exit/salve-on-exit ocorrer após uma activity com payload capturado ou quando a policy passar a preservar o último payload útil. No smoke aceito, `BackToMenu` ocorreu a partir de `activity_02`, que é no-content, portanto `RouteActivitySave` não foi fechado como payload útil final.
+`RouteActivitySave` ainda exige smoke prÃ³prio para payload Ãºtil quando o route-exit/salve-on-exit ocorrer apÃ³s uma activity com payload capturado ou quando a policy passar a preservar o Ãºltimo payload Ãºtil. No smoke aceito, `BackToMenu` ocorreu a partir de `activity_02`, que Ã© no-content, portanto `RouteActivitySave` nÃ£o foi fechado como payload Ãºtil final.
+
+---
+
+## SA-13D Ã¢â‚¬â€ Runtime surface audits
+
+Status: `CLOSED / AUDITED`.
+
+### Fechamento consolidado
+
+```text
+SA-13D1 — ActivityObject unregister/finalization back-reference cleanup: CLOSED.
+SA-13D2 — PlayerInputBinding runtime surface audit: CLOSED / AUDITED.
+SA-13D3 — ActivityCapabilityPermission runtime surface audit: CLOSED / AUDITED.
+SA-13D3A — Permission dead helper cleanup: CLOSED.
+SA-13D4 — Movement retained/control bridge audit: CLOSED / AUDITED.
+SA-13D5 — Camera binding runtime surface audit: CLOSED / AUDITED.
+SA-13D6 — ActivityContent load/release runtime surface audit: CLOSED / AUDITED.
+SA-13D7 — RouteActivitySave payload/handoff audit: CLOSED / AUDITED.
+```
+
+### ConclusÃµes normativas
+
+```text
+Nao ha patch imediato recomendado para PlayerInput, Permission, Movement, Camera, ActivityContent ou RouteActivitySave.
+PlayerInputBinding ainda tem debito futuro de RuntimeConfigRegistry lookup tardio no adapter, mas nao recebeu patch.
+Camera ainda tem debito futuro de explicit composition para ActivityCameraAnchorHost, mas nao recebeu patch.
+Movement retained/control e ActivityContent release/continuation permanecem por alto risco e nao devem ser reduzidos agora.
+RouteActivitySave atual salva/skipa com base na rota/activity imediatamente anterior concluida.
+Se o produto quiser preservar o "last useful payload" em vez da activity imediatamente anterior concluida, isso exige policy explicita nova.
+Nao criar fallback silencioso para payload antigo sem policy explicita.
+```
+
+### DÃƒÂ©bitos futuros registrados
+
+```text
+PlayerInput canonical actions explicit injection.
+ActivityCameraAnchorHost explicit composition.
+RouteActivitySave policy gap: current completed activity vs last useful snapshot payload.
+Movement retained/control surface defer high risk.
+ActivityContent release/continuation surface defer high risk.
+```
+
+### Regras de fechamento
+
+```text
+SA-13D foi fechado como auditoria documental, sem novo smoke funcional.
+SA-14B1 foi fechado como corte funcional + arquitetural do handoff explicito.
+O smoke existente continua sendo a referencia de validacao funcional anterior.
+Nenhum fallback silencioso deve ser criado para payload antigo.
+```
+
+## Estado normativo atual
+
+### Status consolidado
+
+```text
+SA-13D - Runtime surface audits: CLOSED / AUDITED
+SA-13D1 - CLOSED
+SA-13D2 - AUDITED
+SA-13D3 - AUDITED
+SA-13D3A - CLOSED / compile validation sufficient
+SA-13D4 - AUDITED
+SA-13D5 - AUDITED
+SA-13D6 - AUDITED
+SA-13D7 - AUDITED / POLICY_GAP
+SA-14B1 - ActivityObject exit correlation explicit entry result: CLOSED / PASS funcional + PASS arquitetural do corte
+SA-14C - residual bridge / carrier matrix: CLOSED / AUDITED
+```
+
+### Cortes fechados ou auditados sem patch
+
+```text
+SA-13C1 - CLOSED
+SA-13C-OBJ1-FIX - CLOSED
+PlayerInput binding - audited, no patch
+ActivityCapabilityPermission - audited, no patch
+Movement retained/control - audited, high risk, no patch
+Camera binding - audited, no patch
+ActivityContent load/release - audited, high risk, no patch
+RouteActivitySave payload/handoff - audited, policy gap, no patch
+SA-14B1 - CLOSED / PASS funcional + PASS arquitetural do corte
+SA-14C - CLOSED / AUDITED
+```
+
+### Debitos futuros
+
+```text
+PlayerInput canonical actions explicit injection
+ActivityCameraAnchorHost explicit composition
+RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
+Movement retained/control surface defer high risk
+ActivityContent release/continuation surface defer high risk
+ActivityObject exit correlation observability hygiene: optional future cleanup only; ActivityEntryPipeline already produces ActivityObjectExitCorrelationBundle and SessionActivityPipeline only commits it to ActivityObjectExitRuntimeState.
+IActivityEntryContentPendingOperationRuntimeBridge / RunActivityContentOperation(..., this) remain the main future bridge candidate for content ownership reduction.
+IActivityEntryParticipantBindingRuntimeBridge remains a possible future split candidate.
+IActivityEntryContentLoadedSetRuntimeBridge remains a future cleanup candidate.
+ActivityContentReleaseRuntimeState remains defer high risk.
+Movement retained/control remains defer high risk.
+```
+
+### Reabertura proibida sem regressao
+
+```text
+Nao criar fallback silencioso para payload antigo
+Nao salvar last useful payload sem new explicit policy
+Nao reabrir Movement ou ActivityContent sem regressao evidenciada
+Nao criar ActivityExitPipeline or ActivityContentReleasePipeline only for symmetry
+Nao reabrir SA-14B1 exit correlation production; the entry already owns the carrier.
+```
+
+## SA-14E - SessionActivity decomposition closure matrix
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- A decomposicao runtime atual de `SessionActivity` fica congelada como checkpoint temporario.
+- `SA-14B1` permanece como `CLOSED / PASS funcional + PASS arquitetural do corte`.
+- `SA-13D`, `SA-14C` e `SA-14D` permanecem fechados como auditorias.
+- Os residuos restantes ficam classificados como `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_LOW`, `FUTURE_CLEANUP_MEDIUM` e `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
+
+### Matriz final
+
+```text
+CLOSED_PASS:
+  SA-14B1 - ActivityObject exit correlation explicit entry result
+
+CLOSED_AUDITED:
+  SA-13D - Runtime surface audits
+  SA-14C - residual bridge / carrier matrix
+  SA-14D - ActivityContent pending-operation bridge audit
+
+DEFER_HIGH_RISK:
+  Movement retained/control surface
+  ActivityContent release/continuation surface
+  ActivityContentReleaseRuntimeState
+
+POLICY_GAP:
+  RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
+
+FUTURE_CLEANUP_LOW:
+  IActivityEntryContentLoadedSetRuntimeBridge cleanup
+  IActivityEntryContentRuntimeBridge aggregate cleanup
+  ActivityObject exit correlation observability hygiene
+
+FUTURE_CLEANUP_MEDIUM:
+  IActivityEntryContentPendingOperationRuntimeBridge split/reduction
+  IActivityEntryParticipantBindingRuntimeBridge possible split
+  PlayerInput canonical actions explicit injection
+  ActivityCameraAnchorHost explicit composition
+
+DO_NOT_REOPEN_WITHOUT_REGRESSION:
+  Movement
+  ActivityContent
+  RouteActivitySave
+  SA-14B1 exit correlation production
+  ActivityContent release/continuation
+  ActivityContent pending-operation callback path
+```
+
+### Smoke global baseline
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity
+Activity01ToActivity02
+RouteExitBackToMenu
+ActivityObjectSnapshotCapture, ActivityObjectRelease, ActivityObjectContributorUnregister quando aplicavel
+```
+
+### Regras de fechamento
+
+```text
+Os itens marcados como DEFER_HIGH_RISK nao devem ser reabertos sem regressao concreta.
+RouteActivitySave last useful payload e policy nova, nao bug local.
+Qualquer alteracao futura no pending-operation callback path exige smoke completo.
+```
+
+## SA-14D - ActivityContent pending-operation bridge audit
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- `IActivityEntryContentPendingOperationRuntimeBridge` remains a technical residual and is deferred.
+- `RunActivityContentOperation(..., this)` is a technical callback, not a wrong owner.
+- `SessionActivityPipeline` remains the callback boundary through `ISessionActivityPendingOperationCallback`.
+- No fallback silencioso, no new lookup tardio, and no duplicate owner were found in the audited path.
+- No immediate runtime patch is recommended.
+- Any future change in this path requires full smoke validation.
+
+### Backlog futuro
+
+```text
+IActivityEntryContentPendingOperationRuntimeBridge split/reduction
+IActivityEntryContentLoadedSetRuntimeBridge cleanup
+IActivityEntryContentRuntimeBridge aggregate cleanup
+```
+
+## SA-14C - residual bridge / carrier matrix
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- No new wrong owner, duplicate owner, fallback silencioso, or new lookup tardio were found inside SessionActivity.
+- No bridge documented as removed was still active in the code path audited.
+- No immediate runtime patch is recommended.
+- Main future bridge candidate remains `IActivityEntryContentPendingOperationRuntimeBridge` and `RunActivityContentOperation(..., this)`.
+- `IActivityEntryParticipantBindingRuntimeBridge` remains a possible future split candidate.
+- `IActivityEntryContentLoadedSetRuntimeBridge` remains a future cleanup candidate.
+- `Movement retained/control` and `ActivityContentReleaseRuntimeState` remain high risk.
+
+## Historico / checkpoints anteriores
+
+```text
+This ADR keeps previous roadmap and checkpoint history for traceability.
+Historical sections remain informative, but the consolidated status above is the source of truth for the current workfront.
+```
+
 

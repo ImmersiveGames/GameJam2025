@@ -89,7 +89,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityContentReleaseFinalizationStageCommand command,
             SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
-            ActivityEntryPipeline entryPipeline,
             ActivityContentRuntimeState contentRuntimeState,
             ActivityContentReleaseRuntimeState releaseRuntimeState,
             ActivityObjectExitRuntimeState objectExitRuntimeState,
@@ -102,7 +101,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             endpoint = endpoint ?? throw new ArgumentNullException(nameof(endpoint));
-            entryPipeline = entryPipeline ?? throw new ArgumentNullException(nameof(entryPipeline));
             contentRuntimeState = contentRuntimeState ?? throw new ArgumentNullException(nameof(contentRuntimeState));
             releaseRuntimeState = releaseRuntimeState ?? throw new ArgumentNullException(nameof(releaseRuntimeState));
             objectExitRuntimeState = objectExitRuntimeState ?? throw new ArgumentNullException(nameof(objectExitRuntimeState));
@@ -148,7 +146,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     entrySequence),
                 definition,
                 endpoint,
-                entryPipeline,
                 objectExitRuntimeState,
                 facts,
                 snapshots);

@@ -17,6 +17,21 @@ Base 1.2 não substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
 
 ---
 
+## Checkpoints Base 2.0
+
+- `SessionOperational` permanece com checkpoint funcional/arquitetural parcial aceito na frente de ownership stabilization.
+- `SessionActivity` fica congelado temporariamente em `SA-14E - SessionActivity decomposition closure matrix`.
+- `SA-14B1` segue como o último corte runtime validado de `SessionActivity`.
+- `SA-13D`, `SA-14C`, `SA-14D` e `SA-14E` ficaram fechados como auditorias/matriz de débitos.
+- Movement, ActivityContent, RouteActivitySave e pending-operation callback path não devem ser reabertos sem regressão concreta.
+- A próxima frente runtime deve ser escolhida fora de `SessionActivity`, salvo regressão.
+- `SA-15C` fechou o `RouteActivitySave` com `RouteActivitySaveContributorScopePolicy` como policy normativa.
+- `CurrentActivityObjectSnapshot` é o único scope funcional ativo hoje.
+- `CurrentRouteSaveContributors` e `RouteAndActivitySaveContributors` permanecem como contrato/policy futura, sem infraestrutura ativa.
+- `RouteActivitySave last useful payload` continua sendo policy futura explícita; não é bug local nem fallback implícito.
+
+---
+
 ## Checkpoint atual
 
 Base 1.2 — Actors Convergence 4A–4D + H4D Hygiene + ActorReset-1B: CLOSED / PASS funcional.
@@ -362,4 +377,3 @@ Status: CLOSED / PASS funcional + PASS arquitetural parcial.
 - `ActivityObjectSnapshotCapture`, `ActivityObjectRelease` e `ActivityObjectContributorUnregister` voltaram a consumir `test_object_01` em `activity_01`.
 - `activity_02` continua no-content explícito, com zero targets e sem fallback.
 - `RouteActivitySave` permanece em watchlist para payload útil quando o save-on-exit ocorrer após activity com snapshot capturado.
-

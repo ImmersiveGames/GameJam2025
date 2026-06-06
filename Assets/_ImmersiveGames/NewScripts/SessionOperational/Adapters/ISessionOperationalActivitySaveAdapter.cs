@@ -17,7 +17,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         SnapshotPayloadInvalid = 8,
         SaveAdapterUnavailable = 9,
         LoadAdapterUnavailable = 10,
-        Unknown = 11,
+        NoSessionActivity = 11,
+        NoActivityContentContributors = 12,
+        NoRouteSaveContributors = 13,
+        NoSessionSaveContributors = 14,
+        NoSaveContributors = 15,
+        SnapshotPayloadExpectedButMissing = 16,
+        SnapshotPayloadResolved = 17,
+        Unknown = 18,
     }
 
     public enum RouteActivitySaveLoadOutcomeKind
@@ -38,7 +45,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         SaveDisabledByRoute = 6,
         NoPreviousRoute = 7,
         NoCurrentActivity = 8,
-        UnknownFailure = 9,
+        NoSessionActivity = 9,
+        NoActivityContentContributors = 10,
+        NoRouteSaveContributors = 11,
+        NoSessionSaveContributors = 12,
+        NoSaveContributors = 13,
+        SnapshotPayloadExpectedButMissing = 14,
+        SnapshotPayloadResolved = 15,
+        UnknownFailure = 16,
     }
 
     public readonly struct RouteActivitySaveLoadResult
@@ -140,6 +154,13 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 RouteActivitySaveSkipKind.SnapshotPayloadInvalid => "snapshot_payload_invalid",
                 RouteActivitySaveSkipKind.SaveAdapterUnavailable => "save_adapter_unavailable",
                 RouteActivitySaveSkipKind.LoadAdapterUnavailable => "load_adapter_unavailable",
+                RouteActivitySaveSkipKind.NoSessionActivity => "no_session_activity",
+                RouteActivitySaveSkipKind.NoActivityContentContributors => "no_activity_content_contributors",
+                RouteActivitySaveSkipKind.NoRouteSaveContributors => "no_route_save_contributors",
+                RouteActivitySaveSkipKind.NoSessionSaveContributors => "no_session_save_contributors",
+                RouteActivitySaveSkipKind.NoSaveContributors => "no_save_contributors",
+                RouteActivitySaveSkipKind.SnapshotPayloadExpectedButMissing => "snapshot_payload_expected_but_missing",
+                RouteActivitySaveSkipKind.SnapshotPayloadResolved => "snapshot_payload_resolved",
                 RouteActivitySaveSkipKind.None => "none",
                 _ => "unknown",
             };

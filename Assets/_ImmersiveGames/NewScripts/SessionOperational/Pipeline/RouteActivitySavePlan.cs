@@ -100,6 +100,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string previousRouteOperationId,
             int previousRouteSequence,
             bool previousSaveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy previousRouteContributorScopePolicy,
             string previousActivityIdentity,
             string previousActivitySaveKey,
             bool shouldSave,
@@ -115,6 +116,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             PreviousRouteOperationId = Normalize(previousRouteOperationId);
             PreviousRouteSequence = previousRouteSequence < 0 ? 0 : previousRouteSequence;
             PreviousSaveActivityOnExit = previousSaveActivityOnExit;
+            PreviousRouteContributorScopePolicy = previousRouteContributorScopePolicy;
             PreviousActivityIdentity = Normalize(previousActivityIdentity);
             PreviousActivitySaveKey = Normalize(previousActivitySaveKey);
             ShouldSave = shouldSave;
@@ -131,6 +133,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public string PreviousRouteOperationId { get; }
         public int PreviousRouteSequence { get; }
         public bool PreviousSaveActivityOnExit { get; }
+        public RouteActivitySaveContributorScopePolicy PreviousRouteContributorScopePolicy { get; }
         public string PreviousActivityIdentity { get; }
         public string PreviousActivitySaveKey { get; }
         public bool ShouldSave { get; }
@@ -157,6 +160,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string previousRouteOperationId,
             int previousRouteSequence,
             bool previousSaveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy previousRouteContributorScopePolicy,
             string previousActivityIdentity,
             string previousActivitySaveKey)
         {
@@ -173,6 +177,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 previousRouteOperationId,
                 previousRouteSequence,
                 previousSaveActivityOnExit,
+                previousRouteContributorScopePolicy,
                 previousActivityIdentity,
                 previousActivitySaveKey);
 
@@ -208,6 +213,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string previousRouteOperationId,
             int previousRouteSequence,
             bool previousSaveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy previousRouteContributorScopePolicy,
             string previousActivityIdentity,
             string previousActivitySaveKey)
         {
@@ -220,6 +226,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     previousRouteOperationId,
                     previousRouteSequence,
                     previousSaveActivityOnExit,
+                    previousRouteContributorScopePolicy,
                     previousActivityIdentity,
                     previousActivitySaveKey,
                     RouteActivitySaveSkipKind.NoPreviousRoute,
@@ -235,6 +242,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     previousRouteOperationId,
                     previousRouteSequence,
                     previousSaveActivityOnExit,
+                    previousRouteContributorScopePolicy,
                     previousActivityIdentity,
                     previousActivitySaveKey,
                     RouteActivitySaveSkipKind.DisabledByPreviousRoute,
@@ -250,9 +258,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     previousRouteOperationId,
                     previousRouteSequence,
                     previousSaveActivityOnExit,
+                    previousRouteContributorScopePolicy,
                     previousActivityIdentity,
                     previousActivitySaveKey,
-                    RouteActivitySaveSkipKind.Unknown,
+                    RouteActivitySaveSkipKind.NoSessionActivity,
                     "activity identity da rota anterior ausente.");
             }
 
@@ -265,6 +274,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     previousRouteOperationId,
                     previousRouteSequence,
                     previousSaveActivityOnExit,
+                    previousRouteContributorScopePolicy,
                     previousActivityIdentity,
                     previousActivitySaveKey,
                     RouteActivitySaveSkipKind.Unknown,
@@ -281,6 +291,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 previousRouteOperationId,
                 previousRouteSequence,
                 previousSaveActivityOnExit,
+                previousRouteContributorScopePolicy,
                 previousActivityIdentity,
                 previousActivitySaveKey,
                 shouldSave: true,
@@ -295,6 +306,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             string previousRouteOperationId,
             int previousRouteSequence,
             bool previousSaveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy previousRouteContributorScopePolicy,
             string previousActivityIdentity,
             string previousActivitySaveKey,
             RouteActivitySaveSkipKind skipKind,
@@ -310,6 +322,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 previousRouteOperationId,
                 previousRouteSequence,
                 previousSaveActivityOnExit,
+                previousRouteContributorScopePolicy,
                 previousActivityIdentity,
                 previousActivitySaveKey,
                 shouldSave: false,

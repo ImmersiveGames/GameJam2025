@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences;
+using _ImmersiveGames.NewScripts.SessionOperational.Adapters;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
@@ -29,6 +30,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             int previousRouteSequence,
             SceneKeyAsset previousRouteActiveSceneKey,
             bool previousSaveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy previousRouteContributorScopePolicy,
             string previousActivityIdentity,
             string previousActivitySaveKey,
             IReadOnlyList<SceneKeyAsset> previousRouteOwnedLoadedSceneKeys,
@@ -47,6 +49,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             PreviousRouteSequence = previousRouteSequence < 0 ? 0 : previousRouteSequence;
             PreviousRouteActiveSceneKey = previousRouteActiveSceneKey;
             PreviousSaveActivityOnExit = previousSaveActivityOnExit;
+            PreviousRouteContributorScopePolicy = previousRouteContributorScopePolicy;
             PreviousActivityIdentity = Normalize(previousActivityIdentity);
             PreviousActivitySaveKey = Normalize(previousActivitySaveKey);
             PreviousRouteOwnedLoadedSceneKeys = previousRouteOwnedLoadedSceneKeys ?? Array.Empty<SceneKeyAsset>();
@@ -66,6 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public int PreviousRouteSequence { get; }
         public SceneKeyAsset PreviousRouteActiveSceneKey { get; }
         public bool PreviousSaveActivityOnExit { get; }
+        public RouteActivitySaveContributorScopePolicy PreviousRouteContributorScopePolicy { get; }
         public string PreviousActivityIdentity { get; }
         public string PreviousActivitySaveKey { get; }
         public IReadOnlyList<SceneKeyAsset> PreviousRouteOwnedLoadedSceneKeys { get; }
@@ -159,6 +163,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 setupCommand.PreviousRouteOperationId,
                 setupCommand.PreviousRouteSequence,
                 setupCommand.PreviousSaveActivityOnExit,
+                setupCommand.PreviousRouteContributorScopePolicy,
                 setupCommand.PreviousActivityIdentity,
                 setupCommand.PreviousActivitySaveKey);
 
@@ -221,7 +226,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(OperationalRouteSetupStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlanReady routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' routeSequence='{routeCommand.RouteSequence}' loadActivitySaveOnEnter='{routeActivitySavePlan.CurrentPolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePlan.CurrentPolicy.SaveActivityOnExit}' loadShouldRun='{routeActivitySavePlan.LoadOnEnter.ShouldLoad}' saveOnExitShouldRun='{routeActivitySavePlan.SaveOnExit.ShouldSave}' saveOnExitSkipKind='{routeActivitySavePlan.SaveOnExit.SkipKind}' source='{routeCommand.Source}' reason='{routeCommand.Reason}'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySavePlanReady routeIdentity='{routeCommand.RouteIdentity}' routeOperationId='{routeCommand.RouteOperationId}' routeSequence='{routeCommand.RouteSequence}' loadActivitySaveOnEnter='{routeActivitySavePlan.CurrentPolicy.LoadActivitySaveOnEnter}' saveActivityOnExit='{routeActivitySavePlan.CurrentPolicy.SaveActivityOnExit}' contributorScopePolicy='{routeActivitySavePlan.CurrentPolicy.ContributorScopePolicy}' loadShouldRun='{routeActivitySavePlan.LoadOnEnter.ShouldLoad}' saveOnExitShouldRun='{routeActivitySavePlan.SaveOnExit.ShouldSave}' saveOnExitSkipKind='{routeActivitySavePlan.SaveOnExit.SkipKind}' saveOnExitSkipReason='{RouteActivitySaveSkipKindMapper.ToCode(routeActivitySavePlan.SaveOnExit.SkipKind)}' saveOnExitSkipDetail='{Normalize(routeActivitySavePlan.SaveOnExit.SkipDetail)}' source='{routeCommand.Source}' reason='{routeCommand.Reason}'.",
                 DebugUtility.Colors.Info);
 
             DebugUtility.Log(typeof(OperationalRouteSetupStage),

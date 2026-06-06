@@ -191,9 +191,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                         : Normalize(_lastSnapshotCaptureFailureDetail);
                     failureReason = $"snapshot_capture_failed:{detail}";
                 }
+                else if (!HasContributorDiscoveryResult || _currentContributorDiscoveryResult.Reports.Count == 0)
+                {
+                    failureReason = "no_activity_content_contributors";
+                }
                 else
                 {
-                    failureReason = "snapshot_payload_missing";
+                    failureReason = "snapshot_payload_expected_but_missing";
                 }
 
                 LogStateChanged(
@@ -217,7 +221,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             }
 
             payload = _snapshotPayloadForSaveOnExit;
-            failureReason = "resolved";
+            failureReason = "snapshot_payload_resolved";
             LogStateChanged(
                 "ActivityObjectExitRuntimeStateSnapshotPayloadRead",
                 activityId,

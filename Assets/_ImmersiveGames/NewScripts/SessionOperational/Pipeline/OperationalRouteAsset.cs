@@ -44,23 +44,46 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         LoadingOnly = 4,
     }
 
+    public enum RouteActivitySaveContributorScopePolicy
+    {
+        Unknown = 0,
+        CurrentActivityObjectSnapshot = 1,
+        CurrentRouteSaveContributors = 2,
+        RouteAndActivitySaveContributors = 3,
+    }
+
     public readonly struct RouteActivitySavePolicy
     {
         public RouteActivitySavePolicy(
             bool loadActivitySaveOnEnter,
             bool saveActivityOnExit)
+            : this(
+                loadActivitySaveOnEnter,
+                saveActivityOnExit,
+                saveActivityOnExit
+                    ? RouteActivitySaveContributorScopePolicy.CurrentActivityObjectSnapshot
+                    : RouteActivitySaveContributorScopePolicy.Unknown)
+        {
+        }
+
+        public RouteActivitySavePolicy(
+            bool loadActivitySaveOnEnter,
+            bool saveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy contributorScopePolicy)
         {
             LoadActivitySaveOnEnter = loadActivitySaveOnEnter;
             SaveActivityOnExit = saveActivityOnExit;
+            ContributorScopePolicy = contributorScopePolicy;
         }
 
         public bool LoadActivitySaveOnEnter { get; }
         public bool SaveActivityOnExit { get; }
+        public RouteActivitySaveContributorScopePolicy ContributorScopePolicy { get; }
         public bool IsValid => true;
 
         public override string ToString()
         {
-            return $"loadActivitySaveOnEnter='{LoadActivitySaveOnEnter}' saveActivityOnExit='{SaveActivityOnExit}'";
+            return $"loadActivitySaveOnEnter='{LoadActivitySaveOnEnter}' saveActivityOnExit='{SaveActivityOnExit}' contributorScopePolicy='{ContributorScopePolicy}'";
         }
     }
 
@@ -704,5 +727,3 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
     }
 
 }
-
-

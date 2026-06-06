@@ -63,7 +63,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorUnregisterStageCommand command,
             SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
-            ActivityEntryPipeline entryPipeline,
             ActivityObjectExitRuntimeState runtimeState,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -107,7 +106,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult = runtimeState.CurrentContributorDiscoveryResult;
             if (!discoveryResult.IsValid || discoveryResult.Reports == null || discoveryResult.Reports.Count == 0)
             {
-                entryPipeline.ClearCurrentActivityObjectContributorDiscoveryResult();
                 SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
                     definition,
                     SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors,
@@ -207,7 +205,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool skipped = !hasCurrentEntryContributors;
             if (skipped)
             {
-            SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
+                SessionActivityIdentity skippedIdentity = endpoint.BuildIdentity(
                     definition,
                     SessionActivityStage.ActivityObjectContributorUnregisterSkippedNoContributors,
                     entrySequence);
@@ -220,8 +218,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     command.Reason,
                     $"'{definition.ActivityId}' activity object contributor unregister skipped reason='no_contributors_for_entry'.");
             }
-
-            entryPipeline.ClearCurrentActivityObjectContributorDiscoveryResult();
             SessionActivityIdentity completedIdentityFinal = endpoint.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityObjectContributorUnregisterCompleted,

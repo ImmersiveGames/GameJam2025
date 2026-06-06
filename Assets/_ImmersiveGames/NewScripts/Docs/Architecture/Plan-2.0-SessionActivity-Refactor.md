@@ -448,3 +448,144 @@ Não mexer em RouteActivitySave sem smoke que exercite payload útil.
 Não mover continuation macro para runtime state/stage.
 ```
 
+
+## SA-13D - fechamento documental
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- SA-13D1 a SA-13D7 foram concluidos em auditoria documental.
+- Nao ha patch imediato recomendado para PlayerInput, Permission, Movement, Camera, ActivityContent ou RouteActivitySave.
+- PlayerInput ainda tem debito futuro de lookup tardio de RuntimeConfigRegistry no adapter.
+- Camera ainda tem debito futuro de explicit composition para ActivityCameraAnchorHost.
+- Movement retained/control e ActivityContent release/continuation permanecem por alto risco.
+- RouteActivitySave atual salva/skipa com base na activity/rota imediatamente anterior concluida.
+- Se o produto quiser preservar o last useful payload, a policy precisa ser adicionada explicitamente antes de qualquer mudanca funcional.
+- Nao criar fallback silencioso para payload antigo.
+
+## SA-14B1 - fechamento documental
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+Resumo:
+
+- ActivityObject exit correlation agora é carrier explícito produzido pela entry.
+- SessionActivityPipeline continua apenas como commit boundary do bundle no ActivityObjectExitRuntimeState.
+- ActivityObjectExitRuntimeState continua sink técnico.
+- Stages de exit continuam determinísticos.
+- Sem fallback ou reconstruction no exit.
+
+## SA-14C - residual bridge / carrier matrix
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- No new wrong owner, duplicate owner, fallback silencioso, or new lookup tardio was found inside SessionActivity.
+- No bridge documented as removed was still active in the audited path.
+- No immediate runtime patch is recommended.
+- Main future bridge candidate remains `IActivityEntryContentPendingOperationRuntimeBridge` and `RunActivityContentOperation(..., this)`.
+- `IActivityEntryParticipantBindingRuntimeBridge` remains a possible future split candidate.
+- `IActivityEntryContentLoadedSetRuntimeBridge` remains a future cleanup candidate.
+- `Movement retained/control` and `ActivityContentReleaseRuntimeState` remain high risk.
+
+## SA-14D - ActivityContent pending-operation bridge audit
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- `IActivityEntryContentPendingOperationRuntimeBridge` remains a technical residual and is deferred.
+- `RunActivityContentOperation(..., this)` is a technical callback, not a wrong owner.
+- `SessionActivityPipeline` remains the callback boundary through `ISessionActivityPendingOperationCallback`.
+- No fallback silencioso, no new lookup tardio, and no duplicate owner were found in the audited path.
+- No immediate runtime patch is recommended.
+- Any future change in this path requires full smoke validation.
+
+Backlog futuro:
+
+```text
+IActivityEntryContentPendingOperationRuntimeBridge split/reduction
+IActivityEntryContentLoadedSetRuntimeBridge cleanup
+IActivityEntryContentRuntimeBridge aggregate cleanup
+```
+
+## SA-14A - status normalization
+
+- Consolidated current status: `SA-14E - SessionActivity decomposition closure matrix CLOSED / AUDITED`.
+- Treat older roadmap blocks as historical traceability, not active status.
+- Keep current future debts limited to: PlayerInput explicit injection, ActivityCameraAnchorHost explicit composition, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
+- Do not reopen Movement or ActivityContent without regression evidence.
+- Do not create fallback for old payloads or add `ActivityExitPipeline` / `ActivityContentReleasePipeline` only for symmetry.
+
+## SA-14E - SessionActivity decomposition closure matrix
+
+Status: CLOSED / AUDITED.
+
+Resumo:
+
+- The current `SessionActivity` runtime decomposition is frozen as a temporary checkpoint.
+- `SA-14B1` remains `CLOSED / PASS funcional + PASS arquitetural do corte`.
+- `SA-13D`, `SA-14C` and `SA-14D` remain closed as audits.
+- Remaining debts are classified as `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_LOW`, `FUTURE_CLEANUP_MEDIUM` and `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
+
+Matrix:
+
+```text
+CLOSED_PASS:
+  SA-14B1 - ActivityObject exit correlation explicit entry result
+
+CLOSED_AUDITED:
+  SA-13D - Runtime surface audits
+  SA-14C - residual bridge / carrier matrix
+  SA-14D - ActivityContent pending-operation bridge audit
+
+DEFER_HIGH_RISK:
+  Movement retained/control surface
+  ActivityContent release/continuation surface
+  ActivityContentReleaseRuntimeState
+
+POLICY_GAP:
+  RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
+
+FUTURE_CLEANUP_LOW:
+  IActivityEntryContentLoadedSetRuntimeBridge cleanup
+  IActivityEntryContentRuntimeBridge aggregate cleanup
+  ActivityObject exit correlation observability hygiene
+
+FUTURE_CLEANUP_MEDIUM:
+  IActivityEntryContentPendingOperationRuntimeBridge split/reduction
+  IActivityEntryParticipantBindingRuntimeBridge possible split
+  PlayerInput canonical actions explicit injection
+  ActivityCameraAnchorHost explicit composition
+
+DO_NOT_REOPEN_WITHOUT_REGRESSION:
+  Movement
+  ActivityContent
+  RouteActivitySave
+  SA-14B1 exit correlation production
+  ActivityContent release/continuation
+  ActivityContent pending-operation callback path
+```
+
+Smoke baseline:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+RestartCurrentActivity
+Activity01ToActivity02
+RouteExitBackToMenu
+ActivityObjectSnapshotCapture, ActivityObjectRelease, ActivityObjectContributorUnregister quando aplicavel
+```
+
+Closure rules:
+
+```text
+DEFER_HIGH_RISK items must not be reopened without concrete regression evidence.
+RouteActivitySave last useful payload is a new policy, not a local bug.
+Any future change in the pending-operation callback path requires full smoke validation.
+```

@@ -1427,12 +1427,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continuationKind: telemetry.ContinuationKind),
                 definition,
                 this,
-                _activityEntryPipeline,
                 _activityContentRuntimeState,
                 _activityContentReleaseRuntimeState,
                 _activityObjectExitRuntimeState,
                 facts,
                 snapshots);
+
+            _activityEntryPipeline.ClearCurrentActivityObjectContributorDiscoveryResult();
 
             _lastActivityContentReleaseContinuationTelemetry = telemetry;
             EmitActivityContentReleaseContinuationEvent(
@@ -1672,10 +1673,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new ActivityObjectContributorUnregisterStageCommand(command.Identity, command, entrySequence),
                 definition,
                 this,
-                _activityEntryPipeline,
                 _activityObjectExitRuntimeState,
                 facts,
                 snapshots);
+
+            _activityEntryPipeline.ClearCurrentActivityObjectContributorDiscoveryResult();
         }
 
         public void CompletePendingOperation(SessionActivityPendingOperation operation, string source, string reason)
@@ -3292,7 +3294,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline setup/readiness failed. kind='{setupReadinessResult.Kind}' reason='{setupReadinessResult.Reason}' identity='{setupReadinessResult.Identity}'.");
             }
 
-            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, command.Source, command.Reason);
+            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, setupReadinessResult.ExitCorrelation, command.Source, command.Reason);
             EnterActivationFlow(definition, command, facts, snapshots, entrySequence);
         }
 
@@ -3363,12 +3365,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"ActivityEntryPipeline setup/readiness failed. kind='{setupReadinessResult.Kind}' reason='{setupReadinessResult.Reason}' identity='{setupReadinessResult.Identity}'.");
             }
 
-            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, command.Source, command.Reason);
+            SyncActivityObjectExitCorrelation(setupReadinessResult.Identity, setupReadinessResult.ExitCorrelation, command.Source, command.Reason);
             EnterActivationFlow(definition, command, facts, snapshots, entrySequence);
         }
 
         private void SyncActivityObjectExitCorrelation(
             SessionActivityIdentity identity,
+            ActivityObjectExitCorrelationBundle exitCorrelation,
             string source,
             string reason)
         {
@@ -3386,9 +3389,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 "SessionActivityPipeline",
                 "activity_object_exit_correlation_refresh");
 
-            ActivityObjectContributorDiscoveryResult discoveryResult = _activityEntryPipeline.GetCurrentActivityObjectContributorDiscoveryResult();
-            ActivityCapabilityInventory inventoryPreview = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreview();
-            ActivityCapabilityInventoryValidationResult inventoryValidation = _activityEntryPipeline.GetCurrentActivityCapabilityInventoryPreviewValidation();
+            ActivityObjectContributorDiscoveryResult discoveryResult = exitCorrelation.ContributorDiscoveryResult;
+            ActivityCapabilityInventory inventoryPreview = exitCorrelation.InventoryPreview;
+            ActivityCapabilityInventoryValidationResult inventoryValidation = exitCorrelation.InventoryPreviewValidation;
 
             _activityObjectExitRuntimeState.StoreContributorDiscoveryResult(
                 discoveryResult,
@@ -4796,43 +4799,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             return endpoints.ToArray();
-        }
-
-        private static IReadOnlyList<ActivityCapabilityPermissionReceiverReference> ResolvePermissionReceiversFromInventory(
-            ActivityCapabilityInventory inventory,
-            SessionActivityIdentity activeIdentity)
-        {
-            List<ActivityCapabilityPermissionReceiverReference> receivers = new();
-            if (!inventory.IsValid)
-            {
-                return receivers;
-            }
-
-            for (int index = 0; index < inventory.Capabilities.Count; index++)
-            {
-                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
-                if (capability.CapabilityKind != ActivityCapabilityKind.PermissionTarget)
-                {
-                    continue;
-                }
-
-                if (!inventory.TryGetRuntimeReference<ActivityCapabilityPermissionReceiverReference>(capability.CapabilityId, out ActivityCapabilityPermissionReceiverReference runtimeReference) ||
-                    runtimeReference == null ||
-                    !runtimeReference.IsValid ||
-                    runtimeReference.Receiver == null)
-                {
-                    if (capability.Required)
-                    {
-                        throw new InvalidOperationException($"[FATAL][SessionActivityPipeline][CapabilityPermission] Missing runtime reference for required capabilityId='{capability.CapabilityId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
-                    }
-
-                    continue;
-                }
-
-                receivers.Add(runtimeReference);
-            }
-
-            return receivers;
         }
 
         private IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProviders(GameObject targetObject)

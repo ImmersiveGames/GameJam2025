@@ -148,6 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 command.RouteSequence,
                 command.ActiveSceneKey,
                 command.ActivitySavePolicy.SaveActivityOnExit,
+                command.ActivitySavePolicy.ContributorScopePolicy,
                 command.HandoffSessionStateId,
                 command.FinalScenesToLoad);
 
@@ -169,6 +170,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             int routeSequence,
             SceneKeyAsset activeSceneKey,
             bool saveActivityOnExit,
+            RouteActivitySaveContributorScopePolicy contributorScopePolicy,
             string activityIdentity,
             IReadOnlyList<SceneKeyAsset> routeOwnedLoadedSceneKeys)
         {
@@ -177,6 +179,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             RouteSequence = routeSequence < 0 ? 0 : routeSequence;
             ActiveSceneKey = activeSceneKey;
             SaveActivityOnExit = saveActivityOnExit;
+            ContributorScopePolicy = contributorScopePolicy;
             ActivityIdentity = Normalize(activityIdentity);
             RouteOwnedLoadedSceneKeys = routeOwnedLoadedSceneKeys ?? throw new ArgumentNullException(nameof(routeOwnedLoadedSceneKeys));
         }
@@ -186,6 +189,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public int RouteSequence { get; }
         public SceneKeyAsset ActiveSceneKey { get; }
         public bool SaveActivityOnExit { get; }
+        public RouteActivitySaveContributorScopePolicy ContributorScopePolicy { get; }
         public string ActivityIdentity { get; }
         public IReadOnlyList<SceneKeyAsset> RouteOwnedLoadedSceneKeys { get; }
 
