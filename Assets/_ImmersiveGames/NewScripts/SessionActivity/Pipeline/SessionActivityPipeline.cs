@@ -1896,34 +1896,74 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 operation,
                 unloadResult.Kind);
 
-            context.NextSceneIndex += 1;
-            ActivityContentLoadedSet loadedSet = _activityContentRuntimeState.CurrentLoadedSet;
-            if (context.NextSceneIndex < loadedSet.Scenes.Count)
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][ActivityContentRelease] event='ActivityContentUnloadCompletionTechnicalCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{context.Definition.ActivityId}' entrySequence='{context.EntrySequence}' operationId='{operation.OperationId}' unloadKind='{unloadResult.Kind}' source='{Normalize(unloadResult.Source)}' reason='{Normalize(unloadResult.Reason)}' pendingOperationCleared='true'.",
+                DebugUtility.Colors.Info);
+
+            ContinueAfterActivityContentUnloadCompletion(
+                context,
+                syntheticCommand,
+                facts,
+                snapshots,
+                _activityContentRuntimeState);
+        }
+
+        private void ContinueAfterActivityContentUnloadCompletion(
+            PendingActivityContentReleaseContext context,
+            SessionActivityCommand command,
+            List<SessionActivityFact> facts,
+            List<SessionActivitySnapshot> snapshots,
+            ActivityContentRuntimeState contentRuntimeState)
+        {
+            if (context == null || !context.IsValid)
             {
-                ExecuteNextActivityContentSceneRelease(context, syntheticCommand, facts, snapshots, _activityContentRuntimeState);
-                return;
+                throw new InvalidOperationException("Pending activity content release context is invalid for unload completion continuation.");
             }
 
-            FinalizeActivityContentReleaseCompleted(context, syntheticCommand, facts, snapshots, _activityContentRuntimeState);
-            if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail &&
-                string.Equals(context.Definition.ActivityId, _state.CurrentDefinition.ActivityId, StringComparison.Ordinal) &&
-                context.EntrySequence == _state.CurrentEntrySequence)
-            {
-                CompleteRouteExitClosure(context.Definition, syntheticCommand, facts, snapshots, context.EntrySequence);
-                return;
-            }
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][ActivityContentRelease] event='ActivityContentUnloadCompletionContinuationStarted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{context.Definition.ActivityId}' entrySequence='{context.EntrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' nextSceneIndex='{context.NextSceneIndex}' totalScenes='{(contentRuntimeState.CurrentLoadedSet.Scenes?.Count ?? 0)}'.",
+                DebugUtility.Colors.Info);
 
-            PendingRestartTransition restart = _pendingRestartTransition;
-            if (restart.IsValid &&
-                string.Equals(restart.Activity.ActivityId, context.Definition.ActivityId, StringComparison.Ordinal) &&
-                restart.FromEntrySequence == context.EntrySequence)
+            try
             {
-                StartPendingRestartEntry(restart, syntheticCommand, facts, snapshots);
-                return;
-            }
+                context.NextSceneIndex += 1;
+                ActivityContentLoadedSet loadedSet = contentRuntimeState.CurrentLoadedSet;
+                if (context.NextSceneIndex < loadedSet.Scenes.Count)
+                {
+                    ExecuteNextActivityContentSceneRelease(context, command, facts, snapshots, contentRuntimeState);
+                    return;
+                }
 
-            SessionActivityIdentity deactivationIdentity = BuildIdentity(context.Definition, SessionActivityStage.Deactivation, context.EntrySequence);
-            _ = ContinueAfterDeactivationAsync(context.Definition, syntheticCommand, facts, snapshots, context.EntrySequence, deactivationIdentity);
+                FinalizeActivityContentReleaseCompleted(context, command, facts, snapshots, contentRuntimeState);
+                if (_activeRailKind == SessionActivityRailKind.ActivityRouteExitRail &&
+                    string.Equals(context.Definition.ActivityId, _state.CurrentDefinition.ActivityId, StringComparison.Ordinal) &&
+                    context.EntrySequence == _state.CurrentEntrySequence)
+                {
+                    CompleteRouteExitClosure(context.Definition, command, facts, snapshots, context.EntrySequence);
+                    return;
+                }
+
+                PendingRestartTransition restart = _pendingRestartTransition;
+                if (restart.IsValid &&
+                    string.Equals(restart.Activity.ActivityId, context.Definition.ActivityId, StringComparison.Ordinal) &&
+                    restart.FromEntrySequence == context.EntrySequence)
+                {
+                    StartPendingRestartEntry(restart, command, facts, snapshots);
+                    return;
+                }
+
+                SessionActivityIdentity deactivationIdentity = BuildIdentity(context.Definition, SessionActivityStage.Deactivation, context.EntrySequence);
+                _ = ContinueAfterDeactivationAsync(context.Definition, command, facts, snapshots, context.EntrySequence, deactivationIdentity);
+            }
+            finally
+            {
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][ActivityContentRelease] event='ActivityContentUnloadCompletionContinuationCompleted' owner='SessionActivityPipeline' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{context.Definition.ActivityId}' entrySequence='{context.EntrySequence}' source='{Normalize(command.Source)}' reason='{Normalize(command.Reason)}' nextSceneIndex='{context.NextSceneIndex}' totalScenes='{(contentRuntimeState.CurrentLoadedSet.Scenes?.Count ?? 0)}'.",
+                    DebugUtility.Colors.Info);
+            }
         }
 
         private bool TryValidatePendingOperationCompletion(SessionActivityPendingOperation operation, string source, string reason)
