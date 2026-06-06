@@ -4309,6 +4309,66 @@ RouteExitBackToMenu PASS.
 RouteActivitySave preservou classificacao NoActivityContentContributors, sem regressao para SnapshotPayloadExpectedButMissing.
 ```
 
+## SA-16E1 - ActivityCameraAnchorHost explicit scene-scope composition
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+### Fechamento consolidado
+
+```text
+SessionOperationalActivityCameraAdapter nao varre mais a cena.
+SessionOperationalActivityCameraAdapter nao resolve mais ActivityCameraAnchorHost por descoberta local.
+SceneScopedActivityCameraAnchorHostResolver resolve o host por contrato explicito de scene-scope.
+ActivityCameraAnchorHost registra o host no escopo da cena.
+Ausencia de host obrigatorio falha explicitamente.
+Hosts duplicados na mesma cena falham explicitamente.
+ActivityCameraPresentationRequirementResolver continua recebendo host pronto e resolvendo requirement.
+CinemachineActivityCameraDirector continua apenas aplicando side-effects no rig preparado.
+ActivityEntryCameraBindingStage, PlayerCameraEndpoint e ActorCapabilitySurface nao foram alterados neste corte.
+Nao houve fallback silencioso.
+```
+
+### Ownership final
+
+```text
+Scene composition/scene-scope resolve o ActivityCameraAnchorHost.
+SessionOperationalRuntimeComposer injeta o contrato de resolucao no adapter.
+SessionOperationalActivityCameraAdapter continua apenas orquestrando prepare/rebind.
+ActivityCameraPresentationRequirementResolver continua sendo o resolver de requirement com host pronto.
+CinemachineActivityCameraDirector continua owner dos side-effects Cinemachine.
+```
+
+### Invariantes finais
+
+```text
+Adapter nao faz lookup scene-local nem discovery por conta propria.
+Host e resolvido por contrato explicito de composition/scene-scope.
+Ausencia obrigatoria e erro explicito, nao fallback silencioso.
+Nao existe owner duplicado de lifecycle de camera.
+Nao alterar Camera behavior.
+Nao alterar ActivityEntryCameraBindingStage.
+Nao alterar PlayerCameraEndpoint.
+Nao alterar Cinemachine behavior.
+```
+
+### Evidencia aceita
+
+```text
+ActivityCameraPresentationPrepareStarted preservado.
+ActivityCameraPresentationPrepared preservado.
+ActivityCameraPrepared preservado.
+ActivityCameraTargetsRebound preservado.
+ActivityCameraTargetBound preservado.
+CameraBindingCompleted preservado.
+Sem FATAL.
+Sem Exception.
+Sem route_transition_failed.
+Sem foreign/stale indevido.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+```
+
 ### Fechamento final
 
 ```text
@@ -5474,7 +5534,7 @@ SA-13D7 — RouteActivitySave payload/handoff audit: CLOSED / AUDITED.
 ```text
 Nao ha patch imediato recomendado para PlayerInput, Permission, Movement, Camera, ActivityContent ou RouteActivitySave.
 PlayerInputBinding ainda tem debito futuro de RuntimeConfigRegistry lookup tardio no adapter, mas nao recebeu patch.
-Camera ainda tem debito futuro de explicit composition para ActivityCameraAnchorHost, mas nao recebeu patch.
+Camera explicit composition para ActivityCameraAnchorHost foi fechado em SA-16E1.
 Movement retained/control e ActivityContent release/continuation permanecem por alto risco e nao devem ser reduzidos agora.
 RouteActivitySave atual salva/skipa com base na rota/activity imediatamente anterior concluida.
 Se o produto quiser preservar o "last useful payload" em vez da activity imediatamente anterior concluida, isso exige policy explicita nova.
@@ -5484,7 +5544,7 @@ Nao criar fallback silencioso para payload antigo sem policy explicita.
 ### DÃƒÂ©bitos futuros registrados
 
 ```text
-ActivityCameraAnchorHost explicit composition.
+ActivityCameraAnchorHost explicit scene-scope composition foi fechado em SA-16E1.
 RouteActivitySave policy gap: current completed activity vs last useful snapshot payload.
 Movement retained/control surface defer high risk.
 ActivityContent release/continuation surface defer high risk.
@@ -5535,7 +5595,6 @@ SA-14C - CLOSED / AUDITED
 ### Debitos futuros
 
 ```text
-ActivityCameraAnchorHost explicit composition
 RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 Movement retained/control surface defer high risk
 ActivityContent release/continuation surface defer high risk
@@ -5595,8 +5654,6 @@ FUTURE_CLEANUP_LOW:
 FUTURE_CLEANUP_MEDIUM:
   IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
-  ActivityCameraAnchorHost explicit composition
-
 DO_NOT_REOPEN_WITHOUT_REGRESSION:
   Movement
   ActivityContent

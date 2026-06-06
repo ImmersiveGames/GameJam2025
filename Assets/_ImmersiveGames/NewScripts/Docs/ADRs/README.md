@@ -51,6 +51,10 @@ Base 1.2 nÃ£o substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
   - `SessionActivityCompositionInstaller` resolve e valida o `InputActionAsset` canonico.
   - `ActivityEntryPipeline` recebe o asset por construtor e instancia o `PlayerInputBindingAdapter` com dependencia explicita.
   - `PlayerInputBindingAdapter` nao consulta mais `RuntimeConfigRegistry` e apenas aplica/rebinda o `PlayerInput`.
+- `SA-16E1` - `ActivityCameraAnchorHost explicit scene-scope composition`: `CLOSED / PASS funcional + PASS arquitetural do corte`.
+  - `SceneScopedActivityCameraAnchorHostResolver` resolve o host por contrato explicito de scene-scope.
+  - `ActivityCameraAnchorHost` registra o host no escopo da cena e falha explicitamente para duplicatas.
+  - `SessionOperationalActivityCameraAdapter` nao faz mais discovery scene-local.
 ---
 
 ## Checkpoint atual

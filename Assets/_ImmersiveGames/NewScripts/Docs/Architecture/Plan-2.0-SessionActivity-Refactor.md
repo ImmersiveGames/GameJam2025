@@ -458,7 +458,7 @@ Resumo:
 - SA-13D1 a SA-13D7 foram concluidos em auditoria documental.
 - Nao ha patch imediato recomendado para PlayerInput, Permission, Movement, Camera, ActivityContent ou RouteActivitySave.
 - PlayerInput ainda tem debito futuro de lookup tardio de RuntimeConfigRegistry no adapter.
-- Camera ainda tem debito futuro de explicit composition para ActivityCameraAnchorHost.
+- Camera explicit composition para ActivityCameraAnchorHost foi fechado em SA-16E1.
 - Movement retained/control e ActivityContent release/continuation permanecem por alto risco.
 - RouteActivitySave atual salva/skipa com base na activity/rota imediatamente anterior concluida.
 - Se o produto quiser preservar o last useful payload, a policy precisa ser adicionada explicitamente antes de qualquer mudanca funcional.
@@ -515,7 +515,7 @@ IActivityEntryContentRuntimeBridge aggregate cleanup
 
 - Consolidated current status: `SA-14E - SessionActivity decomposition closure matrix CLOSED / AUDITED`.
 - Treat older roadmap blocks as historical traceability, not active status.
-- Keep current future debts limited to: ActivityCameraAnchorHost explicit composition, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
+- Keep current future debts limited to: RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
 - Do not reopen Movement or ActivityContent without regression evidence.
 - Do not create fallback for old payloads or add `ActivityExitPipeline` / `ActivityContentReleasePipeline` only for symmetry.
 
@@ -557,7 +557,7 @@ FUTURE_CLEANUP_LOW:
 FUTURE_CLEANUP_MEDIUM:
   IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
-  ActivityCameraAnchorHost explicit composition
+  ActivityCameraAnchorHost explicit scene-scope composition: CLOSED / PASS funcional + PASS arquitetural do corte
 
 DO_NOT_REOPEN_WITHOUT_REGRESSION:
   Movement

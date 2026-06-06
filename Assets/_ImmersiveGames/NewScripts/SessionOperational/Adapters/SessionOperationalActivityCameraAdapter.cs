@@ -1,12 +1,8 @@
-using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.CameraPresentation.Authoring;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Models;
 using _ImmersiveGames.NewScripts.CameraPresentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
-using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
 {
@@ -14,18 +10,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
     {
         private readonly IActivityCameraPreparationExecutor activityCameraExecutor;
         private readonly ActivityCameraPresentationRequirementResolver requirementResolver;
-        private readonly IDependencyProvider dependencyProvider;
+        private readonly IActivityCameraAnchorHostResolver anchorHostResolver;
 
         private ActivityCameraReadyFact activeReadyFact;
 
         public SessionOperationalActivityCameraAdapter(
             IActivityCameraPreparationExecutor activityCameraExecutor,
             ActivityCameraPresentationRequirementResolver requirementResolver,
-            IDependencyProvider dependencyProvider)
+            IActivityCameraAnchorHostResolver anchorHostResolver)
         {
             this.activityCameraExecutor = activityCameraExecutor;
             this.requirementResolver = requirementResolver;
-            this.dependencyProvider = dependencyProvider;
+            this.anchorHostResolver = anchorHostResolver;
         }
 
         public bool TryPrepareActivityCamera(
@@ -206,90 +202,22 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             out string reason)
         {
             anchorHost = null;
-
-            string sceneName = ResolveSceneName(command);
-            if (string.IsNullOrWhiteSpace(sceneName))
+            if (anchorHostResolver == null)
             {
-                reason = "activity_camera_scene_name_missing";
+                reason = "activity_camera_anchor_host_resolver_missing";
                 return false;
             }
 
-            if (dependencyProvider != null &&
-                dependencyProvider.TryGetForScene<ActivityCameraAnchorHost>(
-                    sceneName,
-                    out var registeredHost) &&
-                registeredHost != null)
-            {
-                anchorHost = registeredHost;
-                reason = "activity_camera_anchor_host_resolved_from_scene_scope";
-                return true;
-            }
+            string sceneName = string.IsNullOrWhiteSpace(command.ActiveSceneName)
+                ? string.Empty
+                : command.ActiveSceneName;
 
-            var scene = SceneManager.GetSceneByName(sceneName);
-            if (!scene.IsValid() || !scene.isLoaded)
-            {
-                reason = "activity_camera_scene_not_loaded";
-                return false;
-            }
-
-            var hosts = new List<ActivityCameraAnchorHost>(4);
-            GameObject[] roots = scene.GetRootGameObjects();
-            for (int i = 0; i < roots.Length; i++)
-            {
-                var root = roots[i];
-                if (root == null)
-                {
-                    continue;
-                }
-
-                ActivityCameraAnchorHost[] rootHosts =
-                    root.GetComponentsInChildren<ActivityCameraAnchorHost>(true);
-
-                if (rootHosts == null || rootHosts.Length == 0)
-                {
-                    continue;
-                }
-
-                for (int j = 0; j < rootHosts.Length; j++)
-                {
-                    if (rootHosts[j] != null)
-                    {
-                        hosts.Add(rootHosts[j]);
-                    }
-                }
-            }
-
-            if (hosts.Count == 0)
-            {
-                reason = "activity_camera_anchor_host_not_found";
-                return false;
-            }
-
-            if (hosts.Count > 1)
-            {
-                reason = "activity_camera_anchor_host_multiple_found";
-                return false;
-            }
-
-            anchorHost = hosts[0];
-            if (!anchorHost.TryValidate(out reason))
+            if (!anchorHostResolver.TryResolve(sceneName, out anchorHost, out reason))
             {
                 return false;
             }
 
-            reason = "activity_camera_anchor_host_resolved_from_scene";
             return true;
-        }
-
-        private static string ResolveSceneName(
-            SessionOperationalActivityCameraPrepareCommand command)
-        {
-            if (!string.IsNullOrWhiteSpace(command.ActiveSceneName))
-            {
-                return command.ActiveSceneName;
-            }
-
-            return string.Empty;
         }
 
         private static void LogFailed(

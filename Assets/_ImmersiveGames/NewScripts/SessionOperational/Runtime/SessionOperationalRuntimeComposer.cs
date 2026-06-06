@@ -480,18 +480,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Runtime
                 return;
             }
 
-            if (!DependencyManager.Provider.TryGetGlobal<IActivityCameraPreparationExecutor>(out var activityCameraExecutor) || activityCameraExecutor == null)
-            {
-                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][ActivityCamera] IActivityCameraPreparationExecutor obrigatorio ausente para compor activity camera adapter.");
-            }
-
             if (DependencyManager.Provider == null)
             {
                 throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][ActivityCamera] IDependencyProvider obrigatorio ausente para compor activity camera adapter.");
             }
 
+            if (!DependencyManager.Provider.TryGetGlobal<IActivityCameraPreparationExecutor>(out var activityCameraExecutor) || activityCameraExecutor == null)
+            {
+                throw new InvalidOperationException("[FATAL][Config][SessionOperationalPipeline][ActivityCamera] IActivityCameraPreparationExecutor obrigatorio ausente para compor activity camera adapter.");
+            }
+
             var requirementResolver = new ActivityCameraPresentationRequirementResolver();
-            _activityCameraAdapter = new SessionOperationalActivityCameraAdapter(activityCameraExecutor, requirementResolver, DependencyManager.Provider);
+            IActivityCameraAnchorHostResolver anchorHostResolver = new SceneScopedActivityCameraAnchorHostResolver(DependencyManager.Provider);
+            _activityCameraAdapter = new SessionOperationalActivityCameraAdapter(activityCameraExecutor, requirementResolver, anchorHostResolver);
             DependencyManager.Provider.RegisterGlobal(_activityCameraAdapter);
             DependencyManager.Provider.RegisterGlobal<ISessionOperationalActivityCameraAdapter>(_activityCameraAdapter);
 

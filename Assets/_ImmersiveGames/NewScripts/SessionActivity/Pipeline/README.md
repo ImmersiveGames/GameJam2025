@@ -72,7 +72,7 @@ Isso é o contrato v0 aceito do sandbox. Não implementar `WindowTemplateLibrary
 - Status: CLOSED / AUDITED.
 - D1 a D7 foram encerrados em auditoria documental, sem patch imediato para PlayerInput, Permission, Movement, Camera, ActivityContent ou RouteActivitySave.
 - PlayerInput ainda tem debito futuro de explicit injection de canonical actions.
-- Camera ainda tem debito futuro de explicit composition para ActivityCameraAnchorHost.
+- Camera explicit composition para ActivityCameraAnchorHost foi fechado em SA-16E1.
 - Movement retained/control e ActivityContent release/continuation permanecem por alto risco.
 - RouteActivitySave atual salva/skipa com base na activity/rota imediatamente anterior concluida, nao em "last useful payload" global.
 - Nao criar fallback silencioso para payload antigo sem policy explicita.
@@ -117,7 +117,7 @@ IActivityEntryContentRuntimeBridge aggregate cleanup
 
 - Current normalized source of truth: `SA-14E - SessionActivity decomposition closure matrix CLOSED / AUDITED`.
 - Keep the earlier roadmap/history for traceability only.
-- Keep current future debts limited to: PlayerInput explicit injection, ActivityCameraAnchorHost explicit composition, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
+- Keep current future debts limited to: PlayerInput explicit injection, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
 - Do not reopen Movement, ActivityContent, or RouteActivitySave without regression evidence.
 - Do not add fallback for old payloads or create `ActivityExitPipeline` / `ActivityContentReleasePipeline` just for symmetry.
 
@@ -157,7 +157,7 @@ FUTURE_CLEANUP_MEDIUM:
   IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
   PlayerInput canonical actions explicit injection
-  ActivityCameraAnchorHost explicit composition
+  ActivityCameraAnchorHost explicit scene-scope composition: CLOSED / PASS funcional + PASS arquitetural do corte
 
 DO_NOT_REOPEN_WITHOUT_REGRESSION:
   Movement
