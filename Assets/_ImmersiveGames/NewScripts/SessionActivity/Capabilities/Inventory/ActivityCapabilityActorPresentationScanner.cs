@@ -5,6 +5,7 @@ using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
@@ -95,6 +96,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 owners,
                 capabilities,
                 Array.Empty<IActivityCapabilityRuntimeReference>(),
+                Array.Empty<ActorCameraBindingContribution>(),
                 Array.Empty<ActorAttributeSetupContribution>(),
                 presentationContributions,
                 Array.Empty<ActivityPermissionReceiverContribution>(),

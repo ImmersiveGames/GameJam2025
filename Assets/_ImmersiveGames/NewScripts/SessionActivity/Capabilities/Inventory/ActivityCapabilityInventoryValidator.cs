@@ -148,9 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             return capabilityKind == ActivityCapabilityKind.ResetEndpoint ||
                    capabilityKind == ActivityCapabilityKind.SnapshotProvider ||
                    capabilityKind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
-                   capabilityKind == ActivityCapabilityKind.ReleaseEndpoint ||
-                   capabilityKind == ActivityCapabilityKind.PresentationEndpoint ||
-                   capabilityKind == ActivityCapabilityKind.CameraTarget;
+                   capabilityKind == ActivityCapabilityKind.ReleaseEndpoint;
         }
 
         private static bool IsExpectedRuntimeReferenceType(ActivityCapabilityKind capabilityKind, IActivityCapabilityRuntimeReference runtimeReference)
@@ -164,11 +162,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference permissionReference &&
                                                            permissionReference.Receiver != null &&
                                                            permissionReference.PermissionId != ActivityCapabilityPermissionId.Unknown,
-                ActivityCapabilityKind.PresentationEndpoint => runtimeReference is ActorPresentationEndpointReference presentationReference &&
-                                                               presentationReference.Endpoint != null &&
-                                                               !string.IsNullOrWhiteSpace(presentationReference.ActorId),
-                ActivityCapabilityKind.CameraTarget => runtimeReference is ActivityCameraTargetReference cameraReference &&
-                                                      cameraReference.TrackingTarget != null,
                 _ => true,
             };
         }

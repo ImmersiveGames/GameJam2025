@@ -8,7 +8,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class ActorObjectEmitterEndpoint : MonoBehaviour, IActorObjectEmitterEndpoint
+    public sealed class ActorObjectEmitterEndpoint : MonoBehaviour, IActorObjectEmitterEndpoint, IActorObjectEmissionPermissionStateEndpoint
     {
         [SerializeField] private string endpointId = "actor.object.emitter";
         [SerializeField] private ActorObjectEmissionProfile objectEmissionProfile;

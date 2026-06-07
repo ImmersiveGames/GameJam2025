@@ -6,6 +6,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
@@ -1003,12 +1004,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryCameraBindingCommand(
             SessionActivityIdentity identity,
+            IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
             string activityId,
             int activityOrdinal,
             string source,
             string reason)
         {
             Identity = identity;
+            CameraBindingContributions = cameraBindingContributions ?? Array.Empty<ActorCameraBindingContribution>();
             ActivityId = Normalize(activityId);
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
             Source = Normalize(source);
@@ -1016,6 +1019,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         }
 
         public SessionActivityIdentity Identity { get; }
+        public IReadOnlyList<ActorCameraBindingContribution> CameraBindingContributions { get; }
         public string ActivityId { get; }
         public int ActivityOrdinal { get; }
         public string Source { get; }
@@ -1024,6 +1028,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public bool IsValid =>
             Identity.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            CameraBindingContributions != null &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             Identity.ActivityId == ActivityId &&
             Identity.ActivityOrdinal == ActivityOrdinal &&

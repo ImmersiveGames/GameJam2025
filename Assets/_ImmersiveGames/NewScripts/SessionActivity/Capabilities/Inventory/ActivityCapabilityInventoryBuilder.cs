@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
@@ -18,6 +19,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         public ActivityCapabilityInventory Build(
             ActivityCapabilityScanContext context,
+            out IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
             out IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
             out IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
             out IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions)
@@ -31,6 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
             Dictionary<string, IActivityCapabilityRuntimeReference> runtimeReferences = new(StringComparer.Ordinal);
+            List<ActorCameraBindingContribution> cameraContributions = new();
             List<ActorAttributeSetupContribution> attributeContributions = new();
             List<ActorPresentationSetupContribution> presentationContributions = new();
             List<ActivityPermissionReceiverContribution> contributions = new();
@@ -47,6 +50,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 AppendOwners(owners, scanResult);
                 AppendCapabilities(capabilities, scanResult, inventoryId);
                 AppendRuntimeReferences(runtimeReferences, scanResult);
+                AppendCameraBindingContributions(cameraContributions, scanResult);
                 AppendAttributeSetupContributions(attributeContributions, scanResult);
                 AppendPresentationSetupContributions(presentationContributions, scanResult);
                 AppendPermissionReceiverContributions(contributions, scanResult);
@@ -54,11 +58,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             owners.Sort(CompareOwners);
             capabilities.Sort(CompareCapabilities);
+            cameraBindingContributions = cameraContributions;
             attributeSetupContributions = attributeContributions;
             presentationSetupContributions = presentationContributions;
             permissionReceiverContributions = contributions;
 
             return new ActivityCapabilityInventory(inventoryId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
+        }
+
+        private static void AppendCameraBindingContributions(
+            List<ActorCameraBindingContribution> contributions,
+            ActivityCapabilityScanResult scanResult)
+        {
+            for (int index = 0; index < scanResult.CameraBindingContributions.Count; index++)
+            {
+                ActorCameraBindingContribution contribution = scanResult.CameraBindingContributions[index];
+                if (!contribution.IsValid)
+                {
+                    throw new InvalidOperationException($"Activity capability camera binding contribution at scanner='{scanResult.ScannerId}' index='{index}' is invalid.");
+                }
+
+                contributions.Add(contribution);
+            }
         }
 
         private static void AppendAttributeSetupContributions(

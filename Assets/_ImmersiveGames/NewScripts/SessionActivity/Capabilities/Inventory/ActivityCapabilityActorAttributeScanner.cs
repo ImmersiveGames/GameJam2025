@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
@@ -92,6 +93,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 owners,
                 Array.Empty<ActivityCapabilityDescriptor>(),
                 Array.Empty<IActivityCapabilityRuntimeReference>(),
+                Array.Empty<ActorCameraBindingContribution>(),
                 attributeContributions,
                 Array.Empty<ActorPresentationSetupContribution>(),
                 Array.Empty<ActivityPermissionReceiverContribution>(),

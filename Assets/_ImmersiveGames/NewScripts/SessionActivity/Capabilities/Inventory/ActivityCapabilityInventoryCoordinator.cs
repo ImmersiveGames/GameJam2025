@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
@@ -12,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public ActivityCapabilityInventoryBuildResult(
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
+            IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
             IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
             IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
             IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions,
@@ -22,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             Inventory = inventory;
             Validation = validation;
+            CameraBindingContributions = cameraBindingContributions ?? Array.Empty<ActorCameraBindingContribution>();
             AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
             PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
@@ -33,6 +36,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         public ActivityCapabilityInventory Inventory { get; }
         public ActivityCapabilityInventoryValidationResult Validation { get; }
+        public IReadOnlyList<ActorCameraBindingContribution> CameraBindingContributions { get; }
         public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
         public IReadOnlyList<ActorPresentationSetupContribution> PresentationSetupContributions { get; }
         public IReadOnlyList<ActivityPermissionReceiverContribution> PermissionReceiverContributions { get; }
@@ -107,6 +111,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             ActivityCapabilityInventory inventory = _inventoryBuilder.Build(
                 scanContext,
+                out IReadOnlyList<ActorCameraBindingContribution> cameraBindingContributions,
                 out IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
                 out IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
                 out IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions);
@@ -114,6 +119,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             return new ActivityCapabilityInventoryBuildResult(
                 inventory,
                 validation,
+                cameraBindingContributions,
                 attributeSetupContributions,
                 presentationSetupContributions,
                 permissionReceiverContributions,

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
@@ -16,6 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public ActivitySetupInventory CurrentActivitySetupInventory { get; private set; }
         public ActivityCapabilityInventory CurrentActivityCapabilityInventoryPreview { get; private set; }
         public ActivityCapabilityInventoryValidationResult CurrentActivityCapabilityInventoryPreviewValidation { get; private set; }
+        public IReadOnlyList<ActorCameraBindingContribution> CurrentActivityCameraBindingContributions { get; private set; }
         public IReadOnlyList<ActorAttributeSetupContribution> CurrentActivityAttributeSetupContributions { get; private set; }
         public IReadOnlyList<ActorPresentationSetupContribution> CurrentActivityPresentationSetupContributions { get; private set; }
         public IReadOnlyList<ActivityPermissionReceiverContribution> CurrentActivityPermissionReceiverContributions { get; private set; }
@@ -58,6 +60,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             CurrentActivityCapabilityInventoryPreviewValidation = validation;
         }
 
+        public void SetCurrentActivityCameraBindingContributions(IReadOnlyList<ActorCameraBindingContribution> contributions)
+        {
+            CurrentActivityCameraBindingContributions = contributions ?? Array.Empty<ActorCameraBindingContribution>();
+        }
+
         public void SetCurrentActivityAttributeSetupContributions(IReadOnlyList<ActorAttributeSetupContribution> contributions)
         {
             CurrentActivityAttributeSetupContributions = contributions ?? Array.Empty<ActorAttributeSetupContribution>();
@@ -77,6 +84,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             CurrentActivityCapabilityInventoryPreview = default;
             CurrentActivityCapabilityInventoryPreviewValidation = default;
+            CurrentActivityCameraBindingContributions = Array.Empty<ActorCameraBindingContribution>();
             CurrentActivityAttributeSetupContributions = Array.Empty<ActorAttributeSetupContribution>();
             CurrentActivityPresentationSetupContributions = Array.Empty<ActorPresentationSetupContribution>();
             CurrentActivityPermissionReceiverContributions = Array.Empty<ActivityPermissionReceiverContribution>();

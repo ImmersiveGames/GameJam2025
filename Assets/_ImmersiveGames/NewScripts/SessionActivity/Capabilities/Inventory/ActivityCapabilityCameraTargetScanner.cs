@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
@@ -11,7 +12,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
     public sealed class ActivityCapabilityCameraTargetScanner : IActivityCapabilityScanner
     {
-        private const string ModuleId = "SessionActivity.CameraTarget";
         private readonly IPlayerActorCapabilityIdentityResolver _identityResolver;
 
         public ActivityCapabilityCameraTargetScanner(IPlayerActorCapabilityIdentityResolver identityResolver)
@@ -31,10 +31,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
             ActivityCapabilityInventoryId inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
-            List<ActivityCapabilityDescriptor> capabilities = new();
-            List<IActivityCapabilityRuntimeReference> runtimeReferences = new();
+            List<ActorCameraBindingContribution> cameraContributions = new();
             HashSet<string> ownerKeys = new(StringComparer.Ordinal);
-            HashSet<string> capabilityKeys = new(StringComparer.Ordinal);
+            HashSet<string> contributionKeys = new(StringComparer.Ordinal);
 
             for (int index = 0; index < context.ActorTargets.Count; index++)
             {
@@ -64,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;
                     Debug.LogWarning(
-                        $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' capabilityKind='{ActivityCapabilityKind.CameraTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
+                        $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraBindingContributionIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' bindingKind='CameraBindingContribution' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 
@@ -86,59 +85,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         context.Source));
                 }
 
-                Component cameraComponent = endpoint as Component;
-                string componentPath = cameraComponent != null
-                    ? ActivityCapabilityTransformPathUtility.BuildTransformPath(cameraComponent.transform)
-                    : string.Empty;
-                string componentType = endpoint.GetType().FullName ?? endpoint.GetType().Name;
-                string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
-                    inventoryId,
-                    ownerId,
-                    ActivityCapabilityKind.CameraTarget,
-                    ModuleId,
-                    componentPath);
-
-                if (!capabilityKeys.Add(capabilityId))
+                if (!ActorCameraBindingContributionBuilder.TryBuild(
+                        context.Identity,
+                        target,
+                        playerIdentity,
+                        endpoint,
+                        context.Source,
+                        context.Reason,
+                        out ActorCameraBindingContribution contribution))
                 {
                     continue;
                 }
 
-                capabilities.Add(new ActivityCapabilityDescriptor(
-                    capabilityId,
-                    ActivityCapabilityKind.CameraTarget,
-                    ModuleId,
-                    ownerId,
-                    componentPath,
-                    componentType,
-                    required: true,
-                    priority: 120,
-                    policyMetadata: new[]
-                    {
-                        new ActivityCapabilityPolicyEntry("actorId", playerIdentity.ActorId.Value),
-                        new ActivityCapabilityPolicyEntry("actorInstanceRuntimeId", playerIdentity.ActorInstanceRuntimeId.Value),
-                        new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId.Value),
-                        new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId.Value),
-                        new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
-                    },
-                    source: context.Source));
+                string contributionKey = $"{contribution.ActorInstanceRuntimeId}|{contribution.ComponentPath}";
+                if (!contributionKeys.Add(contributionKey))
+                {
+                    continue;
+                }
 
-                runtimeReferences.Add(new ActivityCameraTargetReference(
-                    capabilityId,
-                    ownerId,
-                    playerIdentity.ActorId,
-                    playerIdentity.ActorInstanceRuntimeId,
-                    playerIdentity.PlayerActorId,
-                    playerIdentity.PlayerSlotId,
-                    componentPath,
-                    endpoint.FollowTarget,
-                    endpoint.LookAtTarget));
+                cameraContributions.Add(contribution);
             }
 
             return new ActivityCapabilityScanResult(
                 ScannerId,
                 owners,
-                capabilities,
-                runtimeReferences,
+                Array.Empty<ActivityCapabilityDescriptor>(),
+                Array.Empty<IActivityCapabilityRuntimeReference>(),
+                cameraContributions,
                 Array.Empty<ActorAttributeSetupContribution>(),
                 Array.Empty<ActorPresentationSetupContribution>(),
                 Array.Empty<ActivityPermissionReceiverContribution>(),

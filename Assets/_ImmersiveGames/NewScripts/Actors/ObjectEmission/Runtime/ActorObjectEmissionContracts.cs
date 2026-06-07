@@ -2,6 +2,7 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.ObjectEmission.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
@@ -87,5 +88,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
     public interface IActorObjectEmitterEndpoint : IActorCommandSink
     {
         ActorObjectEmissionResult Fire(in ActorObjectEmissionCommand command);
+    }
+
+    public interface IActorObjectEmissionPermissionStateEndpoint
+    {
+        void SetObjectEmissionPermissionState(ActivityCapabilityPermissionState state);
+        void ClearObjectEmissionPermissionState();
     }
 }

@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
 {
     public sealed class ActorObjectEmissionPermissionReceiver : IActivityCapabilityPermissionReceiver
     {
-        private readonly ActorObjectEmitterEndpoint _endpoint;
+        private readonly IActorObjectEmissionPermissionStateEndpoint _endpoint;
         private readonly ActorId _actorId;
         private readonly ActorInstanceRuntimeId _actorInstanceRuntimeId;
         private readonly PlayerActorId _playerActorId;
@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
         private readonly string _receiverId;
 
         public ActorObjectEmissionPermissionReceiver(
-            ActorObjectEmitterEndpoint endpoint,
+            IActorObjectEmissionPermissionStateEndpoint endpoint,
             string receiverId,
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
@@ -32,6 +32,18 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
         }
 
         public string ReceiverId => _receiverId;
+
+        public static string CreateReceiverId(ActivityCapabilityPermissionReceiverIdentity identity)
+        {
+            string normalizedPipelineId = Normalize(identity.PipelineId);
+            string normalizedSessionStateId = Normalize(identity.SessionStateId);
+            string normalizedActivityId = Normalize(identity.ActivityId);
+            string normalizedActorInstanceRuntimeId = identity.ActorInstanceRuntimeId.IsValid ? identity.ActorInstanceRuntimeId.Value : string.Empty;
+            string normalizedPlayerSlotId = identity.PlayerSlotId.IsValid ? identity.PlayerSlotId.Value : string.Empty;
+            string actorInstanceToken = string.IsNullOrWhiteSpace(normalizedActorInstanceRuntimeId) ? "actor.instance.unbound" : normalizedActorInstanceRuntimeId;
+            string slotToken = string.IsNullOrWhiteSpace(normalizedPlayerSlotId) ? "slot.unbound" : normalizedPlayerSlotId;
+            return $"object_emission.receiver|pipeline={normalizedPipelineId}|session={normalizedSessionStateId}|activity={normalizedActivityId}|entry={identity.EntrySequence}|actorInstance={actorInstanceToken}|slot={slotToken}";
+        }
 
         public void OnPermissionChanged(ActivityCapabilityPermissionFact fact)
         {
@@ -86,6 +98,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
         private bool TargetsCurrentActor(ActorInstanceRuntimeId actorInstanceRuntimeId)
         {
             return actorInstanceRuntimeId.IsValid && actorInstanceRuntimeId == _actorInstanceRuntimeId;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private static bool IsGameplayControlPermission(ActivityCapabilityPermissionId permissionId)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -611,6 +612,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason);
             ActivityCapabilityInventory inventory = buildResult.Inventory;
             ActivityCapabilityInventoryValidationResult validationResult = buildResult.Validation;
+            inventoryState.SetCurrentActivityCameraBindingContributions(buildResult.CameraBindingContributions);
             inventoryState.SetCurrentActivityAttributeSetupContributions(buildResult.AttributeSetupContributions);
             inventoryState.SetCurrentActivityPresentationSetupContributions(buildResult.PresentationSetupContributions);
             inventoryState.SetCurrentActivityPermissionReceiverContributions(buildResult.PermissionReceiverContributions);

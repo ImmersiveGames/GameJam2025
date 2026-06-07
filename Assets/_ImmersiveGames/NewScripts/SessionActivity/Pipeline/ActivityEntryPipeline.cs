@@ -399,6 +399,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityEntryCameraBindingResult cameraBindingResult = ExecuteCameraBinding(
                     new ActivityEntryCameraBindingCommand(
                         setupStartedIdentity,
+                        _activityInventoryRuntimeState.CurrentActivityCameraBindingContributions,
                         definition.ActivityId,
                         definition.ActivityOrdinal,
                         command.Source,
@@ -1473,6 +1474,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     _activityInventoryRuntimeState.CurrentActivitySetupInventory,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreviewValidation,
+                    command.CameraBindingContributions,
                     _activityParticipationRuntimeState.CurrentParticipationContext?.Participants ?? Array.Empty<ActivityParticipantBinding>(),
                     _cameraBindingBridge,
                     facts,
