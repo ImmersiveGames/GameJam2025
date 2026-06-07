@@ -4,6 +4,8 @@ Status: Accepted / Base 1.2
 Área: SessionActivityPipeline / Pipeline Stages / Actor Capabilities  
 Atualização: 4D + H4D Hygiene + ActorReset-1B — CLOSED / PASS funcional
 
+> Historical Base 1.2 reference. For the active Base 2.0 boundary, see `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md` and `ENTRY-BOUNDARY-DOC-0` inside it. Any wording that says stages "use inventory" is historical and does not authorize inventory-backed setup/binding in Base 2.0.
+
 ---
 
 ## Contexto
@@ -40,9 +42,9 @@ O pipeline não deve virar dispatcher de qualquer ação local de gameplay.
 
 ### 2. Capability stages usam inventory
 
-Stages que dependem de objetos/actors devem consumir `ActivityCapabilityInventory` sempre que o caminho já foi migrado.
+Stages que dependem de objetos/actors consumiam `ActivityCapabilityInventory` no corte histórico da Base 1.2 quando o caminho já havia sido migrado. Isso não descreve o shape ativo da Base 2.0.
 
-Caminhos migrados:
+Caminhos migrados historicamente:
 
 - ActorPresentation setup/release;
 - ActorAttributes setup/release;

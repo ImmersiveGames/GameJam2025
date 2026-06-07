@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Transitions
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneTransitionProfile",
-        menuName = "ImmersiveGames/NewScripts/Transitions/SceneTransitionProfile",
+        menuName = "ImmersiveGames/Transitions/SceneTransitionProfile",
         order = 30)]
     public sealed class SceneTransitionProfile : ScriptableObject
     {

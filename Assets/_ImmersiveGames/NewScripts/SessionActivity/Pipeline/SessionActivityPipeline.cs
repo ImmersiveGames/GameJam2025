@@ -3733,15 +3733,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
-        private bool TryGetActivePresentationHandle(ActorPresentationEndpointReference presentationReference, out ActorPresentationRuntimeHandle handle)
+        private bool TryGetActivePresentationHandle(ActorInstanceId actorInstanceRuntimeId, out ActorPresentationRuntimeHandle handle)
         {
             handle = default;
-            if (presentationReference == null || !presentationReference.IsValid)
+            if (!actorInstanceRuntimeId.IsValid)
             {
                 return false;
             }
 
-            return _activityActorExitRuntimeState.TryGetActivePresentationHandle(presentationReference, out handle);
+            return _activityActorExitRuntimeState.TryGetActivePresentationHandle(actorInstanceRuntimeId, out handle);
         }
 
         private void EmitActorPresentationReleaseGenericStage(
@@ -8523,10 +8523,10 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         bool IActivityEntryActorPresentationRuntimeBridge.TryGetActiveActorPresentationHandle(
-            ActorPresentationEndpointReference presentationReference,
+            ActorInstanceId actorInstanceRuntimeId,
             out ActorPresentationRuntimeHandle handle)
         {
-            return TryGetActivePresentationHandle(presentationReference, out handle);
+            return TryGetActivePresentationHandle(actorInstanceRuntimeId, out handle);
         }
 
         void IActivityEntryActorPresentationRuntimeBridge.ReleaseActorPresentationBeforeRematerialization(

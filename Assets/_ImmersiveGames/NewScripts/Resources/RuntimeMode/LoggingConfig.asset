@@ -21,11 +21,11 @@ MonoBehaviour:
   - ruleId: logger.Session.operation
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.SessionOperational
-    level: 4
+    level: 1
   - ruleId: logger.saveadapter
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.SaveRuntime
-    level: 4
+    level: 1
   - ruleId: logger.activity
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.SessionActivity
@@ -53,4 +53,8 @@ MonoBehaviour:
   - ruleId: logger.actors
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.Actors
+    level: 4
+  - ruleId: logger.gameplay
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime
     level: 4

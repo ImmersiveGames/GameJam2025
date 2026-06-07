@@ -85,7 +85,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return false;
             }
 
-            if (!_activeActorPresentationByActorInstanceId.TryGetValue(presentationReference.ActorInstanceRuntimeId, out ActorPresentationCapabilityState state) || !state.IsValid)
+            return TryGetActivePresentationHandle(presentationReference.ActorInstanceRuntimeId, out handle);
+        }
+
+        public bool TryGetActivePresentationHandle(
+            ActorInstanceId actorInstanceRuntimeId,
+            out ActorPresentationRuntimeHandle handle)
+        {
+            handle = default;
+            if (!actorInstanceRuntimeId.IsValid)
+            {
+                return false;
+            }
+
+            if (!_activeActorPresentationByActorInstanceId.TryGetValue(actorInstanceRuntimeId, out ActorPresentationCapabilityState state) || !state.IsValid)
             {
                 return false;
             }

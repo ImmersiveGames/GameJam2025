@@ -15,7 +15,7 @@ using UnityEngine.InputSystem;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Composition Installer")]
+    [AddComponentMenu("ImmersiveGames/SessionActivity/Session Activity Composition Installer")]
     public sealed class SessionActivityCompositionInstaller : MonoBehaviour
     {
         private SessionActivityHost _host;

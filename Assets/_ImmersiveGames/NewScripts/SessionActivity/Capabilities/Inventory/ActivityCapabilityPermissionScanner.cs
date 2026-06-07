@@ -2,7 +2,9 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using UnityEngine;
 
@@ -31,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityInventoryId inventoryId = context.InventoryId;
             List<ActivityCapabilityOwnerDescriptor> owners = new();
             List<ActivityCapabilityDescriptor> capabilities = new();
-            List<IActivityCapabilityRuntimeReference> runtimeReferences = new();
+            List<ActivityPermissionReceiverContribution> contributions = new();
             HashSet<string> ownerKeys = new(StringComparer.Ordinal);
             HashSet<string> capabilityKeys = new(StringComparer.Ordinal);
 
@@ -115,17 +117,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
                     receiverIdentity);
 
-                IActorPermissionReceiver receiver = surface.ActorPermissionReceiver;
-                if (receiver == null)
-                {
-                    receiver = new PlayerMovementPermissionReceiver(
+                IActivityPermissionReceiverProvider receiverProvider = surface.ActorPermissionReceiver != null
+                    ? new PlayerMovementPermissionReceiverProvider(
+                        surface.ActorPermissionReceiver,
+                        receiverId,
+                        playerIdentity.ActorId,
+                        playerIdentity.ActorInstanceRuntimeId,
+                        playerIdentity.PlayerActorId,
+                        playerIdentity.PlayerSlotId)
+                    : new PlayerMovementPermissionReceiverProvider(
                         movementEndpoint,
                         receiverId,
                         playerIdentity.ActorId,
                         playerIdentity.ActorInstanceRuntimeId,
                         playerIdentity.PlayerActorId,
                         playerIdentity.PlayerSlotId);
-                }
 
                 capabilities.Add(new ActivityCapabilityDescriptor(
                     capabilityId,
@@ -134,7 +140,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     ownerId,
                     componentPath,
                     componentType,
-                    required: true,
+                    required: false,
                     priority: 100,
                     policyMetadata: new[]
                     {
@@ -147,20 +153,33 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     },
                     source: context.Source));
 
-                runtimeReferences.Add(new ActivityCapabilityPermissionReceiverReference(
+                contributions.Add(new ActivityPermissionReceiverContribution(
+                    context.Identity,
                     capabilityId,
                     ownerId,
                     playerIdentity.ActorId,
                     playerIdentity.ActorInstanceRuntimeId,
                     playerIdentity.PlayerActorId,
                     playerIdentity.PlayerSlotId,
-                    componentPath,
                     ActivityCapabilityPermissionId.ActivityGameplayControl,
                     receiverIdentity,
-                    receiver));
+                    receiverId,
+                    componentPath,
+                    receiverProvider,
+                    context.Source,
+                    context.Reason));
             }
 
-            return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
+            return new ActivityCapabilityScanResult(
+                ScannerId,
+                owners,
+                capabilities,
+                Array.Empty<IActivityCapabilityRuntimeReference>(),
+                Array.Empty<ActorAttributeSetupContribution>(),
+                Array.Empty<ActorPresentationSetupContribution>(),
+                contributions,
+                context.Source,
+                context.Reason);
         }
     }
 

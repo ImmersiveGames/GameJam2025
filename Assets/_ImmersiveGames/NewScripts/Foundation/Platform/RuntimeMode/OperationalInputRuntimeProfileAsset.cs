@@ -5,7 +5,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     [CreateAssetMenu(
         fileName = "OperationalInputRuntimeProfile",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/OperationalInputRuntimeProfileAsset",
+        menuName = "ImmersiveGames/Infrastructure/RuntimeMode/OperationalInputRuntimeProfileAsset",
         order = 24)]
     public sealed class OperationalInputRuntimeProfileAsset : ScriptableObject
     {

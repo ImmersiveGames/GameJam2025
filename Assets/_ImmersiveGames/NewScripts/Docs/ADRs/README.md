@@ -25,6 +25,7 @@ Base 1.2 não substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
 - `SA-13D`, `SA-14C`, `SA-14D` e `SA-14E` ficaram fechados como auditorias/matriz de débitos.
 - Movement, ActivityContent, RouteActivitySave e pending-operation callback path não devem ser reabertos sem regressão concreta.
 - A próxima frente runtime deve ser escolhida fora de `SessionActivity`, salvo regressão.
+- `ADR-2.0-0002` congelou a fronteira `ENTRY-BOUNDARY-DOC-0` de `SessionActivity`: `ResetEndpoint`, `SnapshotProvider`, `SnapshotRestoreEndpoint` e `ReleaseEndpoint` permanecem válidos no scanner; `ObjectEmitter` é local ao Actor; `PermissionTarget` fica limitado a referência mínima; `PresentationEndpoint`, `AttributeEndpoint` e `CameraTarget` pertencem a `ActorCapabilitySurface` e aos seus planos de setup/binding, não ao inventory transversal.
 - `SA-15C` fechou o `RouteActivitySave` com `RouteActivitySaveContributorScopePolicy` como policy normativa.
 - `CurrentActivityObjectSnapshot` é o único scope funcional ativo hoje.
 - `CurrentRouteSaveContributors` e `RouteAndActivitySaveContributors` permanecem como contrato/policy futura, sem infraestrutura ativa.

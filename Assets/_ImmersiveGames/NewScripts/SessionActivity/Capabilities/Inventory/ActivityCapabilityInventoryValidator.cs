@@ -149,9 +149,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                    capabilityKind == ActivityCapabilityKind.SnapshotProvider ||
                    capabilityKind == ActivityCapabilityKind.SnapshotRestoreEndpoint ||
                    capabilityKind == ActivityCapabilityKind.ReleaseEndpoint ||
-                   capabilityKind == ActivityCapabilityKind.PermissionTarget ||
-                   capabilityKind == ActivityCapabilityKind.AttributeEndpoint ||
-                   capabilityKind == ActivityCapabilityKind.ProjectileEmitter ||
                    capabilityKind == ActivityCapabilityKind.PresentationEndpoint ||
                    capabilityKind == ActivityCapabilityKind.CameraTarget;
         }
@@ -167,12 +164,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference permissionReference &&
                                                            permissionReference.Receiver != null &&
                                                            permissionReference.PermissionId != ActivityCapabilityPermissionId.Unknown,
-                ActivityCapabilityKind.AttributeEndpoint => runtimeReference is ActorAttributeEndpointReference attributeReference &&
-                                                            attributeReference.Endpoint != null &&
-                                                            !string.IsNullOrWhiteSpace(attributeReference.ActorId),
-                ActivityCapabilityKind.ProjectileEmitter => runtimeReference is ActorProjectileEmitterEndpointReference projectileReference &&
-                                                             projectileReference.Endpoint != null &&
-                                                             !string.IsNullOrWhiteSpace(projectileReference.ActorId),
                 ActivityCapabilityKind.PresentationEndpoint => runtimeReference is ActorPresentationEndpointReference presentationReference &&
                                                                presentationReference.Endpoint != null &&
                                                                !string.IsNullOrWhiteSpace(presentationReference.ActorId),

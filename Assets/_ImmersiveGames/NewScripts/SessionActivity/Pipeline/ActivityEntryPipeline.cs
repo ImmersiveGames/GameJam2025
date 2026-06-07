@@ -298,6 +298,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityEntryActorPresentationSetupResult actorPresentationSetupResult = ExecuteActorPresentationSetup(
                     new ActivityEntryActorPresentationSetupCommand(
                         setupStartedIdentity,
+                        _activityInventoryRuntimeState.CurrentActivityPresentationSetupContributions,
                         command.Source,
                         command.Reason),
                     facts,
@@ -310,6 +311,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityEntryActorAttributeSetupResult actorAttributeSetupResult = ExecuteActorAttributeSetup(
                     new ActivityEntryActorAttributeSetupCommand(
                         setupStartedIdentity,
+                        _activityInventoryRuntimeState.CurrentActivityAttributeSetupContributions,
                         command.Source,
                         command.Reason),
                     facts,
@@ -367,7 +369,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         setupStartedIdentity,
                         definition.ActivityId,
                         definition.ActivityOrdinal,
+                        requireReceivers: true,
                         registerReceivers: true,
+                        _activityInventoryRuntimeState.CurrentActivityPermissionReceiverContributions,
                         command.Source,
                         command.Reason),
                     facts,
@@ -1166,7 +1170,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityEntryActorPresentationSetupResult result = ActivityEntryActorPresentationStage.Execute(
                     command,
                     _runtimeBridge,
-                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
+                    _activityInventoryRuntimeState.CurrentActivityPresentationSetupContributions,
                     _activityActorExitRuntimeState,
                     _activitySceneActorRegistry,
                     _actorPresentationBridge,
@@ -1217,7 +1221,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 ActivityEntryActorAttributeSetupResult result = ActivityEntryActorAttributeStage.Execute(
                     command,
                     _runtimeBridge,
-                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
                     _activityActorExitRuntimeState,
                     facts,
                     snapshots);
@@ -1356,38 +1359,37 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             _logBridge.LogEntryOwnerEvent(
-                "ActivityEntryPermissionTargetPreparationStarted",
+                "ActivityGateBindingStarted",
                 command.Identity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryPipeline' block='permission_target_preparation'");
+                $"owner='ActivityEntryPipeline' block='gate_binding' requiredReceivers='{command.RequireReceivers}' registerReceivers='{command.RegisterReceivers}' contributionCount='{command.PermissionReceiverContributions.Count}'");
 
             try
             {
-                ActivityEntryPermissionTargetPreparationResult result = ActivityEntryPermissionTargetPreparationStage.Execute(
+                ActivityEntryPermissionTargetPreparationResult result = ActivityGateBindingStage.Execute(
                     command,
                     _runtimeBridge,
-                    _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
                     _permissionTargetBridge,
                     facts,
                     snapshots);
 
                 _logBridge.LogEntryOwnerEvent(
-                    "ActivityEntryPermissionTargetPreparationCompleted",
+                    "ActivityGateBindingCompleted",
                     command.Identity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='permission_target_preparation' receivers='{result.ReceiverCount}' skipped='{result.Skipped}'");
+                    $"owner='ActivityEntryPipeline' block='gate_binding' receivers='{result.ReceiverCount}' skipped='{result.Skipped}' registerReceivers='{command.RegisterReceivers}'");
                 return result;
             }
             catch (Exception exception)
             {
                 _logBridge.LogEntryOwnerEvent(
-                    "ActivityEntryPermissionTargetPreparationFailed",
+                    "ActivityGateBindingFailed",
                     command.Identity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='permission_target_preparation' error='{exception.Message}'");
+                    $"owner='ActivityEntryPipeline' block='gate_binding' error='{exception.Message}'");
                 throw;
             }
         }
@@ -1556,7 +1558,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     resolved.RequirementId,
                     resolved.ParticipantKind,
                     resolved.ParticipantBinding,
-                    resolved.Required));
+                    required: false));
             }
 
             return references;

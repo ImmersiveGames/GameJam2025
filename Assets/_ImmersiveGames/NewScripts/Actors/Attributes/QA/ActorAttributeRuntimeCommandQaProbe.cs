@@ -7,7 +7,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/Actors/Attributes/Actor Attribute Runtime Command QA Probe")]
+    [AddComponentMenu("ImmersiveGames/Actors/Attributes/Actor Attribute Runtime Command QA Probe")]
     public sealed class ActorAttributeRuntimeCommandQaProbe : MonoBehaviour
     {
         [Header("Refs")]

@@ -8,7 +8,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 {
     [CreateAssetMenu(
         fileName = "PlayerSetDefinition",
-        menuName = "ImmersiveGames/NewScripts/Actors/Semantic/Player Set Definition",
+        menuName = "ImmersiveGames/Actors/Semantic/Player Set Definition",
         order = 60)]
     public sealed class PlayerSetDefinitionAsset : ScriptableObject
     {

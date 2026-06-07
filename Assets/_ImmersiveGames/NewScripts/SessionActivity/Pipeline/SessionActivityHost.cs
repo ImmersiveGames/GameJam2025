@@ -12,7 +12,7 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Host")]
+    [AddComponentMenu("ImmersiveGames/SessionActivity/Session Activity Host")]
     public sealed class SessionActivityHost : MonoBehaviour, ISessionActivityRouteExitTeardownBoundary, ISessionActivityVisualReadinessBoundary
     {
         private const int DumpRecentFactsCount = 24;

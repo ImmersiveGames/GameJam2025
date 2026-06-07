@@ -4,7 +4,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     [CreateAssetMenu(
         fileName = "RuntimeLoadingProfileAsset",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/RuntimeLoadingProfileAsset",
+        menuName = "ImmersiveGames/Infrastructure/RuntimeMode/RuntimeLoadingProfileAsset",
         order = 22)]
     public sealed class RuntimeLoadingProfileAsset : ScriptableObject
     {

@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 {
     [CreateAssetMenu(
         fileName = "RuntimePersistentScenesPolicyAsset",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/RuntimeMode/RuntimePersistentScenesPolicyAsset",
+        menuName = "ImmersiveGames/Infrastructure/RuntimeMode/RuntimePersistentScenesPolicyAsset",
         order = 21)]
     public sealed class RuntimePersistentScenesPolicyAsset : ScriptableObject
     {

@@ -402,19 +402,22 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             ActorCommandBindingReference requirement,
             PlayerActorIdentityRecord actorIdentity,
             bool bound,
+            bool skipped,
             string observedEndpoint)
         {
             Requirement = requirement;
             ActorIdentity = actorIdentity;
             Bound = bound;
+            Skipped = skipped;
             ObservedEndpoint = Normalize(observedEndpoint);
         }
 
         public ActorCommandBindingReference Requirement { get; }
         public PlayerActorIdentityRecord ActorIdentity { get; }
         public bool Bound { get; }
+        public bool Skipped { get; }
         public string ObservedEndpoint { get; }
-        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && Bound && !string.IsNullOrWhiteSpace(ObservedEndpoint);
+        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint) && (Bound != Skipped);
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

@@ -54,6 +54,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             int requiredCount = 0;
             int requiredBoundCount = 0;
+            int totalBoundCount = 0;
+            int skippedCount = 0;
             for (int index = 0; index < requirements.Count; index++)
             {
                 if (requirements[index].Required)
@@ -70,7 +72,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][ActorCommandBinding] Invalid binding record activityId='{command.PipelineIdentity.ActivityId}' entrySequence='{entrySequence}' index='{index}'.");
                 }
 
-                if (record.Requirement.Required)
+                if (record.Bound)
+                {
+                    totalBoundCount += 1;
+                }
+
+                if (record.Skipped)
+                {
+                    skippedCount += 1;
+                }
+
+                if (record.Requirement.Required && record.Bound)
                 {
                     requiredBoundCount += 1;
                 }
@@ -88,9 +100,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 requirements.Count,
                 requiredCount,
                 requiredBoundCount,
-                records.Count,
-                skippedCount: 0,
-                skipped: false,
+                totalBoundCount,
+                skippedCount: skippedCount,
+                skipped: skippedCount > 0,
                 reason: "resolved");
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -610,6 +611,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 command.Reason);
             ActivityCapabilityInventory inventory = buildResult.Inventory;
             ActivityCapabilityInventoryValidationResult validationResult = buildResult.Validation;
+            inventoryState.SetCurrentActivityAttributeSetupContributions(buildResult.AttributeSetupContributions);
+            inventoryState.SetCurrentActivityPresentationSetupContributions(buildResult.PresentationSetupContributions);
+            inventoryState.SetCurrentActivityPermissionReceiverContributions(buildResult.PermissionReceiverContributions);
             string capabilityKindsSummary = FormatCapabilityKindsSummary(inventory.Capabilities);
             inventoryState.SetCurrentActivityCapabilityInventoryPreview(inventory, validationResult);
             string validationIssueCodes = FormatValidationIssueCodes(validationResult.Issues);

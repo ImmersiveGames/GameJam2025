@@ -1,5 +1,7 @@
 ﻿# Plano de RefatoraÃ§Ã£o â€” SessionActivity Base 2.0
 
+> Historical planning document. The active normative boundary is frozen by `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md` and `ENTRY-BOUNDARY-DOC-0` inside it. Use this plan only as refactor context; do not read inventory-backed setup/binding as an allowed final shape.
+
 ## Objetivo
 
 Decompor `SessionActivityPipeline` sem criar trilho paralelo, fallback silencioso ou novo owner ambÃ­guo.

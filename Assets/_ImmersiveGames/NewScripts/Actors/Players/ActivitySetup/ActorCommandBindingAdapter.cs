@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -51,7 +52,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantBinding.ParticipantId);
                 ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorCapabilitySurface.");
                 IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing Actor command input hub.");
-                IActorProjectileEmitterEndpoint projectileEndpoint = capabilitySurface.ActorProjectileEmitterEndpoint ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing IActorProjectileEmitterEndpoint.");
+                IActorObjectEmitterEndpoint objectEmitterEndpoint = capabilitySurface.ActorObjectEmitterEndpoint;
+                if (objectEmitterEndpoint == null)
+                {
+                    if (requirement.Required)
+                    {
+                        throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing IActorObjectEmitterEndpoint.");
+                    }
+
+                    DebugUtility.Log(
+                        typeof(ActorCommandBindingAdapter),
+                        $"[OBS][ActorCommandHub] event='ActorCommandSinkBindingSkipped' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' sink='IActorObjectEmitterEndpoint' source='{nameof(ActorCommandBindingAdapter)}' reason='optional_endpoint_missing'.",
+                        DebugUtility.Colors.Info);
+
+                    records.Add(new ActorCommandBindingRecord(
+                        requirement,
+                        actorHandle.ActorIdentity,
+                        bound: false,
+                        skipped: true,
+                        observedEndpoint: "optional_endpoint_missing"));
+                    continue;
+                }
 
                 if (!commandHub.IsPrepared)
                 {
@@ -68,21 +89,22 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 DebugUtility.Log(
                     typeof(ActorCommandBindingAdapter),
-                    $"[OBS][ActorProjectile] event='ActorProjectileEmitterEndpointResolved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' endpointType='{projectileEndpoint.GetType().Name}' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActorObjectEmission] event='ActorObjectEmitterEndpointResolved' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{requirement.ParticipantBinding.ParticipantId}' endpointType='{objectEmitterEndpoint.GetType().Name}' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
-                commandHub.BindCommandSink(ActorCommandValueKind.FirePrimary, projectileEndpoint);
+                commandHub.BindCommandSink(ActorCommandValueKind.FirePrimary, objectEmitterEndpoint);
 
                 DebugUtility.Log(
                     typeof(ActorCommandBindingAdapter),
-                    $"[OBS][ActorCommandHub] event='ActorCommandSinkBound' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' sink='{projectileEndpoint.GetType().Name}' source='{nameof(ActorCommandBindingAdapter)}' reason='command_sink_bound'.",
+                    $"[OBS][ActorCommandHub] event='ActorCommandSinkBound' actorId='{requirement.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' commandId='FirePrimary' sink='{objectEmitterEndpoint.GetType().Name}' source='{nameof(ActorCommandBindingAdapter)}' reason='command_sink_bound'.",
                     DebugUtility.Colors.Info);
 
                 records.Add(new ActorCommandBindingRecord(
                     requirement,
                     actorHandle.ActorIdentity,
                     bound: true,
-                    observedEndpoint: $"{projectileEndpoint.GetType().Name}|hub={commandHub.GetType().Name}|hubPrepared={commandHub.IsPrepared}|hubBound=true"));
+                    skipped: false,
+                    observedEndpoint: $"{objectEmitterEndpoint.GetType().Name}|hub={commandHub.GetType().Name}|hubPrepared={commandHub.IsPrepared}|hubBound=true"));
             }
 
             return records;

@@ -6,7 +6,7 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Activity Scene Contract Authoring")]
+    [AddComponentMenu("ImmersiveGames/SessionActivity/Activity Scene Contract Authoring")]
     public sealed class ActivitySceneContractAuthoring : MonoBehaviour
     {
         [SerializeField] private string activitySceneId;

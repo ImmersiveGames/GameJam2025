@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using UnityEngine;
 
@@ -73,7 +76,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 }
             }
 
-            return new ActivityCapabilityScanResult(ScannerId, owners, capabilities, runtimeReferences, context.Source, context.Reason);
+            return new ActivityCapabilityScanResult(
+                ScannerId,
+                owners,
+                capabilities,
+                runtimeReferences,
+                Array.Empty<ActorAttributeSetupContribution>(),
+                Array.Empty<ActorPresentationSetupContribution>(),
+                Array.Empty<ActivityPermissionReceiverContribution>(),
+                context.Source,
+                context.Reason);
         }
 
         private static void TryAppendCapability(

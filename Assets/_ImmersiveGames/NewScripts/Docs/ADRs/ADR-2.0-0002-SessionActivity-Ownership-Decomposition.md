@@ -116,6 +116,97 @@ save/progression global
 route operation lifecycle
 ```
 
+### 2A. `ENTRY-BOUNDARY-DOC-0`
+
+This section freezes the active Base 2.0 boundary for `SessionActivity`.
+It supersedes transitional wording that treated inventory-backed setup/binding as an allowed final shape.
+
+#### Raw Scan
+
+```text
+Raw scan discovers components, behaviors and local endpoints.
+Raw scan does not decide requiredness.
+Raw scan does not perform setup.
+Raw scan does not perform binding.
+```
+
+#### ActorCapabilitySurface
+
+```text
+ActorCapabilitySurface is the technical local index of the Actor.
+ActorCapabilitySurface does not decide lifecycle.
+ActorCapabilitySurface does not decide requiredness.
+ActorCapabilitySurface does not replace setup or binding plans.
+```
+
+#### Projection
+
+```text
+Projection transforms local discovery into:
+- TransversalContractContribution
+- SetupContribution
+- BindingContribution
+- LifecycleRecordContribution
+```
+
+#### Transversal Inventory
+
+```text
+Transversal Inventory contains only:
+- Gate / Permission
+- Reset
+- Snapshot / Restore
+- Release / Teardown
+```
+
+```text
+Transversal Inventory does not contain Presentation, Attributes, CameraTarget, ObjectEmitter, Movement, CommandSink, Dash, Attack, Interact or AI.
+Transversal Inventory is not a general Actor catalog.
+Transversal Inventory is not a service locator.
+Transversal Inventory is not setup.
+Transversal Inventory is not binding.
+```
+
+#### Setup Plan
+
+```text
+Setup Plan contains presentation setup, attribute setup, actor local setup and retained setup.
+```
+
+#### Binding Plan
+
+```text
+Binding Plan contains player input binding, command sink binding, movement binding, camera binding and permission receiver binding.
+```
+
+#### Runtime State
+
+```text
+Runtime State stores correlation for exit, teardown, release, snapshot and continuity.
+Runtime State does not become the source of truth for setup or binding.
+```
+
+#### Current normative invariants
+
+```text
+No behavior is required by default.
+Local capability does not imply inventory.
+Behavior may be discovered in raw scan, but it only enters a phase if it declares that phase's contract.
+Inventory is not setup.
+Inventory is not binding.
+Inventory is not a service locator.
+```
+
+#### Transitional shapes deprecated by this boundary
+
+```text
+ObjectEmitter is local Actor behavior and does not belong to transversal inventory.
+PermissionTarget contributes only a minimal reference to gate logic; receiver preparation belongs to permission runtime/stage.
+PresentationEndpoint belongs to ActorCapabilitySurface and Setup Plan.
+AttributeEndpoint belongs to ActorCapabilitySurface and Setup Plan.
+CameraTarget belongs to ActorCapabilitySurface and Binding Plan.
+```
+
 ### 3. `RouteExit teardown` deve ter owner Ãºnico
 
 `SessionActivityPipeline` decide o lifecycle de teardown de activity para `RouteExit`.

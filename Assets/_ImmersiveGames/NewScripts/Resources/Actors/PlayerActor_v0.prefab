@@ -260,6 +260,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8fca8bf78d7d4b4ab4e3fbe757f9c4d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  endpointId: actor.object.emitter
+  objectEmissionProfile: {fileID: 11400000, guid: c6e4b0c145f1f244a980804c2c698492, type: 2}
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0

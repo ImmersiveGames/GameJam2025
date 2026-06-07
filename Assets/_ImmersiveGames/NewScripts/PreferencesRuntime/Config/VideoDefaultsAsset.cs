@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Config
 {
     [CreateAssetMenu(
         fileName = "VideoDefaults",
-        menuName = "ImmersiveGames/NewScripts/Preferences/Video Defaults",
+        menuName = "ImmersiveGames/Preferences/Video Defaults",
         order = 4)]
     public sealed class VideoDefaultsAsset : ScriptableObject
     {

@@ -7,7 +7,7 @@ using UnityEngine.SceneManagement;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {
     [DisallowMultipleComponent]
-    [AddComponentMenu("ImmersiveGames/NewScripts/SessionActivity/Session Activity Debug Panel")]
+    [AddComponentMenu("ImmersiveGames/SessionActivity/Session Activity Debug Panel")]
     public sealed class SessionActivityDebugPanel : MonoBehaviour
     {
         private const int PanelWidth = 1040;

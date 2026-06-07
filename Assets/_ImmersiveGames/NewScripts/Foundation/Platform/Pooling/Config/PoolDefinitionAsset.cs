@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
 {
     [CreateAssetMenu(
         fileName = "PoolDefinitionAsset",
-        menuName = "ImmersiveGames/NewScripts/Infrastructure/Pooling/PoolDefinitionAsset",
+        menuName = "ImmersiveGames/Infrastructure/Pooling/PoolDefinitionAsset",
         order = 20)]
     public sealed class PoolDefinitionAsset : ScriptableObject
     {

@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
+using _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using UnityEngine;
 
@@ -14,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         private IActorMovementEndpoint actorMovementEndpoint;
         private IActorPermissionReceiver actorPermissionReceiver;
         private IActorCommandSourceHub actorCommandSourceHub;
-        private IActorProjectileEmitterEndpoint actorProjectileEmitterEndpoint;
+        private IActorObjectEmitterEndpoint actorObjectEmitterEndpoint;
 
         public ActorPresentationEndpoint PresentationEndpoint
         {
@@ -94,16 +95,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
         }
 
-        public IActorProjectileEmitterEndpoint ActorProjectileEmitterEndpoint
+        public IActorObjectEmitterEndpoint ActorObjectEmitterEndpoint
         {
             get
             {
-                if (actorProjectileEmitterEndpoint == null)
+                if (actorObjectEmitterEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorProjectileEmitterEndpoint;
+                return actorObjectEmitterEndpoint;
             }
         }
 
@@ -116,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
             actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
             actorCommandSourceHub = ResolveSingleInterfaceInActorRoot<IActorCommandSourceHub>(actorRoot);
-            actorProjectileEmitterEndpoint = ResolveSingleInterfaceInActorRoot<IActorProjectileEmitterEndpoint>(actorRoot);
+            actorObjectEmitterEndpoint = ResolveSingleInterfaceInActorRoot<IActorObjectEmitterEndpoint>(actorRoot);
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)

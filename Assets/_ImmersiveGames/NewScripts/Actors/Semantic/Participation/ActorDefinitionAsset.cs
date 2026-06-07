@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
 
     [CreateAssetMenu(
         fileName = "ActorDefinition",
-        menuName = "ImmersiveGames/NewScripts/Actors/Semantic/Actor Definition",
+        menuName = "ImmersiveGames/Actors/Semantic/Actor Definition",
         order = 59)]
     public sealed class ActorDefinitionAsset : ScriptableObject
     {

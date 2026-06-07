@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneReferences
     /// </summary>
     [CreateAssetMenu(
         fileName = "SceneKeyAsset",
-        menuName = "ImmersiveGames/NewScripts/Scene References/SceneKeyAsset",
+        menuName = "ImmersiveGames/Scene References/SceneKeyAsset",
         order = 30)]
     public sealed class SceneKeyAsset : ScriptableObject
     {

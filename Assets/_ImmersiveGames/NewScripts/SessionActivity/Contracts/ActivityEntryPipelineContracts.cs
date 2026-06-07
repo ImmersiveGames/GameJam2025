@@ -6,6 +6,9 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
@@ -480,21 +483,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryActorPresentationSetupCommand(
             SessionActivityIdentity identity,
+            IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
             string source,
             string reason)
         {
             Identity = identity;
+            PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
+        public IReadOnlyList<ActorPresentationSetupContribution> PresentationSetupContributions { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            PresentationSetupContributions != null &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -546,21 +553,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     {
         public ActivityEntryActorAttributeSetupCommand(
             SessionActivityIdentity identity,
+            IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
             string source,
             string reason)
         {
             Identity = identity;
+            AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
 
         public SessionActivityIdentity Identity { get; }
+        public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
         public string Source { get; }
         public string Reason { get; }
 
         public bool IsValid =>
             Identity.IsValid &&
             Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            AttributeSetupContributions != null &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -799,11 +810,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             bool registerReceivers,
             string source,
             string reason)
+            : this(identity, activityId, activityOrdinal, requireReceivers: false, registerReceivers, Array.Empty<ActivityPermissionReceiverContribution>(), source, reason)
+        {
+        }
+
+        public ActivityEntryPermissionTargetPreparationCommand(
+            SessionActivityIdentity identity,
+            string activityId,
+            int activityOrdinal,
+            bool requireReceivers,
+            bool registerReceivers,
+            IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions,
+            string source,
+            string reason)
         {
             Identity = identity;
             ActivityId = Normalize(activityId);
             ActivityOrdinal = activityOrdinal < 0 ? 0 : activityOrdinal;
+            RequireReceivers = requireReceivers;
             RegisterReceivers = registerReceivers;
+            PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -811,7 +837,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public SessionActivityIdentity Identity { get; }
         public string ActivityId { get; }
         public int ActivityOrdinal { get; }
+        public bool RequireReceivers { get; }
         public bool RegisterReceivers { get; }
+        public IReadOnlyList<ActivityPermissionReceiverContribution> PermissionReceiverContributions { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -1312,7 +1340,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityEntryActorPresentationRuntimeBridge
     {
         bool TryGetActiveActorPresentationHandle(
-            ActorPresentationEndpointReference presentationReference,
+            ActorInstanceId actorInstanceRuntimeId,
             out ActorPresentationRuntimeHandle handle);
         void ReleaseActorPresentationBeforeRematerialization(
             SessionActivityIdentity identity,

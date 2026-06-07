@@ -4,6 +4,8 @@ Status: Accepted / Base 1.2
 Área: SessionActivity / Actor Capabilities / Activity Inventory  
 Atualização: pós 4B–4D + H4D Hygiene + ActorReset-1B
 
+> Historical Base 1.2 reference. For the active Base 2.0 boundary, see `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md` and `ENTRY-BOUNDARY-DOC-0` inside it. Any inventory-backed setup/binding wording below is historical and does not authorize the Base 2.0 shape.
+
 ---
 
 ## Contexto
@@ -40,12 +42,14 @@ Para capabilities de Actor, scanners devem consumir:
 - `ActorCapabilitySurface`;
 - endpoint local da capability.
 
-Caminhos migrados:
+Caminhos migrados historicamente:
 
 - `PresentationEndpoint`;
 - `AttributeEndpoint`;
 - `CameraTarget`;
 - `PermissionTarget`.
+
+Esses caminhos são históricos para Base 1.2. Em Base 2.0, capability local não implica inventory, e scanner não decide requiredness por `ActorSourceKind`, `Player`, `Participation`, `Scope` ou simples presença de componente.
 
 ### 3. Scanners migrados não devem usar PlayerActorTargets como fonte primária
 
@@ -56,6 +60,8 @@ Caminhos migrados:
 Quando uma capability obrigatória não resolve seu endpoint/identity, o sistema deve gerar falha explícita ou unresolved report/log.
 
 Quando a capability é opcional, a ausência deve gerar skip explícito quando necessário.
+
+Esse requisito continua válido como política de stage, mas não autoriza scanner a inferir requiredness para o shape Base 2.0.
 
 ### 5. `ActivityCapabilityKind.Custom` não é canal de erro operacional
 

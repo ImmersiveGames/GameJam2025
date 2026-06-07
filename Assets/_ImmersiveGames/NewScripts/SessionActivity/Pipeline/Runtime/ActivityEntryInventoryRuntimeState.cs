@@ -1,5 +1,10 @@
+using System;
+using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
@@ -11,6 +16,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public ActivitySetupInventory CurrentActivitySetupInventory { get; private set; }
         public ActivityCapabilityInventory CurrentActivityCapabilityInventoryPreview { get; private set; }
         public ActivityCapabilityInventoryValidationResult CurrentActivityCapabilityInventoryPreviewValidation { get; private set; }
+        public IReadOnlyList<ActorAttributeSetupContribution> CurrentActivityAttributeSetupContributions { get; private set; }
+        public IReadOnlyList<ActorPresentationSetupContribution> CurrentActivityPresentationSetupContributions { get; private set; }
+        public IReadOnlyList<ActivityPermissionReceiverContribution> CurrentActivityPermissionReceiverContributions { get; private set; }
 
         public void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result)
         {
@@ -50,10 +58,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
             CurrentActivityCapabilityInventoryPreviewValidation = validation;
         }
 
+        public void SetCurrentActivityAttributeSetupContributions(IReadOnlyList<ActorAttributeSetupContribution> contributions)
+        {
+            CurrentActivityAttributeSetupContributions = contributions ?? Array.Empty<ActorAttributeSetupContribution>();
+        }
+
+        public void SetCurrentActivityPresentationSetupContributions(IReadOnlyList<ActorPresentationSetupContribution> contributions)
+        {
+            CurrentActivityPresentationSetupContributions = contributions ?? Array.Empty<ActorPresentationSetupContribution>();
+        }
+
+        public void SetCurrentActivityPermissionReceiverContributions(IReadOnlyList<ActivityPermissionReceiverContribution> contributions)
+        {
+            CurrentActivityPermissionReceiverContributions = contributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
+        }
+
         public void ClearCurrentActivityCapabilityInventoryPreview()
         {
             CurrentActivityCapabilityInventoryPreview = default;
             CurrentActivityCapabilityInventoryPreviewValidation = default;
+            CurrentActivityAttributeSetupContributions = Array.Empty<ActorAttributeSetupContribution>();
+            CurrentActivityPresentationSetupContributions = Array.Empty<ActorPresentationSetupContribution>();
+            CurrentActivityPermissionReceiverContributions = Array.Empty<ActivityPermissionReceiverContribution>();
         }
     }
 }

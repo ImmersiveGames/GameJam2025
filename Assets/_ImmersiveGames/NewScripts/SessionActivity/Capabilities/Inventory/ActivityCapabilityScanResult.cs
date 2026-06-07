@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 {
@@ -11,6 +14,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             IReadOnlyList<ActivityCapabilityOwnerDescriptor> owners,
             IReadOnlyList<ActivityCapabilityDescriptor> capabilities,
             IReadOnlyList<IActivityCapabilityRuntimeReference> runtimeReferences,
+            IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
+            IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
+            IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions,
             string source,
             string reason)
         {
@@ -18,6 +24,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Owners = owners ?? Array.Empty<ActivityCapabilityOwnerDescriptor>();
             Capabilities = capabilities ?? Array.Empty<ActivityCapabilityDescriptor>();
             RuntimeReferences = runtimeReferences ?? Array.Empty<IActivityCapabilityRuntimeReference>();
+            AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
+            PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
+            PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
             Source = Normalize(source);
             Reason = Normalize(reason);
         }
@@ -26,6 +35,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public IReadOnlyList<ActivityCapabilityOwnerDescriptor> Owners { get; }
         public IReadOnlyList<ActivityCapabilityDescriptor> Capabilities { get; }
         public IReadOnlyList<IActivityCapabilityRuntimeReference> RuntimeReferences { get; }
+        public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
+        public IReadOnlyList<ActorPresentationSetupContribution> PresentationSetupContributions { get; }
+        public IReadOnlyList<ActivityPermissionReceiverContribution> PermissionReceiverContributions { get; }
         public string Source { get; }
         public string Reason { get; }
 
@@ -33,7 +45,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         public static ActivityCapabilityScanResult Empty(string scannerId, string source, string reason)
         {
-            return new ActivityCapabilityScanResult(scannerId, Array.Empty<ActivityCapabilityOwnerDescriptor>(), Array.Empty<ActivityCapabilityDescriptor>(), Array.Empty<IActivityCapabilityRuntimeReference>(), source, reason);
+            return new ActivityCapabilityScanResult(
+                scannerId,
+                Array.Empty<ActivityCapabilityOwnerDescriptor>(),
+                Array.Empty<ActivityCapabilityDescriptor>(),
+                Array.Empty<IActivityCapabilityRuntimeReference>(),
+                Array.Empty<ActorAttributeSetupContribution>(),
+                Array.Empty<ActorPresentationSetupContribution>(),
+                Array.Empty<ActivityPermissionReceiverContribution>(),
+                source,
+                reason);
         }
 
         private static string Normalize(string value)

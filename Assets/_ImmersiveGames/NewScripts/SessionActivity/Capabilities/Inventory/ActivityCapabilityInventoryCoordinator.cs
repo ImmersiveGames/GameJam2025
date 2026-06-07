@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -9,6 +12,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public ActivityCapabilityInventoryBuildResult(
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
+            IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
+            IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
+            IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions,
             int objectTargetCount,
             int unresolvedReportCount,
             string source,
@@ -16,6 +22,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             Inventory = inventory;
             Validation = validation;
+            AttributeSetupContributions = attributeSetupContributions ?? Array.Empty<ActorAttributeSetupContribution>();
+            PresentationSetupContributions = presentationSetupContributions ?? Array.Empty<ActorPresentationSetupContribution>();
+            PermissionReceiverContributions = permissionReceiverContributions ?? Array.Empty<ActivityPermissionReceiverContribution>();
             ObjectTargetCount = objectTargetCount < 0 ? 0 : objectTargetCount;
             UnresolvedReportCount = unresolvedReportCount < 0 ? 0 : unresolvedReportCount;
             Source = Normalize(source);
@@ -24,6 +33,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         public ActivityCapabilityInventory Inventory { get; }
         public ActivityCapabilityInventoryValidationResult Validation { get; }
+        public IReadOnlyList<ActorAttributeSetupContribution> AttributeSetupContributions { get; }
+        public IReadOnlyList<ActorPresentationSetupContribution> PresentationSetupContributions { get; }
+        public IReadOnlyList<ActivityPermissionReceiverContribution> PermissionReceiverContributions { get; }
         public int ObjectTargetCount { get; }
         public int UnresolvedReportCount { get; }
         public string Source { get; }
@@ -54,7 +66,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             scannerRegistry.Register(new ActivityCapabilityPermissionScanner(playerIdentityResolver));
             scannerRegistry.Register(new ActivityCapabilityActorPresentationScanner());
             scannerRegistry.Register(new ActivityCapabilityActorAttributeScanner());
-            scannerRegistry.Register(new ActivityCapabilityProjectileEmitterScanner(playerIdentityResolver));
             scannerRegistry.Register(new ActivityCapabilityCameraTargetScanner(playerIdentityResolver));
 
             _inventoryBuilder = new ActivityCapabilityInventoryBuilder(scannerRegistry);
@@ -94,11 +105,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 source,
                 reason);
 
-            ActivityCapabilityInventory inventory = _inventoryBuilder.Build(scanContext);
+            ActivityCapabilityInventory inventory = _inventoryBuilder.Build(
+                scanContext,
+                out IReadOnlyList<ActorAttributeSetupContribution> attributeSetupContributions,
+                out IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
+                out IReadOnlyList<ActivityPermissionReceiverContribution> permissionReceiverContributions);
             ActivityCapabilityInventoryValidationResult validation = _inventoryValidator.Validate(inventory, source, reason);
             return new ActivityCapabilityInventoryBuildResult(
                 inventory,
                 validation,
+                attributeSetupContributions,
+                presentationSetupContributions,
+                permissionReceiverContributions,
                 objectTargets.Count,
                 unresolvedReportCount,
                 source,

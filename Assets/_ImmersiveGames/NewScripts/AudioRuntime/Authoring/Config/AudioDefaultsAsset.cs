@@ -4,7 +4,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Authoring.Config
 {
     [CreateAssetMenu(
         fileName = "AudioDefaults",
-        menuName = "ImmersiveGames/NewScripts/Audio/Audio Defaults",
+        menuName = "ImmersiveGames/Audio/Audio Defaults",
         order = 3)]
     public sealed class AudioDefaultsAsset : ScriptableObject
     {
