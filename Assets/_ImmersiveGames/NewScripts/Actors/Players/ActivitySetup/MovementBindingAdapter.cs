@@ -63,7 +63,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_movement_binding_requirement: requirement identity does not match active identity.");
                 }
 
-                PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantId);
+                if (!TryResolveHandle(registry, requirement.ParticipantId, out PlayerActorRuntimeHandle actorHandle) || !actorHandle.IsValid)
+                {
+                    throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' actor handle not found.");
+                }
                 PlayerActorId playerActorId = actorHandle.PlayerActorId;
                 ActorInstanceRuntimeId actorInstanceRuntimeId = actorHandle.ActorInstanceRuntimeId;
                 if (!actorInstanceRuntimeId.IsValid)
@@ -135,6 +138,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 string.Equals(left.ActivityId, right.ActivityId, StringComparison.Ordinal) &&
                 left.ActivityOrdinal == right.ActivityOrdinal &&
                 left.EntrySequence == right.EntrySequence;
+        }
+
+        private static bool TryResolveHandle(ActivityPlayerActorRegistry registry, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            return (registry.TryGetActiveHandleByParticipant(participantId, out handle) && handle.IsValid) ||
+                (registry.TryGetRouteScopedHandleByParticipant(participantId, out handle) && handle.IsValid);
         }
     }
 }

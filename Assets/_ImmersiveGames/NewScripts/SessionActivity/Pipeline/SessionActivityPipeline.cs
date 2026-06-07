@@ -32,6 +32,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeR
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
@@ -4066,9 +4067,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargetsOrEmpty(SessionActivityIdentity identity)
         {
-            if (_activityPlayerActorRegistry.TryGetActiveActorIdentities(identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
+            if (_activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
                 activeActors != null &&
-                activeActors.Count > 0)
+                activeActors.Count > 0 &&
+                ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
+                    _activityPlayerActorRegistry.ActiveScopeIdentity,
+                    identity,
+                    ActorScope.ActivityScoped))
             {
                 List<PlayerActorIdentityRecord> resolvedActive = new();
                 for (int index = 0; index < activeActors.Count; index++)
@@ -4079,8 +4084,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         continue;
                     }
 
-                    if (!_activityPlayerActorRegistry.TryResolveHandleForParticipant(identity, candidate.ParticipantId, out PlayerActorRuntimeHandle handle) ||
-                        !handle.IsValid)
+                    if ((!_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+                        !handle.IsValid) &&
+                        (!_activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out handle) ||
+                         !handle.IsValid))
                     {
                         continue;
                     }
@@ -4108,7 +4115,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
             }
 
-            IReadOnlyList<PlayerActorIdentityRecord> retained = _activityPlayerActorRegistry.GetRouteRetainedActorIdentitiesForSession(identity);
+            IReadOnlyList<PlayerActorIdentityRecord> retained = _activityPlayerActorRegistry.GetIndexedRouteScopedActorIdentitiesForSession(identity);
             if (retained == null || retained.Count == 0)
             {
                 return Array.Empty<PlayerActorIdentityRecord>();
@@ -4123,7 +4130,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (!_activityPlayerActorRegistry.TryResolveHandleForParticipant(identity, candidate.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if ((!_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+                    !handle.IsValid) &&
+                    (!_activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out handle) ||
+                     !handle.IsValid))
                 {
                     continue;
                 }
@@ -4571,7 +4581,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                         continue;
                     }
 
-                    if (_activityPlayerActorRegistry.TryResolveHandleForParticipant(commandIdentity, candidate.ParticipantId, out PlayerActorRuntimeHandle candidateHandle) &&
+                    if ((_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle candidateHandle) ||
+                        _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out candidateHandle)) &&
                         candidateHandle.IsValid &&
                         candidateHandle.ActorInstanceRuntimeId.IsValid)
                     {
@@ -8099,7 +8110,21 @@ private bool TryBuildActivityParticipantBinding(
 
         bool IActivityEntryPreparationRuntimeBridge.TryGetActivePlayerActorIdentities(SessionActivityIdentity identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors)
         {
-            return _activityPlayerActorRegistry.TryGetActiveActorIdentities(identity, out activeActors);
+            activeActors = Array.Empty<PlayerActorIdentityRecord>();
+            if (!identity.IsValid)
+            {
+                return false;
+            }
+
+            if (!_activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out activeActors))
+            {
+                return false;
+            }
+
+            return ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
+                _activityPlayerActorRegistry.ActiveScopeIdentity,
+                identity,
+                ActorScope.ActivityScoped);
         }
 
         void IActivityEntryPreparationRuntimeBridge.EmitPredefinedVisualSetupReadyFactIfApplicable(
@@ -8170,14 +8195,47 @@ private bool TryBuildActivityParticipantBinding(
 
         void IActivityEntryParticipantBindingRuntimeBridge.BeginPlayerActorActivityScope(SessionActivityIdentity identity)
         {
-            _activityPlayerActorRegistry.BeginActivityScope(identity);
+            if (!identity.IsValid)
+            {
+                throw new InvalidOperationException("ActivityPlayerActorRegistry requires valid activity scope identity.");
+            }
+
+            IReadOnlyList<PlayerActorRuntimeHandle> activeHandles = _activityPlayerActorRegistry.GetIndexedActiveHandles();
+            _activityPlayerActorRegistry.SetActiveScopeIdentity(identity);
+            _activityPlayerActorRegistry.ClearActiveIndexes();
+            for (int index = 0; index < activeHandles.Count; index++)
+            {
+                PlayerActorRuntimeHandle handle = activeHandles[index];
+                if (ActivityActorScopeCompatibilityPolicy.ShouldRetainActiveHandleOnActivityScopeBegin(
+                        identity,
+                        handle,
+                        nameof(SessionActivityPipeline),
+                        nameof(IActivityEntryParticipantBindingRuntimeBridge.BeginPlayerActorActivityScope)))
+                {
+                    _activityPlayerActorRegistry.IndexActiveHandle(handle);
+                }
+            }
         }
 
         bool IActivityEntryParticipantBindingRuntimeBridge.TryGetActivePlayerActorIdentities(
             SessionActivityIdentity identity,
             out IReadOnlyList<PlayerActorIdentityRecord> activeActors)
         {
-            return _activityPlayerActorRegistry.TryGetActiveActorIdentities(identity, out activeActors);
+            activeActors = Array.Empty<PlayerActorIdentityRecord>();
+            if (!identity.IsValid)
+            {
+                return false;
+            }
+
+            if (!_activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out activeActors))
+            {
+                return false;
+            }
+
+            return ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
+                _activityPlayerActorRegistry.ActiveScopeIdentity,
+                identity,
+                ActorScope.ActivityScoped);
         }
 
         IReadOnlyList<PlayerActivityParticipantBinding> IActivityEntryParticipantBindingRuntimeBridge.GetRetainedPlayerExitBindings(SessionActivityIdentity identity)
@@ -8190,7 +8248,13 @@ private bool TryBuildActivityParticipantBinding(
             PlayerSessionParticipantId participantId,
             out PlayerActorRuntimeHandle handle)
         {
-            return _activityPlayerActorRegistry.TryGetRetainedForParticipant(identity, participantId, out handle);
+            handle = default;
+            if (!identity.IsValid || !participantId.IsValid)
+            {
+                return false;
+            }
+
+            return _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(participantId, out handle);
         }
 
         bool IActivityEntryParticipantBindingRuntimeBridge.TryGetSessionScopedPlayerActorForParticipant(
@@ -8213,13 +8277,30 @@ private bool TryBuildActivityParticipantBinding(
 
         void IActivityEntryParticipantBindingRuntimeBridge.RegisterRetainedPlayerActorParticipation(SessionActivityIdentity identity, PlayerActorRuntimeHandle handle)
         {
-            _activityPlayerActorRegistry.RegisterRetainedParticipation(identity, handle);
+            _activityPlayerActorRegistry.IndexActiveHandle(handle);
+            if (ActivityActorScopeCompatibilityPolicy.ShouldTrackInRouteIndex(
+                    identity,
+                    handle,
+                    nameof(SessionActivityPipeline),
+                    nameof(IActivityEntryParticipantBindingRuntimeBridge.RegisterRetainedPlayerActorParticipation)))
+            {
+                _activityPlayerActorRegistry.IndexRouteScopedHandle(handle);
+            }
             TrackSessionScopedHandle(handle);
         }
 
         void IActivityEntryParticipantBindingRuntimeBridge.RegisterMaterializedPlayerActor(PlayerActorRuntimeHandle handle)
         {
-            _activityPlayerActorRegistry.RegisterMaterialized(handle);
+            SessionActivityIdentity identity = _state.CurrentIdentity;
+            _activityPlayerActorRegistry.IndexActiveHandle(handle);
+            if (ActivityActorScopeCompatibilityPolicy.ShouldTrackInRouteIndex(
+                    identity,
+                    handle,
+                    nameof(SessionActivityPipeline),
+                    nameof(IActivityEntryParticipantBindingRuntimeBridge.RegisterMaterializedPlayerActor)))
+            {
+                _activityPlayerActorRegistry.IndexRouteScopedHandle(handle);
+            }
             TrackSessionScopedHandle(handle);
         }
 
@@ -8247,7 +8328,18 @@ private bool TryBuildActivityParticipantBinding(
             PlayerSessionParticipantId participantId,
             out PlayerActorRuntimeHandle handle)
         {
-            return _activityPlayerActorRegistry.TryResolveHandleForParticipant(identity, participantId, out handle);
+            handle = default;
+            if (!identity.IsValid || !participantId.IsValid)
+            {
+                return false;
+            }
+
+            if (_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(participantId, out handle))
+            {
+                return true;
+            }
+
+            return _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(participantId, out handle);
         }
 
         bool IActivityEntryParticipantBindingRuntimeBridge.TryResolvePlacementMarkerFromCurrentEntry(
@@ -8500,7 +8592,11 @@ private bool TryBuildActivityParticipantBinding(
 
             try
             {
-                handle = _activityPlayerActorRegistry.ResolveActiveHandleOrFail(identity, binding.ParticipantId);
+                if (!_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(binding.ParticipantId, out handle) || !handle.IsValid)
+                {
+                    return false;
+                }
+
                 return handle.IsValid;
             }
             catch (InvalidOperationException)

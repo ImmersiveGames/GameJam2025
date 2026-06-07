@@ -4262,6 +4262,16 @@ Status: CLOSED / DOCUMENTED.
 - `ActivityPlayerActorRegistry` ficou classificado como Ã­ndice tÃ©cnico puro, sem `Destroy` local.
 - O prÃ³ximo passo volta para decomposiÃ§Ã£o macro de `SessionActivity`; nÃ£o abrir `SessionScoped` ainda.
 
+### Checkpoint ACTOR-COMP-0C -> 0F
+
+Status: CLOSED / PASS funcional.
+
+- `ActivityActorScopeCompatibilityPolicy` continua owner explícito de compatibilidade/eligibilidade de scope e reentry.
+- `ActivityPlayerActorRegistry` ficou reduzido a índice técnico e lookup técnico.
+- O registry não decide lifecycle, retain, release, reentry, materialization policy ou scope compatibility.
+- Wrappers transitórios de `ActivityPlayerActorRegistry` foram removidos; os callers agora expressam intenção por stage/pipeline e usam a API técnica do registry.
+- Smoke funcional preservado: `RestartCurrentActivity PASS`, `Activity01ToActivity02 PASS`, `RouteExitBackToMenu PASS`, `ActivityParticipantActorMaterializationRetained`, `ActivityParticipantRetainedBindingChosen`, `ActivityGateBindingCompleted receivers='2'`, `MovementControlEnabled`, `CameraBindingCompleted`, `ObjectEmissionSpawned`, `ObjectEmissionReturnedToPool`, sem `FATAL`, `Exception`, `route_transition_failed` ou foreign/stale indevido.
+
 ### Mapeamento
 
 ```text

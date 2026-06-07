@@ -129,7 +129,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             handle = default;
             if (_playerRegistry != null &&
-                _playerRegistry.TryResolveHandleForParticipant(identity, player.ParticipantId, out handle) &&
+                (_playerRegistry.TryGetActiveHandleByParticipant(player.ParticipantId, out handle) ||
+                 _playerRegistry.TryGetRouteScopedHandleByParticipant(player.ParticipantId, out handle)) &&
                 handle.IsValid)
             {
                 return true;

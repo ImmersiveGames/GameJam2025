@@ -49,7 +49,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     continue;
                 }
 
-                PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantBinding.ParticipantId);
+                if (!registry.TryGetActiveHandleByParticipant(requirement.ParticipantBinding.ParticipantId, out PlayerActorRuntimeHandle actorHandle) || !actorHandle.IsValid)
+                {
+                    throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' actor handle not found.");
+                }
                 ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing ActorCapabilitySurface.");
                 IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"Actor command binding failed: actorId='{requirement.ParticipantBinding.ActorId}' participantId='{requirement.ParticipantBinding.ParticipantId}' missing Actor command input hub.");
                 IActorObjectEmitterEndpoint objectEmitterEndpoint = capabilitySurface.ActorObjectEmitterEndpoint;

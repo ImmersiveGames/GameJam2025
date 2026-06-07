@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
+using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -57,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActorIdentityRecord at index '{index}' is invalid.");
                 }
 
-                if (!registry.TryResolveHandleForParticipant(activeIdentity, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolveHandle(registry, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
                         $"player_participation_exit_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
@@ -147,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"PlayerActorIdentityRecord at index '{index}' is invalid.");
                 }
 
-                if (!registry.TryResolveHandleForParticipant(activeIdentity, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if (!TryResolveHandle(registry, actorIdentity.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
                 {
                     throw new InvalidOperationException(
                         $"player_participation_enter_actor_not_found: playerActorId='{actorIdentity.PlayerActorId}' playerSlotId='{actorIdentity.PlayerSlotId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
@@ -188,6 +189,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                    outcomeKind == PermissionOutcomeKind.RejectedStaleIdentity ||
                    outcomeKind == PermissionOutcomeKind.RejectedMissingRequiredReceiver ||
                    outcomeKind == PermissionOutcomeKind.Failed;
+        }
+
+        private static bool TryResolveHandle(ActivityPlayerActorRegistry registry, SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
+        {
+            handle = default;
+            return (registry.TryGetActiveHandleByParticipant(participantId, out handle) && handle.IsValid) ||
+                (registry.TryGetRouteScopedHandleByParticipant(participantId, out handle) && handle.IsValid);
         }
 
         private static void EnsureIdentityMatches(

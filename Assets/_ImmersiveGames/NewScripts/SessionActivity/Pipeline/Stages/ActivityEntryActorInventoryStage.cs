@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using static _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages.ActivityEntryObjectSetupStageUtility;
 
@@ -241,9 +243,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             if (playerActorRegistry != null &&
-                playerActorRegistry.TryGetActiveActorIdentities(identity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
+                playerActorRegistry.TryGetIndexedActiveActorIdentities(out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
                 activeActors != null &&
-                activeActors.Count > 0)
+                activeActors.Count > 0 &&
+                ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
+                    playerActorRegistry.ActiveScopeIdentity,
+                    identity,
+                    ActorScope.ActivityScoped))
             {
                 return activeActors;
             }
@@ -300,7 +306,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             if (playerActorRegistry != null &&
-                playerActorRegistry.TryResolveHandleForParticipant(identity, participant.ParticipantId, out handle) &&
+                ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
+                    playerActorRegistry.ActiveScopeIdentity,
+                    identity,
+                    ActorScope.ActivityScoped) &&
+                (playerActorRegistry.TryGetActiveHandleByParticipant(participant.ParticipantId, out handle) ||
+                    playerActorRegistry.TryGetRouteScopedHandleByParticipant(participant.ParticipantId, out handle)) &&
                 handle.IsValid)
             {
                 return true;
@@ -327,7 +338,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return Array.Empty<PlayerActorIdentityRecord>();
             }
 
-            IReadOnlyList<PlayerActorIdentityRecord> retained = playerActorRegistry.GetRouteRetainedActorIdentitiesForSession(identity);
+            IReadOnlyList<PlayerActorIdentityRecord> retained = playerActorRegistry.GetIndexedRouteScopedActorIdentitiesForSession(identity);
             return retained == null || retained.Count == 0
                 ? Array.Empty<PlayerActorIdentityRecord>()
                 : FilterRetainedPlayerActorIdentities(identity, playerActorRegistry, retained);
@@ -347,7 +358,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (!playerActorRegistry.TryResolveHandleForParticipant(identity, candidate.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if ((!playerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+                    !handle.IsValid) &&
+                    (!playerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out handle) ||
+                     !handle.IsValid))
                 {
                     continue;
                 }

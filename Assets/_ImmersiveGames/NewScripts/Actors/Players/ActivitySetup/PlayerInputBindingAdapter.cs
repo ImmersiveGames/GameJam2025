@@ -58,7 +58,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException("stale_or_foreign_player_input_binding_requirement: requirement identity does not match active identity.");
                 }
 
-                PlayerActorRuntimeHandle actorHandle = registry.ResolveActiveHandleOrFail(activeIdentity, requirement.ParticipantId);
+                if (!registry.TryGetActiveHandleByParticipant(requirement.ParticipantId, out PlayerActorRuntimeHandle actorHandle) || !actorHandle.IsValid)
+                {
+                    throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' actor handle not found.");
+                }
                 PlayerActorId playerActorId = actorHandle.PlayerActorId;
                 GameObject actorInstance = actorHandle.Instance;
                 if (actorHandle.PlayerSlotId != requirement.PlayerSlotId || actorHandle.ActorId != requirement.ActorId)

@@ -50,7 +50,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("actor_reset_identity_mismatch: actor identity does not match active identity.");
             }
 
-            if (_registry.TryResolveHandleForActorInstance(activeIdentity, actor.ActorInstanceRuntimeId, out PlayerActorRuntimeHandle handle) &&
+            if ((_registry.TryGetActiveHandleByActorInstance(actor.ActorInstanceRuntimeId, out PlayerActorRuntimeHandle handle) ||
+                _registry.TryGetRouteScopedHandleByActorInstance(actor.ActorInstanceRuntimeId, out handle)) &&
                 handle.IsValid &&
                 handle.Instance != null)
             {

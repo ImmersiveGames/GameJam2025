@@ -209,6 +209,7 @@ Resumo:
 - Consumers de exit/reset passam a resolver `PlayerActorRuntimeHandle` por `ActorInstanceRuntimeId`.
 - `PlayerActorId` permanece como identidade observada/logada depois do handle resolvido, não como chave ativa de lookup runtime.
 - PASS exige novo smoke/log.
+- `ACTOR-COMP-0C -> 0F` fechou a limpeza do `ActivityPlayerActorRegistry`: o registry ficou como índice técnico puro; compatibilidade de scope/reentry permanece em `ActivityActorScopeCompatibilityPolicy`; wrappers transitórios foram removidos do código ativo.
 
 - `ADR-2.0-0004-SA-IDREF-Typed-Runtime-References.md` — Typed runtime references / IDREF cleanup. Status: SA-IDREF-3A-H1/H2/H3 applied; contract regression registered; next runtime cut blocked until identity audit.
 

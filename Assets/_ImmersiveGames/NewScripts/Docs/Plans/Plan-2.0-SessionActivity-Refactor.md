@@ -6,6 +6,8 @@
 
 > ACT-EMIT-2 closure note: `ACT-EMIT-2 â€” ObjectEmission Pool/Rent/Return MVP â€” PASS` is now recorded in `ADR-2.0-0002`. The MVP shape is frozen: `FirePrimary` is routed through `PlayerActorCommandInputHub`, `ActorObjectEmitterEndpoint` builds the resolved payload, `ObjectEmissionRuntimeComposer`/`ObjectEmissionPoolRuntimeBridge` wire `IPoolService`, `ObjectEmissionPoolAdapter` owns `Rent`, `ObjectEmissionPoolReturnSink` owns `Return`, and the runtime stays out of scanner/inventory/setup/binding/gate reopening. Next possible cuts start at `ACT-EMIT-3A`, `ACT-EMIT-4A`, `ACT-EMIT-5A` and `ACT-EMIT-6A`.
 
+> ACTOR-COMP-0F note: `ActivityPlayerActorRegistry` is now technical index only; scope/reentry compatibility remains in `ActivityActorScopeCompatibilityPolicy`, and the legacy lifecycle wrappers were removed from the active code path.
+
 ## Objetivo
 
 Decompor `SessionActivityPipeline` sem criar trilho paralelo, fallback silencioso ou novo owner ambÃ­guo.

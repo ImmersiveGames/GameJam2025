@@ -57,7 +57,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     throw new InvalidOperationException($"Movement control actor identity invalid at index '{index}'.");
                 }
 
-                if (!registry.TryResolveHandleForParticipant(activeIdentity, actor.ParticipantId, out PlayerActorRuntimeHandle handle) || !handle.IsValid)
+                if ((!registry.TryGetActiveHandleByParticipant(actor.ParticipantId, out PlayerActorRuntimeHandle handle) ||
+                    !handle.IsValid) &&
+                    (!registry.TryGetRouteScopedHandleByParticipant(actor.ParticipantId, out handle) ||
+                     !handle.IsValid))
                 {
                     throw new InvalidOperationException($"Movement control failed: actor not found for playerActorId='{actor.PlayerActorId}'.");
                 }
