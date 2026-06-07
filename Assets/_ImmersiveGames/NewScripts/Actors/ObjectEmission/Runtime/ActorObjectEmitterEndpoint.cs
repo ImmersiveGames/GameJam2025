@@ -24,6 +24,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
         public ActivityCapabilityPermissionState FirePermissionState => _firePermissionState;
         public bool IsFireAllowed => _firePermissionState == ActivityCapabilityPermissionState.Allowed;
         public ActorObjectEmissionProfile ObjectEmissionProfile => objectEmissionProfile;
+        internal ObjectEmissionPoolAdapter PoolAdapter => _objectEmissionPoolAdapter;
 
         public void SetObjectEmissionPermissionState(ActivityCapabilityPermissionState state)
         {
@@ -38,6 +39,18 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
         public void ClearObjectEmissionPermissionState()
         {
             _firePermissionState = ActivityCapabilityPermissionState.Unbound;
+        }
+
+        private void OnEnable()
+        {
+            if (ObjectEmissionPoolRuntimeBridge.TryAttachEndpoint(this))
+            {
+                return;
+            }
+
+            DebugUtility.LogWarning(
+                typeof(ActorObjectEmitterEndpoint),
+                $"[OBS][ObjectEmission] event='ObjectEmissionPoolServiceAttachDeferred' endpointId='{EndpointId}' reason='runtime_bridge_unavailable'.");
         }
 
         public ActorCommandDispatchResult AcceptCommand(ActorCommandEnvelope command)
@@ -95,6 +108,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
                 DebugUtility.Colors.Info);
 
             _objectEmissionPoolAdapter.PrepareObjectEmissionPool(command);
+            ObjectEmissionRuntimePayload payload = BuildRuntimePayload(command, ResolveEmissionPoseOrFail(command.Profile));
+            IObjectEmissionReturnSink returnSink = _objectEmissionPoolAdapter.CreateReturnSink(command.PoolDefinition, payload);
+            ObjectEmissionPooledObject pooledObject = _objectEmissionPoolAdapter.RentAndInitialize(command, payload, returnSink);
+
+            DebugUtility.Log(
+                typeof(ActorObjectEmitterEndpoint),
+                $"[OBS][ObjectEmission] event='ObjectEmissionSpawned' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='FirePrimary' profileId='{payload.ProfileId}' instanceName='{pooledObject.name}' instancePath='{BuildInstancePath(pooledObject.transform)}' activeSelf='{pooledObject.gameObject.activeSelf}' activeInHierarchy='{pooledObject.gameObject.activeInHierarchy}' endpointId='{EndpointId}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Success);
 
             _lastAcceptedCommand = command;
             _acceptedCommandCount++;
@@ -133,6 +154,54 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
             }
 
             return objectEmissionProfile;
+        }
+
+        private static ObjectEmissionRuntimePayload BuildRuntimePayload(
+            in ActorObjectEmissionCommand command,
+            (Vector3 position, Quaternion rotation) spawnPose)
+        {
+            return new ObjectEmissionRuntimePayload(
+                command.ActorId,
+                command.ActorInstanceRuntimeId,
+                command.ProfileId,
+                command.ObjectSpeed,
+                command.ObjectLifetime,
+                spawnPose.position,
+                spawnPose.rotation,
+                command.Source,
+                command.Reason);
+        }
+
+        private (Vector3 position, Quaternion rotation) ResolveEmissionPoseOrFail(ActorObjectEmissionProfile profile)
+        {
+            if (profile == null)
+            {
+                throw new InvalidOperationException($"ActorObjectEmitterEndpoint requires non-null profile for endpointId='{EndpointId}'.");
+            }
+
+            return profile.EmissionOriginPolicy switch
+            {
+                ActorObjectEmissionOriginPolicy.EmitterTransform => (transform.position, transform.rotation),
+                _ => throw new InvalidOperationException($"ActorObjectEmitterEndpoint does not support emission origin policy '{profile.EmissionOriginPolicy}' for endpointId='{EndpointId}'."),
+            };
+        }
+
+        private static string BuildInstancePath(Transform transform)
+        {
+            if (transform == null)
+            {
+                return string.Empty;
+            }
+
+            System.Collections.Generic.Stack<string> segments = new();
+            Transform current = transform;
+            while (current != null)
+            {
+                segments.Push(current.name);
+                current = current.parent;
+            }
+
+            return string.Join("/", segments);
         }
 
         private static string ResolveBlockedReason(ActivityCapabilityPermissionState permissionState)

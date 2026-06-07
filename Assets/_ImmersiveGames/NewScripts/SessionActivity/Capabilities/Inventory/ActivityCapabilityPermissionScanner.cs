@@ -8,6 +8,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
@@ -102,121 +103,40 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
                 if (movementEndpoint != null)
                 {
-                    Component endpointComponent = movementEndpoint as Component;
-                    string componentPath = endpointComponent != null
-                        ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
-                        : string.Empty;
-                    string componentType = movementEndpoint.GetType().FullName ?? movementEndpoint.GetType().Name;
-                    string capabilityPath = BuildCapabilityPath(componentPath, receiverIdentity, receiverKind: "movement");
-                    string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+                    AppendPermissionReceiverContribution(
+                        contributions,
+                        capabilityKeys,
                         inventoryId,
                         ownerId,
-                        ActivityCapabilityKind.PermissionTarget,
-                        ModuleId,
-                        capabilityPath);
-
-                    if (capabilityKeys.Add(capabilityId))
-                    {
-                        string permissionToken = ActivityCapabilityPermissionIds.ActivityGameplayControl;
-                        string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(
-                            receiverIdentity);
-
-                        IActivityPermissionReceiverProvider receiverProvider = surface.ActorPermissionReceiver != null
-                            ? new PlayerMovementPermissionReceiverProvider(
-                                surface.ActorPermissionReceiver,
-                                receiverId,
-                                playerIdentity.ActorId,
-                                playerIdentity.ActorInstanceRuntimeId,
-                                playerIdentity.PlayerActorId,
-                                playerIdentity.PlayerSlotId)
-                            : new PlayerMovementPermissionReceiverProvider(
-                                movementEndpoint,
-                                receiverId,
-                                playerIdentity.ActorId,
-                                playerIdentity.ActorInstanceRuntimeId,
-                                playerIdentity.PlayerActorId,
-                                playerIdentity.PlayerSlotId);
-
-                        capabilities.Add(new ActivityCapabilityDescriptor(
-                            capabilityId,
-                            ActivityCapabilityKind.PermissionTarget,
-                            ModuleId,
-                            ownerId,
-                            componentPath,
-                            componentType,
-                            required: false,
-                            priority: 100,
-                            policyMetadata: new[]
-                            {
-                                new ActivityCapabilityPolicyEntry("permissionId", permissionToken),
-                                new ActivityCapabilityPolicyEntry("actorId", playerIdentity.ActorId.Value),
-                                new ActivityCapabilityPolicyEntry("actorInstanceRuntimeId", playerIdentity.ActorInstanceRuntimeId.Value),
-                                new ActivityCapabilityPolicyEntry("playerActorId", playerIdentity.PlayerActorId.Value),
-                                new ActivityCapabilityPolicyEntry("playerSlotId", playerIdentity.PlayerSlotId.Value),
-                                new ActivityCapabilityPolicyEntry("actorRole", target.ActorRole.ToString()),
-                            },
-                            source: context.Source));
-
-                        contributions.Add(new ActivityPermissionReceiverContribution(
-                            context.Identity,
-                            capabilityId,
-                            ownerId,
-                            playerIdentity.ActorId,
-                            playerIdentity.ActorInstanceRuntimeId,
-                            playerIdentity.PlayerActorId,
-                            playerIdentity.PlayerSlotId,
-                            ActivityCapabilityPermissionId.ActivityGameplayControl,
-                            receiverIdentity,
-                            receiverId,
-                            componentPath,
-                            receiverProvider,
-                            context.Source,
-                            context.Reason));
-                    }
+                        context.Identity,
+                        playerIdentity,
+                        receiverIdentity,
+                        movementEndpoint as Component,
+                        movementEndpoint,
+                        null,
+                        surface.ActorPermissionReceiver,
+                        receiverKind: "movement",
+                        source: context.Source,
+                        reason: context.Reason);
                 }
 
                 if (objectEmitterEndpoint != null)
                 {
-                    Component objectEmissionComponent = objectEmitterEndpoint as Component;
-                    string objectEmissionComponentPath = objectEmissionComponent != null
-                        ? ActivityCapabilityTransformPathUtility.BuildTransformPath(objectEmissionComponent.transform)
-                        : string.Empty;
-                    string objectEmissionCapabilityPath = BuildCapabilityPath(objectEmissionComponentPath, receiverIdentity, receiverKind: "object_emission");
-                    string objectEmissionCapabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+                    AppendPermissionReceiverContribution(
+                        contributions,
+                        capabilityKeys,
                         inventoryId,
                         ownerId,
-                        ActivityCapabilityKind.PermissionTarget,
-                        ModuleId,
-                        objectEmissionCapabilityPath);
-
-                    string objectEmissionReceiverId = ActorObjectEmissionPermissionReceiver.CreateReceiverId(receiverIdentity);
-                    IActivityPermissionReceiverProvider objectEmissionReceiverProvider =
-                        new ActorObjectEmissionPermissionReceiverProvider(
-                            objectEmitterEndpoint,
-                            objectEmissionReceiverId,
-                            playerIdentity.ActorId,
-                            playerIdentity.ActorInstanceRuntimeId,
-                            playerIdentity.PlayerActorId,
-                            playerIdentity.PlayerSlotId);
-
-                    if (capabilityKeys.Add(objectEmissionCapabilityId))
-                    {
-                        contributions.Add(new ActivityPermissionReceiverContribution(
-                            context.Identity,
-                            objectEmissionCapabilityId,
-                            ownerId,
-                            playerIdentity.ActorId,
-                            playerIdentity.ActorInstanceRuntimeId,
-                            playerIdentity.PlayerActorId,
-                            playerIdentity.PlayerSlotId,
-                            ActivityCapabilityPermissionId.ActivityGameplayControl,
-                            receiverIdentity,
-                            objectEmissionReceiverId,
-                            objectEmissionComponentPath,
-                            objectEmissionReceiverProvider,
-                            context.Source,
-                            context.Reason));
-                    }
+                        context.Identity,
+                        playerIdentity,
+                        receiverIdentity,
+                        objectEmitterEndpoint as Component,
+                        null,
+                        objectEmitterEndpoint,
+                        null,
+                        receiverKind: "object_emission",
+                        source: context.Source,
+                        reason: context.Reason);
                 }
             }
 
@@ -239,11 +159,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string receiverKind)
         {
             string normalizedComponentPath = string.IsNullOrWhiteSpace(componentPath) ? string.Empty : componentPath.Trim();
-            if (!string.IsNullOrWhiteSpace(normalizedComponentPath))
-            {
-                return normalizedComponentPath;
-            }
-
             string normalizedReceiverKind = string.IsNullOrWhiteSpace(receiverKind) ? "receiver" : receiverKind.Trim();
             string actorInstanceToken = receiverIdentity.ActorInstanceRuntimeId.IsValid
                 ? receiverIdentity.ActorInstanceRuntimeId.Value
@@ -251,7 +166,94 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string slotToken = receiverIdentity.PlayerSlotId.IsValid
                 ? receiverIdentity.PlayerSlotId.Value
                 : "slot.unbound";
+            if (!string.IsNullOrWhiteSpace(normalizedComponentPath))
+            {
+                return $"{normalizedReceiverKind}|componentPath={normalizedComponentPath}|actorInstance={actorInstanceToken}|slot={slotToken}";
+            }
+
             return $"{normalizedReceiverKind}|actorInstance={actorInstanceToken}|slot={slotToken}";
+        }
+
+        private static void AppendPermissionReceiverContribution(
+            List<ActivityPermissionReceiverContribution> contributions,
+            HashSet<string> capabilityKeys,
+            ActivityCapabilityInventoryId inventoryId,
+            string ownerId,
+            SessionActivityIdentity identity,
+            PlayerActorCapabilityIdentity playerIdentity,
+            ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
+            Component endpointComponent,
+            IActorMovementEndpoint movementEndpoint,
+            IActorObjectEmitterEndpoint objectEmitterEndpoint,
+            IActivityCapabilityPermissionReceiver existingReceiver,
+            string receiverKind,
+            string source,
+            string reason)
+        {
+            string componentPath = endpointComponent != null
+                ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
+                : string.Empty;
+            string capabilityPath = BuildCapabilityPath(componentPath, receiverIdentity, receiverKind);
+            string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
+                inventoryId,
+                ownerId,
+                ActivityCapabilityKind.PermissionTarget,
+                ModuleId,
+                capabilityPath);
+
+            if (!capabilityKeys.Add(capabilityId))
+            {
+                return;
+            }
+
+            string receiverId = receiverKind == "movement"
+                ? PlayerMovementPermissionReceiver.CreateReceiverId(receiverIdentity)
+                : ActorObjectEmissionPermissionReceiver.CreateReceiverId(receiverIdentity);
+
+            IActivityPermissionReceiverProvider receiverProvider = receiverKind == "movement"
+                ? existingReceiver != null
+                    ? new PlayerMovementPermissionReceiverProvider(
+                        existingReceiver,
+                        receiverId,
+                        playerIdentity.ActorId,
+                        playerIdentity.ActorInstanceRuntimeId,
+                        playerIdentity.PlayerActorId,
+                        playerIdentity.PlayerSlotId)
+                    : new PlayerMovementPermissionReceiverProvider(
+                        movementEndpoint,
+                        receiverId,
+                        playerIdentity.ActorId,
+                        playerIdentity.ActorInstanceRuntimeId,
+                        playerIdentity.PlayerActorId,
+                        playerIdentity.PlayerSlotId)
+                : new ActorObjectEmissionPermissionReceiverProvider(
+                    objectEmitterEndpoint,
+                    receiverId,
+                    playerIdentity.ActorId,
+                    playerIdentity.ActorInstanceRuntimeId,
+                    playerIdentity.PlayerActorId,
+                    playerIdentity.PlayerSlotId);
+
+            if (receiverProvider == null)
+            {
+                return;
+            }
+
+            contributions.Add(new ActivityPermissionReceiverContribution(
+                identity,
+                capabilityId,
+                ownerId,
+                playerIdentity.ActorId,
+                playerIdentity.ActorInstanceRuntimeId,
+                playerIdentity.PlayerActorId,
+                playerIdentity.PlayerSlotId,
+                ActivityCapabilityPermissionId.ActivityGameplayControl,
+                receiverIdentity,
+                receiverId,
+                componentPath,
+                receiverProvider,
+                source,
+                reason));
         }
     }
 

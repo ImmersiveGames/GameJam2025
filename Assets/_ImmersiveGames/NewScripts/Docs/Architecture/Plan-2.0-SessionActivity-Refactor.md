@@ -2,6 +2,10 @@
 
 > Historical planning document. The active normative boundary is frozen by `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md` and `ENTRY-BOUNDARY-DOC-0` inside it. Use this plan only as refactor context; do not read inventory-backed setup/binding as an allowed final shape.
 
+> Closure note: `ENTRY-BOUNDARY Closure â€” PASS funcional + PASS arquitetural parcial` is recorded in `ADR-2.0-0002`. The active shape is now frozen: gate binding is explicit, Presentation/Attribute use SetupContributions, Camera uses BindingContributions, and ObjectEmission participates in permission by provider/contribution without returning to inventory.
+
+> ACT-EMIT-2 closure note: `ACT-EMIT-2 â€” ObjectEmission Pool/Rent/Return MVP â€” PASS` is now recorded in `ADR-2.0-0002`. The MVP shape is frozen: FirePrimary is accepted by `ActorObjectEmitterEndpoint`, `ObjectEmissionRuntimeComposer`/`ObjectEmissionPoolRuntimeBridge` wire `IPoolService`, `ObjectEmissionPoolAdapter` owns `Rent`, `ObjectEmissionPoolReturnSink` owns `Return`, and no scanner/inventory/setup/binding/gate reopening is allowed. Next possible cuts start at `ACT-EMIT-3A`, `ACT-EMIT-4A`, `ACT-EMIT-5A` and `ACT-EMIT-6A`.
+
 ## Objetivo
 
 Decompor `SessionActivityPipeline` sem criar trilho paralelo, fallback silencioso ou novo owner ambíguo.

@@ -207,6 +207,128 @@ AttributeEndpoint belongs to ActorCapabilitySurface and Setup Plan.
 CameraTarget belongs to ActorCapabilitySurface and Binding Plan.
 ```
 
+### 2B. ENTRY-BOUNDARY Closure â€” PASS funcional + PASS arquitetural parcial
+
+This checkpoint freezes the closure of the ActivityEntryPipeline boundary after:
+
+```text
+ENTRY-BOUNDARY-1B â€” ActivityGateBindingStage
+ENTRY-BOUNDARY-1C â€” Presentation SetupContribution
+ENTRY-BOUNDARY-1D â€” Attribute SetupContribution
+ENTRY-BOUNDARY-1E â€” Camera BindingContribution
+ENTRY-BOUNDARY-H2B â€” ObjectEmission permission receiver contribution flow
+```
+
+#### Normative decisions registered
+
+```text
+ActivityCapabilityInventory is only transversal inventory.
+It may contain only ResetEndpoint, SnapshotProvider, SnapshotRestoreEndpoint, ReleaseEndpoint and real transversal Gate/Permission metadata.
+It must not contain PresentationEndpoint, AttributeEndpoint, CameraTarget, ObjectEmitter, ProjectileEmitter, CommandSink, Movement or any other local behavior.
+
+Setup Plan uses ActorPresentationSetupContribution and ActorAttributeSetupContribution.
+Setup stages no longer use ActivityCapabilityInventory as a service locator.
+
+Binding Plan uses ActorCameraBindingContribution and ActivityPermissionReceiverContribution.
+Camera no longer uses CameraTarget as inventory reference.
+
+ActivityGateBindingStage is the explicit owner of permission/gate binding.
+Scanner does not create receiver.
+Scanner does not register receiver.
+Scanner does not decide requiredness by Player, Actor, Scope, Participation or component presence.
+Movement and ObjectEmission enter the gate through the same provider/contribution flow.
+
+ObjectEmission does not return to inventory.
+There is no ActivityCapabilityKind.ObjectEmitter.
+There is no ObjectEmission-specific scanner.
+ObjectEmission participates in ActivityGameplayControl by receiver/provider only.
+
+This closure does not implement real ObjectEmission runtime.
+The next block may continue with follow-up ObjectEmission runtime/trajectory/audio, but the MVP closure is recorded below and it must not reintroduce inventory as behavior catalog.
+Any new behavior must declare phase contracts through interface/contribution: SetupContribution, BindingContribution, PermissionReceiverContribution, and Reset/Snapshot/Release contribution when applicable.
+```
+
+#### Smoke evidence summary
+
+```text
+Inventory preview without PresentationEndpoint, AttributeEndpoint, CameraTarget, ObjectEmitter or ProjectileEmitter.
+Presentation and Attribute via SetupContributions.
+Camera via BindingContributions.
+Gate with movement.receiver + object_emission.receiver.
+ActorObjectEmissionPermissionApplied state='Allowed'.
+ActorObjectEmissionCommandAccepted in ActivityRunning.
+RestartCurrentActivity PASS.
+Activity01ToActivity02 PASS.
+RouteExitBackToMenu PASS.
+No FATAL.
+No Exception.
+No route_transition_failed.
+No foreign/stale indevido.
+```
+
+### 2C. ACT-EMIT-2 — ObjectEmission Pool/Rent/Return MVP â€” PASS
+
+This checkpoint closes the ObjectEmission MVP after `ACT-EMIT-2B`, `ACT-EMIT-2D`, `ACT-EMIT-2D2`, `ACT-EMIT-2E` and `ACT-EMIT-2E-H1`.
+
+#### Normative decisions registered
+
+```text
+FirePrimary is read by PlayerActorCommandInputHub.
+ActorObjectEmitterEndpoint accepts or rejects the command and builds the resolved payload.
+ActivityGateBindingStage controls permission via ActivityGameplayControl.
+ObjectEmission participates in the gate through IActivityPermissionReceiverProvider / ActivityPermissionReceiverContribution.
+ObjectEmission does not return to ActivityCapabilityInventory.
+There is no ActivityCapabilityKind.ObjectEmitter.
+There is no ObjectEmission-specific scanner.
+ObjectEmissionRuntimeComposer resolves IPoolService.
+ObjectEmissionPoolRuntimeBridge wires the service to endpoints.
+ObjectEmissionPoolAdapter is the sole owner of Rent.
+ObjectEmissionPoolReturnSink is the explicit owner of Return.
+ObjectEmissionPooledObject receives payload, controls local lifetime and requests return through the sink.
+Endpoint and runtime object do not know IPoolService.
+PoolService, GameObjectPool, PoolRuntimeHost and PoolAutoReturnTracker remain canonical infrastructure, not gameplay owners.
+The MVP does not implement audio, damage, collision/impact gameplay or VFX.
+```
+
+#### Smoke evidence summary
+
+```text
+ActivityGateBindingStarted contributionCount='2'.
+ActivityCapabilityPermissionReceiverRegistered movement.receiver.
+ActivityCapabilityPermissionReceiverRegistered object_emission.receiver.
+ActivityGateBindingCompleted receivers='2'.
+ActorObjectEmissionPermissionApplied state='Allowed'.
+ActorObjectEmissionCommandAccepted.
+ObjectEmissionPoolRentCompleted.
+ObjectEmissionSpawned.
+ObjectEmissionPooledObjectLifetimeExpired.
+ObjectEmissionPooledObjectReturnRequested.
+ObjectEmissionReturnedToPool.
+ObjectEmissionReturnedToPool with actorId, actorInstanceRuntimeId and profileId filled.
+No pool_service_unavailable.
+No Missing Script.
+No AudioPlay.
+No Damage.
+No VFX.
+```
+
+#### Remark
+
+```text
+commandSource and commandReason still appear empty in the return log.
+This is non-blocking observability for future hygiene if the fields remain redundant.
+It is not a blocker because actorId, actorInstanceRuntimeId, profileId, source and reason are populated.
+```
+
+#### Next possible blocks
+
+```text
+ACT-EMIT-3A â€” movement/trajectory of the emitted object.
+ACT-EMIT-4A â€” audio pooled by adapter.
+ACT-EMIT-5A â€” collision/impact without damage.
+ACT-EMIT-6A â€” damage as a separate capability.
+```
+
 ### 3. `RouteExit teardown` deve ter owner Ãºnico
 
 `SessionActivityPipeline` decide o lifecycle de teardown de activity para `RouteExit`.

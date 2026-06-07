@@ -1,5 +1,7 @@
 # ADR-2.0-0005 — ActorCommandHub, Actor Projectile Capability, Projectile Pooling e Pooled SFX
 
+> Historical note: the ObjectEmission MVP closure is recorded in `ADR-2.0-0002`. This ADR remains the historical command-hub boundary for the FirePrimary command path and does not reopen inventory or gate ownership.
+
 ## Status
 
 Aceito / congelado.  

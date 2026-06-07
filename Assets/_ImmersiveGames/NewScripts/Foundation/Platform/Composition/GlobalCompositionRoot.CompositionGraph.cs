@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bootstrap;
+using _ImmersiveGames.NewScripts.Actors.ObjectEmission.Bootstrap;
 using _ImmersiveGames.NewScripts.CameraPresentation.Bootstrap;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
@@ -65,9 +66,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Composition
         private static IReadOnlyList<CompositionPipelineStep> GetSessionOperationalCompositionSteps(
             RuntimeModeConfig runtimeModeConfig)
         {
-            return new List<CompositionPipelineStep>(7)
+            return new List<CompositionPipelineStep>(9)
             {
                 CompositionPipelineStep.FromDescriptor(AudioCompositionDescriptor.Descriptor),
+                new CompositionPipelineStep(
+                    id: "ObjectEmission",
+                    installer: ObjectEmissionRuntimeComposer.Install,
+                    installerDependencies: new[] { "RuntimePolicy" },
+                    bootstrap: ObjectEmissionRuntimeComposer.ComposeRuntime,
+                    bootstrapDependencies: new[] { "Pooling" }),
                 CompositionPipelineStep.FromDescriptor(SaveCompositionDescriptor.Descriptor),
                 CompositionPipelineStep.FromDescriptor(PreferencesCompositionDescriptor.Descriptor),
                 new CompositionPipelineStep(
