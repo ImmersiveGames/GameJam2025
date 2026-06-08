@@ -26,7 +26,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
             contribution = new ActorPresentationSetupContribution(
                 identity,
                 new ActorId(target.ActorId),
-                target.ActorInstanceId,
+                target.ActorInstanceRuntimeId,
                 target.ActorKind,
                 target.ActorRole,
                 target.ActorScope,

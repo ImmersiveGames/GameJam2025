@@ -219,7 +219,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         internal readonly struct ActorAttributeCapabilityState
         {
             public ActorAttributeCapabilityState(
-                ActorInstanceId actorInstanceRuntimeId,
+                ActorInstanceRuntimeId actorInstanceRuntimeId,
                 string actorId,
                 ActorAttributeEndpoint endpoint)
             {
@@ -228,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 Endpoint = endpoint;
             }
 
-            public ActorInstanceId ActorInstanceRuntimeId { get; }
+            public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
             public string ActorId { get; }
             public ActorAttributeEndpoint Endpoint { get; }
             public bool IsValid =>
@@ -3582,12 +3582,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return _activityActorExitRuntimeState.GetActorInventoryFeedForExit(identity, source, reason);
         }
 
-        private static Dictionary<ActorInstanceId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
+        private static Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
         {
-            Dictionary<ActorInstanceId, ActorInstanceRecord> byId = new();
+            Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> byRuntimeId = new();
             if (instances == null)
             {
-                return byId;
+                return byRuntimeId;
             }
 
             for (int index = 0; index < instances.Count; index++)
@@ -3598,19 +3598,19 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                byId[instance.ActorInstanceId] = instance;
+                byRuntimeId[instance.ActorInstanceRuntimeId] = instance;
             }
 
-            return byId;
+            return byRuntimeId;
         }
 
         private bool TryResolveActorInstanceMetadata(
             SessionActivityIdentity identity,
-            ActorInstanceId actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             out ActorInstanceRecord instance)
         {
             instance = default;
-            if (!identity.IsValid || !actorInstanceId.IsValid)
+            if (!identity.IsValid || !actorInstanceRuntimeId.IsValid)
             {
                 return false;
             }
@@ -3624,7 +3624,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (current.ActorInstanceId == actorInstanceId)
+                if (current.ActorInstanceRuntimeId == actorInstanceRuntimeId)
                 {
                     instance = current;
                     return true;
@@ -3733,7 +3733,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
         }
 
-        private bool TryGetActivePresentationHandle(ActorInstanceId actorInstanceRuntimeId, out ActorPresentationRuntimeHandle handle)
+        private bool TryGetActivePresentationHandle(ActorInstanceRuntimeId actorInstanceRuntimeId, out ActorPresentationRuntimeHandle handle)
         {
             handle = default;
             if (!actorInstanceRuntimeId.IsValid)
@@ -3751,10 +3751,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<SessionActivitySnapshot> snapshots,
             int entrySequence,
             ActorPresentationReleaseRail rail,
-            ActorInstanceId targetActorInstanceId = default)
+            ActorInstanceRuntimeId targetActorInstanceRuntimeId = default)
         {
             ActivityExitActorTeardownStage.ExecuteActorPresentationRelease(
-                new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, rail, targetActorInstanceId),
+                new ActivityExitActorTeardownCommand(command.Identity, command, entrySequence, rail, targetActorInstanceRuntimeId),
                 definition,
                 this,
                 _activityActorExitRuntimeState,
@@ -4484,11 +4484,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return false;
             }
 
-            ActorInstanceRuntimeId actorInstanceRuntimeId = new(capabilityState.ActorInstanceRuntimeId.Value);
-
             ActorAttributeCommand command = BuildActorAttributeCommand(
                 commandIdentity,
-                actorInstanceRuntimeId,
+                capabilityState.ActorInstanceRuntimeId,
                 runtimeAttributeId,
                 operation,
                 amount,
@@ -4505,7 +4503,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!result.HasFact)
             {
-                result = ActorAttributeApplyResult.Fail(actorInstanceRuntimeId, runtimeAttributeId, "attribute_changed_fact_missing");
+                result = ActorAttributeApplyResult.Fail(capabilityState.ActorInstanceRuntimeId, runtimeAttributeId, "attribute_changed_fact_missing");
                 LogActorAttributeCommandRejected(operation, normalizedActorId, runtimeAttributeId, result.Reason, normalizedSource, normalizedReason);
                 return false;
             }
@@ -4627,7 +4625,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new ActorResetActorRef(
                     commandIdentity,
                     new ActorId(selectedPlayerInstance.ActorId),
-                    new ActorInstanceRuntimeId(selectedPlayerInstance.ActorInstanceId.Value),
+                    selectedPlayerInstance.ActorInstanceRuntimeId,
                     selectedPlayerInstance.Kind,
                     observedIdentity.PlayerActorId,
                     observedIdentity.PlayerSlotId),
@@ -4746,8 +4744,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     IsDiscoveryResultForCurrentResetEntry,
                     IsReportForCurrentResetEntry,
                     HasRequiredResetContributorForCurrentResetEntry,
-                    Stages.ActivityEntryObjectSetupStageUtility.ResolveObjectResetEndpointsFromInventory,
-                    Stages.ActivityEntryObjectSetupStageUtility.ExecuteObjectResetCommand,
+                    ActivityEntryObjectSetupStageUtility.ResolveObjectResetEndpointsFromInventory,
+                    ActivityEntryObjectSetupStageUtility.ExecuteObjectResetCommand,
                     IsObjectResetResultForCurrentResetEntry,
                     (kind, message) => DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][QA][ObjectResetStage] fact='{kind}' detail='{message}' source='{normalizedSource}' reason='{normalizedReason}'.", DebugUtility.Colors.Info),
                     (snapshotKind, message) => DebugUtility.Log(typeof(SessionActivityPipeline), $"[OBS][SessionActivityPipeline][QA][ObjectResetStage] snapshot='{snapshotKind}' detail='{message}' source='{normalizedSource}' reason='{normalizedReason}'.", DebugUtility.Colors.Info));
@@ -8617,7 +8615,7 @@ private bool TryBuildActivityParticipantBinding(
         }
 
         bool IActivityEntryActorPresentationRuntimeBridge.TryGetActiveActorPresentationHandle(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             out ActorPresentationRuntimeHandle handle)
         {
             return TryGetActivePresentationHandle(actorInstanceRuntimeId, out handle);
@@ -8627,7 +8625,7 @@ private bool TryBuildActivityParticipantBinding(
             SessionActivityIdentity identity,
             string source,
             string reason,
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -8680,7 +8678,7 @@ private bool TryBuildActivityParticipantBinding(
 
                 if (profile.IsRequired)
                 {
-                    if (!_activityActorExitRuntimeState.TryGetActivePresentationState(instance.ActorInstanceId, out ActivityActorExitRuntimeState.ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
+                    if (!_activityActorExitRuntimeState.TryGetActivePresentationState(instance.ActorInstanceRuntimeId, out ActivityActorExitRuntimeState.ActorPresentationCapabilityState presentationState) || !presentationState.IsValid)
                     {
                         return new ActorParticipationReadinessEvaluation(
                             isReady: false,
@@ -8693,7 +8691,7 @@ private bool TryBuildActivityParticipantBinding(
             ActorAttributeEndpoint attributeEndpoint = instance.CapabilitySurface.AttributeEndpoint;
             if (attributeEndpoint != null)
             {
-                if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(instance.ActorInstanceId, out ActorAttributeCapabilityState capabilityState))
+                if (!_activityActorExitRuntimeState.TryGetActiveActorAttributeCapability(instance.ActorInstanceRuntimeId, out ActorAttributeCapabilityState capabilityState))
                 {
                     return new ActorParticipationReadinessEvaluation(
                         isReady: false,

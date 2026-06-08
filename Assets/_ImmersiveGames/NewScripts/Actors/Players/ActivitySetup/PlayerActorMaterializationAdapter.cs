@@ -70,18 +70,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     actorScope,
                     ActorParticipationRecord.ActorParticipationPolicy.AllActivitiesInRoute,
                     nameof(PlayerActorMaterializationAdapter));
-                ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
+                ActorInstanceRuntimeId actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                     activeIdentity,
                     actor.ActorId,
                     actor.ActorScopeMetadata,
                     actor.ActorScopeMetadata.ToString());
-                if (!runtimeActorInstanceId.IsValid)
+                if (!actorInstanceRuntimeId.IsValid)
                 {
                     throw new InvalidOperationException(
-                        $"player_actor_runtime_identity_missing_after_materialization: playerSlotId='{plan.ActorIdentity.PlayerSlotId}' playerActorId='{plan.ActorIdentity.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                        $"player_actor_runtime_identity_missing_after_materialization: playerSlotId='{plan.ActorIdentity.PlayerSlotId}' playerActorId='{plan.ActorIdentity.PlayerActorId}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}' reason='runtime_actor_instance_runtime_id_invalid'.");
                 }
 
-                actor.SetRuntimeActorInstanceId(runtimeActorInstanceId);
+                actor.SetRuntimeActorInstanceId(actorInstanceRuntimeId);
 
                 PlayerActorIdentity identity = instance.GetComponent<PlayerActorIdentity>();
                 if (identity == null)

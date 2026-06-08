@@ -6,7 +6,6 @@ using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
@@ -18,7 +17,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public readonly struct ActorPresentationCapabilityState
         {
             public ActorPresentationCapabilityState(
-                ActorInstanceId actorInstanceRuntimeId,
+                ActorInstanceRuntimeId actorInstanceRuntimeId,
                 string actorId,
                 ActorPresentationEndpoint endpoint,
                 ActorPresentationRuntimeHandle runtimeHandle,
@@ -33,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 ActivityIdentity = Normalize(activityIdentity);
             }
 
-            public ActorInstanceId ActorInstanceRuntimeId { get; }
+            public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
             public string ActorId { get; }
             public ActorPresentationEndpoint Endpoint { get; }
             public ActorPresentationRuntimeHandle RuntimeHandle { get; }
@@ -48,16 +47,16 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 !string.IsNullOrWhiteSpace(ActivityIdentity);
         }
 
-        private readonly Dictionary<ActorInstanceId, ActorPresentationCapabilityState> _activeActorPresentationByActorInstanceId = new();
-        private readonly Dictionary<ActorInstanceId, SessionActivityPipeline.ActorAttributeCapabilityState> _activeActorAttributeCapabilitiesByActorInstanceId = new();
-        private readonly HashSet<ActorInstanceId> _activeActorParticipationsByActorInstanceId = new();
+        private readonly Dictionary<ActorInstanceRuntimeId, ActorPresentationCapabilityState> _activeActorPresentationByActorInstanceId = new();
+        private readonly Dictionary<ActorInstanceRuntimeId, SessionActivityPipeline.ActorAttributeCapabilityState> _activeActorAttributeCapabilitiesByActorInstanceId = new();
+        private readonly HashSet<ActorInstanceRuntimeId> _activeActorParticipationsByActorInstanceRuntimeId = new();
         private readonly Dictionary<ActorId, PlayerActivityParticipantBinding> _activePlayerParticipantBindingsByActorId = new();
         private PlayerActivityParticipationContext _currentActivityParticipationContext;
         private ActorInventoryFeedResult _currentActorInventoryFeedResult;
 
         public int ActivePresentationCount => _activeActorPresentationByActorInstanceId.Count;
         public int ActiveAttributeCount => _activeActorAttributeCapabilitiesByActorInstanceId.Count;
-        public int ActiveParticipationCount => _activeActorParticipationsByActorInstanceId.Count;
+        public int ActiveParticipationCount => _activeActorParticipationsByActorInstanceRuntimeId.Count;
         public int ActivePlayerParticipantBindingCount => _activePlayerParticipantBindingsByActorId.Count;
         public bool HasActorInventoryFeedResult => _currentActorInventoryFeedResult.IsValid;
 
@@ -76,20 +75,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         }
 
         public bool TryGetActivePresentationHandle(
-            ActorPresentationEndpointReference presentationReference,
-            out ActorPresentationRuntimeHandle handle)
-        {
-            handle = default;
-            if (presentationReference == null || !presentationReference.IsValid)
-            {
-                return false;
-            }
-
-            return TryGetActivePresentationHandle(presentationReference.ActorInstanceRuntimeId, out handle);
-        }
-
-        public bool TryGetActivePresentationHandle(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             out ActorPresentationRuntimeHandle handle)
         {
             handle = default;
@@ -108,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         }
 
         public bool TryGetActivePresentationState(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             out ActorPresentationCapabilityState state)
         {
             state = default;
@@ -137,10 +123,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' hadBefore='{hadBefore.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' hadBefore='{hadBefore.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
-        public IReadOnlyList<ActorPresentationCapabilityState> ResolveActiveActorPresentationStates(ActorInstanceId targetActorInstanceRuntimeId)
+        public IReadOnlyList<ActorPresentationCapabilityState> ResolveActiveActorPresentationStates(ActorInstanceRuntimeId targetActorInstanceRuntimeId)
         {
             List<ActorPresentationCapabilityState> activeStates = new();
             if (targetActorInstanceRuntimeId.IsValid)
@@ -166,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         }
 
         public void RemoveActiveActorPresentation(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             string activityId,
             int entrySequence,
             string source,
@@ -184,11 +170,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' removed='{removed.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' removed='{removed.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public bool TryGetActiveActorAttributeCapability(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             out SessionActivityPipeline.ActorAttributeCapabilityState state)
         {
             state = default;
@@ -243,7 +229,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' hadBefore='{hadBefore.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' hadBefore='{hadBefore.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public IReadOnlyList<SessionActivityPipeline.ActorAttributeCapabilityState> ResolveActiveActorAttributeStates()
@@ -261,7 +247,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         }
 
         public void RemoveActiveActorAttributeCapability(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             string activityId,
             int entrySequence,
             string source,
@@ -279,11 +265,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' removed='{removed.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' removed='{removed.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public void StoreActiveActorParticipation(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             string activityId,
             int entrySequence,
             string source,
@@ -294,24 +280,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return;
             }
 
-            bool added = _activeActorParticipationsByActorInstanceId.Add(actorInstanceRuntimeId);
+            bool added = _activeActorParticipationsByActorInstanceRuntimeId.Add(actorInstanceRuntimeId);
             Log(
                 "ActivityActorExitRuntimeStateParticipationRecordStored",
                 activityId,
                 entrySequence,
                 source,
                 reason,
-                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' added='{added.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' added='{added.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public ActorParticipationExitResult ExecuteActorParticipationExit(ActorParticipationExitCommand command)
         {
             ActorParticipationExitStageExecutor exitExecutor = new();
-            return exitExecutor.Execute(command, _activeActorParticipationsByActorInstanceId);
+            return exitExecutor.Execute(command, _activeActorParticipationsByActorInstanceRuntimeId);
         }
 
         public void RemoveActiveActorParticipation(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             string activityId,
             int entrySequence,
             string source,
@@ -322,27 +308,27 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return;
             }
 
-            bool removed = _activeActorParticipationsByActorInstanceId.Remove(actorInstanceRuntimeId);
+            bool removed = _activeActorParticipationsByActorInstanceRuntimeId.Remove(actorInstanceRuntimeId);
             Log(
                 "ActivityActorExitRuntimeStateParticipationRecordRemoved",
                 activityId,
                 entrySequence,
                 source,
                 reason,
-                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' removed='{removed.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorInstanceRuntimeId='{actorInstanceRuntimeId}' removed='{removed.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public void ClearActiveActorParticipations(string activityId, int entrySequence, string source, string reason)
         {
-            int before = _activeActorParticipationsByActorInstanceId.Count;
-            _activeActorParticipationsByActorInstanceId.Clear();
+            int before = _activeActorParticipationsByActorInstanceRuntimeId.Count;
+            _activeActorParticipationsByActorInstanceRuntimeId.Clear();
             Log(
                 "ActivityActorExitRuntimeStateParticipationRecordsCleared",
                 activityId,
                 entrySequence,
                 source,
                 reason,
-                $"cleared='{before}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"cleared='{before}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
 
@@ -394,7 +380,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"participantCount='{participantCount}' storedPlayerExitBindingCount='{storedPlayerExitBindingCount}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' correlationMode='{correlationMode}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"participantCount='{participantCount}' storedPlayerExitBindingCount='{storedPlayerExitBindingCount}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' correlationMode='{correlationMode}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public bool TryResolveActivePlayerParticipantBindingForExit(
@@ -430,7 +416,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                     instance.Identity.EntrySequence,
                     "ActivityActorExitRuntimeState",
                     "active_binding_by_actor_id",
-                    $"actorId='{Normalize(instance.ActorId)}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' resolution='active_binding'");
+                    $"actorId='{Normalize(instance.ActorId)}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' resolution='active_binding'");
                 return true;
             }
 
@@ -456,7 +442,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                             instance.Identity.EntrySequence,
                             "ActivityActorExitRuntimeState",
                             "participation_context_scan",
-                            $"actorId='{Normalize(instance.ActorId)}' actorInstanceRuntimeId='{instance.ActorInstanceId}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' resolution='context_scan'");
+                            $"actorId='{Normalize(instance.ActorId)}' actorInstanceRuntimeId='{instance.ActorInstanceRuntimeId}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}' resolution='context_scan'");
                         return true;
                     }
                 }
@@ -483,7 +469,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"actorInstanceCount='{actorInstanceCount}' actorEntryCount='{actorEntryCount}' actorParticipationCount='{actorParticipationCount}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}'");
+                $"actorInstanceCount='{actorInstanceCount}' actorEntryCount='{actorEntryCount}' actorParticipationCount='{actorParticipationCount}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}'");
         }
 
         public ActorInventoryFeedResult GetActorInventoryFeedForExit(
@@ -511,7 +497,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 entrySequence,
                 source,
                 reason,
-                $"hadBefore='{hadBefore.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceId.Count}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}'");
+                $"hadBefore='{hadBefore.ToString().ToLowerInvariant()}' presentationStateCount='{_activeActorPresentationByActorInstanceId.Count}' attributeStateCount='{_activeActorAttributeCapabilitiesByActorInstanceId.Count}' participationRecordCount='{_activeActorParticipationsByActorInstanceRuntimeId.Count}' playerExitBindingCount='{_activePlayerParticipantBindingsByActorId.Count}'");
         }
 
 
@@ -519,12 +505,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         {
             int presentationBefore = _activeActorPresentationByActorInstanceId.Count;
             int attributeBefore = _activeActorAttributeCapabilitiesByActorInstanceId.Count;
-            int participationBefore = _activeActorParticipationsByActorInstanceId.Count;
+            int participationBefore = _activeActorParticipationsByActorInstanceRuntimeId.Count;
             int playerBindingBefore = _activePlayerParticipantBindingsByActorId.Count;
             bool hadInventoryFeed = _currentActorInventoryFeedResult.IsValid;
             _activeActorPresentationByActorInstanceId.Clear();
             _activeActorAttributeCapabilitiesByActorInstanceId.Clear();
-            _activeActorParticipationsByActorInstanceId.Clear();
+            _activeActorParticipationsByActorInstanceRuntimeId.Clear();
             _activePlayerParticipantBindingsByActorId.Clear();
             _currentActivityParticipationContext = null;
             _currentActorInventoryFeedResult = default;

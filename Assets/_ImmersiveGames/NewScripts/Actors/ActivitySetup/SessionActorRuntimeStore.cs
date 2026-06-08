@@ -199,7 +199,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
             return new SessionActorRuntimeEntry(
                 handle.ActorIdentity.Identity,
-                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value),
+                runtimeActor.RuntimeActorInstanceId,
                 new ActorId(runtimeActor.ActorId),
                 runtimeActor.ActorScopeMetadata,
                 handle.ParticipantId,

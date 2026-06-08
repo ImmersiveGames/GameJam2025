@@ -45,112 +45,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
-    public readonly struct ActorInstanceId : IEquatable<ActorInstanceId>
-    {
-        private const string RuntimeActorTypeDiscriminator = nameof(Actor);
-
-        public ActorInstanceId(string value)
-        {
-            Value = Normalize(value);
-        }
-
-        public string Value { get; }
-        public bool IsValid => !string.IsNullOrWhiteSpace(Value);
-
-        public bool Equals(ActorInstanceId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
-        public override bool Equals(object obj) => obj is ActorInstanceId other && Equals(other);
-        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
-        public override string ToString() => Value;
-
-        public static ActorInstanceId FromIdentity(
-            SessionActivityIdentity identity,
-            ActorKind actorKind,
-            string actorId,
-            string actorScopeDiscriminator)
-        {
-            if (!identity.IsValid)
-            {
-                return default;
-            }
-
-            string normalizedActorId = Normalize(actorId);
-            string normalizedScopeDiscriminator = Normalize(actorScopeDiscriminator);
-            if (string.IsNullOrWhiteSpace(normalizedActorId))
-            {
-                return default;
-            }
-
-            return new ActorInstanceId(
-                $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}");
-        }
-
-        public static ActorInstanceId FromScopedIdentity(
-            SessionActivityIdentity identity,
-            ActorKind actorKind,
-            string actorId,
-            ActorScope actorScope,
-            string actorScopeDiscriminator)
-        {
-            return FromScopedActorIdentity(
-                identity,
-                actorId,
-                actorScope,
-                RuntimeActorTypeDiscriminator,
-                actorScopeDiscriminator);
-        }
-
-        public static ActorInstanceId FromScopedRuntimeActorIdentity(
-            SessionActivityIdentity identity,
-            string actorId,
-            ActorScope actorScope,
-            string actorScopeDiscriminator)
-        {
-            return FromScopedActorIdentity(
-                identity,
-                actorId,
-                actorScope,
-                RuntimeActorTypeDiscriminator,
-                actorScopeDiscriminator);
-        }
-
-        private static ActorInstanceId FromScopedActorIdentity(
-            SessionActivityIdentity identity,
-            string actorId,
-            ActorScope actorScope,
-            string actorTypeDiscriminator,
-            string actorScopeDiscriminator)
-        {
-            if (!identity.IsValid)
-            {
-                return default;
-            }
-
-            string normalizedActorId = Normalize(actorId);
-            string normalizedActorTypeDiscriminator = Normalize(actorTypeDiscriminator);
-            string normalizedScopeDiscriminator = Normalize(actorScopeDiscriminator);
-            if (string.IsNullOrWhiteSpace(normalizedActorId) || string.IsNullOrWhiteSpace(normalizedActorTypeDiscriminator))
-            {
-                return default;
-            }
-
-            return actorScope switch
-            {
-                ActorScope.SessionScoped => new ActorInstanceId(
-                    $"{identity.PipelineId}|{identity.SessionId}|session|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
-                ActorScope.RouteScoped => new ActorInstanceId(
-                    $"{identity.PipelineId}|{identity.SessionId}|route|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
-                ActorScope.ActivityScoped => new ActorInstanceId(
-                    $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{normalizedActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
-                _ => default,
-            };
-        }
-
-        public static bool operator ==(ActorInstanceId left, ActorInstanceId right) => left.Equals(right);
-        public static bool operator !=(ActorInstanceId left, ActorInstanceId right) => !left.Equals(right);
-
-        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-    }
-
     public enum ActorKind
     {
         Unknown = 0,
@@ -163,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Unknown = 0,
         PrimaryPlayer = 1,
         SupportingPlayer = 2,
-        SceneAuthoredNonPlayer = 3,
+        SceneActor = 3,
     }
 
     public enum ActorScope
@@ -242,7 +136,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
     {
         public ActorInstanceRecord(
             SessionActivityIdentity identity,
-            ActorInstanceId actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorDefinitionRef definitionRef,
             string actorId,
             ActorKind actorKind,
@@ -259,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             string reason)
         {
             Identity = identity;
-            ActorInstanceId = actorInstanceId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             DefinitionRef = definitionRef;
             ActorId = Normalize(actorId);
             Kind = actorKind;
@@ -277,7 +171,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         }
 
         public SessionActivityIdentity Identity { get; }
-        public ActorInstanceId ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorDefinitionRef DefinitionRef { get; }
         public string ActorId { get; }
         public ActorKind Kind { get; }
@@ -298,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         public bool HasCapabilitySurface => CapabilitySurface != null;
         public bool IsValid =>
             Identity.IsValid &&
-            ActorInstanceId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(ActorId) &&
             Kind != ActorKind.Unknown &&
             Role != ActorRole.Unknown &&
@@ -347,7 +241,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public ActorParticipationRecord(
             SessionActivityIdentity identity,
-            ActorInstanceId actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             bool participatesInCurrentEntry,
             ActorParticipationPolicy policy,
             IReadOnlyList<string> explicitActivityIds,
@@ -356,7 +250,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             string reason)
         {
             Identity = identity;
-            ActorInstanceId = actorInstanceId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ParticipatesInCurrentEntry = participatesInCurrentEntry;
             Policy = policy;
             ExplicitActivityIds = explicitActivityIds ?? Array.Empty<string>();
@@ -366,14 +260,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         }
 
         public SessionActivityIdentity Identity { get; }
-        public ActorInstanceId ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public bool ParticipatesInCurrentEntry { get; }
         public ActorParticipationPolicy Policy { get; }
         public IReadOnlyList<string> ExplicitActivityIds { get; }
         public string PolicyMetadata { get; }
         public string Source { get; }
         public string Reason { get; }
-        public bool IsValid => Identity.IsValid && ActorInstanceId.IsValid && HasValidExplicitActivities() && !string.IsNullOrWhiteSpace(Source);
+        public bool IsValid => Identity.IsValid && ActorInstanceRuntimeId.IsValid && HasValidExplicitActivities() && !string.IsNullOrWhiteSpace(Source);
 
         private bool HasValidExplicitActivities()
         {

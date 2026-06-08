@@ -79,14 +79,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 string stableActorId = resolvedIdentity.ActorId.ToString();
-                ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
+                ActorInstanceRuntimeId actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                     identity,
                     stableActorId,
                     actorScope,
                     actorScopeDiscriminator: actorScope.ToString());
+                if (!actorInstanceRuntimeId.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"PlayerActorInstanceSource generated invalid actor instance runtime identity playerActorId='{resolvedIdentity.PlayerActorId}' actorId='{stableActorId}' actorScope='{actorScope}'.");
+                }
+
+                runtimeActor.SetRuntimeActorInstanceId(actorInstanceRuntimeId);
                 ActorInstanceRecord instance = new(
                     identity,
-                    actorInstanceId,
+                    actorInstanceRuntimeId,
                     runtimeActor.ActorDefinitionRef,
                     stableActorId,
                     ActorKind.Player,
@@ -110,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 actorInstances.Add(instance);
                 actorParticipations.Add(new ActorParticipationRecord(
                     identity,
-                    actorInstanceId,
+                    actorInstanceRuntimeId,
                     participatesInCurrentEntry: true,
                     policy: participationPolicy,
                     explicitActivityIds: Array.Empty<string>(),

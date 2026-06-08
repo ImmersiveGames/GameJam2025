@@ -158,7 +158,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 throw new InvalidOperationException("ActorParticipationCommand is invalid.");
             }
 
-            Dictionary<ActorInstanceId, ActorInstanceRecord> instancesById = BuildActorInstanceIndex(command.InventoryFeed.ActorInstances);
+            Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> instancesByRuntimeId = BuildActorInstanceIndex(command.InventoryFeed.ActorInstances);
             List<ActorParticipationActorResult> actorResults = new();
             int total = 0;
             int entered = 0;
@@ -174,7 +174,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                if (!instancesById.TryGetValue(participation.ActorInstanceId, out ActorInstanceRecord instance) || !instance.IsValid)
+                if (!instancesByRuntimeId.TryGetValue(participation.ActorInstanceRuntimeId, out ActorInstanceRecord instance) || !instance.IsValid)
                 {
                     continue;
                 }
@@ -237,12 +237,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 command.Reason);
         }
 
-        private static Dictionary<ActorInstanceId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
+        private static Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
         {
-            Dictionary<ActorInstanceId, ActorInstanceRecord> byId = new();
+            Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> byRuntimeId = new();
             if (instances == null)
             {
-                return byId;
+                return byRuntimeId;
             }
 
             for (int index = 0; index < instances.Count; index++)
@@ -253,10 +253,10 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                byId[instance.ActorInstanceId] = instance;
+                byRuntimeId[instance.ActorInstanceRuntimeId] = instance;
             }
 
-            return byId;
+            return byRuntimeId;
         }
 
         private static bool IsEligibleFromPolicy(

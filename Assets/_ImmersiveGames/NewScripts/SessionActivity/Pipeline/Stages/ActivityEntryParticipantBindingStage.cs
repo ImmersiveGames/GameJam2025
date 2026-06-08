@@ -1109,20 +1109,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"player_actor_runtime_identity_missing_after_{operation}: participantId='{participantId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' reason='runtime_actor_missing'.");
             }
 
-            ActorInstanceId runtimeActorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
+            ActorInstanceRuntimeId actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                 identity,
                 runtimeActor.ActorId,
                 runtimeActor.ActorScopeMetadata,
                 runtimeActor.ActorScopeMetadata.ToString());
-            if (!runtimeActorInstanceId.IsValid)
+            if (!actorInstanceRuntimeId.IsValid)
             {
                 throw new InvalidOperationException(
-                    $"player_actor_runtime_identity_missing_after_{operation}: participantId='{participantId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' reason='runtime_actor_instance_id_invalid'.");
+                    $"player_actor_runtime_identity_missing_after_{operation}: participantId='{participantId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' reason='runtime_actor_instance_runtime_id_invalid'.");
             }
 
-            runtimeActor.SetRuntimeActorInstanceId(runtimeActorInstanceId);
+            runtimeActor.SetRuntimeActorInstanceId(actorInstanceRuntimeId);
             if (!runtimeActor.RuntimeActorInstanceId.IsValid ||
-                !string.Equals(runtimeActor.RuntimeActorInstanceId.Value, runtimeActorInstanceId.Value, StringComparison.Ordinal))
+                runtimeActor.RuntimeActorInstanceId != actorInstanceRuntimeId)
             {
                 throw new InvalidOperationException(
                     $"player_actor_runtime_identity_missing_after_{operation}: participantId='{participantId}' activityId='{identity.ActivityId}' entrySequence='{identity.EntrySequence}' reason='runtime_actor_instance_id_not_bound'.");
@@ -1358,7 +1358,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return new ActorResetActorRef(
                 identity,
                 new ActorId(runtimeActor.ActorId),
-                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value),
+                runtimeActor.RuntimeActorInstanceId,
                 ActorKind.Player,
                 observedIdentity.PlayerActorId,
                 observedIdentity.PlayerSlotId);
@@ -1400,7 +1400,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             return new ActorResetActorRef(
                 identity,
                 new ActorId(runtimeActor.ActorId),
-                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value),
+                runtimeActor.RuntimeActorInstanceId,
                 ActorKind.Player,
                 observedIdentity.PlayerActorId,
                 observedIdentity.PlayerSlotId);

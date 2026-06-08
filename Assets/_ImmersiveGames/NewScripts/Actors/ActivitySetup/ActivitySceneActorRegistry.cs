@@ -13,8 +13,8 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
     /// </summary>
     public sealed class ActivitySceneActorRegistry
     {
-        private readonly Dictionary<ActorInstanceId, SceneAuthoredActorRuntimeEntry> _activeByActorInstanceId = new();
-        private readonly Dictionary<string, ActorInstanceId> _activeActorInstanceIdByActorId = new(StringComparer.Ordinal);
+        private readonly Dictionary<ActorInstanceRuntimeId, SceneAuthoredActorRuntimeEntry> _activeByActorInstanceRuntimeId = new();
+        private readonly Dictionary<string, ActorInstanceRuntimeId> _activeActorInstanceRuntimeIdByActorId = new(StringComparer.Ordinal);
         private SessionActivityIdentity _activeScopeIdentity;
 
         public void BeginActivityScope(SessionActivityIdentity identity)
@@ -25,14 +25,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             }
 
             _activeScopeIdentity = identity;
-            _activeByActorInstanceId.Clear();
-            _activeActorInstanceIdByActorId.Clear();
+            _activeByActorInstanceRuntimeId.Clear();
+            _activeActorInstanceRuntimeIdByActorId.Clear();
         }
 
         public void ClearAllRouteRetained()
         {
-            _activeByActorInstanceId.Clear();
-            _activeActorInstanceIdByActorId.Clear();
+            _activeByActorInstanceRuntimeId.Clear();
+            _activeActorInstanceRuntimeIdByActorId.Clear();
             _activeScopeIdentity = default;
         }
 
@@ -58,21 +58,21 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 throw new InvalidOperationException("Actor scene registration generated invalid runtime entry.");
             }
 
-            if (_activeByActorInstanceId.ContainsKey(identity.ActorInstanceId) ||
-                _activeActorInstanceIdByActorId.ContainsKey(identity.ActorId))
+            if (_activeByActorInstanceRuntimeId.ContainsKey(identity.ActorInstanceRuntimeId) ||
+                _activeActorInstanceRuntimeIdByActorId.ContainsKey(identity.ActorId))
             {
-                throw new InvalidOperationException($"Duplicate Actor discovered in same entry across sources/scopes. actorId='{identity.ActorId}' actorInstanceId='{identity.ActorInstanceId}'.");
+                throw new InvalidOperationException($"Duplicate Actor discovered in same entry across sources/scopes. actorId='{identity.ActorId}' actorInstanceRuntimeId='{identity.ActorInstanceRuntimeId}'.");
             }
 
-            _activeByActorInstanceId.Add(identity.ActorInstanceId, entry);
-            _activeActorInstanceIdByActorId.Add(identity.ActorId, identity.ActorInstanceId);
+            _activeByActorInstanceRuntimeId.Add(identity.ActorInstanceRuntimeId, entry);
+            _activeActorInstanceRuntimeIdByActorId.Add(identity.ActorId, identity.ActorInstanceRuntimeId);
         }
 
         public IReadOnlyList<SceneAuthoredActorRuntimeEntry> GetActiveEntries(SessionActivityIdentity identity)
         {
             EnsureScopeOrFail(identity);
-            List<SceneAuthoredActorRuntimeEntry> entries = new(_activeByActorInstanceId.Count);
-            foreach (KeyValuePair<ActorInstanceId, SceneAuthoredActorRuntimeEntry> pair in _activeByActorInstanceId)
+            List<SceneAuthoredActorRuntimeEntry> entries = new(_activeByActorInstanceRuntimeId.Count);
+            foreach (KeyValuePair<ActorInstanceRuntimeId, SceneAuthoredActorRuntimeEntry> pair in _activeByActorInstanceRuntimeId)
             {
                 entries.Add(pair.Value);
             }

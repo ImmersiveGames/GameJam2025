@@ -52,7 +52,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 if (surface == null)
                 {
                     throw new InvalidOperationException(
-                        $"ActivityCapabilityPermissionScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
+                        $"ActivityCapabilityPermissionScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}'.");
                 }
 
                 IActorMovementEndpoint movementEndpoint = surface.ActorMovementEndpoint;
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(movementComponent.transform)
                         : string.Empty;
                     Debug.LogWarning(
-                        $"[OBS][ActivityCapabilityPermissionScanner] event='PermissionTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' capabilityKind='{ActivityCapabilityKind.PermissionTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
+                        $"[OBS][ActivityCapabilityPermissionScanner] event='PermissionTargetIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' capabilityKind='{ActivityCapabilityKind.PermissionTarget}' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 

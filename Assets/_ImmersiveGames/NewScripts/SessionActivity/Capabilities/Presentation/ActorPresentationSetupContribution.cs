@@ -13,7 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
         public ActorPresentationSetupContribution(
             SessionActivityIdentity identity,
             ActorId actorId,
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorKind actorKind,
             ActorRole actorRole,
             ActorScope actorScope,
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation
 
         public SessionActivityIdentity Identity { get; }
         public ActorId ActorId { get; }
-        public ActorInstanceId ActorInstanceRuntimeId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorKind ActorKind { get; }
         public ActorRole ActorRole { get; }
         public ActorScope ActorScope { get; }

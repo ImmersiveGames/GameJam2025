@@ -28,7 +28,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera
             contribution = new ActorCameraBindingContribution(
                 identity,
                 new ActorId(target.ActorId),
-                new ActorInstanceRuntimeId(target.ActorInstanceId.Value),
+                target.ActorInstanceRuntimeId,
                 target.ActorKind,
                 target.ActorRole,
                 target.ActorScope,

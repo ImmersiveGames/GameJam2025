@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes
             contribution = new ActorAttributeSetupContribution(
                 identity,
                 new ActorId(target.ActorId),
-                target.ActorInstanceId,
+                target.ActorInstanceRuntimeId,
                 target.ActorKind,
                 target.ActorRole,
                 target.ActorScope,

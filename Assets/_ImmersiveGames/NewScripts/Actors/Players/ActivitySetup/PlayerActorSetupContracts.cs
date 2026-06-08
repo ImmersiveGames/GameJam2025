@@ -79,7 +79,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     return default;
                 }
 
-                return new ActorInstanceRuntimeId(Actor.RuntimeActorInstanceId.Value);
+                return Actor.RuntimeActorInstanceId;
             }
         }
         public ActorCapabilitySurface CapabilitySurface => Actor?.CapabilitySurface;

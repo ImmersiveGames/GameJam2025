@@ -1,4 +1,5 @@
 using System;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.Actors.Foundation
 {
@@ -25,6 +26,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
     public readonly struct ActorInstanceRuntimeId : IEquatable<ActorInstanceRuntimeId>
     {
+        private const string RuntimeActorTypeDiscriminator = "Actor";
+
         public ActorInstanceRuntimeId(string value)
         {
             Value = Normalize(value);
@@ -40,6 +43,36 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
 
         public static bool operator ==(ActorInstanceRuntimeId left, ActorInstanceRuntimeId right) => left.Equals(right);
         public static bool operator !=(ActorInstanceRuntimeId left, ActorInstanceRuntimeId right) => !left.Equals(right);
+
+        public static ActorInstanceRuntimeId FromScopedRuntimeActorIdentity(
+            SessionActivityIdentity identity,
+            string actorId,
+            ActorScope actorScope,
+            string actorScopeDiscriminator)
+        {
+            if (!identity.IsValid)
+            {
+                return default;
+            }
+
+            string normalizedActorId = Normalize(actorId);
+            string normalizedScopeDiscriminator = Normalize(actorScopeDiscriminator);
+            if (string.IsNullOrWhiteSpace(normalizedActorId))
+            {
+                return default;
+            }
+
+            return actorScope switch
+            {
+                ActorScope.SessionScoped => new ActorInstanceRuntimeId(
+                    $"{identity.PipelineId}|{identity.SessionId}|session|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                ActorScope.RouteScoped => new ActorInstanceRuntimeId(
+                    $"{identity.PipelineId}|{identity.SessionId}|route|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                ActorScope.ActivityScoped => new ActorInstanceRuntimeId(
+                    $"{identity.PipelineId}|{identity.SessionId}|{identity.ActivityId}|{identity.EntrySequence}|{RuntimeActorTypeDiscriminator}|{normalizedActorId}|{normalizedScopeDiscriminator}"),
+                _ => default,
+            };
+        }
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

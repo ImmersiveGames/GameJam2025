@@ -107,7 +107,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             if (!runtimeActor.RuntimeActorInstanceId.IsValid ||
-                new ActorInstanceRuntimeId(runtimeActor.RuntimeActorInstanceId.Value) != actor.ActorInstanceRuntimeId ||
+                runtimeActor.RuntimeActorInstanceId != actor.ActorInstanceRuntimeId ||
                 new ActorId(runtimeActor.ActorId) != actor.ActorId)
             {
                 throw new InvalidOperationException(

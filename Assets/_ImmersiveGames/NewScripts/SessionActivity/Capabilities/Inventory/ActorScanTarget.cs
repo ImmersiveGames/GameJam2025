@@ -7,7 +7,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     public readonly struct ActorScanTarget
     {
         public ActorScanTarget(
-            ActorInstanceId actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorDefinitionRef actorDefinitionRef,
             string actorId,
             ActorKind actorKind,
@@ -22,7 +22,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             string componentBasePath,
             string source)
         {
-            ActorInstanceId = actorInstanceId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorDefinitionRef = actorDefinitionRef;
             ActorId = Normalize(actorId);
             ActorKind = actorKind;
@@ -38,7 +38,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Source = Normalize(source);
         }
 
-        public ActorInstanceId ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorDefinitionRef ActorDefinitionRef { get; }
         public string ActorId { get; }
         public ActorKind ActorKind { get; }
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         public string Source { get; }
 
         public bool IsValid =>
-            ActorInstanceId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(ActorId) &&
             ActorKind != ActorKind.Unknown &&
             ActorRole != ActorRole.Unknown &&
@@ -71,8 +71,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return false;
             }
 
+            ActorInstanceRuntimeId runtimeActorInstanceId = instance.ActorInstanceRuntimeId;
+            if (!runtimeActorInstanceId.IsValid)
+            {
+                return false;
+            }
+
             target = new ActorScanTarget(
-                instance.ActorInstanceId,
+                runtimeActorInstanceId,
                 instance.DefinitionRef,
                 instance.ActorId,
                 instance.Kind,

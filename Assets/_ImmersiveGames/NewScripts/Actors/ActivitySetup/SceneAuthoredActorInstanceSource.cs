@@ -63,9 +63,11 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 string stableActorId = !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
                     ? runtimeActor.ActorId
                     : actorIdentity.ActorId;
+                ActorInstanceRuntimeId actorInstanceRuntimeId = actorIdentity.ActorInstanceRuntimeId;
+                runtimeActor.SetRuntimeActorInstanceId(actorInstanceRuntimeId);
                 ActorInstanceRecord instance = new(
                     identity,
-                    actorIdentity.ActorInstanceId,
+                    actorInstanceRuntimeId,
                     runtimeActor.ActorDefinitionRef,
                     stableActorId,
                     ActorKind.Actor,
@@ -89,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                 actorInstances.Add(instance);
                 actorParticipations.Add(new ActorParticipationRecord(
                     identity,
-                    actorIdentity.ActorInstanceId,
+                    actorInstanceRuntimeId,
                     participatesInCurrentEntry: true,
                     policy: actorIdentity.ParticipationPolicy,
                     explicitActivityIds: actorIdentity.ParticipationPolicy == ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds

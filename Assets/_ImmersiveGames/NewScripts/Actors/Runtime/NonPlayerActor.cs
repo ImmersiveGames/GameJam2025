@@ -16,7 +16,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         [SerializeField] private List<ActivityAsset> participatingActivities = new();
 
         public override ActorId ActorIdValue => new(Normalize(actorId));
-        public override ActorRole ActorRoleMetadata => ActorRole.SceneAuthoredNonPlayer;
+        public override ActorRole ActorRoleMetadata => ActorRole.SceneActor;
         public override ActorScope ActorScopeMetadata => actorScope;
         public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => participationPolicy;
         public ActorScope SceneActorScope => ActorScopeMetadata;

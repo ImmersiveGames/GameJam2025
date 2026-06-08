@@ -19,7 +19,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
     {
         public SceneAuthoredActorIdentityRecord(
             SessionActivityIdentity identity,
-            ActorInstanceId actorInstanceId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             string actorId,
             ActorRole actorRole,
             ActorScope actorScope,
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             string actorType)
         {
             Identity = identity;
-            ActorInstanceId = actorInstanceId;
+            ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ActorId = Normalize(actorId);
             ActorRole = actorRole;
             ActorScope = actorScope;
@@ -42,7 +42,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         }
 
         public SessionActivityIdentity Identity { get; }
-        public ActorInstanceId ActorInstanceId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public string ActorId { get; }
         public ActorRole ActorRole { get; }
         public ActorScope ActorScope { get; }
@@ -54,7 +54,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
 
         public bool IsValid =>
             Identity.IsValid &&
-            ActorInstanceId.IsValid &&
+            ActorInstanceRuntimeId.IsValid &&
             !string.IsNullOrWhiteSpace(ActorId) &&
             ActorRole != ActorRole.Unknown &&
             ActorScope != ActorScope.Unknown &&
@@ -102,8 +102,9 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         }
 
         public SceneAuthoredActorIdentityRecord ActorIdentity { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId => ActorIdentity.ActorInstanceRuntimeId;
         public Actor Actor { get; }
         public GameObject ActorInstance { get; }
-        public bool IsValid => ActorIdentity.IsValid && Actor != null && ActorInstance != null;
+        public bool IsValid => ActorIdentity.IsValid && ActorInstanceRuntimeId.IsValid && Actor != null && ActorInstance != null;
     }
 }

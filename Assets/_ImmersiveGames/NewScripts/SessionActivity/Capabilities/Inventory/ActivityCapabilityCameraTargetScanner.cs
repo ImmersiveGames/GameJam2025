@@ -47,7 +47,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 if (surface == null)
                 {
                     throw new InvalidOperationException(
-                        $"ActivityCapabilityCameraTargetScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
+                        $"ActivityCapabilityCameraTargetScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}'.");
                 }
 
                 IActorCameraTargetEndpoint endpoint = surface.ActorCameraTargetEndpoint;
@@ -63,7 +63,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                         : string.Empty;
                     Debug.LogWarning(
-                        $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraBindingContributionIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceId.Value}' bindingKind='CameraBindingContribution' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
+                        $"[OBS][ActivityCapabilityCameraTargetScanner] event='CameraBindingContributionIdentityUnresolved' reason='player_identity_missing' actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}' bindingKind='CameraBindingContribution' componentPath='{unresolvedComponentPath}' source='{context.Source}' activityId='{context.Identity.ActivityId}' entrySequence='{context.Identity.EntrySequence}'.");
                     continue;
                 }
 

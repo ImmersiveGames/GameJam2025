@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes
         public ActorAttributeSetupContribution(
             SessionActivityIdentity identity,
             ActorId actorId,
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorKind actorKind,
             ActorRole actorRole,
             ActorScope actorScope,
@@ -43,7 +43,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes
         public string ActivityId => Identity.ActivityId;
         public int EntrySequence => Identity.EntrySequence;
         public ActorId ActorId { get; }
-        public ActorInstanceId ActorInstanceRuntimeId { get; }
+        public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorKind ActorKind { get; }
         public ActorRole ActorRole { get; }
         public ActorScope ActorScope { get; }

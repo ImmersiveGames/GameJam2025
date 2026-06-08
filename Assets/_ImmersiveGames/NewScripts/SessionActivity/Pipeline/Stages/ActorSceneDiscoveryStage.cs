@@ -113,20 +113,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                     string actorId = Normalize(actor.ActorId);
                     string actorType = nameof(Actor);
-                    ActorInstanceId actorInstanceId = ActorInstanceId.FromScopedRuntimeActorIdentity(
+                    ActorInstanceRuntimeId actorInstanceRuntimeId = ActorInstanceRuntimeId.FromScopedRuntimeActorIdentity(
                         identity,
                         actorId,
                         sceneAuthoredActor.SceneActorScope,
                         sceneAuthoredActor.SceneActorScope.ToString());
-                    if (!actorInstanceId.IsValid)
+                    if (!actorInstanceRuntimeId.IsValid)
                     {
                         throw new InvalidOperationException(
-                            $"ActorSceneDiscovery generated invalid actor instance identity actorId='{actorId}' actorType='{actorType}' actorScope='{sceneAuthoredActor.SceneActorScope}'.");
+                            $"ActorSceneDiscovery generated invalid actor instance runtime identity actorId='{actorId}' actorType='{actorType}' actorScope='{sceneAuthoredActor.SceneActorScope}'.");
                     }
+
+                    actor.SetRuntimeActorInstanceId(actorInstanceRuntimeId);
 
                     SceneAuthoredActorIdentityRecord resolvedIdentity = new(
                         identity,
-                        actorInstanceId,
+                        actorInstanceRuntimeId,
                         actorId,
                         actor.ActorRoleMetadata,
                         sceneAuthoredActor.SceneActorScope,

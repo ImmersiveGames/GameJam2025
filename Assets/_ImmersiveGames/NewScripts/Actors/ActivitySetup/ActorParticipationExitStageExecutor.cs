@@ -128,14 +128,14 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
     {
         public ActorParticipationExitResult Execute(
             ActorParticipationExitCommand command,
-            IReadOnlyCollection<ActorInstanceId> activeParticipationActorIds)
+            IReadOnlyCollection<ActorInstanceRuntimeId> activeParticipationActorIds)
         {
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("ActorParticipationExitCommand is invalid.");
             }
 
-            Dictionary<ActorInstanceId, ActorInstanceRecord> instancesById = BuildActorInstanceIndex(command.InventoryFeed.ActorInstances);
+            Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> instancesByRuntimeId = BuildActorInstanceIndex(command.InventoryFeed.ActorInstances);
             List<ActorParticipationExitActorResult> actorResults = new();
             int total = 0;
             int exited = 0;
@@ -151,7 +151,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                if (!instancesById.TryGetValue(participation.ActorInstanceId, out ActorInstanceRecord instance) || !instance.IsValid)
+                if (!instancesByRuntimeId.TryGetValue(participation.ActorInstanceRuntimeId, out ActorInstanceRecord instance) || !instance.IsValid)
                 {
                     continue;
                 }
@@ -171,7 +171,22 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                if (!ContainsActorInstanceId(activeParticipationActorIds, instance.ActorInstanceId))
+                ActorInstanceRuntimeId runtimeActorInstanceId = instance.ActorInstanceRuntimeId;
+                if (!runtimeActorInstanceId.IsValid)
+                {
+                    skipped += 1;
+                    actorResults.Add(new ActorParticipationExitActorResult(
+                        ActorParticipationExitActorOutcome.Skipped,
+                        instance,
+                        participation,
+                        default,
+                        default,
+                        "actor_instance_runtime_id_invalid",
+                        "runtime_id"));
+                    continue;
+                }
+
+                if (!ContainsActorInstanceRuntimeId(activeParticipationActorIds, runtimeActorInstanceId))
                 {
                     skipped += 1;
                     actorResults.Add(new ActorParticipationExitActorResult(
@@ -264,12 +279,12 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             return true;
         }
 
-        private static Dictionary<ActorInstanceId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
+        private static Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> BuildActorInstanceIndex(IReadOnlyList<ActorInstanceRecord> instances)
         {
-            Dictionary<ActorInstanceId, ActorInstanceRecord> byId = new();
+            Dictionary<ActorInstanceRuntimeId, ActorInstanceRecord> byRuntimeId = new();
             if (instances == null)
             {
-                return byId;
+                return byRuntimeId;
             }
 
             for (int index = 0; index < instances.Count; index++)
@@ -280,10 +295,10 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     continue;
                 }
 
-                byId[instance.ActorInstanceId] = instance;
+                byRuntimeId[instance.ActorInstanceRuntimeId] = instance;
             }
 
-            return byId;
+            return byRuntimeId;
         }
 
         private static bool IsEligibleFromPolicy(
@@ -330,18 +345,18 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
             }
         }
 
-        private static bool ContainsActorInstanceId(
-            IReadOnlyCollection<ActorInstanceId> activeParticipationActorIds,
-            ActorInstanceId actorInstanceId)
+        private static bool ContainsActorInstanceRuntimeId(
+            IReadOnlyCollection<ActorInstanceRuntimeId> activeParticipationActorIds,
+            ActorInstanceRuntimeId actorInstanceRuntimeId)
         {
-            if (activeParticipationActorIds == null || !actorInstanceId.IsValid)
+            if (activeParticipationActorIds == null || !actorInstanceRuntimeId.IsValid)
             {
                 return false;
             }
 
-            foreach (ActorInstanceId current in activeParticipationActorIds)
+            foreach (ActorInstanceRuntimeId current in activeParticipationActorIds)
             {
-                if (current == actorInstanceId)
+                if (current == actorInstanceRuntimeId)
                 {
                     return true;
                 }

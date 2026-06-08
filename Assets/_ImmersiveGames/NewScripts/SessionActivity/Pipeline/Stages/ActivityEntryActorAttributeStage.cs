@@ -108,7 +108,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         throw new InvalidOperationException($"[FATAL][ActivityEntryActorAttributeStage][ActorAttributeSetup] Missing ActorAttributeProfileAsset actorId='{attributeContribution.ActorId}' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}'.");
                     }
 
-                    if (!attributeEndpoint.TryInitialize(new ActorInstanceRuntimeId(attributeContribution.ActorInstanceRuntimeId.Value), startedIdentity, out ActorAttributeSetupResult setupResult))
+                    if (!attributeEndpoint.TryInitialize(attributeContribution.ActorInstanceRuntimeId, startedIdentity, out ActorAttributeSetupResult setupResult))
                     {
                         failedCount += 1;
                         SessionActivityIdentity failedIdentity = BuildIdentity(command, SessionActivityStage.ActorAttributeSetupFailed);

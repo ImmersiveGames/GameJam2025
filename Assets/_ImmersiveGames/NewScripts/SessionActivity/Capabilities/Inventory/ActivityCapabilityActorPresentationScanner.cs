@@ -62,7 +62,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 if (target.CapabilitySurface == null)
                 {
                     throw new InvalidOperationException(
-                        $"ActivityCapabilityActorPresentationScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceId='{target.ActorInstanceId.Value}'.");
+                        $"ActivityCapabilityActorPresentationScanner requires ActorCapabilitySurface actorId='{target.ActorId}' actorInstanceRuntimeId='{target.ActorInstanceRuntimeId.Value}'.");
                 }
 
                 ActorPresentationEndpoint endpoint = target.CapabilitySurface.PresentationEndpoint;

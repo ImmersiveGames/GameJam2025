@@ -180,7 +180,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 throw new InvalidOperationException("PlayerActorCommandInputHub.Bind found invalid ActorId on actor root.");
             }
 
-            _actorInstanceRuntimeId = new ActorInstanceRuntimeId(actor.RuntimeActorInstanceId.Value);
+            _actorInstanceRuntimeId = actor.RuntimeActorInstanceId;
             if (!_actorInstanceRuntimeId.IsValid)
             {
                 throw new InvalidOperationException("PlayerActorCommandInputHub.Bind requires valid ActorInstanceRuntimeId on actor root.");

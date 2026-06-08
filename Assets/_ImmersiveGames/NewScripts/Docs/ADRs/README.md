@@ -2,7 +2,7 @@
 
 Este diretório contém os ADRs vivos da Base 1.2 — Actors Convergence / Convergência de Atores.
 
-Fonte normativa anterior: Base 1.1 já concluída.  
+Fonte normativa anterior: Base 1.1 já concluída.
 Base 1.2 não substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
 
 ---
@@ -381,3 +381,13 @@ Status: CLOSED / PASS funcional + PASS arquitetural parcial.
 - `ActivityObjectSnapshotCapture`, `ActivityObjectRelease` e `ActivityObjectContributorUnregister` voltaram a consumir `test_object_01` em `activity_01`.
 - `activity_02` continua no-content explícito, com zero targets e sem fallback.
 - `RouteActivitySave` permanece em watchlist para payload útil quando o save-on-exit ocorrer após activity com snapshot capturado.
+  ACTOR-COMP-3D — Actor runtime identity cleanup
+  Status: CLOSED / PASS funcional + PASS arquitetural.
+
+### Checkpoint ActorInstanceRuntimeId tornou-se a identity runtime canônica para instâncias de Actor.
+ActorInstanceId foi removido do runtime ativo.
+A cadeia Actor/IActor, feed records, scan targets, scene-authored registry,
+runtime states, command hub, permission e ObjectEmission passou a usar ActorInstanceRuntimeId.
+Não houve factory inversa, compat alias, trilho paralelo, mudança de lifecycle,
+scope, reentry, release ou retain.
+Smoke preservou RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu.

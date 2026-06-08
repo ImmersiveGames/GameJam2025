@@ -1345,13 +1345,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityEntryActorPresentationRuntimeBridge
     {
         bool TryGetActiveActorPresentationHandle(
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             out ActorPresentationRuntimeHandle handle);
         void ReleaseActorPresentationBeforeRematerialization(
             SessionActivityIdentity identity,
             string source,
             string reason,
-            ActorInstanceId actorInstanceRuntimeId,
+            ActorInstanceRuntimeId actorInstanceRuntimeId,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);
     }

@@ -332,7 +332,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool HasScenes => Scenes != null && Scenes.Count > 0;
-        public bool IsExplicitNoContent => ActivityContentMode == global::_ImmersiveGames.NewScripts.SessionActivity.Contracts.ActivityContentMode.None;
+        public bool IsExplicitNoContent => ActivityContentMode == ActivityContentMode.None;
 
         public bool IsValid
         {
@@ -353,12 +353,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
                     return false;
                 }
 
-                if (ActivityContentMode == global::_ImmersiveGames.NewScripts.SessionActivity.Contracts.ActivityContentMode.None)
+                if (ActivityContentMode == ActivityContentMode.None)
                 {
                     return string.IsNullOrWhiteSpace(ActivityContentProfileId) && !HasScenes;
                 }
 
-                if (ActivityContentMode != global::_ImmersiveGames.NewScripts.SessionActivity.Contracts.ActivityContentMode.Profile)
+                if (ActivityContentMode != ActivityContentMode.Profile)
                 {
                     return false;
                 }
