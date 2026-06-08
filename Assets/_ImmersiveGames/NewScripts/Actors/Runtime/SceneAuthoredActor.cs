@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     [DisallowMultipleComponent]
-    public sealed class NonPlayerActor : Actor, ISceneAuthoredActor
+    public sealed class SceneAuthoredActor : Actor, ISceneAuthoredActor
     {
         [SerializeField] private string actorId = string.Empty;
         [SerializeField] private ActorScope actorScope = ActorScope.Unknown;
@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         private IReadOnlyList<string> ResolveParticipatingActivityIdsOrFail(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
-                ? $"{nameof(NonPlayerActor)}:{name}"
+                ? $"SceneActor:{name}"
                 : source.Trim();
 
             if (ActorParticipationPolicy != ActorParticipationRecord.ActorParticipationPolicy.ExplicitActivityIds)
@@ -80,7 +80,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public override void ValidateLocalConfigurationOrThrow(string source)
         {
             string origin = string.IsNullOrWhiteSpace(source)
-                ? $"{nameof(NonPlayerActor)}:{name}"
+                ? $"SceneActor:{name}"
                 : source.Trim();
 
             if (string.IsNullOrWhiteSpace(ActorId))

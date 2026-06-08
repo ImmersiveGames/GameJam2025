@@ -3,6 +3,7 @@ using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
 {
@@ -14,7 +15,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
         [SerializeField] private SessionActivityHost host;
 
         [Header("Command Target")]
-        [SerializeField] private string actorId = "npc.generic.01";
+        [FormerlySerializedAs("nonPlayerActorId")]
+        [FormerlySerializedAs("actorId")]
+        [SerializeField] private string sceneActorId = "scene.actor.generic.01";
         [SerializeField] private ActorAttributeDefinitionAsset attributeDefinition;
 
         [Header("Command Values")]
@@ -30,7 +33,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
                 return;
             }
 
-            RequireHost().QaSubtractActorAttribute(actorId, attributeId, subtractAmount);
+            RequireHost().QaSubtractActorAttribute(sceneActorId, attributeId, subtractAmount);
         }
 
         [ContextMenu("QA/Add Attribute")]
@@ -41,7 +44,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
                 return;
             }
 
-            RequireHost().QaAddActorAttribute(actorId, attributeId, addAmount);
+            RequireHost().QaAddActorAttribute(sceneActorId, attributeId, addAmount);
         }
 
         [ContextMenu("QA/Set Attribute")]
@@ -52,7 +55,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
                 return;
             }
 
-            RequireHost().QaSetActorAttribute(actorId, attributeId, setValue);
+            RequireHost().QaSetActorAttribute(sceneActorId, attributeId, setValue);
         }
 
         [ContextMenu("QA/Reset Attribute To Initial")]
@@ -63,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
                 return;
             }
 
-            RequireHost().QaResetActorAttributeToInitial(actorId, attributeId);
+            RequireHost().QaResetActorAttributeToInitial(sceneActorId, attributeId);
         }
 
         [ContextMenu("QA/Restore Attribute To Max")]
@@ -74,7 +77,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
                 return;
             }
 
-            RequireHost().QaRestoreActorAttributeToMax(actorId, attributeId);
+            RequireHost().QaRestoreActorAttributeToMax(sceneActorId, attributeId);
         }
 
         private bool TryResolveAttributeIdOrLog(out string attributeId)
@@ -82,19 +85,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.QA
             attributeId = string.Empty;
             if (attributeDefinition == null)
             {
-                Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition is required. actorId='{Normalize(actorId)}'.");
+                Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition is required. actorId='{Normalize(sceneActorId)}'.");
                 return false;
             }
 
             ActorAttributeId runtimeId = ActorAttributeId.FromDefinition(attributeDefinition);
             if (!runtimeId.IsValid)
             {
-                Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{Normalize(actorId)}'.");
+                Debug.LogError($"[FATAL][ActorAttributeRuntimeCommandQaProbe] attributeDefinition has invalid attributeId. definition='{attributeDefinition.name}' actorId='{Normalize(sceneActorId)}'.");
                 return false;
             }
 
             attributeId = runtimeId.ToString();
-            Debug.Log($"[OBS][ActorAttributeRuntimeCommandQaProbe] attributeDefinitionResolved definition='{attributeDefinition.name}' attributeId='{attributeId}' actorId='{Normalize(actorId)}'.");
+            Debug.Log($"[OBS][ActorAttributeRuntimeCommandQaProbe] attributeDefinitionResolved definition='{attributeDefinition.name}' attributeId='{attributeId}' actorId='{Normalize(sceneActorId)}'.");
             return true;
         }
 

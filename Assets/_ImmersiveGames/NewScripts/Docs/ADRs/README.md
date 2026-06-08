@@ -391,3 +391,21 @@ runtime states, command hub, permission e ObjectEmission passou a usar ActorInst
 Não houve factory inversa, compat alias, trilho paralelo, mudança de lifecycle,
 scope, reentry, release ou retain.
 Smoke preservou RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackToMenu.
+  ACTOR-COMP-3D â€” Actor runtime identity cleanup â€” CLOSED / PASS funcional + PASS arquitetural.
+  ACTOR-COMP-4 â€” Actor role/archetype + specialization boundary â€” CLOSED / PASS funcional + PASS arquitetural.
+---
+
+## ACTOR-COMP-4 fechamento
+
+- `ACTOR-COMP-4` está `CLOSED / PASS funcional + PASS arquitetural`.
+- `ACTOR-COMP-4B` removeu o bridge de `PlayerMovementPermissionReceiverProvider` e limpou labels `non_player`.
+- `ACTOR-COMP-4C` confirmou no-op; sem resíduos ativos de `NonPlayer` além da classe antiga naquele momento.
+- `ACTOR-COMP-4D` concluiu que `NonPlayerActor` era marcador Unity serializado sem comportamento runtime próprio.
+- `ACTOR-COMP-4E` criou `SceneAuthoredActor`, migrou prefabs e removeu `NonPlayerActor`.
+- `ACTOR-COMP-4F` migrou `nonPlayerActorId` para `sceneActorId` com `[FormerlySerializedAs]` por preservação técnica de serialization Unity.
+- `ACTOR-COMP-4G` renomeou `ActorDefinitionKind.NPC` para `ActorDefinitionKind.SceneActor`, preservando o valor numérico.
+- `ACTOR-COMP-5A` fechou a fronteira Spawnable/Projectile como composition boundary.
+- `ACTOR-COMP-5B` abriu a fronteira de lifecycle/reset para spawnable Actors.
+- `ACTOR-COMP-5C` foi documentado como shape passivo de Spawnable Actor, sem runtime wiring.
+- Resíduos não bloqueantes continuam como authoring naming debt / asset naming debt: `NPC_Generic.prefab`, `NPC_Route_Generic.prefab`, `actor.presentation.npc.*`, `npc.attribute.*`, `npc.generic.01`, `npc.route.generic.01`, `ActorPresentationProfile_NpcGenerico*` e `NpcAttribute*`.
+- Resumo: Spawnables de gameplay são Actors; Reset padrão de spawnable pooled é `ReturnToOriginPool`; pool é adapter técnico, não owner de lifecycle/policy.

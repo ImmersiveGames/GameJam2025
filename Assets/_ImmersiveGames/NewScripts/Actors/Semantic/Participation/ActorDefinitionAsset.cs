@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
     {
         Unknown = 0,
         Player = 1,
-        NPC = 2,
+        SceneActor = 2,
         Object = 3,
     }
 

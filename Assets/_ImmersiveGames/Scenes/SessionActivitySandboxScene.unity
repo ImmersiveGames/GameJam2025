@@ -589,7 +589,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   host: {fileID: 300000}
-  nonPlayerActorId: npc.generic.01
+  sceneActorId: npc.generic.01
   attributeDefinition: {fileID: 11400000, guid: b101e7a7894cc9c4d8535ace53589d2b, type: 2}
   addAmount: 5
   subtractAmount: 10

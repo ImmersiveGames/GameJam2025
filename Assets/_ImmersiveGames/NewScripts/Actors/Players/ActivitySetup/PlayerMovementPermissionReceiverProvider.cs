@@ -9,7 +9,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
     public sealed class PlayerMovementPermissionReceiverProvider : IActivityPermissionReceiverProvider
     {
         private readonly IActorMovementEndpoint _movementEndpoint;
-        private readonly IActivityCapabilityPermissionReceiver _existingReceiver;
         private readonly string _receiverId;
         private readonly ActorId _actorId;
         private readonly ActorInstanceRuntimeId _actorInstanceRuntimeId;
@@ -23,32 +22,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             PlayerActorId playerActorId,
             PlayerSlotId playerSlotId)
-            : this(movementEndpoint, null, receiverId, actorId, actorInstanceRuntimeId, playerActorId, playerSlotId)
-        {
-        }
-
-        public PlayerMovementPermissionReceiverProvider(
-            IActivityCapabilityPermissionReceiver existingReceiver,
-            string receiverId,
-            ActorId actorId,
-            ActorInstanceRuntimeId actorInstanceRuntimeId,
-            PlayerActorId playerActorId,
-            PlayerSlotId playerSlotId)
-            : this(null, existingReceiver, receiverId, actorId, actorInstanceRuntimeId, playerActorId, playerSlotId)
-        {
-        }
-
-        private PlayerMovementPermissionReceiverProvider(
-            IActorMovementEndpoint movementEndpoint,
-            IActivityCapabilityPermissionReceiver existingReceiver,
-            string receiverId,
-            ActorId actorId,
-            ActorInstanceRuntimeId actorInstanceRuntimeId,
-            PlayerActorId playerActorId,
-            PlayerSlotId playerSlotId)
         {
             _movementEndpoint = movementEndpoint;
-            _existingReceiver = existingReceiver;
             _receiverId = string.IsNullOrWhiteSpace(receiverId) ? "movement.permission.receiver" : receiverId.Trim();
             _actorId = actorId;
             _actorInstanceRuntimeId = actorInstanceRuntimeId;
@@ -60,12 +35,6 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
         public bool TryCreateReceiver(out IActivityCapabilityPermissionReceiver receiver)
         {
-            if (_existingReceiver != null)
-            {
-                receiver = _existingReceiver;
-                return true;
-            }
-
             if (_movementEndpoint == null)
             {
                 receiver = null;

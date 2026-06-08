@@ -45,7 +45,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1574379559858498907}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1b6f71a4c8e4d38b73a2d9c46a2f0a1, type: 3}
+  m_Script: {fileID: 11500000, guid: 27e7ee15b05442c8b26840eb681d6274, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   actorId: npc.generic.01

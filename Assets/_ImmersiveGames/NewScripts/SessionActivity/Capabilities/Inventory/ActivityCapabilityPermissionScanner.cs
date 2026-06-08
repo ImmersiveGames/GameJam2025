@@ -114,7 +114,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         movementEndpoint as Component,
                         movementEndpoint,
                         null,
-                        surface.ActorPermissionReceiver,
                         receiverKind: "movement",
                         source: context.Source,
                         reason: context.Reason);
@@ -133,7 +132,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         objectEmitterEndpoint as Component,
                         null,
                         objectEmitterEndpoint,
-                        null,
                         receiverKind: "object_emission",
                         source: context.Source,
                         reason: context.Reason);
@@ -185,7 +183,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             Component endpointComponent,
             IActorMovementEndpoint movementEndpoint,
             IActorObjectEmitterEndpoint objectEmitterEndpoint,
-            IActivityCapabilityPermissionReceiver existingReceiver,
             string receiverKind,
             string source,
             string reason)
@@ -211,21 +208,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 : ActorObjectEmissionPermissionReceiver.CreateReceiverId(receiverIdentity);
 
             IActivityPermissionReceiverProvider receiverProvider = receiverKind == "movement"
-                ? existingReceiver != null
-                    ? new PlayerMovementPermissionReceiverProvider(
-                        existingReceiver,
-                        receiverId,
-                        playerIdentity.ActorId,
-                        playerIdentity.ActorInstanceRuntimeId,
-                        playerIdentity.PlayerActorId,
-                        playerIdentity.PlayerSlotId)
-                    : new PlayerMovementPermissionReceiverProvider(
-                        movementEndpoint,
-                        receiverId,
-                        playerIdentity.ActorId,
-                        playerIdentity.ActorInstanceRuntimeId,
-                        playerIdentity.PlayerActorId,
-                        playerIdentity.PlayerSlotId)
+                ? new PlayerMovementPermissionReceiverProvider(
+                    movementEndpoint,
+                    receiverId,
+                    playerIdentity.ActorId,
+                    playerIdentity.ActorInstanceRuntimeId,
+                    playerIdentity.PlayerActorId,
+                    playerIdentity.PlayerSlotId)
                 : new ActorObjectEmissionPermissionReceiverProvider(
                     objectEmitterEndpoint,
                     receiverId,

@@ -1,4 +1,4 @@
-# ADR-2.0-0005 — ActorCommandHub, Actor Projectile Capability, Projectile Pooling e Pooled SFX
+﻿# ADR-2.0-0005 â€” ActorCommandHub, Actor Projectile Capability, Projectile Pooling e Pooled SFX
 
 > Historical note: the ObjectEmission MVP closure is recorded in `ADR-2.0-0002`. This ADR remains the historical command-hub boundary for the FirePrimary command path and does not reopen inventory or gate ownership.
 
@@ -7,9 +7,9 @@
 Aceito / congelado.  
 ADR conceitual fechado e primeiro corte runtime `ACT-CMD-1A` validado por smoke manual.
 
-`ACT-CMD-1A` está `CLOSED / PASS funcional + PASS arquitetural parcial`.
+`ACT-CMD-1A` estÃ¡ `CLOSED / PASS funcional + PASS arquitetural parcial`.
 
-Este ADR fecha a decisão arquitetural inicial para:
+Este ADR fecha a decisÃ£o arquitetural inicial para:
 
 ```text
 Actor command input/command sources
@@ -18,15 +18,15 @@ Projectile pooling
 Pooled projectile SFX
 ```
 
-A primeira implementação runtime autorizada por este ADR deve começar pelo novo shape de command/input do Actor, antes da habilidade de projéteis.
+A primeira implementaÃ§Ã£o runtime autorizada por este ADR deve comeÃ§ar pelo novo shape de command/input do Actor, antes da habilidade de projÃ©teis.
 
 ---
 
-## Checkpoint ACT-CMD-1A — PlayerActorCommandInputHub para Movement
+## Checkpoint ACT-CMD-1A â€” PlayerActorCommandInputHub para Movement
 
 ### Status
 
-`ACT-CMD-1A` está `CLOSED / PASS funcional + PASS arquitetural parcial`.
+`ACT-CMD-1A` estÃ¡ `CLOSED / PASS funcional + PASS arquitetural parcial`.
 
 Este checkpoint fecha o primeiro corte runtime do ADR-0005. O objetivo foi substituir o reader estreito de movimento por um hub local de comandos do Actor, usando Movement como primeira capability validada.
 
@@ -41,24 +41,24 @@ Movement passou a receber comando/intent via ActorCommandEnvelope.
 PlayerMovementController permaneceu endpoint concreto de Movement.
 MovementBindingAdapter passou a bindar PlayerActorCommandInputHub + PlayerMovementController.
 PlayerMovementControlAdapter deixou de depender do reader antigo como gate.
-ActivityEntryPipeline permaneceu owner de preparação/binding.
+ActivityEntryPipeline permaneceu owner de preparaÃ§Ã£o/binding.
 PermissionRuntime + PlayerMovementPermissionReceiver permaneceram owners do gate Allowed/Blocked/Unbound.
 ```
 
-### Escopo explicitamente não alterado
+### Escopo explicitamente nÃ£o alterado
 
 ```text
-Projectile não foi implementado.
-Pooling não foi alterado.
-AudioRuntime não foi alterado.
-Dash, Interact, AI, Behavior, Contact e Timer não foram implementados.
-Runtime rebinding UI não foi implementado.
-EventBus global não foi usado para comandos locais.
-UnityEvent não foi usado como bind, callback, debug ou ponte.
-SessionActivityPipeline não ganhou lógica nova de input/movement.
+Projectile nÃ£o foi implementado.
+Pooling nÃ£o foi alterado.
+AudioRuntime nÃ£o foi alterado.
+Dash, Interact, AI, Behavior, Contact e Timer nÃ£o foram implementados.
+Runtime rebinding UI nÃ£o foi implementado.
+EventBus global nÃ£o foi usado para comandos locais.
+UnityEvent nÃ£o foi usado como bind, callback, debug ou ponte.
+SessionActivityPipeline nÃ£o ganhou lÃ³gica nova de input/movement.
 ```
 
-### Evidência de smoke
+### EvidÃªncia de smoke
 
 Smoke manual completo validou o fluxo:
 
@@ -88,7 +88,7 @@ Activity01ToActivity02 checkpointStatus='Passed'
 RouteExitBackToMenu checkpointStatus='Passed'
 ```
 
-Evidência específica do novo shape:
+EvidÃªncia especÃ­fica do novo shape:
 
 ```text
 activity_01:
@@ -102,21 +102,21 @@ activity_02 no-content:
 Permission gate:
   Blocked durante setup/readiness
   Allowed ao entrar em ActivityRunning
-  Unbound/Blocked nos caminhos de saída conforme lifecycle
+  Unbound/Blocked nos caminhos de saÃ­da conforme lifecycle
 ```
 
 ### Regra congelada pelo smoke
 
 ```text
-ActivityContent None não significa Actor None.
-Activity no-content não pode remover capability de Actor persistente.
+ActivityContent None nÃ£o significa Actor None.
+Activity no-content nÃ£o pode remover capability de Actor persistente.
 Cada ActivityEntry deve revalidar/bindar o Actor persistente contra o contexto atual.
-Movement não pode depender da existência de content scene própria da Activity.
+Movement nÃ£o pode depender da existÃªncia de content scene prÃ³pria da Activity.
 ```
 
-### Observação aceita
+### ObservaÃ§Ã£o aceita
 
-`activity_02` reexecutou `PlayerMovementBound` em vez de emitir `MovementBindingRetained`. Isso é aceitável neste corte porque o owner correto é a entry atual: o Actor `SessionScoped` persiste, mas o binding/permission são revalidados por ActivityEntry.
+`activity_02` reexecutou `PlayerMovementBound` em vez de emitir `MovementBindingRetained`. Isso Ã© aceitÃ¡vel neste corte porque o owner correto Ã© a entry atual: o Actor `SessionScoped` persiste, mas o binding/permission sÃ£o revalidados por ActivityEntry.
 
 O que permanece proibido:
 
@@ -125,12 +125,12 @@ activity_02 pular movement por ser no-content;
 hub decidir enable/disable sozinho;
 retornar ao PlayerMoveInputReader;
 criar fallback silencioso para input antigo;
-comparar identidades de domínios diferentes como equivalentes.
+comparar identidades de domÃ­nios diferentes como equivalentes.
 ```
 
-### Conclusão arquitetural
+### ConclusÃ£o arquitetural
 
-O corte confirma que o hub local de comandos pode substituir o reader específico de movement sem criar novo pipeline, sem EventBus global, sem UnityEvent e sem deslocar o gate de permission.
+O corte confirma que o hub local de comandos pode substituir o reader especÃ­fico de movement sem criar novo pipeline, sem EventBus global, sem UnityEvent e sem deslocar o gate de permission.
 
 O caminho runtime validado passa a ser:
 
@@ -142,11 +142,11 @@ PlayerInput
 -> PlayerMovementPermissionReceiver / PermissionRuntime como gate
 ```
 
-O próximo corte pode avançar para preparar `FirePrimary` no mesmo modelo de command hub antes de implementar a capability de projéteis.
+O prÃ³ximo corte pode avanÃ§ar para preparar `FirePrimary` no mesmo modelo de command hub antes de implementar a capability de projÃ©teis.
 
 ---
 
-## Área
+## Ãrea
 
 ```text
 Actors
@@ -166,10 +166,10 @@ AudioRuntime
 Este ADR complementa:
 
 ```text
-ADR-1.2-0008 — Actor Typing, ActorCapabilitySurface e Actor Inventory Convergence
-ADR-2.0-0002 — SessionActivity Ownership Decomposition e ActivityEntryPipeline
-ADR-2.0-0003 — PlayerParticipation, PlayerSlot, PlayerSelection, SessionParticipation e ActorMaterialization Boundary
-ADR-2.0-0004 — SA-IDREF Typed Runtime References e PlayerActor Runtime Identity
+ADR-1.2-0008 â€” Actor Typing, ActorCapabilitySurface e Actor Inventory Convergence
+ADR-2.0-0002 â€” SessionActivity Ownership Decomposition e ActivityEntryPipeline
+ADR-2.0-0003 â€” PlayerParticipation, PlayerSlot, PlayerSelection, SessionParticipation e ActorMaterialization Boundary
+ADR-2.0-0004 â€” SA-IDREF Typed Runtime References e PlayerActor Runtime Identity
 ```
 
 Em caso de conflito na Base 2.0, este ADR prevalece para:
@@ -186,13 +186,13 @@ pooled SFX de disparo
 
 ## Contexto
 
-A próxima habilidade planejada para `Actors` é a capacidade de disparar projéteis.
+A prÃ³xima habilidade planejada para `Actors` Ã© a capacidade de disparar projÃ©teis.
 
-A intenção funcional é:
+A intenÃ§Ã£o funcional Ã©:
 
 ```text
-Actors podem disparar projéteis.
-A capacidade de disparar é comum ao Actor.
+Actors podem disparar projÃ©teis.
+A capacidade de disparar Ã© comum ao Actor.
 A fonte que gera o comando varia por Actor/contexto.
 ```
 
@@ -208,7 +208,7 @@ Scripted event
 QA/debug
 ```
 
-O shape atual de Movement expôs uma limitação: `PlayerMoveInputReader` é estreito demais. Ele representa apenas um comando de movimento do player e induz a criação futura de leitores separados por capacidade:
+O shape atual de Movement expÃ´s uma limitaÃ§Ã£o: `PlayerMoveInputReader` Ã© estreito demais. Ele representa apenas um comando de movimento do player e induz a criaÃ§Ã£o futura de leitores separados por capacidade:
 
 ```text
 PlayerMoveInputReader
@@ -217,13 +217,13 @@ PlayerInteractInputReader
 PlayerDashInputReader
 ```
 
-Esse caminho é incorreto para a Base 2.0. Ele espalha leitura de input por componentes isolados, dificulta rebinding runtime, dificulta validação de capabilities obrigatórias e cria acoplamento local entre input e controllers concretos.
+Esse caminho Ã© incorreto para a Base 2.0. Ele espalha leitura de input por componentes isolados, dificulta rebinding runtime, dificulta validaÃ§Ã£o de capabilities obrigatÃ³rias e cria acoplamento local entre input e controllers concretos.
 
-A decisão deste ADR é criar um shape de command source local ao Actor antes de implementar projéteis.
+A decisÃ£o deste ADR Ã© criar um shape de command source local ao Actor antes de implementar projÃ©teis.
 
 ---
 
-## Decisão central
+## DecisÃ£o central
 
 ### 1. Actor command source hub
 
@@ -237,7 +237,7 @@ PlayerActorCommandInputHub
 ActorCommandSourceHub
 ```
 
-A nomenclatura final pode variar na implementação, mas a categoria arquitetural não muda:
+A nomenclatura final pode variar na implementaÃ§Ã£o, mas a categoria arquitetural nÃ£o muda:
 
 ```text
 Hub local de fontes de comando do Actor.
@@ -250,31 +250,31 @@ ler fontes de comando locais;
 mapear fonte para ActorCommandId;
 montar ActorCommandEnvelope tipado;
 despachar para command dispatcher local;
-expor estado técnico de enable/disable quando comandado;
-registrar debug interno quando necessário.
+expor estado tÃ©cnico de enable/disable quando comandado;
+registrar debug interno quando necessÃ¡rio.
 ```
 
-O hub não executa gameplay.
+O hub nÃ£o executa gameplay.
 
 Proibido ao hub:
 
 ```text
-spawnar projéteis;
-tocar áudio;
+spawnar projÃ©teis;
+tocar Ã¡udio;
 gerenciar pool;
 aplicar cooldown;
 aplicar dano;
 decidir lifecycle de Activity;
 decidir permission como owner final;
-executar side-effects técnicos de capability;
+executar side-effects tÃ©cnicos de capability;
 chamar EventBus global para comandos frame a frame.
 ```
 
 ---
 
-### 2. Command source é separado de capability
+### 2. Command source Ã© separado de capability
 
-A capacidade e o comando são conceitos diferentes.
+A capacidade e o comando sÃ£o conceitos diferentes.
 
 ```text
 ActorProjectileEmitterEndpoint = capacidade local de disparar.
@@ -288,7 +288,7 @@ Regra normativa:
 A fonte do comando nunca define a arquitetura da capability.
 ```
 
-Portanto, é proibido criar rails como:
+Portanto, Ã© proibido criar rails como:
 
 ```text
 PlayerShoot
@@ -298,7 +298,7 @@ AIProjectilePipeline
 PlayerProjectilePipeline
 ```
 
-O correto é:
+O correto Ã©:
 
 ```text
 ActorProjectileFireCapability
@@ -309,11 +309,11 @@ IActorProjectileFireCommandSource
 
 ---
 
-### 3. Binding canônico é declarativo, tipado e validável
+### 3. Binding canÃ´nico Ã© declarativo, tipado e validÃ¡vel
 
-O bind entre fonte de comando e endpoint/capability não deve usar `UnityEvent`.
+O bind entre fonte de comando e endpoint/capability nÃ£o deve usar `UnityEvent`.
 
-O bind canônico deve ser declarado por dados tipados:
+O bind canÃ´nico deve ser declarado por dados tipados:
 
 ```text
 Source -> ActorCommandId -> CommandKind/CommandPayload -> TargetCapability -> Endpoint
@@ -339,71 +339,71 @@ PlayerInput.Move
 -> IActorMovementEndpoint
 ```
 
-Critério:
+CritÃ©rio:
 
 ```text
-ActivityEntryPipeline/scanners conseguem validar se endpoint obrigatório existe.
-Ausência obrigatória falha explicitamente.
-Ausência opcional gera skip explícito.
+ActivityEntryPipeline/scanners conseguem validar se endpoint obrigatÃ³rio existe.
+AusÃªncia obrigatÃ³ria falha explicitamente.
+AusÃªncia opcional gera skip explÃ­cito.
 ```
 
 ---
 
-### 4. UnityEvents são proibidos neste shape
+### 4. UnityEvents sÃ£o proibidos neste shape
 
-Decisão final deste ADR:
+DecisÃ£o final deste ADR:
 
 ```text
-UnityEvent não é permitido como bind canônico.
-UnityEvent não é permitido como callback auxiliar do ActorCommandHub.
-UnityEvent não é permitido como callback auxiliar de Projectile capability.
-UnityEvent não é permitido como ponte para pooling, áudio, VFX, gameplay ou debug.
+UnityEvent nÃ£o Ã© permitido como bind canÃ´nico.
+UnityEvent nÃ£o Ã© permitido como callback auxiliar do ActorCommandHub.
+UnityEvent nÃ£o Ã© permitido como callback auxiliar de Projectile capability.
+UnityEvent nÃ£o Ã© permitido como ponte para pooling, Ã¡udio, VFX, gameplay ou debug.
 ```
 
 Motivo:
 
 ```text
-O benefício de authoring visual não compensa a perda de contrato, validação, rastreabilidade e clareza de ownership.
-Debug interno, facts/logs e tooling futuro são suficientes para observabilidade.
+O benefÃ­cio de authoring visual nÃ£o compensa a perda de contrato, validaÃ§Ã£o, rastreabilidade e clareza de ownership.
+Debug interno, facts/logs e tooling futuro sÃ£o suficientes para observabilidade.
 ```
 
-Se futuramente existir tooling visual, ele deve editar dados tipados, não armazenar callbacks `UnityEvent` como contrato runtime.
+Se futuramente existir tooling visual, ele deve editar dados tipados, nÃ£o armazenar callbacks `UnityEvent` como contrato runtime.
 
 ---
 
-### 5. ActivityEntryPipeline prepara; não executa comandos
+### 5. ActivityEntryPipeline prepara; nÃ£o executa comandos
 
-`ActivityEntryPipeline` é owner de setup/readiness por entry.
+`ActivityEntryPipeline` Ã© owner de setup/readiness por entry.
 
 Ele pode:
 
 ```text
 descobrir ActorCommandHub;
-validar command bindings obrigatórios;
+validar command bindings obrigatÃ³rios;
 validar endpoints/capabilities requeridos;
 preparar permission targets;
 registrar facts de readiness;
-falhar se contrato obrigatório estiver ausente.
+falhar se contrato obrigatÃ³rio estiver ausente.
 ```
 
-Ele não pode:
+Ele nÃ£o pode:
 
 ```text
 executar disparo;
 ler input frame a frame;
 chamar PoolService diretamente para tiro;
-tocar áudio de tiro;
+tocar Ã¡udio de tiro;
 aplicar cooldown;
 executar IA/Behavior.
 ```
 
-`SessionActivityPipeline` permanece owner de lifecycle macro e não executa ação fina de comando/capability.
+`SessionActivityPipeline` permanece owner de lifecycle macro e nÃ£o executa aÃ§Ã£o fina de comando/capability.
 
 ---
 
-### 6. Projectile fire é ActorCapability
+### 6. Projectile fire Ã© ActorCapability
 
-Disparo de projétil deve ser modelado como capability local do Actor:
+Disparo de projÃ©til deve ser modelado como capability local do Actor:
 
 ```text
 ActorProjectileFireCapability
@@ -425,19 +425,19 @@ comandar projectile audio adapter;
 registrar result/debug interno.
 ```
 
-O endpoint não decide lifecycle global.
+O endpoint nÃ£o decide lifecycle global.
 
 ---
 
-### 7. Projectiles usam Pool System canônico
+### 7. Projectiles usam Pool System canÃ´nico [historical backend shape; superseded by ACTOR-COMP-5A/5B]
 
-Projéteis devem ser runtime objects pooled.
+No shape histÃ³rico deste ADR, projÃ©teis eram runtime objects pooled.
 
 Proibido:
 
 ```text
 criar PoolManager novo;
-instanciar/destruir projétil por disparo no caminho canônico;
+instanciar/destruir projÃ©til por disparo no caminho canÃ´nico;
 colocar pool ownership no ActorCommandHub;
 colocar pool ownership no SessionActivityPipeline;
 colocar pool ownership no Projectile runtime object.
@@ -452,28 +452,28 @@ ActorProjectileSpawnAdapter usa IPoolService;
 ProjectileRuntimeObject retorna ao pool por impact/lifetime/release.
 ```
 
-Interpretação de “cada Actor terá seu pool”:
+InterpretaÃ§Ã£o de â€œcada Actor terÃ¡ seu poolâ€:
 
 ```text
-Cada Actor pode possuir um ou vários projectile pool bindings.
-O serviço técnico de pool continua canônico/global.
-O Actor decide qual binding/pool definition usar; não cria um pool service paralelo.
+Cada Actor pode possuir um ou vÃ¡rios projectile pool bindings.
+O serviÃ§o tÃ©cnico de pool continua canÃ´nico/global.
+O Actor decide qual binding/pool definition usar; nÃ£o cria um pool service paralelo.
 ```
 
 ---
 
-### 8. Áudio de disparo usa AudioRuntime com pooled SFX
+### 8. Ãudio de disparo usa AudioRuntime com pooled SFX
 
-Disparos podem ser rápidos. O áudio deve acompanhar isso por pooled SFX.
+Disparos podem ser rÃ¡pidos. O Ã¡udio deve acompanhar isso por pooled SFX.
 
 Proibido:
 
 ```text
-AudioSource.PlayClipAtPoint no caminho canônico;
+AudioSource.PlayClipAtPoint no caminho canÃ´nico;
 Instantiate/Destroy de AudioSource por disparo;
-audio pool próprio dentro da habilidade de projétil;
-UnityEvent chamando áudio;
-hub tocando áudio diretamente.
+audio pool prÃ³prio dentro da habilidade de projÃ©til;
+UnityEvent chamando Ã¡udio;
+hub tocando Ã¡udio diretamente.
 ```
 
 Permitido:
@@ -482,68 +482,74 @@ Permitido:
 ProjectileFireModeProfile referencia AudioSfxCueAsset;
 ActorProjectileAudioAdapter solicita playback ao AudioRuntime/IGlobalAudioService;
 AudioRuntime executa com AudioSfxExecutionMode.PooledOneShot quando configurado;
-voice pooling permanece propriedade técnica do AudioRuntime.
+voice pooling permanece propriedade tÃ©cnica do AudioRuntime.
 ```
 
-O endpoint/capability apenas solicita áudio por cue/context. O AudioRuntime decide execução técnica.
+O endpoint/capability apenas solicita Ã¡udio por cue/context. O AudioRuntime decide execuÃ§Ã£o tÃ©cnica.
 
 ---
 
-### 9. Projectiles não são Actors no primeiro shape
+### 9. Projectiles nÃ£o sÃ£o Actors no primeiro shape (historical shape; superseded by ACTOR-COMP-5A/5B)
 
-No primeiro desenho de projectile fire, o projétil deve ser um runtime object pooled, não um `Actor` completo.
-
-Motivo:
+Este trecho preserva a decisÃ£o histÃ³rica do shape ACT-CMD/ACT-PROJ anterior.
+A decisÃ£o vigente Ã©:
 
 ```text
-projétil é objeto transitório;
+spawnables de gameplay sÃ£o Actors;
+projectile gameplay futuro deve ser Actor composition;
+objeto pooled pode existir apenas como detalhe tÃ©cnico de adapter.
+```
+
+Motivo histÃ³rico:
+
+```text
+projÃ©til Ã© objeto transitÃ³rio;
 possui motion/collision/lifetime/impact;
-não precisa, por padrão, de participation, presentation complexa, attributes, save ou lifecycle de Actor.
+nÃ£o precisava, naquele shape inicial, de participation, presentation complexa, attributes, save ou lifecycle de Actor.
 ```
 
-Um projétil só deve virar Actor futuramente se houver necessidade concreta de:
+Um projÃ©til sÃ³ deve virar Actor futuramente se houver necessidade concreta de:
 
 ```text
-ActorCapabilitySurface própria;
-ActorAttributes próprios;
-ActorParticipation própria;
+ActorCapabilitySurface prÃ³pria;
+ActorAttributes prÃ³prios;
+ActorParticipation prÃ³pria;
 ActorPresentation complexa;
-Save/snapshot próprio;
-comandos próprios;
-reset próprio como Actor.
+Save/snapshot prÃ³prio;
+comandos prÃ³prios;
+reset prÃ³prio como Actor.
 ```
-
 ---
 
-## Funcionalidades legadas tratadas como intenção
+## Funcionalidades legadas tratadas como intenÃ§Ã£o
 
-Os arquivos legados `ProjectilesSystems.zip` e `Shooting.zip` são referência de intenção funcional, não de arquitetura.
+Os arquivos legados `ProjectilesSystems.zip` e `Shooting.zip` sÃ£o referÃªncia de intenÃ§Ã£o funcional, nÃ£o de arquitetura.
 
-### Intenções aceitas no novo modelo
+### IntenÃ§Ãµes aceitas no novo modelo
 
-| Intenção legada | Novo modelo |
+| IntenÃ§Ã£o legada | Novo modelo |
 |---|---|
-| Velocidade de projétil | `ProjectileMotionProfile` / `ProjectileFireModeProfile`. |
-| Projétil pooled | `ProjectileRuntimeObject` via `IPoolService`. |
+| Velocidade de projÃ©til | `ProjectileMotionProfile` / `ProjectileFireModeProfile`. |
+| ProjÃ©til pooled | `ProjectileRuntimeObject` via `IPoolService`. |
 | Movimento por Rigidbody | `ProjectilePhysicsMotionRuntime`. |
 | Trigger/collision impact | `ProjectileImpactRuntime` / `ProjectileCollisionProfile`. |
-| Layer mask de colisão | `ProjectileCollisionProfile`. |
-| Disparo único | `ProjectileSpawnPattern.Single`. |
-| Disparo múltiplo linear | `ProjectileSpawnPattern.LinearBurst`. |
+| Layer mask de colisÃ£o | `ProjectileCollisionProfile`. |
+| Disparo Ãºnico | `ProjectileSpawnPattern.Single`. |
+| Disparo mÃºltiplo linear | `ProjectileSpawnPattern.LinearBurst`. |
 | Disparo circular/radial | `ProjectileSpawnPattern.RadialArc`. |
 | Fuzzy/random spread | `ProjectileSpreadPolicy`. |
 | Cooldown | `ActorProjectileFireState` / `ProjectileFireRatePolicy`. |
 | Input action Fire | `PlayerActorCommandInputHub` source binding. |
-| Áudio por modo/skin | `ProjectileFireModeProfile` + `AudioSfxCueAsset` / future presentation binding. |
+| Ãudio por modo/skin | `ProjectileFireModeProfile` + `AudioSfxCueAsset` / future presentation binding. |
 | Reset/rebind de estado | `ActorReset` / capability reset futuro. |
 
-### Intenções aceitas, mas fora do primeiro runtime cut
+### IntenÃ§Ãµes aceitas, mas fora do primeiro runtime cut
 
-| Intenção | Motivo |
+| IntenÃ§Ã£o | Motivo |
 |---|---|
-| Damage completo | Deve virar `DamageCapability`/damage ADR próprio se ainda não existir shape canônico. |
-| Skin/presentation complexa do projétil | Pode virar `ProjectilePresentationProfile` depois. |
-| Determinismo completo de spread | Seed/policy deve ser prevista, mas só será endurecida quando necessário. |
+| Damage completo | Deve virar `DamageCapability`/damage ADR prÃ³prio se ainda nÃ£o existir shape canÃ´nico. |
+| Skin/presentation complexa do projÃ©til | Pode virar `ProjectilePresentationProfile` depois. |
+| Determinismo completo de spread | Seed/policy deve ser prevista, mas sÃ³ serÃ¡ endurecida quando necessÃ¡rio. |
 | Runtime editor visual de bindings | O ADR prepara dados tipados; UI/tooling vem depois. |
 
 ### Shapes legados rejeitados
@@ -552,7 +558,7 @@ Os arquivos legados `ProjectilesSystems.zip` e `Shooting.zip` são referência d
 PlayerShootController como owner central de input, cooldown, pool, spawn, audio e reset;
 PoolManager.Instance;
 DependencyManager.Provider.InjectDependencies(this) em capability local;
-SkinSystem legado como dependência ativa;
+SkinSystem legado como dependÃªncia ativa;
 IResetInterfaces legado como contrato de reset;
 UnityEvent como substituto de contrato tipado;
 input reader separado por capability.
@@ -714,7 +720,7 @@ RadialArc
 Spread/Fuzzy variation
 ```
 
-A decisão é não criar um v0 artificial para substituir depois. O primeiro corte de projectile runtime deve nascer com o shape de fire modes e patterns previsto, ainda que parte das policies comece simples internamente.
+A decisÃ£o Ã© nÃ£o criar um v0 artificial para substituir depois. O primeiro corte de projectile runtime deve nascer com o shape de fire modes e patterns previsto, ainda que parte das policies comece simples internamente.
 
 ---
 
@@ -730,7 +736,7 @@ A decisão é não criar um v0 artificial para substituir depois. O primeiro cor
 | Capability execution | Endpoint local da capability. |
 | Projectile fire execution | `IActorProjectileEmitterEndpoint`. |
 | Projectile spawn side-effect | `ActorProjectileSpawnAdapter` + `IPoolService`. |
-| Projectile runtime motion/collision/lifetime | Projectile runtime object pooled. |
+| Projectile runtime motion/collision/lifetime | Projectile runtime object pooled como detalhe tÃ©cnico transitÃ³rio; o lifetime final de spawnable Actor deve vir de policy/capability/state explÃ­cito. |
 | Pooled SFX | `AudioRuntime` / `IGlobalAudioService`. |
 | Activity setup/readiness | `ActivityEntryPipeline` + stages. |
 | Macro lifecycle | `SessionActivityPipeline`. |
@@ -739,7 +745,7 @@ A decisão é não criar um v0 artificial para substituir depois. O primeiro cor
 
 ---
 
-## Proibições
+## ProibiÃ§Ãµes
 
 Proibido:
 
@@ -749,7 +755,7 @@ UnityEvent em Projectile capability;
 UnityEvent como callback auxiliar;
 UnityEvent como bind de comando;
 UnityEvent para pooling/audio/debug;
-reader MonoBehaviour por ação/capability;
+reader MonoBehaviour por aÃ§Ã£o/capability;
 PlayerShootInputReader;
 EnemyShootInputReader;
 hub chamando PoolService diretamente;
@@ -763,14 +769,14 @@ SendMessage/reflection como dispatch;
 PoolManager paralelo;
 Audio pool paralelo;
 ScriptableObject autoral inteiro dentro de command runtime;
-fallback silencioso quando endpoint obrigatório falta.
+fallback silencioso quando endpoint obrigatÃ³rio falta.
 ```
 
 ---
 
 ## Plano normativo
 
-### ACT-CMD-0 — ADR ActorCommandHub + Projectile Capability
+### ACT-CMD-0 â€” ADR ActorCommandHub + Projectile Capability
 
 Status deste documento:
 
@@ -781,10 +787,10 @@ CLOSED / DOCUMENTATION ONLY
 Objetivo:
 
 ```text
-Congelar command source hub e proibir UnityEvents antes da implementação.
+Congelar command source hub e proibir UnityEvents antes da implementaÃ§Ã£o.
 ```
 
-### ACT-CMD-1 — Auditoria do input/movement atual
+### ACT-CMD-1 â€” Auditoria do input/movement atual
 
 Status:
 
@@ -798,18 +804,18 @@ Objetivo:
 Auditar PlayerMoveInputReader, PlayerMovementController, MovementBindingAdapter, PlayerMovementControlAdapter e PlayerInputBinding path.
 ```
 
-Saída esperada:
+SaÃ­da esperada:
 
 ```text
-onde Movement lê input;
-onde PlayerMoveInputReader é resolvido;
+onde Movement lÃª input;
+onde PlayerMoveInputReader Ã© resolvido;
 quem habilita/desabilita movimento;
 quais contracts precisam virar command hub;
-risco de regressão em Activity01ToActivity02;
+risco de regressÃ£o em Activity01ToActivity02;
 plano pequeno para trocar Movement primeiro.
 ```
 
-### ACT-CMD-1A — PlayerActorCommandInputHub para Movement
+### ACT-CMD-1A â€” PlayerActorCommandInputHub para Movement
 
 Status:
 
@@ -833,7 +839,7 @@ PlayerActorCommandInputHub;
 Move command binding;
 Movement endpoint/sink consumindo command/intent;
 MovementBindingAdapter procurando o hub novo;
-PlayerMoveInputReader removido ou tornado inacessível no caminho ativo.
+PlayerMoveInputReader removido ou tornado inacessÃ­vel no caminho ativo.
 ```
 
 Fora do escopo:
@@ -847,7 +853,7 @@ AI real;
 runtime rebinding UI.
 ```
 
-Smoke obrigatório:
+Smoke obrigatÃ³rio:
 
 ```text
 Boot -> Menu -> Sandbox
@@ -862,7 +868,7 @@ sem route_transition_failed
 sem foreign/stale indevido
 ```
 
-### ACT-CMD-1B — FirePrimary command binding readiness
+### ACT-CMD-1B â€” FirePrimary command binding readiness
 
 Objetivo:
 
@@ -875,7 +881,7 @@ Escopo:
 ```text
 ActorCommandId.FirePrimary;
 command binding tipado para FirePrimary;
-validação de capability target requerida/opcional;
+validaÃ§Ã£o de capability target requerida/opcional;
 sem UnityEvent;
 sem Pool;
 sem Audio;
@@ -883,25 +889,25 @@ sem Projectile runtime;
 sem reader novo por capability.
 ```
 
-### ACT-PROJ-0 — Projectile capability contracts + authoring
+### ACT-PROJ-0 â€” Projectile capability contracts + authoring
 
 Objetivo:
 
 ```text
-Criar contratos/profile passivos de Projectile capability já com fire modes, pool binding, spawn patterns e audio cue.
+Criar contratos/profile passivos de Projectile capability jÃ¡ com fire modes, pool binding, spawn patterns e audio cue.
 ```
 
 Sem runtime ativo ainda.
 
-### ACT-PROJ-1 — Projectile runtime first cut completo do shape previsto
+### ACT-PROJ-1 â€” Projectile runtime first cut completo do shape previsto [HISTORICAL / SUPERSEDED BY ACTOR-COMP-5A/5B]
 
-Objetivo:
+Objetivo histÃ³rico do shape anterior:
 
 ```text
 Implementar projectile fire usando ActorCommandHub e IActorProjectileEmitterEndpoint.
 ```
 
-Escopo mínimo deste primeiro runtime cut de projectile:
+Escopo mÃ­nimo histÃ³rico deste primeiro runtime cut de projectile:
 
 ```text
 FirePrimary command binding;
@@ -915,15 +921,15 @@ Projectile cooldown local;
 ProjectileSpawnAdapter via IPoolService;
 ProjectileRuntimeObject pooled;
 Projectile lifetime/return-to-pool;
-Projectile collision/impact básico;
+Projectile collision/impact bÃ¡sico;
 Projectile fire SFX via AudioRuntime pooled cue.
 ```
 
-Não fazer:
+NÃ£o fazer (histÃ³rico do shape anterior):
 
 ```text
 Damage capability completa;
-projétil como Actor;
+projÃ©til como Actor;
 runtime editor de input;
 AI real;
 VFX/presentation complexa;
@@ -931,27 +937,28 @@ pooling paralelo;
 audio pooling paralelo.
 ```
 
+A decisÃ£o vigente foi consolidada em ACTOR-COMP-5A/5B: spawnables de gameplay sÃ£o Actors; projectile gameplay futuro deve ser Actor composition; objeto pooled pode existir apenas como detalhe tÃ©cnico de adapter.
+
 ---
+## CritÃ©rios de aceite arquitetural
 
-## Critérios de aceite arquitetural
-
-Um corte desta frente só pode ser aceito quando:
+Um corte desta frente sÃ³ pode ser aceito quando:
 
 ```text
-ActorCommandHub não usa UnityEvent;
-ActorCommandHub não executa capability;
-ActorCommandHub não acessa PoolService;
-ActorCommandHub não acessa AudioRuntime;
-command binding é tipado e validável;
-ActivityEntryPipeline valida readiness, mas não executa ação fina;
-ProjectileFire é ActorCapability;
-Projectile spawn usa Pool System canônico;
-Projectile audio usa AudioRuntime canônico;
-Player input é apenas command source;
+ActorCommandHub nÃ£o usa UnityEvent;
+ActorCommandHub nÃ£o executa capability;
+ActorCommandHub nÃ£o acessa PoolService;
+ActorCommandHub nÃ£o acessa AudioRuntime;
+command binding Ã© tipado e validÃ¡vel;
+ActivityEntryPipeline valida readiness, mas nÃ£o executa aÃ§Ã£o fina;
+ProjectileFire Ã© ActorCapability;
+Projectile spawn usa Pool System canÃ´nico;
+Projectile audio usa AudioRuntime canÃ´nico;
+Player input Ã© apenas command source;
 AI/Behavior/Timer/Contact podem gerar o mesmo command sem novo rail;
-Movement não exige reader específico por capability;
+Movement nÃ£o exige reader especÃ­fico por capability;
 sem fallback silencioso;
-sem lookup textual entre domínios runtime;
+sem lookup textual entre domÃ­nios runtime;
 sem owner duplicado para lifecycle ou side-effect.
 ```
 
@@ -966,10 +973,10 @@ Boot -> Menu -> Sandbox
 Activity 01 entry
 CompleteActivationWindow
 Move preservado
-FirePrimary dispara projétil
-Projétil nasce via pool
+FirePrimary dispara projÃ©til
+ProjÃ©til nasce via pool
 SFX de disparo toca via AudioRuntime pooled
-Projétil retorna ao pool por lifetime ou impact
+ProjÃ©til retorna ao pool por lifetime ou impact
 RestartCurrentActivity PASS
 Activity01ToActivity02 PASS
 RouteExitBackToMenu PASS
@@ -984,20 +991,121 @@ sem AudioSource instantiate por disparo
 
 ---
 
-## Respostas obrigatórias
+## ACTOR-COMP-3D â€” Actor runtime identity cleanup â€” CLOSED
 
-### Qual pipeline é dono desta decisão?
+Status:
 
 ```text
-ActivityEntryPipeline é dono de setup/readiness/binding por entry.
-SessionActivityPipeline é dono de lifecycle macro.
-Nenhum pipeline executa comandos locais frame a frame.
-ActorCommandHub é componente local de source/routing.
-Capability endpoint executa comportamento local.
-Adapters executam side-effects técnicos.
+CLOSED / PASS funcional + PASS arquitetural
 ```
 
-### Isso é stage, policy, command, fact, adapter, endpoint, snapshot ou authoring data?
+Resumo:
+
+```text
+ActorInstanceRuntimeId tornou-se a identity runtime canÃ´nica para instÃ¢ncias de Actor.
+ActorInstanceId foi removido do runtime ativo.
+Foram removidos ActorInstanceId struct, FromIdentity(...), FromScopedIdentity(...),
+FromScopedRuntimeActorIdentity(...) e ActorInstanceRuntimeId.FromActorInstanceId(...).
+A cadeia Actor/IActor, ActorInstanceRecord, ActorParticipationRecord, ActorScanTarget,
+ActivitySceneActorRegistry, ActorPresentation runtime state, ActorAttribute runtime state,
+ActorParticipation active state, CommandHub, Permission e ObjectEmission passou a usar
+ActorInstanceRuntimeId.
+NÃ£o houve factory inversa, compat alias, trilho paralelo, mudanÃ§a de lifecycle,
+scope, reentry, release ou retain.
+```
+
+Smoke aceito:
+
+```text
+sem FATAL
+sem Exception
+sem route_transition_failed
+sem checkpointStatus='Failed'
+sem error CS
+sem foreign/stale indevido
+RestartCurrentActivity PASS
+Activity01ToActivity02 PASS
+RouteExitBackToMenu PASS
+```
+
+DÃ©bito nÃ£o bloqueante:
+
+```text
+ActorAttributeState.ActorInstanceId : string permanece como naming/metadata hygiene,
+nÃ£o identity runtime forte.
+```
+
+## ACTOR-COMP-4 â€” historical shape; superseded by final CLOSED section
+
+Objetivo:
+
+```text
+Auditar e corrigir o uso de PlayerActor/NonPlayerActor/ActorRole/ActorKind como rails de comportamento.
+```
+
+Modelo alvo:
+
+```text
+Actor Ã© a raiz semÃ¢ntica.
+PlayerActor Ã© especializaÃ§Ã£o estreita ligada a PlayerSlot/Input/Participation.
+NonPlayerActor nÃ£o deve ser raiz arquitetural ampla nem rail para tudo que nÃ£o Ã© player.
+ActorRole/ActorKind classificam, mas nÃ£o devem decidir comportamento sozinhos.
+VariaÃ§Ã£o de comportamento deve vir de capabilities, role/archetype, scope/lifetime,
+materialization policy, presentation e runtime endpoints.
+Spawnable/Projectile futuros devem ser composition/materialization policy/archetype de Actor,
+nÃ£o raiz paralela.
+```
+
+RestriÃ§Ãµes:
+
+```text
+nÃ£o mexer em ObjectEmission;
+nÃ£o criar SpawnedActor ainda;
+nÃ£o criar SpawnableObject;
+nÃ£o criar ProjectileManager;
+nÃ£o criar SpawnableManager;
+nÃ£o mexer em projectile/spawn runtime/movement/collision/audio/VFX/damage/pool;
+nÃ£o renomear PlayerActor ou NonPlayerActor antes de auditoria.
+```
+
+Primeiro corte:
+
+```text
+ACTOR-COMP-4A â€” Actor specialization and role usage audit.
+```
+
+Escopo da auditoria 4A:
+
+```text
+uso de tipo concreto PlayerActor;
+uso de tipo concreto NonPlayerActor;
+ActorKind.Player / ActorKind.Actor;
+ActorRole.PrimaryPlayer / SupportingPlayer / SceneActor;
+branches player/nonplayer;
+resÃ­duos de nomes/logs que tratem NonPlayer como categoria arquitetural;
+usos aceitÃ¡veis, suspeitos, rails incorretos e resÃ­duos legados.
+```
+
+CritÃ©rio de sequÃªncia:
+
+```text
+depois do 4A, implementar cortes derivados pequenos sem repetir auditoria para cada microaÃ§Ã£o.
+```
+
+## Respostas obrigatÃ³rias
+
+### Qual pipeline Ã© dono desta decisÃ£o?
+
+```text
+ActivityEntryPipeline Ã© dono de setup/readiness/binding por entry.
+SessionActivityPipeline Ã© dono de lifecycle macro.
+Nenhum pipeline executa comandos locais frame a frame.
+ActorCommandHub Ã© componente local de source/routing.
+Capability endpoint executa comportamento local.
+Adapters executam side-effects tÃ©cnicos.
+```
+
+### Isso Ã© stage, policy, command, fact, adapter, endpoint, snapshot ou authoring data?
 
 ```text
 ActorCommandBindingProfile = authoring data.
@@ -1007,50 +1115,237 @@ ActorCommandDispatcher = dispatch local.
 ProjectileEmitterEndpoint = endpoint.
 ProjectileSpawnAdapter = adapter.
 ProjectileAudioAdapter = adapter.
-ProjectileRuntimeObject = runtime object pooled.
+ProjectileRuntimeObject = runtime object pooled como detalhe tecnico de adapter, nao owner final de gameplay.
 Facts/logs/debug = observabilidade.
 ```
 
-### Isso é comportamento final ou bridge transitória?
+### Isso Ã© comportamento final ou bridge transitÃ³ria?
 
 ```text
-Command hub tipado e binding declarativo são comportamento final.
-Projectile fire como ActorCapability é comportamento final.
-UnityEvent é rejeitado, não bridge.
+Command hub tipado e binding declarativo sÃ£o comportamento final.
+Projectile fire como ActorCapability Ã© comportamento final.
+UnityEvent Ã© rejeitado, nÃ£o bridge.
 ```
 
-### Essa compatibilidade ainda é necessária?
+### Essa compatibilidade ainda Ã© necessÃ¡ria?
 
 ```text
-Não.
+NÃ£o.
 PlayerMoveInputReader foi migrado/removido do caminho ativo no ACT-CMD-1A.
-Legado de shooting/projectiles é intenção funcional, não compatibilidade.
+Legado de shooting/projectiles Ã© intenÃ§Ã£o funcional, nÃ£o compatibilidade.
 ```
 
-### O erro está no sintoma ou na fronteira arquitetural errada?
+### O erro estÃ¡ no sintoma ou na fronteira arquitetural errada?
 
 ```text
 Fronteira errada: input reader por capability e shooting player-specific.
-A correção é separar command source, command binding e capability endpoint.
+A correÃ§Ã£o Ã© separar command source, command binding e capability endpoint.
 ```
 
 ### Existe owner duplicado para o mesmo lifecycle?
 
 ```text
-Não deve existir.
+NÃ£o deve existir.
 Se hub executar pool/audio/cooldown/lifecycle, vira owner duplicado e o corte deve ser rejeitado.
 ```
 
 ---
 
-## Decisão final
+## DecisÃ£o final
 
 Aceitar este ADR como contrato inicial para command source e projectile capability de Actors na Base 2.0.
 
-Próxima ação permitida:
+PrÃ³xima aÃ§Ã£o permitida:
 
 ```text
-ACT-CMD-1B — preparar FirePrimary command binding readiness no ActorCommandHub.
+ACT-CMD-1B â€” preparar FirePrimary command binding readiness no ActorCommandHub.
 ```
 
-Não implementar projectile runtime antes de preparar o command binding de FirePrimary.
+NÃ£o implementar projectile runtime antes de preparar o command binding de FirePrimary.
+---
+
+## ACTOR-COMP-4 â€” Actor role/archetype + specialization boundary â€” CLOSED
+
+### Status
+
+```text
+CLOSED / PASS funcional herdado dos smokes dos cortes 4B, 4E e 4F.
+ACTOR-COMP-4G fechado por rename de enum com valor numÃ©rico preservado.
+```
+
+### DecisÃµes finais
+
+```text
+Actor Ã© a raiz semÃ¢ntica.
+PlayerActor permanece como especializaÃ§Ã£o estreita ligada a PlayerSlot/Input/Participation.
+NonPlayerActor foi removido.
+SceneAuthoredActor Ã© o componente Unity concreto canÃ´nico para actors de cena.
+ActorRole.SceneActor representa role/classificaÃ§Ã£o de actor de cena.
+ActorDefinitionKind.SceneActor substitui ActorDefinitionKind.NPC.
+ActorKind/ActorRole/ActorDefinitionKind classificam, mas nÃ£o devem decidir comportamento sozinhos.
+VariaÃ§Ã£o de comportamento deve vir de capabilities, scope/lifetime, materialization policy,
+presentation e runtime endpoints.
+```
+
+### Cortes fechados
+
+```text
+ACTOR-COMP-4B â€” removeu bridge de PlayerMovementPermissionReceiverProvider e limpou labels non_player.
+ACTOR-COMP-4C â€” confirmou no-op; sem resÃ­duos ativos de NonPlayer alÃ©m da classe antiga.
+ACTOR-COMP-4D â€” preflight concluiu que NonPlayerActor era marcador Unity serializado sem comportamento runtime prÃ³prio.
+ACTOR-COMP-4E â€” criou SceneAuthoredActor, migrou prefabs e removeu NonPlayerActor.
+ACTOR-COMP-4F â€” migrou nonPlayerActorId para sceneActorId com FormerlySerializedAs por preservaÃ§Ã£o tÃ©cnica de serialization Unity.
+ACTOR-COMP-4G â€” renomeou ActorDefinitionKind.NPC para ActorDefinitionKind.SceneActor preservando valor numÃ©rico.
+```
+
+### ResÃ­duos nÃ£o bloqueantes
+
+```text
+NPC_Generic.prefab;
+NPC_Route_Generic.prefab;
+actor.presentation.npc.*;
+npc.attribute.*;
+npc.generic.01;
+npc.route.generic.01;
+ActorPresentationProfile_NpcGenerico*;
+NpcAttribute*.
+```
+
+Esses nomes permanecem como authoring naming debt / asset naming debt, nÃ£o rail runtime.
+
+## ACTOR-COMP-5A â€” Spawnable/Projectile as Actor composition boundary â€” CLOSED
+
+### Status
+
+```text
+CLOSED / audit consolidado e decisao normativa fechada.
+```
+
+### Decisoes finais
+
+```text
+Spawnables de gameplay devem ser Actors quando precisarem de identidade, capabilities, participation, reset ou save/snapshot por policy explicita.
+Projectile futuro deve seguir o mesmo criterio.
+ObjectEmission atual permanece como bridge tecnica transitoria.
+Pool continua sendo adapter tecnico, nao owner de lifecycle/policy.
+Nao criar SpawnedActor, SpawnableObject, ProjectileManager ou SpawnableManager.
+```
+
+### Resumo do corte
+
+```text
+Boundary de composition aceita Actor como forma final para spawnables de gameplay.
+Objeto pooled pode existir apenas como detalhe tecnico de adapter.
+Projectile simples nao deve ser tratado como objeto tecnico final se precisar de identidade/reset/save/capabilities.
+```
+
+## ACTOR-COMP-5B â€” Spawnable Actor lifecycle/reset boundary â€” OPEN
+
+### Status
+
+```text
+OPEN / aguardando corte de lifecycle, reset e snapshot policy.
+```
+
+### Decisao normativa
+
+```text
+1. Spawnables de gameplay sao Actors.
+
+   * Devem ter ActorInstanceRuntimeId.
+   * Devem participar do modelo comum de capabilities/endpoints.
+   * Devem poder participar de Reset.
+   * Devem poder participar de Save/Snapshot em casos raros por policy explicita.
+   * Nao devem virar SpawnableObject, ProjectileManager, SpawnableManager ou raiz paralela.
+
+2. Projectile futuro:
+
+   * deve ser Actor composition quando for gameplay spawnable;
+   * pode usar pool tecnicamente;
+   * nao deve ser MonoBehaviour tecnico isolado como modelo final se precisar de identidade/reset/save/capabilities;
+   * nao deve usar SceneActor como atalho semantico.
+
+3. ObjectEmission atual:
+
+   * permanece como bridge tecnica transitoria;
+   * nao e owner final de Actor lifecycle;
+   * nao deve virar spawn runtime generico;
+   * nao deve decidir policy de Reset/Save/Lifetime de Actor.
+
+4. Pool:
+
+   * e adapter tecnico;
+   * pode executar Rent/Return/Prewarm;
+   * nao decide lifecycle, save, reset, ownership ou policy;
+   * nao deve ser source of truth de gameplay lifecycle.
+
+5. Lifetime:
+
+   * coroutine/local lifetime em ObjectEmissionPooledObject e bridge transitoria;
+   * modelo final deve usar lifetime explicito e reinicializavel;
+   * lifetime deve ser limpo/zerado no ReturnToPool;
+   * spawnables nao devem renascer com tempo anterior;
+   * lifetime pode existir como endpoint/capability/state de Actor, nao como comportamento escondido no pooled object.
+
+6. Reset:
+
+   * Reset padrao de spawnable pooled e ReturnToOriginPool;
+   * ReturnToOriginPool deve limpar estado transitorio;
+   * ReturnToOriginPool deve limpar/zerar lifetime;
+   * ReturnToOriginPool deve invalidar binding/runtime state corrente quando aplicavel;
+   * Reset deve enxergar o spawnable como Actor/capability, nao como objeto tecnico invisivel.
+
+7. Save/Snapshot:
+
+   * default para spawnable runtime e skip explicito, por exemplo SkipRuntimeTransient;
+   * casos raros podem ser salvos por policy, por exemplo SaveIfMarked, CheckpointRelevant ou PersistUntilConsumed;
+   * snapshot nao salva detalhe tecnico de pool; salva estado necessario para rematerializar o Actor.
+
+8. Proximos contratos possiveis, ainda sem implementar:
+
+   * ActorSpawnability;
+   * ActorMaterializationKind.RuntimeSpawned;
+   * ActorLifetimePolicy.RuntimeTransient;
+   * SpawnedActorPoolOrigin;
+   * SpawnedActorLifetimeState;
+   * ReturnToOriginPool reset/release command;
+   * SnapshotPolicy.SkipRuntimeTransient.
+
+9. Restricoes:
+
+   * nao implementar projectile ainda;
+   * nao expandir ObjectEmission agora;
+   * nao criar manager paralelo;
+   * nao mexer em damage/collision/VFX/audio/movement/pool;
+   * nao mover detalhes locais de projectile para ActivityEntryPipeline;
+   * pipeline/stage/policy decidem lifecycle/reset, adapters executam side-effects.
+```
+
+## ACTOR-COMP-5C â€” passive Spawnable Actor contracts â€” DOCUMENTED
+
+### Status
+
+```text
+DOCUMENTED / nota documental do shape passivo, sem wiring de runtime.
+```
+
+### Contratos documentados
+
+```text
+ActorMaterializationKind;
+ActorLifetimePolicy.PolicyKind;
+ActorSpawnedResetPolicy;
+ActorSnapshotPolicy;
+SpawnedActorPoolOrigin;
+SpawnedActorLifetimeState;
+ActorSpawnability.
+```
+
+### ConfirmaÃ§Ãµes
+
+```text
+Nao houve wiring de runtime.
+ObjectEmission nao foi alterado.
+Projectile ainda nao foi implementado.
+```
+
