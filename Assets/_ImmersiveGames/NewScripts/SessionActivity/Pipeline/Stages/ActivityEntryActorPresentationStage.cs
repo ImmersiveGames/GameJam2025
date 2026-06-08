@@ -19,7 +19,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             IActivityEntryRuntimeBridge endpoint,
             IReadOnlyList<ActorPresentationSetupContribution> presentationSetupContributions,
             ActivityActorExitRuntimeState runtimeState,
-            ActivitySceneActorRegistry sceneActorRegistry,
             IActivityEntryActorPresentationRuntimeBridge bridge,
             ActorPresentationPlanResolver planResolver,
             IActorPresentationMaterializationAdapter materializationAdapter,
@@ -44,11 +43,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (runtimeState == null)
             {
                 throw new ArgumentNullException(nameof(runtimeState));
-            }
-
-            if (sceneActorRegistry == null)
-            {
-                throw new ArgumentNullException(nameof(sceneActorRegistry));
             }
 
             if (planResolver == null)
@@ -183,7 +177,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         endpoint.SetCurrentIdentity(readyRetainedIdentity, SessionActivityStage.ActorPresentationReady);
                         endpoint.EmitFact(facts, SessionActivityFactKind.ActorPresentationReady, readyRetainedIdentity, command.Source, command.Reason, $"'{startedIdentity.ActivityId}' actor presentation ready retained actorId='{presentationContribution.ActorId}' actorKind='{presentationContribution.ActorKind}' actorScope='{presentationContribution.ActorScope}' instance='{activeHandle.PresentationInstance.name}'.");
                         DebugUtility.Log(typeof(ActivityEntryActorPresentationStage), $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationReady' activityId='{startedIdentity.ActivityId}' entrySequence='{entrySequence}' owner='ActivityEntryPipeline' actorId='{presentationContribution.ActorId}' actorInstanceRuntimeId='{presentationContribution.ActorInstanceRuntimeId}' actorKind='{presentationContribution.ActorKind}' actorRole='{presentationContribution.ActorRole}' actorScope='{presentationContribution.ActorScope}' profileId='{activeHandle.ResolvedPlan.ProfileId}' mode='Retained' source='{command.Source}' reason='{command.Reason}'.", DebugUtility.Colors.Success);
-                        SyncActorPresentationRegistryHandle(sceneActorRegistry, startedIdentity, presentationContribution, activeHandle);
                         totalReady += 1;
                         continue;
                     }
@@ -233,7 +226,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     startedIdentity,
                     presentationContribution,
                     materializationResult.ReadyFact.RuntimeHandle);
-                SyncActorPresentationRegistryHandle(sceneActorRegistry, startedIdentity, presentationContribution, materializationResult.ReadyFact.RuntimeHandle);
                 totalReady += 1;
             }
 
@@ -291,28 +283,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity.EntrySequence,
                 nameof(ActivityEntryActorPresentationStage),
                 "store_active_actor_presentation");
-        }
-
-        private static void SyncActorPresentationRegistryHandle(
-            ActivitySceneActorRegistry sceneActorRegistry,
-            SessionActivityIdentity identity,
-            ActorPresentationSetupContribution presentationContribution,
-            ActorPresentationRuntimeHandle handle)
-        {
-            if (sceneActorRegistry == null || !presentationContribution.IsValid || !handle.IsValid || !identity.IsValid)
-            {
-                return;
-            }
-
-            try
-            {
-                sceneActorRegistry.SetPresentationHandle(identity, presentationContribution.ActorId.Value, handle);
-                DebugUtility.Log(typeof(ActivityEntryActorPresentationStage), $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSynced' owner='ActivitySceneActorRegistry' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' actorId='{Normalize(presentationContribution.ActorId.Value)}' source='ActivityEntryActorPresentationStage' reason='actor_presentation_registry_handle_sync'.", DebugUtility.Colors.Info);
-            }
-            catch (InvalidOperationException)
-            {
-                DebugUtility.Log(typeof(ActivityEntryActorPresentationStage), $"[OBS][ActivityEntryPipeline][ActorPresentation] event='ActorPresentationRegistryHandleSyncSkipped' owner='ActivitySceneActorRegistry' activityId='{Normalize(identity.ActivityId)}' entrySequence='{identity.EntrySequence}' actorId='{Normalize(presentationContribution.ActorId.Value)}' source='ActivityEntryActorPresentationStage' reason='actor_not_registered_in_presentation_registry'.", DebugUtility.Colors.Info);
-            }
         }
 
         private static string BuildActorAttributeActivityIdentity(SessionActivityIdentity identity)

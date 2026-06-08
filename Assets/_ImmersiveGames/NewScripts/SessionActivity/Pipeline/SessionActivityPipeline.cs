@@ -2599,7 +2599,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 definition,
                 this,
                 _activityActorExitRuntimeState,
-                _activitySceneActorRegistry,
                 this,
                 _sessionActorRuntimeStore,
                 facts,
@@ -3759,7 +3758,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 definition,
                 this,
                 _activityActorExitRuntimeState,
-                _activitySceneActorRegistry,
                 this,
                 facts,
                 snapshots);

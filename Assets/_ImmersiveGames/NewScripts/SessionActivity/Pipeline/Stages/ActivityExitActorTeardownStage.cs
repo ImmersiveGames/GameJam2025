@@ -85,7 +85,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
-            ActivitySceneActorRegistry sceneActorRegistry,
             IActivityExitActorTeardownRuntimeBridge bridge,
             SessionActorRuntimeStore sessionActorRuntimeStore,
             List<SessionActivityFact> facts,
@@ -111,12 +110,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(bridge));
             }
 
-            if (sceneActorRegistry == null)
-            {
-                throw new ArgumentNullException(nameof(sceneActorRegistry));
-            }
-
-            ExecuteActorPresentationRelease(command, definition, endpoint, runtimeState, sceneActorRegistry, bridge, facts, snapshots);
+            ExecuteActorPresentationRelease(command, definition, endpoint, runtimeState, bridge, facts, snapshots);
             ExecuteActorAttributeRelease(command, definition, endpoint, runtimeState, bridge, facts, snapshots);
             SessionActivityIdentity completedIdentity = ExecuteActorParticipationExit(command, definition, endpoint, runtimeState, bridge, sessionActorRuntimeStore, facts, snapshots);
 
@@ -131,7 +125,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityDefinition definition,
             IActivityEntryRuntimeBridge endpoint,
             ActivityActorExitRuntimeState runtimeState,
-            ActivitySceneActorRegistry sceneActorRegistry,
             IActivityExitActorTeardownRuntimeBridge bridge,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -220,15 +213,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     }
 
                     runtimeState.RemoveActiveActorPresentation(state.ActorInstanceRuntimeId, definition.ActivityId, entrySequence, command.Source, command.Reason);
-                    try
-                    {
-                        sceneActorRegistry.ClearPresentationHandle(startedIdentity, state.ActorId);
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"[OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearRequested' owner='ActivitySceneActorRegistry' activityId='{Normalize(definition.ActivityId)}' entrySequence='{entrySequence}' actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' source='ActivityExitActorTeardownStage' reason='actor_presentation_registry_handle_clear'.", DebugUtility.Colors.Info);
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        DebugUtility.Log(typeof(ActivityExitActorTeardownStage), $"[OBS][ActivityExitActorTeardownStage][ActorPresentation] event='ActorPresentationRegistryHandleClearSkipped' owner='ActivitySceneActorRegistry' activityId='{Normalize(definition.ActivityId)}' entrySequence='{entrySequence}' actorId='{Normalize(state.ActorId)}' actorInstanceRuntimeId='{state.ActorInstanceRuntimeId}' source='ActivityExitActorTeardownStage' reason='actor_not_registered_in_presentation_registry'.", DebugUtility.Colors.Info);
-                    }
                 }
             }
 

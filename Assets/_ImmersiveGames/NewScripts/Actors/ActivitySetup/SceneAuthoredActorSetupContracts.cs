@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
@@ -95,20 +94,16 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
         public SceneAuthoredActorRuntimeEntry(
             SceneAuthoredActorIdentityRecord actorIdentity,
             Actor actor,
-            GameObject actorInstance,
-            ActorPresentationRuntimeHandle presentationHandle)
+            GameObject actorInstance)
         {
             ActorIdentity = actorIdentity;
             Actor = actor;
             ActorInstance = actorInstance;
-            PresentationHandle = presentationHandle;
         }
 
         public SceneAuthoredActorIdentityRecord ActorIdentity { get; }
         public Actor Actor { get; }
         public GameObject ActorInstance { get; }
-        public ActorPresentationRuntimeHandle PresentationHandle { get; }
-        public bool HasPresentationHandle => PresentationHandle.IsValid;
         public bool IsValid => ActorIdentity.IsValid && Actor != null && ActorInstance != null;
     }
 }

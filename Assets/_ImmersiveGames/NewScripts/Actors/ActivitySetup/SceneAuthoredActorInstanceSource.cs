@@ -60,11 +60,6 @@ namespace _ImmersiveGames.NewScripts.Actors.ActivitySetup
                     throw new InvalidOperationException($"SceneAuthoredActorInstanceSource requires known ActorScope for actorId='{actorIdentity.ActorId}'.");
                 }
 
-                if (runtimeScope == ActorScope.SessionScoped)
-                {
-                    throw new InvalidOperationException($"SceneAuthoredActorInstanceSource forbids SessionScoped scene-authored actor in v0. actorId='{actorIdentity.ActorId}'.");
-                }
-
                 string stableActorId = !string.IsNullOrWhiteSpace(runtimeActor.ActorId)
                     ? runtimeActor.ActorId
                     : actorIdentity.ActorId;
