@@ -6,11 +6,11 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
     public sealed class SceneScopedActivityCameraAnchorHostResolver : IActivityCameraAnchorHostResolver
     {
-        private readonly IDependencyProvider dependencyProvider;
+        private readonly IDependencyProvider _dependencyProvider;
 
         public SceneScopedActivityCameraAnchorHostResolver(IDependencyProvider dependencyProvider)
         {
-            this.dependencyProvider = dependencyProvider;
+            this._dependencyProvider = dependencyProvider;
         }
 
         public bool TryResolve(
@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
         {
             anchorHost = null;
 
-            if (dependencyProvider == null)
+            if (_dependencyProvider == null)
             {
                 reason = "activity_camera_anchor_host_resolver_dependency_provider_missing";
                 return false;
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!dependencyProvider.TryGetForScene<ActivityCameraAnchorHost>(sceneName, out var registeredHost) ||
+            if (!_dependencyProvider.TryGetForScene<ActivityCameraAnchorHost>(sceneName, out var registeredHost) ||
                 registeredHost == null)
             {
                 reason = "activity_camera_anchor_host_not_registered";

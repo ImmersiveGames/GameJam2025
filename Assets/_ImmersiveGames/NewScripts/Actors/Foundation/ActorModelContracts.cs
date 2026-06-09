@@ -58,6 +58,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         PrimaryPlayer = 1,
         SupportingPlayer = 2,
         SceneActor = 3,
+        RuntimeSpawnedActor = 4,
     }
 
     public enum ActorScope

@@ -25,7 +25,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             var runtimeObject = new GameObject($"{cue.name}_AudioSfxDirect");
             runtimeObject.transform.SetParent(transform, false);
-            runtimeObject.transform.position = context.FollowTarget != null ? context.FollowTarget.position : context.WorldPosition;
+            runtimeObject.transform.position = context.followTarget != null ? context.followTarget.position : context.worldPosition;
 
             var source = runtimeObject.AddComponent<AudioSource>();
             ConfigureSource(source, cue, clip, context, resolvedEmission, reason);
@@ -35,7 +35,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 cueId: cue.GetInstanceID(),
                 cueName: cue.name,
                 source: source,
-                followTarget: context.FollowTarget,
+                followTarget: context.followTarget,
                 modeLabel: mode,
                 reason: reason,
                 destroyOwnerOnComplete: true,
@@ -75,7 +75,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 throw new InvalidOperationException("[FATAL][Audio] AudioClip obrigatorio ausente para configuracao SFX.");
             }
 
-            float volumeScale = Mathf.Max(0f, context.VolumeScale);
+            float volumeScale = Mathf.Max(0f, context.volumeScale);
             float masterVolume = _settings != null ? Mathf.Clamp01(_settings.MasterVolume) : 1f;
             float sfxVolume = _settings != null ? Mathf.Clamp01(_settings.SfxVolume) : 1f;
             float categoryMultiplier = _settings != null ? Mathf.Max(0f, _settings.SfxCategoryMultiplier) : 1f;
@@ -100,9 +100,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             out AudioSfxVoiceProfileAsset profile,
             out string source)
         {
-            if (context.VoiceProfile != null)
+            if (context.voiceProfile != null)
             {
-                profile = context.VoiceProfile;
+                profile = context.voiceProfile;
                 source = "context";
                 return true;
             }

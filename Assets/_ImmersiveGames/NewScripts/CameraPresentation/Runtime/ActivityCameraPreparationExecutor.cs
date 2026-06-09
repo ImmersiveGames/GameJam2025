@@ -5,12 +5,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
     public sealed class ActivityCameraPreparationExecutor : IActivityCameraPreparationExecutor
     {
-        private readonly IActivityCameraDirector director;
-        private ActivityCameraBindingResult activeBinding;
+        private readonly IActivityCameraDirector _director;
+        private ActivityCameraBindingResult _activeBinding;
 
         public ActivityCameraPreparationExecutor(IActivityCameraDirector director)
         {
-            this.director = director;
+            this._director = director;
         }
 
         public bool TryPrepare(
@@ -18,7 +18,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraPreparationResult result,
             out string reason)
         {
-            if (director == null)
+            if (_director == null)
             {
                 reason = "activity_camera_director_missing";
 
@@ -32,7 +32,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (activeBinding != null)
+            if (_activeBinding != null)
             {
                 reason = "active_camera_binding_already_exists";
 
@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (!director.TryPrepareActivityCamera(command, out ActivityCameraBindingResult bindingResult, out reason))
+            if (!_director.TryPrepareActivityCamera(command, out ActivityCameraBindingResult bindingResult, out reason))
             {
                 ActivityCameraFailureFact failureFact = ActivityCameraFailureFact.FromResult(
                     bindingResult,
@@ -57,7 +57,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            activeBinding = bindingResult;
+            _activeBinding = bindingResult;
 
             ActivityCameraReadyFact readyFact = ActivityCameraReadyFact.FromResult(
                 bindingResult,
@@ -73,7 +73,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraReleaseResult result,
             out string reason)
         {
-            if (director == null)
+            if (_director == null)
             {
                 reason = "activity_camera_director_missing";
                 result = BuildReleaseFailure(command, reason);
@@ -86,34 +86,34 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (activeBinding == null)
+            if (_activeBinding == null)
             {
                 reason = "active_camera_binding_missing";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            if (activeBinding.Handle == null)
+            if (_activeBinding.Handle == null)
             {
                 reason = "active_camera_binding_handle_missing";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            if (!MatchesActiveBinding(command, activeBinding.Handle))
+            if (!MatchesActiveBinding(command, _activeBinding.Handle))
             {
                 reason = "foreign_or_stale_camera_release_command";
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            if (!director.TryReleaseActivityCamera(activeBinding, out reason))
+            if (!_director.TryReleaseActivityCamera(_activeBinding, out reason))
             {
                 result = BuildReleaseFailure(command, reason);
                 return false;
             }
 
-            activeBinding = null;
+            _activeBinding = null;
 
             ActivityCameraReleasedFact releasedFact = ActivityCameraReleasedFact.FromCommand(
                 command,
@@ -129,7 +129,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             out ActivityCameraRebindTargetsResult result,
             out string reason)
         {
-            if (director == null)
+            if (_director == null)
             {
                 reason = "activity_camera_director_missing";
                 result = ActivityCameraRebindTargetsResult.Failed(command?.ActivityIdentity, reason);
@@ -157,21 +157,21 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (activeBinding == null || activeBinding.Handle == null)
+            if (_activeBinding == null || _activeBinding.Handle == null)
             {
                 reason = "active_camera_binding_missing";
                 result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
                 return false;
             }
 
-            if (!string.Equals(activeBinding.Handle.ActivityIdentity, command.ActivityIdentity, System.StringComparison.Ordinal))
+            if (!string.Equals(_activeBinding.Handle.ActivityIdentity, command.ActivityIdentity, System.StringComparison.Ordinal))
             {
                 reason = "foreign_or_stale_activity_identity";
                 result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
                 return false;
             }
 
-            if (!director.TryRebindActivityCameraTargets(activeBinding.Handle, command, out reason))
+            if (!_director.TryRebindActivityCameraTargets(_activeBinding.Handle, command, out reason))
             {
                 result = ActivityCameraRebindTargetsResult.Failed(command.ActivityIdentity, reason);
                 return false;

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
@@ -120,6 +121,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorProjectileFireModeId fireModeId,
             ActorCommandId acceptedCommandId,
             ActorSpawnability spawnability,
+            PoolDefinitionAsset poolDefinition,
             ActorProjectileSpawnPattern spawnPattern,
             ActorProjectileMuzzlePolicyKind muzzlePolicy,
             ActorProjectileSpreadPolicyKind spreadPolicy,
@@ -129,6 +131,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             FireModeId = fireModeId;
             AcceptedCommandId = acceptedCommandId;
             Spawnability = spawnability;
+            PoolDefinition = poolDefinition;
             SpawnPattern = spawnPattern;
             MuzzlePolicy = muzzlePolicy;
             SpreadPolicy = spreadPolicy;
@@ -139,6 +142,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorProjectileFireModeId FireModeId { get; }
         public ActorCommandId AcceptedCommandId { get; }
         public ActorSpawnability Spawnability { get; }
+        public PoolDefinitionAsset PoolDefinition { get; }
         public ActorProjectileSpawnPattern SpawnPattern { get; }
         public ActorProjectileMuzzlePolicyKind MuzzlePolicy { get; }
         public ActorProjectileSpreadPolicyKind SpreadPolicy { get; }
@@ -151,6 +155,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             AcceptedCommandId == ActorCommandId.FirePrimary &&
             Spawnability.IsValid &&
             Spawnability.IsSpawnable &&
+            PoolDefinition != null &&
             SpawnPattern.IsValid &&
             MuzzlePolicy != ActorProjectileMuzzlePolicyKind.Unknown &&
             SpreadPolicy != ActorProjectileSpreadPolicyKind.Unknown;
@@ -165,6 +170,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorCommandEnvelope commandEnvelope,
             ActorProjectileFireModeId fireModeId,
+            PoolDefinitionAsset poolDefinition,
             Vector3 origin,
             Vector3 direction,
             string source,
@@ -174,6 +180,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             CommandEnvelope = commandEnvelope;
             FireModeId = fireModeId;
+            PoolDefinition = poolDefinition;
             Origin = origin;
             Direction = direction;
             Source = Normalize(source);
@@ -184,6 +191,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorCommandEnvelope CommandEnvelope { get; }
         public ActorProjectileFireModeId FireModeId { get; }
+        public PoolDefinitionAsset PoolDefinition { get; }
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
         public string Source { get; }
@@ -195,6 +203,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             CommandEnvelope.IsValid &&
             CommandEnvelope.CommandId == ActorCommandId.FirePrimary &&
             FireModeId.IsValid &&
+            PoolDefinition != null &&
             HasDirection &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);

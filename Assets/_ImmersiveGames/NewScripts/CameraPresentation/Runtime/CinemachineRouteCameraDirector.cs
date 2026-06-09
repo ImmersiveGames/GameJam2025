@@ -9,12 +9,12 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
 {
     public sealed class CinemachineRouteCameraDirector : IRouteCameraDirector
     {
-        private readonly IOperationalCameraProvider operationalCameraProvider;
+        private readonly IOperationalCameraProvider _operationalCameraProvider;
 
         public CinemachineRouteCameraDirector(
             IOperationalCameraProvider operationalCameraProvider)
         {
-            this.operationalCameraProvider = operationalCameraProvider;
+            this._operationalCameraProvider = operationalCameraProvider;
         }
 
         public bool TryPrepareRouteCamera(
@@ -39,14 +39,14 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (operationalCameraProvider == null)
+            if (_operationalCameraProvider == null)
             {
                 reason = "operational_camera_provider_missing";
                 result = RouteCameraBindingResult.Failed(command, reason);
                 return false;
             }
 
-            if (!operationalCameraProvider.TryGetCurrent(
+            if (!_operationalCameraProvider.TryGetCurrent(
                     out OperationalCameraHandle operationalCamera,
                     out string providerReason))
             {

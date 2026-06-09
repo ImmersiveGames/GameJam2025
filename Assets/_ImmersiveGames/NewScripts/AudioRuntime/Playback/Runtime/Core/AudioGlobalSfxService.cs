@@ -28,10 +28,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private struct PooledPlaybackState
         {
-            public PoolDefinitionAsset Definition;
-            public AudioSfxVoiceProfileAsset Profile;
-            public GameObject Instance;
-            public float ReleaseGraceSeconds;
+            public PoolDefinitionAsset definition;
+            public AudioSfxVoiceProfileAsset profile;
+            public GameObject instance;
+            public float releaseGraceSeconds;
         }
 
         private readonly struct ResolvedEmission
@@ -83,7 +83,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         public IAudioPlaybackHandle Play(AudioSfxCueAsset cue, AudioPlaybackContext context)
         {
-            string reason = ResolveReason(context.Reason);
+            string reason = ResolveReason(context.reason);
 
             if (cue == null)
             {
@@ -133,8 +133,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 source: executionSource);
             float now = Time.realtimeSinceStartup;
             int activeInstances = GetActiveInstances(cueId);
-            bool hasActive2d = !resolvedEmission.UseSpatial && HasActive2dHandle(cueId);
-            bool previousHandleStopped = hasActive2d && StopActive2dHandles(cueId);
+            bool hasActive2D = !resolvedEmission.UseSpatial && HasActive2DHandle(cueId);
+            bool previousHandleStopped = hasActive2D && StopActive2DHandles(cueId);
             float? lastPlayTime = _lastPlayRealtimeByCueId.TryGetValue(cueId, out var lastPlayTimeValue)
                 ? lastPlayTimeValue
                 : null;
@@ -145,7 +145,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 now: now,
                 lastPlayTime: lastPlayTime,
                 activeInstances: activeInstances,
-                hasActive2dHandle: hasActive2d,
+                hasActive2DHandle: hasActive2D,
                 previousHandleStopped: previousHandleStopped);
 
             if (directDecision.RestartedExisting)

@@ -10,18 +10,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
     {
         [SerializeField] private ActorAttributeProfileAsset attributeProfile;
 
-        private readonly Dictionary<ActorAttributeId, ActorAttributeState> statesById = new Dictionary<ActorAttributeId, ActorAttributeState>();
-        private ActorAttributeState[] runtimeStates = Array.Empty<ActorAttributeState>();
-        private ActorInstanceRuntimeId currentActorInstanceRuntimeId = default;
-        private SessionActivityIdentity currentActivityIdentity = default;
-        private bool isInitialized;
+        private readonly Dictionary<ActorAttributeId, ActorAttributeState> _statesById = new Dictionary<ActorAttributeId, ActorAttributeState>();
+        private ActorAttributeState[] _runtimeStates = Array.Empty<ActorAttributeState>();
+        private ActorInstanceRuntimeId _currentActorInstanceRuntimeId = default;
+        private SessionActivityIdentity _currentActivityIdentity = default;
+        private bool _isInitialized;
 
         public ActorAttributeProfileAsset AttributeProfile => attributeProfile;
-        public IReadOnlyList<ActorAttributeState> RuntimeStates => runtimeStates;
-        public ActorInstanceRuntimeId CurrentActorInstanceRuntimeId => currentActorInstanceRuntimeId;
-        public SessionActivityIdentity CurrentActivityIdentity => currentActivityIdentity;
-        public bool IsInitialized => isInitialized;
-        public int AttributeCount => runtimeStates.Length;
+        public IReadOnlyList<ActorAttributeState> RuntimeStates => _runtimeStates;
+        public ActorInstanceRuntimeId CurrentActorInstanceRuntimeId => _currentActorInstanceRuntimeId;
+        public SessionActivityIdentity CurrentActivityIdentity => _currentActivityIdentity;
+        public bool IsInitialized => _isInitialized;
+        public int AttributeCount => _runtimeStates.Length;
 
         public bool TryInitialize(ActorInstanceRuntimeId actorInstanceRuntimeId, out ActorAttributeSetupResult result)
         {
@@ -70,20 +70,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            currentActorInstanceRuntimeId = actorInstanceRuntimeId;
-            currentActivityIdentity = activityIdentity;
-            runtimeStates = profile.CreateStates(currentActorInstanceRuntimeId.Value);
-            isInitialized = true;
+            _currentActorInstanceRuntimeId = actorInstanceRuntimeId;
+            _currentActivityIdentity = activityIdentity;
+            _runtimeStates = profile.CreateStates(_currentActorInstanceRuntimeId.Value);
+            _isInitialized = true;
 
-            if (runtimeStates.Length == 0)
+            if (_runtimeStates.Length == 0)
             {
-                result = ActorAttributeSetupResult.SkippedNoContent(currentActorInstanceRuntimeId, "attribute_profile_empty");
+                result = ActorAttributeSetupResult.SkippedNoContent(_currentActorInstanceRuntimeId, "attribute_profile_empty");
                 return true;
             }
 
-            for (var i = 0; i < runtimeStates.Length; i++)
+            for (var i = 0; i < _runtimeStates.Length; i++)
             {
-                var state = runtimeStates[i];
+                var state = _runtimeStates[i];
                 if (state == null)
                 {
                     ClearRuntimeState();
@@ -98,34 +98,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                     return false;
                 }
 
-                if (statesById.ContainsKey(state.AttributeId))
+                if (_statesById.ContainsKey(state.AttributeId))
                 {
                     ClearRuntimeState();
                     result = ActorAttributeSetupResult.Fail(actorInstanceRuntimeId, $"duplicate_runtime_attribute_id:attributeId={state.AttributeId}");
                     return false;
                 }
 
-                statesById.Add(state.AttributeId, state);
+                _statesById.Add(state.AttributeId, state);
             }
 
-            result = ActorAttributeSetupResult.Ready(currentActorInstanceRuntimeId, runtimeStates.Length);
+            result = ActorAttributeSetupResult.Ready(_currentActorInstanceRuntimeId, _runtimeStates.Length);
             return true;
         }
 
         public bool TryGetState(ActorAttributeId attributeId, out ActorAttributeState state)
         {
-            if (!isInitialized || !attributeId.IsValid)
+            if (!_isInitialized || !attributeId.IsValid)
             {
                 state = null;
                 return false;
             }
 
-            return statesById.TryGetValue(attributeId, out state);
+            return _statesById.TryGetValue(attributeId, out state);
         }
 
         public bool TryApplyCommand(ActorAttributeCommand command, out ActorAttributeApplyResult result)
         {
-            if (!isInitialized)
+            if (!_isInitialized)
             {
                 result = ActorAttributeApplyResult.Fail(command.ActorInstanceRuntimeId, command.AttributeId, "attribute_endpoint_not_initialized");
                 return false;
@@ -137,27 +137,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
                 return false;
             }
 
-            if (command.ActorInstanceRuntimeId != currentActorInstanceRuntimeId)
+            if (command.ActorInstanceRuntimeId != _currentActorInstanceRuntimeId)
             {
-                result = ActorAttributeApplyResult.Reject(currentActorInstanceRuntimeId, command.AttributeId, "foreign_actor_instance_id");
+                result = ActorAttributeApplyResult.Reject(_currentActorInstanceRuntimeId, command.AttributeId, "foreign_actor_instance_id");
                 return false;
             }
 
-            if (!MatchesRequiredActivityIdentity(command.ActivityIdentity, currentActivityIdentity))
+            if (!MatchesRequiredActivityIdentity(command.ActivityIdentity, _currentActivityIdentity))
             {
-                result = ActorAttributeApplyResult.Reject(currentActorInstanceRuntimeId, command.AttributeId, "foreign_or_stale_activity_identity");
+                result = ActorAttributeApplyResult.Reject(_currentActorInstanceRuntimeId, command.AttributeId, "foreign_or_stale_activity_identity");
                 return false;
             }
 
-            if (!statesById.TryGetValue(command.AttributeId, out var state))
+            if (!_statesById.TryGetValue(command.AttributeId, out var state))
             {
-                result = ActorAttributeApplyResult.Fail(currentActorInstanceRuntimeId, command.AttributeId, "attribute_state_not_found");
+                result = ActorAttributeApplyResult.Fail(_currentActorInstanceRuntimeId, command.AttributeId, "attribute_state_not_found");
                 return false;
             }
 
             if (!TryResolveNewValue(state, command, out var rawValue, out var failureReason))
             {
-                result = ActorAttributeApplyResult.Reject(currentActorInstanceRuntimeId, command.AttributeId, failureReason);
+                result = ActorAttributeApplyResult.Reject(_currentActorInstanceRuntimeId, command.AttributeId, failureReason);
                 return false;
             }
 
@@ -168,7 +168,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
             var fact = new ActorAttributeChangedFact(
                 command.ActivityIdentity,
-                currentActorInstanceRuntimeId,
+                _currentActorInstanceRuntimeId,
                 state.AttributeId,
                 state.AttributeId.ToString(),
                 command.Operation,
@@ -193,20 +193,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
             SessionActivityIdentity activityIdentity,
             out ActorAttributeReleaseResult result)
         {
-            if (!isInitialized)
+            if (!_isInitialized)
             {
-                result = ActorAttributeReleaseResult.Skipped(currentActorInstanceRuntimeId, "attribute_endpoint_not_initialized");
+                result = ActorAttributeReleaseResult.Skipped(_currentActorInstanceRuntimeId, "attribute_endpoint_not_initialized");
                 return true;
             }
 
-            if (!MatchesRequiredActivityIdentity(activityIdentity, currentActivityIdentity))
+            if (!MatchesRequiredActivityIdentity(activityIdentity, _currentActivityIdentity))
             {
-                result = ActorAttributeReleaseResult.Reject(currentActorInstanceRuntimeId, "foreign_or_stale_activity_identity");
+                result = ActorAttributeReleaseResult.Reject(_currentActorInstanceRuntimeId, "foreign_or_stale_activity_identity");
                 return false;
             }
 
-            var releasedCount = runtimeStates.Length;
-            var releasedActorInstanceRuntimeId = currentActorInstanceRuntimeId;
+            var releasedCount = _runtimeStates.Length;
+            var releasedActorInstanceRuntimeId = _currentActorInstanceRuntimeId;
             ClearRuntimeState();
 
             if (releasedCount == 0)
@@ -276,11 +276,11 @@ namespace _ImmersiveGames.NewScripts.Actors.Attributes.Runtime
 
         private void ClearRuntimeState()
         {
-            statesById.Clear();
-            runtimeStates = Array.Empty<ActorAttributeState>();
-            currentActorInstanceRuntimeId = default;
-            currentActivityIdentity = default;
-            isInitialized = false;
+            _statesById.Clear();
+            _runtimeStates = Array.Empty<ActorAttributeState>();
+            _currentActorInstanceRuntimeId = default;
+            _currentActivityIdentity = default;
+            _isInitialized = false;
         }
     }
 }

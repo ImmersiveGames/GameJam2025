@@ -1,4 +1,6 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
+using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 {
@@ -7,7 +9,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         Unknown = 0,
         NotConfigured = 1,
         AcceptedNoSpawn = 2,
-        Failed = 3,
+        Spawned = 3,
+        Failed = 4,
     }
 
     public readonly struct ActorProjectileSpawnAdapterResult
@@ -17,6 +20,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorProjectileFireCommand command,
             bool spawnExecuted,
             bool poolCalled,
+            GameObject spawnedInstance,
+            Actor spawnedActor,
             string reason,
             string message)
         {
@@ -24,6 +29,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             Command = command;
             SpawnExecuted = spawnExecuted;
             PoolCalled = poolCalled;
+            SpawnedInstance = spawnedInstance;
+            SpawnedActor = spawnedActor;
             Reason = Normalize(reason);
             Message = Normalize(message);
         }
@@ -32,10 +39,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorProjectileFireCommand Command { get; }
         public bool SpawnExecuted { get; }
         public bool PoolCalled { get; }
+        public GameObject SpawnedInstance { get; }
+        public Actor SpawnedActor { get; }
         public string Reason { get; }
         public string Message { get; }
         public bool IsValid => Kind != ActorProjectileSpawnAdapterResultKind.Unknown;
-        public bool IsAccepted => Kind == ActorProjectileSpawnAdapterResultKind.AcceptedNoSpawn || Kind == ActorProjectileSpawnAdapterResultKind.NotConfigured;
+        public bool IsAccepted =>
+            Kind == ActorProjectileSpawnAdapterResultKind.AcceptedNoSpawn ||
+            Kind == ActorProjectileSpawnAdapterResultKind.Spawned;
         public bool IsFailed => Kind == ActorProjectileSpawnAdapterResultKind.Failed;
 
         public static ActorProjectileSpawnAdapterResult NotConfigured(
@@ -48,6 +59,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
                 command,
                 spawnExecuted: false,
                 poolCalled: false,
+                spawnedInstance: null,
+                spawnedActor: null,
                 reason,
                 message);
         }
@@ -62,6 +75,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
                 command,
                 spawnExecuted: false,
                 poolCalled: false,
+                spawnedInstance: null,
+                spawnedActor: null,
+                reason,
+                message);
+        }
+
+        public static ActorProjectileSpawnAdapterResult Spawned(
+            ActorProjectileFireCommand command,
+            GameObject spawnedInstance,
+            Actor spawnedActor,
+            string reason,
+            string message)
+        {
+            return new ActorProjectileSpawnAdapterResult(
+                ActorProjectileSpawnAdapterResultKind.Spawned,
+                command,
+                spawnExecuted: true,
+                poolCalled: true,
+                spawnedInstance,
+                spawnedActor,
                 reason,
                 message);
         }
@@ -76,6 +109,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
                 command,
                 spawnExecuted: false,
                 poolCalled: false,
+                spawnedInstance: null,
+                spawnedActor: null,
                 reason,
                 message);
         }

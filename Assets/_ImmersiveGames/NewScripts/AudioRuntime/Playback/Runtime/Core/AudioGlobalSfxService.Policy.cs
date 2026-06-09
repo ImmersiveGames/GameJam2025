@@ -37,11 +37,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             float now,
             float? lastPlayTime,
             int activeInstances,
-            bool hasActive2dHandle,
+            bool hasActive2DHandle,
             bool previousHandleStopped)
         {
-            bool isGlobal2dRequest = !useSpatial;
-            bool restartedExisting = isGlobal2dRequest && hasActive2dHandle;
+            bool isGlobal2DRequest = !useSpatial;
+            bool restartedExisting = isGlobal2DRequest && hasActive2DHandle;
 
             float cooldown = Mathf.Max(0f, cue.SfxRetriggerCooldownSeconds);
             if (!restartedExisting && cooldown > 0f && lastPlayTime.HasValue)

@@ -10,11 +10,11 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
     public sealed class CinemachineActivityCameraDirector : IActivityCameraDirector
     {
         private const int ActivityCameraPriority = 100;
-        private readonly IOperationalCameraProvider operationalCameraProvider;
+        private readonly IOperationalCameraProvider _operationalCameraProvider;
 
         public CinemachineActivityCameraDirector(IOperationalCameraProvider operationalCameraProvider)
         {
-            this.operationalCameraProvider = operationalCameraProvider;
+            this._operationalCameraProvider = operationalCameraProvider;
         }
 
         public bool TryPrepareActivityCamera(
@@ -28,14 +28,14 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
                 return false;
             }
 
-            if (operationalCameraProvider == null)
+            if (_operationalCameraProvider == null)
             {
                 reason = "operational_camera_provider_missing";
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;
             }
 
-            if (!operationalCameraProvider.TryGetCurrent(out OperationalCameraHandle operationalHandle, out reason))
+            if (!_operationalCameraProvider.TryGetCurrent(out OperationalCameraHandle operationalHandle, out reason))
             {
                 result = ActivityCameraBindingResult.Failed(command, reason);
                 return false;

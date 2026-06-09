@@ -74,7 +74,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
         public AudioPlaybackContext ApplyEmitterDefaults(AudioPlaybackContext context)
         {
             var resolvedContext = context;
-            resolvedContext.VolumeScale = ResolveVolumeScale(context.VolumeScale);
+            resolvedContext.volumeScale = ResolveVolumeScale(context.volumeScale);
             ApplyVoiceProfileDefaults(ref resolvedContext);
             ApplySpatialDefaults(ref resolvedContext);
             return resolvedContext;
@@ -151,25 +151,25 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Bindings
 
         private void ApplyVoiceProfileDefaults(ref AudioPlaybackContext context)
         {
-            if (context.VoiceProfile == null && defaultVoiceProfile != null)
+            if (context.voiceProfile == null && defaultVoiceProfile != null)
             {
-                context.VoiceProfile = defaultVoiceProfile;
+                context.voiceProfile = defaultVoiceProfile;
             }
         }
 
         private void ApplySpatialDefaults(ref AudioPlaybackContext context)
         {
-            if (!context.UseSpatial)
+            if (!context.useSpatial)
             {
                 return;
             }
 
             Transform anchor = ResolveSpatialAnchor();
-            context.WorldPosition = anchor.position;
+            context.worldPosition = anchor.position;
 
-            if (context.FollowTarget == null)
+            if (context.followTarget == null)
             {
-                context.FollowTarget = anchor;
+                context.followTarget = anchor;
             }
         }
 

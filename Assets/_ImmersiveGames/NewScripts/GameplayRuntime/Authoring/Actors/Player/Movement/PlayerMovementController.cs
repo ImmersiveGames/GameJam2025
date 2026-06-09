@@ -81,14 +81,13 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 throw new InvalidOperationException("PlayerMovementController received invalid actor command envelope.");
             }
 
-            if (command.SourceKind != ActorCommandSourceKind.PlayerInput ||
-                command.CommandId != ActorCommandId.Move ||
+            if (command.CommandId != ActorCommandId.Move ||
                 command.Value.ValueKind != ActorCommandValueKind.Vector2 ||
                 (command.Value.TriggerKind != ActorCommandTriggerKind.Continuous &&
                     command.Value.TriggerKind != ActorCommandTriggerKind.ValueChanged))
             {
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(
-                    $"movement_endpoint_has_no_sink_for_source='{command.SourceKind}' commandId='{command.CommandId}' valueKind='{command.Value.ValueKind}' trigger='{command.Value.TriggerKind}'.");
+                    $"movement_endpoint_has_no_sink_for_command='{command.CommandId}' valueKind='{command.Value.ValueKind}' trigger='{command.Value.TriggerKind}'.");
             }
 
             if (!_movementEnabled)

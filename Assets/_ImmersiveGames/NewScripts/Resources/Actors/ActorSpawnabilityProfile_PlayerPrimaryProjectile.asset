@@ -19,3 +19,4 @@ MonoBehaviour:
   snapshotPolicy: 1
   poolOriginId: pool.projectile.player.primary
   poolDefinitionId: pool.definition.projectile.player.primary
+  poolDefinition: {fileID: 11400000, guid: 2829820cd78e491b98b4cfdf684fb795, type: 2}

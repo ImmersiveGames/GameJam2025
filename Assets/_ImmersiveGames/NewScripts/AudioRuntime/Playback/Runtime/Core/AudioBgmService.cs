@@ -43,15 +43,15 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private struct TransitionState
         {
-            public int Token;
-            public TransitionKind Kind;
-            public float ConfiguredSeconds;
-            public string CueName;
-            public string Reason;
-            public double QueuedAt;
-            public double RuntimeStartedAt;
+            public int token;
+            public TransitionKind kind;
+            public float configuredSeconds;
+            public string cueName;
+            public string reason;
+            public double queuedAt;
+            public double runtimeStartedAt;
 
-            public bool IsActive => Token > 0 && Kind != TransitionKind.None;
+            public bool IsActive => token > 0 && kind != TransitionKind.None;
         }
 
         public static IAudioBgmService Create(
@@ -605,16 +605,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             _nextTransitionToken++;
             _activeTransition = new TransitionState
             {
-                Token = _nextTransitionToken,
-                Kind = kind,
-                CueName = string.IsNullOrWhiteSpace(cueName) ? "null" : cueName,
-                ConfiguredSeconds = Mathf.Max(0f, configuredSeconds),
-                Reason = SafeReason(reason),
-                QueuedAt = Time.realtimeSinceStartupAsDouble,
-                RuntimeStartedAt = 0d
+                token = _nextTransitionToken,
+                kind = kind,
+                cueName = string.IsNullOrWhiteSpace(cueName) ? "null" : cueName,
+                configuredSeconds = Mathf.Max(0f, configuredSeconds),
+                reason = SafeReason(reason),
+                queuedAt = Time.realtimeSinceStartupAsDouble,
+                runtimeStartedAt = 0d
             };
 
-            return _activeTransition.Token;
+            return _activeTransition.token;
         }
 
         private double MarkTransitionRuntimeStarted(int transitionToken)
@@ -625,20 +625,20 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return now;
             }
 
-            if (_activeTransition.RuntimeStartedAt > 0d)
+            if (_activeTransition.runtimeStartedAt > 0d)
             {
-                return _activeTransition.RuntimeStartedAt;
+                return _activeTransition.runtimeStartedAt;
             }
 
             var updated = _activeTransition;
-            updated.RuntimeStartedAt = now;
+            updated.runtimeStartedAt = now;
             _activeTransition = updated;
             return now;
         }
 
         private bool IsTransitionStillValid(int transitionToken)
         {
-            return _activeTransition.IsActive && _activeTransition.Token == transitionToken;
+            return _activeTransition.IsActive && _activeTransition.token == transitionToken;
         }
 
         private void CancelActiveTransition(string cancelCause, string triggerReason)
@@ -656,7 +656,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             _activeTransition = default;
 
             DebugUtility.LogVerbose(typeof(AudioBgmService),
-                $"[Audio][BGM] {snapshot.Kind} canceled token={snapshot.Token} cue='{snapshot.CueName}' configured={snapshot.ConfiguredSeconds:0.###} elapsed={elapsed:0.###} queuedAt={snapshot.QueuedAt:0.###} runtimeStartAt={snapshot.RuntimeStartedAt:0.###} cause='{cancelCause}' transitionReason='{snapshot.Reason}' triggerReason='{SafeReason(triggerReason)}'.",
+                $"[Audio][BGM] {snapshot.kind} canceled token={snapshot.token} cue='{snapshot.cueName}' configured={snapshot.configuredSeconds:0.###} elapsed={elapsed:0.###} queuedAt={snapshot.queuedAt:0.###} runtimeStartAt={snapshot.runtimeStartedAt:0.###} cause='{cancelCause}' transitionReason='{snapshot.reason}' triggerReason='{SafeReason(triggerReason)}'.",
                 DebugUtility.Colors.Info);
         }
 
@@ -676,13 +676,13 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             _activeTransition = default;
 
             DebugUtility.LogVerbose(typeof(AudioBgmService),
-                $"[Audio][BGM] {snapshot.Kind} {status} token={snapshot.Token} cue='{snapshot.CueName}' configured={snapshot.ConfiguredSeconds:0.###} elapsed={elapsed:0.###} elapsedMode='{(explicitElapsedSeconds.HasValue ? "coroutine_unscaled" : "runtime_clock")}' queuedAt={snapshot.QueuedAt:0.###} runtimeStartAt={snapshot.RuntimeStartedAt:0.###} detail='{detail}' reason='{snapshot.Reason}'.",
+                $"[Audio][BGM] {snapshot.kind} {status} token={snapshot.token} cue='{snapshot.cueName}' configured={snapshot.configuredSeconds:0.###} elapsed={elapsed:0.###} elapsedMode='{(explicitElapsedSeconds.HasValue ? "coroutine_unscaled" : "runtime_clock")}' queuedAt={snapshot.queuedAt:0.###} runtimeStartAt={snapshot.runtimeStartedAt:0.###} detail='{detail}' reason='{snapshot.reason}'.",
                 DebugUtility.Colors.Info);
         }
 
         private static double ComputeElapsedSeconds(in TransitionState transition)
         {
-            double startedAt = transition.RuntimeStartedAt > 0d ? transition.RuntimeStartedAt : transition.QueuedAt;
+            double startedAt = transition.runtimeStartedAt > 0d ? transition.runtimeStartedAt : transition.queuedAt;
             return Mathf.Max(0f, (float)(Time.realtimeSinceStartupAsDouble - startedAt));
         }
 

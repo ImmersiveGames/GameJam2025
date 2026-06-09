@@ -1145,41 +1145,41 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoveryStarted)
                 {
-                    aggregation.DiscoveryStarted = true;
+                    aggregation.discoveryStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscovered)
                 {
-                    aggregation.DiscoveredCount += 1;
+                    aggregation.discoveredCount += 1;
 
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string roleId = ExtractToken(fact.Message, "roleId");
                     if (!string.Equals(roleId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.RoleIds.Add(roleId);
+                        aggregation.roleIds.Add(roleId);
                     }
 
                     string contributorKind = ExtractToken(fact.Message, "contributorKind");
                     if (!string.Equals(contributorKind, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ContributorKinds.Add(contributorKind);
+                        aggregation.contributorKinds.Add(contributorKind);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoverySkippedNoContent)
                 {
-                    aggregation.SkippedNoContent = true;
+                    aggregation.skippedNoContent = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoveryCompleted)
                 {
-                    aggregation.DiscoveryCompleted = true;
+                    aggregation.discoveryCompleted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorDiscoveryFailed)
                 {
-                    aggregation.DiscoveryFailed = true;
+                    aggregation.discoveryFailed = true;
                 }
 
                 byEntry[key] = aggregation;
@@ -1189,12 +1189,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             {
                 ActivityObjectContributorDiscoveryCheckpointAggregation aggregation = pair.Value;
                 string checkpointStatus = ResolveActivityObjectContributorDiscoveryCheckpointStatus(aggregation);
-                string targetIds = JoinValues(aggregation.TargetIds);
-                string roleIds = JoinValues(aggregation.RoleIds);
-                string contributorKinds = JoinValues(aggregation.ContributorKinds);
+                string targetIds = JoinValues(aggregation.targetIds);
+                string roleIds = JoinValues(aggregation.roleIds);
+                string contributorKinds = JoinValues(aggregation.contributorKinds);
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.DiscoveryStarted}|{aggregation.DiscoveredCount}|{targetIds}|{roleIds}|{contributorKinds}|{aggregation.DiscoveryCompleted}|{aggregation.DiscoveryFailed}|{aggregation.SkippedNoContent}|{checkpointStatus}";
+                    $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.discoveryStarted}|{aggregation.discoveredCount}|{targetIds}|{roleIds}|{contributorKinds}|{aggregation.discoveryCompleted}|{aggregation.discoveryFailed}|{aggregation.skippedNoContent}|{checkpointStatus}";
 
                 if (_lastActivityObjectContributorDiscoveryCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -1205,40 +1205,40 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectContributorDiscoveryCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectContributorDiscovery' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' discoveryStarted='{aggregation.DiscoveryStarted.ToString().ToLowerInvariant()}' " +
-                    $"discoveredCount='{aggregation.DiscoveredCount}' targetIds='{targetIds}' roleIds='{roleIds}' contributorKinds='{contributorKinds}' " +
-                    $"discoveryCompleted='{aggregation.DiscoveryCompleted.ToString().ToLowerInvariant()}' discoveryFailed='{aggregation.DiscoveryFailed.ToString().ToLowerInvariant()}' " +
-                    $"skippedNoContent='{aggregation.SkippedNoContent.ToString().ToLowerInvariant()}'");
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' discoveryStarted='{aggregation.discoveryStarted.ToString().ToLowerInvariant()}' " +
+                    $"discoveredCount='{aggregation.discoveredCount}' targetIds='{targetIds}' roleIds='{roleIds}' contributorKinds='{contributorKinds}' " +
+                    $"discoveryCompleted='{aggregation.discoveryCompleted.ToString().ToLowerInvariant()}' discoveryFailed='{aggregation.discoveryFailed.ToString().ToLowerInvariant()}' " +
+                    $"skippedNoContent='{aggregation.skippedNoContent.ToString().ToLowerInvariant()}'");
             }
         }
 
         private static string ResolveActivityObjectContributorDiscoveryCheckpointStatus(ActivityObjectContributorDiscoveryCheckpointAggregation aggregation)
         {
-            if (aggregation.DiscoveryFailed)
+            if (aggregation.discoveryFailed)
             {
                 return "Failed";
             }
 
-            if (string.Equals(aggregation.ActivityId, "activity_01", StringComparison.Ordinal))
+            if (string.Equals(aggregation.activityId, "activity_01", StringComparison.Ordinal))
             {
-                return aggregation.DiscoveryCompleted && aggregation.DiscoveredCount >= 1
+                return aggregation.discoveryCompleted && aggregation.discoveredCount >= 1
                     ? "Passed"
                     : "Waiting";
             }
 
-            if (string.Equals(aggregation.ActivityId, "activity_02", StringComparison.Ordinal))
+            if (string.Equals(aggregation.activityId, "activity_02", StringComparison.Ordinal))
             {
-                return aggregation.SkippedNoContent
+                return aggregation.skippedNoContent
                     ? "Passed"
                     : "Waiting";
             }
 
-            if (aggregation.DiscoveryCompleted && aggregation.DiscoveredCount >= 1)
+            if (aggregation.discoveryCompleted && aggregation.discoveredCount >= 1)
             {
                 return "Passed";
             }
 
-            if (aggregation.SkippedNoContent)
+            if (aggregation.skippedNoContent)
             {
                 return "Passed";
             }
@@ -1293,73 +1293,73 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ObjectResetStarted)
                 {
-                    aggregation.ResetStarted = true;
+                    aggregation.resetStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectResetCommandIssued)
                 {
-                    aggregation.CommandCount += 1;
+                    aggregation.commandCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string resetGroup = ExtractToken(fact.Message, "resetGroup");
                     if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ResetGroups.Add(resetGroup);
+                        aggregation.resetGroups.Add(resetGroup);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectResetApplied)
                 {
-                    aggregation.AppliedCount += 1;
+                    aggregation.appliedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string resetGroup = ExtractToken(fact.Message, "resetGroup");
                     if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ResetGroups.Add(resetGroup);
+                        aggregation.resetGroups.Add(resetGroup);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectResetSkippedOptional)
                 {
-                    aggregation.SkippedCount += 1;
+                    aggregation.skippedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string resetGroup = ExtractToken(fact.Message, "resetGroup");
                     if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ResetGroups.Add(resetGroup);
+                        aggregation.resetGroups.Add(resetGroup);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectResetFailed)
                 {
-                    aggregation.FailedCount += 1;
+                    aggregation.failedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string resetGroup = ExtractToken(fact.Message, "resetGroup");
                     if (!string.Equals(resetGroup, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ResetGroups.Add(resetGroup);
+                        aggregation.resetGroups.Add(resetGroup);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectResetCompleted)
                 {
-                    aggregation.ResetCompleted = true;
-                    aggregation.CompletionKind = ExtractToken(fact.Message, "completionKind");
-                    aggregation.CompletionReason = ExtractToken(fact.Message, "completionReason");
+                    aggregation.resetCompleted = true;
+                    aggregation.completionKind = ExtractToken(fact.Message, "completionKind");
+                    aggregation.completionReason = ExtractToken(fact.Message, "completionReason");
                 }
 
                 byEntry[key] = aggregation;
@@ -1368,14 +1368,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             foreach (KeyValuePair<string, ActivityObjectResetCheckpointAggregation> pair in byEntry)
             {
                 ActivityObjectResetCheckpointAggregation aggregation = pair.Value;
-                string targetIds = JoinValues(aggregation.TargetIds);
-                string resetGroups = JoinValues(aggregation.ResetGroups);
+                string targetIds = JoinValues(aggregation.targetIds);
+                string resetGroups = JoinValues(aggregation.resetGroups);
                 string checkpointStatus = ResolveActivityObjectResetCheckpointStatus(aggregation);
-                string completionKind = string.IsNullOrWhiteSpace(aggregation.CompletionKind) ? "<none>" : aggregation.CompletionKind;
-                string completionReason = string.IsNullOrWhiteSpace(aggregation.CompletionReason) ? "<none>" : aggregation.CompletionReason;
+                string completionKind = string.IsNullOrWhiteSpace(aggregation.completionKind) ? "<none>" : aggregation.completionKind;
+                string completionReason = string.IsNullOrWhiteSpace(aggregation.completionReason) ? "<none>" : aggregation.completionReason;
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ResetStarted}|{aggregation.CommandCount}|{aggregation.AppliedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{resetGroups}|{aggregation.ResetCompleted}|{checkpointStatus}|{completionKind}|{completionReason}";
+                    $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.resetStarted}|{aggregation.commandCount}|{aggregation.appliedCount}|{aggregation.skippedCount}|{aggregation.failedCount}|{targetIds}|{resetGroups}|{aggregation.resetCompleted}|{checkpointStatus}|{completionKind}|{completionReason}";
 
                 if (_lastActivityObjectResetCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -1386,9 +1386,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectResetCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectReset' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' resetStarted='{aggregation.ResetStarted.ToString().ToLowerInvariant()}' " +
-                    $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
-                    $"targetIds='{targetIds}' resetGroups='{resetGroups}' resetCompleted='{aggregation.ResetCompleted.ToString().ToLowerInvariant()}' " +
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' resetStarted='{aggregation.resetStarted.ToString().ToLowerInvariant()}' " +
+                    $"commandCount='{aggregation.commandCount}' appliedCount='{aggregation.appliedCount}' skippedCount='{aggregation.skippedCount}' failedCount='{aggregation.failedCount}' " +
+                    $"targetIds='{targetIds}' resetGroups='{resetGroups}' resetCompleted='{aggregation.resetCompleted.ToString().ToLowerInvariant()}' " +
                     $"completionKind='{completionKind}' completionReason='{completionReason}'");
             }
         }
@@ -1407,36 +1407,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static string ResolveActivityObjectResetCheckpointStatus(ActivityObjectResetCheckpointAggregation aggregation)
         {
-            if (aggregation.FailedCount > 0)
+            if (aggregation.failedCount > 0)
             {
                 return "Failed";
             }
 
-            if (aggregation.ResetCompleted)
+            if (aggregation.resetCompleted)
             {
-                if (aggregation.AppliedCount > 0)
+                if (aggregation.appliedCount > 0)
                 {
                     return "PassedApplied";
                 }
 
-                if (string.Equals(aggregation.CompletionKind, "SkippedOptional", StringComparison.Ordinal))
+                if (string.Equals(aggregation.completionKind, "SkippedOptional", StringComparison.Ordinal))
                 {
                     return "SkippedOptional";
                 }
 
-                if (string.Equals(aggregation.CompletionKind, "InventoryInvalidOrStale", StringComparison.Ordinal))
+                if (string.Equals(aggregation.completionKind, "InventoryInvalidOrStale", StringComparison.Ordinal))
                 {
                     return "SkippedInventoryInvalidOrStale";
                 }
 
-                if (string.Equals(aggregation.CompletionKind, "NoCommands", StringComparison.Ordinal) &&
-                    aggregation.CommandCount == 0 &&
-                    aggregation.FailedCount == 0)
+                if (string.Equals(aggregation.completionKind, "NoCommands", StringComparison.Ordinal) &&
+                    aggregation.commandCount == 0 &&
+                    aggregation.failedCount == 0)
                 {
                     return "PassedNoCommands";
                 }
 
-                if (string.Equals(aggregation.CompletionKind, "NoApplicableGroups", StringComparison.Ordinal))
+                if (string.Equals(aggregation.completionKind, "NoApplicableGroups", StringComparison.Ordinal))
                 {
                     return "SkippedNoApplicableGroups";
                 }
@@ -1484,71 +1484,71 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ObjectReleaseStarted)
                 {
-                    aggregation.ReleaseStarted = true;
+                    aggregation.releaseStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectReleaseCommandIssued)
                 {
-                    aggregation.CommandCount += 1;
+                    aggregation.commandCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string releaseKind = ExtractToken(fact.Message, "releaseKind");
                     if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ReleaseKinds.Add(releaseKind);
+                        aggregation.releaseKinds.Add(releaseKind);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectReleaseApplied)
                 {
-                    aggregation.AppliedCount += 1;
+                    aggregation.appliedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string releaseKind = ExtractToken(fact.Message, "releaseKind");
                     if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ReleaseKinds.Add(releaseKind);
+                        aggregation.releaseKinds.Add(releaseKind);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectReleaseSkippedOptional)
                 {
-                    aggregation.SkippedCount += 1;
+                    aggregation.skippedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string releaseKind = ExtractToken(fact.Message, "releaseKind");
                     if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ReleaseKinds.Add(releaseKind);
+                        aggregation.releaseKinds.Add(releaseKind);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectReleaseFailed)
                 {
-                    aggregation.FailedCount += 1;
+                    aggregation.failedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string releaseKind = ExtractToken(fact.Message, "releaseKind");
                     if (!string.Equals(releaseKind, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.ReleaseKinds.Add(releaseKind);
+                        aggregation.releaseKinds.Add(releaseKind);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ObjectReleaseCompleted)
                 {
-                    aggregation.ReleaseCompleted = true;
+                    aggregation.releaseCompleted = true;
                 }
 
                 byEntry[key] = aggregation;
@@ -1557,12 +1557,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             foreach (KeyValuePair<string, ActivityObjectReleaseCheckpointAggregation> pair in byEntry)
             {
                 ActivityObjectReleaseCheckpointAggregation aggregation = pair.Value;
-                string targetIds = JoinValues(aggregation.TargetIds);
-                string releaseKinds = JoinValues(aggregation.ReleaseKinds);
+                string targetIds = JoinValues(aggregation.targetIds);
+                string releaseKinds = JoinValues(aggregation.releaseKinds);
                 string checkpointStatus = ResolveActivityObjectReleaseCheckpointStatus(aggregation);
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ReleaseStarted}|{aggregation.CommandCount}|{aggregation.AppliedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{releaseKinds}|{aggregation.ReleaseCompleted}|{checkpointStatus}";
+                    $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.releaseStarted}|{aggregation.commandCount}|{aggregation.appliedCount}|{aggregation.skippedCount}|{aggregation.failedCount}|{targetIds}|{releaseKinds}|{aggregation.releaseCompleted}|{checkpointStatus}";
 
                 if (_lastActivityObjectReleaseCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -1573,9 +1573,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectReleaseCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectRelease' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' releaseStarted='{aggregation.ReleaseStarted.ToString().ToLowerInvariant()}' " +
-                    $"commandCount='{aggregation.CommandCount}' appliedCount='{aggregation.AppliedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
-                    $"targetIds='{targetIds}' releaseKinds='{releaseKinds}' releaseCompleted='{aggregation.ReleaseCompleted.ToString().ToLowerInvariant()}'");
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' releaseStarted='{aggregation.releaseStarted.ToString().ToLowerInvariant()}' " +
+                    $"commandCount='{aggregation.commandCount}' appliedCount='{aggregation.appliedCount}' skippedCount='{aggregation.skippedCount}' failedCount='{aggregation.failedCount}' " +
+                    $"targetIds='{targetIds}' releaseKinds='{releaseKinds}' releaseCompleted='{aggregation.releaseCompleted.ToString().ToLowerInvariant()}'");
             }
         }
 
@@ -1615,34 +1615,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptureStarted)
                 {
-                    aggregation.CaptureStarted = true;
+                    aggregation.captureStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptured)
                 {
-                    aggregation.CapturedCount += 1;
+                    aggregation.capturedCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
 
                     string hasTransformPayload = ExtractToken(fact.Message, "hasTransformPayload");
                     if (string.Equals(hasTransformPayload, "true", StringComparison.OrdinalIgnoreCase))
                     {
-                        aggregation.HasTransformPayload = true;
+                        aggregation.hasTransformPayload = true;
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptureFailed)
                 {
-                    aggregation.CaptureFailed = true;
+                    aggregation.captureFailed = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptureCompleted)
                 {
-                    aggregation.CaptureCompleted = true;
+                    aggregation.captureCompleted = true;
                     string hasTransformPayload = ExtractToken(fact.Message, "hasTransformPayload");
                     if (string.Equals(hasTransformPayload, "true", StringComparison.OrdinalIgnoreCase))
                     {
-                        aggregation.HasTransformPayload = true;
+                        aggregation.hasTransformPayload = true;
                     }
                 }
 
@@ -1652,11 +1652,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             foreach (KeyValuePair<string, ActivityObjectSnapshotCaptureCheckpointAggregation> pair in byEntry)
             {
                 ActivityObjectSnapshotCaptureCheckpointAggregation aggregation = pair.Value;
-                string targetIds = JoinValues(aggregation.TargetIds);
+                string targetIds = JoinValues(aggregation.targetIds);
                 string checkpointStatus = ResolveActivityObjectSnapshotCaptureCheckpointStatus(aggregation);
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.CaptureStarted}|{aggregation.CapturedCount}|{targetIds}|{aggregation.HasTransformPayload}|{aggregation.CaptureCompleted}|{aggregation.CaptureFailed}|{checkpointStatus}";
+                    $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.captureStarted}|{aggregation.capturedCount}|{targetIds}|{aggregation.hasTransformPayload}|{aggregation.captureCompleted}|{aggregation.captureFailed}|{checkpointStatus}";
 
                 if (_lastActivityObjectSnapshotCaptureCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -1667,20 +1667,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectSnapshotCaptureCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectSnapshotCapture' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' captureStarted='{aggregation.CaptureStarted.ToString().ToLowerInvariant()}' " +
-                    $"capturedCount='{aggregation.CapturedCount}' targetIds='{targetIds}' hasTransformPayload='{aggregation.HasTransformPayload.ToString().ToLowerInvariant()}' " +
-                    $"captureCompleted='{aggregation.CaptureCompleted.ToString().ToLowerInvariant()}' captureFailed='{aggregation.CaptureFailed.ToString().ToLowerInvariant()}'");
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' captureStarted='{aggregation.captureStarted.ToString().ToLowerInvariant()}' " +
+                    $"capturedCount='{aggregation.capturedCount}' targetIds='{targetIds}' hasTransformPayload='{aggregation.hasTransformPayload.ToString().ToLowerInvariant()}' " +
+                    $"captureCompleted='{aggregation.captureCompleted.ToString().ToLowerInvariant()}' captureFailed='{aggregation.captureFailed.ToString().ToLowerInvariant()}'");
             }
         }
 
         private static string ResolveActivityObjectSnapshotCaptureCheckpointStatus(ActivityObjectSnapshotCaptureCheckpointAggregation aggregation)
         {
-            if (aggregation.CaptureFailed)
+            if (aggregation.captureFailed)
             {
                 return "Failed";
             }
 
-            if (aggregation.CaptureCompleted)
+            if (aggregation.captureCompleted)
             {
                 return "Passed";
             }
@@ -1727,7 +1727,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotRestoreStarted)
                 {
-                    aggregation.RestoreStarted = true;
+                    aggregation.restoreStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotCaptured)
                 {
@@ -1736,58 +1736,58 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     if (!string.Equals(capturedTargetId, "<none>", StringComparison.Ordinal) &&
                         !string.Equals(capturedTargetPath, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.CaptureTargetTransformPathByTargetId[capturedTargetId] = capturedTargetPath;
+                        aggregation.captureTargetTransformPathByTargetId[capturedTargetId] = capturedTargetPath;
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotRestoreApplied)
                 {
-                    aggregation.RestoredCount += 1;
+                    aggregation.restoredCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
-                        aggregation.AppliedTargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
+                        aggregation.appliedTargetIds.Add(targetId);
                     }
 
-                    aggregation.PayloadPosition = ExtractToken(fact.Message, "payloadPosition");
-                    aggregation.BeforePosition = ExtractToken(fact.Message, "beforePosition");
-                    aggregation.AfterPosition = ExtractToken(fact.Message, "afterPosition");
-                    aggregation.CoordinateSpace = ExtractToken(fact.Message, "coordinateSpace");
-                    aggregation.RestoreVerified = string.Equals(ExtractToken(fact.Message, "restoreVerified"), "true", StringComparison.OrdinalIgnoreCase);
+                    aggregation.payloadPosition = ExtractToken(fact.Message, "payloadPosition");
+                    aggregation.beforePosition = ExtractToken(fact.Message, "beforePosition");
+                    aggregation.afterPosition = ExtractToken(fact.Message, "afterPosition");
+                    aggregation.coordinateSpace = ExtractToken(fact.Message, "coordinateSpace");
+                    aggregation.restoreVerified = string.Equals(ExtractToken(fact.Message, "restoreVerified"), "true", StringComparison.OrdinalIgnoreCase);
                     string restoreTargetPath = ExtractToken(fact.Message, "targetTransformPath");
                     if (!string.Equals(restoreTargetPath, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.RestoreTargetTransformPathByTargetId[targetId] = restoreTargetPath;
-                        aggregation.RestoreTargetTransformPath = restoreTargetPath;
+                        aggregation.restoreTargetTransformPathByTargetId[targetId] = restoreTargetPath;
+                        aggregation.restoreTargetTransformPath = restoreTargetPath;
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotRestoreFailed)
                 {
-                    aggregation.RestoreFailed = true;
+                    aggregation.restoreFailed = true;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.FailedTargetIds.Add(targetId);
+                        aggregation.failedTargetIds.Add(targetId);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotRestoreCompleted)
                 {
-                    aggregation.RestoreCompleted = true;
-                    aggregation.PayloadAvailable = string.Equals(ExtractToken(fact.Message, "payloadAvailable"), "true", StringComparison.OrdinalIgnoreCase);
-                    aggregation.PayloadObjectCount = ParseIntToken(fact.Message, "payloadObjectCount");
-                    aggregation.MatchedTargetCount = ParseIntToken(fact.Message, "matchedTargetCount");
-                    aggregation.RestoredCount = Math.Max(aggregation.RestoredCount, ParseIntToken(fact.Message, "restoredCount"));
-                    aggregation.RestoreFailed = aggregation.RestoreFailed || string.Equals(ExtractToken(fact.Message, "restoreFailed"), "true", StringComparison.OrdinalIgnoreCase);
+                    aggregation.restoreCompleted = true;
+                    aggregation.payloadAvailable = string.Equals(ExtractToken(fact.Message, "payloadAvailable"), "true", StringComparison.OrdinalIgnoreCase);
+                    aggregation.payloadObjectCount = ParseIntToken(fact.Message, "payloadObjectCount");
+                    aggregation.matchedTargetCount = ParseIntToken(fact.Message, "matchedTargetCount");
+                    aggregation.restoredCount = Math.Max(aggregation.restoredCount, ParseIntToken(fact.Message, "restoredCount"));
+                    aggregation.restoreFailed = aggregation.restoreFailed || string.Equals(ExtractToken(fact.Message, "restoreFailed"), "true", StringComparison.OrdinalIgnoreCase);
                     string restoreVerifiedToken = ExtractToken(fact.Message, "restoreVerified");
                     if (!string.Equals(restoreVerifiedToken, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.RestoreVerified = string.Equals(restoreVerifiedToken, "true", StringComparison.OrdinalIgnoreCase);
+                        aggregation.restoreVerified = string.Equals(restoreVerifiedToken, "true", StringComparison.OrdinalIgnoreCase);
                     }
 
                     string coordinateSpace = ExtractToken(fact.Message, "coordinateSpace");
                     if (!string.Equals(coordinateSpace, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.CoordinateSpace = coordinateSpace;
+                        aggregation.coordinateSpace = coordinateSpace;
                     }
 
                     string appliedIds = ExtractToken(fact.Message, "appliedTargetIds");
@@ -1799,7 +1799,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                             string current = splitApplied[idx].Trim();
                             if (!string.IsNullOrWhiteSpace(current))
                             {
-                                aggregation.AppliedTargetIds.Add(current);
+                                aggregation.appliedTargetIds.Add(current);
                             }
                         }
                     }
@@ -1813,7 +1813,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                             string current = splitFailed[idx].Trim();
                             if (!string.IsNullOrWhiteSpace(current))
                             {
-                                aggregation.FailedTargetIds.Add(current);
+                                aggregation.failedTargetIds.Add(current);
                             }
                         }
                     }
@@ -1827,7 +1827,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                             string current = split[idx].Trim();
                             if (!string.IsNullOrWhiteSpace(current))
                             {
-                                aggregation.TargetIds.Add(current);
+                                aggregation.targetIds.Add(current);
                             }
                         }
                     }
@@ -1839,36 +1839,36 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             foreach (KeyValuePair<string, ActivityObjectSnapshotRestoreCheckpointAggregation> pair in byEntry)
             {
                 ActivityObjectSnapshotRestoreCheckpointAggregation aggregation = pair.Value;
-                foreach (KeyValuePair<string, string> capturePair in aggregation.CaptureTargetTransformPathByTargetId)
+                foreach (KeyValuePair<string, string> capturePair in aggregation.captureTargetTransformPathByTargetId)
                 {
-                    if (!aggregation.RestoreTargetTransformPathByTargetId.TryGetValue(capturePair.Key, out string restoredPath))
+                    if (!aggregation.restoreTargetTransformPathByTargetId.TryGetValue(capturePair.Key, out string restoredPath))
                     {
                         continue;
                     }
 
                     if (!string.Equals(capturePair.Value, restoredPath, StringComparison.Ordinal))
                     {
-                        aggregation.SnapshotRestoreTargetTransformMismatch = true;
-                        aggregation.MismatchReason = "snapshot_restore_target_transform_mismatch";
-                        if (string.Equals(aggregation.CaptureTargetTransformPath, "<none>", StringComparison.Ordinal))
+                        aggregation.snapshotRestoreTargetTransformMismatch = true;
+                        aggregation.mismatchReason = "snapshot_restore_target_transform_mismatch";
+                        if (string.Equals(aggregation.captureTargetTransformPath, "<none>", StringComparison.Ordinal))
                         {
-                            aggregation.CaptureTargetTransformPath = capturePair.Value;
+                            aggregation.captureTargetTransformPath = capturePair.Value;
                         }
 
-                        if (string.Equals(aggregation.RestoreTargetTransformPath, "<none>", StringComparison.Ordinal))
+                        if (string.Equals(aggregation.restoreTargetTransformPath, "<none>", StringComparison.Ordinal))
                         {
-                            aggregation.RestoreTargetTransformPath = restoredPath;
+                            aggregation.restoreTargetTransformPath = restoredPath;
                         }
                     }
                 }
 
-                string targetIds = JoinValues(aggregation.TargetIds);
-                string appliedTargetIds = JoinValues(aggregation.AppliedTargetIds);
-                string failedTargetIds = JoinValues(aggregation.FailedTargetIds);
+                string targetIds = JoinValues(aggregation.targetIds);
+                string appliedTargetIds = JoinValues(aggregation.appliedTargetIds);
+                string failedTargetIds = JoinValues(aggregation.failedTargetIds);
                 string checkpointStatus = ResolveActivityObjectSnapshotRestoreCheckpointStatus(aggregation);
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.PayloadAvailable}|{aggregation.PayloadObjectCount}|{aggregation.MatchedTargetCount}|{aggregation.RestoredCount}|{targetIds}|{appliedTargetIds}|{failedTargetIds}|{aggregation.CoordinateSpace}|{aggregation.PayloadPosition}|{aggregation.BeforePosition}|{aggregation.AfterPosition}|{aggregation.RestoreVerified}|{aggregation.CaptureTargetTransformPath}|{aggregation.RestoreTargetTransformPath}|{aggregation.SnapshotRestoreTargetTransformMismatch}|{aggregation.MismatchReason}|{aggregation.RestoreCompleted}|{aggregation.RestoreFailed}|{checkpointStatus}";
+                    $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.payloadAvailable}|{aggregation.payloadObjectCount}|{aggregation.matchedTargetCount}|{aggregation.restoredCount}|{targetIds}|{appliedTargetIds}|{failedTargetIds}|{aggregation.coordinateSpace}|{aggregation.payloadPosition}|{aggregation.beforePosition}|{aggregation.afterPosition}|{aggregation.restoreVerified}|{aggregation.captureTargetTransformPath}|{aggregation.restoreTargetTransformPath}|{aggregation.snapshotRestoreTargetTransformMismatch}|{aggregation.mismatchReason}|{aggregation.restoreCompleted}|{aggregation.restoreFailed}|{checkpointStatus}";
 
                 if (_lastActivityObjectSnapshotRestoreCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -1879,57 +1879,57 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectSnapshotRestoreCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectSnapshotRestore' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' payloadAvailable='{aggregation.PayloadAvailable.ToString().ToLowerInvariant()}' " +
-                    $"payloadObjectCount='{aggregation.PayloadObjectCount}' matchedTargetCount='{aggregation.MatchedTargetCount}' restoredCount='{aggregation.RestoredCount}' " +
-                    $"targetIds='{targetIds}' appliedTargetIds='{appliedTargetIds}' failedTargetIds='{failedTargetIds}' coordinateSpace='{aggregation.CoordinateSpace}' " +
-                    $"captureTargetTransformPath='{aggregation.CaptureTargetTransformPath}' restoreTargetTransformPath='{aggregation.RestoreTargetTransformPath}' " +
-                    $"snapshotRestoreTargetTransformMismatch='{aggregation.SnapshotRestoreTargetTransformMismatch.ToString().ToLowerInvariant()}' mismatchReason='{aggregation.MismatchReason}' " +
-                    $"payloadPosition='{aggregation.PayloadPosition}' beforePosition='{aggregation.BeforePosition}' afterPosition='{aggregation.AfterPosition}' restoreVerified='{aggregation.RestoreVerified.ToString().ToLowerInvariant()}' " +
-                    $"restoreCompleted='{aggregation.RestoreCompleted.ToString().ToLowerInvariant()}' restoreFailed='{aggregation.RestoreFailed.ToString().ToLowerInvariant()}'");
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' payloadAvailable='{aggregation.payloadAvailable.ToString().ToLowerInvariant()}' " +
+                    $"payloadObjectCount='{aggregation.payloadObjectCount}' matchedTargetCount='{aggregation.matchedTargetCount}' restoredCount='{aggregation.restoredCount}' " +
+                    $"targetIds='{targetIds}' appliedTargetIds='{appliedTargetIds}' failedTargetIds='{failedTargetIds}' coordinateSpace='{aggregation.coordinateSpace}' " +
+                    $"captureTargetTransformPath='{aggregation.captureTargetTransformPath}' restoreTargetTransformPath='{aggregation.restoreTargetTransformPath}' " +
+                    $"snapshotRestoreTargetTransformMismatch='{aggregation.snapshotRestoreTargetTransformMismatch.ToString().ToLowerInvariant()}' mismatchReason='{aggregation.mismatchReason}' " +
+                    $"payloadPosition='{aggregation.payloadPosition}' beforePosition='{aggregation.beforePosition}' afterPosition='{aggregation.afterPosition}' restoreVerified='{aggregation.restoreVerified.ToString().ToLowerInvariant()}' " +
+                    $"restoreCompleted='{aggregation.restoreCompleted.ToString().ToLowerInvariant()}' restoreFailed='{aggregation.restoreFailed.ToString().ToLowerInvariant()}'");
             }
         }
 
         private static string ResolveActivityObjectSnapshotRestoreCheckpointStatus(ActivityObjectSnapshotRestoreCheckpointAggregation aggregation)
         {
-            if (aggregation.RestoredCount > 0 && !aggregation.RestoreVerified)
+            if (aggregation.restoredCount > 0 && !aggregation.restoreVerified)
             {
                 return "Failed";
             }
 
-            if (aggregation.SnapshotRestoreTargetTransformMismatch)
+            if (aggregation.snapshotRestoreTargetTransformMismatch)
             {
                 return "Failed";
             }
 
-            if (aggregation.RestoreFailed)
+            if (aggregation.restoreFailed)
             {
                 return "Failed";
             }
 
-            if (aggregation.RestoreCompleted)
+            if (aggregation.restoreCompleted)
             {
                 // Restore was completed, but check if it was actually applied or just skipped due to missing payload
-                if (!aggregation.PayloadAvailable)
+                if (!aggregation.payloadAvailable)
                 {
                     // No payload was available - checkpoint should be Skipped/NotApplicable, not Passed
                     return "Skipped";
                 }
 
                 // Payload was available - check if restore was actually applied
-                if (aggregation.MatchedTargetCount == 0)
+                if (aggregation.matchedTargetCount == 0)
                 {
                     // Payload had no matching targets for this entry - checkpoint skipped
                     return "Skipped";
                 }
 
                 // Restore was applied - mark as passed only if verified
-                if (aggregation.RestoredCount == aggregation.MatchedTargetCount && aggregation.RestoreVerified)
+                if (aggregation.restoredCount == aggregation.matchedTargetCount && aggregation.restoreVerified)
                 {
                     return "Passed";
                 }
 
                 // Some targets had restore applied, but not all matched ones or not verified
-                if (aggregation.RestoredCount > 0)
+                if (aggregation.restoredCount > 0)
                 {
                     return "Passed";
                 }
@@ -1943,12 +1943,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static string ResolveActivityObjectReleaseCheckpointStatus(ActivityObjectReleaseCheckpointAggregation aggregation)
         {
-            if (aggregation.FailedCount > 0)
+            if (aggregation.failedCount > 0)
             {
                 return "Failed";
             }
 
-            if (aggregation.ReleaseCompleted)
+            if (aggregation.releaseCompleted)
             {
                 return "Passed";
             }
@@ -1992,56 +1992,56 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractValidationStarted)
                 {
-                    aggregation.ValidationStarted = true;
+                    aggregation.validationStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractValidated)
                 {
-                    aggregation.ValidatedCount += 1;
-                    aggregation.TargetIds.Add(ExtractToken(fact.Message, "targetId"));
-                    aggregation.ProviderPaths.Add(ExtractToken(fact.Message, "providerPath"));
-                    aggregation.RestoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "targetTransformPath"));
+                    aggregation.validatedCount += 1;
+                    aggregation.targetIds.Add(ExtractToken(fact.Message, "targetId"));
+                    aggregation.providerPaths.Add(ExtractToken(fact.Message, "providerPath"));
+                    aggregation.restoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
+                    aggregation.targetTransformPaths.Add(ExtractToken(fact.Message, "targetTransformPath"));
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractSkippedOptional)
                 {
-                    aggregation.SkippedCount += 1;
-                    aggregation.TargetIds.Add(ExtractToken(fact.Message, "targetId"));
-                    aggregation.ProviderPaths.Add(ExtractToken(fact.Message, "providerPath"));
-                    aggregation.RestoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "targetTransformPath"));
+                    aggregation.skippedCount += 1;
+                    aggregation.targetIds.Add(ExtractToken(fact.Message, "targetId"));
+                    aggregation.providerPaths.Add(ExtractToken(fact.Message, "providerPath"));
+                    aggregation.restoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
+                    aggregation.targetTransformPaths.Add(ExtractToken(fact.Message, "targetTransformPath"));
                     string reason = ExtractToken(fact.Message, "reason");
                     if (!string.IsNullOrWhiteSpace(reason) &&
                         !string.Equals(reason, "<none>", StringComparison.Ordinal) &&
                         !string.Equals(reason, "snapshot_capability_not_declared_optional", StringComparison.Ordinal))
                     {
-                        aggregation.MismatchReason = reason;
+                        aggregation.mismatchReason = reason;
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractFailed)
                 {
-                    aggregation.FailedCount += 1;
-                    aggregation.TargetIds.Add(ExtractToken(fact.Message, "targetId"));
-                    aggregation.ProviderPaths.Add(ExtractToken(fact.Message, "providerPath"));
-                    aggregation.RestoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "providerTargetTransformPath"));
-                    aggregation.TargetTransformPaths.Add(ExtractToken(fact.Message, "restoreTargetTransformPath"));
+                    aggregation.failedCount += 1;
+                    aggregation.targetIds.Add(ExtractToken(fact.Message, "targetId"));
+                    aggregation.providerPaths.Add(ExtractToken(fact.Message, "providerPath"));
+                    aggregation.restoreEndpointPaths.Add(ExtractToken(fact.Message, "restoreEndpointPath"));
+                    aggregation.targetTransformPaths.Add(ExtractToken(fact.Message, "providerTargetTransformPath"));
+                    aggregation.targetTransformPaths.Add(ExtractToken(fact.Message, "restoreTargetTransformPath"));
                     string reason = ExtractToken(fact.Message, "reason");
-                    aggregation.MismatchReason = string.IsNullOrWhiteSpace(reason) ? "contract_failed" : reason;
+                    aggregation.mismatchReason = string.IsNullOrWhiteSpace(reason) ? "contract_failed" : reason;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectSnapshotContractValidationCompleted)
                 {
-                    aggregation.ValidationCompleted = true;
-                    aggregation.ValidatedCount = Math.Max(aggregation.ValidatedCount, ParseIntToken(fact.Message, "validatedCount"));
-                    aggregation.SkippedCount = Math.Max(aggregation.SkippedCount, ParseIntToken(fact.Message, "skippedCount"));
-                    aggregation.FailedCount = Math.Max(aggregation.FailedCount, ParseIntToken(fact.Message, "failedCount"));
-                    AddCsvTokens(aggregation.TargetIds, ExtractToken(fact.Message, "targetIds"));
-                    AddCsvTokens(aggregation.ProviderPaths, ExtractToken(fact.Message, "providerPaths"));
-                    AddCsvTokens(aggregation.RestoreEndpointPaths, ExtractToken(fact.Message, "restoreEndpointPaths"));
-                    AddCsvTokens(aggregation.TargetTransformPaths, ExtractToken(fact.Message, "targetTransformPaths"));
+                    aggregation.validationCompleted = true;
+                    aggregation.validatedCount = Math.Max(aggregation.validatedCount, ParseIntToken(fact.Message, "validatedCount"));
+                    aggregation.skippedCount = Math.Max(aggregation.skippedCount, ParseIntToken(fact.Message, "skippedCount"));
+                    aggregation.failedCount = Math.Max(aggregation.failedCount, ParseIntToken(fact.Message, "failedCount"));
+                    AddCsvTokens(aggregation.targetIds, ExtractToken(fact.Message, "targetIds"));
+                    AddCsvTokens(aggregation.providerPaths, ExtractToken(fact.Message, "providerPaths"));
+                    AddCsvTokens(aggregation.restoreEndpointPaths, ExtractToken(fact.Message, "restoreEndpointPaths"));
+                    AddCsvTokens(aggregation.targetTransformPaths, ExtractToken(fact.Message, "targetTransformPaths"));
                     string mismatchReason = ExtractToken(fact.Message, "mismatchReason");
                     if (!string.IsNullOrWhiteSpace(mismatchReason) && !string.Equals(mismatchReason, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.MismatchReason = mismatchReason;
+                        aggregation.mismatchReason = mismatchReason;
                     }
                 }
 
@@ -2051,13 +2051,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             foreach (KeyValuePair<string, ActivityObjectSnapshotContractValidationCheckpointAggregation> pair in byEntry)
             {
                 ActivityObjectSnapshotContractValidationCheckpointAggregation aggregation = pair.Value;
-                string targetIds = JoinValues(aggregation.TargetIds);
-                string providerPaths = JoinValues(aggregation.ProviderPaths);
-                string restoreEndpointPaths = JoinValues(aggregation.RestoreEndpointPaths);
-                string targetTransformPaths = JoinValues(aggregation.TargetTransformPaths);
+                string targetIds = JoinValues(aggregation.targetIds);
+                string providerPaths = JoinValues(aggregation.providerPaths);
+                string restoreEndpointPaths = JoinValues(aggregation.restoreEndpointPaths);
+                string targetTransformPaths = JoinValues(aggregation.targetTransformPaths);
                 string checkpointStatus = ResolveActivityObjectSnapshotContractValidationCheckpointStatus(aggregation);
 
-                string token = $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.ValidationStarted}|{aggregation.ValidatedCount}|{aggregation.SkippedCount}|{aggregation.FailedCount}|{targetIds}|{providerPaths}|{restoreEndpointPaths}|{targetTransformPaths}|{aggregation.MismatchReason}|{aggregation.ValidationCompleted}|{checkpointStatus}";
+                string token = $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.validationStarted}|{aggregation.validatedCount}|{aggregation.skippedCount}|{aggregation.failedCount}|{targetIds}|{providerPaths}|{restoreEndpointPaths}|{targetTransformPaths}|{aggregation.mismatchReason}|{aggregation.validationCompleted}|{checkpointStatus}";
                 if (_lastActivityObjectSnapshotContractValidationCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
                 {
@@ -2067,22 +2067,22 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectSnapshotContractValidationCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectSnapshotContractValidation' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' validationStarted='{aggregation.ValidationStarted.ToString().ToLowerInvariant()}' " +
-                    $"validatedCount='{aggregation.ValidatedCount}' skippedCount='{aggregation.SkippedCount}' failedCount='{aggregation.FailedCount}' " +
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' validationStarted='{aggregation.validationStarted.ToString().ToLowerInvariant()}' " +
+                    $"validatedCount='{aggregation.validatedCount}' skippedCount='{aggregation.skippedCount}' failedCount='{aggregation.failedCount}' " +
                     $"targetIds='{targetIds}' providerPaths='{providerPaths}' restoreEndpointPaths='{restoreEndpointPaths}' targetTransformPaths='{targetTransformPaths}' " +
-                    $"mismatchReason='{aggregation.MismatchReason}' validationCompleted='{aggregation.ValidationCompleted.ToString().ToLowerInvariant()}'");
+                    $"mismatchReason='{aggregation.mismatchReason}' validationCompleted='{aggregation.validationCompleted.ToString().ToLowerInvariant()}'");
             }
         }
 
         private static string ResolveActivityObjectSnapshotContractValidationCheckpointStatus(ActivityObjectSnapshotContractValidationCheckpointAggregation aggregation)
         {
-            if (aggregation.FailedCount > 0)
+            if (aggregation.failedCount > 0)
             {
                 return "Failed";
             }
 
-            if (aggregation.ValidationCompleted &&
-                string.Equals(aggregation.MismatchReason, "<none>", StringComparison.Ordinal))
+            if (aggregation.validationCompleted &&
+                string.Equals(aggregation.mismatchReason, "<none>", StringComparison.Ordinal))
             {
                 return "Passed";
             }
@@ -2126,28 +2126,28 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterStarted)
                 {
-                    aggregation.UnregisterStarted = true;
+                    aggregation.unregisterStarted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregistered)
                 {
-                    aggregation.UnregisteredCount += 1;
+                    aggregation.unregisteredCount += 1;
                     string targetId = ExtractToken(fact.Message, "targetId");
                     if (!string.Equals(targetId, "<none>", StringComparison.Ordinal))
                     {
-                        aggregation.TargetIds.Add(targetId);
+                        aggregation.targetIds.Add(targetId);
                     }
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterSkippedNoContributors)
                 {
-                    aggregation.SkippedNoContributors = true;
+                    aggregation.skippedNoContributors = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterCompleted)
                 {
-                    aggregation.UnregisterCompleted = true;
+                    aggregation.unregisterCompleted = true;
                 }
                 else if (fact.Kind == SessionActivityFactKind.ActivityObjectContributorUnregisterFailed)
                 {
-                    aggregation.UnregisterFailed = true;
+                    aggregation.unregisterFailed = true;
                 }
 
                 byEntry[key] = aggregation;
@@ -2156,11 +2156,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             foreach (KeyValuePair<string, ActivityObjectContributorUnregisterCheckpointAggregation> pair in byEntry)
             {
                 ActivityObjectContributorUnregisterCheckpointAggregation aggregation = pair.Value;
-                string targetIds = JoinValues(aggregation.TargetIds);
+                string targetIds = JoinValues(aggregation.targetIds);
                 string checkpointStatus = ResolveActivityObjectContributorUnregisterCheckpointStatus(aggregation);
 
                 string token =
-                    $"{aggregation.ActivityId}|{aggregation.EntrySequence}|{aggregation.UnregisterStarted}|{aggregation.UnregisteredCount}|{aggregation.SkippedNoContributors}|{aggregation.UnregisterCompleted}|{aggregation.UnregisterFailed}|{targetIds}|{checkpointStatus}";
+                    $"{aggregation.activityId}|{aggregation.entrySequence}|{aggregation.unregisterStarted}|{aggregation.unregisteredCount}|{aggregation.skippedNoContributors}|{aggregation.unregisterCompleted}|{aggregation.unregisterFailed}|{targetIds}|{checkpointStatus}";
 
                 if (_lastActivityObjectContributorUnregisterCheckpointTokenByEntry.TryGetValue(pair.Key, out string lastToken) &&
                     string.Equals(lastToken, token, StringComparison.Ordinal))
@@ -2171,21 +2171,21 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _lastActivityObjectContributorUnregisterCheckpointTokenByEntry[pair.Key] = token;
                 Debug.Log(
                     $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='ActivityObjectContributorUnregister' checkpointStatus='{checkpointStatus}' " +
-                    $"activityId='{aggregation.ActivityId}' entrySequence='{aggregation.EntrySequence}' unregisterStarted='{aggregation.UnregisterStarted.ToString().ToLowerInvariant()}' " +
-                    $"unregisteredCount='{aggregation.UnregisteredCount}' skippedNoContributors='{aggregation.SkippedNoContributors.ToString().ToLowerInvariant()}' " +
-                    $"unregisterCompleted='{aggregation.UnregisterCompleted.ToString().ToLowerInvariant()}' unregisterFailed='{aggregation.UnregisterFailed.ToString().ToLowerInvariant()}' " +
+                    $"activityId='{aggregation.activityId}' entrySequence='{aggregation.entrySequence}' unregisterStarted='{aggregation.unregisterStarted.ToString().ToLowerInvariant()}' " +
+                    $"unregisteredCount='{aggregation.unregisteredCount}' skippedNoContributors='{aggregation.skippedNoContributors.ToString().ToLowerInvariant()}' " +
+                    $"unregisterCompleted='{aggregation.unregisterCompleted.ToString().ToLowerInvariant()}' unregisterFailed='{aggregation.unregisterFailed.ToString().ToLowerInvariant()}' " +
                     $"targetIds='{targetIds}'");
             }
         }
 
         private static string ResolveActivityObjectContributorUnregisterCheckpointStatus(ActivityObjectContributorUnregisterCheckpointAggregation aggregation)
         {
-            if (aggregation.UnregisterFailed)
+            if (aggregation.unregisterFailed)
             {
                 return "Failed";
             }
 
-            if (aggregation.UnregisterCompleted)
+            if (aggregation.unregisterCompleted)
             {
                 return "Passed";
             }
@@ -2197,222 +2197,222 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         {
             public ActivityObjectContributorDiscoveryCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                DiscoveryStarted = false;
-                DiscoveredCount = 0;
-                DiscoveryCompleted = false;
-                DiscoveryFailed = false;
-                SkippedNoContent = false;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                RoleIds = new HashSet<string>(StringComparer.Ordinal);
-                ContributorKinds = new HashSet<string>(StringComparer.Ordinal);
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                discoveryStarted = false;
+                discoveredCount = 0;
+                discoveryCompleted = false;
+                discoveryFailed = false;
+                skippedNoContent = false;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
+                roleIds = new HashSet<string>(StringComparer.Ordinal);
+                contributorKinds = new HashSet<string>(StringComparer.Ordinal);
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool DiscoveryStarted;
-            public int DiscoveredCount;
-            public bool DiscoveryCompleted;
-            public bool DiscoveryFailed;
-            public bool SkippedNoContent;
-            public HashSet<string> TargetIds;
-            public HashSet<string> RoleIds;
-            public HashSet<string> ContributorKinds;
+            public string activityId;
+            public int entrySequence;
+            public bool discoveryStarted;
+            public int discoveredCount;
+            public bool discoveryCompleted;
+            public bool discoveryFailed;
+            public bool skippedNoContent;
+            public HashSet<string> targetIds;
+            public HashSet<string> roleIds;
+            public HashSet<string> contributorKinds;
         }
 
         private struct ActivityObjectResetCheckpointAggregation
         {
             public ActivityObjectResetCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                ResetStarted = false;
-                CommandCount = 0;
-                AppliedCount = 0;
-                SkippedCount = 0;
-                FailedCount = 0;
-                ResetCompleted = false;
-                CompletionKind = string.Empty;
-                CompletionReason = string.Empty;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                ResetGroups = new HashSet<string>(StringComparer.Ordinal);
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                resetStarted = false;
+                commandCount = 0;
+                appliedCount = 0;
+                skippedCount = 0;
+                failedCount = 0;
+                resetCompleted = false;
+                completionKind = string.Empty;
+                completionReason = string.Empty;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
+                resetGroups = new HashSet<string>(StringComparer.Ordinal);
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool ResetStarted;
-            public int CommandCount;
-            public int AppliedCount;
-            public int SkippedCount;
-            public int FailedCount;
-            public bool ResetCompleted;
-            public string CompletionKind;
-            public string CompletionReason;
-            public HashSet<string> TargetIds;
-            public HashSet<string> ResetGroups;
+            public string activityId;
+            public int entrySequence;
+            public bool resetStarted;
+            public int commandCount;
+            public int appliedCount;
+            public int skippedCount;
+            public int failedCount;
+            public bool resetCompleted;
+            public string completionKind;
+            public string completionReason;
+            public HashSet<string> targetIds;
+            public HashSet<string> resetGroups;
         }
 
         private struct ActivityObjectReleaseCheckpointAggregation
         {
             public ActivityObjectReleaseCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                ReleaseStarted = false;
-                CommandCount = 0;
-                AppliedCount = 0;
-                SkippedCount = 0;
-                FailedCount = 0;
-                ReleaseCompleted = false;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                ReleaseKinds = new HashSet<string>(StringComparer.Ordinal);
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                releaseStarted = false;
+                commandCount = 0;
+                appliedCount = 0;
+                skippedCount = 0;
+                failedCount = 0;
+                releaseCompleted = false;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
+                releaseKinds = new HashSet<string>(StringComparer.Ordinal);
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool ReleaseStarted;
-            public int CommandCount;
-            public int AppliedCount;
-            public int SkippedCount;
-            public int FailedCount;
-            public bool ReleaseCompleted;
-            public HashSet<string> TargetIds;
-            public HashSet<string> ReleaseKinds;
+            public string activityId;
+            public int entrySequence;
+            public bool releaseStarted;
+            public int commandCount;
+            public int appliedCount;
+            public int skippedCount;
+            public int failedCount;
+            public bool releaseCompleted;
+            public HashSet<string> targetIds;
+            public HashSet<string> releaseKinds;
         }
 
         private struct ActivityObjectSnapshotCaptureCheckpointAggregation
         {
             public ActivityObjectSnapshotCaptureCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                CaptureStarted = false;
-                CapturedCount = 0;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                HasTransformPayload = false;
-                CaptureCompleted = false;
-                CaptureFailed = false;
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                captureStarted = false;
+                capturedCount = 0;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
+                hasTransformPayload = false;
+                captureCompleted = false;
+                captureFailed = false;
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool CaptureStarted;
-            public int CapturedCount;
-            public HashSet<string> TargetIds;
-            public bool HasTransformPayload;
-            public bool CaptureCompleted;
-            public bool CaptureFailed;
+            public string activityId;
+            public int entrySequence;
+            public bool captureStarted;
+            public int capturedCount;
+            public HashSet<string> targetIds;
+            public bool hasTransformPayload;
+            public bool captureCompleted;
+            public bool captureFailed;
         }
 
         private struct ActivityObjectSnapshotContractValidationCheckpointAggregation
         {
             public ActivityObjectSnapshotContractValidationCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                ValidationStarted = false;
-                ValidatedCount = 0;
-                SkippedCount = 0;
-                FailedCount = 0;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                ProviderPaths = new HashSet<string>(StringComparer.Ordinal);
-                RestoreEndpointPaths = new HashSet<string>(StringComparer.Ordinal);
-                TargetTransformPaths = new HashSet<string>(StringComparer.Ordinal);
-                MismatchReason = "<none>";
-                ValidationCompleted = false;
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                validationStarted = false;
+                validatedCount = 0;
+                skippedCount = 0;
+                failedCount = 0;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
+                providerPaths = new HashSet<string>(StringComparer.Ordinal);
+                restoreEndpointPaths = new HashSet<string>(StringComparer.Ordinal);
+                targetTransformPaths = new HashSet<string>(StringComparer.Ordinal);
+                mismatchReason = "<none>";
+                validationCompleted = false;
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool ValidationStarted;
-            public int ValidatedCount;
-            public int SkippedCount;
-            public int FailedCount;
-            public HashSet<string> TargetIds;
-            public HashSet<string> ProviderPaths;
-            public HashSet<string> RestoreEndpointPaths;
-            public HashSet<string> TargetTransformPaths;
-            public string MismatchReason;
-            public bool ValidationCompleted;
+            public string activityId;
+            public int entrySequence;
+            public bool validationStarted;
+            public int validatedCount;
+            public int skippedCount;
+            public int failedCount;
+            public HashSet<string> targetIds;
+            public HashSet<string> providerPaths;
+            public HashSet<string> restoreEndpointPaths;
+            public HashSet<string> targetTransformPaths;
+            public string mismatchReason;
+            public bool validationCompleted;
         }
 
         private struct ActivityObjectSnapshotRestoreCheckpointAggregation
         {
             public ActivityObjectSnapshotRestoreCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                PayloadAvailable = false;
-                PayloadObjectCount = 0;
-                MatchedTargetCount = 0;
-                RestoredCount = 0;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
-                AppliedTargetIds = new HashSet<string>(StringComparer.Ordinal);
-                FailedTargetIds = new HashSet<string>(StringComparer.Ordinal);
-                CoordinateSpace = "world_transform";
-                PayloadPosition = "<none>";
-                BeforePosition = "<none>";
-                AfterPosition = "<none>";
-                CaptureTargetTransformPath = "<none>";
-                RestoreTargetTransformPath = "<none>";
-                SnapshotRestoreTargetTransformMismatch = false;
-                MismatchReason = "<none>";
-                CaptureTargetTransformPathByTargetId = new Dictionary<string, string>(StringComparer.Ordinal);
-                RestoreTargetTransformPathByTargetId = new Dictionary<string, string>(StringComparer.Ordinal);
-                RestoreVerified = false;
-                RestoreStarted = false;
-                RestoreCompleted = false;
-                RestoreFailed = false;
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                payloadAvailable = false;
+                payloadObjectCount = 0;
+                matchedTargetCount = 0;
+                restoredCount = 0;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
+                appliedTargetIds = new HashSet<string>(StringComparer.Ordinal);
+                failedTargetIds = new HashSet<string>(StringComparer.Ordinal);
+                coordinateSpace = "world_transform";
+                payloadPosition = "<none>";
+                beforePosition = "<none>";
+                afterPosition = "<none>";
+                captureTargetTransformPath = "<none>";
+                restoreTargetTransformPath = "<none>";
+                snapshotRestoreTargetTransformMismatch = false;
+                mismatchReason = "<none>";
+                captureTargetTransformPathByTargetId = new Dictionary<string, string>(StringComparer.Ordinal);
+                restoreTargetTransformPathByTargetId = new Dictionary<string, string>(StringComparer.Ordinal);
+                restoreVerified = false;
+                restoreStarted = false;
+                restoreCompleted = false;
+                restoreFailed = false;
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool PayloadAvailable;
-            public int PayloadObjectCount;
-            public int MatchedTargetCount;
-            public int RestoredCount;
-            public HashSet<string> TargetIds;
-            public HashSet<string> AppliedTargetIds;
-            public HashSet<string> FailedTargetIds;
-            public string CoordinateSpace;
-            public string PayloadPosition;
-            public string BeforePosition;
-            public string AfterPosition;
-            public string CaptureTargetTransformPath;
-            public string RestoreTargetTransformPath;
-            public bool SnapshotRestoreTargetTransformMismatch;
-            public string MismatchReason;
-            public Dictionary<string, string> CaptureTargetTransformPathByTargetId;
-            public Dictionary<string, string> RestoreTargetTransformPathByTargetId;
-            public bool RestoreVerified;
-            public bool RestoreStarted;
-            public bool RestoreCompleted;
-            public bool RestoreFailed;
+            public string activityId;
+            public int entrySequence;
+            public bool payloadAvailable;
+            public int payloadObjectCount;
+            public int matchedTargetCount;
+            public int restoredCount;
+            public HashSet<string> targetIds;
+            public HashSet<string> appliedTargetIds;
+            public HashSet<string> failedTargetIds;
+            public string coordinateSpace;
+            public string payloadPosition;
+            public string beforePosition;
+            public string afterPosition;
+            public string captureTargetTransformPath;
+            public string restoreTargetTransformPath;
+            public bool snapshotRestoreTargetTransformMismatch;
+            public string mismatchReason;
+            public Dictionary<string, string> captureTargetTransformPathByTargetId;
+            public Dictionary<string, string> restoreTargetTransformPathByTargetId;
+            public bool restoreVerified;
+            public bool restoreStarted;
+            public bool restoreCompleted;
+            public bool restoreFailed;
         }
 
         private struct ActivityObjectContributorUnregisterCheckpointAggregation
         {
             public ActivityObjectContributorUnregisterCheckpointAggregation(string activityId, int entrySequence)
             {
-                ActivityId = activityId;
-                EntrySequence = entrySequence;
-                UnregisterStarted = false;
-                UnregisteredCount = 0;
-                SkippedNoContributors = false;
-                UnregisterCompleted = false;
-                UnregisterFailed = false;
-                TargetIds = new HashSet<string>(StringComparer.Ordinal);
+                this.activityId = activityId;
+                this.entrySequence = entrySequence;
+                unregisterStarted = false;
+                unregisteredCount = 0;
+                skippedNoContributors = false;
+                unregisterCompleted = false;
+                unregisterFailed = false;
+                targetIds = new HashSet<string>(StringComparer.Ordinal);
             }
 
-            public string ActivityId;
-            public int EntrySequence;
-            public bool UnregisterStarted;
-            public int UnregisteredCount;
-            public bool SkippedNoContributors;
-            public bool UnregisterCompleted;
-            public bool UnregisterFailed;
-            public HashSet<string> TargetIds;
+            public string activityId;
+            public int entrySequence;
+            public bool unregisterStarted;
+            public int unregisteredCount;
+            public bool skippedNoContributors;
+            public bool unregisterCompleted;
+            public bool unregisterFailed;
+            public HashSet<string> targetIds;
         }
 
         private bool TryRunSmokeStep(string smokeName, string stepName, SessionActivityStage? expectedStage, Action action)

@@ -179,6 +179,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         ActorProjectileProfileId ProfileId { get; }
         ActorProjectileFireModeId DefaultFireModeId { get; }
         bool IsRequired { get; }
+        bool IsProjectileFireEnabled { get; }
+        bool HasSpawnAdapter { get; }
+        string SpawnAdapterName { get; }
+
+        void ConfigureSpawnAdapter(
+            IActorProjectileSpawnAdapter spawnAdapter,
+            string source,
+            string reason);
+
+        void SetProjectileFireEnabled(bool enabled);
 
         bool TryGetReadiness(
             ActorCommandId commandId,

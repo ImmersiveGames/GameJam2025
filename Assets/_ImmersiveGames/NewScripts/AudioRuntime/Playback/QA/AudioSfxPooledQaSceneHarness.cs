@@ -18,8 +18,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
     public sealed class AudioSfxPooledQaSceneHarness : MonoBehaviour
     {
         [Header("Pooled Cues")]
-        [SerializeField] private AudioSfxCueAsset pooled2dCue;
-        [SerializeField] private AudioSfxCueAsset pooled3dCue;
+        [SerializeField] private AudioSfxCueAsset pooled2DCue;
+        [SerializeField] private AudioSfxCueAsset pooled3DCue;
         [SerializeField] private AudioSfxCueAsset pooledSequenceCue;
         [SerializeField] private AudioSfxVoiceProfileAsset pooledVoiceProfile;
 
@@ -53,69 +53,69 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            if (pooled2dCue == null && pooled3dCue == null)
+            if (pooled2DCue == null && pooled3DCue == null)
             {
                 LogError("ValidatePooledSetup", "pooled2dCue and pooled3dCue are both null");
                 return;
             }
 
-            if (!IsCueConfiguredForPooled(pooled2dCue))
+            if (!IsCueConfiguredForPooled(pooled2DCue))
             {
-                LogError("ValidatePooledSetup", $"pooled2dCue='{SafeName(pooled2dCue)}' must resolve execution as pooled (execution profile)");
+                LogError("ValidatePooledSetup", $"pooled2dCue='{SafeName(pooled2DCue)}' must resolve execution as pooled (execution profile)");
                 return;
             }
 
-            if (!IsCueConfiguredForPooled(pooled3dCue))
+            if (!IsCueConfiguredForPooled(pooled3DCue))
             {
-                LogError("ValidatePooledSetup", $"pooled3dCue='{SafeName(pooled3dCue)}' must resolve execution as pooled (execution profile)");
+                LogError("ValidatePooledSetup", $"pooled3dCue='{SafeName(pooled3DCue)}' must resolve execution as pooled (execution profile)");
                 return;
             }
 
-            var effective2d = ResolveEffectiveProfile(pooled2dCue, null, out string source2d);
-            var effective3d = ResolveEffectiveProfile(pooled3dCue, null, out string source3d);
-            var effectivePool = effective3d != null && effective3d.PooledVoicePoolDefinition != null
-                ? effective3d.PooledVoicePoolDefinition
-                : (effective2d != null ? effective2d.PooledVoicePoolDefinition : null);
+            var effective2D = ResolveEffectiveProfile(pooled2DCue, null, out string source2D);
+            var effective3D = ResolveEffectiveProfile(pooled3DCue, null, out string source3D);
+            var effectivePool = effective3D != null && effective3D.PooledVoicePoolDefinition != null
+                ? effective3D.PooledVoicePoolDefinition
+                : (effective2D != null ? effective2D.PooledVoicePoolDefinition : null);
 
             LogInfo("ValidatePooledSetup",
-                $"ok pooled2d='{SafeName(pooled2dCue)}' pooled3d='{SafeName(pooled3dCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2d)}' source2d='{source2d}' effective3d='{SafeName(effective3d)}' source3d='{source3d}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3d != null ? effective3d.AllowDirectFallback : (effective2d != null && effective2d.AllowDirectFallback))}");
+                $"ok pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' effective2d='{SafeName(effective2D)}' source2d='{source2D}' effective3d='{SafeName(effective3D)}' source3d='{source3D}' pool='{SafeName(effectivePool)}' allowDirectFallback={(effective3D != null ? effective3D.AllowDirectFallback : (effective2D != null && effective2D.AllowDirectFallback))}");
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Play 2D")]
-        private void PlayPooled2d()
+        private void PlayPooled2D()
         {
-            if (!TryEnsureService() || !TryValidateCue(pooled2dCue, "PlayPooled2d"))
+            if (!TryEnsureService() || !TryValidateCue(pooled2DCue, "PlayPooled2d"))
             {
                 return;
             }
 
             var context = BuildDefaultPooledContext(
-                cue: pooled2dCue,
+                cue: pooled2DCue,
                 context: AudioPlaybackContext.Global(reason: "qa_pooled_play_2d"));
-            PlayAndLog(pooled2dCue, context, "PlayPooled2d");
+            PlayAndLog(pooled2DCue, context, "PlayPooled2d");
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Play 3D")]
-        private void PlayPooled3d()
+        private void PlayPooled3D()
         {
-            if (!TryEnsureService() || !TryValidateCue(pooled3dCue, "PlayPooled3d"))
+            if (!TryEnsureService() || !TryValidateCue(pooled3DCue, "PlayPooled3d"))
             {
                 return;
             }
 
             var context = BuildDefaultPooledContext(
-                cue: pooled3dCue,
+                cue: pooled3DCue,
                 context: AudioPlaybackContext.Spatial(
                     worldPosition: spatialFollowTarget != null ? spatialFollowTarget.position : spatialProbePosition,
                     followTarget: spatialFollowTarget,
                     reason: "qa_pooled_play_3d"));
-            PlayAndLog(pooled3dCue, context, "PlayPooled3d");
+            PlayAndLog(pooled3DCue, context, "PlayPooled3d");
         }
 
         [ContextMenu("QA/Audio/SFX/Pooled/Probe Restart Existing")]
         private void ProbePooledRestartExisting()
         {
-            if (!TryEnsureService() || !TryValidateCue(pooled2dCue, "ProbePooledRestartExisting"))
+            if (!TryEnsureService() || !TryValidateCue(pooled2DCue, "ProbePooledRestartExisting"))
             {
                 return;
             }
@@ -138,7 +138,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return;
             }
 
-            var cue = pooled3dCue != null ? pooled3dCue : pooled2dCue;
+            var cue = pooled3DCue != null ? pooled3DCue : pooled2DCue;
             if (!TryValidateCue(cue, "ProbePooledBudgetForced"))
             {
                 return;
@@ -156,12 +156,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         [ContextMenu("QA/Audio/SFX/Pooled/Probe Fallback (Forced Diagnostic)")]
         private void ProbePooledFallbackForced()
         {
-            if (!TryEnsureService() || !TryValidateCue(pooled2dCue, "ProbePooledFallbackForced"))
+            if (!TryEnsureService() || !TryValidateCue(pooled2DCue, "ProbePooledFallbackForced"))
             {
                 return;
             }
 
-            var baseEffectiveProfile = ResolveEffectiveProfile(pooled2dCue, null, out _);
+            var baseEffectiveProfile = ResolveEffectiveProfile(pooled2DCue, null, out _);
             if (baseEffectiveProfile == null)
             {
                 LogError("ProbePooledFallbackForced", "cannot resolve base effective profile");
@@ -176,16 +176,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 releaseGraceSeconds: baseEffectiveProfile.ReleaseGraceSeconds);
 
             var context = BuildContextWithForcedProfile(
-                cue: pooled2dCue,
+                cue: pooled2DCue,
                 context: AudioPlaybackContext.Global(reason: "qa_sfx_probe_pooled_fallback_forced"),
                 forcedProfile: forcedFallbackProfile);
-            var handle = _globalAudioService.Play(pooled2dCue, context);
+            var handle = _globalAudioService.Play(pooled2DCue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
             bool valid = handle != null && handle.IsValid;
             string inferredPath = InferPathFromHandle(handle);
             LogInfo("ProbePooledFallbackForced",
-                $"cue='{pooled2dCue.name}' effectiveProfile='context:{SafeName(forcedFallbackProfile)}' expectedPath='fallback_direct' inferredPath='{inferredPath}' handleValid={valid} (check runtime log path='fallback_direct')");
+                $"cue='{pooled2DCue.name}' effectiveProfile='context:{SafeName(forcedFallbackProfile)}' expectedPath='fallback_direct' inferredPath='{inferredPath}' handleValid={valid} (check runtime log path='fallback_direct')");
 
             if (forcedFallbackProfile != null)
             {
@@ -229,11 +229,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             string pool = pooledVoiceProfile != null && pooledVoiceProfile.PooledVoicePoolDefinition != null
                 ? pooledVoiceProfile.PooledVoicePoolDefinition.name
                 : "null";
-            var effective2d = ResolveEffectiveProfile(pooled2dCue, null, out string source2d);
-            var effective3d = ResolveEffectiveProfile(pooled3dCue, null, out string source3d);
+            var effective2D = ResolveEffectiveProfile(pooled2DCue, null, out string source2D);
+            var effective3D = ResolveEffectiveProfile(pooled3DCue, null, out string source3D);
 
             DebugUtility.Log(typeof(AudioSfxPooledQaSceneHarness),
-                $"[QA][Audio][SFX][Pooled] action='LogPooledState' serviceResolved={serviceResolved} pooled2d='{SafeName(pooled2dCue)}' pooled3d='{SafeName(pooled3dCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' poolDefault='{pool}' effective2d='{SafeName(effective2d)}' effective2dSource='{source2d}' effective3d='{SafeName(effective3d)}' effective3dSource='{source3d}' budget={(pooledVoiceProfile != null ? pooledVoiceProfile.DefaultVoiceBudget : 0)} releaseGrace={(pooledVoiceProfile != null ? pooledVoiceProfile.ReleaseGraceSeconds : 0f):0.###}.",
+                $"[QA][Audio][SFX][Pooled] action='LogPooledState' serviceResolved={serviceResolved} pooled2d='{SafeName(pooled2DCue)}' pooled3d='{SafeName(pooled3DCue)}' profileDefault='{SafeName(pooledVoiceProfile)}' poolDefault='{pool}' effective2d='{SafeName(effective2D)}' effective2dSource='{source2D}' effective3d='{SafeName(effective3D)}' effective3dSource='{source3D}' budget={(pooledVoiceProfile != null ? pooledVoiceProfile.DefaultVoiceBudget : 0)} releaseGrace={(pooledVoiceProfile != null ? pooledVoiceProfile.ReleaseGraceSeconds : 0f):0.###}.",
                 DebugUtility.Colors.Info);
         }
 
@@ -256,12 +256,12 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             int repeats = Mathf.Max(1, pooledRetriggerRepeatCount);
 
             LogInfo("ProbePooledRestartExisting",
-                $"start cue='{pooled2dCue.name}' delay={delay:0.###} repeatCount={repeats} profileDefault='{SafeName(pooledVoiceProfile)}'");
+                $"start cue='{pooled2DCue.name}' delay={delay:0.###} repeatCount={repeats} profileDefault='{SafeName(pooledVoiceProfile)}'");
 
             var firstContext = BuildDefaultPooledContext(
-                cue: pooled2dCue,
+                cue: pooled2DCue,
                 context: AudioPlaybackContext.Global(reason: "qa_pooled_restart_first"));
-            var first = _globalAudioService.Play(pooled2dCue, firstContext);
+            var first = _globalAudioService.Play(pooled2DCue, firstContext);
             _lastHandle = first ?? NullAudioPlaybackHandle.Instance;
 
             for (int i = 0; i < repeats; i++)
@@ -269,9 +269,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 yield return new WaitForSeconds(delay);
 
                 var nextContext = BuildDefaultPooledContext(
-                    cue: pooled2dCue,
+                    cue: pooled2DCue,
                     context: AudioPlaybackContext.Global(reason: $"qa_pooled_restart_repeat_{i + 1}"));
-                var next = _globalAudioService.Play(pooled2dCue, nextContext);
+                var next = _globalAudioService.Play(pooled2DCue, nextContext);
                 _lastHandle = next ?? NullAudioPlaybackHandle.Instance;
 
                 LogInfo("ProbePooledRestartExisting",
@@ -279,7 +279,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             }
 
             LogInfo("ProbePooledRestartExisting",
-                $"complete cue='{pooled2dCue.name}' delay={delay:0.###} repeatCount={repeats} lastHandleValid={(_lastHandle != null && _lastHandle.IsValid)}");
+                $"complete cue='{pooled2DCue.name}' delay={delay:0.###} repeatCount={repeats} lastHandleValid={(_lastHandle != null && _lastHandle.IsValid)}");
             _pooledRetriggerRoutine = null;
         }
 
@@ -473,14 +473,14 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 return pooledSequenceCue;
             }
 
-            if (pooled2dCue != null)
+            if (pooled2DCue != null)
             {
                 source = "pooled2dCue";
-                return pooled2dCue;
+                return pooled2DCue;
             }
 
             source = "pooled3dCue";
-            return pooled3dCue;
+            return pooled3DCue;
         }
 
         private void PlayAndLog(AudioSfxCueAsset cue, AudioPlaybackContext context, string action)
@@ -490,9 +490,9 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
 
             bool valid = handle != null && handle.IsValid;
             bool playing = handle != null && handle.IsPlaying;
-            var effectiveProfile = ResolveEffectiveProfile(cue, context.VoiceProfile, out string profileSource);
+            var effectiveProfile = ResolveEffectiveProfile(cue, context.voiceProfile, out string profileSource);
             LogInfo(action,
-                $"cue='{cue.name}' handleValid={valid} isPlaying={playing} contextProfile='{SafeName(context.VoiceProfile)}' effectiveProfile='{SafeName(effectiveProfile)}' effectiveProfileSource='{profileSource}' reason='{(string.IsNullOrWhiteSpace(context.Reason) ? "unspecified" : context.Reason)}'");
+                $"cue='{cue.name}' handleValid={valid} isPlaying={playing} contextProfile='{SafeName(context.voiceProfile)}' effectiveProfile='{SafeName(effectiveProfile)}' effectiveProfileSource='{profileSource}' reason='{(string.IsNullOrWhiteSpace(context.reason) ? "unspecified" : context.reason)}'");
         }
 
         private bool TryEnsureService()
@@ -563,7 +563,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             AudioPlaybackContext context,
             AudioSfxVoiceProfileAsset forcedProfile)
         {
-            context.VoiceProfile = forcedProfile;
+            context.voiceProfile = forcedProfile;
             return context;
         }
 

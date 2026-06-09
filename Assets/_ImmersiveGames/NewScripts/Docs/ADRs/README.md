@@ -502,3 +502,68 @@ Status: APPLIED / aguardando compile + smoke.
 - `PlayerActor_v0.prefab` recebeu referência tipada do endpoint para `ActorProjectileSpawnAdapterBoundary`.
 - `FirePrimary` deve continuar com sink executável e dispatch aceito, agora com `dispatchReason='projectile_spawn_adapter_not_configured'`.
 - Não houve `ObjectEmission`, `IPoolService`, projectile prefab/runtime object, manager, pool, audio, collision, damage, VFX, lifetime, reset, save ou alteração de pipelines.
+
+### Checkpoint ACT-PROJ-2B — Projectile spawn adapter uses canonical pool service
+
+Status: APPLIED / aguardando compile + smoke.
+
+- `ActorProjectileSpawnAdapterBoundary` passou a usar `IPoolService` canônico para `Rent`.
+- `ActorSpawnabilityProfileAsset` agora tem referência tipada para `PoolDefinitionAsset`; `RuntimeSpawned`/`ReturnToOriginPool` executável exige essa referência.
+- Criado `RuntimeSpawnedActor` como Actor concreto para prefabs spawnáveis de runtime.
+- Criados `ProjectileActor_PlayerPrimary.prefab` e `PoolDefinition_PlayerPrimaryProjectile.asset`.
+- `FirePrimary` deve gerar `ActorProjectileSpawnedFromPool`, `spawnExecuted='True'`, `poolCalled='True'` e `dispatchReason='projectile_spawned_from_pool'`.
+- `ObjectEmission`, managers novos, collision, damage, VFX, audio, motion runtime, lifetime executor, reset/save e pipelines permanecem fora do corte.
+### Checkpoint ACT-PROJ-2C — ObjectEmission legacy runtime deletion
+
+- `ObjectEmissionRuntimeComposer` saiu do composition graph.
+- `Actors/ObjectEmission/**` e assets autorais antigos de ObjectEmission devem ser removidos via `DELETE_FILES.txt`.
+- `ActorProjectileFireEndpoint + ActorProjectileSpawnAdapterBoundary` permanecem como caminho ativo de `FirePrimary`.
+- Próximo débito observado: `FirePrimary` ainda precisa de gate/policy para não executar fora de `ActivityRunning`.
+
+
+### Checkpoint ACT-PROJ-2D — Projectile fire gameplay-state gate alignment
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- `ProjectileFire` agora participa do mesmo `ActivityGameplayControl` gate usado por Movement.
+- `ActivityCapabilityPermissionScanner` registra `projectile_fire.receiver` quando encontra `IActorProjectileFireEndpoint` no `ActorCapabilitySurface`.
+- `ActorProjectileFireEndpoint` mantém estado local de enabled/disabled e retorna `RejectedInactive` com `projectile_fire_endpoint_inactive` quando o gate está Blocked/Unbound.
+- `ActorProjectileSpawnAdapterBoundary` continua como único ponto técnico de pool/rent.
+- Não houve `ObjectEmission`, gate paralelo, permission runtime novo, alteração de pipeline ou limpeza ampla de IDs/string neste corte.
+
+### Checkpoint ACT-PROJ-2E — Projectile MVP closure documentation
+
+Status: CLOSED / DOCUMENTATION ONLY.
+
+- Fechamento documental do MVP atual de ProjectileFire.
+- Caminho congelado: `PlayerActorCommandInputHub -> ActorProjectileFireEndpoint -> ActorProjectileSpawnAdapterBoundary -> IPoolService -> RuntimeSpawnedActor`.
+- `FirePrimary` usa `ActorCommandHub` e respeita `ActivityGameplayControl` via `projectile_fire.receiver`.
+- `Movement` e `ProjectileFire` compartilham o mesmo gate de gameplay; o smoke de fechamento confirmou `ActivityGateBindingCompleted receivers='2'`.
+- `FirePrimary` é rejeitado como `projectile_fire_endpoint_inactive` fora de `ActivityRunning`.
+- `FirePrimary` spawna via pool canônico durante `ActivityRunning`, com `spawnExecuted='True'` e `poolCalled='True'`.
+- `ObjectEmission` permanece removido do caminho ativo e não deve ser reintroduzido como bridge de FirePrimary.
+- Débitos fora do MVP: typed refs/IDREF para command/projectile/pool, alinhamento transversal Movement/Fire, lifetime/return-to-pool automático, motion, collision, damage, VFX, audio e determinismo de spread.
+
+
+### Checkpoint ACT-CMD-IDREF-1 — ActorCommand/InputMode ownership cleanup
+
+Status: APPLIED / aguardando compile + smoke.
+
+- Remove `ActorCommandSourceKind` do path ativo de ActorCommand.
+- Remove `SourceKind`, `ActionMapName` e `ActionName` de `ActorCommandInputBinding`.
+- `ActorCommandInputBinding` passa a exigir `InputActionReference` tipado.
+- `PlayerActorCommandInputHub` resolve a action tipada contra o `PlayerInput.actions` ativo por `InputAction.id`.
+- `InputModes` permanece owner de ActionMap ativo; `PlayerInputBindingAdapter` não chama `SwitchCurrentActionMap`.
+- Configuração obrigatória no prefab: `move -> PlayerInputActions/Player/Move`, `fire_primary -> PlayerInputActions/Player/Fire`.
+
+### Checkpoint ACT-PROJ-3A — Projectile spawn adapter runtime binding cleanup
+
+Status: APPLIED / aguardando compile + smoke.
+
+- Remove o componente técnico `ActorProjectileSpawnAdapterBoundary` do prefab do Player.
+- `PlayerActor_v0.prefab` mantém apenas `PlayerActorCommandInputHub` + `ActorProjectileFireEndpoint` para o fluxo de tiro.
+- `ActorProjectileFireEndpoint` não serializa mais referência para adapter de spawn.
+- `PooledActorProjectileSpawnAdapter` passa a ser classe runtime não-MonoBehaviour.
+- `ActorCommandBindingAdapter` configura `IActorProjectileSpawnAdapter` no endpoint e mantém `BindCommandSink(FirePrimary, endpoint)`.
+- `IPoolService` continua sendo chamado apenas pelo adapter técnico.
+- `ObjectEmission` permanece fora do caminho ativo.

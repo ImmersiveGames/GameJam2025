@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bbd809353bf04d0dbac9fbf19fafa791, type: 3}
-  m_Name: PoolDefinitionObjectEmission
+  m_Name: PoolDefinition_PlayerPrimaryProjectile
   m_EditorClassIdentifier: 
-  prefab: {fileID: 3581607072504760889, guid: fbbf4f37c2a020c49a875e9c3b3d1e8d, type: 3}
-  initialSize: 10
+  prefab: {fileID: 100000000000000000, guid: d143f55983e144f589e5c383dff268f2, type: 3}
+  initialSize: 4
   canExpand: 1
   maxSize: 32
   autoReturnSeconds: 0
-  poolLabel: pool
+  poolLabel: pool.projectile.player.primary
   prewarm: 1

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.InputModes.Contracts;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
@@ -75,6 +77,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 ActorCapabilitySurface capabilitySurface = actorHandle.CapabilitySurface ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing ActorCapabilitySurface.");
                 IActorCommandSourceHub commandHub = capabilitySurface.ActorCommandSourceHub ?? throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing Actor command input hub.");
 
+                ApplyCurrentInputModeToPlayerInputOrFail(resolvedInput, requirement);
+
                 PlayerActorInputBindingState bindingState = actorInstance.GetComponent<PlayerActorInputBindingState>();
                 if (bindingState == null)
                 {
@@ -97,7 +101,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     requirement,
                     actorHandle.ActorIdentity,
                     bound: true,
-                    observedInputId: $"{resolvedInput.name}|index={resolvedInput.playerIndex}|instance={resolvedInput.GetInstanceID()}|actionsRebound={resolution.ActionsReboundToCanonical}"));
+                    observedInputId: $"{resolvedInput.name}|index={resolvedInput.playerIndex}|instance={resolvedInput.GetInstanceID()}|actionsRebound={resolution.ActionsReboundToCanonical}|currentActionMap={resolvedInput.currentActionMap?.name ?? "<none>"}"));
             }
 
             return records;
@@ -140,20 +144,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     DebugUtility.Colors.Info);
             }
 
-            InputActionMap playerActionMap = resolved.actions?.FindActionMap(InputModesDefaults.PlayerActionMapName, throwIfNotFound: false);
-            if (playerActionMap == null)
+            if (resolved.actions == null)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing ActionMap '{InputModesDefaults.PlayerActionMapName}'.");
-            }
-
-            if (!string.Equals(resolved.defaultActionMap, InputModesDefaults.PlayerActionMapName, StringComparison.Ordinal))
-            {
-                resolved.defaultActionMap = InputModesDefaults.PlayerActionMapName;
-            }
-
-            if (resolved.currentActionMap == null || !string.Equals(resolved.currentActionMap.name, InputModesDefaults.PlayerActionMapName, StringComparison.Ordinal))
-            {
-                resolved.SwitchCurrentActionMap(InputModesDefaults.PlayerActionMapName);
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing actions asset.");
             }
 
             PlayerInputSlotBinding slotBinding = resolved.GetComponent<PlayerInputSlotBinding>();
@@ -176,6 +169,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             return new PlayerInputResolution(resolved, actionsRebound);
+        }
+
+        private static void ApplyCurrentInputModeToPlayerInputOrFail(
+            PlayerInput playerInput,
+            PlayerInputBindingRequirement requirement)
+        {
+            if (playerInput == null)
+            {
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing PlayerInput before InputModes refresh.");
+            }
+
+            if (!DependencyManager.HasInstance ||
+                !DependencyManager.Provider.TryGetGlobal<IInputModeService>(out IInputModeService inputModeService) ||
+                inputModeService == null)
+            {
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing IInputModeService for canonical action map ownership.");
+            }
+
+            inputModeService.ApplyCurrentModeToPlayerInput(
+                playerInput,
+                $"PlayerInputBindingAdapter|source={requirement.Source}|reason={requirement.Reason}|apply_current_input_mode");
         }
 
         private static bool IsSameActivityCycle(SessionActivityIdentity left, SessionActivityIdentity right)

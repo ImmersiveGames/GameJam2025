@@ -1,5 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
@@ -19,8 +20,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         // O pool continua sendo adapter técnico; este profile só declara o contrato passivo.
         [SerializeField, Tooltip("Identificador técnico da origem do pool, se o reset/release futuro precisar retornar ao pool de origem.")]
         private string poolOriginId;
-        [SerializeField, Tooltip("Identificador técnico da definição do pool, se existir no authoring.")] 
+        [SerializeField, Tooltip("Identificador técnico da definição do pool, se existir no authoring.")]
         private string poolDefinitionId;
+        [SerializeField, Tooltip("Referência tipada para a definição canônica de pool. Obrigatória para RuntimeSpawned/ReturnToOriginPool executável.")]
+        private PoolDefinitionAsset poolDefinition;
 
         public string ProfileId => Normalize(profileId);
         public ActorMaterializationKind MaterializationKind => materializationKind;
@@ -29,8 +32,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
         public ActorSnapshotPolicy SnapshotPolicy => snapshotPolicy;
         public string PoolOriginId => Normalize(poolOriginId);
         public string PoolDefinitionId => Normalize(poolDefinitionId);
+        public PoolDefinitionAsset PoolDefinition => poolDefinition;
         public SpawnedActorPoolOrigin PoolOrigin => new(PoolOriginId, PoolDefinitionId);
-        public bool HasPoolOrigin => PoolOrigin.IsValid;
+        public bool HasPoolOrigin => PoolOrigin.IsValid || poolDefinition != null;
+        public bool HasPoolDefinition => poolDefinition != null;
         public bool IsValid =>
             !string.IsNullOrWhiteSpace(ProfileId) &&
             materializationKind != ActorMaterializationKind.Unknown &&
@@ -81,15 +86,21 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 return false;
             }
 
-            if (materializationKind == ActorMaterializationKind.RuntimeSpawned && !HasPoolOrigin)
+            if (materializationKind == ActorMaterializationKind.RuntimeSpawned && !HasPoolDefinition)
             {
-                reason = "runtime_spawned_requires_pool_origin";
+                reason = "runtime_spawned_requires_pool_definition_asset";
                 return false;
             }
 
-            if (resetPolicy == ActorSpawnedResetPolicy.ReturnToOriginPool && !HasPoolOrigin)
+            if (resetPolicy == ActorSpawnedResetPolicy.ReturnToOriginPool && !HasPoolDefinition)
             {
-                reason = "return_to_origin_pool_requires_pool_origin";
+                reason = "return_to_origin_pool_requires_pool_definition_asset";
+                return false;
+            }
+
+            if (poolDefinition != null && poolDefinition.Prefab == null)
+            {
+                reason = "pool_definition_prefab_missing";
                 return false;
             }
 

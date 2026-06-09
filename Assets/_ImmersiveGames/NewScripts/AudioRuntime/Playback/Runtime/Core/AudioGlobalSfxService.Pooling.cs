@@ -173,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 cueId: cue.GetInstanceID(),
                 cueName: cue.name,
                 source: source,
-                followTarget: context.FollowTarget,
+                followTarget: context.followTarget,
                 modeLabel: mode,
                 reason: reason,
                 destroyOwnerOnComplete: false,
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             if (_pooledPlaybackByHandle.TryGetValue(handle, out var pooledState))
             {
                 _pooledPlaybackByHandle.Remove(handle);
-                DecrementActivePooledForProfile(pooledState.Profile);
+                DecrementActivePooledForProfile(pooledState.profile);
                 SchedulePooledReturn(pooledState, completionReason);
             }
 
@@ -222,7 +222,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private void SchedulePooledReturn(PooledPlaybackState state, string completionReason)
         {
-            float grace = Mathf.Max(0f, state.ReleaseGraceSeconds);
+            float grace = Mathf.Max(0f, state.releaseGraceSeconds);
             if (grace <= 0f)
             {
                 ReturnPooledInstance(state, completionReason, delayed: false);
@@ -240,16 +240,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
         private void ReturnPooledInstance(PooledPlaybackState state, string completionReason, bool delayed)
         {
-            if (state.Instance == null || state.Definition == null)
+            if (state.instance == null || state.definition == null)
             {
                 return;
             }
 
             try
             {
-                _poolService.Return(state.Definition, state.Instance);
+                _poolService.Return(state.definition, state.instance);
                 DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Pool return cueInstance='{state.Instance.name}' pool='{state.Definition.name}' delayed={delayed} completion='{completionReason}'.",
+                    $"[Audio][SFX] Pool return cueInstance='{state.instance.name}' pool='{state.definition.name}' delayed={delayed} completion='{completionReason}'.",
                     DebugUtility.Colors.Info);
             }
             catch (Exception ex)
@@ -257,13 +257,13 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 if (ex.Message != null && ex.Message.IndexOf("not currently rented", StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     DebugUtility.LogVerbose(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pool return skipped cueInstance='{state.Instance.name}' pool='{state.Definition.name}' delayed={delayed} completion='{completionReason}' reason='already_returned'.",
+                        $"[Audio][SFX] Pool return skipped cueInstance='{state.instance.name}' pool='{state.definition.name}' delayed={delayed} completion='{completionReason}' reason='already_returned'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Pool return failed pool='{state.Definition.name}' delayed={delayed} message='{ex.Message}'.");
+                    $"[Audio][SFX] Pool return failed pool='{state.definition.name}' delayed={delayed} message='{ex.Message}'.");
             }
         }
 
@@ -281,10 +281,10 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
 
             _pooledPlaybackByHandle[handle] = new PooledPlaybackState
             {
-                Definition = definition,
-                Profile = profile,
-                Instance = instance,
-                ReleaseGraceSeconds = Mathf.Max(0f, releaseGraceSeconds)
+                definition = definition,
+                profile = profile,
+                instance = instance,
+                releaseGraceSeconds = Mathf.Max(0f, releaseGraceSeconds)
             };
 
             int profileId = profile.GetInstanceID();
@@ -368,7 +368,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             }
         }
 
-        private bool HasActive2dHandle(int cueId)
+        private bool HasActive2DHandle(int cueId)
         {
             if (!_activeHandlesByCueId.TryGetValue(cueId, out var handles) || handles == null)
             {
@@ -384,7 +384,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                     continue;
                 }
 
-                if (handle.IsPlaying && IsHandle2d(handle))
+                if (handle.IsPlaying && IsHandle2D(handle))
                 {
                     return true;
                 }
@@ -398,7 +398,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             return false;
         }
 
-        private bool StopActive2dHandles(int cueId)
+        private bool StopActive2DHandles(int cueId)
         {
             if (!_activeHandlesByCueId.TryGetValue(cueId, out var handles) || handles == null)
             {
@@ -414,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                     continue;
                 }
 
-                if (!IsHandle2d(handle))
+                if (!IsHandle2D(handle))
                 {
                     continue;
                 }
@@ -427,7 +427,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
             return stoppedAny;
         }
 
-        private static bool IsHandle2d(AudioSfxPlaybackHandle handle)
+        private static bool IsHandle2D(AudioSfxPlaybackHandle handle)
         {
             if (handle == null)
             {

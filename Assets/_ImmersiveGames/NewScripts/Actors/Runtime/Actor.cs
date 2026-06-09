@@ -6,7 +6,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
     public abstract class Actor : MonoBehaviour, IActor
     {
-        private ActorInstanceRuntimeId runtimeActorInstanceId;
+        private ActorInstanceRuntimeId _runtimeActorInstanceId;
         [SerializeField] private ActorCapabilitySurface capabilitySurface;
 
         public virtual string ActorId => ActorIdValue.ToString();
@@ -22,13 +22,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 return capabilitySurface;
             }
         }
-        public virtual ActorInstanceRuntimeId RuntimeActorInstanceId => runtimeActorInstanceId;
+        public virtual ActorInstanceRuntimeId RuntimeActorInstanceId => _runtimeActorInstanceId;
 
         public virtual ActorDefinitionRef ActorDefinitionRef => default;
 
         public void SetRuntimeActorInstanceId(ActorInstanceRuntimeId actorInstanceRuntimeId)
         {
-            runtimeActorInstanceId = actorInstanceRuntimeId.IsValid ? actorInstanceRuntimeId : default;
+            _runtimeActorInstanceId = actorInstanceRuntimeId.IsValid ? actorInstanceRuntimeId : default;
         }
 
         public abstract void ValidateLocalConfigurationOrThrow(string source);

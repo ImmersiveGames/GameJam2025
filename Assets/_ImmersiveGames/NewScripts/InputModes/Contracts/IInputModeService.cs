@@ -4,6 +4,8 @@
  * - Conectar o fluxo de resume ao producer canônico adequado quando ele existir.
  */
 
+using UnityEngine.InputSystem;
+
 namespace _ImmersiveGames.NewScripts.InputModes.Contracts
 {
     /// <summary>
@@ -15,6 +17,6 @@ namespace _ImmersiveGames.NewScripts.InputModes.Contracts
         void SetGameplay(string reason);
         void SetPauseOverlay(string reason);
         void SetInputLocked(string reason);
+        void ApplyCurrentModeToPlayerInput(PlayerInput playerInput, string reason);
     }
 }
-

@@ -36,6 +36,41 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
         public void SetPauseOverlay(string reason) => HandleRequest(InputModeRequestKind.PauseOverlay, reason);
         public void SetInputLocked(string reason) => HandleRequest(InputModeRequestKind.InputLocked, reason);
 
+        public void ApplyCurrentModeToPlayerInput(PlayerInput playerInput, string reason)
+        {
+            if (playerInput == null)
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService),
+                    $"[FATAL][Config][InputModes] PlayerInput obrigatorio ausente para reaplicar modo atual reason='{NormalizeReason(reason)}'.");
+                return;
+            }
+
+            string resolvedReason = NormalizeReason(reason);
+            switch (_currentMode)
+            {
+                case InputModeRequestKind.FrontendMenu:
+                    ApplyModeToPlayerInput(_currentMode, _menuMapName, playerInput, resolvedReason);
+                    return;
+
+                case InputModeRequestKind.Gameplay:
+                    ApplyModeToPlayerInput(_currentMode, _playerMapName, playerInput, resolvedReason);
+                    return;
+
+                case InputModeRequestKind.PauseOverlay:
+                case InputModeRequestKind.InputLocked:
+                    DebugUtility.Log(typeof(InputModeService),
+                        $"[OBS][InputModes] InputModeCurrentModeAppliedToPlayerInput inputMode='{_currentMode}' reason='{resolvedReason}' target='state_only' playerInput='{playerInput.name}'.",
+                        DebugUtility.Colors.Info);
+                    return;
+
+                case InputModeRequestKind.Unspecified:
+                default:
+                    HardFailFastH1.Trigger(typeof(InputModeService),
+                        $"[FATAL][H1][InputModes] Current InputModeRequestKind '{_currentMode}' cannot be applied to PlayerInput '{playerInput.name}' reason='{resolvedReason}'.");
+                    return;
+            }
+        }
+
         public InputModeRequestKind CurrentMode => _currentMode;
 
         private void HandleRequest(InputModeRequestKind mode, string reason)
@@ -82,6 +117,35 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
             }
 
             return reason.Trim();
+        }
+
+        private void ApplyModeToPlayerInput(InputModeRequestKind mode, string actionMapName, PlayerInput playerInput, string reason)
+        {
+            if (string.IsNullOrWhiteSpace(actionMapName))
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService),
+                    $"[FATAL][Config][InputModes] Action map obrigatorio ausente inputMode='{mode}' reason='{reason}'.");
+                return;
+            }
+
+            if (playerInput == null || playerInput.actions == null)
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService),
+                    $"[FATAL][Config][InputModes] PlayerInput/actions obrigatorio ausente inputMode='{mode}' reason='{reason}'.");
+                return;
+            }
+
+            if (playerInput.actions.FindActionMap(actionMapName, throwIfNotFound: false) == null)
+            {
+                HardFailFastH1.Trigger(typeof(InputModeService),
+                    $"[FATAL][Config][InputModes] ActionMap ausente no PlayerInput. playerInput='{playerInput.name}' inputMode='{mode}' actionMap='{actionMapName}' reason='{reason}'.");
+                return;
+            }
+
+            playerInput.SwitchCurrentActionMap(actionMapName);
+            DebugUtility.Log(typeof(InputModeService),
+                $"[OBS][InputModes] InputModeCurrentModeAppliedToPlayerInput inputMode='{mode}' reason='{reason}' actionMap='{actionMapName}' playerInput='{playerInput.name}'.",
+                DebugUtility.Colors.Success);
         }
 
         private void ApplyModeToActivePlayerInputs(InputModeRequestKind mode, string actionMapName, string reason)

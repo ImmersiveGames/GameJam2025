@@ -59,6 +59,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     return false;
                 }
 
+                if (spawnabilityProfile.PoolDefinition == null)
+                {
+                    reason = "spawnability_profile_pool_definition_missing";
+                    return false;
+                }
+
                 if (!spawnabilityProfile.TryValidate(out string spawnabilityReason))
                 {
                     reason = $"spawnability_profile_invalid:{spawnabilityReason}";
@@ -106,6 +112,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     new ActorProjectileFireModeId(FireModeId),
                     ActorCommandId.FirePrimary,
                     spawnabilityProfile.BuildSpawnability(),
+                    spawnabilityProfile.PoolDefinition,
                     pattern,
                     muzzlePolicy,
                     spreadPolicy,

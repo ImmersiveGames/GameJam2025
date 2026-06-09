@@ -9,24 +9,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     [DisallowMultipleComponent]
     public sealed class ActorCapabilitySurface : MonoBehaviour
     {
-        private ActorPresentationEndpoint presentationEndpoint;
-        private ActorAttributeEndpoint attributeEndpoint;
-        private IActorCameraTargetEndpoint actorCameraTargetEndpoint;
-        private IActorMovementEndpoint actorMovementEndpoint;
-        private IActorPermissionReceiver actorPermissionReceiver;
-        private IActorCommandSourceHub actorCommandSourceHub;
-        private IActorProjectileFireEndpoint actorProjectileFireEndpoint;
+        private ActorPresentationEndpoint _presentationEndpoint;
+        private ActorAttributeEndpoint _attributeEndpoint;
+        private IActorCameraTargetEndpoint _actorCameraTargetEndpoint;
+        private IActorMovementEndpoint _actorMovementEndpoint;
+        private IActorPermissionReceiver _actorPermissionReceiver;
+        private IActorCommandSourceHub _actorCommandSourceHub;
+        private IActorProjectileFireEndpoint _actorProjectileFireEndpoint;
 
         public ActorPresentationEndpoint PresentationEndpoint
         {
             get
             {
-                if (presentationEndpoint == null)
+                if (_presentationEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return presentationEndpoint;
+                return _presentationEndpoint;
             }
         }
 
@@ -34,12 +34,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             get
             {
-                if (attributeEndpoint == null)
+                if (_attributeEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return attributeEndpoint;
+                return _attributeEndpoint;
             }
         }
 
@@ -47,12 +47,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             get
             {
-                if (actorCameraTargetEndpoint == null)
+                if (_actorCameraTargetEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorCameraTargetEndpoint;
+                return _actorCameraTargetEndpoint;
             }
         }
 
@@ -60,12 +60,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             get
             {
-                if (actorMovementEndpoint == null)
+                if (_actorMovementEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorMovementEndpoint;
+                return _actorMovementEndpoint;
             }
         }
 
@@ -73,12 +73,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             get
             {
-                if (actorPermissionReceiver == null)
+                if (_actorPermissionReceiver == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorPermissionReceiver;
+                return _actorPermissionReceiver;
             }
         }
 
@@ -86,12 +86,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             get
             {
-                if (actorCommandSourceHub == null)
+                if (_actorCommandSourceHub == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorCommandSourceHub;
+                return _actorCommandSourceHub;
             }
         }
 
@@ -99,25 +99,25 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         {
             get
             {
-                if (actorProjectileFireEndpoint == null)
+                if (_actorProjectileFireEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorProjectileFireEndpoint;
+                return _actorProjectileFireEndpoint;
             }
         }
 
         public void RefreshFromLocalActorRoot()
         {
             Transform actorRoot = ResolveActorRootTransform();
-            presentationEndpoint = ResolveSingleInActorRoot<ActorPresentationEndpoint>(actorRoot);
-            attributeEndpoint = ResolveSingleInActorRoot<ActorAttributeEndpoint>(actorRoot);
-            actorCameraTargetEndpoint = ResolveSingleInterfaceInActorRoot<IActorCameraTargetEndpoint>(actorRoot);
-            actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
-            actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
-            actorCommandSourceHub = ResolveSingleInterfaceInActorRoot<IActorCommandSourceHub>(actorRoot);
-            actorProjectileFireEndpoint = ResolveSingleInterfaceInActorRoot<IActorProjectileFireEndpoint>(actorRoot);
+            _presentationEndpoint = ResolveSingleInActorRoot<ActorPresentationEndpoint>(actorRoot);
+            _attributeEndpoint = ResolveSingleInActorRoot<ActorAttributeEndpoint>(actorRoot);
+            _actorCameraTargetEndpoint = ResolveSingleInterfaceInActorRoot<IActorCameraTargetEndpoint>(actorRoot);
+            _actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
+            _actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
+            _actorCommandSourceHub = ResolveSingleInterfaceInActorRoot<IActorCommandSourceHub>(actorRoot);
+            _actorProjectileFireEndpoint = ResolveSingleInterfaceInActorRoot<IActorProjectileFireEndpoint>(actorRoot);
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)

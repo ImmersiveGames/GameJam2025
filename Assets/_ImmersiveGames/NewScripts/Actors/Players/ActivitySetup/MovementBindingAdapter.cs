@@ -94,11 +94,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
 
                 if (!commandHub.HasBinding(
                     ActorCommandId.Move,
-                    ActorCommandSourceKind.PlayerInput,
                     ActorCommandTriggerKind.Continuous) &&
                     !commandHub.HasBinding(
                         ActorCommandId.Move,
-                        ActorCommandSourceKind.PlayerInput,
                         ActorCommandTriggerKind.ValueChanged))
                 {
                     throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing active Move binding on ActorCommandSourceHub.");

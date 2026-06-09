@@ -8,14 +8,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
     [DisallowMultipleComponent]
     public sealed class PlayerActor : Actor
     {
-        private ActorId runtimeActorId;
-        private ActorScope runtimeActorScope;
-        private ActorParticipationRecord.ActorParticipationPolicy runtimeParticipationPolicy;
+        private ActorId _runtimeActorId;
+        private ActorScope _runtimeActorScope;
+        private ActorParticipationRecord.ActorParticipationPolicy _runtimeParticipationPolicy;
 
-        public override ActorId ActorIdValue => runtimeActorId;
+        public override ActorId ActorIdValue => _runtimeActorId;
         public override ActorRole ActorRoleMetadata => ActorRole.PrimaryPlayer;
-        public override ActorScope ActorScopeMetadata => runtimeActorScope;
-        public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => runtimeParticipationPolicy;
+        public override ActorScope ActorScopeMetadata => _runtimeActorScope;
+        public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => _runtimeParticipationPolicy;
 
         public void BindRuntimeMetadata(
             ActorId actorId,
@@ -40,9 +40,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 throw new InvalidOperationException($"{origin} cannot bind empty ActorParticipationPolicy.");
             }
 
-            runtimeActorId = actorId;
-            runtimeActorScope = actorScope;
-            runtimeParticipationPolicy = participationPolicy;
+            _runtimeActorId = actorId;
+            _runtimeActorScope = actorScope;
+            _runtimeParticipationPolicy = participationPolicy;
         }
 
         public override void ValidateLocalConfigurationOrThrow(string source)
@@ -68,11 +68,6 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
-        }
-
-        protected override void OnValidate()
-        {
-            base.OnValidate();
         }
     }
 }

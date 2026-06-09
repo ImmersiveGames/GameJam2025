@@ -21,7 +21,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
         public const string ReasonPrimaryContainerMissing = "actor_presentation_primary_container_missing";
         public const string ReasonPrimaryContainerSkippedOptional = "actor_presentation_primary_container_skipped_optional";
 
-        private readonly ActorPresentationContainerResolver containerResolver;
+        private readonly ActorPresentationContainerResolver _containerResolver;
 
         public ActorPresentationPlanResolver()
             : this(new ActorPresentationContainerResolver())
@@ -30,7 +30,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
 
         public ActorPresentationPlanResolver(ActorPresentationContainerResolver containerResolver)
         {
-            this.containerResolver = containerResolver ?? throw new ArgumentNullException(nameof(containerResolver));
+            this._containerResolver = containerResolver ?? throw new ArgumentNullException(nameof(containerResolver));
         }
 
         public ActorPresentationPlanResolutionResult Resolve(
@@ -94,7 +94,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Runtime
                     $"{origin} requires ActorPresentationEndpoint.");
             }
 
-            ActorPresentationContainerResolutionResult containerResult = containerResolver.Resolve(
+            ActorPresentationContainerResolutionResult containerResult = _containerResolver.Resolve(
                 endpoint,
                 profile.SlotRequirements,
                 origin,

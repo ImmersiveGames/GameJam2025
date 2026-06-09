@@ -29,13 +29,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
         [SerializeField] private bool releaseAfterFullProbe = true;
         [SerializeField] private bool clearPreviousInstanceBeforeMaterialize = true;
 
-        private readonly ActorPresentationPlanResolver planResolver = new ActorPresentationPlanResolver();
-        private readonly IActorPresentationMaterializationAdapter adapter = new UnityActorPresentationMaterializationAdapter();
+        private readonly ActorPresentationPlanResolver _planResolver = new ActorPresentationPlanResolver();
+        private readonly IActorPresentationMaterializationAdapter _adapter = new UnityActorPresentationMaterializationAdapter();
 
-        private ActorPresentationResolvedPlan lastResolvedPlan;
-        private ActorPresentationRuntimeHandle lastRuntimeHandle;
-        private bool hasResolvedPlan;
-        private bool hasRuntimeHandle;
+        private ActorPresentationResolvedPlan _lastResolvedPlan;
+        private ActorPresentationRuntimeHandle _lastRuntimeHandle;
+        private bool _hasResolvedPlan;
+        private bool _hasRuntimeHandle;
 
         [ContextMenu("ActorPresentation Probe/Resolve Plan")]
         public void ResolvePlanContextMenu()
@@ -70,7 +70,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
         public ActorPresentationPlanResolutionResult ResolvePlan(string reason)
         {
-            ActorPresentationPlanResolutionResult result = planResolver.Resolve(
+            ActorPresentationPlanResolutionResult result = _planResolver.Resolve(
                 profile,
                 endpoint,
                 activityIdentity,
@@ -81,25 +81,25 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
             if (result.IsSuccess)
             {
-                lastResolvedPlan = result.ResolvedPlan;
-                hasResolvedPlan = true;
+                _lastResolvedPlan = result.ResolvedPlan;
+                _hasResolvedPlan = true;
 
                 UDebug.Log(
                     $"{LogPrefix} PlanResolved " +
-                    $"activityIdentity='{lastResolvedPlan.ActivityIdentity}' " +
-                    $"actorId='{lastResolvedPlan.ActorId}' " +
-                    $"actorKind='{lastResolvedPlan.ActorKind}' " +
-                    $"profileId='{lastResolvedPlan.ProfileId}' " +
-                    $"primarySlot='{lastResolvedPlan.PrimarySlotKind}:{lastResolvedPlan.PrimarySlotId}' " +
-                    $"slotCount='{lastResolvedPlan.Slots.Count}' " +
+                    $"activityIdentity='{_lastResolvedPlan.ActivityIdentity}' " +
+                    $"actorId='{_lastResolvedPlan.ActorId}' " +
+                    $"actorKind='{_lastResolvedPlan.ActorKind}' " +
+                    $"profileId='{_lastResolvedPlan.ProfileId}' " +
+                    $"primarySlot='{_lastResolvedPlan.PrimarySlotKind}:{_lastResolvedPlan.PrimarySlotId}' " +
+                    $"slotCount='{_lastResolvedPlan.Slots.Count}' " +
                     $"reason='{reason}'.",
                     this);
 
                 return result;
             }
 
-            hasResolvedPlan = false;
-            lastResolvedPlan = default;
+            _hasResolvedPlan = false;
+            _lastResolvedPlan = default;
 
             if (result.IsSkippedOptional)
             {
@@ -125,7 +125,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
         public ActorPresentationResult Materialize(string reason)
         {
-            if (!hasResolvedPlan)
+            if (!_hasResolvedPlan)
             {
                 ActorPresentationPlanResolutionResult planResult = ResolvePlan($"{reason}/ResolveBeforeMaterialize");
                 if (!planResult.IsSuccess)
@@ -136,29 +136,29 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 }
             }
 
-            if (clearPreviousInstanceBeforeMaterialize && hasRuntimeHandle)
+            if (clearPreviousInstanceBeforeMaterialize && _hasRuntimeHandle)
             {
                 Release($"{reason}/ReleasePreviousInstance");
             }
 
             ActorPresentationMaterializationCommand command = new ActorPresentationMaterializationCommand(
-                lastResolvedPlan,
+                _lastResolvedPlan,
                 nameof(ActorPresentationManualProbe),
                 reason);
 
-            ActorPresentationResult result = adapter.Materialize(command);
+            ActorPresentationResult result = _adapter.Materialize(command);
 
             if (result.Kind == ActorPresentationResultKind.Materialized && result.ReadyFact.IsValid)
             {
-                lastRuntimeHandle = result.ReadyFact.RuntimeHandle;
-                hasRuntimeHandle = true;
+                _lastRuntimeHandle = result.ReadyFact.RuntimeHandle;
+                _hasRuntimeHandle = true;
 
                 UDebug.Log(
                     $"{LogPrefix} Materialized " +
-                    $"activityIdentity='{lastRuntimeHandle.ResolvedPlan.ActivityIdentity}' " +
-                    $"actorId='{lastRuntimeHandle.ResolvedPlan.ActorId}' " +
-                    $"profileId='{lastRuntimeHandle.ResolvedPlan.ProfileId}' " +
-                    $"instance='{lastRuntimeHandle.PresentationInstance.name}' " +
+                    $"activityIdentity='{_lastRuntimeHandle.ResolvedPlan.ActivityIdentity}' " +
+                    $"actorId='{_lastRuntimeHandle.ResolvedPlan.ActorId}' " +
+                    $"profileId='{_lastRuntimeHandle.ResolvedPlan.ProfileId}' " +
+                    $"instance='{_lastRuntimeHandle.PresentationInstance.name}' " +
                     $"reason='{reason}'.",
                     this);
 
@@ -177,8 +177,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
                 return result;
             }
 
-            hasRuntimeHandle = false;
-            lastRuntimeHandle = default;
+            _hasRuntimeHandle = false;
+            _lastRuntimeHandle = default;
 
             UDebug.LogError(
                 $"{LogPrefix} MaterializeFailed " +
@@ -192,7 +192,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
         public ActorPresentationResult Release(string reason)
         {
-            if (!hasRuntimeHandle)
+            if (!_hasRuntimeHandle)
             {
                 UDebug.Log(
                     $"{LogPrefix} ReleaseSkippedNoRuntimeHandle " +
@@ -206,24 +206,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
             }
 
             ActorPresentationReleaseCommand command = new ActorPresentationReleaseCommand(
-                lastRuntimeHandle,
+                _lastRuntimeHandle,
                 nameof(ActorPresentationManualProbe),
                 reason);
 
-            ActorPresentationResult result = adapter.Release(command);
+            ActorPresentationResult result = _adapter.Release(command);
 
             if (result.Kind == ActorPresentationResultKind.Released && result.ReleasedFact.IsValid)
             {
                 UDebug.Log(
                     $"{LogPrefix} Released " +
-                    $"activityIdentity='{lastRuntimeHandle.ResolvedPlan.ActivityIdentity}' " +
-                    $"actorId='{lastRuntimeHandle.ResolvedPlan.ActorId}' " +
-                    $"profileId='{lastRuntimeHandle.ResolvedPlan.ProfileId}' " +
+                    $"activityIdentity='{_lastRuntimeHandle.ResolvedPlan.ActivityIdentity}' " +
+                    $"actorId='{_lastRuntimeHandle.ResolvedPlan.ActorId}' " +
+                    $"profileId='{_lastRuntimeHandle.ResolvedPlan.ProfileId}' " +
                     $"reason='{reason}'.",
                     this);
 
-                hasRuntimeHandle = false;
-                lastRuntimeHandle = default;
+                _hasRuntimeHandle = false;
+                _lastRuntimeHandle = default;
 
                 return result;
             }
@@ -298,10 +298,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
         private void ClearLocalState()
         {
-            hasResolvedPlan = false;
-            hasRuntimeHandle = false;
-            lastResolvedPlan = default;
-            lastRuntimeHandle = default;
+            _hasResolvedPlan = false;
+            _hasRuntimeHandle = false;
+            _lastResolvedPlan = default;
+            _lastRuntimeHandle = default;
         }
 
         private void OnValidate()

@@ -74,6 +74,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             };
         }
 
+        public static ActorInstanceRuntimeId FromRuntimeSpawnedActorIdentity(
+            ActorInstanceRuntimeId ownerActorInstanceRuntimeId,
+            string spawnedActorId,
+            int spawnSequence)
+        {
+            if (!ownerActorInstanceRuntimeId.IsValid)
+            {
+                return default;
+            }
+
+            string normalizedSpawnedActorId = Normalize(spawnedActorId);
+            if (string.IsNullOrWhiteSpace(normalizedSpawnedActorId))
+            {
+                return default;
+            }
+
+            int normalizedSequence = spawnSequence < 0 ? 0 : spawnSequence;
+            return new ActorInstanceRuntimeId(
+                $"{ownerActorInstanceRuntimeId.Value}|runtime-spawn|{RuntimeActorTypeDiscriminator}|{normalizedSpawnedActorId}|{normalizedSequence}");
+        }
+
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 }
