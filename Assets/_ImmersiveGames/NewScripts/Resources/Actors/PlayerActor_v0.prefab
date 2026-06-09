@@ -14,13 +14,14 @@ GameObject:
   - component: {fileID: -2183440626502986053}
   - component: {fileID: 1401694685376812566}
   - component: {fileID: -8484781760947784792}
+  - component: {fileID: 707070707070707070}
+  - component: {fileID: 808080808080808080}
   - component: {fileID: 8906509120750850877}
   - component: {fileID: 333333333333333333}
   - component: {fileID: 444444444444444444}
   - component: {fileID: 555555555555555555}
   - component: {fileID: 2835148354476443585}
   - component: {fileID: 909090909090909091}
-  - component: {fileID: 777777777777777777}
   m_Layer: 0
   m_Name: PlayerActor_v0
   m_TagString: Untagged
@@ -145,6 +146,7 @@ MonoBehaviour:
     Enabled: 1
     Required: 1
     SourceKind: 1
+    CommandKind: 1
     ValueKind: 1
     TriggerKind: 1
     ActionReference: {fileID: 0}
@@ -154,6 +156,7 @@ MonoBehaviour:
     Enabled: 1
     Required: 0
     SourceKind: 1
+    CommandKind: 2
     ValueKind: 2
     TriggerKind: 3
     ActionReference: {fileID: 0}
@@ -161,6 +164,36 @@ MonoBehaviour:
     ActionName: Fire
   deadzone: 0.1
   clampMagnitude: 1
+--- !u!114 &707070707070707070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c9d1f01bda24a55a7cc2e339adf7a61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  endpointId: actor.projectile.fire.endpoint.player.primary
+  fireProfile: {fileID: 11400000, guid: 6e7909166f3043ce8cdcf2de050620d4, type: 2}
+  acceptedCommandKind: 2
+  required: 0
+  spawnAdapter: {fileID: 808080808080808080}
+--- !u!114 &808080808080808080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b85dd0d998645f8846df10ff93792aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  adapterId: actor.projectile.spawn.adapter.player.primary
 --- !u!114 &8906509120750850877
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,20 +281,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   movementController: {fileID: 8906509120750850877}
---- !u!114 &777777777777777777
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 100000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8fca8bf78d7d4b4ab4e3fbe757f9c4d1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  endpointId: actor.object.emitter
-  objectEmissionProfile: {fileID: 11400000, guid: c6e4b0c145f1f244a980804c2c698492, type: 2}
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0

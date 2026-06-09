@@ -96,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                     $"actor_reset_player_identity_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' pipelineId='{activeIdentity.PipelineId}' sessionId='{activeIdentity.SessionId}' does not match endpoint identity.");
             }
 
-            bool isRetainedAcrossActivity = ActorLifetimePolicy.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
+            bool isRetainedAcrossActivity = ActorLifetimePolicyRuntime.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
             if (!isRetainedAcrossActivity &&
                 (!string.Equals(identity.ActivityId, activeIdentity.ActivityId, StringComparison.Ordinal) ||
                  identity.ActivityOrdinal != activeIdentity.ActivityOrdinal ||

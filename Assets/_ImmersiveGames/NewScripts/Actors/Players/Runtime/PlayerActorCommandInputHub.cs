@@ -20,7 +20,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
         private readonly List<ResolvedCommandBinding> _resolvedBindings = new();
         private readonly List<ActionSubscription> _actionSubscriptions = new();
-        private readonly Dictionary<ActorCommandValueKind, IActorCommandSink> _commandSinks = new();
+        private readonly Dictionary<ActorCommandId, IActorCommandSink> _commandSinks = new();
         private PlayerInput _boundPlayerInput;
         private ActorId _actorId;
         private ActorInstanceRuntimeId _actorInstanceRuntimeId;
@@ -64,9 +64,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 DebugUtility.Colors.Info);
         }
 
-        public void BindCommandSink(ActorCommandValueKind commandId, IActorCommandSink sink)
+        public void BindCommandSink(ActorCommandId commandId, IActorCommandSink sink)
         {
-            if (commandId == ActorCommandValueKind.Unknown)
+            if (!commandId.IsValid)
             {
                 throw new InvalidOperationException("PlayerActorCommandInputHub.BindCommandSink requires a valid commandId.");
             }
@@ -79,9 +79,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             _commandSinks[commandId] = sink;
         }
 
-        public void UnbindCommandSink(ActorCommandValueKind commandId)
+        public void UnbindCommandSink(ActorCommandId commandId)
         {
-            if (commandId == ActorCommandValueKind.Unknown)
+            if (!commandId.IsValid)
             {
                 return;
             }
@@ -96,8 +96,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 return;
             }
 
-            List<ActorCommandValueKind> removedKeys = new();
-            foreach (KeyValuePair<ActorCommandValueKind, IActorCommandSink> pair in _commandSinks)
+            List<ActorCommandId> removedKeys = new();
+            foreach (KeyValuePair<ActorCommandId, IActorCommandSink> pair in _commandSinks)
             {
                 if (ReferenceEquals(pair.Value, sink))
                 {
@@ -125,15 +125,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         }
 
         public bool HasBinding(
+            ActorCommandId commandId,
             ActorCommandSourceKind sourceKind,
-            ActorCommandValueKind valueKind,
             ActorCommandTriggerKind triggerKind)
         {
             IReadOnlyList<ActorCommandInputBinding> bindings = commandBindings;
             for (int index = 0; index < bindings.Count; index++)
             {
                 ActorCommandInputBinding binding = bindings[index];
-                if (binding != null && binding.Matches(sourceKind, valueKind, triggerKind))
+                if (binding != null && binding.Matches(commandId, sourceKind, triggerKind))
                 {
                     return true;
                 }
@@ -144,7 +144,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
         private void Update()
         {
-            if (!_prepared || _resolvedBindings.Count == 0 || !TryGetCommandSink(ActorCommandValueKind.Move, out _))
+            if (!_prepared || _resolvedBindings.Count == 0 || !TryGetCommandSink(ActorCommandId.Move, out _))
             {
                 return;
             }
@@ -152,7 +152,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             for (int index = 0; index < _resolvedBindings.Count; index++)
             {
                 ResolvedCommandBinding binding = _resolvedBindings[index];
-                if (binding.Descriptor.ValueKind == ActorCommandValueKind.FirePrimary)
+                if (binding.CommandId == ActorCommandId.FirePrimary)
                 {
                     continue;
                 }
@@ -231,7 +231,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
                     DebugUtility.Log(
                         typeof(PlayerActorCommandInputHub),
-                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' bindingId='{binding.ResolveBindingId()}' sourceKind='{binding.SourceKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' reason='unconfigured_optional_binding'.",
+                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' bindingId='{binding.BindingId}' sourceKind='{binding.SourceKind}' commandKind='{binding.CommandKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' reason='unconfigured_optional_binding'.",
                         DebugUtility.Colors.Info);
                     _lastSkippedBindingCount++;
                     continue;
@@ -239,19 +239,19 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
                 if (binding.SourceKind != ActorCommandSourceKind.PlayerInput)
                 {
-                    throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings only supports PlayerInput source kind. Binding '{binding.ResolveBindingId()}' at index '{index}' uses '{binding.SourceKind}'.");
+                    throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings only supports PlayerInput source kind. Binding '{binding.BindingId}' at index '{index}' uses '{binding.SourceKind}'.");
                 }
 
                 if (!binding.Enabled)
                 {
                     if (binding.Required)
                     {
-                        throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires enabled binding '{binding.ResolveBindingId()}' at index '{index}'.");
+                        throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires enabled binding '{binding.BindingId}' at index '{index}'.");
                     }
 
                     DebugUtility.Log(
                         typeof(PlayerActorCommandInputHub),
-                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' bindingId='{binding.ResolveBindingId()}' sourceKind='{binding.SourceKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' reason='disabled_optional_binding'.",
+                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' bindingId='{binding.BindingId}' sourceKind='{binding.SourceKind}' commandKind='{binding.CommandKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' reason='disabled_optional_binding'.",
                         DebugUtility.Colors.Info);
                     _lastSkippedBindingCount++;
                     continue;
@@ -261,39 +261,40 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 {
                     if (binding.Required)
                     {
-                        throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires action for binding '{binding.ResolveBindingId()}' at index '{index}'.");
+                        throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires action for binding '{binding.BindingId}' at index '{index}'.");
                     }
 
                     DebugUtility.Log(
                         typeof(PlayerActorCommandInputHub),
-                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='{binding.ValueKind}' bindingId='{binding.ResolveBindingId()}' sourceKind='{binding.SourceKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' actionMap='{binding.ActionMapName}' actionName='{binding.ActionName}' required='{binding.Required}' enabled='{binding.Enabled}' reason='input_action_missing'.",
+                        $"[OBS][ActorCommandHub] event='ActorCommandBindingSkipped' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='{binding.ResolveCommandIdOrFail()}' bindingId='{binding.BindingId}' sourceKind='{binding.SourceKind}' commandKind='{binding.CommandKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' actionMap='{binding.ActionMapName}' actionName='{binding.ActionName}' required='{binding.Required}' enabled='{binding.Enabled}' reason='input_action_missing'.",
                         DebugUtility.Colors.Info);
                     _lastSkippedBindingCount++;
                     continue;
                 }
 
-                if (binding.ValueKind == ActorCommandValueKind.Move &&
+                ActorCommandId commandId = binding.ResolveCommandIdOrFail();
+                if (commandId == ActorCommandId.Move &&
                     binding.TriggerKind != ActorCommandTriggerKind.Continuous &&
                     binding.TriggerKind != ActorCommandTriggerKind.ValueChanged)
                 {
-                    throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires Move binding '{binding.ResolveBindingId()}' to use Continuous or ValueChanged trigger.");
+                    throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires Move binding '{binding.BindingId}' to use Continuous or ValueChanged trigger.");
                 }
 
-                if (binding.ValueKind == ActorCommandValueKind.FirePrimary &&
+                if (commandId == ActorCommandId.FirePrimary &&
                     binding.TriggerKind != ActorCommandTriggerKind.Pressed)
                 {
-                    throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires FirePrimary binding '{binding.ResolveBindingId()}' to use Pressed trigger.");
+                    throw new InvalidOperationException($"PlayerActorCommandInputHub.PrepareInputBindings requires FirePrimary binding '{binding.BindingId}' to use Pressed trigger.");
                 }
 
-                _resolvedBindings.Add(new ResolvedCommandBinding(binding, action));
+                _resolvedBindings.Add(new ResolvedCommandBinding(binding, commandId, action));
 
                 DebugUtility.Log(
                     typeof(PlayerActorCommandInputHub),
-                    $"[OBS][ActorCommandHub] event='ActorCommandBindingResolved' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='{binding.ValueKind}' bindingId='{binding.ResolveBindingId()}' sourceKind='{binding.SourceKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' actionMapName='{binding.ActionMapName}' actionName='{binding.ActionName}' required='{binding.Required}' enabled='{binding.Enabled}' context='{NormalizeContext(context)}' source='{nameof(PlayerActorCommandInputHub)}' reason='binding_active'.",
+                    $"[OBS][ActorCommandHub] event='ActorCommandBindingResolved' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='{commandId}' bindingId='{binding.BindingId}' sourceKind='{binding.SourceKind}' commandKind='{binding.CommandKind}' valueKind='{binding.ValueKind}' triggerKind='{binding.TriggerKind}' actionMapName='{binding.ActionMapName}' actionName='{binding.ActionName}' required='{binding.Required}' enabled='{binding.Enabled}' context='{NormalizeContext(context)}' source='{nameof(PlayerActorCommandInputHub)}' reason='binding_active'.",
                     DebugUtility.Colors.Info);
                 _lastResolvedBindingCount++;
 
-                if (binding.ValueKind == ActorCommandValueKind.FirePrimary)
+                if (commandId == ActorCommandId.FirePrimary)
                 {
                     RegisterFirePrimaryCallback(binding, action);
                 }
@@ -333,35 +334,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         private void EmitResolvedBinding(ResolvedCommandBinding binding)
         {
             ActorCommandInputBinding descriptor = binding.Descriptor;
-            if (descriptor.ValueKind != ActorCommandValueKind.Move)
+            if (binding.CommandId != ActorCommandId.Move)
             {
                 return;
             }
 
-            if (!TryGetCommandSink(ActorCommandValueKind.Move, out IActorCommandSink moveSink))
+            if (!TryGetCommandSink(ActorCommandId.Move, out IActorCommandSink moveSink))
             {
                 return;
             }
 
             ActorCommandValue value = ReadMoveValue(binding.Action, descriptor.TriggerKind);
+            ActorCommandBindingId bindingId = descriptor.ResolveBindingIdOrFail();
             ActorCommandEnvelope command = new(
                 _actorId,
                 _actorInstanceRuntimeId,
-                new ActorCommandId(descriptor.SourceKind, descriptor.ValueKind, descriptor.TriggerKind, _commandSequence++),
-                descriptor.ResolveBindingId(),
+                binding.CommandId,
+                bindingId,
+                new ActorCommandSourceIdentity(nameof(PlayerActorCommandInputHub)),
+                _commandSequence++,
+                descriptor.SourceKind,
                 value,
                 source: nameof(PlayerActorCommandInputHub),
-                reason: descriptor.ResolveBindingId());
+                reason: bindingId.Value);
 
             if (!command.IsValid)
             {
-                throw new InvalidOperationException($"PlayerActorCommandInputHub produced invalid command envelope for binding '{descriptor.ResolveBindingId()}'.");
+                throw new InvalidOperationException($"PlayerActorCommandInputHub produced invalid command envelope for binding '{bindingId.Value}'.");
             }
 
             ActorCommandDispatchResult dispatchResult = moveSink.AcceptCommand(command);
             if (!dispatchResult.IsValid)
             {
-                throw new InvalidOperationException($"PlayerActorCommandInputHub received invalid dispatch result for binding '{descriptor.ResolveBindingId()}'.");
+                throw new InvalidOperationException($"PlayerActorCommandInputHub received invalid dispatch result for binding '{bindingId.Value}'.");
             }
 
             if (!dispatchResult.IsAccepted)
@@ -373,7 +378,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                         _moveInactiveDispatchLogged = true;
                         DebugUtility.Log(
                             typeof(PlayerActorCommandInputHub),
-                            $"[OBS][ActorCommandHub] event='ActorCommandDispatchIgnored' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='Move' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='{descriptor.ValueKind}' triggerKind='{descriptor.TriggerKind}' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='endpoint_inactive'.",
+                            $"[OBS][ActorCommandHub] event='ActorCommandDispatchIgnored' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='Move' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' commandKind='{descriptor.CommandKind}' valueKind='{descriptor.ValueKind}' triggerKind='{descriptor.TriggerKind}' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='endpoint_inactive'.",
                             DebugUtility.Colors.Info);
                     }
 
@@ -382,17 +387,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
                 if (descriptor.Required)
                 {
-                    throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{descriptor.ResolveBindingId()}' has no executable sink: '{dispatchResult.Status}' reason='{dispatchResult.Reason}'.");
+                    throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{bindingId.Value}' has no executable sink: '{dispatchResult.Status}' reason='{dispatchResult.Reason}'.");
                 }
 
                 DebugUtility.Log(
                     typeof(PlayerActorCommandInputHub),
-                    $"[OBS][ActorCommandHub] event='ActorCommandDispatchRejected' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='{descriptor.ValueKind}' triggerKind='{descriptor.TriggerKind}' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='no_executable_sink'.",
+                    $"[OBS][ActorCommandHub] event='ActorCommandDispatchRejected' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' commandKind='{descriptor.CommandKind}' valueKind='{descriptor.ValueKind}' triggerKind='{descriptor.TriggerKind}' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='no_executable_sink'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
-            if (descriptor.ValueKind == ActorCommandValueKind.Move)
+            if (binding.CommandId == ActorCommandId.Move)
             {
                 _moveInactiveDispatchLogged = false;
             }
@@ -409,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             _actionSubscriptions.Add(new ActionSubscription(action, startedCallback));
         }
 
-        private bool TryGetCommandSink(ActorCommandValueKind commandId, out IActorCommandSink sink)
+        private bool TryGetCommandSink(ActorCommandId commandId, out IActorCommandSink sink)
         {
             return _commandSinks.TryGetValue(commandId, out sink) && sink != null;
         }
@@ -432,7 +437,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             ActorCommandInputBinding descriptor,
             InputAction.CallbackContext context)
         {
-            if (descriptor.ValueKind != ActorCommandValueKind.FirePrimary ||
+            if (!descriptor.TryResolveCommandId(out ActorCommandId resolvedCommandId) ||
+                resolvedCommandId != ActorCommandId.FirePrimary ||
                 descriptor.TriggerKind != ActorCommandTriggerKind.Pressed)
             {
                 return;
@@ -444,35 +450,39 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             }
 
             ActorCommandValue value = ActorCommandValue.CreateFirePrimary(true, ActorCommandTriggerKind.Pressed);
+            ActorCommandBindingId bindingId = descriptor.ResolveBindingIdOrFail();
             ActorCommandEnvelope command = new(
                 _actorId,
                 _actorInstanceRuntimeId,
-                new ActorCommandId(descriptor.SourceKind, descriptor.ValueKind, descriptor.TriggerKind, _commandSequence++),
-                descriptor.ResolveBindingId(),
+                ActorCommandId.FirePrimary,
+                bindingId,
+                new ActorCommandSourceIdentity(nameof(PlayerActorCommandInputHub)),
+                _commandSequence++,
+                descriptor.SourceKind,
                 value,
                 source: nameof(PlayerActorCommandInputHub),
-                reason: descriptor.ResolveBindingId());
+                reason: bindingId.Value);
 
             if (!command.IsValid)
             {
-                throw new InvalidOperationException($"PlayerActorCommandInputHub produced invalid command envelope for binding '{descriptor.ResolveBindingId()}'.");
+                throw new InvalidOperationException($"PlayerActorCommandInputHub produced invalid command envelope for binding '{bindingId.Value}'.");
             }
 
             DebugUtility.Log(
                 typeof(PlayerActorCommandInputHub),
-                $"[OBS][ActorCommandHub] event='ActorCommandEmitted' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' source='{nameof(PlayerActorCommandInputHub)}' reason='fire_primary_pressed'.",
+                $"[OBS][ActorCommandHub] event='ActorCommandEmitted' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' source='{nameof(PlayerActorCommandInputHub)}' reason='fire_primary_pressed'.",
                 DebugUtility.Colors.Info);
 
-            if (!TryGetCommandSink(ActorCommandValueKind.FirePrimary, out IActorCommandSink fireSink))
+            if (!TryGetCommandSink(ActorCommandId.FirePrimary, out IActorCommandSink fireSink))
             {
                 if (descriptor.Required)
                 {
-                    throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{descriptor.ResolveBindingId()}' has no executable sink.");
+                    throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{bindingId.Value}' has no executable sink.");
                 }
 
                 DebugUtility.Log(
                     typeof(PlayerActorCommandInputHub),
-                    $"[OBS][ActorCommandHub] event='ActorCommandDispatchRejected' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='RejectedUnsupportedCommand' dispatchReason='missing_sink' source='{nameof(PlayerActorCommandInputHub)}' reason='no_executable_sink'.",
+                    $"[OBS][ActorCommandHub] event='ActorCommandDispatchRejected' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='RejectedUnsupportedCommand' dispatchReason='missing_sink' source='{nameof(PlayerActorCommandInputHub)}' reason='no_executable_sink'.",
                     DebugUtility.Colors.Info);
                 return;
             }
@@ -480,7 +490,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             ActorCommandDispatchResult dispatchResult = fireSink.AcceptCommand(command);
             if (!dispatchResult.IsValid)
             {
-                throw new InvalidOperationException($"PlayerActorCommandInputHub received invalid dispatch result for binding '{descriptor.ResolveBindingId()}'.");
+                throw new InvalidOperationException($"PlayerActorCommandInputHub received invalid dispatch result for binding '{bindingId.Value}'.");
             }
 
             if (!dispatchResult.IsAccepted)
@@ -489,26 +499,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 {
                     DebugUtility.Log(
                         typeof(PlayerActorCommandInputHub),
-                        $"[OBS][ActorCommandHub] event='ActorCommandDispatchIgnored' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='endpoint_inactive'.",
+                        $"[OBS][ActorCommandHub] event='ActorCommandDispatchIgnored' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='endpoint_inactive'.",
                         DebugUtility.Colors.Info);
                     return;
                 }
 
                 if (descriptor.Required)
                 {
-                    throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{descriptor.ResolveBindingId()}' has no executable sink: '{dispatchResult.Status}' reason='{dispatchResult.Reason}'.");
+                    throw new InvalidOperationException($"PlayerActorCommandInputHub required command binding '{bindingId.Value}' has no executable sink: '{dispatchResult.Status}' reason='{dispatchResult.Reason}'.");
                 }
 
                 DebugUtility.Log(
                     typeof(PlayerActorCommandInputHub),
-                    $"[OBS][ActorCommandHub] event='ActorCommandDispatchRejected' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='no_executable_sink'.",
+                    $"[OBS][ActorCommandHub] event='ActorCommandDispatchRejected' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchStatus='{dispatchResult.Status}' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='no_executable_sink'.",
                     DebugUtility.Colors.Info);
                 return;
             }
 
             DebugUtility.Log(
                 typeof(PlayerActorCommandInputHub),
-                $"[OBS][ActorCommandHub] event='ActorCommandDispatchAccepted' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{descriptor.ResolveBindingId()}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='command_observed'.",
+                $"[OBS][ActorCommandHub] event='ActorCommandDispatchAccepted' actorId='{_actorId}' actorInstanceRuntimeId='{_actorInstanceRuntimeId}' commandId='FirePrimary' bindingId='{bindingId.Value}' sourceKind='{descriptor.SourceKind}' valueKind='Button' triggerKind='Pressed' dispatchReason='{dispatchResult.Reason}' source='{nameof(PlayerActorCommandInputHub)}' reason='command_observed'.",
                 DebugUtility.Colors.Success);
         }
 
@@ -535,13 +545,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
         private readonly struct ResolvedCommandBinding
         {
-            public ResolvedCommandBinding(ActorCommandInputBinding descriptor, InputAction action)
+            public ResolvedCommandBinding(ActorCommandInputBinding descriptor, ActorCommandId commandId, InputAction action)
             {
                 Descriptor = descriptor;
+                CommandId = commandId;
                 Action = action;
             }
 
             public ActorCommandInputBinding Descriptor { get; }
+            public ActorCommandId CommandId { get; }
             public InputAction Action { get; }
         }
 

@@ -503,7 +503,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActorRuntimeEntry entry,
             ActorLifetimeTrigger trigger)
         {
-            ActorLifetimeDecision decision = ActorLifetimePolicy.ResolveDecision(entry.ActorScope, trigger);
+            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(entry.ActorScope, trigger);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActorLifetimeDecisionResolved,
@@ -544,7 +544,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActorInstanceRecord instance,
             ActorLifetimeTrigger trigger)
         {
-            ActorLifetimeDecision decision = ActorLifetimePolicy.ResolveDecision(instance.Scope, trigger);
+            ActorLifetimeDecision decision = ActorLifetimePolicyRuntime.ResolveDecision(instance.Scope, trigger);
             endpoint.EmitFact(
                 facts,
                 SessionActivityFactKind.ActorLifetimeDecisionResolved,

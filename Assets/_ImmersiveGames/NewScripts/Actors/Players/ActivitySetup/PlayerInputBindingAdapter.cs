@@ -110,24 +110,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         {
             if (actorInstance == null)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: actor instance ausente para actorId='{requirement.ActorId}'.");
+                throw new InvalidOperationException($"PlayerInput binding failed: actor instance missing for actorId='{requirement.ActorId}'.");
             }
 
             PlayerInput[] inputs = actorInstance.GetComponentsInChildren<PlayerInput>(includeInactive: true);
             if (inputs == null || inputs.Length == 0)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' sem PlayerInput no prefab materializado.");
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' no PlayerInput found in materialized prefab.");
             }
 
             if (inputs.Length > 1)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' possui multiplos PlayerInput sem endpoint explicito.");
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' multiple PlayerInput components without explicit endpoint.");
             }
 
             PlayerInput resolved = inputs[0];
             if (resolved == null)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' PlayerInput invalido.");
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' invalid PlayerInput.");
             }
 
             bool actionsRebound = false;
@@ -143,7 +143,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             InputActionMap playerActionMap = resolved.actions?.FindActionMap(InputModesDefaults.PlayerActionMapName, throwIfNotFound: false);
             if (playerActionMap == null)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' sem ActionMap '{InputModesDefaults.PlayerActionMapName}'.");
+                throw new InvalidOperationException($"PlayerInput binding failed: actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}' missing ActionMap '{InputModesDefaults.PlayerActionMapName}'.");
             }
 
             if (!string.Equals(resolved.defaultActionMap, InputModesDefaults.PlayerActionMapName, StringComparison.Ordinal))
@@ -165,14 +165,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             PlayerSlotId authoredSlotId = slotBinding.PlayerSlotId;
             if (authoredSlotId.IsValid && authoredSlotId != requirement.PlayerSlotId)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: slot binding conflita actorId='{requirement.ActorId}' expectedSlotId='{requirement.PlayerSlotId}' authoredSlotId='{authoredSlotId}'.");
+                throw new InvalidOperationException($"PlayerInput binding failed: slot binding conflict actorId='{requirement.ActorId}' expectedSlotId='{requirement.PlayerSlotId}' authoredSlotId='{authoredSlotId}'.");
             }
 
             slotBinding.Initialize(requirement.PlayerSlotId, requirement.Source, requirement.Reason);
 
             if (!slotBinding.IsValid || slotBinding.PlayerSlotId != requirement.PlayerSlotId)
             {
-                throw new InvalidOperationException($"PlayerInput binding failed: PlayerInputSlotBinding invalido para actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}'.");
+                throw new InvalidOperationException($"PlayerInput binding failed: PlayerInputSlotBinding invalid for actorId='{requirement.ActorId}' slotId='{requirement.PlayerSlotId}'.");
             }
 
             return new PlayerInputResolution(resolved, actionsRebound);

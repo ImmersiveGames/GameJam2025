@@ -6,6 +6,13 @@ using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
 {
+    public enum ActorCommandKind
+    {
+        Unknown = 0,
+        Move = 1,
+        FirePrimary = 2
+    }
+
     public enum ActorCommandSourceKind
     {
         Unknown = 0,
@@ -15,8 +22,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     public enum ActorCommandValueKind
     {
         Unknown = 0,
-        Move = 1,
-        FirePrimary = 2
+        Vector2 = 1,
+        Button = 2,
+        Axis = 3,
+        Trigger = 4
     }
 
     public enum ActorCommandTriggerKind
@@ -29,13 +38,60 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     }
 
     [Serializable]
+    public readonly struct ActorCommandBindingId
+    {
+        public ActorCommandBindingId(string value)
+        {
+            Value = Normalize(value);
+        }
+
+        public string Value { get; }
+
+        public bool IsValid => !string.IsNullOrWhiteSpace(Value);
+
+        public override string ToString()
+        {
+            return Value;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [Serializable]
+    public readonly struct ActorCommandSourceIdentity
+    {
+        public ActorCommandSourceIdentity(string value)
+        {
+            Value = Normalize(value);
+        }
+
+        public string Value { get; }
+
+        public bool IsValid => !string.IsNullOrWhiteSpace(Value);
+
+        public override string ToString()
+        {
+            return Value;
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
+    [Serializable]
     public sealed class ActorCommandInputBinding
     {
         public string BindingId = string.Empty;
         public bool Enabled = true;
         public bool Required = false;
         public ActorCommandSourceKind SourceKind = ActorCommandSourceKind.PlayerInput;
-        public ActorCommandValueKind ValueKind = ActorCommandValueKind.Move;
+        public ActorCommandKind CommandKind = ActorCommandKind.Move;
+        public ActorCommandValueKind ValueKind = ActorCommandValueKind.Vector2;
         public ActorCommandTriggerKind TriggerKind = ActorCommandTriggerKind.Continuous;
         [HideInInspector]
         public InputActionReference ActionReference;
@@ -43,34 +99,94 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public string ActionName = string.Empty;
 
         public bool IsConfigured =>
+            HasBindingId &&
             SourceKind != ActorCommandSourceKind.Unknown &&
+            CommandKind != ActorCommandKind.Unknown &&
             ValueKind != ActorCommandValueKind.Unknown &&
             TriggerKind != ActorCommandTriggerKind.Unknown &&
+            IsCommandValueShapeValid &&
             (ActionReference != null || (!string.IsNullOrWhiteSpace(ActionMapName) && !string.IsNullOrWhiteSpace(ActionName)));
 
         public bool IsActive => Enabled && IsConfigured;
 
+        public bool HasBindingId => !string.IsNullOrWhiteSpace(BindingId);
+
+        public bool IsCommandValueShapeValid => IsCommandValueCompatible(ResolveCommandId(), ValueKind, TriggerKind);
+
         public bool Matches(
+            ActorCommandId commandId,
             ActorCommandSourceKind sourceKind,
-            ActorCommandValueKind valueKind,
             ActorCommandTriggerKind triggerKind)
         {
             return IsActive &&
+                TryResolveCommandId(out ActorCommandId declaredCommandId) &&
+                declaredCommandId == commandId &&
                 SourceKind == sourceKind &&
-                ValueKind == valueKind &&
                 TriggerKind == triggerKind;
         }
 
-        public string ResolveBindingId()
+        public bool TryResolveCommandId(out ActorCommandId commandId)
         {
-            if (!string.IsNullOrWhiteSpace(BindingId))
+            commandId = ResolveCommandId();
+            return commandId.IsValid;
+        }
+
+        public ActorCommandId ResolveCommandIdOrFail()
+        {
+            if (!TryResolveCommandId(out ActorCommandId commandId))
             {
-                return BindingId.Trim();
+                throw new InvalidOperationException($"ActorCommandInputBinding requires a supported command kind for binding '{BindingId}'.");
             }
 
-            string map = string.IsNullOrWhiteSpace(ActionMapName) ? "unmapped" : ActionMapName.Trim();
-            string action = string.IsNullOrWhiteSpace(ActionName) ? "unbound" : ActionName.Trim();
-            return $"{SourceKind}|{ValueKind}|{TriggerKind}|{map}.{action}";
+            return commandId;
+        }
+
+        public ActorCommandBindingId ResolveBindingIdOrFail()
+        {
+            if (!HasBindingId)
+            {
+                throw new InvalidOperationException("ActorCommandInputBinding requires a non-empty BindingId.");
+            }
+
+            return new ActorCommandBindingId(BindingId);
+        }
+
+        private ActorCommandId ResolveCommandId()
+        {
+            return CommandKind switch
+            {
+                ActorCommandKind.Move => ActorCommandId.Move,
+                ActorCommandKind.FirePrimary => ActorCommandId.FirePrimary,
+                _ => default
+            };
+        }
+
+        internal static bool IsCommandValueCompatible(
+            ActorCommandId commandId,
+            ActorCommandValueKind valueKind,
+            ActorCommandTriggerKind triggerKind)
+        {
+            if (!commandId.IsValid ||
+                valueKind == ActorCommandValueKind.Unknown ||
+                triggerKind == ActorCommandTriggerKind.Unknown)
+            {
+                return false;
+            }
+
+            if (commandId == ActorCommandId.Move)
+            {
+                return valueKind == ActorCommandValueKind.Vector2 &&
+                    (triggerKind == ActorCommandTriggerKind.Continuous ||
+                        triggerKind == ActorCommandTriggerKind.ValueChanged);
+            }
+
+            if (commandId == ActorCommandId.FirePrimary)
+            {
+                return valueKind == ActorCommandValueKind.Button &&
+                    triggerKind == ActorCommandTriggerKind.Pressed;
+            }
+
+            return false;
         }
     }
 
@@ -102,47 +218,47 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public static ActorCommandValue CreateMove(Vector2 value, ActorCommandTriggerKind triggerKind = ActorCommandTriggerKind.Continuous)
         {
-            return new ActorCommandValue(ActorCommandValueKind.Move, triggerKind, value, boolValue: false, floatValue: 0f);
+            return new ActorCommandValue(ActorCommandValueKind.Vector2, triggerKind, value, boolValue: false, floatValue: 0f);
         }
 
         public static ActorCommandValue CreateFirePrimary(bool pressed, ActorCommandTriggerKind triggerKind = ActorCommandTriggerKind.Pressed)
         {
-            return new ActorCommandValue(ActorCommandValueKind.FirePrimary, triggerKind, Vector2.zero, pressed, floatValue: 0f);
+            return new ActorCommandValue(ActorCommandValueKind.Button, triggerKind, Vector2.zero, pressed, floatValue: 0f);
         }
 
         public static ActorCommandValue CreateButton(
-            ActorCommandValueKind valueKind,
             ActorCommandTriggerKind triggerKind,
             bool pressed)
         {
-            return new ActorCommandValue(valueKind, triggerKind, Vector2.zero, pressed, floatValue: 0f);
+            return new ActorCommandValue(ActorCommandValueKind.Button, triggerKind, Vector2.zero, pressed, floatValue: 0f);
         }
     }
 
-    public readonly struct ActorCommandId
+    public readonly struct ActorCommandId : IEquatable<ActorCommandId>
     {
-        public ActorCommandId(
-            ActorCommandSourceKind sourceKind,
-            ActorCommandValueKind valueKind,
-            ActorCommandTriggerKind triggerKind,
-            int sequence)
+        public ActorCommandId(ActorCommandKind kind)
         {
-            SourceKind = sourceKind;
-            ValueKind = valueKind;
-            TriggerKind = triggerKind;
-            Sequence = sequence < 0 ? 0 : sequence;
+            Kind = kind;
         }
 
-        public ActorCommandSourceKind SourceKind { get; }
-        public ActorCommandValueKind ValueKind { get; }
-        public ActorCommandTriggerKind TriggerKind { get; }
-        public int Sequence { get; }
+        public ActorCommandKind Kind { get; }
 
-        public bool IsValid =>
-            SourceKind != ActorCommandSourceKind.Unknown &&
-            ValueKind != ActorCommandValueKind.Unknown &&
-            TriggerKind != ActorCommandTriggerKind.Unknown &&
-            Sequence >= 0;
+        public bool IsValid => Kind != ActorCommandKind.Unknown;
+
+        public static ActorCommandId Move => new(ActorCommandKind.Move);
+        public static ActorCommandId FirePrimary => new(ActorCommandKind.FirePrimary);
+
+        public bool Equals(ActorCommandId other) => Kind == other.Kind;
+        public override bool Equals(object obj) => obj is ActorCommandId other && Equals(other);
+        public override int GetHashCode() => Kind.GetHashCode();
+
+        public static bool operator ==(ActorCommandId left, ActorCommandId right) => left.Equals(right);
+        public static bool operator !=(ActorCommandId left, ActorCommandId right) => !left.Equals(right);
+
+        public override string ToString()
+        {
+            return Kind.ToString();
+        }
     }
 
     public readonly struct ActorCommandEnvelope
@@ -151,7 +267,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             ActorId actorId,
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorCommandId commandId,
-            string sourceId,
+            ActorCommandBindingId bindingId,
+            ActorCommandSourceIdentity sourceIdentity,
+            int sequence,
+            ActorCommandSourceKind sourceKind,
             ActorCommandValue value,
             string source,
             string reason)
@@ -159,7 +278,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             ActorId = actorId;
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             CommandId = commandId;
-            SourceId = Normalize(sourceId);
+            BindingId = bindingId;
+            SourceIdentity = sourceIdentity;
+            Sequence = sequence < 0 ? 0 : sequence;
+            SourceKind = sourceKind;
             Value = value;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -168,21 +290,24 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         public ActorId ActorId { get; }
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorCommandId CommandId { get; }
-        public string SourceId { get; }
+        public ActorCommandBindingId BindingId { get; }
+        public ActorCommandSourceIdentity SourceIdentity { get; }
+        public int Sequence { get; }
+        public ActorCommandSourceKind SourceKind { get; }
         public ActorCommandValue Value { get; }
         public string Source { get; }
         public string Reason { get; }
-        public ActorCommandSourceKind SourceKind => CommandId.SourceKind;
 
         public bool IsValid =>
             ActorId.IsValid &&
             ActorInstanceRuntimeId.IsValid &&
             CommandId.IsValid &&
+            BindingId.IsValid &&
+            SourceIdentity.IsValid &&
+            SourceKind != ActorCommandSourceKind.Unknown &&
             Value.IsValid &&
-            CommandId.SourceKind == SourceKind &&
-            CommandId.ValueKind == Value.ValueKind &&
-            CommandId.TriggerKind == Value.TriggerKind &&
-            !string.IsNullOrWhiteSpace(SourceId);
+            ActorCommandInputBinding.IsCommandValueCompatible(CommandId, Value.ValueKind, Value.TriggerKind) &&
+            Sequence >= 0;
 
         private static string Normalize(string value)
         {
@@ -246,12 +371,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         bool IsPrepared { get; }
         IReadOnlyList<ActorCommandInputBinding> Bindings { get; }
         bool HasBinding(
+            ActorCommandId commandId,
             ActorCommandSourceKind sourceKind,
-            ActorCommandValueKind valueKind,
             ActorCommandTriggerKind triggerKind);
         void PrepareInputBindings(PlayerInput playerInput, string context);
-        void BindCommandSink(ActorCommandValueKind commandId, IActorCommandSink sink);
-        void UnbindCommandSink(ActorCommandValueKind commandId);
+        void BindCommandSink(ActorCommandId commandId, IActorCommandSink sink);
+        void UnbindCommandSink(ActorCommandId commandId);
         void UnbindCommandSink(IActorCommandSink sink);
         void Clear();
     }

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -16,6 +15,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
     public sealed class ActivityCapabilityPermissionScanner : IActivityCapabilityScanner
     {
         private const string ModuleId = "SessionActivity.PermissionTarget";
+        private const string MovementReceiverKind = "movement";
         private readonly IPlayerActorCapabilityIdentityResolver _identityResolver;
 
         public ActivityCapabilityPermissionScanner(IPlayerActorCapabilityIdentityResolver identityResolver)
@@ -56,8 +56,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 }
 
                 IActorMovementEndpoint movementEndpoint = surface.ActorMovementEndpoint;
-                IActorObjectEmitterEndpoint objectEmitterEndpoint = surface.ActorObjectEmitterEndpoint;
-                if (movementEndpoint == null && objectEmitterEndpoint == null)
+                if (movementEndpoint == null)
                 {
                     continue;
                 }
@@ -101,41 +100,18 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                     playerIdentity.PlayerActorId,
                     playerIdentity.PlayerSlotId);
 
-                if (movementEndpoint != null)
-                {
-                    AppendPermissionReceiverContribution(
-                        contributions,
-                        capabilityKeys,
-                        inventoryId,
-                        ownerId,
-                        context.Identity,
-                        playerIdentity,
-                        receiverIdentity,
-                        movementEndpoint as Component,
-                        movementEndpoint,
-                        null,
-                        receiverKind: "movement",
-                        source: context.Source,
-                        reason: context.Reason);
-                }
-
-                if (objectEmitterEndpoint != null)
-                {
-                    AppendPermissionReceiverContribution(
-                        contributions,
-                        capabilityKeys,
-                        inventoryId,
-                        ownerId,
-                        context.Identity,
-                        playerIdentity,
-                        receiverIdentity,
-                        objectEmitterEndpoint as Component,
-                        null,
-                        objectEmitterEndpoint,
-                        receiverKind: "object_emission",
-                        source: context.Source,
-                        reason: context.Reason);
-                }
+                AppendMovementPermissionReceiverContribution(
+                    contributions,
+                    capabilityKeys,
+                    inventoryId,
+                    ownerId,
+                    context.Identity,
+                    playerIdentity,
+                    receiverIdentity,
+                    movementEndpoint as Component,
+                    movementEndpoint,
+                    context.Source,
+                    context.Reason);
             }
 
             return new ActivityCapabilityScanResult(
@@ -153,11 +129,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
 
         private static string BuildCapabilityPath(
             string componentPath,
-            ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
-            string receiverKind)
+            ActivityCapabilityPermissionReceiverIdentity receiverIdentity)
         {
             string normalizedComponentPath = string.IsNullOrWhiteSpace(componentPath) ? string.Empty : componentPath.Trim();
-            string normalizedReceiverKind = string.IsNullOrWhiteSpace(receiverKind) ? "receiver" : receiverKind.Trim();
             string actorInstanceToken = receiverIdentity.ActorInstanceRuntimeId.IsValid
                 ? receiverIdentity.ActorInstanceRuntimeId.Value
                 : "actor.instance.unbound";
@@ -166,13 +140,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 : "slot.unbound";
             if (!string.IsNullOrWhiteSpace(normalizedComponentPath))
             {
-                return $"{normalizedReceiverKind}|componentPath={normalizedComponentPath}|actorInstance={actorInstanceToken}|slot={slotToken}";
+                return $"{MovementReceiverKind}|componentPath={normalizedComponentPath}|actorInstance={actorInstanceToken}|slot={slotToken}";
             }
 
-            return $"{normalizedReceiverKind}|actorInstance={actorInstanceToken}|slot={slotToken}";
+            return $"{MovementReceiverKind}|actorInstance={actorInstanceToken}|slot={slotToken}";
         }
 
-        private static void AppendPermissionReceiverContribution(
+        private static void AppendMovementPermissionReceiverContribution(
             List<ActivityPermissionReceiverContribution> contributions,
             HashSet<string> capabilityKeys,
             ActivityCapabilityInventoryId inventoryId,
@@ -182,15 +156,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             ActivityCapabilityPermissionReceiverIdentity receiverIdentity,
             Component endpointComponent,
             IActorMovementEndpoint movementEndpoint,
-            IActorObjectEmitterEndpoint objectEmitterEndpoint,
-            string receiverKind,
             string source,
             string reason)
         {
             string componentPath = endpointComponent != null
                 ? ActivityCapabilityTransformPathUtility.BuildTransformPath(endpointComponent.transform)
                 : string.Empty;
-            string capabilityPath = BuildCapabilityPath(componentPath, receiverIdentity, receiverKind);
+            string capabilityPath = BuildCapabilityPath(componentPath, receiverIdentity);
             string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(
                 inventoryId,
                 ownerId,
@@ -203,30 +175,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 return;
             }
 
-            string receiverId = receiverKind == "movement"
-                ? PlayerMovementPermissionReceiver.CreateReceiverId(receiverIdentity)
-                : ActorObjectEmissionPermissionReceiver.CreateReceiverId(receiverIdentity);
-
-            IActivityPermissionReceiverProvider receiverProvider = receiverKind == "movement"
-                ? new PlayerMovementPermissionReceiverProvider(
-                    movementEndpoint,
-                    receiverId,
-                    playerIdentity.ActorId,
-                    playerIdentity.ActorInstanceRuntimeId,
-                    playerIdentity.PlayerActorId,
-                    playerIdentity.PlayerSlotId)
-                : new ActorObjectEmissionPermissionReceiverProvider(
-                    objectEmitterEndpoint,
-                    receiverId,
-                    playerIdentity.ActorId,
-                    playerIdentity.ActorInstanceRuntimeId,
-                    playerIdentity.PlayerActorId,
-                    playerIdentity.PlayerSlotId);
-
-            if (receiverProvider == null)
-            {
-                return;
-            }
+            string receiverId = PlayerMovementPermissionReceiver.CreateReceiverId(receiverIdentity);
+            IActivityPermissionReceiverProvider receiverProvider = new PlayerMovementPermissionReceiverProvider(
+                movementEndpoint,
+                receiverId,
+                playerIdentity.ActorId,
+                playerIdentity.ActorInstanceRuntimeId,
+                playerIdentity.PlayerActorId,
+                playerIdentity.PlayerSlotId);
 
             contributions.Add(new ActivityPermissionReceiverContribution(
                 identity,
@@ -245,5 +201,4 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 reason));
         }
     }
-
 }

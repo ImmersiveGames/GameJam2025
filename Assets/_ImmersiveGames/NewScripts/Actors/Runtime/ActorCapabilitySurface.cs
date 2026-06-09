@@ -1,7 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
-using _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Runtime
@@ -15,7 +15,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         private IActorMovementEndpoint actorMovementEndpoint;
         private IActorPermissionReceiver actorPermissionReceiver;
         private IActorCommandSourceHub actorCommandSourceHub;
-        private IActorObjectEmitterEndpoint actorObjectEmitterEndpoint;
+        private IActorProjectileFireEndpoint actorProjectileFireEndpoint;
 
         public ActorPresentationEndpoint PresentationEndpoint
         {
@@ -95,16 +95,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             }
         }
 
-        public IActorObjectEmitterEndpoint ActorObjectEmitterEndpoint
+        public IActorProjectileFireEndpoint ActorProjectileFireEndpoint
         {
             get
             {
-                if (actorObjectEmitterEndpoint == null)
+                if (actorProjectileFireEndpoint == null)
                 {
                     RefreshFromLocalActorRoot();
                 }
 
-                return actorObjectEmitterEndpoint;
+                return actorProjectileFireEndpoint;
             }
         }
 
@@ -117,7 +117,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             actorMovementEndpoint = ResolveSingleInterfaceInActorRoot<IActorMovementEndpoint>(actorRoot);
             actorPermissionReceiver = ResolveSingleInterfaceInActorRoot<IActorPermissionReceiver>(actorRoot);
             actorCommandSourceHub = ResolveSingleInterfaceInActorRoot<IActorCommandSourceHub>(actorRoot);
-            actorObjectEmitterEndpoint = ResolveSingleInterfaceInActorRoot<IActorObjectEmitterEndpoint>(actorRoot);
+            actorProjectileFireEndpoint = ResolveSingleInterfaceInActorRoot<IActorProjectileFireEndpoint>(actorRoot);
         }
 
         public bool TryGetEndpoint<TEndpoint>(out TEndpoint endpoint)

@@ -93,18 +93,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 }
 
                 if (!commandHub.HasBinding(
+                    ActorCommandId.Move,
                     ActorCommandSourceKind.PlayerInput,
-                    ActorCommandValueKind.Move,
                     ActorCommandTriggerKind.Continuous) &&
                     !commandHub.HasBinding(
+                        ActorCommandId.Move,
                         ActorCommandSourceKind.PlayerInput,
-                        ActorCommandValueKind.Move,
                         ActorCommandTriggerKind.ValueChanged))
                 {
                     throw new InvalidOperationException($"Movement binding failed: actorId='{requirement.ActorId}' participantId='{requirement.ParticipantId}' missing active Move binding on ActorCommandSourceHub.");
                 }
 
-                commandHub.BindCommandSink(ActorCommandValueKind.Move, commandSink);
+                commandHub.BindCommandSink(ActorCommandId.Move, commandSink);
 
                 GameObject actorInstance = actorHandle.Instance;
                 PlayerActorMovementBindingState bindingState = actorInstance.GetComponent<PlayerActorMovementBindingState>();

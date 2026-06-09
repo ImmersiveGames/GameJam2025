@@ -83,18 +83,18 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
         Release = 2,
     }
 
-    public static class ActorLifetimePolicy
+    public static class ActorLifetimePolicyRuntime
     {
         public static ActorLifetimeDecision ResolveDecision(ActorScope actorScope, ActorLifetimeTrigger trigger)
         {
             if (actorScope == ActorScope.Unknown)
             {
-                throw new InvalidOperationException("ActorLifetimePolicy requires explicit ActorScope.");
+                throw new InvalidOperationException("ActorLifetimePolicyRuntime requires explicit ActorScope.");
             }
 
             if (trigger == ActorLifetimeTrigger.Unknown)
             {
-                throw new InvalidOperationException("ActorLifetimePolicy requires explicit ActorLifetimeTrigger.");
+                throw new InvalidOperationException("ActorLifetimePolicyRuntime requires explicit ActorLifetimeTrigger.");
             }
 
             return trigger switch

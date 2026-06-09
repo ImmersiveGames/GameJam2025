@@ -372,6 +372,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
+    public enum ActorCommandBindingState
+    {
+        Unknown = 0,
+        Declared = 1,
+        Prepared = 2,
+        SinkBound = 3,
+        Executable = 4,
+        SkippedOptional = 5,
+        MissingRequired = 6
+    }
+
     public readonly struct ActorCommandBindingCommand
     {
         public ActorCommandBindingCommand(
@@ -401,23 +412,29 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
         public ActorCommandBindingRecord(
             ActorCommandBindingReference requirement,
             PlayerActorIdentityRecord actorIdentity,
-            bool bound,
-            bool skipped,
+            ActorCommandBindingState state,
             string observedEndpoint)
         {
             Requirement = requirement;
             ActorIdentity = actorIdentity;
-            Bound = bound;
-            Skipped = skipped;
+            State = state;
             ObservedEndpoint = Normalize(observedEndpoint);
         }
 
         public ActorCommandBindingReference Requirement { get; }
         public PlayerActorIdentityRecord ActorIdentity { get; }
-        public bool Bound { get; }
-        public bool Skipped { get; }
+        public ActorCommandBindingState State { get; }
         public string ObservedEndpoint { get; }
-        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint) && (Bound != Skipped);
+        public bool Bound => State == ActorCommandBindingState.SinkBound ||
+            State == ActorCommandBindingState.Executable;
+        public bool Skipped => State == ActorCommandBindingState.SkippedOptional;
+        public bool IsPrepared => State == ActorCommandBindingState.Prepared ||
+            State == ActorCommandBindingState.SinkBound ||
+            State == ActorCommandBindingState.Executable;
+        public bool IsSinkBound => State == ActorCommandBindingState.SinkBound ||
+            State == ActorCommandBindingState.Executable;
+        public bool IsExecutable => State == ActorCommandBindingState.Executable;
+        public bool IsValid => Requirement.IsValid && ActorIdentity.IsValid && !string.IsNullOrWhiteSpace(ObservedEndpoint) && State != ActorCommandBindingState.Unknown;
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

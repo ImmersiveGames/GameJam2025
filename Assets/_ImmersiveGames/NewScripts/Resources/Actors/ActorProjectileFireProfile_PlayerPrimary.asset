@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ee21c2873744645b9a42c9b11c7cec3, type: 3}
+  m_Name: ActorProjectileFireProfile_PlayerPrimary
+  m_EditorClassIdentifier: 
+  profileId: actor.projectile.fire.player.primary
+  defaultFireModeId: fire.primary.single
+  fireModes:
+  - fireModeId: fire.primary.single
+    acceptedCommandKind: 2
+    spawnabilityProfile: {fileID: 11400000, guid: 814be223534e7184d9458e0f730fb98b, type: 2}
+    spawnPattern: 1
+    muzzlePolicy: 1
+    spreadPolicy: 1
+    cooldownSeconds: 0.15
+    projectileCount: 1
+    radialArcDegrees: 0

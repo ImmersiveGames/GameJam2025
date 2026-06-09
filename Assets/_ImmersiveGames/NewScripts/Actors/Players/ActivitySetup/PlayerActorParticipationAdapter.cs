@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             }
 
             Actor runtimeActor = actorInstance.GetComponent<Actor>();
-            bool isRetainedAcrossActivity = runtimeActor != null && ActorLifetimePolicy.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
+            bool isRetainedAcrossActivity = runtimeActor != null && ActorLifetimePolicyRuntime.IsRetainedAcrossActivity(runtimeActor.ActorScopeMetadata);
 
             if (!string.Equals(identity.PipelineId, activeIdentity.PipelineId, StringComparison.Ordinal) ||
                 !string.Equals(identity.SessionId, activeIdentity.SessionId, StringComparison.Ordinal) ||

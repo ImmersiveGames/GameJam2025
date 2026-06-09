@@ -67,7 +67,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
             {
                 DebugUtility.Log(
                     typeof(ObjectEmissionPoolAdapter),
-                    $"[OBS][ObjectEmissionPool] event='ObjectEmissionPoolRegistrationSkipped' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' profileId='{profile.ProfileId}' poolDefinition='{poolDefinition.name}' reason='pool_service_unavailable' source='{command.Source}' commandSource='{command.SourceId}' commandReason='{command.Reason}'.",
+                    $"[OBS][ObjectEmissionPool] event='ObjectEmissionPoolRegistrationSkipped' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' profileId='{profile.ProfileId}' poolDefinition='{poolDefinition.name}' reason='pool_service_unavailable' source='{command.Source}' commandSource='{command.SourceIdentity}' commandReason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
                 return;
             }

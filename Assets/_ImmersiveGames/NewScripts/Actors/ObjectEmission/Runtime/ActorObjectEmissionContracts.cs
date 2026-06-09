@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
         public ActorInstanceRuntimeId ActorInstanceRuntimeId => Command.ActorInstanceRuntimeId;
         public ActorCommandId CommandId => Command.CommandId;
         public ActorCommandSourceKind SourceKind => Command.SourceKind;
-        public string SourceId => Command.SourceId;
+        public ActorCommandSourceIdentity SourceIdentity => Command.SourceIdentity;
         public ActorCommandValue Value => Command.Value;
         public string Source => Command.Source;
         public string Reason => Command.Reason;
@@ -44,8 +44,9 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
 
         public bool IsValid =>
             Command.IsValid &&
-            Command.CommandId.ValueKind == ActorCommandValueKind.FirePrimary &&
-            Command.CommandId.TriggerKind == ActorCommandTriggerKind.Pressed &&
+            Command.CommandId == ActorCommandId.FirePrimary &&
+            Command.Value.ValueKind == ActorCommandValueKind.Button &&
+            Command.Value.TriggerKind == ActorCommandTriggerKind.Pressed &&
             Profile != null &&
             Profile.IsValid;
     }

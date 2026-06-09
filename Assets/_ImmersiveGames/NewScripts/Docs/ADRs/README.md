@@ -406,6 +406,99 @@ Smoke preservou RestartCurrentActivity, Activity01ToActivity02 e RouteExitBackTo
 - `ACTOR-COMP-4G` renomeou `ActorDefinitionKind.NPC` para `ActorDefinitionKind.SceneActor`, preservando o valor numérico.
 - `ACTOR-COMP-5A` fechou a fronteira Spawnable/Projectile como composition boundary.
 - `ACTOR-COMP-5B` abriu a fronteira de lifecycle/reset para spawnable Actors.
-- `ACTOR-COMP-5C` foi documentado como shape passivo de Spawnable Actor, sem runtime wiring.
+- `ACTOR-COMP-5C` foi aplicado como shape passivo de Spawnable Actor, sem runtime wiring.
+- `ACTOR-COMP-5D` foi aplicado como boundary passivo de command/result/payload para reset/release, sem runtime wiring.
+- `ACTOR-COMP-5E` foi aplicado como boundary passivo de authoring/profile para spawnability, usando profile separado e sem migration ampla de assets.
+- `ACTOR-COMP-5F` fechou a frente 5 como boundary conceitual/passiva pronta e `ACT-CMD-1B` foi aplicado como next runtime gate para FirePrimary readiness.
 - Resíduos não bloqueantes continuam como authoring naming debt / asset naming debt: `NPC_Generic.prefab`, `NPC_Route_Generic.prefab`, `actor.presentation.npc.*`, `npc.attribute.*`, `npc.generic.01`, `npc.route.generic.01`, `ActorPresentationProfile_NpcGenerico*` e `NpcAttribute*`.
 - Resumo: Spawnables de gameplay são Actors; Reset padrão de spawnable pooled é `ReturnToOriginPool`; pool é adapter técnico, não owner de lifecycle/policy.
+
+
+### Checkpoint ACT-CMD-1D — ObjectEmission permission/gate isolation
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- `ActivityGameplayControl` registra somente o receiver de Movement.
+- `ObjectEmission` não participa mais do gate ativo de Activity.
+- `FirePrimary` permanece readiness passiva e rejeita dispatch por `missing_sink`.
+
+### Checkpoint ACT-CMD-1E — ObjectEmission detached from Actor active capability surface
+
+Status: CLOSED / PASS funcional + PASS arquitetural do corte.
+
+- `ActorCapabilitySurface` não expõe mais `IActorObjectEmitterEndpoint`.
+- `ActivityCapabilityPermissionScanner` não consulta nem registra receiver de ObjectEmission.
+- `PlayerActor_v0` não carrega mais `ActorObjectEmitterEndpoint`.
+- `ObjectEmission` permanece como bridge técnica transitória fora do caminho ativo de ActorCommand/ActivityGate.
+- `FirePrimary` continua sem sink executável até existir capability runtime canônica.
+
+
+### Checkpoint ACT-PROJ-0A — Projectile/Fire capability passive contracts + authoring boundary
+
+Status: CLOSED / compile + smoke PASS / PASS arquitetural.
+
+- Criados contratos passivos em `Actors/Projectile/Contracts/ActorProjectileContracts.cs`.
+- Criado `ActorProjectileFireProfileAsset` como authoring passivo de fire modes.
+- `FirePrimary` continua command semântico/readiness passivo; nenhum sink executável foi criado.
+- Projectile fire exige `ActorSpawnabilityProfileAsset` com `RuntimeSpawned` e `ReturnToOriginPool`.
+- Spawn patterns passivos: `Single`, `LinearBurst`, `RadialArc`.
+- Não houve runtime de projectile, `ObjectEmission` wiring, pool, audio, collision, damage, VFX, lifetime, `IPoolService`, manager novo ou alteração de pipeline.
+- Aceite: compile sem error CS; smoke não é obrigatório por ser corte passivo. Se rodar smoke, `FirePrimary` deve continuar `missing_sink`.
+
+
+### Checkpoint ACT-PROJ-0B — Fire capability passive endpoint contract
+
+Status: APPLIED / aguardando compile.
+
+- Criado `Actors/Projectile/Contracts/ActorProjectileEndpointContracts.cs`.
+- Adicionados `ActorProjectileFireEndpointId`, `ActorProjectileFireEndpointReadinessKind`, `ActorProjectileFireEndpointDescriptor`, `ActorProjectileFireEndpointReadiness` e `IActorProjectileFireEndpoint`.
+- `IActorProjectileFireEndpoint` é contrato passivo: readiness + construção de command, sem execução de spawn.
+- O endpoint contract não implementa `IActorCommandSink` e não foi registrado em `ActorCapabilitySurface`.
+- `FirePrimary` continua `Prepared/passive-readiness-only` e deve continuar `missing_sink` em smoke.
+- Não houve runtime de projectile, `ObjectEmission` wiring, pool, audio, collision, damage, VFX, lifetime, `IPoolService`, manager novo ou alteração de pipeline.
+- Aceite: compile sem error CS; se rodar smoke, sem `ActorCommandSinkBound` para `FirePrimary` e sem `ObjectEmission` no gate/surface ativo.
+
+
+### Checkpoint ACT-PROJ-0B — Fire capability passive endpoint contract
+
+Status: CLOSED / compile + smoke PASS / PASS arquitetural.
+
+- Criado `Actors/Projectile/Contracts/ActorProjectileEndpointContracts.cs`.
+- `IActorProjectileFireEndpoint` permanece contrato passivo, sem implementação, sem `IActorCommandSink` e sem registro em `ActorCapabilitySurface`.
+- Smoke preservou `FirePrimary` como `Prepared/passive-readiness-only` e `dispatchReason='missing_sink'`.
+- Não houve runtime de projectile, `ObjectEmission` wiring, pool, audio, collision, damage, VFX, lifetime, `IPoolService`, manager novo ou alteração de pipeline.
+
+
+### Checkpoint ACT-PROJ-0C — Projectile fire prefab authoring marker
+
+Status: APPLIED / aguardando compile.
+
+- Criado `Actors/Projectile/Authoring/ActorProjectileFireAuthoringMarker.cs`.
+- `PlayerActor_v0.prefab` recebeu marcador passivo de authoring para `FirePrimary`/projectile fire.
+- O marcador declara `endpointId`, `profileId`, `defaultFireModeId` e `acceptedCommandKind`.
+- O marcador não implementa `IActorProjectileFireEndpoint`, não implementa `IActorCommandSink`, não registra capability e não é lido por pipeline neste corte.
+- Nenhum YAML asset de projectile profile foi criado porque a base enviada não inclui metas de todos os scripts authoring antigos necessários para referências seguras.
+- `FirePrimary` deve continuar `missing_sink` em smoke.
+
+- `ACT-PROJ-1A`: aplicado como endpoint runtime de readiness para projectile/fire, usando referência tipada para `ActorProjectileFireProfileAsset`, sem `IActorCommandSink`, sem spawn, sem pool e sem `ObjectEmission`.
+
+### Checkpoint ACT-PROJ-1B — Projectile fire command sink dry-run
+
+Status: APPLIED / aguardando compile + smoke.
+
+- `ActorProjectileFireEndpoint` passou a consumir `FirePrimary` como `IActorCommandSink` canônico da capability de fire.
+- O sink é dry-run: monta `ActorProjectileFireCommand` e aceita o dispatch, mas não spawna, não chama pool e não instancia projectile.
+- `ActorCommandBindingAdapter` só faz `BindCommandSink(FirePrimary, endpoint)` quando `ActorProjectileFireEndpointReadinessObserved` está `Prepared`.
+- `FirePrimary` deve sair de `missing_sink` e gerar `ActorProjectileFireCommandBuilt`, `ActorProjectileFireDryRunAccepted` e `ActorCommandDispatchAccepted`.
+- `ObjectEmission`, `IPoolService`, audio, collision, damage, VFX, lifetime, reset, save e pipelines permanecem fora do corte.
+
+### Checkpoint ACT-PROJ-2A — Projectile spawn adapter boundary / no pool
+
+Status: APPLIED / aguardando compile + smoke.
+
+- Criado `ActorProjectileSpawnAdapterContracts.cs` com `IActorProjectileSpawnAdapter` e resultado explícito de adapter.
+- Criado `ActorProjectileSpawnAdapterBoundary`, componente de fronteira que retorna `NotConfigured` sem executar spawn.
+- `ActorProjectileFireEndpoint` agora monta `ActorProjectileFireCommand` e delega para a fronteira de spawn.
+- `PlayerActor_v0.prefab` recebeu referência tipada do endpoint para `ActorProjectileSpawnAdapterBoundary`.
+- `FirePrimary` deve continuar com sink executável e dispatch aceito, agora com `dispatchReason='projectile_spawn_adapter_not_configured'`.
+- Não houve `ObjectEmission`, `IPoolService`, projectile prefab/runtime object, manager, pool, audio, collision, damage, VFX, lifetime, reset, save ou alteração de pipelines.

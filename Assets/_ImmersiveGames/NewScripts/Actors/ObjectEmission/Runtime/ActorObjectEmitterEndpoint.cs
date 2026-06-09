@@ -60,8 +60,9 @@ namespace _ImmersiveGames.NewScripts.Actors.ObjectEmission.Runtime
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("invalid_command");
             }
 
-            if (command.CommandId.ValueKind != ActorCommandValueKind.FirePrimary ||
-                command.CommandId.TriggerKind != ActorCommandTriggerKind.Pressed)
+            if (command.CommandId != ActorCommandId.FirePrimary ||
+                command.Value.ValueKind != ActorCommandValueKind.Button ||
+                command.Value.TriggerKind != ActorCommandTriggerKind.Pressed)
             {
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand("unsupported_command");
             }
