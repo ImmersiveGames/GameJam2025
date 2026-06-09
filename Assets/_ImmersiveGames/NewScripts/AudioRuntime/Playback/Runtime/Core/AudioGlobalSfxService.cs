@@ -20,8 +20,6 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
         private readonly Dictionary<int, List<AudioSfxPlaybackHandle>> _activeHandlesByCueId = new Dictionary<int, List<AudioSfxPlaybackHandle>>();
         private readonly Dictionary<AudioSfxPlaybackHandle, PooledPlaybackState> _pooledPlaybackByHandle = new Dictionary<AudioSfxPlaybackHandle, PooledPlaybackState>();
         private readonly Dictionary<int, int> _activePooledByProfileId = new Dictionary<int, int>();
-        private readonly HashSet<PoolDefinitionAsset> _prewarmedDefinitions = new HashSet<PoolDefinitionAsset>();
-
         private IAudioSettingsService _settings;
         private IAudioRoutingResolver _routing;
         private IPoolService _poolService;

@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;

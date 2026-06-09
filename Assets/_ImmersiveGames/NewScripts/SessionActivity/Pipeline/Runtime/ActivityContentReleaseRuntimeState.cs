@@ -1,5 +1,4 @@
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
-using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 {

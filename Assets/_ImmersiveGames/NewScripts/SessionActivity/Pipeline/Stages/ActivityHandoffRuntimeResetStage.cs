@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;

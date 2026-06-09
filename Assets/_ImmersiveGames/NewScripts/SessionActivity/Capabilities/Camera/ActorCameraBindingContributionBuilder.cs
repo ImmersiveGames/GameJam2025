@@ -1,7 +1,5 @@
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
-using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
-using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;

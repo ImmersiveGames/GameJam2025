@@ -16,6 +16,6 @@ MonoBehaviour:
   initialSize: 4
   canExpand: 1
   maxSize: 32
-  autoReturnSeconds: 0
+  autoReturnSeconds: 2
   poolLabel: pool.projectile.player.primary
   prewarm: 1

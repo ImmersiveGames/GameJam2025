@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.SessionActivity.Pipeline;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages

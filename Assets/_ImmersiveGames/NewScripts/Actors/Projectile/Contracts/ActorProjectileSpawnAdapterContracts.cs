@@ -1,4 +1,3 @@
-using System;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
 
@@ -104,13 +103,30 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             string reason,
             string message)
         {
+            return Failed(
+                command,
+                poolCalled: false,
+                spawnedInstance: null,
+                spawnedActor: null,
+                reason,
+                message);
+        }
+
+        public static ActorProjectileSpawnAdapterResult Failed(
+            ActorProjectileFireCommand command,
+            bool poolCalled,
+            GameObject spawnedInstance,
+            Actor spawnedActor,
+            string reason,
+            string message)
+        {
             return new ActorProjectileSpawnAdapterResult(
                 ActorProjectileSpawnAdapterResultKind.Failed,
                 command,
                 spawnExecuted: false,
-                poolCalled: false,
-                spawnedInstance: null,
-                spawnedActor: null,
+                poolCalled: poolCalled,
+                spawnedInstance: spawnedInstance,
+                spawnedActor: spawnedActor,
                 reason,
                 message);
         }

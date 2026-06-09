@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
-using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
@@ -11,13 +10,10 @@ using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Presentation;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
-using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
-using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
 using PlayerActivityParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipationContext;
-using PlayerSessionParticipantId = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipantId;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {

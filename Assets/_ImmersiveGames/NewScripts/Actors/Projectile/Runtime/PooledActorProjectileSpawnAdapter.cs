@@ -12,6 +12,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 {
     public sealed class PooledActorProjectileSpawnAdapter : IActorProjectileSpawnAdapter
     {
+        private const float TransformPositionTolerance = 0.01f;
+        private const float TransformRotationTolerance = 0.01f;
+
         private readonly string _adapterId;
         private readonly Transform _spawnParent;
         private IPoolService _poolService;
@@ -34,7 +37,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.Log(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='invalid_projectile_fire_command'.",
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='invalid_projectile_fire_command'.",
                     DebugUtility.Colors.Info);
 
                 return ActorProjectileSpawnAdapterResult.Failed(
@@ -48,20 +51,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 DebugUtility.Log(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_pool_definition_missing'.",
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_pool_definition_missing'.",
                     DebugUtility.Colors.Info);
 
                 return ActorProjectileSpawnAdapterResult.Failed(
                     command,
                     "projectile_pool_definition_missing",
-                    "Projectile spawn requires a PoolDefinitionAsset resolved from the fire profile.");
+                    "Projectile spawn requires a PoolDefinitionAsset resolved from the projectile spawn profile.");
             }
 
             if (!TryResolvePoolService(nameof(Execute)))
             {
                 DebugUtility.Log(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='pool_service_unavailable'.",
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterRejected' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='False' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='pool_service_unavailable'.",
                     DebugUtility.Colors.Info);
 
                 return ActorProjectileSpawnAdapterResult.Failed(
@@ -70,31 +73,31 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     "Canonical IPoolService is unavailable for projectile spawn.");
             }
 
+            GameObject instance = null;
+            RuntimeSpawnedActor runtimeSpawnedActor = null;
+            bool poolCalled = false;
+
             try
             {
                 DebugUtility.Log(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnPoolRentRequested' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' poolDefinition='{poolDefinition.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_pool_rent_requested'.",
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnPoolRentRequested' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_pool_rent_requested'.",
                     DebugUtility.Colors.Info);
 
-                _poolService.EnsureRegistered(poolDefinition);
-                if (poolDefinition.Prewarm)
-                {
-                    _poolService.Prewarm(poolDefinition);
-                }
+                instance = _poolService.Rent(poolDefinition, _spawnParent);
+                poolCalled = true;
 
-                GameObject instance = _poolService.Rent(poolDefinition, _spawnParent);
                 if (instance == null)
                 {
                     throw new InvalidOperationException($"PoolService returned null instance for poolDefinition='{poolDefinition.name}'.");
                 }
 
-                instance.transform.SetPositionAndRotation(command.Origin, Quaternion.LookRotation(command.Direction.normalized, Vector3.up));
+                Quaternion targetRotation = Quaternion.LookRotation(command.Direction.normalized, Vector3.up);
+                instance.transform.SetPositionAndRotation(command.Origin, targetRotation);
 
-                RuntimeSpawnedActor runtimeSpawnedActor = instance.GetComponent<RuntimeSpawnedActor>();
+                runtimeSpawnedActor = instance.GetComponent<RuntimeSpawnedActor>();
                 if (runtimeSpawnedActor == null)
                 {
-                    _poolService.Return(poolDefinition, instance);
                     throw new InvalidOperationException($"Projectile spawn prefab requires RuntimeSpawnedActor. poolDefinition='{poolDefinition.name}' instance='{instance.name}'.");
                 }
 
@@ -104,17 +107,47 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     spawnedActorId.Value,
                     command.CommandEnvelope.Sequence);
 
+                RuntimeSpawnOriginMetadata spawnOrigin = new RuntimeSpawnOriginMetadata(
+                    command.ActorId,
+                    command.ActorInstanceRuntimeId,
+                    new RuntimeSpawnProfileId(command.SpawnProfileId.ToString()),
+                    poolDefinition,
+                    command.CommandEnvelope.Sequence,
+                    nameof(PooledActorProjectileSpawnAdapter),
+                    "projectile_spawn_origin_bound");
+
                 runtimeSpawnedActor.BindRuntimeMetadata(
                     spawnedActorId,
                     spawnedRuntimeId,
-                    ActorRole.RuntimeSpawnedActor,
-                    ActorScope.ActivityScoped,
+                    command.SpawnedActorRole,
+                    command.SpawnedActorScope,
                     ActorParticipationRecord.ActorParticipationPolicy.None,
+                    spawnOrigin,
                     nameof(PooledActorProjectileSpawnAdapter));
+
+                if (!TryPrepareSpawnedInstance(
+                    command,
+                    poolDefinition,
+                    instance,
+                    runtimeSpawnedActor,
+                    command.Origin,
+                    targetRotation,
+                    out string failureReason,
+                    out string failureMessage))
+                {
+                    ReturnRentedInstanceIfNeeded(poolDefinition, instance, failureReason);
+                    return ActorProjectileSpawnAdapterResult.Failed(
+                        command,
+                        poolCalled,
+                        instance,
+                        runtimeSpawnedActor,
+                        failureReason,
+                        failureMessage);
+                }
 
                 DebugUtility.Log(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedFromPool' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' fireModeId='{command.FireModeId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' spawnExecuted='True' poolCalled='True' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawned_from_pool'.",
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnedFromPool' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' spawnExecuted='True' poolCalled='True' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawned_from_pool'.",
                     DebugUtility.Colors.Success);
 
                 return ActorProjectileSpawnAdapterResult.Spawned(
@@ -122,18 +155,204 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     instance,
                     runtimeSpawnedActor,
                     "projectile_spawned_from_pool",
-                    "Projectile actor instance was rented from the canonical pool.");
+                    "Projectile actor instance was rented from the canonical pool and validated as materialized.");
+            }
+            catch (Exception ex)
+            {
+                string reason = "projectile_spawn_pool_failed";
+                ReturnRentedInstanceIfNeeded(poolDefinition, instance, reason);
+
+                DebugUtility.LogError(
+                    typeof(PooledActorProjectileSpawnAdapter),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterFailed' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='{poolCalled}' instanceName='{(instance == null ? string.Empty : instance.name)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{reason}' message='{Normalize(ex.Message)}'.");
+
+                return ActorProjectileSpawnAdapterResult.Failed(
+                    command,
+                    poolCalled,
+                    instance,
+                    runtimeSpawnedActor,
+                    reason,
+                    ex.Message);
+            }
+        }
+
+        private bool TryPrepareSpawnedInstance(
+            ActorProjectileFireCommand command,
+            PoolDefinitionAsset poolDefinition,
+            GameObject instance,
+            RuntimeSpawnedActor runtimeSpawnedActor,
+            Vector3 expectedPosition,
+            Quaternion expectedRotation,
+            out string failureReason,
+            out string failureMessage)
+        {
+            failureReason = string.Empty;
+            failureMessage = string.Empty;
+
+            if (instance == null)
+            {
+                failureReason = "projectile_spawn_instance_missing";
+                failureMessage = "Pool returned a missing projectile instance.";
+                return false;
+            }
+
+            if (runtimeSpawnedActor == null)
+            {
+                failureReason = "projectile_spawn_runtime_actor_missing";
+                failureMessage = "Projectile spawned instance does not contain RuntimeSpawnedActor.";
+                return false;
+            }
+
+            if (!runtimeSpawnedActor.IsRuntimeMetadataBound || !runtimeSpawnedActor.ActorIdValue.IsValid || !runtimeSpawnedActor.RuntimeActorInstanceId.IsValid || !runtimeSpawnedActor.HasSpawnOrigin)
+            {
+                failureReason = "projectile_spawn_runtime_actor_metadata_invalid";
+                failureMessage = "Projectile RuntimeSpawnedActor metadata/origin is invalid after bind.";
+                return false;
+            }
+
+            if (!instance.activeSelf)
+            {
+                failureReason = "projectile_spawn_instance_inactive_self";
+                failureMessage = "Projectile spawned instance is inactive after rent.";
+                return false;
+            }
+
+            if (!instance.activeInHierarchy)
+            {
+                failureReason = "projectile_spawn_instance_inactive_hierarchy";
+                failureMessage = "Projectile spawned instance is not active in hierarchy after rent.";
+                return false;
+            }
+
+            Vector3 actualPosition = instance.transform.position;
+            Quaternion actualRotation = instance.transform.rotation;
+            bool positionApplied = Vector3.Distance(actualPosition, expectedPosition) <= TransformPositionTolerance;
+            bool rotationApplied = Quaternion.Angle(actualRotation, expectedRotation) <= TransformRotationTolerance;
+
+            if (!positionApplied)
+            {
+                failureReason = "projectile_spawn_position_not_applied";
+                failureMessage = $"Projectile spawned instance position was not applied. expected='{FormatVector(expectedPosition)}' actual='{FormatVector(actualPosition)}'.";
+                return false;
+            }
+
+            if (!rotationApplied)
+            {
+                failureReason = "projectile_spawn_rotation_not_applied";
+                failureMessage = "Projectile spawned instance rotation was not applied.";
+                return false;
+            }
+
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(includeInactive: true);
+            int rendererCount = renderers?.Length ?? 0;
+            int enabledRendererCount = 0;
+            int materialCount = 0;
+            int validMaterialCount = 0;
+            string rendererNames = string.Empty;
+            string materialNames = string.Empty;
+
+            if (renderers != null)
+            {
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    Renderer renderer = renderers[i];
+                    if (renderer == null)
+                    {
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(rendererNames))
+                    {
+                        rendererNames += ",";
+                    }
+
+                    rendererNames += renderer.name;
+
+                    if (renderer.enabled)
+                    {
+                        enabledRendererCount++;
+                    }
+
+                    Material[] sharedMaterials = renderer.sharedMaterials;
+                    if (sharedMaterials == null)
+                    {
+                        continue;
+                    }
+
+                    materialCount += sharedMaterials.Length;
+                    for (int j = 0; j < sharedMaterials.Length; j++)
+                    {
+                        Material material = sharedMaterials[j];
+                        if (material == null)
+                        {
+                            continue;
+                        }
+
+                        validMaterialCount++;
+                        if (!string.IsNullOrEmpty(materialNames))
+                        {
+                            materialNames += ",";
+                        }
+
+                        materialNames += material.name;
+                    }
+                }
+            }
+
+            DebugUtility.Log(
+                typeof(PooledActorProjectileSpawnAdapter),
+                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnVisualObserved' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' materialCount='{materialCount}' validMaterialCount='{validMaterialCount}' rendererNames='{Normalize(rendererNames)}' materialNames='{Normalize(materialNames)}' position='{FormatVector(actualPosition)}' rotation='{FormatQuaternion(actualRotation)}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_visual_observed'.",
+                DebugUtility.Colors.Info);
+
+            if (rendererCount <= 0)
+            {
+                failureReason = "projectile_spawn_visual_renderer_missing";
+                failureMessage = "Projectile spawned instance has no Renderer components.";
+                return false;
+            }
+
+            if (enabledRendererCount <= 0)
+            {
+                failureReason = "projectile_spawn_visual_renderer_disabled";
+                failureMessage = "Projectile spawned instance has no enabled Renderer components.";
+                return false;
+            }
+
+            if (validMaterialCount <= 0)
+            {
+                failureReason = "projectile_spawn_visual_material_missing";
+                failureMessage = "Projectile spawned instance has no valid shared material.";
+                return false;
+            }
+
+            DebugUtility.Log(
+                typeof(PooledActorProjectileSpawnAdapter),
+                $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnInstancePrepared' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' spawnedActorId='{runtimeSpawnedActor.ActorIdValue}' spawnedActorInstanceRuntimeId='{runtimeSpawnedActor.RuntimeActorInstanceId}' ownerActorId='{runtimeSpawnedActor.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnedActor.OwnerActorInstanceRuntimeId}' originPoolDefinition='{runtimeSpawnedActor.SpawnOrigin.PoolDefinitionName}' originCommandSequence='{runtimeSpawnedActor.SpawnOrigin.CommandSequence}' fireModeId='{command.FireModeId}' spawnProfileId='{command.SpawnProfileId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' instancePath='{BuildInstancePath(instance.transform)}' activeSelf='{instance.activeSelf}' activeInHierarchy='{instance.activeInHierarchy}' positionApplied='{positionApplied}' rotationApplied='{rotationApplied}' rendererCount='{rendererCount}' enabledRendererCount='{enabledRendererCount}' validMaterialCount='{validMaterialCount}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_instance_prepared'.",
+                DebugUtility.Colors.Success);
+
+            return true;
+        }
+
+        private void ReturnRentedInstanceIfNeeded(PoolDefinitionAsset poolDefinition, GameObject instance, string reason)
+        {
+            if (_poolService == null || poolDefinition == null || instance == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _poolService.Return(poolDefinition, instance);
+                DebugUtility.Log(
+                    typeof(PooledActorProjectileSpawnAdapter),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnFailedInstanceReturnedToPool' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{Normalize(reason)}'.",
+                    DebugUtility.Colors.Info);
             }
             catch (Exception ex)
             {
                 DebugUtility.LogError(
                     typeof(PooledActorProjectileSpawnAdapter),
-                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnAdapterFailed' adapterId='{AdapterId}' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' fireModeId='{command.FireModeId}' poolDefinition='{poolDefinition.name}' spawnExecuted='False' poolCalled='True' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='projectile_spawn_pool_failed' message='{Normalize(ex.Message)}'.");
-
-                return ActorProjectileSpawnAdapterResult.Failed(
-                    command,
-                    "projectile_spawn_pool_failed",
-                    ex.Message);
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileSpawnFailedInstanceReturnToPoolFailed' adapterId='{AdapterId}' poolDefinition='{poolDefinition.name}' instanceName='{instance.name}' source='{nameof(PooledActorProjectileSpawnAdapter)}' reason='{Normalize(reason)}' message='{Normalize(ex.Message)}'.");
             }
         }
 
@@ -181,6 +400,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             return string.Join("/", segments);
+        }
+
+        private static string FormatVector(Vector3 value)
+        {
+            return $"{value.x:0.###},{value.y:0.###},{value.z:0.###}";
+        }
+
+        private static string FormatQuaternion(Quaternion value)
+        {
+            return $"{value.x:0.###},{value.y:0.###},{value.z:0.###},{value.w:0.###}";
         }
 
         private static string Normalize(string value)

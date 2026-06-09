@@ -12,7 +12,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 {
     /// <summary>
     /// Reusable consumer base for explicit pool dependencies.
-    /// It ensures all configured pools and prewarms only the definitions marked with prewarm=true.
+    /// It ensures all configured pools. Prewarm is applied by PoolService.EnsureRegistered when the definition requests it.
     /// </summary>
     public abstract class PoolConsumerBehaviourBase : MonoBehaviour
     {
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             }
 
             int ensured = 0;
-            int prewarmed = 0;
+            int prewarmRequested = 0;
 
             for (int i = 0; i < poolDefinitions.Count; i++)
             {
@@ -77,19 +77,15 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
                 poolService.EnsureRegistered(definition);
                 ensured++;
-                LogDependencyInfo($"ensured index={i} asset='{definition.name}' prewarm={definition.Prewarm}");
-
-                if (!definition.Prewarm)
+                if (definition.Prewarm)
                 {
-                    continue;
+                    prewarmRequested++;
                 }
 
-                poolService.Prewarm(definition);
-                prewarmed++;
-                LogDependencyInfo($"prewarmed index={i} asset='{definition.name}' initialSize={definition.InitialSize}");
+                LogDependencyInfo($"ensured index={i} asset='{definition.name}' prewarmRequested={definition.Prewarm}");
             }
 
-            LogDependencyInfo($"done ensured={ensured} prewarmed={prewarmed}");
+            LogDependencyInfo($"done ensured={ensured} prewarmRequested={prewarmRequested}");
         }
 
         protected PoolDefinitionAsset GetPrimaryPoolDefinition()
@@ -173,7 +169,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
         private readonly List<GameObject> _rented = new();
         private Coroutine _autoReturnScenarioRoutine;
-        private PoolDefinitionAsset Definition => GetPrimaryPoolDefinition();
+        private PoolDefinitionAsset definition => GetPrimaryPoolDefinition();
 
         [ContextMenu("QA/Ensure Pool")]
         private void QaEnsurePool()
@@ -188,7 +184,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 return;
             }
 
-            service.EnsureRegistered(Definition);
+            service.EnsureRegistered(definition);
             LogInfo("EnsurePool", "ok");
         }
 
@@ -205,7 +201,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 return;
             }
 
-            service.Prewarm(Definition);
+            service.Prewarm(definition);
             LogInfo("Prewarm", "ok");
         }
 
@@ -222,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 return;
             }
 
-            var instance = service.Rent(Definition, rentParent);
+            var instance = service.Rent(definition, rentParent);
             if (instance != null)
             {
                 _rented.Add(instance);
@@ -250,7 +246,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             int lastIndex = _rented.Count - 1;
             var instance = _rented[lastIndex];
             _rented.RemoveAt(lastIndex);
-            service.Return(Definition, instance);
+            service.Return(definition, instance);
             totalReturnOperations++;
             SyncLocalCounters();
             LogInfo("ReturnLast", $"ok instance='{instance.name}'");
@@ -270,7 +266,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             {
                 var instance = _rented[i];
                 _rented.RemoveAt(i);
-                service.Return(Definition, instance);
+                service.Return(definition, instance);
                 totalReturnOperations++;
                 returnedNow++;
             }
@@ -299,7 +295,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             {
                 try
                 {
-                    var instance = service.Rent(Definition, rentParent);
+                    var instance = service.Rent(definition, rentParent);
                     if (instance != null)
                     {
                         _rented.Add(instance);
@@ -338,7 +334,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 return;
             }
 
-            var instance = service.Rent(Definition, rentParent);
+            var instance = service.Rent(definition, rentParent);
             if (instance == null)
             {
                 return;
@@ -348,7 +344,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             totalRentOperations++;
             SyncLocalCounters();
 
-            if (Definition.AutoReturnSeconds <= 0f)
+            if (definition.AutoReturnSeconds <= 0f)
             {
                 LogInfo("RentOneAutoReturnAware", $"ok instance='{instance.name}' autoReturn='disabled'");
                 return;
@@ -356,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
             bool hasBefore = TryGetServicePoolSnapshot(service, out int totalBefore, out int activeBefore, out int inactiveBefore);
             LogInfo("RentOneAutoReturnAware",
-                $"rented instance='{instance.name}' autoReturnSeconds={Definition.AutoReturnSeconds:0.###} before={FormatSnapshot(hasBefore, totalBefore, activeBefore, inactiveBefore)}");
+                $"rented instance='{instance.name}' autoReturnSeconds={definition.AutoReturnSeconds:0.###} before={FormatSnapshot(hasBefore, totalBefore, activeBefore, inactiveBefore)}");
             StartCoroutine(LogAutoReturnOutcomeAfterDelay(service, instance, "RentOneAutoReturnAware"));
         }
 
@@ -378,7 +374,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             {
                 try
                 {
-                    var instance = service.Rent(Definition, rentParent);
+                    var instance = service.Rent(definition, rentParent);
                     _rented.Add(instance);
                     totalRentOperations++;
                     rentedNow++;
@@ -405,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 return;
             }
 
-            service.EnsureRegistered(Definition);
+            service.EnsureRegistered(definition);
 
             bool hasBefore = TryGetServicePoolSnapshot(service, out int totalBefore, out int activeBefore, out int inactiveBefore);
             LogInfo("RentPastMaxExpectFail",
@@ -416,7 +412,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             {
                 try
                 {
-                    var saturatedInstance = service.Rent(Definition, rentParent);
+                    var saturatedInstance = service.Rent(definition, rentParent);
                     _rented.Add(saturatedInstance);
                     totalRentOperations++;
                     saturatedNow++;
@@ -433,7 +429,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
             try
             {
-                var instance = service.Rent(Definition, rentParent);
+                var instance = service.Rent(definition, rentParent);
                 _rented.Add(instance);
                 totalRentOperations++;
                 SyncLocalCounters();
@@ -490,12 +486,12 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
             if (TryGetServicePoolSnapshot(service, out int total, out int active, out int inactive))
             {
                 LogInfo("LogPoolSnapshot",
-                    $"asset='{Definition.name}' total={total} active={active} inactive={inactive} localRented={localRentedCount} rents={totalRentOperations} returns={totalReturnOperations}");
+                    $"asset='{definition.name}' total={total} active={active} inactive={inactive} localRented={localRentedCount} rents={totalRentOperations} returns={totalReturnOperations}");
                 return;
             }
 
             LogInfo("LogPoolSnapshot",
-                $"asset='{Definition.name}' total=n/a active=n/a inactive=n/a localRented={localRentedCount} rents={totalRentOperations} returns={totalReturnOperations} serviceSnapshot='unavailable-public-api'");
+                $"asset='{definition.name}' total=n/a active=n/a inactive=n/a localRented={localRentedCount} rents={totalRentOperations} returns={totalReturnOperations} serviceSnapshot='unavailable-public-api'");
         }
 
         [ContextMenu("QA/Run Basic Scenario")]
@@ -542,28 +538,28 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
         private bool ValidateDefinitionForQa()
         {
-            if (Definition == null)
+            if (definition == null)
             {
                 LogError("ValidateDefinition", "PoolDefinitionAsset is null (configure first entry in poolDefinitions)");
                 return false;
             }
 
-            if (Definition.Prefab == null)
+            if (definition.Prefab == null)
             {
                 LogError("ValidateDefinition", "PoolDefinitionAsset.prefab is null");
                 return false;
             }
 
-            if (Definition.Prefab.GetComponent<PoolingQaMockPooledObject>() == null)
+            if (definition.Prefab.GetComponent<PoolingQaMockPooledObject>() == null)
             {
                 LogInfo("ValidateDefinition",
                     "prefab-without-PoolingQaMockPooledObject (lifecycle evidence reduced)");
             }
 
-            if (Definition.AutoReturnSeconds > 0f)
+            if (definition.AutoReturnSeconds > 0f)
             {
                 LogInfo("ValidateDefinition",
-                    $"auto-return-enabled autoReturnSeconds={Definition.AutoReturnSeconds:0.###}");
+                    $"auto-return-enabled autoReturnSeconds={definition.AutoReturnSeconds:0.###}");
             }
 
             return true;
@@ -610,27 +606,26 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                 yield break;
             }
 
-            if (Definition.AutoReturnSeconds <= 0f)
+            if (definition.AutoReturnSeconds <= 0f)
             {
                 LogError("RunAutoReturnScenario", "definition-autoReturnSeconds-must-be-greater-than-zero");
                 _autoReturnScenarioRoutine = null;
                 yield break;
             }
 
-            service.EnsureRegistered(Definition);
-            service.Prewarm(Definition);
+            service.EnsureRegistered(definition);
 
             bool hasBefore = TryGetServicePoolSnapshot(service, out int totalBefore, out int activeBefore, out int inactiveBefore);
             LogInfo("RunAutoReturnScenario",
-                $"start before={FormatSnapshot(hasBefore, totalBefore, activeBefore, inactiveBefore)} autoReturnSeconds={Definition.AutoReturnSeconds:0.###}");
+                $"start before={FormatSnapshot(hasBefore, totalBefore, activeBefore, inactiveBefore)} autoReturnSeconds={definition.AutoReturnSeconds:0.###}");
 
-            var rented = service.Rent(Definition, rentParent);
+            var rented = service.Rent(definition, rentParent);
             _rented.Add(rented);
             totalRentOperations++;
             SyncLocalCounters();
             LogInfo("RunAutoReturnScenario", $"rented instance='{rented.name}' waiting-auto-return");
 
-            float waitSeconds = Definition.AutoReturnSeconds + Mathf.Max(0.05f, autoReturnValidationPaddingSeconds);
+            float waitSeconds = definition.AutoReturnSeconds + Mathf.Max(0.05f, autoReturnValidationPaddingSeconds);
             yield return new WaitForSeconds(waitSeconds);
 
             bool stillActive = rented != null && rented.activeSelf;
@@ -653,7 +648,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
 
         private IEnumerator LogAutoReturnOutcomeAfterDelay(IPoolService service, GameObject instance, string action)
         {
-            float waitSeconds = Definition.AutoReturnSeconds + Mathf.Max(0.05f, autoReturnValidationPaddingSeconds);
+            float waitSeconds = definition.AutoReturnSeconds + Mathf.Max(0.05f, autoReturnValidationPaddingSeconds);
             yield return new WaitForSeconds(waitSeconds);
             SyncLocalCounters();
 
@@ -688,7 +683,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.QA
                     return false;
                 }
 
-                if (!pools.TryGetValue(Definition, out var pool) || pool == null)
+                if (!pools.TryGetValue(definition, out var pool) || pool == null)
                 {
                     return false;
                 }

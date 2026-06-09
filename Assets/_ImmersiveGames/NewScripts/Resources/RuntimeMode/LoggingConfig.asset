@@ -58,3 +58,7 @@ MonoBehaviour:
     enabled: 1
     namespacePrefix: _ImmersiveGames.NewScripts.GameplayRuntime
     level: 4
+  - ruleId: logger.pool
+    enabled: 1
+    namespacePrefix: _ImmersiveGames.NewScripts.Foundation.Platform.Pooling
+    level: 4

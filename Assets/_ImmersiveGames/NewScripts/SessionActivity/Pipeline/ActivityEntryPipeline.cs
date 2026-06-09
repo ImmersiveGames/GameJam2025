@@ -10,7 +10,6 @@ using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
-using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine.InputSystem;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline

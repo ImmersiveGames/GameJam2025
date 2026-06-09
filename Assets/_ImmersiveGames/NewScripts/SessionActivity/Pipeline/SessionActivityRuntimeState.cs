@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 {

@@ -94,29 +94,6 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.Runtime.Core
                 return true;
             }
 
-            try
-            {
-                _poolService.EnsureRegistered(poolDefinition);
-                if (poolDefinition.Prewarm && _prewarmedDefinitions.Add(poolDefinition))
-                {
-                    _poolService.Prewarm(poolDefinition);
-                }
-            }
-            catch (Exception ex)
-            {
-                if (profile.AllowDirectFallback)
-                {
-                    path = "direct";
-                    DebugUtility.LogWarning(typeof(AudioGlobalSfxService),
-                        $"[Audio][SFX] Pooled direct path='direct' cue='{cue.name}' profile='{profile.name}' reason='pool_registration_failed' message='{ex.Message}'.");
-                    return false;
-                }
-
-                DebugUtility.LogError(typeof(AudioGlobalSfxService),
-                    $"[Audio][SFX] Play blocked policy='block_budget' cue='{cue.name}' path='pooled' reason='pool_registration_failed' message='{ex.Message}'.");
-                return true;
-            }
-
             GameObject rentedInstance;
             try
             {

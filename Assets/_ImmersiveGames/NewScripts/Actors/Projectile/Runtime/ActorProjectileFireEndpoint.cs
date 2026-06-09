@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
@@ -15,13 +16,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         private string endpointId = "actor.projectile.fire.endpoint.player.primary";
         [SerializeField, Tooltip("Profile autoral tipado da capability de fire/projectile.")]
         private ActorProjectileFireProfileAsset fireProfile;
-        [SerializeField] private ActorCommandKind acceptedCommandKind = ActorCommandKind.FirePrimary;
         [SerializeField] private bool required;
 
         private Actor _actor;
         private IActorProjectileSpawnAdapter _spawnAdapter;
         private string _spawnAdapterName = string.Empty;
         private bool _projectileFireEnabled;
+        private readonly Dictionary<ActorProjectileFireModeId, float> _nextAllowedFireTimeByMode = new();
 
         public ActorProjectileFireEndpointId EndpointId => new(Normalize(endpointId));
         public ActorId ActorId => ResolveActor()?.ActorIdValue ?? default;
@@ -59,11 +60,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         public ActorCommandDispatchResult AcceptCommand(ActorCommandEnvelope command)
         {
-            if (!command.IsValid || command.CommandId != ActorCommandId.FirePrimary)
+            if (!command.IsValid)
             {
-                string invalidReason = !command.IsValid
-                    ? "invalid_projectile_fire_envelope"
-                    : "unsupported_projectile_fire_command";
+                const string invalidReason = "invalid_projectile_fire_envelope";
 
                 DebugUtility.Log(
                     typeof(ActorProjectileFireEndpoint),
@@ -109,9 +108,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
             }
 
+            if (!fireProfile.TryGetFireMode(fireCommand.FireModeId, out ActorProjectileFireMode fireMode, out string fireModeReason))
+            {
+                string blockedReason = string.IsNullOrWhiteSpace(fireModeReason)
+                    ? "projectile_fire_mode_missing"
+                    : fireModeReason;
+
+                DebugUtility.Log(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandRejected' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' dispatchStatus='RejectedUnsupportedCommand' blockedReason='MissingFireMode' reason='{blockedReason}' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    DebugUtility.Colors.Info);
+
+                return ActorCommandDispatchResult.RejectedUnsupportedCommand(blockedReason);
+            }
+
+            float now = Time.time;
+            if (IsCooldownActive(fireMode, now, out float nextAllowedTime, out float remainingSeconds))
+            {
+                DebugUtility.Log(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCooldownBlocked' actorId='{command.ActorId}' actorInstanceRuntimeId='{command.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' remainingSeconds='{remainingSeconds:0.###}' nextAllowedTime='{nextAllowedTime:0.###}' dispatchStatus='RejectedUnsupportedCommand' reason='projectile_fire_cooldown_active' source='{nameof(ActorProjectileFireEndpoint)}'.",
+                    DebugUtility.Colors.Info);
+
+                return ActorCommandDispatchResult.RejectedUnsupportedCommand("projectile_fire_cooldown_active");
+            }
+
             DebugUtility.Log(
                 typeof(ActorProjectileFireEndpoint),
-                $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
+                $"[OBS][ActorProjectileFire] event='ActorProjectileFireCommandBuilt' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' origin='{FormatVector(fireCommand.Origin)}' direction='{FormatVector(fireCommand.Direction)}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='spawn_adapter_command_built'.",
                 DebugUtility.Colors.Info);
 
             if (_spawnAdapter == null)
@@ -139,6 +163,17 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return ActorCommandDispatchResult.RejectedUnsupportedCommand(failureReason);
             }
 
+            if (fireMode.HasCooldown)
+            {
+                float scheduledNextAllowedTime = now + fireMode.CooldownSeconds;
+                _nextAllowedFireTimeByMode[fireMode.FireModeId] = scheduledNextAllowedTime;
+
+                DebugUtility.Log(
+                    typeof(ActorProjectileFireEndpoint),
+                    $"[OBS][ActorProjectileFire] event='ActorProjectileFireCooldownScheduled' actorId='{fireCommand.ActorId}' actorInstanceRuntimeId='{fireCommand.ActorInstanceRuntimeId}' commandId='{command.CommandId}' bindingId='{command.BindingId}' endpointId='{EndpointId}' profileId='{ProfileId}' fireModeId='{fireCommand.FireModeId}' cooldownSeconds='{fireMode.CooldownSeconds:0.###}' nextAllowedTime='{scheduledNextAllowedTime:0.###}' source='{nameof(ActorProjectileFireEndpoint)}' reason='projectile_fire_cooldown_scheduled'.",
+                    DebugUtility.Colors.Info);
+            }
+
             string acceptedReason = string.IsNullOrWhiteSpace(adapterResult.Reason)
                 ? "projectile_spawn_adapter_accepted"
                 : adapterResult.Reason;
@@ -151,24 +186,26 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             readiness = default;
 
-            if (commandId != ActorCommandId.FirePrimary || acceptedCommandKind != ActorCommandKind.FirePrimary)
+            if (!commandId.IsValid)
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.InvalidCommand,
-                    BuildDescriptorOrDefault(),
+                    BuildDescriptorOrDefault(commandId),
+                    commandId,
                     DefaultFireModeId,
                     ActorProjectileFireBlockedReasonKind.InvalidCommand,
                     "invalid_projectile_fire_command",
-                    "ActorProjectileFireEndpoint currently accepts only FirePrimary.");
+                    "ActorProjectileFireEndpoint requires a valid bound command.");
                 return false;
             }
 
-            if (!TryBuildDescriptor(out ActorProjectileFireEndpointDescriptor descriptor, out ActorProjectileFireEndpointReadinessKind descriptorFailureKind, out string descriptorFailureReason))
+            if (!TryBuildDescriptor(commandId, out ActorProjectileFireEndpointDescriptor descriptor, out ActorProjectileFireEndpointReadinessKind descriptorFailureKind, out string descriptorFailureReason))
             {
                 if (!required && descriptorFailureKind == ActorProjectileFireEndpointReadinessKind.MissingProfile)
                 {
                     readiness = ActorProjectileFireEndpointReadiness.SkippedOptional(
                         descriptor,
+                        commandId,
                         descriptorFailureReason);
                     return true;
                 }
@@ -176,6 +213,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     descriptorFailureKind,
                     descriptor,
+                    commandId,
                     DefaultFireModeId,
                     ToBlockedReason(descriptorFailureKind),
                     descriptorFailureReason,
@@ -189,12 +227,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     ? ActorProjectileFireEndpointReadiness.Blocked(
                         ActorProjectileFireEndpointReadinessKind.MissingProfile,
                         descriptor,
+                        commandId,
                         DefaultFireModeId,
-                        ActorProjectileFireBlockedReasonKind.MissingSpawnability,
+                        ActorProjectileFireBlockedReasonKind.MissingSpawnProfile,
                         "projectile_fire_profile_missing",
                         "ActorProjectileFireEndpoint requires ActorProjectileFireProfileAsset.")
                     : ActorProjectileFireEndpointReadiness.SkippedOptional(
                         descriptor,
+                        commandId,
                         "optional_projectile_fire_profile_missing");
                 return !required;
             }
@@ -204,27 +244,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.MissingFireMode,
                     descriptor,
+                    commandId,
                     DefaultFireModeId,
                     ActorProjectileFireBlockedReasonKind.MissingFireMode,
                     fireModeReason,
                     fireModeReason);
                 return false;
             }
-
-            if (fireMode.AcceptedCommandId != ActorCommandId.FirePrimary)
-            {
-                readiness = ActorProjectileFireEndpointReadiness.Blocked(
-                    ActorProjectileFireEndpointReadinessKind.InvalidCommand,
-                    descriptor,
-                    fireMode.FireModeId,
-                    ActorProjectileFireBlockedReasonKind.InvalidCommand,
-                    "projectile_fire_mode_command_mismatch",
-                    "Projectile fire mode does not accept FirePrimary.");
-                return false;
-            }
-
             readiness = ActorProjectileFireEndpointReadiness.Prepared(
                 descriptor,
+                commandId,
                 fireMode.FireModeId,
                 "projectile_fire_endpoint_ready");
             return true;
@@ -240,15 +269,16 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             command = default;
 
-            if (!commandEnvelope.IsValid || commandEnvelope.CommandId != ActorCommandId.FirePrimary)
+            if (!commandEnvelope.IsValid)
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.InvalidCommand,
-                    BuildDescriptorOrDefault(),
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
                     fireModeId,
                     ActorProjectileFireBlockedReasonKind.InvalidCommand,
                     "invalid_fire_command_envelope",
-                    "ActorProjectileFireEndpoint.TryBuildFireCommand requires a valid FirePrimary envelope.");
+                    "ActorProjectileFireEndpoint.TryBuildFireCommand requires a valid command envelope.");
                 return false;
             }
 
@@ -263,9 +293,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 const string missingProfileReason = "projectile_fire_profile_missing";
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.MissingProfile,
-                    BuildDescriptorOrDefault(),
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
                     resolvedFireModeId,
-                    ActorProjectileFireBlockedReasonKind.MissingSpawnability,
+                    ActorProjectileFireBlockedReasonKind.MissingSpawnProfile,
                     missingProfileReason,
                     missingProfileReason);
                 return false;
@@ -275,7 +306,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.MissingFireMode,
-                    BuildDescriptorOrDefault(),
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
                     resolvedFireModeId,
                     ActorProjectileFireBlockedReasonKind.MissingFireMode,
                     fireModeReason,
@@ -287,7 +319,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 readiness = ActorProjectileFireEndpointReadiness.Blocked(
                     ActorProjectileFireEndpointReadinessKind.MissingMuzzle,
-                    BuildDescriptorOrDefault(),
+                    BuildDescriptorOrDefault(commandEnvelope.CommandId),
+                    commandEnvelope.CommandId,
                     resolvedFireModeId,
                     ActorProjectileFireBlockedReasonKind.MissingMuzzle,
                     "projectile_fire_direction_missing",
@@ -300,7 +333,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 commandEnvelope.ActorInstanceRuntimeId,
                 commandEnvelope,
                 resolvedFireModeId,
+                fireMode.SpawnProfileId,
                 fireMode.PoolDefinition,
+                fireMode.SpawnedActorRole,
+                fireMode.SpawnedActorScope,
                 origin,
                 direction.normalized,
                 nameof(ActorProjectileFireEndpoint),
@@ -319,11 +355,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         }
 
         private bool TryBuildDescriptor(
+            ActorCommandId boundCommandId,
             out ActorProjectileFireEndpointDescriptor descriptor,
             out ActorProjectileFireEndpointReadinessKind failureKind,
             out string reason)
         {
-            descriptor = BuildDescriptorOrDefault();
+            descriptor = BuildDescriptorOrDefault(boundCommandId);
             failureKind = ActorProjectileFireEndpointReadinessKind.Unknown;
             reason = string.Empty;
 
@@ -368,7 +405,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 ActorInstanceRuntimeId,
                 fireProfile.ProfileId,
                 fireProfile.DefaultFireModeId,
-                ActorCommandId.FirePrimary,
+                boundCommandId,
                 required,
                 nameof(ActorProjectileFireEndpoint),
                 "projectile_fire_endpoint_descriptor");
@@ -383,7 +420,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             return true;
         }
 
-        private ActorProjectileFireEndpointDescriptor BuildDescriptorOrDefault()
+        private ActorProjectileFireEndpointDescriptor BuildDescriptorOrDefault(ActorCommandId boundCommandId)
         {
             return new ActorProjectileFireEndpointDescriptor(
                 EndpointId,
@@ -391,7 +428,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 ActorInstanceRuntimeId,
                 ProfileId,
                 DefaultFireModeId,
-                acceptedCommandKind == ActorCommandKind.FirePrimary ? ActorCommandId.FirePrimary : default,
+                boundCommandId,
                 required,
                 nameof(ActorProjectileFireEndpoint),
                 "projectile_fire_endpoint_descriptor_snapshot");
@@ -414,21 +451,43 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             {
                 ActorProjectileFireEndpointReadinessKind.InvalidCommand => ActorProjectileFireBlockedReasonKind.InvalidCommand,
                 ActorProjectileFireEndpointReadinessKind.MissingFireMode => ActorProjectileFireBlockedReasonKind.MissingFireMode,
-                ActorProjectileFireEndpointReadinessKind.MissingProfile => ActorProjectileFireBlockedReasonKind.MissingSpawnability,
+                ActorProjectileFireEndpointReadinessKind.MissingProfile => ActorProjectileFireBlockedReasonKind.MissingSpawnProfile,
                 ActorProjectileFireEndpointReadinessKind.MissingMuzzle => ActorProjectileFireBlockedReasonKind.MissingMuzzle,
                 ActorProjectileFireEndpointReadinessKind.NotExecutable => ActorProjectileFireBlockedReasonKind.NotExecutable,
                 _ => ActorProjectileFireBlockedReasonKind.Unknown,
             };
         }
 
+        private bool IsCooldownActive(ActorProjectileFireMode fireMode, float now, out float nextAllowedTime, out float remainingSeconds)
+        {
+            nextAllowedTime = 0f;
+            remainingSeconds = 0f;
+
+            if (!fireMode.HasCooldown)
+            {
+                return false;
+            }
+
+            if (!_nextAllowedFireTimeByMode.TryGetValue(fireMode.FireModeId, out nextAllowedTime))
+            {
+                return false;
+            }
+
+            remainingSeconds = nextAllowedTime - now;
+            if (remainingSeconds <= 0f)
+            {
+                _nextAllowedFireTimeByMode.Remove(fireMode.FireModeId);
+                remainingSeconds = 0f;
+                return false;
+            }
+
+            return true;
+        }
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
             endpointId = Normalize(endpointId);
-            if (acceptedCommandKind != ActorCommandKind.FirePrimary)
-            {
-                acceptedCommandKind = ActorCommandKind.FirePrimary;
-            }
         }
 #endif
 

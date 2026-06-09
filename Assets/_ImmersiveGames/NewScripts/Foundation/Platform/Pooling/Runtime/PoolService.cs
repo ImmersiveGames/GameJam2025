@@ -47,8 +47,14 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Runtime
             var pool = new GameObjectPool(validatedDefinition, host);
             _pools.Add(validatedDefinition, pool);
 
+            bool prewarmRequested = validatedDefinition.Prewarm;
+            if (prewarmRequested)
+            {
+                pool.Prewarm();
+            }
+
             DebugUtility.LogVerbose(typeof(PoolService),
-                $"[OBS][Pooling] Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' total={pool.TotalCount} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
+                $"[OBS][Pooling] Ensure registered asset='{validatedDefinition.name}' label='{Sanitize(validatedDefinition.PoolLabel)}' total={pool.TotalCount} inactive={pool.InactiveCount} prewarmRequested={prewarmRequested} autoReturnSeconds={validatedDefinition.AutoReturnSeconds:0.###}.",
                 DebugUtility.Colors.Info);
         }
 

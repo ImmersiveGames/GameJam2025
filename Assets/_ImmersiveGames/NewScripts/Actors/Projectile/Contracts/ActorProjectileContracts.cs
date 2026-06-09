@@ -48,6 +48,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
+    public readonly struct ActorProjectileSpawnProfileId : IEquatable<ActorProjectileSpawnProfileId>
+    {
+        public ActorProjectileSpawnProfileId(string value)
+        {
+            Value = Normalize(value);
+        }
+
+        public string Value { get; }
+        public bool IsValid => !string.IsNullOrWhiteSpace(Value);
+
+        public bool Equals(ActorProjectileSpawnProfileId other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
+        public override bool Equals(object obj) => obj is ActorProjectileSpawnProfileId other && Equals(other);
+        public override int GetHashCode() => Value == null ? 0 : StringComparer.Ordinal.GetHashCode(Value);
+        public override string ToString() => Value;
+
+        public static bool operator ==(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right) => left.Equals(right);
+        public static bool operator !=(ActorProjectileSpawnProfileId left, ActorProjectileSpawnProfileId right) => !left.Equals(right);
+
+        private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
     public enum ActorProjectileSpawnPatternKind
     {
         Unknown = 0,
@@ -76,8 +97,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         Unknown = 0,
         InvalidCommand = 1,
         MissingFireMode = 2,
-        MissingSpawnability = 3,
-        MissingPoolOrigin = 4,
+        MissingSpawnProfile = 3,
+        MissingPoolDefinition = 4,
         MissingMuzzle = 5,
         CooldownActive = 6,
         NotExecutable = 7,
@@ -119,9 +140,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
     {
         public ActorProjectileFireMode(
             ActorProjectileFireModeId fireModeId,
-            ActorCommandId acceptedCommandId,
-            ActorSpawnability spawnability,
+            ActorProjectileSpawnProfileId spawnProfileId,
             PoolDefinitionAsset poolDefinition,
+            ActorRole spawnedActorRole,
+            ActorScope spawnedActorScope,
             ActorProjectileSpawnPattern spawnPattern,
             ActorProjectileMuzzlePolicyKind muzzlePolicy,
             ActorProjectileSpreadPolicyKind spreadPolicy,
@@ -129,9 +151,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             string reason)
         {
             FireModeId = fireModeId;
-            AcceptedCommandId = acceptedCommandId;
-            Spawnability = spawnability;
+            SpawnProfileId = spawnProfileId;
             PoolDefinition = poolDefinition;
+            SpawnedActorRole = spawnedActorRole;
+            SpawnedActorScope = spawnedActorScope;
             SpawnPattern = spawnPattern;
             MuzzlePolicy = muzzlePolicy;
             SpreadPolicy = spreadPolicy;
@@ -140,9 +163,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         }
 
         public ActorProjectileFireModeId FireModeId { get; }
-        public ActorCommandId AcceptedCommandId { get; }
-        public ActorSpawnability Spawnability { get; }
+        public ActorProjectileSpawnProfileId SpawnProfileId { get; }
         public PoolDefinitionAsset PoolDefinition { get; }
+        public ActorRole SpawnedActorRole { get; }
+        public ActorScope SpawnedActorScope { get; }
         public ActorProjectileSpawnPattern SpawnPattern { get; }
         public ActorProjectileMuzzlePolicyKind MuzzlePolicy { get; }
         public ActorProjectileSpreadPolicyKind SpreadPolicy { get; }
@@ -151,11 +175,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public bool HasCooldown => CooldownSeconds > 0f;
         public bool IsValid =>
             FireModeId.IsValid &&
-            AcceptedCommandId.IsValid &&
-            AcceptedCommandId == ActorCommandId.FirePrimary &&
-            Spawnability.IsValid &&
-            Spawnability.IsSpawnable &&
+            SpawnProfileId.IsValid &&
             PoolDefinition != null &&
+            SpawnedActorRole != ActorRole.Unknown &&
+            SpawnedActorScope != ActorScope.Unknown &&
             SpawnPattern.IsValid &&
             MuzzlePolicy != ActorProjectileMuzzlePolicyKind.Unknown &&
             SpreadPolicy != ActorProjectileSpreadPolicyKind.Unknown;
@@ -170,7 +193,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorCommandEnvelope commandEnvelope,
             ActorProjectileFireModeId fireModeId,
+            ActorProjectileSpawnProfileId spawnProfileId,
             PoolDefinitionAsset poolDefinition,
+            ActorRole spawnedActorRole,
+            ActorScope spawnedActorScope,
             Vector3 origin,
             Vector3 direction,
             string source,
@@ -180,7 +206,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             CommandEnvelope = commandEnvelope;
             FireModeId = fireModeId;
+            SpawnProfileId = spawnProfileId;
             PoolDefinition = poolDefinition;
+            SpawnedActorRole = spawnedActorRole;
+            SpawnedActorScope = spawnedActorScope;
             Origin = origin;
             Direction = direction;
             Source = Normalize(source);
@@ -191,7 +220,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorCommandEnvelope CommandEnvelope { get; }
         public ActorProjectileFireModeId FireModeId { get; }
+        public ActorProjectileSpawnProfileId SpawnProfileId { get; }
         public PoolDefinitionAsset PoolDefinition { get; }
+        public ActorRole SpawnedActorRole { get; }
+        public ActorScope SpawnedActorScope { get; }
         public Vector3 Origin { get; }
         public Vector3 Direction { get; }
         public string Source { get; }
@@ -203,7 +235,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             CommandEnvelope.IsValid &&
             CommandEnvelope.CommandId == ActorCommandId.FirePrimary &&
             FireModeId.IsValid &&
+            SpawnProfileId.IsValid &&
             PoolDefinition != null &&
+            SpawnedActorRole != ActorRole.Unknown &&
+            SpawnedActorScope != ActorScope.Unknown &&
             HasDirection &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);

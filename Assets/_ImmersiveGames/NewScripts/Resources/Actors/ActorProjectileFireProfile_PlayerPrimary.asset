@@ -16,8 +16,7 @@ MonoBehaviour:
   defaultFireModeId: fire.primary.single
   fireModes:
   - fireModeId: fire.primary.single
-    acceptedCommandKind: 2
-    spawnabilityProfile: {fileID: 11400000, guid: 814be223534e7184d9458e0f730fb98b, type: 2}
+    projectileSpawnProfile: {fileID: 11400000, guid: 51c969da3d1e4e129635d668e1bb65ee, type: 2}
     spawnPattern: 1
     muzzlePolicy: 1
     spreadPolicy: 1

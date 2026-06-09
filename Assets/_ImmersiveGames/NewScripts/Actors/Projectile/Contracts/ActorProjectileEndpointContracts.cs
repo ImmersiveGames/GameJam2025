@@ -48,7 +48,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId actorInstanceRuntimeId,
             ActorProjectileProfileId profileId,
             ActorProjectileFireModeId defaultFireModeId,
-            ActorCommandId acceptedCommandId,
+            ActorCommandId boundCommandId,
             bool required,
             string source,
             string reason)
@@ -58,7 +58,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId = actorInstanceRuntimeId;
             ProfileId = profileId;
             DefaultFireModeId = defaultFireModeId;
-            AcceptedCommandId = acceptedCommandId;
+            BoundCommandId = boundCommandId;
             Required = required;
             Source = Normalize(source);
             Reason = Normalize(reason);
@@ -69,7 +69,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public ActorInstanceRuntimeId ActorInstanceRuntimeId { get; }
         public ActorProjectileProfileId ProfileId { get; }
         public ActorProjectileFireModeId DefaultFireModeId { get; }
-        public ActorCommandId AcceptedCommandId { get; }
+        public ActorCommandId BoundCommandId { get; }
         public bool Required { get; }
         public string Source { get; }
         public string Reason { get; }
@@ -80,8 +80,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             ActorInstanceRuntimeId.IsValid &&
             ProfileId.IsValid &&
             DefaultFireModeId.IsValid &&
-            AcceptedCommandId.IsValid &&
-            AcceptedCommandId == ActorCommandId.FirePrimary &&
+            BoundCommandId.IsValid &&
             !string.IsNullOrWhiteSpace(Source) &&
             !string.IsNullOrWhiteSpace(Reason);
 
@@ -123,13 +122,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public static ActorProjectileFireEndpointReadiness Prepared(
             ActorProjectileFireEndpointDescriptor descriptor,
+            ActorCommandId commandId,
             ActorProjectileFireModeId fireModeId,
             string reason)
         {
             return new ActorProjectileFireEndpointReadiness(
                 ActorProjectileFireEndpointReadinessKind.Prepared,
                 descriptor,
-                ActorCommandId.FirePrimary,
+                commandId,
                 fireModeId,
                 ActorProjectileFireBlockedReasonKind.Unknown,
                 reason,
@@ -138,12 +138,13 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
 
         public static ActorProjectileFireEndpointReadiness SkippedOptional(
             ActorProjectileFireEndpointDescriptor descriptor,
+            ActorCommandId commandId,
             string reason)
         {
             return new ActorProjectileFireEndpointReadiness(
                 ActorProjectileFireEndpointReadinessKind.SkippedOptional,
                 descriptor,
-                ActorCommandId.FirePrimary,
+                commandId,
                 default,
                 ActorProjectileFireBlockedReasonKind.Unknown,
                 reason,
@@ -153,6 +154,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
         public static ActorProjectileFireEndpointReadiness Blocked(
             ActorProjectileFireEndpointReadinessKind kind,
             ActorProjectileFireEndpointDescriptor descriptor,
+            ActorCommandId commandId,
             ActorProjectileFireModeId fireModeId,
             ActorProjectileFireBlockedReasonKind blockedReason,
             string reason,
@@ -161,7 +163,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Contracts
             return new ActorProjectileFireEndpointReadiness(
                 kind,
                 descriptor,
-                ActorCommandId.FirePrimary,
+                commandId,
                 fireModeId,
                 blockedReason,
                 reason,

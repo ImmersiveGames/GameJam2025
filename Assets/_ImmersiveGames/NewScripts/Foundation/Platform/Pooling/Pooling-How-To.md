@@ -116,7 +116,7 @@ Regra importante:
 
 ### 2) Prewarm
 
-`Prewarm(definition)` preenche capacidade inicial conforme configuracao.
+`prewarm=true` no `PoolDefinitionAsset` e aplicado canonicamente por `EnsureRegistered(definition)` no primeiro registro do pool. `Prewarm(definition)` permanece como comando explicito de QA/manutencao, nao como responsabilidade de consumers de gameplay.
 
 ### 3) Rent
 
@@ -141,19 +141,18 @@ Se `autoReturnSeconds > 0`, instancia rented recebe retorno automatico canonicam
 3. Definir `initialSize`, `canExpand` e `maxSize`.
 4. Definir `autoReturnSeconds` (0 para desativado).
 5. Definir `poolLabel` para observabilidade.
-6. Marcar `prewarm=true` quando quiser aquecimento automatico no consumer.
+6. Marcar `prewarm=true` quando quiser aquecimento automatico no primeiro `EnsureRegistered`.
 
 ## Como um consumer usa pools
 
 Shape final aprovado:
-- o consumer usa base reutilizavel (`PoolConsumerBehaviourBase`, namespace `Infrastructure.Pooling.Interop`)
+- o consumer usa base reutilizavel (`PoolConsumerBehaviourBase`)
 - o consumer declara lista explicita de `PoolDefinitionAsset`
 - a base resolve `IPoolService`
-- para cada definicao:
-  - sempre executa `EnsureRegistered`
-  - executa `Prewarm` somente quando `definition.prewarm == true`
+- para cada definicao, executa somente `EnsureRegistered`
+- `PoolService.EnsureRegistered` aplica o prewarm uma vez quando `definition.prewarm == true`
 
-Sem script manual por feature para chamar ensure/prewarm.
+Sem script manual por feature para chamar prewarm.
 
 ## Como o QA usa pools hoje
 

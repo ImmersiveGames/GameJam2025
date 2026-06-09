@@ -10,14 +10,28 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config
         order = 20)]
     public sealed class PoolDefinitionAsset : ScriptableObject
     {
-        [SerializeField] private GameObject prefab;
-        [SerializeField] private int initialSize = 1;
-        [SerializeField] private bool canExpand = true;
-        [SerializeField] private int maxSize = 32;
-        [SerializeField] private float autoReturnSeconds;
-        [SerializeField] private string poolLabel = "pool";
+        [Header("Prefab")]
+        [SerializeField, Tooltip("Prefab técnico alugado por este pool. A identidade final de gameplay deve ser aplicada no rent, não no prefab.")]
+        private GameObject prefab;
+
+        [Header("Capacity")]
+        [SerializeField, Tooltip("Quantidade inicial criada quando o pool é preparado/preaquecido.")]
+        private int initialSize = 1;
+        [SerializeField, Tooltip("Permite criar novas instâncias quando o pool esgota.")]
+        private bool canExpand = true;
+        [SerializeField, Tooltip("Limite máximo de instâncias quando Can Expand está ativo.")]
+        private int maxSize = 32;
+
+        [Header("Lifetime")]
+        [SerializeField, Tooltip("Retorno automático técnico em segundos. 0 desativa. Para projectiles, o reset canônico futuro deve retornar ao pool por policy/objeto, não por fallback silencioso.")]
+        private float autoReturnSeconds;
+
+        [Header("Identity / Bootstrap")]
+        [SerializeField, Tooltip("Label técnico observacional do pool. Não deve substituir referência tipada ao PoolDefinitionAsset.")]
+        private string poolLabel = "pool";
         [FormerlySerializedAs("prewarmOnEnsure")]
-        [SerializeField] private bool prewarm;
+        [SerializeField, Tooltip("Se ativo, o pool é preaquecido quando garantido pelo serviço canônico.")]
+        private bool prewarm;
 
         public GameObject Prefab => prefab;
         public int InitialSize => initialSize;

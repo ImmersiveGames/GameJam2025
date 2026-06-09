@@ -1,5 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using UnityEngine;
 
@@ -8,19 +10,30 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
     [DisallowMultipleComponent]
     public sealed class RuntimeSpawnedActor : Actor, IPoolableObject
     {
-        [SerializeField] private string defaultActorId = "actor.runtime.spawned";
-        [SerializeField] private ActorRole defaultActorRole = ActorRole.RuntimeSpawnedActor;
-        [SerializeField] private ActorScope defaultActorScope = ActorScope.ActivityScoped;
+        private ActorId runtimeActorId;
+        private ActorRole runtimeActorRole;
+        private ActorScope runtimeActorScope;
+        private ActorParticipationRecord.ActorParticipationPolicy runtimeParticipationPolicy;
+        private RuntimeSpawnOriginMetadata runtimeSpawnOrigin;
 
-        private ActorId _runtimeActorId;
-        private ActorRole _runtimeActorRole;
-        private ActorScope _runtimeActorScope;
-        private ActorParticipationRecord.ActorParticipationPolicy _runtimeParticipationPolicy;
+        public bool IsRuntimeMetadataBound =>
+            runtimeActorId.IsValid &&
+            RuntimeActorInstanceId.IsValid &&
+            runtimeActorRole != ActorRole.Unknown &&
+            runtimeActorScope != ActorScope.Unknown &&
+            runtimeSpawnOrigin.IsValid;
 
-        public override ActorId ActorIdValue => _runtimeActorId.IsValid ? _runtimeActorId : new ActorId(Normalize(defaultActorId));
-        public override ActorRole ActorRoleMetadata => _runtimeActorRole == ActorRole.Unknown ? defaultActorRole : _runtimeActorRole;
-        public override ActorScope ActorScopeMetadata => _runtimeActorScope == ActorScope.Unknown ? defaultActorScope : _runtimeActorScope;
-        public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => _runtimeParticipationPolicy;
+        public override ActorId ActorIdValue => runtimeActorId;
+        public override ActorRole ActorRoleMetadata => runtimeActorRole;
+        public override ActorScope ActorScopeMetadata => runtimeActorScope;
+        public override ActorParticipationRecord.ActorParticipationPolicy ActorParticipationPolicy => runtimeParticipationPolicy;
+        public RuntimeSpawnOriginMetadata SpawnOrigin => runtimeSpawnOrigin;
+        public bool HasSpawnOrigin => runtimeSpawnOrigin.IsValid;
+        public ActorId OwnerActorId => runtimeSpawnOrigin.OwnerActorId;
+        public ActorInstanceRuntimeId OwnerActorInstanceRuntimeId => runtimeSpawnOrigin.OwnerActorInstanceRuntimeId;
+        public RuntimeSpawnProfileId SpawnProfileId => runtimeSpawnOrigin.SpawnProfileId;
+        public PoolDefinitionAsset OriginPoolDefinition => runtimeSpawnOrigin.PoolDefinition;
+
 
         public void BindRuntimeMetadata(
             ActorId actorId,
@@ -28,6 +41,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
             ActorRole actorRole,
             ActorScope actorScope,
             ActorParticipationRecord.ActorParticipationPolicy participationPolicy,
+            RuntimeSpawnOriginMetadata spawnOrigin,
             string source)
         {
             string origin = ResolveOrigin(source, nameof(RuntimeSpawnedActor), name);
@@ -51,31 +65,27 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
                 throw new InvalidOperationException($"{origin} cannot bind unknown ActorScope.");
             }
 
-            _runtimeActorId = actorId;
-            _runtimeActorRole = actorRole;
-            _runtimeActorScope = actorScope;
-            _runtimeParticipationPolicy = participationPolicy;
+            if (!spawnOrigin.IsValid)
+            {
+                throw new InvalidOperationException($"{origin} cannot bind invalid RuntimeSpawnOriginMetadata.");
+            }
+
+            runtimeActorId = actorId;
+            runtimeActorRole = actorRole;
+            runtimeActorScope = actorScope;
+            runtimeParticipationPolicy = participationPolicy;
+            runtimeSpawnOrigin = spawnOrigin;
             SetRuntimeActorInstanceId(actorInstanceRuntimeId);
+
+            DebugUtility.Log(
+                typeof(RuntimeSpawnedActor),
+                $"[OBS][ActorProjectileFire] event='RuntimeSpawnedActorMetadataBound' actorId='{runtimeActorId}' actorInstanceRuntimeId='{RuntimeActorInstanceId}' actorRole='{runtimeActorRole}' actorScope='{runtimeActorScope}' ownerActorId='{runtimeSpawnOrigin.OwnerActorId}' ownerActorInstanceRuntimeId='{runtimeSpawnOrigin.OwnerActorInstanceRuntimeId}' spawnProfileId='{runtimeSpawnOrigin.SpawnProfileId}' originPoolDefinition='{runtimeSpawnOrigin.PoolDefinitionName}' commandSequence='{runtimeSpawnOrigin.CommandSequence}' instanceName='{name}' activeSelf='{gameObject.activeSelf}' activeInHierarchy='{gameObject.activeInHierarchy}' source='{Normalize(source)}' reason='runtime_spawned_actor_metadata_bound'.",
+                DebugUtility.Colors.Info);
         }
 
         public override void ValidateLocalConfigurationOrThrow(string source)
         {
             string origin = ResolveOrigin(source, nameof(RuntimeSpawnedActor), name);
-            if (!ActorIdValue.IsValid)
-            {
-                throw new InvalidOperationException($"{origin} requires defaultActorId or runtime actor binding.");
-            }
-
-            if (ActorRoleMetadata == ActorRole.Unknown)
-            {
-                throw new InvalidOperationException($"{origin} requires explicit ActorRole.");
-            }
-
-            if (ActorScopeMetadata == ActorScope.Unknown)
-            {
-                throw new InvalidOperationException($"{origin} requires explicit ActorScope.");
-            }
-
             if (CapabilitySurface == null)
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
@@ -89,7 +99,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
 
         public void OnPoolRent()
         {
-            // O adapter de spawn é o owner do bind runtime. O pool apenas reativa a instância.
+            // O pool apenas aluga a instância. A identidade runtime é aplicada pelo adapter de spawn logo após o rent.
         }
 
         public void OnPoolReturn()
@@ -105,15 +115,20 @@ namespace _ImmersiveGames.NewScripts.Actors.Runtime
         protected override void OnValidate()
         {
             base.OnValidate();
-            defaultActorId = Normalize(defaultActorId);
+        }
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
         }
 
         private void ClearRuntimeMetadata()
         {
-            _runtimeActorId = default;
-            _runtimeActorRole = ActorRole.Unknown;
-            _runtimeActorScope = ActorScope.Unknown;
-            _runtimeParticipationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
+            runtimeActorId = default;
+            runtimeActorRole = ActorRole.Unknown;
+            runtimeActorScope = ActorScope.Unknown;
+            runtimeParticipationPolicy = ActorParticipationRecord.ActorParticipationPolicy.None;
+            runtimeSpawnOrigin = default;
             SetRuntimeActorInstanceId(default);
         }
     }

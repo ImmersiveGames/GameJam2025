@@ -1,5 +1,4 @@
 using System;
-using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
 using _ImmersiveGames.NewScripts.CameraPresentation.Contracts;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
@@ -7,8 +6,6 @@ using _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode;
 using _ImmersiveGames.NewScripts.InputModes.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Adapters;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
-using _ImmersiveGames.NewScripts.SessionActivity.Simulation;
-using _ImmersiveGames.NewScripts.SessionOperational.Contracts;
 using UnityEngine;
 using UnityEngine.InputSystem;
 

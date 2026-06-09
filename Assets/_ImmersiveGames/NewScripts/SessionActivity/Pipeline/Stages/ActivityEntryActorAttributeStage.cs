@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Authoring;
 using _ImmersiveGames.NewScripts.Actors.Attributes.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;

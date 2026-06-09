@@ -1,7 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Authoring;
-using _ImmersiveGames.NewScripts.Actors.Presentation.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Presentation.Runtime;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 

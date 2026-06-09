@@ -1,8 +1,6 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Contracts;
-using _ImmersiveGames.NewScripts.Actors.Runtime;
-using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
@@ -16,20 +14,34 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
         [Serializable]
         public sealed class FireModeAuthoring
         {
+            [Header("Identity")]
             [SerializeField, Tooltip("Identificador do modo de fire. Ex.: fire.primary.single.")]
             private string fireModeId;
-            [SerializeField] private ActorCommandKind acceptedCommandKind = ActorCommandKind.FirePrimary;
-            [SerializeField] private ActorSpawnabilityProfileAsset spawnabilityProfile;
-            [SerializeField] private ActorProjectileSpawnPatternKind spawnPattern = ActorProjectileSpawnPatternKind.Single;
-            [SerializeField] private ActorProjectileMuzzlePolicyKind muzzlePolicy = ActorProjectileMuzzlePolicyKind.Unknown;
-            [SerializeField] private ActorProjectileSpreadPolicyKind spreadPolicy = ActorProjectileSpreadPolicyKind.None;
-            [SerializeField, Min(0f)] private float cooldownSeconds;
-            [SerializeField, Min(1)] private int projectileCount = 1;
-            [SerializeField, Min(0f)] private float radialArcDegrees;
+
+            [Header("Spawn")]
+            [SerializeField, Tooltip("Profile específico de spawn de projectile. Ele contém PoolDefinition, role/scope e policies do actor spawnado.")]
+            private ActorProjectileSpawnProfileAsset projectileSpawnProfile;
+
+            [Header("Pattern")]
+            [SerializeField, Tooltip("Padrão de spawn aplicado pelo fire mode. Single é o MVP validado.")]
+            private ActorProjectileSpawnPatternKind spawnPattern = ActorProjectileSpawnPatternKind.Single;
+            [SerializeField, Tooltip("Política de origem/direção do muzzle. ActorForward usa o forward do actor.")]
+            private ActorProjectileMuzzlePolicyKind muzzlePolicy = ActorProjectileMuzzlePolicyKind.Unknown;
+            [SerializeField, Tooltip("Política de spread do disparo. None mantém a direção base.")]
+            private ActorProjectileSpreadPolicyKind spreadPolicy = ActorProjectileSpreadPolicyKind.None;
+
+            [Header("Timing")]
+            [SerializeField, Min(0f), Tooltip("Cooldown mínimo entre disparos deste modo, em segundos.")]
+            private float cooldownSeconds;
+
+            [Header("Multi-projectile")]
+            [SerializeField, Min(1), Tooltip("Quantidade de projectiles para LinearBurst/RadialArc. Single força 1 no OnValidate.")]
+            private int projectileCount = 1;
+            [SerializeField, Min(0f), Tooltip("Arco em graus usado por RadialArc.")]
+            private float radialArcDegrees;
 
             public string FireModeId => Normalize(fireModeId);
-            public ActorCommandKind AcceptedCommandKind => acceptedCommandKind;
-            public ActorSpawnabilityProfileAsset SpawnabilityProfile => spawnabilityProfile;
+            public ActorProjectileSpawnProfileAsset ProjectileSpawnProfile => projectileSpawnProfile;
             public ActorProjectileSpawnPatternKind SpawnPattern => spawnPattern;
             public ActorProjectileMuzzlePolicyKind MuzzlePolicy => muzzlePolicy;
             public ActorProjectileSpreadPolicyKind SpreadPolicy => spreadPolicy;
@@ -46,38 +58,25 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
                     reason = "fire_mode_id_missing";
                     return false;
                 }
-
-                if (acceptedCommandKind != ActorCommandKind.FirePrimary)
+                if (projectileSpawnProfile == null)
                 {
-                    reason = "only_fire_primary_is_supported_in_passive_profile";
+                    reason = "projectile_spawn_profile_missing";
                     return false;
                 }
 
-                if (spawnabilityProfile == null)
+                if (!projectileSpawnProfile.TryValidate(out string projectileSpawnReason))
                 {
-                    reason = "spawnability_profile_missing";
+                    reason = $"projectile_spawn_profile_invalid:{projectileSpawnReason}";
                     return false;
                 }
 
-                if (spawnabilityProfile.PoolDefinition == null)
+                if (projectileSpawnProfile.MaterializationKind != ActorMaterializationKind.RuntimeSpawned)
                 {
-                    reason = "spawnability_profile_pool_definition_missing";
+                    reason = "projectile_fire_requires_runtime_spawned_projectile_spawn_profile";
                     return false;
                 }
 
-                if (!spawnabilityProfile.TryValidate(out string spawnabilityReason))
-                {
-                    reason = $"spawnability_profile_invalid:{spawnabilityReason}";
-                    return false;
-                }
-
-                if (spawnabilityProfile.MaterializationKind != ActorMaterializationKind.RuntimeSpawned)
-                {
-                    reason = "projectile_fire_requires_runtime_spawned_actor_spawnability";
-                    return false;
-                }
-
-                if (spawnabilityProfile.ResetPolicy != ActorSpawnedResetPolicy.ReturnToOriginPool)
+                if (projectileSpawnProfile.ResetPolicy != ActorSpawnedResetPolicy.ReturnToOriginPool)
                 {
                     reason = "projectile_fire_requires_return_to_origin_pool_reset";
                     return false;
@@ -110,9 +109,10 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
 
                 fireMode = new ActorProjectileFireMode(
                     new ActorProjectileFireModeId(FireModeId),
-                    ActorCommandId.FirePrimary,
-                    spawnabilityProfile.BuildSpawnability(),
-                    spawnabilityProfile.PoolDefinition,
+                    projectileSpawnProfile.ProfileId,
+                    projectileSpawnProfile.PoolDefinition,
+                    projectileSpawnProfile.SpawnedActorRole,
+                    projectileSpawnProfile.SpawnedActorScope,
                     pattern,
                     muzzlePolicy,
                     spreadPolicy,
@@ -145,11 +145,15 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Authoring
             }
         }
 
-        [SerializeField, Tooltip("Identificador canônico do profile de fire. O asset é passivo e não executa spawn.")]
+        [Header("Profile Identity")]
+        [SerializeField, Tooltip("Identificador canônico do profile de fire. O asset é authoring data: não executa spawn.")]
         private string profileId;
-        [SerializeField, Tooltip("Modo default para o comando FirePrimary. A referência entre prefab e profile é tipada; este ID é interno ao asset.")]
+        [SerializeField, Tooltip("Modo default de fire usado pelo endpoint quando o binding não especifica um modo. Deve existir em Fire Modes.")]
         private string defaultFireModeId;
-        [SerializeField] private FireModeAuthoring[] fireModes = Array.Empty<FireModeAuthoring>();
+
+        [Header("Fire Modes")]
+        [SerializeField, Tooltip("Lista de modos de fire. Cada modo aponta para um ActorProjectileSpawnProfileAsset.")]
+        private FireModeAuthoring[] fireModes = Array.Empty<FireModeAuthoring>();
 
         public ActorProjectileProfileId ProfileId => new(Normalize(profileId));
         public ActorProjectileFireModeId DefaultFireModeId => new(Normalize(defaultFireModeId));

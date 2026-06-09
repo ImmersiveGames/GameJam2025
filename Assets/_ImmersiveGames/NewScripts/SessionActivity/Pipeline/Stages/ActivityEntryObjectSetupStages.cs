@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Authoring;
-using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Camera;
-using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Attributes;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
