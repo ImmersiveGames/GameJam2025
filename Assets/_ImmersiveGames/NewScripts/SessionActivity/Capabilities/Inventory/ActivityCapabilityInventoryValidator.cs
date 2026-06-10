@@ -155,13 +155,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
         {
             return capabilityKind switch
             {
-                ActivityCapabilityKind.ResetEndpoint => runtimeReference is ActivityObjectResetEndpointReference resetReference && resetReference.Endpoint != null,
-                ActivityCapabilityKind.SnapshotProvider => runtimeReference is ActivityObjectSnapshotProviderReference snapshotReference && snapshotReference.Provider != null,
-                ActivityCapabilityKind.SnapshotRestoreEndpoint => runtimeReference is ActivityObjectSnapshotRestoreEndpointReference restoreReference && restoreReference.Endpoint != null,
-                ActivityCapabilityKind.ReleaseEndpoint => runtimeReference is ActivityObjectReleaseEndpointReference releaseReference && releaseReference.Endpoint != null,
-                ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference permissionReference &&
-                                                           permissionReference.Receiver != null &&
-                                                           permissionReference.PermissionId != ActivityCapabilityPermissionId.Unknown,
+                ActivityCapabilityKind.ResetEndpoint => runtimeReference is ActivityObjectResetEndpointReference { Endpoint: not null },
+                ActivityCapabilityKind.SnapshotProvider => runtimeReference is ActivityObjectSnapshotProviderReference { Provider: not null },
+                ActivityCapabilityKind.SnapshotRestoreEndpoint => runtimeReference is ActivityObjectSnapshotRestoreEndpointReference { Endpoint: not null },
+                ActivityCapabilityKind.ReleaseEndpoint => runtimeReference is ActivityObjectReleaseEndpointReference { Endpoint: not null },
+                ActivityCapabilityKind.PermissionTarget => runtimeReference is ActivityCapabilityPermissionReceiverReference { Receiver: not null } permissionReference &&
+                    permissionReference.PermissionId != ActivityCapabilityPermissionId.Unknown,
                 _ => true,
             };
         }

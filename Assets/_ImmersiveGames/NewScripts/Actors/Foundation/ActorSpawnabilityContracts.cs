@@ -109,7 +109,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Foundation
             ResetPolicy = resetPolicy;
             SnapshotPolicy = snapshotPolicy;
             PoolOrigin = poolOrigin ?? default;
-            HasPoolOrigin = poolOrigin.HasValue && poolOrigin.Value.IsValid;
+            HasPoolOrigin = poolOrigin is { IsValid: true };
         }
 
         public bool IsSpawnable { get; }

@@ -331,7 +331,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasScenes => Scenes != null && Scenes.Count > 0;
+        public bool HasScenes => Scenes is { Count: > 0 };
         public bool IsExplicitNoContent => ActivityContentMode == ActivityContentMode.None;
 
         public bool IsValid
@@ -472,7 +472,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasScenes => Scenes != null && Scenes.Count > 0;
+        public bool HasScenes => Scenes is { Count: > 0 };
 
         public bool IsValid
         {

@@ -1463,7 +1463,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "NextActivity";
             }
 
-            if (definition.IsValid && definition.HasNextActivity)
+            if (definition is { IsValid: true, HasNextActivity: true })
             {
                 return "NextActivity";
             }
@@ -1498,7 +1498,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 definition.IsValid &&
                 string.Equals(transition.FromActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                 transition.FromEntrySequence == entrySequence;
-            bool hasNextActivity = definition.IsValid && definition.HasNextActivity;
+            bool hasNextActivity = definition is { IsValid: true, HasNextActivity: true };
 
             if (string.Equals(normalizedContinuationKind, "RestartCurrentActivity", StringComparison.Ordinal) && hasPendingRestart)
             {
@@ -3501,7 +3501,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason,
             string readinessPoint)
         {
-            string routeOperationId = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
+            string routeOperationId = _lastSessionParticipationContext is { IsValid: true }
                 ? _lastSessionParticipationContext.RouteOperationId
                 : string.Empty;
             if (string.IsNullOrWhiteSpace(routeOperationId))
@@ -4060,8 +4060,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargetsOrEmpty(SessionActivityIdentity identity)
         {
             if (_activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
-                activeActors != null &&
-                activeActors.Count > 0 &&
+                activeActors is { Count: > 0 } &&
                 ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
                     _activityPlayerActorRegistry.ActiveScopeIdentity,
                     identity,
@@ -4344,13 +4343,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 SessionActivityDefinition currentDefinition,
                 int currentEntrySequence)
             {
-                return currentLoadedSet.IsValid &&
-                       currentLoadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
-                       string.Equals(currentLoadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                       string.Equals(currentLoadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                       string.Equals(currentLoadedSet.Identity.ActivityId, currentDefinition.ActivityId, StringComparison.Ordinal) &&
-                       currentLoadedSet.Identity.ActivityOrdinal == currentDefinition.ActivityOrdinal &&
-                       currentLoadedSet.Identity.EntrySequence == currentEntrySequence;
+                return currentLoadedSet is { IsValid: true, Identity: { Stage: SessionActivityStage.ActivityContentLoadedSetReady } } &&
+                    string.Equals(currentLoadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                    string.Equals(currentLoadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                    string.Equals(currentLoadedSet.Identity.ActivityId, currentDefinition.ActivityId, StringComparison.Ordinal) &&
+                    currentLoadedSet.Identity.ActivityOrdinal == currentDefinition.ActivityOrdinal &&
+                    currentLoadedSet.Identity.EntrySequence == currentEntrySequence;
             }
 
             void AddContractCandidates(
@@ -4572,9 +4570,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     }
 
                     if ((_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle candidateHandle) ||
-                        _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out candidateHandle)) &&
-                        candidateHandle.IsValid &&
-                        candidateHandle.ActorInstanceRuntimeId.IsValid)
+                            _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out candidateHandle)) &&
+                        candidateHandle is { IsValid: true, ActorInstanceRuntimeId: { IsValid: true } })
                     {
                         availableActorInstances.Add(candidateHandle.ActorInstanceRuntimeId.ToString());
                     }
@@ -5216,13 +5213,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             int entrySequence)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         private bool IsDiscoveryResultForCurrentResetEntry(
@@ -5231,13 +5227,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int activityOrdinal,
             int entrySequence)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == activityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == activityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         private bool IsReportForCurrentEntry(
@@ -5245,13 +5240,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             int entrySequence)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                   report.Identity.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                report.Identity.EntrySequence == entrySequence;
         }
 
         private bool IsReportForCurrentResetEntry(
@@ -5260,13 +5254,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int activityOrdinal,
             int entrySequence)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == activityOrdinal &&
-                   report.Identity.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                report.Identity.ActivityOrdinal == activityOrdinal &&
+                report.Identity.EntrySequence == entrySequence;
         }
 
         private bool HasRequiredResetContributorForCurrentResetEntry(
@@ -5288,9 +5281,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required &&
-                    report.SupportedResetGroups != null &&
-                    report.SupportedResetGroups.Count > 0)
+                if (report is { Requiredness: ActivitySetupRequirementRequiredness.Required, SupportedResetGroups: { Count: > 0 } })
                 {
                     return true;
                 }
@@ -5345,13 +5336,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             int entrySequence)
         {
-            return loadedSet.IsValid &&
-                   loadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
-                   string.Equals(loadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                   loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                   loadedSet.Identity.EntrySequence == entrySequence;
+            return loadedSet is { IsValid: true, Identity: { Stage: SessionActivityStage.ActivityContentLoadedSetReady } } &&
+                string.Equals(loadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                string.Equals(loadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                loadedSet.Identity.EntrySequence == entrySequence;
         }
 
         private static string FormatCapabilityKindsSummary(IReadOnlyList<ActivityCapabilityDescriptor> capabilities)
@@ -7409,7 +7399,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             _activityEntryPipeline.StoreActivityParticipationContext(context);
             _activityActorExitRuntimeState.StoreActivityParticipationContext(context);
-            string sessionParticipationState = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
+            string sessionParticipationState = _lastSessionParticipationContext is { IsValid: true }
                 ? "present"
                 : "absent";
             int sessionRevision = _lastSessionParticipationContext?.Revision ?? 0;
@@ -7537,7 +7527,7 @@ private bool TryBuildActivityParticipantBinding(
             string reason)
         {
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext is { IsValid: true } ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Warning);
         }
 
@@ -7872,7 +7862,7 @@ private bool TryBuildActivityParticipantBinding(
                 return true;
             }
 
-            string observedRouteOperationId = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
+            string observedRouteOperationId = _lastSessionParticipationContext is { IsValid: true }
                 ? _lastSessionParticipationContext.RouteOperationId
                 : string.Empty;
 

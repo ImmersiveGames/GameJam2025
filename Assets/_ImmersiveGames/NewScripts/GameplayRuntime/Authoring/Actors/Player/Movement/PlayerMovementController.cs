@@ -1,11 +1,13 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Movement
 {
     [DisallowMultipleComponent]
-    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint, IActorCommandSink
+    public sealed class PlayerMovementController : MonoBehaviour, IActorMovementEndpoint, IActorCommandSink, IActorResetEndpoint, IActorResetContributionProvider
     {
         [Header("Movement")]
         [SerializeField] private float moveSpeed = 5f;
@@ -17,6 +19,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         private Rigidbody _rigidbody;
         private bool _movementEnabled;
         private Vector2 _moveInput;
+
+        private static readonly ActorResetGroup[] MovementTransientResetGroups =
+        {
+            ActorResetGroup.MovementTransient,
+        };
+
 
         public Transform Transform => transform;
         public bool IsMovementEnabled => _movementEnabled;
@@ -72,6 +80,41 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         {
             _moveInput = Vector2.zero;
             HaltHorizontalVelocity();
+        }
+
+        public bool TryCreateResetContribution(
+            ActorCapabilityContributionContext context,
+            out IActorResetContribution contribution)
+        {
+            if (!context.IsValid)
+            {
+                contribution = null;
+                return false;
+            }
+
+            contribution = new MovementTransientResetContribution(context);
+            return true;
+        }
+
+        public bool Supports(ActorResetGroup group)
+        {
+            return group == ActorResetGroup.MovementTransient;
+        }
+
+        public void ApplyReset(ActorResetContext context)
+        {
+            if (!context.IsValid)
+            {
+                throw new InvalidOperationException("PlayerMovementController received invalid reset context.");
+            }
+
+            if (context.Group != ActorResetGroup.MovementTransient)
+            {
+                throw new InvalidOperationException(
+                    $"PlayerMovementController received unsupported reset group='{context.Group}' for actorId='{context.Actor.ActorId}'.");
+            }
+
+            ClearMovementState();
         }
 
         public ActorCommandDispatchResult AcceptCommand(ActorCommandEnvelope command)
@@ -177,5 +220,27 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
             _rigidbody.angularVelocity = Vector3.zero;
         }
 
+        private readonly struct MovementTransientResetContribution : IActorResetContribution
+        {
+            public MovementTransientResetContribution(ActorCapabilityContributionContext context)
+            {
+                Descriptor = new ActorCapabilityContributionDescriptor(
+                    new ActorCapabilityId("actor.capability.movement"),
+                    ActorCapabilityContributionPhase.Reset,
+                    ActorCapabilityContributionRequirement.Optional,
+                    context.ActorId,
+                    context.ActorInstanceRuntimeId,
+                    context.ActorKind,
+                    context.ActorRole,
+                    context.ActorScope,
+                    context.ComponentPath,
+                    nameof(PlayerMovementController),
+                    "movement_transient_reset_contribution");
+            }
+
+            public ActorCapabilityContributionDescriptor Descriptor { get; }
+            public ActorResetGroup[] SupportedGroups => MovementTransientResetGroups;
+            public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
+        }
     }
 }

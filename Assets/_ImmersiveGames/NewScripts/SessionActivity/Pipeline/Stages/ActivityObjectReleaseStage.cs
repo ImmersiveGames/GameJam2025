@@ -469,14 +469,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                identity.IsValid &&
+                string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
@@ -484,14 +483,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   identity.IsValid &&
-                   string.Equals(report.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   report.ActivityOrdinal == identity.ActivityOrdinal &&
-                   report.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                identity.IsValid &&
+                string.Equals(report.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.SessionStateId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(report.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                report.ActivityOrdinal == identity.ActivityOrdinal &&
+                report.EntrySequence == entrySequence;
         }
 
         private static bool TryGetPolicyValue(IReadOnlyList<ActivityCapabilityPolicyEntry> metadata, string key, out string value)

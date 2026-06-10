@@ -31,7 +31,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         public OperationalPlayerParticipationResultKind Kind { get; }
         public PlayerParticipationResult PlayerParticipationResult { get; }
         public SessionParticipationContext SessionParticipationContext { get; }
-        public bool HasSessionParticipationContext => SessionParticipationContext != null && SessionParticipationContext.IsValid;
+        public bool HasSessionParticipationContext => SessionParticipationContext is { IsValid: true };
         public bool IsCompleted =>
             Kind == OperationalPlayerParticipationResultKind.Completed &&
             PlayerParticipationResult.IsValid &&

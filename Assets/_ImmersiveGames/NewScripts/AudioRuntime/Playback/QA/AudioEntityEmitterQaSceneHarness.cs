@@ -103,8 +103,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         [ContextMenu("QA/Audio/EntityEmitter/Log Harness State")]
         private void LogHarnessState()
         {
-            bool handleValid = _lastHandle != null && _lastHandle.IsValid;
-            bool handlePlaying = _lastHandle != null && _lastHandle.IsPlaying;
+            bool handleValid = _lastHandle is { IsValid: true };
+            bool handlePlaying = _lastHandle is { IsPlaying: true };
             Transform effectiveOwner = ResolveOwner(out string ownerSource);
 
             DebugUtility.Log(typeof(AudioEntityEmitterQaSceneHarness),
@@ -126,8 +126,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         private void LogHandle(string action, IAudioPlaybackHandle handle, string payload)
         {
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
-            bool valid = handle != null && handle.IsValid;
-            bool playing = handle != null && handle.IsPlaying;
+            bool valid = handle is { IsValid: true };
+            bool playing = handle is { IsPlaying: true };
             LogInfo(action, $"payload='{payload}' handleValid={valid} isPlaying={playing}");
         }
 
@@ -168,16 +168,16 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 yield return null;
             }
 
-            bool handleValidBeforeStop = _lastHandle != null && _lastHandle.IsValid;
-            bool handlePlayingBeforeStop = _lastHandle != null && _lastHandle.IsPlaying;
+            bool handleValidBeforeStop = _lastHandle is { IsValid: true };
+            bool handlePlayingBeforeStop = _lastHandle is { IsPlaying: true };
 
             LogInfo("AutoStopBeforeStop",
                 $"origin='{originAction}' delay={delay:0.###} useUnscaledTime={autoStopUseUnscaledTime} handleValid={handleValidBeforeStop} isPlaying={handlePlayingBeforeStop}");
 
             StopLastHandle();
 
-            bool handleValidAfterStop = _lastHandle != null && _lastHandle.IsValid;
-            bool handlePlayingAfterStop = _lastHandle != null && _lastHandle.IsPlaying;
+            bool handleValidAfterStop = _lastHandle is { IsValid: true };
+            bool handlePlayingAfterStop = _lastHandle is { IsPlaying: true };
 
             LogInfo("AutoStopAfterStop",
                 $"origin='{originAction}' delay={delay:0.###} useUnscaledTime={autoStopUseUnscaledTime} handleValid={handleValidAfterStop} isPlaying={handlePlayingAfterStop}");

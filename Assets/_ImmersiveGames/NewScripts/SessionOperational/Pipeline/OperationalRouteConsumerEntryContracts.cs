@@ -46,7 +46,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public string SessionStateId { get; }
         public SessionParticipationContext SessionParticipationContext { get; }
-        public bool HasSessionParticipationContext => SessionParticipationContext != null && SessionParticipationContext.IsValid;
+        public bool HasSessionParticipationContext => SessionParticipationContext is { IsValid: true };
         public IReadOnlyList<PlayerSetDefinitionAsset.PlayerActorResolvedEntry> ActorMaterializationSeedEntries { get; }
         public ActivityEntryObjectSnapshotRestorePayloadContext LoadedSnapshotPayloadContext { get; }
         public bool HasLoadedSnapshotPayloadContext => LoadedSnapshotPayloadContext.IsValid;

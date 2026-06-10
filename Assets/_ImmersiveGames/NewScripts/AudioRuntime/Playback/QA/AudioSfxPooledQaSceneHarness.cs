@@ -182,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var handle = _globalAudioService.Play(pooled2DCue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
-            bool valid = handle != null && handle.IsValid;
+            bool valid = handle is { IsValid: true };
             string inferredPath = InferPathFromHandle(handle);
             LogInfo("ProbePooledFallbackForced",
                 $"cue='{pooled2DCue.name}' effectiveProfile='context:{SafeName(forcedFallbackProfile)}' expectedPath='fallback_direct' inferredPath='{inferredPath}' handleValid={valid} (check runtime log path='fallback_direct')");
@@ -275,11 +275,11 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 _lastHandle = next ?? NullAudioPlaybackHandle.Instance;
 
                 LogInfo("ProbePooledRestartExisting",
-                    $"step='retrigger_play' index={i + 1} handleValid={(next != null && next.IsValid)} expected='restart_existing'");
+                    $"step='retrigger_play' index={i + 1} handleValid={next is { IsValid: true }} expected='restart_existing'");
             }
 
             LogInfo("ProbePooledRestartExisting",
-                $"complete cue='{pooled2DCue.name}' delay={delay:0.###} repeatCount={repeats} lastHandleValid={(_lastHandle != null && _lastHandle.IsValid)}");
+                $"complete cue='{pooled2DCue.name}' delay={delay:0.###} repeatCount={repeats} lastHandleValid={_lastHandle is { IsValid: true }}");
             _pooledRetriggerRoutine = null;
         }
 
@@ -315,7 +315,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 forcedProfile: forcedBudgetProfile);
             var firstHandle = _globalAudioService.Play(cue, firstContext);
             _lastHandle = firstHandle ?? NullAudioPlaybackHandle.Instance;
-            bool firstValid = firstHandle != null && firstHandle.IsValid;
+            bool firstValid = firstHandle is { IsValid: true };
 
             yield return null;
 
@@ -327,7 +327,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                     reason: "qa_pooled_budget_forced_second"),
                 forcedProfile: forcedBudgetProfile);
             var secondHandle = _globalAudioService.Play(cue, secondContext);
-            bool secondValid = secondHandle != null && secondHandle.IsValid;
+            bool secondValid = secondHandle is { IsValid: true };
             if (secondValid)
             {
                 _lastHandle = secondHandle;
@@ -347,7 +347,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                     forcedProfile: forcedBudgetProfile);
 
                 var handle = _globalAudioService.Play(cue, context);
-                if (handle != null && handle.IsValid)
+                if (handle is { IsValid: true })
                 {
                     additionalValid++;
                     _lastHandle = handle;
@@ -366,7 +366,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             LogInfo("ProbePooledBudgetForced",
                 $"complete cue='{cue.name}' firstHandleValid={firstValid} secondHandleValid={secondValid} expectedSecond='blocked_by_budget' additionalValid={additionalValid} additionalBlocked={additionalBlocked} (check runtime log policy='block_budget')");
 
-            if (firstHandle != null && firstHandle.IsValid)
+            if (firstHandle is { IsValid: true })
             {
                 firstHandle.Stop();
             }
@@ -414,7 +414,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                         context: AudioPlaybackContext.Global(reason: $"qa_pooled_sequence_{i + 1}"));
 
                 var handle = _globalAudioService.Play(sequenceProbeCue, context);
-                if (handle != null && handle.IsValid)
+                if (handle is { IsValid: true })
                 {
                     validCount++;
                     _lastHandle = handle;
@@ -425,7 +425,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                 }
 
                 bool completedBeforeTimeout = false;
-                if (handle != null && handle.IsValid)
+                if (handle is { IsValid: true })
                 {
                     double waitStartAt = Time.realtimeSinceStartupAsDouble;
                     double waitDeadlineAt = waitStartAt + waitTimeout;
@@ -488,8 +488,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var handle = _globalAudioService.Play(cue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
-            bool valid = handle != null && handle.IsValid;
-            bool playing = handle != null && handle.IsPlaying;
+            bool valid = handle is { IsValid: true };
+            bool playing = handle is { IsPlaying: true };
             var effectiveProfile = ResolveEffectiveProfile(cue, context.voiceProfile, out string profileSource);
             LogInfo(action,
                 $"cue='{cue.name}' handleValid={valid} isPlaying={playing} contextProfile='{SafeName(context.voiceProfile)}' effectiveProfile='{SafeName(effectiveProfile)}' effectiveProfileSource='{profileSource}' reason='{(string.IsNullOrWhiteSpace(context.reason) ? "unspecified" : context.reason)}'");

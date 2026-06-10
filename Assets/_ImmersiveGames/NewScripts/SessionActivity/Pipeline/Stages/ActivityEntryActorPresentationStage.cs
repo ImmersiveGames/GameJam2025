@@ -309,8 +309,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return false;
             }
 
-            return activeHandle.IsValid &&
-                activeHandle.ResolvedPlan.IsValid &&
+            return activeHandle is { IsValid: true, ResolvedPlan: { IsValid: true } } &&
                 activeHandle.PresentationInstance != null &&
                 activeHandle.ResolvedPlan.ReleasePolicy == resolvedPlan.ReleasePolicy &&
                 string.Equals(activeHandle.ResolvedPlan.ProfileId, resolvedPlan.ProfileId, StringComparison.Ordinal) &&

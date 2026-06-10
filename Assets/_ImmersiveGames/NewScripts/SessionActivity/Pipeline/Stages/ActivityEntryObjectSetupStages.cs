@@ -584,7 +584,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 $"'{command.Identity.ActivityId}' activity capability inventory preview started scannerId='{coordinator.ActivityObjectScannerId}'.");
 
             bool hasDiscoveryForCurrentEntry = IsDiscoveryResultForCurrentEntryForIdentity(discoveryResult, command.Identity, entrySequence, previewIdentity);
-            bool hasActorTargets = actorTargets != null && actorTargets.Count > 0;
+            bool hasActorTargets = actorTargets is { Count: > 0 };
             if (!hasDiscoveryForCurrentEntry && !hasActorTargets)
             {
                 inventoryState.ClearCurrentActivityCapabilityInventoryPreview();
@@ -1219,13 +1219,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return loadedSet.IsValid &&
-                   loadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
-                   string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   loadedSet.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   loadedSet.Identity.EntrySequence == entrySequence;
+            return loadedSet is { IsValid: true, Identity: { Stage: SessionActivityStage.ActivityContentLoadedSetReady } } &&
+                string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(loadedSet.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                loadedSet.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                loadedSet.Identity.EntrySequence == entrySequence;
         }
 
         public static bool IsDiscoveryResultForCurrentEntryForIdentity(
@@ -1234,13 +1233,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             SessionActivityIdentity currentIdentity)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(result.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         public static bool IsReportForCurrentEntryForIdentity(
@@ -1249,13 +1247,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int entrySequence,
             SessionActivityIdentity currentIdentity)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   string.Equals(report.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   report.Identity.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(report.Identity.PipelineId, currentIdentity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.SessionId, currentIdentity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                report.Identity.EntrySequence == entrySequence;
         }
 
         public static GameObject ResolveContributorObjectOrFailForActivityId(
@@ -1308,13 +1305,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         public static bool IsReportForCurrentEntry(
@@ -1322,13 +1318,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   report.Identity.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                report.Identity.EntrySequence == entrySequence;
         }
 
         public static bool HasRequiredResetContributor(
@@ -1355,9 +1350,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required &&
-                    report.SupportedResetGroups != null &&
-                    report.SupportedResetGroups.Count > 0)
+                if (report is { Requiredness: ActivitySetupRequirementRequiredness.Required, SupportedResetGroups: { Count: > 0 } })
                 {
                     return true;
                 }

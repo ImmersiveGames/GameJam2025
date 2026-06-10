@@ -401,7 +401,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     blackoutCommand,
                     blackoutFadeInCompleted);
 
-                if (!blackoutResult.IsCompleted && !blackoutResult.IsSkipped)
+                if (blackoutResult is { IsCompleted: false, IsSkipped: false })
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{blackoutResult.Kind}' reason='{blackoutResult.Reason}' detail='{blackoutResult.Detail}'.");
@@ -499,7 +499,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     handoffExitResult,
                     sourceText,
                     reasonText);
-                if (sessionResetResult.IsValid && sessionResetResult.IsFailed)
+                if (sessionResetResult is { IsValid: true, IsFailed: true })
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] Session reset after previous route exit failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' result='{sessionResetResult}'.");

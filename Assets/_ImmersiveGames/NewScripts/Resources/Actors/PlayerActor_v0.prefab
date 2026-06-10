@@ -244,10 +244,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d9fecc36b6bc01b4bab912bb9ed7b0e6, type: 3}
+  m_Script: {fileID: 11500000, guid: 72c284be093af774d97b7053f0be9e4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementController: {fileID: 8906509120750850877}
+  participationState: 1
+  currentActivityId: 
+  currentEntrySequence: 0
 --- !u!114 &4452905082100865595
 MonoBehaviour:
   m_ObjectHideFlags: 0

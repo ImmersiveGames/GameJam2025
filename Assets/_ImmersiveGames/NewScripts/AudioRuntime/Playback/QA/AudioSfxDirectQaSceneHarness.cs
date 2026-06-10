@@ -130,8 +130,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
         private void LogHarnessState()
         {
             bool serviceResolved = TryEnsureService();
-            bool lastValid = _lastHandle != null && _lastHandle.IsValid;
-            bool lastPlaying = _lastHandle != null && _lastHandle.IsPlaying;
+            bool lastValid = _lastHandle is { IsValid: true };
+            bool lastPlaying = _lastHandle is { IsPlaying: true };
 
             DebugUtility.Log(typeof(AudioSfxDirectQaSceneHarness),
                 $"[QA][Audio][SFX][Direct] action='LogHarnessState' serviceResolved={serviceResolved} direct2d='{SafeName(direct2DCue)}' direct3d='{SafeName(direct3DCue)}' lastHandleValid={lastValid} lastHandlePlaying={lastPlaying}.",
@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
                     direct2DCue,
                     AudioPlaybackContext.Global(reason: $"qa_direct_burst_{i + 1}"));
 
-                if (handle != null && handle.IsValid)
+                if (handle is { IsValid: true })
                 {
                     validCount++;
                     _lastHandle = handle;
@@ -178,8 +178,8 @@ namespace _ImmersiveGames.NewScripts.AudioRuntime.Playback.QA
             var handle = _globalAudioService.Play(cue, context);
             _lastHandle = handle ?? NullAudioPlaybackHandle.Instance;
 
-            bool valid = handle != null && handle.IsValid;
-            bool playing = handle != null && handle.IsPlaying;
+            bool valid = handle is { IsValid: true };
+            bool playing = handle is { IsPlaying: true };
             LogInfo(action,
                 $"cue='{cue.name}' handleValid={valid} isPlaying={playing} reason='{(string.IsNullOrWhiteSpace(context.reason) ? "unspecified" : context.reason)}'");
         }

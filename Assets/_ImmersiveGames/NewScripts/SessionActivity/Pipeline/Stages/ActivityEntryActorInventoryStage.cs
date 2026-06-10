@@ -223,10 +223,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<PlayerActorIdentityRecord> resolved = new();
             HashSet<SessionParticipantId> resolvedParticipantIds = new();
 
-            if (participationContext != null &&
-                participationContext.IsValid &&
-                participationContext.Participants != null &&
-                participationContext.Participants.Count > 0)
+            if (participationContext is { IsValid: true, Participants: { Count: > 0 } })
             {
                 AddPlayerActorCapabilityTargetsFromParticipationContext(
                     playerActorRegistry,
@@ -244,8 +241,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             if (playerActorRegistry != null &&
                 playerActorRegistry.TryGetIndexedActiveActorIdentities(out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
-                activeActors != null &&
-                activeActors.Count > 0 &&
+                activeActors is { Count: > 0 } &&
                 ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
                     playerActorRegistry.ActiveScopeIdentity,
                     identity,
@@ -399,12 +395,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return loadedSet.IsValid &&
-                   loadedSet.Identity.IsValid &&
-                   string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(loadedSet.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   loadedSet.Identity.EntrySequence == entrySequence;
+            return loadedSet is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(loadedSet.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(loadedSet.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(loadedSet.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                loadedSet.Identity.EntrySequence == entrySequence;
         }
     }
 }

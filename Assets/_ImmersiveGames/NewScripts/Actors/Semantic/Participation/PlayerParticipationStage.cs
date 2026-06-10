@@ -155,7 +155,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Semantic.Participation
                 {
                     readinessStatus = PlayerReadinessStatus.Ready;
                 }
-                else if (!materializationEntry.Required && materializationEntry.MaterializationStatus == PlayerMaterializationStatus.Skipped)
+                else if (materializationEntry is { Required: false, MaterializationStatus: PlayerMaterializationStatus.Skipped })
                 {
                     readinessStatus = PlayerReadinessStatus.OptionalSkipped;
                 }

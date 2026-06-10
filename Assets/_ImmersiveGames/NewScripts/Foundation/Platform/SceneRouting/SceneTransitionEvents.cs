@@ -20,8 +20,8 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.SceneRouting
         public string ResetDecisionReason { get; }
         public SceneTransitionPayload Payload { get; }
         public SceneTransitionGameplayEntryKind GameplayEntryKind => Payload?.GameplayEntryKind ?? SceneTransitionGameplayEntryKind.None;
-        public bool IsGameplayInitialEntry => Payload != null && Payload.IsGameplayInitialEntry;
-        public bool IsGameplayReentry => Payload != null && Payload.IsGameplayReentry;
+        public bool IsGameplayInitialEntry => Payload is { IsGameplayInitialEntry: true };
+        public bool IsGameplayReentry => Payload is { IsGameplayReentry: true };
         public string ContextSignature { get; }
 
         public SceneTransitionContext(

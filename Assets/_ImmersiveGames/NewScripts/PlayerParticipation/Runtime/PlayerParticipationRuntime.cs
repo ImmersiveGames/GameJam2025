@@ -48,8 +48,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
             IsAccepted &&
             !string.IsNullOrWhiteSpace(SessionId) &&
             Revision > 0 &&
-            Context != null &&
-            Context.IsValid;
+            Context is { IsValid: true };
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
@@ -101,8 +100,7 @@ namespace _ImmersiveGames.NewScripts.PlayerParticipation.Runtime
             if (_statesBySessionId.TryGetValue(normalizedSessionId, out PlayerParticipationRuntimeState existingState) &&
                 existingState != null)
             {
-                if (existingState.Context != null &&
-                    existingState.Context.IsValid &&
+                if (existingState.Context is { IsValid: true } &&
                     SatisfiesRequirement(existingState.Context, candidateContext.RequirementKind))
                 {
                     SessionParticipationContext reusedSnapshot = BuildRouteSnapshot(

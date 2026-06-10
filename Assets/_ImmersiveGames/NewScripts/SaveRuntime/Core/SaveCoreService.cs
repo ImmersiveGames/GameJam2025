@@ -325,7 +325,7 @@ namespace _ImmersiveGames.NewScripts.SaveRuntime.Core
 
         private bool TryResolveProfileIdForAddress(SaveAddress address, out string profileId, out string reason)
         {
-            if (address != null && address.Scope == SaveScope.Preferences && !string.IsNullOrWhiteSpace(address.OwnerId))
+            if (address is { Scope: SaveScope.Preferences } && !string.IsNullOrWhiteSpace(address.OwnerId))
             {
                 profileId = address.OwnerId.Trim();
                 reason = "profile_id_from_preferences_address";

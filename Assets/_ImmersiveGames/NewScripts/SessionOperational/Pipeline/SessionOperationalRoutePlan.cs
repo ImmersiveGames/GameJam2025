@@ -88,8 +88,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             (!UsesLoading || LoadingMode != SessionOperationalRouteLoadingMode.Profile || (LoadingProfile != null && LoadingProfile.TryValidate(out _))) &&
             ActiveSceneKey != null &&
             !string.IsNullOrWhiteSpace(ActiveSceneKey.SceneName) &&
-            FinalScenesToLoad != null &&
-            FinalScenesToLoad.Count > 0 &&
+            FinalScenesToLoad is { Count: > 0 } &&
             FinalScenesToUnload != null &&
             AutoScenesToUnload != null &&
             Audio.IsValid &&

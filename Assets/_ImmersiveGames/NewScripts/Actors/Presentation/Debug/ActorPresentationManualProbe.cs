@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
             ActorPresentationResult result = _adapter.Materialize(command);
 
-            if (result.Kind == ActorPresentationResultKind.Materialized && result.ReadyFact.IsValid)
+            if (result is { Kind: ActorPresentationResultKind.Materialized, ReadyFact: { IsValid: true } })
             {
                 _lastRuntimeHandle = result.ReadyFact.RuntimeHandle;
                 _hasRuntimeHandle = true;
@@ -212,7 +212,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Presentation.Debug
 
             ActorPresentationResult result = _adapter.Release(command);
 
-            if (result.Kind == ActorPresentationResultKind.Released && result.ReleasedFact.IsValid)
+            if (result is { Kind: ActorPresentationResultKind.Released, ReleasedFact: { IsValid: true } })
             {
                 UDebug.Log(
                     $"{LogPrefix} Released " +

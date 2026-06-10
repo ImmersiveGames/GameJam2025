@@ -527,13 +527,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return result.IsValid &&
-                   result.Identity.IsValid &&
-                   string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   result.Identity.EntrySequence == entrySequence;
+            return result is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
@@ -541,13 +540,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return report.IsValid &&
-                   report.Identity.IsValid &&
-                   string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                   report.Identity.EntrySequence == entrySequence;
+            return report is { IsValid: true, Identity: { IsValid: true } } &&
+                string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                report.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsObjectSnapshotCaptureResultForCurrentEntry(

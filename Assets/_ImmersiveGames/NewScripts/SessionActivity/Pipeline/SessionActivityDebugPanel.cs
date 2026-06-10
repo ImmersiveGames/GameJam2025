@@ -1221,7 +1221,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (string.Equals(aggregation.activityId, "activity_01", StringComparison.Ordinal))
             {
-                return aggregation.discoveryCompleted && aggregation.discoveredCount >= 1
+                return aggregation is { discoveryCompleted: true, discoveredCount: >= 1 }
                     ? "Passed"
                     : "Waiting";
             }
@@ -1233,7 +1233,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     : "Waiting";
             }
 
-            if (aggregation.discoveryCompleted && aggregation.discoveredCount >= 1)
+            if (aggregation is { discoveryCompleted: true, discoveredCount: >= 1 })
             {
                 return "Passed";
             }
@@ -1430,8 +1430,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 }
 
                 if (string.Equals(aggregation.completionKind, "NoCommands", StringComparison.Ordinal) &&
-                    aggregation.commandCount == 0 &&
-                    aggregation.failedCount == 0)
+                    aggregation is { commandCount: 0, failedCount: 0 })
                 {
                     return "PassedNoCommands";
                 }
@@ -1891,7 +1890,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private static string ResolveActivityObjectSnapshotRestoreCheckpointStatus(ActivityObjectSnapshotRestoreCheckpointAggregation aggregation)
         {
-            if (aggregation.restoredCount > 0 && !aggregation.restoreVerified)
+            if (aggregation is { restoredCount: > 0, restoreVerified: false })
             {
                 return "Failed";
             }

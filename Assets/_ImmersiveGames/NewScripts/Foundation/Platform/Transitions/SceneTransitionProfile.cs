@@ -89,7 +89,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.Transitions
 
         private static bool HasCurve(AnimationCurve curve)
         {
-            return curve != null && curve.keys != null && curve.keys.Length > 0;
+            return curve is { keys: { Length: > 0 } };
         }
     }
 }

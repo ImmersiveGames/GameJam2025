@@ -160,7 +160,7 @@ namespace _ImmersiveGames.Scripts.PlayerControllerSystem.Interactions
 
         private void OnInteractPerformed(InputAction.CallbackContext obj)
         {
-            if (_actor != null && !_actor.IsActive)
+            if (_actor is { IsActive: false })
             {
                 return;
             }

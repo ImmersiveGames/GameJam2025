@@ -157,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasSessionParticipationContext => SessionParticipationContext != null && SessionParticipationContext.IsValid;
+        public bool HasSessionParticipationContext => SessionParticipationContext is { IsValid: true };
         public int SessionParticipationRevision => SessionParticipationContext?.Revision ?? 0;
         public int SessionParticipationSlotReservationCount => SessionParticipationContext?.SlotReservationCount ?? 0;
         public int SessionParticipationSelectionCount => SessionParticipationContext?.SelectionCount ?? 0;

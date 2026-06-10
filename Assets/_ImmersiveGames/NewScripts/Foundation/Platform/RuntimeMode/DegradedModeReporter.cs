@@ -198,7 +198,7 @@ namespace _ImmersiveGames.NewScripts.Foundation.Platform.RuntimeMode
 
         private void LogWithSeverity(string msg, EffectiveRuntimePolicySettings settings)
         {
-            if (_runtimeModeProvider != null && _runtimeModeProvider.IsStrict && settings.StrictnessDegradedAsError)
+            if (_runtimeModeProvider is { IsStrict: true } && settings.StrictnessDegradedAsError)
             {
                 DebugUtility.LogError<DegradedModeReporter>(msg);
                 return;

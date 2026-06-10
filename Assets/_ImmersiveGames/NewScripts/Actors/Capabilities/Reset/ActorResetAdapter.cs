@@ -78,7 +78,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 
                     if (group == ActorResetGroup.Placement)
                     {
-                        if (target.PlacementRequired && !target.HasPlacement && string.IsNullOrWhiteSpace(target.PlacementId))
+                        if (target is { PlacementRequired: true, HasPlacement: false } && string.IsNullOrWhiteSpace(target.PlacementId))
                         {
                             throw new InvalidOperationException($"invalid_required_placement: actorId='{target.Actor.ActorId}'.");
                         }
@@ -90,14 +90,14 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                             continue;
                         }
 
-                        if (target.PlacementOptional && !target.HasPlacement)
+                        if (target is { PlacementOptional: true, HasPlacement: false })
                         {
                             skippedGroups.Add(group);
                             skippedReasons.Add(new ActorResetSkippedGroupReason(group, "optional_placement_missing"));
                             continue;
                         }
 
-                        if (target.HasPlacement && !target.PlacementRequired)
+                        if (target is { HasPlacement: true, PlacementRequired: false })
                         {
                             skippedGroups.Add(group);
                             skippedReasons.Add(new ActorResetSkippedGroupReason(group, "placement_not_required"));

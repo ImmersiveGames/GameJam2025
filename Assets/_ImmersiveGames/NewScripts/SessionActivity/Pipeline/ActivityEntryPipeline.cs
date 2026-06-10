@@ -1704,17 +1704,14 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             ActivityContentLoadPlanScene scene = _pendingContentLoadContext.Scenes[sceneOrdinal - 1];
-            if (!scene.IsValid)
+            if (scene is { IsValid: false, Requiredness: ActivityContentRequiredness.Required })
             {
-                if (scene.Requiredness == ActivityContentRequiredness.Required)
-                {
-                    SessionActivityIdentity failedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadFailed, source);
-                    _identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityContentLoadFailed);
-                    _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentLoadFailed, failedIdentity, source, reason, $"'{plan.ActivityId}' required activity content scene is invalid at ordinal='{sceneOrdinal}'.");
-                    _factBridge.EmitSnapshot(snapshots, "activity_content_load_failed_required_scene_invalid", source, reason, $"'{plan.ActivityId}' required activity content scene is invalid at ordinal='{sceneOrdinal}'.");
-                    _logBridge.LogEntryOwnerEvent("ActivityEntryContentLoadFailed", failedIdentity, source, reason, "reason='required_scene_invalid'");
-                    throw new InvalidOperationException($"Activity '{plan.ActivityId}' required content scene at ordinal='{sceneOrdinal}' is invalid.");
-                }
+                SessionActivityIdentity failedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadFailed, source);
+                _identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityContentLoadFailed);
+                _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentLoadFailed, failedIdentity, source, reason, $"'{plan.ActivityId}' required activity content scene is invalid at ordinal='{sceneOrdinal}'.");
+                _factBridge.EmitSnapshot(snapshots, "activity_content_load_failed_required_scene_invalid", source, reason, $"'{plan.ActivityId}' required activity content scene is invalid at ordinal='{sceneOrdinal}'.");
+                _logBridge.LogEntryOwnerEvent("ActivityEntryContentLoadFailed", failedIdentity, source, reason, "reason='required_scene_invalid'");
+                throw new InvalidOperationException($"Activity '{plan.ActivityId}' required content scene at ordinal='{sceneOrdinal}' is invalid.");
             }
 
             if (!scene.HasSceneReference)

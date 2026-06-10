@@ -154,8 +154,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     entrySequence);
                 IReadOnlyList<PlayerActorIdentityRecord> activeActors = Array.Empty<PlayerActorIdentityRecord>();
                 if (bridge.TryGetActivePlayerActorIdentities(command.Identity, out IReadOnlyList<PlayerActorIdentityRecord> resolvedActiveActors) &&
-                    resolvedActiveActors != null &&
-                    resolvedActiveActors.Count > 0)
+                    resolvedActiveActors is { Count: > 0 })
                 {
                     activeActors = resolvedActiveActors;
                 }
@@ -193,8 +192,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         continue;
                     }
 
-                    if (!activeActor.ParticipantBinding.RequiresPlayerActor &&
-                        !activeActor.ParticipantBinding.RequiresPlayerInput)
+                    if (activeActor.ParticipantBinding is { RequiresPlayerActor: false, RequiresPlayerInput: false })
                     {
                         DebugUtility.Log(
                             typeof(ActivityEntryParticipantBindingStage),
@@ -226,7 +224,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             continue;
                         }
 
-                        if (!retainedExitBinding.RequiresPlayerActor && !retainedExitBinding.RequiresPlayerInput)
+                        if (retainedExitBinding is { RequiresPlayerActor: false, RequiresPlayerInput: false })
                         {
                             DebugUtility.Log(
                                 typeof(ActivityEntryParticipantBindingStage),

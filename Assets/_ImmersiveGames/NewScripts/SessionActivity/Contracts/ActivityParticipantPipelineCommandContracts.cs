@@ -179,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Source { get; }
         public string Reason { get; }
 
-        public bool HasResetGroups => ResetGroups != null && ResetGroups.Count > 0;
+        public bool HasResetGroups => ResetGroups is { Count: > 0 };
 
         public bool IsValid
         {

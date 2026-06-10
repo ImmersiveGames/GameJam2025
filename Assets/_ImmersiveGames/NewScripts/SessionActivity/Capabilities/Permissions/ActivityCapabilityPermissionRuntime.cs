@@ -216,8 +216,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Permissions
 
         private static bool RequiresReceiverForFunctionalSuccess(ActivityCapabilityPermissionCommand command)
         {
-            return command.State == ActivityCapabilityPermissionState.Allowed &&
-                   command.PermissionId == ActivityCapabilityPermissionId.ActivityGameplayControl;
+            return command is { State: ActivityCapabilityPermissionState.Allowed, PermissionId: ActivityCapabilityPermissionId.ActivityGameplayControl };
         }
 
         private bool MatchesActiveIdentity(ActivityCapabilityPermissionReceiverIdentity identity)

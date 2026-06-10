@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
@@ -122,11 +123,72 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
                 throw new InvalidOperationException("actor_reset_actor_not_found: cannot resolve endpoints from null instance.");
             }
 
-            MonoBehaviour[] behaviours = instance.GetComponentsInChildren<MonoBehaviour>(includeInactive: true);
-            List<IActorResetEndpoint> endpoints = new();
-            for (int index = 0; index < behaviours.Length; index++)
+            Actor runtimeActor = instance.GetComponent<Actor>();
+            if (runtimeActor == null)
             {
-                if (behaviours[index] is IActorResetEndpoint endpoint)
+                throw new InvalidOperationException(
+                    $"actor_reset_actor_target_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' reason='runtime_actor_missing'.");
+            }
+
+            ActorCapabilitySurface surface = runtimeActor.CapabilitySurface;
+            if (surface == null)
+            {
+                throw new InvalidOperationException(
+                    $"actor_reset_capability_surface_missing: actorId='{actor.ActorId}' actorRoot='{instance.name}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+            }
+
+            surface.RefreshFromLocalActorRoot();
+            IReadOnlyList<IActorResetContributionProvider> providers = surface.ResetContributionProviders;
+            if (providers == null || providers.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"actor_reset_contribution_provider_missing: actorId='{actor.ActorId}' actorRoot='{instance.name}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+            }
+
+            List<IActorResetEndpoint> endpoints = new();
+            HashSet<IActorResetEndpoint> indexedEndpoints = new();
+            for (int index = 0; index < providers.Count; index++)
+            {
+                IActorResetContributionProvider provider = providers[index];
+                if (provider == null)
+                {
+                    continue;
+                }
+
+                ActorCapabilityContributionContext context = BuildContributionContext(
+                    activeIdentity,
+                    actor,
+                    runtimeActor,
+                    provider,
+                    source: nameof(PlayerActorResetEndpointResolver),
+                    reason: "resolve_reset_lifecycle_contributions");
+
+                if (!provider.TryCreateResetContribution(context, out IActorResetContribution contribution))
+                {
+                    continue;
+                }
+
+                if (contribution == null || !contribution.IsValid)
+                {
+                    throw new InvalidOperationException(
+                        $"actor_reset_contribution_invalid: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' provider='{provider.GetType().Name}'.");
+                }
+
+                ActorResetGroup[] supportedGroups = contribution.SupportedGroups;
+                if (supportedGroups == null || supportedGroups.Length == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"actor_reset_contribution_without_groups: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' provider='{provider.GetType().Name}'.");
+                }
+
+                if (provider is not IActorResetEndpoint endpoint)
+                {
+                    throw new InvalidOperationException(
+                        $"actor_reset_contribution_not_executable: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' provider='{provider.GetType().Name}' reason='provider_does_not_implement_IActorResetEndpoint'.");
+                }
+
+                ValidateEndpointSupportsContributionOrFail(endpoint, contribution, actor, provider);
+                if (indexedEndpoints.Add(endpoint))
                 {
                     endpoints.Add(endpoint);
                 }
@@ -135,10 +197,73 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             if (endpoints.Count == 0)
             {
                 throw new InvalidOperationException(
-                    $"actor_reset_endpoint_missing: actorId='{actor.ActorId}' actorRoot='{instance.name}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}'.");
+                    $"actor_reset_endpoint_missing: actorId='{actor.ActorId}' actorRoot='{instance.name}' activityId='{activeIdentity.ActivityId}' entrySequence='{activeIdentity.EntrySequence}' reason='no_reset_contribution_provider_produced_executable_endpoint'.");
             }
 
             return endpoints;
+        }
+
+        private static ActorCapabilityContributionContext BuildContributionContext(
+            SessionActivityIdentity activeIdentity,
+            ActorResetActorRef actor,
+            Actor runtimeActor,
+            IActorResetContributionProvider provider,
+            string source,
+            string reason)
+        {
+            string componentPath = provider is Component component
+                ? BuildTransformPath(component.transform)
+                : BuildTransformPath(runtimeActor != null ? runtimeActor.transform : null);
+
+            ActorRole actorRole = runtimeActor != null ? runtimeActor.ActorRoleMetadata : ActorRole.Unknown;
+            ActorScope actorScope = runtimeActor != null ? runtimeActor.ActorScopeMetadata : ActorScope.Unknown;
+            return new ActorCapabilityContributionContext(
+                activeIdentity,
+                actor.ActorId,
+                actor.ActorInstanceRuntimeId,
+                actor.ActorKind,
+                actorRole,
+                actorScope,
+                componentPath,
+                source,
+                reason);
+        }
+
+        private static void ValidateEndpointSupportsContributionOrFail(
+            IActorResetEndpoint endpoint,
+            IActorResetContribution contribution,
+            ActorResetActorRef actor,
+            IActorResetContributionProvider provider)
+        {
+            ActorResetGroup[] supportedGroups = contribution.SupportedGroups;
+            for (int index = 0; index < supportedGroups.Length; index++)
+            {
+                ActorResetGroup group = supportedGroups[index];
+                if (group == ActorResetGroup.Unknown)
+                {
+                    throw new InvalidOperationException(
+                        $"actor_reset_contribution_unknown_group: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' provider='{provider.GetType().Name}'.");
+                }
+
+                if (!endpoint.Supports(group))
+                {
+                    throw new InvalidOperationException(
+                        $"actor_reset_contribution_endpoint_mismatch: actorId='{actor.ActorId}' actorInstanceRuntimeId='{actor.ActorInstanceRuntimeId}' provider='{provider.GetType().Name}' group='{group}' reason='endpoint_does_not_support_declared_group'.");
+                }
+            }
+        }
+
+        private static string BuildTransformPath(Transform transform)
+        {
+            if (transform == null)
+            {
+                return string.Empty;
+            }
+
+            string parentPath = BuildTransformPath(transform.parent);
+            return string.IsNullOrWhiteSpace(parentPath)
+                ? transform.name
+                : $"{parentPath}/{transform.name}";
         }
 
         public ActorResetPlacementResolution ResolvePlacementFromMarker(Scene scopeScene, string placementId)

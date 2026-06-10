@@ -10,7 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         public SessionActivityPipeline.PendingActivityContentReleaseContext PendingReleaseContext => _pendingReleaseContext;
         public bool IsAwaitingContinuation => _isAwaitingContinuation;
 
-        public bool HasPendingReleaseContext => _pendingReleaseContext != null && _pendingReleaseContext.IsValid;
+        public bool HasPendingReleaseContext => _pendingReleaseContext is { IsValid: true };
 
         public void SetPendingReleaseContext(
             SessionActivityPipeline.PendingActivityContentReleaseContext context,

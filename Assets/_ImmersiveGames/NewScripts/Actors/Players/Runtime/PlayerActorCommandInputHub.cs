@@ -469,7 +469,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
             for (int index = 0; index < _actionSubscriptions.Count; index++)
             {
                 ActionSubscription subscription = _actionSubscriptions[index];
-                if (subscription.Action != null && subscription.StartedCallback != null)
+                if (subscription is { Action: not null, StartedCallback: not null })
                 {
                     subscription.Action.started -= subscription.StartedCallback;
                 }

@@ -153,7 +153,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                     $"observedCount='{observedCount}' eventSystem='{eventSystem.name}'"),
                 DebugUtility.Colors.Info);
 
-            if (modules != null && modules.Length > 1)
+            if (modules is { Length: > 1 })
             {
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,
                     $"InputSystemUIInputModule duplicado detectado. count='{modules.Length}'.");
@@ -179,7 +179,7 @@ namespace _ImmersiveGames.NewScripts.InputModes.Runtime
                 return;
             }
 
-            if (modules != null && modules.Length == 1)
+            if (modules is { Length: 1 })
             {
                 InputSystemUIInputModule observed = modules[0];
                 throw BuildFatal(routeIdentity, routeOperationId, transitionId, routeSequence, source, reason,

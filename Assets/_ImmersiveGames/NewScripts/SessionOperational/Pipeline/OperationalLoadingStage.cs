@@ -167,7 +167,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             OperationalTransitionBlackoutResult blackoutResult)
         {
             ValidateCommand(command);
-            if (!blackoutResult.IsCompleted && !blackoutResult.IsSkipped)
+            if (blackoutResult is { IsCompleted: false, IsSkipped: false })
             {
                 return new OperationalLoadingResult(
                     OperationalLoadingResultKind.Failed,

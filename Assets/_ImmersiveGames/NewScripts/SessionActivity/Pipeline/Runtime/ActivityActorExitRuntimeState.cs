@@ -342,10 +342,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
 
             int participantCount = 0;
             int storedPlayerExitBindingCount = 0;
-            bool hasExplicitParticipants = context != null &&
-                                           context.IsValid &&
-                                           context.Participants != null &&
-                                           context.Participants.Count > 0;
+            bool hasExplicitParticipants = context is { IsValid: true, Participants: { Count: > 0 } };
 
             if (hasExplicitParticipants)
             {
@@ -364,7 +361,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                     storedPlayerExitBindingCount++;
                 }
             }
-            else if (context != null && context.IsValid && context.Participants != null)
+            else if (context is { IsValid: true, Participants: not null })
             {
                 participantCount = context.Participants.Count;
             }
@@ -419,9 +416,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 return true;
             }
 
-            if (_currentActivityParticipationContext != null &&
-                _currentActivityParticipationContext.IsValid &&
-                _currentActivityParticipationContext.Participants != null)
+            if (_currentActivityParticipationContext is { IsValid: true, Participants: not null })
             {
                 for (int index = 0; index < _currentActivityParticipationContext.Participants.Count; index++)
                 {

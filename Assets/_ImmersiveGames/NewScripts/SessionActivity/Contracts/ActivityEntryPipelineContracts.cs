@@ -34,8 +34,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -67,8 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             ActivityOrdinal >= 0 &&
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
@@ -354,8 +352,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
@@ -426,8 +423,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
@@ -496,8 +492,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             PresentationSetupContributions != null &&
             !string.IsNullOrWhiteSpace(Source);
 
@@ -566,8 +561,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             AttributeSetupContributions != null &&
             !string.IsNullOrWhiteSpace(Source);
 
@@ -640,8 +634,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             ActivityOrdinal > 0 &&
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
@@ -747,8 +740,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             Identity.ActivityId == ActivityId &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
@@ -841,8 +833,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             Identity.ActivityId == ActivityId &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
@@ -940,8 +931,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             Identity.ActivityId == ActivityId &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
@@ -1022,8 +1012,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             CameraBindingContributions != null &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             Identity.ActivityId == ActivityId &&
@@ -1211,8 +1200,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public string Reason { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivitySetupStarted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
             !string.IsNullOrWhiteSpace(ActivityId) &&
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
@@ -1299,8 +1287,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public IReadOnlyList<ActivityEntryParticipantBindingResolvedRecord> ResolvedParticipants { get; }
 
         public bool IsValid =>
-            Identity.IsValid &&
-            Identity.Stage == SessionActivityStage.ActivityParticipantBindingCompleted &&
+            Identity is { IsValid: true, Stage: SessionActivityStage.ActivityParticipantBindingCompleted } &&
             RequiredRequirements >= 0 &&
             ResolvedRequirements >= 0 &&
             SkippedRequirements >= 0 &&

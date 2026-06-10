@@ -1,4 +1,6 @@
 using System;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
+using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
@@ -6,8 +8,13 @@ using UnityEngine;
 namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
 {
     [DisallowMultipleComponent]
-    public sealed class PlayerActor : Actor
+    public sealed class PlayerActor : Actor, IActorResetEndpoint, IActorResetContributionProvider
     {
+        private static readonly ActorResetGroup[] PlacementResetGroups =
+        {
+            ActorResetGroup.Placement,
+        };
+
         private ActorId _runtimeActorId;
         private ActorScope _runtimeActorScope;
         private ActorParticipationRecord.ActorParticipationPolicy _runtimeParticipationPolicy;
@@ -68,6 +75,75 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
             {
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
+        }
+
+        public bool TryCreateResetContribution(
+            ActorCapabilityContributionContext context,
+            out IActorResetContribution contribution)
+        {
+            if (!context.IsValid)
+            {
+                contribution = null;
+                return false;
+            }
+
+            contribution = new PlayerActorPlacementResetContribution(context);
+            return true;
+        }
+
+        public bool Supports(ActorResetGroup group)
+        {
+            return group == ActorResetGroup.Placement;
+        }
+
+        public void ApplyReset(ActorResetContext context)
+        {
+            if (!context.IsValid)
+            {
+                throw new InvalidOperationException("PlayerActor received invalid reset context.");
+            }
+
+            if (context.Group != ActorResetGroup.Placement)
+            {
+                throw new InvalidOperationException(
+                    $"PlayerActor received unsupported reset group='{context.Group}' for actorId='{context.Actor.ActorId}'.");
+            }
+
+            if (context is { PlacementRequired: true, HasPlacement: false })
+            {
+                throw new InvalidOperationException($"Placement reset is required but missing for actorId='{context.Actor.ActorId}'.");
+            }
+
+            if (!context.HasPlacement)
+            {
+                return;
+            }
+
+            transform.localPosition = context.PlacementPosition;
+            transform.localRotation = Quaternion.Euler(context.PlacementEulerAngles);
+        }
+
+        private readonly struct PlayerActorPlacementResetContribution : IActorResetContribution
+        {
+            public PlayerActorPlacementResetContribution(ActorCapabilityContributionContext context)
+            {
+                Descriptor = new ActorCapabilityContributionDescriptor(
+                    new ActorCapabilityId("actor.capability.player.placement"),
+                    ActorCapabilityContributionPhase.Reset,
+                    ActorCapabilityContributionRequirement.Optional,
+                    context.ActorId,
+                    context.ActorInstanceRuntimeId,
+                    context.ActorKind,
+                    context.ActorRole,
+                    context.ActorScope,
+                    context.ComponentPath,
+                    nameof(PlayerActor),
+                    "player_actor_placement_reset_contribution");
+            }
+
+            public ActorCapabilityContributionDescriptor Descriptor { get; }
+            public ActorResetGroup[] SupportedGroups => PlacementResetGroups;
+            public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
         }
     }
 }

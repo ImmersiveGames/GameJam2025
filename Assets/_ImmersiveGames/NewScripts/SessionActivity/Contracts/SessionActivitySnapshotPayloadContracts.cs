@@ -89,8 +89,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             !string.IsNullOrWhiteSpace(ActivityId) &&
             ActivityOrdinal > 0 &&
             EntrySequence > 0 &&
-            Objects != null &&
-            Objects.Count > 0;
+            Objects is { Count: > 0 };
 
         private static string Normalize(string value)
         {

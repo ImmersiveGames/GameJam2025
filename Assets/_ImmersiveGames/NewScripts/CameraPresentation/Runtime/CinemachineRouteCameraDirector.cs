@@ -202,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             Camera[] unityCameras = rigInstance.GetComponentsInChildren<Camera>(
                 includeInactive: true);
 
-            if (unityCameras != null && unityCameras.Length > 0)
+            if (unityCameras is { Length: > 0 })
             {
                 reason = "route_presentation_rig_must_not_contain_unity_camera";
                 return false;
@@ -211,7 +211,7 @@ namespace _ImmersiveGames.NewScripts.CameraPresentation.Runtime
             CinemachineBrain[] brains = rigInstance.GetComponentsInChildren<CinemachineBrain>(
                 includeInactive: true);
 
-            if (brains != null && brains.Length > 0)
+            if (brains is { Length: > 0 })
             {
                 reason = "route_presentation_rig_must_not_contain_cinemachine_brain";
                 return false;

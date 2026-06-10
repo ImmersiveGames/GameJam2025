@@ -81,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
         public Vector3 PlacementPosition { get; }
         public Vector3 PlacementEulerAngles { get; }
 
-        public bool IsValid => Actor.IsValid && Groups != null && Groups.Count > 0;
+        public bool IsValid => Actor.IsValid && Groups is { Count: > 0 };
 
         private static string Normalize(string value) => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }

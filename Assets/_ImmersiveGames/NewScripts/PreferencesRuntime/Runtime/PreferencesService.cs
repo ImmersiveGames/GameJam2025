@@ -227,7 +227,7 @@ namespace _ImmersiveGames.NewScripts.PreferencesRuntime.Runtime
             }
 
             var current = new Vector2Int(Screen.currentResolution.width, Screen.currentResolution.height);
-            if (current.x > 0 && current.y > 0)
+            if (current is { x: > 0, y: > 0 })
             {
                 return current;
             }
