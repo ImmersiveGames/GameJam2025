@@ -178,6 +178,22 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup
             return true;
         }
 
+        public bool TryGetIndexedActiveHandleByParticipant(SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
+        {
+            return TryGetActiveHandleByParticipant(participantId, out handle);
+        }
+
+        public bool HasActiveHandleByParticipant(SessionParticipantId participantId)
+        {
+            if (!participantId.IsValid)
+            {
+                throw new InvalidOperationException("participantId is required.");
+            }
+
+            return _activeHandlesByParticipantId.TryGetValue(participantId, out PlayerActorRuntimeHandle activeHandle) &&
+                   activeHandle.IsValid;
+        }
+
         public bool TryGetRouteScopedHandleByParticipant(SessionParticipantId participantId, out PlayerActorRuntimeHandle handle)
         {
             handle = default;

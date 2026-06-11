@@ -1081,28 +1081,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string message);
     }
 
-    public interface IActivityEntryContentLoadedSetRuntimeBridge
-    {
-        void SetCurrentActivityContentLoadedSet(ActivityContentLoadedSet loadedSet);
-        void ClearCurrentActivityContentLoadedSet();
-    }
-
     public interface IActivityEntryContentPendingOperationRuntimeBridge
     {
-        SessionActivityPendingOperation BuildActivityContentPendingOperation(
-            ActivityContentLoadPlan plan,
-            int entrySequence,
-            ActivityContentSceneLoadCommand command);
         void SetPendingOperation(SessionActivityPendingOperation operation);
-        void RunActivityContentOperation(
-            SessionActivityPendingOperation operation,
-            ActivityContentSceneLoadCommand command);
-    }
-
-    public interface IActivityEntryContentRuntimeBridge :
-        IActivityEntryContentLoadedSetRuntimeBridge,
-        IActivityEntryContentPendingOperationRuntimeBridge
-    {
     }
 
     public interface IActivityEntryLogRuntimeBridge
@@ -1149,18 +1130,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityEntryRuntimeBridge :
         IActivityEntryIdentityRuntimeBridge,
         IActivityEntryFactRuntimeBridge,
-        IActivityEntryContentRuntimeBridge,
+        IActivityEntryContentPendingOperationRuntimeBridge,
         IActivityEntryLogRuntimeBridge,
         IActivityEntryPreparationRuntimeBridge
     {
-    }
-
-    // Bridge transitoria SA-3B0: expõe apenas state técnico canônico e actor scan targets
-    // enquanto o subfluxo é transferido do SessionActivityPipeline para o ActivityEntryPipeline.
-    public interface IActivityEntryObjectSetupRuntimeBridge :
-        IActivityEntryRuntimeBridge
-    {
-        ActivityContentLoadedSet GetCurrentActivityContentLoadedSet();
     }
 
     public interface IActivityEntryActorInventoryRuntimeBridge
@@ -1342,7 +1315,6 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
     public interface IActivityEntryPipeline
     {
         PlayerActivityParticipationContext GetCurrentActivityParticipationContext();
-        void StoreActivityParticipationContext(PlayerActivityParticipationContext context);
         ActivityObjectContributorDiscoveryResult GetCurrentActivityObjectContributorDiscoveryResult();
         void SetCurrentActivityObjectContributorDiscoveryResult(ActivityObjectContributorDiscoveryResult result);
         void ClearCurrentActivityObjectContributorDiscoveryResult();

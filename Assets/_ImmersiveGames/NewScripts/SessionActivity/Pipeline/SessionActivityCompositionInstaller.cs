@@ -52,6 +52,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             UnitySessionActivityWindowSceneAdapter windowSceneAdapter = new();
             UnityActivityContentSceneAdapter activityContentSceneAdapter = new();
             UnityActivityContentSceneReleaseAdapter activityContentSceneReleaseAdapter = new();
+            UnitySessionActivityPendingOperationRunner pendingOperationRunner = new(
+                windowSceneAdapter,
+                activityContentSceneAdapter,
+                activityContentSceneReleaseAdapter);
 
             _host = host;
             _catalog = catalog;
@@ -63,12 +67,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 new SessionActivityTransitionAdapter(),
                 new SessionActivityTransitionLoadingAdapter(),
                 windowSceneAdapter,
-                new UnitySessionActivityPendingOperationRunner(
-                    windowSceneAdapter,
-                    activityContentSceneAdapter,
-                    activityContentSceneReleaseAdapter));
+                pendingOperationRunner);
 
             ActivityEntryPipeline activityEntryPipeline = new ActivityEntryPipeline(
+                _pipeline,
                 _pipeline,
                 _pipeline,
                 _pipeline,
@@ -78,8 +80,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 _pipeline.EntryActorSceneRegistry,
                 _pipeline.EntryActorPlayerRegistry,
                 _pipeline.EntrySessionActorRuntimeStore,
+                _pipeline.ActivityContentRuntimeState,
                 _pipeline.EntryMovementBindingAdapter,
                 activityCameraPreparationExecutor,
+                pendingOperationRunner,
+                _pipeline,
                 canonicalPlayerInputActionsAsset,
                 _pipeline.ActivityActorExitRuntimeState);
             _pipeline.BindEntryPipeline(activityEntryPipeline);

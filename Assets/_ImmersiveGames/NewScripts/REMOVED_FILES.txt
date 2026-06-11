@@ -1,0 +1,10 @@
+Docs/Architecture/Plan-2.0-SessionActivity-Refactor.md
+Motivo: espelho documental redundante do plano de SessionActivity; o status atual foi consolidado em Docs/Reports/SessionActivity-2.0-Current-Status.md.
+Docs/Reports/ACTIVITY-OBJECT-CAPACITY-1A-FIX1-Compile-Fix.md
+Motivo: fix transitório já absorvido pela consolidação de status e pelo ADR canônico.
+Docs/Reports/ACTIVITY-OBJECT-CAPACITY-1A-FIX2-Restore-Runtime-References.md
+Motivo: fix transitório já absorvido pela consolidação de status e pelo ADR canônico.
+Docs/Reports/ACTIVITY-OBJECT-CAPACITY-1A-Object-Lifecycle-Contribution-Provider.md
+Motivo: report transitório de capacity já consolidado em documentação canônica.
+Docs/Reports/ACTOR-CAPACITY-3A-Passive-Actor-Snapshot-Restore-Release-Contracts.md
+Motivo: contrato passivo transitório já consolidado em ADR/status canônico.

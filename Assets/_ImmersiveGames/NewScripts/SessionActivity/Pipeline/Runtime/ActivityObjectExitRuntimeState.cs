@@ -197,7 +197,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 }
                 else
                 {
-                    failureReason = "snapshot_payload_expected_but_missing";
+                    failureReason = "exit_correlation_snapshot_payload_expected_but_missing";
                 }
 
                 LogStateChanged(

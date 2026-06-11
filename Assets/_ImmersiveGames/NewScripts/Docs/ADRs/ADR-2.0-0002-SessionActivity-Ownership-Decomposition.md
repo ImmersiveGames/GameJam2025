@@ -1,4 +1,4 @@
-﻿# ADR-2.0-0002 â€” SessionActivity Ownership Decomposition e ActivityEntryPipeline
+# ADR-2.0-0002 â€” SessionActivity Ownership Decomposition e ActivityEntryPipeline
 
 ## Status
 
@@ -5821,10 +5821,13 @@ SA-14C - CLOSED / AUDITED
 RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 Movement retained/control surface defer high risk
 ActivityContent release/continuation surface defer high risk
-ActivityObject exit correlation observability hygiene: optional future cleanup only; ActivityEntryPipeline already produces ActivityObjectExitCorrelationBundle and SessionActivityPipeline only commits it to ActivityObjectExitRuntimeState.
-IActivityEntryContentPendingOperationRuntimeBridge / RunActivityContentOperation(..., this) remain the main future bridge candidate for content ownership reduction.
+ActivityObject exit correlation observability hygiene: closed as SA-17D; technical ownership stays in ActivityObjectExitRuntimeState and SessionActivityPipeline remains only the macro ordering/freeze boundary.
+`SA-17A` closed the `RunActivityContentOperation(...)` dispatch split.
+`SA-17B` removed the `LoadedSet` bridge and moved store/clear to the technical runtime state.
+`SA-17C` removed the `ActivityContent` aggregate bridge without introducing a substitute bridge name.
+`SA-17D` closed the `ActivityObject exit correlation observability hygiene` cut with `ActivityObjectExitRuntimeState` as technical owner and `SessionActivityPipeline` only as macro ordering/freeze owner.
+`SA-17D-FIX` restored `activity_02` no-content RouteActivitySave classification to `NoActivityContentContributors / no_activity_content_contributors`; `SnapshotPayloadExpectedButMissing` remains reserved for expected contributors that failed to produce payload.
 IActivityEntryParticipantBindingRuntimeBridge remains a possible future split candidate.
-IActivityEntryContentLoadedSetRuntimeBridge remains a future cleanup candidate.
 ActivityContentReleaseRuntimeState remains defer high risk.
 Movement retained/control remains defer high risk.
 ```
@@ -5848,13 +5851,15 @@ Resumo:
 - A decomposicao runtime atual de `SessionActivity` fica congelada como checkpoint temporario.
 - `SA-14B1` permanece como `CLOSED / PASS funcional + PASS arquitetural do corte`.
 - `SA-13D`, `SA-14C` e `SA-14D` permanecem fechados como auditorias.
-- Os residuos restantes ficam classificados como `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_LOW`, `FUTURE_CLEANUP_MEDIUM` e `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
+- Os residuos restantes ficam classificados como `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_MEDIUM` e `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
 
 ### Matriz final
 
 ```text
 CLOSED_PASS:
   SA-14B1 - ActivityObject exit correlation explicit entry result
+  SA-17D - ActivityObject exit correlation observability hygiene
+  SA-17D-FIX - restore activity_02 no-content RouteActivitySave classification
 
 CLOSED_AUDITED:
   SA-13D - Runtime surface audits
@@ -5869,13 +5874,7 @@ DEFER_HIGH_RISK:
 POLICY_GAP:
   RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 
-FUTURE_CLEANUP_LOW:
-  IActivityEntryContentLoadedSetRuntimeBridge cleanup
-  IActivityEntryContentRuntimeBridge aggregate cleanup
-  ActivityObject exit correlation observability hygiene
-
 FUTURE_CLEANUP_MEDIUM:
-  IActivityEntryContentPendingOperationRuntimeBridge split/reduction
   IActivityEntryParticipantBindingRuntimeBridge possible split
 DO_NOT_REOPEN_WITHOUT_REGRESSION:
   Movement
@@ -5907,14 +5906,14 @@ RouteActivitySave last useful payload e policy nova, nao bug local.
 Qualquer alteracao futura no pending-operation callback path exige smoke completo.
 ```
 
-## SA-14D - ActivityContent pending-operation bridge audit
+## SA-14D - ActivityContent pending-operation bridge audit (histórico)
 
-Status: CLOSED / AUDITED.
+Status: CLOSED / AUDITED (historical; superseded by SA-17A).
 
 Resumo:
 
-- `IActivityEntryContentPendingOperationRuntimeBridge` remains a technical residual and is deferred.
-- `RunActivityContentOperation(..., this)` is a technical callback, not a wrong owner.
+- Historicamente, `IActivityEntryContentPendingOperationRuntimeBridge` cobria apenas build/set state registration antes de `SA-17A`.
+- `RunActivityContentOperation(...)` is owned by `ISessionActivityPendingOperationRunner`, with `SessionActivityPipeline` as callback boundary.
 - `SessionActivityPipeline` remains the callback boundary through `ISessionActivityPendingOperationCallback`.
 - No fallback silencioso, no new lookup tardio, and no duplicate owner were found in the audited path.
 - No immediate runtime patch is recommended.
@@ -5923,9 +5922,7 @@ Resumo:
 ### Backlog futuro
 
 ```text
-IActivityEntryContentPendingOperationRuntimeBridge split/reduction
-IActivityEntryContentLoadedSetRuntimeBridge cleanup
-IActivityEntryContentRuntimeBridge aggregate cleanup
+IActivityEntryParticipantBindingRuntimeBridge possible split
 ```
 
 ## SA-14C - residual bridge / carrier matrix
@@ -5937,9 +5934,14 @@ Resumo:
 - No new wrong owner, duplicate owner, fallback silencioso, or new lookup tardio were found inside SessionActivity.
 - No bridge documented as removed was still active in the code path audited.
 - No immediate runtime patch is recommended.
-- Main future bridge candidate remains `IActivityEntryContentPendingOperationRuntimeBridge` and `RunActivityContentOperation(..., this)`.
+- `SA-17A` closed the pending-operation bridge dispatch split.
+- `SA-17B` removed the `LoadedSet` bridge and moved store/clear to `ActivityContentRuntimeState`.
+- `SA-17C` removed the aggregate `ActivityContent` bridge without introducing a substitute bridge name.
+- `SA-17D` closed the `ActivityObject exit correlation observability hygiene` cut; `ActivityObjectExitRuntimeState` remains the technical owner and `SessionActivityPipeline` remains only the macro ordering/freeze owner.
+- `SA-17D-FIX` restored the `activity_02` no-content RouteActivitySave classification to `NoActivityContentContributors / no_activity_content_contributors`.
+- `SA-18A7-FIX7-DOC` recorded the validated closure note for retained PlayerActor rebind plus permission scanner guard closure; runtime ownership remains unchanged and is inherited from the `SA-18A7-FIX7` smoke baseline.
+- `SA-18A8-A9-DOC` recorded the participant-binding bridge residual cleanup closure: placement marker lookup left the participant binding bridge in SA-18A8, and participation context store left the bridge in SA-18A9-H1 with separate runtime-state owners.
 - `IActivityEntryParticipantBindingRuntimeBridge` remains a possible future split candidate.
-- `IActivityEntryContentLoadedSetRuntimeBridge` remains a future cleanup candidate.
 - `Movement retained/control` and `ActivityContentReleaseRuntimeState` remain high risk.
 
 ## Historico / checkpoints anteriores

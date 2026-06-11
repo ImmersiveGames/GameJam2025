@@ -756,6 +756,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return RouteActivitySaveSnapshotFailureKind.SnapshotPayloadExpectedButMissing;
             }
 
+            if (string.Equals(normalized, "exit_correlation_snapshot_payload_expected_but_missing", StringComparison.Ordinal))
+            {
+                return RouteActivitySaveSnapshotFailureKind.SnapshotPayloadExpectedButMissing;
+            }
+
             if (string.Equals(normalized, "snapshot_payload_missing", StringComparison.Ordinal))
             {
                 return RouteActivitySaveSnapshotFailureKind.SnapshotPayloadExpectedButMissing;

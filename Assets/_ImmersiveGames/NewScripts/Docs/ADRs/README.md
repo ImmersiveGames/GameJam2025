@@ -20,10 +20,13 @@ Base 1.2 não substitui a Base 1.1; ela adapta atores ao shape da Base 1.1.
 ## Checkpoints Base 2.0
 
 - `SessionOperational` permanece com checkpoint funcional/arquitetural parcial aceito na frente de ownership stabilization.
-- `SessionActivity` fica congelado temporariamente em `SA-14E - SessionActivity decomposition closure matrix`.
+- O resumo canônico atual de `SessionActivity` fica em `Docs/Reports/SessionActivity-2.0-Current-Status.md`.
 - `SA-14B1` segue como o último corte runtime validado de `SessionActivity`.
-- `SA-13D`, `SA-14C`, `SA-14D` e `SA-14E` ficaram fechados como auditorias/matriz de débitos.
-- Movement, ActivityContent, RouteActivitySave e pending-operation callback path não devem ser reabertos sem regressão concreta.
+- `SA-13D`, `SA-14C` e `SA-14D` seguem fechados como auditorias.
+- `SA-14E` permanece como matriz histórica consolidada no ADR; o estado corrente não deve ser lido a partir de múltiplos resumos paralelos.
+- `SA-17A`, `SA-17B` e `SA-17C` já estão fechados no status canônico; o antigo pending-operation bridge, o LoadedSet bridge e o aggregate `ActivityContent` bridge ficam como histórico e não devem ser recontados como dívida viva.
+- `SA-18A8-A9-DOC` registra o fechamento documental do residual do participant binding bridge: placement marker lookup saiu do bridge em SA-18A8 e participation context store saiu do bridge em SA-18A9-H1.
+- Movement, ActivityContent e RouteActivitySave continuam em watchlist arquitetural, mas sem reabrir os bridges já fechados sem regressão concreta.
 - A próxima frente runtime deve ser escolhida fora de `SessionActivity`, salvo regressão.
 - `ADR-2.0-0002` congelou a fronteira `ENTRY-BOUNDARY-DOC-0` de `SessionActivity`: `ResetEndpoint`, `SnapshotProvider`, `SnapshotRestoreEndpoint` e `ReleaseEndpoint` permanecem válidos no scanner; `ObjectEmitter` é local ao Actor; `PermissionTarget` fica limitado a referência mínima; `PresentationEndpoint`, `AttributeEndpoint` e `CameraTarget` pertencem a `ActorCapabilitySurface` e aos seus planos de setup/binding, não ao inventory transversal.
 - `ADR-2.0-0002` também registra `ENTRY-BOUNDARY Closure â€” PASS funcional + PASS arquitetural parcial`: `ActivityGateBindingStage` é owner explícito do gate binding; Presentation/Attribute usam `SetupContributions`; Camera usa `BindingContributions`; `ObjectEmission` participa de `ActivityGameplayControl` por provider/contribution e não volta ao inventory; o próximo bloco pode iniciar runtime/pooling/audio sem reabrir inventory como behavior catalog.

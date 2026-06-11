@@ -90,16 +90,21 @@ Isso é o contrato v0 aceito do sandbox. Não implementar `WindowTemplateLibrary
 - Status: CLOSED / AUDITED.
 - Residual bridge/carrier matrix audited after SA-14B1; no new wrong owner, duplicate owner, fallback silencioso, or new lookup tardio found inside SessionActivity.
 - No immediate runtime patch is recommended.
-- Main future bridge candidate remains `IActivityEntryContentPendingOperationRuntimeBridge` and `RunActivityContentOperation(..., this)`.
+- `SA-17A` closed the pending-operation bridge dispatch split; `RunActivityContentOperation(...)` now lives in the runner boundary, not in the entry bridge.
+- `SA-17B` closed the `LoadedSet` bridge cleanup; the runtime state now owns direct store/clear.
+- `SA-17C` closed the aggregate `ActivityContent` bridge cleanup; no substitute bridge was introduced.
+- `SA-17D` closed the activity-object exit correlation observability hygiene cut; `ActivityObjectExitRuntimeState` is the technical owner and `SessionActivityPipeline` stays only the macro ordering/freeze owner.
+- `SA-17D-FIX` preserved `NoActivityContentContributors / no_activity_content_contributors` for `activity_02`, and `SnapshotPayloadExpectedButMissing` remained reserved for the expected-contributor-failed case.
+- `SA-18A7-FIX7-DOC` recorded the validated closure note for retained PlayerActor rebind plus permission scanner guard closure, without changing runtime ownership or the no-content route save path.
+- `SA-18A8-A9-DOC` recorded the participant-binding bridge residual cleanup closure; placement marker lookup and participation context store now have separate runtime owners outside the bridge.
 - `IActivityEntryParticipantBindingRuntimeBridge` remains a possible future split candidate.
-- `IActivityEntryContentLoadedSetRuntimeBridge` remains a future cleanup candidate.
 - `Movement retained/control` and `ActivityContentReleaseRuntimeState` remain high risk.
 
-## SA-14D - ActivityContent pending-operation bridge audit
+## SA-14D - ActivityContent pending-operation bridge audit (histórico)
 
-- Status: CLOSED / AUDITED.
-- `IActivityEntryContentPendingOperationRuntimeBridge` remains a technical residual and is deferred.
-- `RunActivityContentOperation(..., this)` is a technical callback, not a wrong owner.
+- Status: CLOSED / AUDITED (historical; superseded by SA-17A).
+- Historicamente, `IActivityEntryContentPendingOperationRuntimeBridge` cobria apenas build/set state registration antes de `SA-17A`.
+- `RunActivityContentOperation(...)` is owned by `ISessionActivityPendingOperationRunner` with `SessionActivityPipeline` as callback boundary.
 - `SessionActivityPipeline` remains the callback boundary through `ISessionActivityPendingOperationCallback`.
 - No fallback silencioso, no new lookup tardio, and no duplicate owner were found in the audited path.
 - No immediate runtime patch is recommended.
@@ -108,65 +113,17 @@ Isso é o contrato v0 aceito do sandbox. Não implementar `WindowTemplateLibrary
 ### Backlog futuro
 
 ```text
-IActivityEntryContentPendingOperationRuntimeBridge split/reduction
-IActivityEntryContentLoadedSetRuntimeBridge cleanup
-IActivityEntryContentRuntimeBridge aggregate cleanup
+RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
 ```
 
-## SA-14A - status normalization
+## Status canônico
 
-- Current normalized source of truth: `SA-14E - SessionActivity decomposition closure matrix CLOSED / AUDITED`.
-- Keep the earlier roadmap/history for traceability only.
-- Keep current future debts limited to: PlayerInput explicit injection, RouteActivitySave policy gap, Movement high risk, ActivityContent high risk, and optional ActivityObject exit correlation observability hygiene only.
-- Do not reopen Movement, ActivityContent, or RouteActivitySave without regression evidence.
-- Do not add fallback for old payloads or create `ActivityExitPipeline` / `ActivityContentReleasePipeline` just for symmetry.
+O resumo atual de `SessionActivity` fica em:
 
-## SA-14E - SessionActivity decomposition closure matrix
+- `Docs/Reports/SessionActivity-2.0-Current-Status.md`
 
-- Status: CLOSED / AUDITED.
-- The current runtime decomposition is frozen as a temporary checkpoint.
-- `SA-14B1` remains `CLOSED / PASS funcional + PASS arquitetural do corte`.
-- `SA-13D`, `SA-14C` and `SA-14D` remain closed as audits.
-- Remaining debts are classified as `DEFER_HIGH_RISK`, `POLICY_GAP`, `FUTURE_CLEANUP_LOW`, `FUTURE_CLEANUP_MEDIUM` and `DO_NOT_REOPEN_WITHOUT_REGRESSION`.
-
-### Final matrix
-
-```text
-CLOSED_PASS:
-  SA-14B1 - ActivityObject exit correlation explicit entry result
-
-CLOSED_AUDITED:
-  SA-13D - Runtime surface audits
-  SA-14C - residual bridge / carrier matrix
-  SA-14D - ActivityContent pending-operation bridge audit
-
-DEFER_HIGH_RISK:
-  Movement retained/control surface
-  ActivityContent release/continuation surface
-  ActivityContentReleaseRuntimeState
-
-POLICY_GAP:
-  RouteActivitySave policy gap: current completed activity vs last useful snapshot payload
-
-FUTURE_CLEANUP_LOW:
-  IActivityEntryContentLoadedSetRuntimeBridge cleanup
-  IActivityEntryContentRuntimeBridge aggregate cleanup
-  ActivityObject exit correlation observability hygiene
-
-FUTURE_CLEANUP_MEDIUM:
-  IActivityEntryContentPendingOperationRuntimeBridge split/reduction
-  IActivityEntryParticipantBindingRuntimeBridge possible split
-  PlayerInput canonical actions explicit injection
-  ActivityCameraAnchorHost explicit scene-scope composition: CLOSED / PASS funcional + PASS arquitetural do corte
-
-DO_NOT_REOPEN_WITHOUT_REGRESSION:
-  Movement
-  ActivityContent
-  RouteActivitySave
-  SA-14B1 exit correlation production
-  ActivityContent release/continuation
-  ActivityContent pending-operation callback path
-```
+Este README mantém apenas a documentação operacional do pipeline.
+O histórico de corte continua no ADR e nos relatórios específicos.
 
 ### Smoke baseline
 

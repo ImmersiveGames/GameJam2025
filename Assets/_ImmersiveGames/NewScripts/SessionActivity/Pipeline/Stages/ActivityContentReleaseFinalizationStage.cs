@@ -149,7 +149,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 facts,
                 snapshots);
 
-            endpoint.ClearCurrentActivityContentLoadedSet();
+            contentRuntimeState.ClearCurrentLoadedSet(
+                command.ActivityId,
+                entrySequence,
+                "ActivityContentReleaseFinalizationStage",
+                "activity_content_release_finalized");
             releaseRuntimeState.ClearPendingReleaseContext(command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
             releaseRuntimeState.SetAwaitingContinuation(false, command.ActivityId, entrySequence, "ActivityContentReleaseFinalizationStage", "activity_content_release_finalized");
             bool loadedSetPresentAfter = contentRuntimeState.HasCurrentLoadedSet;

@@ -331,7 +331,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
         }
 
 
-        public void StoreActivityParticipationContext(PlayerActivityParticipationContext context)
+        public void StoreActivityParticipationExitCorrelation(PlayerActivityParticipationContext context)
         {
             _currentActivityParticipationContext = context;
 
@@ -371,7 +371,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime
                 : "keep_existing_bindings_for_exit_lookup";
 
             Log(
-                "ActivityActorExitRuntimeStateActivityParticipationContextStored",
+                "ActivityActorExitRuntimeStateActivityParticipationExitCorrelationStored",
                 activityId,
                 entrySequence,
                 source,

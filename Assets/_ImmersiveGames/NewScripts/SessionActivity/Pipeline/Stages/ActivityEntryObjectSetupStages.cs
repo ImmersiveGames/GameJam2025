@@ -379,7 +379,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityEntryObjectSetupCommand command,
             ActivityContentLoadedSet loadedSet,
             ActivityObjectContributorDiscoveryResult discoveryResult,
-            IActivityEntryObjectSetupRuntimeBridge endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts)
         {
             if (!command.IsValid)
@@ -699,7 +699,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
-            IActivityEntryObjectSetupRuntimeBridge endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
         {
@@ -978,7 +978,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             ActivityObjectContributorDiscoveryResult discoveryResult,
             ActivityCapabilityInventory inventory,
             ActivityCapabilityInventoryValidationResult validation,
-            IActivityEntryObjectSetupRuntimeBridge endpoint,
+            IActivityEntryRuntimeBridge endpoint,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts)
         {
