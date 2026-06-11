@@ -133,8 +133,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             string loadedSnapshotPayloadState = loadedSnapshotPayloadContext.HasPayload ? "true" : "false";
-            int loadedSnapshotPayloadObjectCount = loadedSnapshotPayloadContext.HasPayload
-                ? loadedSnapshotPayloadContext.Payload.Objects.Count
+            int loadedSnapshotPayloadRecordCount = loadedSnapshotPayloadContext.HasPayload
+                ? loadedSnapshotPayloadContext.Payload.RecordCount
                 : 0;
             string loadedSnapshotPayloadSourceActivityId = loadedSnapshotPayloadContext.HasPayload
                 ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId)
@@ -148,7 +148,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Identity,
                 command.Source,
                 command.Reason,
-                $"owner='ActivityEntryPipeline' bridgeReduction='runtime_bridge_domain_split' stageBridgeSplit='content_object_actor_inventory' runtimeStateStoreSplit='content_preparation_store_sources' objectActorStoreSourceSplit='stage_owned_store_sources' contentPendingOperationSplit='loaded_set_store_pending_operation_dispatch' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadObjectCount='{loadedSnapshotPayloadObjectCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'");
+                $"owner='ActivityEntryPipeline' bridgeReduction='runtime_bridge_domain_split' stageBridgeSplit='content_object_actor_inventory' runtimeStateStoreSplit='content_preparation_store_sources' objectActorStoreSourceSplit='stage_owned_store_sources' contentPendingOperationSplit='loaded_set_store_pending_operation_dispatch' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadRecordCount='{loadedSnapshotPayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'");
             _logBridge.LogEntryOwnerEvent(
                 "ActivityEntryPreparationStarted",
                 command.Identity,
@@ -1099,8 +1099,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     snapshots);
 
                 string restorePayloadState = loadedSnapshotPayloadContext.HasPayload ? "true" : "false";
-                int restorePayloadObjectCount = loadedSnapshotPayloadContext.HasPayload
-                    ? loadedSnapshotPayloadContext.Payload.Objects.Count
+                int restorePayloadRecordCount = loadedSnapshotPayloadContext.HasPayload
+                    ? loadedSnapshotPayloadContext.Payload.RecordCount
                     : 0;
                 string restorePayloadSourceActivityId = loadedSnapshotPayloadContext.HasPayload
                     ? Normalize(loadedSnapshotPayloadContext.Payload.ActivityId)
@@ -1113,7 +1113,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Identity,
                     command.Source,
                     command.Reason,
-                    $"owner='ActivityEntryPipeline' block='capability_inventory_object_state' loadedSnapshotPayload='{restorePayloadState}' loadedSnapshotPayloadObjectCount='{restorePayloadObjectCount}' loadedSnapshotPayloadSourceActivityId='{restorePayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{restorePayloadSourceEntrySequence}'");
+                    $"owner='ActivityEntryPipeline' block='capability_inventory_object_state' loadedSnapshotPayload='{restorePayloadState}' loadedSnapshotPayloadRecordCount='{restorePayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{restorePayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{restorePayloadSourceEntrySequence}'");
                 ActivityEntryObjectSnapshotRestoreStage.Execute(
                     command,
                     discoveryResult,

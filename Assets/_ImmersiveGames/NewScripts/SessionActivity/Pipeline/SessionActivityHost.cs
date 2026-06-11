@@ -281,6 +281,32 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return applied;
         }
 
+        internal bool QaCaptureCurrentActivitySnapshotPayload()
+        {
+            EnsurePipeline();
+            bool captured;
+            string outcomeReason;
+            try
+            {
+                captured = _pipeline.TryQaCaptureCurrentActivitySnapshotPayload(
+                    State.CurrentIdentity,
+                    QaSource("QaCaptureCurrentActivitySnapshotPayload"),
+                    QaReason("QaCaptureCurrentActivitySnapshotPayload"),
+                    out outcomeReason);
+            }
+            catch (Exception exception)
+            {
+                captured = false;
+                outcomeReason = $"activity_snapshot_capture_qa_failed_exception:{exception.GetType().Name}";
+                Debug.LogError(
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivitySnapshotCaptureQaFailed' reason='{outcomeReason}' error='{exception.Message}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            }
+
+            Debug.Log(
+                $"[OBS][SessionActivityPipeline][Host] action='QaCaptureCurrentActivitySnapshotPayload' outcomeKind='{(captured ? "Captured" : "SkippedOrRejected")}' reason='{outcomeReason}' activityId='{State.CurrentDefinition.ActivityId}' entrySequence='{State.CurrentEntrySequence}' stage='{State.CurrentStage}'.");
+            return captured;
+        }
+
         public SessionActivityRouteExitTeardownResult RequestRouteExitTeardown(string requestedSessionStateId, string source, string reason)
         {
             EnsurePipeline();

@@ -76,6 +76,41 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
     }
 
+    public readonly struct OperationalRouteActivitySaveQaSaveCommand
+    {
+        public OperationalRouteActivitySaveQaSaveCommand(
+            RuntimeModeConfig runtimeModeConfig,
+            string sessionStateId,
+            string requestedActivityIdentity,
+            string source,
+            string reason)
+        {
+            RuntimeModeConfig = runtimeModeConfig;
+            SessionStateId = Normalize(sessionStateId);
+            SaveOwnerActivityIdentity = Normalize(sessionStateId);
+            RequestedActivityIdentity = Normalize(requestedActivityIdentity);
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public RuntimeModeConfig RuntimeModeConfig { get; }
+        public string SessionStateId { get; }
+        public string SaveOwnerActivityIdentity { get; }
+        public string RequestedActivityIdentity { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            RuntimeModeConfig != null &&
+            !string.IsNullOrWhiteSpace(SessionStateId) &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public sealed class OperationalRouteActivitySaveSaveOnExitStage
     {
         private readonly ISessionOperationalActivitySaveAdapter _activitySaveAdapter;
@@ -126,6 +161,159 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 "route_activity_save_save_on_exit_completed");
         }
 
+        public OperationalRouteActivitySaveSaveOnExitResult ExecuteQaSaveCurrentSnapshot(OperationalRouteActivitySaveQaSaveCommand command)
+        {
+            if (!command.IsValid)
+            {
+                return new OperationalRouteActivitySaveSaveOnExitResult(
+                    OperationalRouteActivitySaveSaveOnExitResultKind.Failed,
+                    "invalid_qa_command",
+                    "OperationalRouteActivitySaveQaSaveCommand invalido.");
+            }
+
+            const string qaRouteIdentity = "qa.route_activity_save";
+            const string qaRouteOperationId = "qa.route_activity_save|manual";
+            const string qaTransitionId = "qa.route_activity_save|manual|snapshot";
+            const int qaRouteSequence = 1;
+
+            DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave][QA] RouteActivitySaveQaSaveStarted sessionStateId='{Normalize(command.SessionStateId)}' saveOwnerActivityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Info);
+
+            ISessionActivitySnapshotPayloadProvider provider = _activitySnapshotPayloadProviderResolver();
+            if (provider == null)
+            {
+                DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' saveOwnerActivityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' payloadActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='false' payloadKind='<none>' recordCount='0' contributorResolutionKind='no_session_save_contributors' failureReason='no_session_save_contributors' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
+                return new OperationalRouteActivitySaveSaveOnExitResult(
+                    OperationalRouteActivitySaveSaveOnExitResultKind.Failed,
+                    "no_session_save_contributors",
+                    "ISessionActivitySnapshotPayloadProvider ausente para QA save.");
+            }
+
+            if (!provider.TryGetSnapshotPayloadForSaveOnExit(
+                    command.SessionStateId,
+                    out SessionActivitySnapshotPayload payload,
+                    out string failureReason) ||
+                !payload.IsValid)
+            {
+                string normalizedFailure = Normalize(failureReason);
+                if (string.IsNullOrWhiteSpace(normalizedFailure))
+                {
+                    normalizedFailure = "snapshot_payload_expected_but_missing";
+                }
+
+                if (string.Equals(normalizedFailure, "no_activity_content_contributors", StringComparison.Ordinal))
+                {
+                    DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                        $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='SkippedNoContent' activityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' saveOwnerActivityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' payloadActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='false' payloadKind='<none>' recordCount='0' contributorResolutionKind='{normalizedFailure}' skipReason='{normalizedFailure}' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Info);
+                    return new OperationalRouteActivitySaveSaveOnExitResult(
+                        OperationalRouteActivitySaveSaveOnExitResultKind.Completed,
+                        "qa_save_skipped_no_content",
+                        "snapshot payload skipped because current activity has no content contributors.");
+                }
+
+                DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' saveOwnerActivityIdentity='{Normalize(command.SaveOwnerActivityIdentity)}' payloadActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='false' payloadKind='<none>' recordCount='0' contributorResolutionKind='{normalizedFailure}' failureReason='{normalizedFailure}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
+                return new OperationalRouteActivitySaveSaveOnExitResult(
+                    OperationalRouteActivitySaveSaveOnExitResultKind.Failed,
+                    normalizedFailure,
+                    "snapshot payload ausente/invalido para QA save.");
+            }
+
+            string actualActivityIdentity = Normalize(payload.ActivityId);
+            string saveOwnerActivityIdentity = Normalize(command.SaveOwnerActivityIdentity);
+            if (string.IsNullOrWhiteSpace(saveOwnerActivityIdentity))
+            {
+                saveOwnerActivityIdentity = Normalize(command.SessionStateId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(command.RequestedActivityIdentity) &&
+                !string.Equals(command.RequestedActivityIdentity, actualActivityIdentity, StringComparison.Ordinal))
+            {
+                DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{saveOwnerActivityIdentity}' saveOwnerActivityIdentity='{saveOwnerActivityIdentity}' payloadActivityIdentity='{actualActivityIdentity}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='true' payloadKind='{ResolveSnapshotPayloadKind(payload)}' recordCount='{ResolveSnapshotPayloadRecordCount(payload)}' contributorResolutionKind='snapshot_identity_mismatch' failureReason='snapshot_identity_mismatch' sourceActivityId='{actualActivityIdentity}' sourceEntrySequence='{payload.EntrySequence}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
+                return new OperationalRouteActivitySaveSaveOnExitResult(
+                    OperationalRouteActivitySaveSaveOnExitResultKind.Failed,
+                    "snapshot_identity_mismatch",
+                    "requested activity identity differs from captured payload activity identity.");
+            }
+
+            string serializedPayload = SerializeSnapshotPayload(payload);
+            if (string.IsNullOrWhiteSpace(serializedPayload))
+            {
+                DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{saveOwnerActivityIdentity}' saveOwnerActivityIdentity='{saveOwnerActivityIdentity}' payloadActivityIdentity='{actualActivityIdentity}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='true' payloadKind='{ResolveSnapshotPayloadKind(payload)}' recordCount='{ResolveSnapshotPayloadRecordCount(payload)}' contributorResolutionKind='snapshot_payload_serialization_failed' failureReason='snapshot_payload_serialization_failed' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
+                return new OperationalRouteActivitySaveSaveOnExitResult(
+                    OperationalRouteActivitySaveSaveOnExitResultKind.Failed,
+                    "snapshot_payload_serialization_failed",
+                    "snapshot payload serialization failed for QA save.");
+            }
+
+            ProgressionSlotContext slotContext = ResolveProgressionSlotContextOrFail(
+                _progressionSlotContextResolver,
+                qaRouteIdentity,
+                qaRouteOperationId,
+                qaTransitionId,
+                qaRouteSequence,
+                command.Source,
+                command.Reason);
+
+            RouteActivitySaveSaveResult saveResult = _activitySaveAdapter.SaveActivityOnExit(
+                command.RuntimeModeConfig,
+                slotContext,
+                saveOwnerActivityIdentity,
+                serializedPayload);
+
+            string payloadKind = ResolveSnapshotPayloadKind(payload);
+            int recordCount = ResolveSnapshotPayloadRecordCount(payload);
+            string targetIds = ResolveSnapshotPayloadTargetIdsLabel(payload);
+            string contributorResolutionKind = payload.HasCapabilitySnapshotEnvelope
+                ? "capability_snapshot_envelope_resolved"
+                : "snapshot_payload_resolved";
+
+            if (!saveResult.IsSaved)
+            {
+                DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{saveOwnerActivityIdentity}' saveOwnerActivityIdentity='{saveOwnerActivityIdentity}' payloadActivityIdentity='{actualActivityIdentity}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='true' payloadKind='{payloadKind}' recordCount='{recordCount}' targetIds='{Normalize(targetIds)}' contributorResolutionKind='{contributorResolutionKind}' failureReason='{Normalize(saveResult.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Warning);
+                return new OperationalRouteActivitySaveSaveOnExitResult(
+                    OperationalRouteActivitySaveSaveOnExitResultKind.Failed,
+                    string.IsNullOrWhiteSpace(saveResult.Detail) ? "save_not_completed" : Normalize(saveResult.Detail),
+                    saveResult.Detail);
+            }
+
+            ObserveCurrentSnapshotPointerAfterSave(
+                qaRouteIdentity,
+                qaRouteOperationId,
+                qaTransitionId,
+                qaRouteSequence,
+                saveOwnerActivityIdentity,
+                slotContext,
+                payloadKind,
+                recordCount,
+                "qa_save",
+                command.Source,
+                command.Reason);
+
+            DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave][QA] RouteActivitySaveQaSaveCompleted activityIdentity='{saveOwnerActivityIdentity}' saveOwnerActivityIdentity='{saveOwnerActivityIdentity}' payloadActivityIdentity='{actualActivityIdentity}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadKind='{payloadKind}' recordCount='{recordCount}' targetIds='{Normalize(targetIds)}' contributorResolutionKind='{contributorResolutionKind}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' detail='{Normalize(saveResult.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Success);
+            DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Passed' activityIdentity='{saveOwnerActivityIdentity}' saveOwnerActivityIdentity='{saveOwnerActivityIdentity}' payloadActivityIdentity='{actualActivityIdentity}' requestedActivityIdentity='{Normalize(command.RequestedActivityIdentity)}' payloadResolved='true' payloadKind='{payloadKind}' recordCount='{recordCount}' targetIds='{Normalize(targetIds)}' contributorResolutionKind='{contributorResolutionKind}' slotId='{slotContext.SlotId}' snapshotId='{slotContext.SnapshotId}' payloadSize='{serializedPayload.Length}' detail='{Normalize(saveResult.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
+                DebugUtility.Colors.Success);
+
+            return new OperationalRouteActivitySaveSaveOnExitResult(
+                OperationalRouteActivitySaveSaveOnExitResultKind.Completed,
+                "qa_save_completed",
+                saveResult.Detail);
+        }
+
         private void ExecuteSaveOnExitOrFail(OperationalRouteActivitySaveSaveOnExitCommand command)
         {
             RouteActivitySaveOnExitPlan saveOnExitPlan = command.RouteActivitySavePlan.SaveOnExit;
@@ -154,10 +342,11 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             if (!TryResolvePreviousActivitySnapshotPayload(command, contributorScopePolicy, out string activitySnapshotPayload, out RouteActivitySnapshotPayloadResolution payloadResolution))
             {
                 bool isCaptureFailed = payloadResolution.FailureKind == RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed;
+                bool isNoContent = payloadResolution.FailureKind == RouteActivitySaveSnapshotFailureKind.NoActivityContentContributors;
                 RouteActivitySaveSkipKind skipKind = ResolveSnapshotPayloadSkipReason(payloadResolution.FailureKind);
-                string checkpointStatus = isCaptureFailed ? "Failed" : "Waiting";
+                string checkpointStatus = isCaptureFailed ? "Failed" : isNoContent ? "SkippedNoContent" : "Waiting";
                 DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
-                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='{checkpointStatus}' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' payloadObjectCount='0' targetIds='<none>' payloadSize='0' failureReason='{Normalize(payloadResolution.FailureReason)}'.",
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='{checkpointStatus}' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='<none>' sourceEntrySequence='0' payloadResolved='false' recordCount='0' payloadKind='<none>' targetIds='<none>' payloadSize='0' failureReason='{Normalize(payloadResolution.FailureReason)}'.",
                     DebugUtility.Colors.Info);
                 if (isCaptureFailed)
                 {
@@ -185,10 +374,10 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySnapshotPayloadResolved previousRouteIdentity='{saveOnExitPlan.PreviousRouteIdentity}' previousRouteOperationId='{saveOnExitPlan.PreviousRouteOperationId}' previousRouteSequence='{saveOnExitPlan.PreviousRouteSequence}' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='{Normalize(payloadResolution.SourceActivityId)}' sourceEntrySequence='{payloadResolution.SourceEntrySequence}' payloadObjectCount='{payloadResolution.PayloadObjectCount}' targetIds='{Normalize(payloadResolution.TargetIds)}' schemaId='{Normalize(payloadResolution.SchemaId)}' payloadSize='{payloadResolution.PayloadSize}' payloadResolutionReason='snapshot_payload_resolved'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySnapshotPayloadResolved previousRouteIdentity='{saveOnExitPlan.PreviousRouteIdentity}' previousRouteOperationId='{saveOnExitPlan.PreviousRouteOperationId}' previousRouteSequence='{saveOnExitPlan.PreviousRouteSequence}' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='{Normalize(payloadResolution.SourceActivityId)}' sourceEntrySequence='{payloadResolution.SourceEntrySequence}' recordCount='{payloadResolution.RecordCount}' payloadKind='{ResolvePayloadKindFromSerialized(activitySnapshotPayload)}' targetIds='{Normalize(payloadResolution.TargetIds)}' schemaId='{Normalize(payloadResolution.SchemaId)}' payloadSize='{payloadResolution.PayloadSize}' payloadResolutionReason='snapshot_payload_resolved'.",
                 DebugUtility.Colors.Info);
             DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
-                $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='Passed' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='{Normalize(payloadResolution.SourceActivityId)}' sourceEntrySequence='{payloadResolution.SourceEntrySequence}' payloadResolved='true' payloadObjectCount='{payloadResolution.PayloadObjectCount}' targetIds='{Normalize(payloadResolution.TargetIds)}' payloadSize='{payloadResolution.PayloadSize}'.",
+                $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveSnapshotPayload' checkpointStatus='Passed' activityIdentity='{Normalize(previousActivityIdentity)}' contributorScopePolicy='{contributorScopePolicy}' contributorResolutionKind='{Normalize(payloadResolution.ContributorResolutionKind)}' sourceActivityId='{Normalize(payloadResolution.SourceActivityId)}' sourceEntrySequence='{payloadResolution.SourceEntrySequence}' payloadResolved='true' recordCount='{payloadResolution.RecordCount}' payloadKind='{ResolvePayloadKindFromSerialized(activitySnapshotPayload)}' targetIds='{Normalize(payloadResolution.TargetIds)}' payloadSize='{payloadResolution.PayloadSize}'.",
                 DebugUtility.Colors.Info);
 
             if (string.IsNullOrWhiteSpace(activitySnapshotPayload))
@@ -244,9 +433,64 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 throw new InvalidOperationException(message);
             }
 
+            ObserveCurrentSnapshotPointerAfterSave(
+                currentRouteIdentity,
+                currentRouteOperationId,
+                currentTransitionId,
+                currentRouteSequence,
+                previousActivityIdentity,
+                slotContext,
+                ResolvePayloadKindFromSerialized(activitySnapshotPayload),
+                payloadResolution.RecordCount,
+                "save_on_exit",
+                command.Source,
+                command.Reason);
+
             DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
                 $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveSaveCompleted previousRouteIdentity='{saveOnExitPlan.PreviousRouteIdentity}' previousRouteOperationId='{saveOnExitPlan.PreviousRouteOperationId}' previousRouteSequence='{saveOnExitPlan.PreviousRouteSequence}' previousActivityIdentity='{Normalize(previousActivityIdentity)}' previousActivitySaveKey='{previousActivitySaveKey}' currentRouteIdentity='{Normalize(currentRouteIdentity)}' currentRouteOperationId='{Normalize(currentRouteOperationId)}' currentTransitionId='{Normalize(currentTransitionId)}' routeSequence='{currentRouteSequence}' detail='{Normalize(saveResult.Detail)}' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
+        }
+
+        private void ObserveCurrentSnapshotPointerAfterSave(
+            string routeIdentity,
+            string routeOperationId,
+            string transitionId,
+            int routeSequence,
+            string activityIdentity,
+            ProgressionSlotContext expectedSlotContext,
+            string payloadKind,
+            int recordCount,
+            string operationKind,
+            string source,
+            string reason)
+        {
+            ProgressionSlotContext observedSlotContext = ResolveProgressionSlotContextOrFail(
+                _progressionSlotContextResolver,
+                routeIdentity,
+                routeOperationId,
+                transitionId,
+                routeSequence,
+                source,
+                reason);
+
+            string expectedSnapshotId = expectedSlotContext != null && expectedSlotContext.SnapshotId.IsValid
+                ? expectedSlotContext.SnapshotId.Value
+                : string.Empty;
+            string observedSnapshotId = observedSlotContext != null && observedSlotContext.SnapshotId.IsValid
+                ? observedSlotContext.SnapshotId.Value
+                : string.Empty;
+            string expectedSlotId = expectedSlotContext != null && expectedSlotContext.SlotId.IsValid
+                ? expectedSlotContext.SlotId.Value
+                : string.Empty;
+            string observedSlotId = observedSlotContext != null && observedSlotContext.SlotId.IsValid
+                ? observedSlotContext.SlotId.Value
+                : string.Empty;
+            bool snapshotIdMatches = !string.IsNullOrWhiteSpace(expectedSnapshotId) &&
+                                     string.Equals(expectedSnapshotId, observedSnapshotId, StringComparison.Ordinal);
+
+            DebugUtility.Log(typeof(OperationalRouteActivitySaveSaveOnExitStage),
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] RouteActivitySaveCurrentSnapshotPointerObserved operationKind='{Normalize(operationKind)}' activityIdentity='{Normalize(activityIdentity)}' routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' expectedSlotId='{Normalize(expectedSlotId)}' observedSlotId='{Normalize(observedSlotId)}' expectedSnapshotId='{Normalize(expectedSnapshotId)}' observedSnapshotId='{Normalize(observedSnapshotId)}' snapshotIdMatches='{snapshotIdMatches.ToString().ToLowerInvariant()}' payloadKind='{Normalize(payloadKind)}' recordCount='{recordCount}' pointerOwner='ProgressionSlotContextResolver' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                snapshotIdMatches ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
         }
 
         private static void LogRouteActivitySaveSaveSkipped(
@@ -292,7 +536,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     schemaId: string.Empty,
                     sourceActivityId: string.Empty,
                     sourceEntrySequence: 0,
-                    payloadObjectCount: 0,
+                    recordCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
                     failureKind: RouteActivitySaveSnapshotFailureKind.NoPreviousRoute,
@@ -308,7 +552,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     schemaId: string.Empty,
                     sourceActivityId: string.Empty,
                     sourceEntrySequence: 0,
-                    payloadObjectCount: 0,
+                    recordCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
                     failureKind: RouteActivitySaveSnapshotFailureKind.NoSessionActivity,
@@ -323,7 +567,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     schemaId: string.Empty,
                     sourceActivityId: string.Empty,
                     sourceEntrySequence: 0,
-                    payloadObjectCount: 0,
+                    recordCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
                     failureKind: RouteActivitySaveSnapshotFailureKind.NoRouteSaveContributors,
@@ -339,7 +583,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     schemaId: string.Empty,
                     sourceActivityId: string.Empty,
                     sourceEntrySequence: 0,
-                    payloadObjectCount: 0,
+                    recordCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
                     failureKind: RouteActivitySaveSnapshotFailureKind.NoSessionSaveContributors,
@@ -359,7 +603,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     schemaId: string.Empty,
                     sourceActivityId: string.Empty,
                     sourceEntrySequence: 0,
-                    payloadObjectCount: 0,
+                    recordCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
                     failureKind: ResolveFailureKindFromFailureReason(failureReason),
@@ -374,7 +618,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     schemaId: string.Empty,
                     sourceActivityId: string.Empty,
                     sourceEntrySequence: 0,
-                    payloadObjectCount: 0,
+                    recordCount: 0,
                     targetIds: string.Empty,
                     payloadSize: 0,
                     failureKind: RouteActivitySaveSnapshotFailureKind.SnapshotCaptureFailed,
@@ -390,8 +634,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     payload.SchemaId,
                     payload.ActivityId,
                     payload.EntrySequence,
-                    payload.Objects.Count,
-                    BuildTargetIdsLabel(payload.Objects),
+                    ResolveSnapshotPayloadRecordCount(payload),
+                    ResolveSnapshotPayloadTargetIdsLabel(payload),
                     0,
                     RouteActivitySaveSnapshotFailureKind.SnapshotPayloadInvalid,
                     "snapshot_payload_serialization_failed",
@@ -399,16 +643,18 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 return false;
             }
 
+            int resolvedRecordCount = ResolveSnapshotPayloadRecordCount(payload);
+            string resolvedTargetIds = ResolveSnapshotPayloadTargetIdsLabel(payload);
             resolution = new RouteActivitySnapshotPayloadResolution(
                 payload.SchemaId,
                 payload.ActivityId,
                 payload.EntrySequence,
-                payload.Objects.Count,
-                BuildTargetIdsLabel(payload.Objects),
+                resolvedRecordCount,
+                resolvedTargetIds,
                 activitySnapshotPayload.Length,
                 RouteActivitySaveSnapshotFailureKind.SnapshotPayloadResolved,
-                "snapshot_payload_resolved",
-                "snapshot_payload_resolved");
+                payload.HasCapabilitySnapshotEnvelope ? "capability_snapshot_envelope_resolved" : "snapshot_payload_resolved",
+                payload.HasCapabilitySnapshotEnvelope ? "capability_snapshot_envelope_resolved" : "snapshot_payload_resolved");
             return true;
         }
 
@@ -562,9 +808,29 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return slotContext;
         }
 
+        private static string ResolvePayloadKindFromSerialized(string payload)
+        {
+            string normalized = Normalize(payload);
+            if (normalized.IndexOf("\"canonicalPayload\":\"CapabilitySnapshotEnvelope\"", StringComparison.Ordinal) >= 0 ||
+                normalized.IndexOf("\"capabilitySnapshotEnvelope\"", StringComparison.Ordinal) >= 0)
+            {
+                return "CapabilitySnapshotEnvelope";
+            }
+
+            return "Unknown";
+        }
+
         private static string SerializeSnapshotPayload(SessionActivitySnapshotPayload payload)
         {
-            StringBuilder builder = new(512);
+            return payload.HasCapabilitySnapshotEnvelope
+                ? SerializeCapabilitySnapshotEnvelopePayload(payload)
+                : string.Empty;
+        }
+
+        private static string SerializeCapabilitySnapshotEnvelopePayload(SessionActivitySnapshotPayload payload)
+        {
+            ActivityCapabilitySnapshotEnvelope envelope = payload.CapabilitySnapshotEnvelope;
+            StringBuilder builder = new(1024);
             builder.Append('{');
             AppendJsonField(builder, "schemaId", payload.SchemaId);
             builder.Append(',');
@@ -574,46 +840,61 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             builder.Append(',');
             AppendJsonField(builder, "entrySequence", payload.EntrySequence.ToString(CultureInfo.InvariantCulture), isNumber: true);
             builder.Append(',');
-            builder.Append("\"objects\":[");
+            AppendJsonField(builder, "canonicalPayload", "CapabilitySnapshotEnvelope");
+            builder.Append(',');
+            builder.Append("\"capabilitySnapshotEnvelope\":{");
+            AppendJsonField(builder, "schemaId", envelope.SchemaId);
+            builder.Append(',');
+            AppendJsonField(builder, "pipelineId", envelope.PipelineId);
+            builder.Append(',');
+            AppendJsonField(builder, "sessionStateId", envelope.SessionStateId);
+            builder.Append(',');
+            AppendJsonField(builder, "activityId", envelope.ActivityId);
+            builder.Append(',');
+            AppendJsonField(builder, "activityOrdinal", envelope.ActivityOrdinal.ToString(CultureInfo.InvariantCulture), isNumber: true);
+            builder.Append(',');
+            AppendJsonField(builder, "entrySequence", envelope.EntrySequence.ToString(CultureInfo.InvariantCulture), isNumber: true);
+            builder.Append(',');
+            AppendJsonField(builder, "source", envelope.Source);
+            builder.Append(',');
+            AppendJsonField(builder, "reason", envelope.Reason);
+            builder.Append(',');
+            builder.Append("\"records\":[");
 
-            for (int index = 0; index < payload.Objects.Count; index++)
+            for (int index = 0; index < envelope.Records.Count; index++)
             {
-                SessionActivitySnapshotPayloadObject obj = payload.Objects[index];
+                ActivityCapabilitySnapshotRecord record = envelope.Records[index];
                 if (index > 0)
                 {
                     builder.Append(',');
                 }
 
                 builder.Append('{');
-                AppendJsonField(builder, "targetId", obj.TargetId);
+                AppendJsonField(builder, "ownerKind", record.OwnerKind.ToString());
                 builder.Append(',');
-                builder.Append("\"position\":{");
-                AppendJsonField(builder, "x", obj.PositionX.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "ownerId", record.OwnerId);
                 builder.Append(',');
-                AppendJsonField(builder, "y", obj.PositionY.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "contentProfileId", record.ContentProfileId);
                 builder.Append(',');
-                AppendJsonField(builder, "z", obj.PositionZ.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
-                builder.Append("},");
-                builder.Append("\"rotation\":{");
-                AppendJsonField(builder, "x", obj.RotationX.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "capabilityId", record.CapabilityId);
                 builder.Append(',');
-                AppendJsonField(builder, "y", obj.RotationY.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "capabilityKind", record.CapabilityKind);
                 builder.Append(',');
-                AppendJsonField(builder, "z", obj.RotationZ.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "payloadSchemaId", record.PayloadSchemaId);
                 builder.Append(',');
-                AppendJsonField(builder, "w", obj.RotationW.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
-                builder.Append("},");
-                builder.Append("\"scale\":{");
-                AppendJsonField(builder, "x", obj.ScaleX.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "payloadSchemaVersion", record.PayloadSchemaVersion.ToString(CultureInfo.InvariantCulture), isNumber: true);
                 builder.Append(',');
-                AppendJsonField(builder, "y", obj.ScaleY.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
+                AppendJsonField(builder, "payloadFormat", record.PayloadFormat.ToString());
                 builder.Append(',');
-                AppendJsonField(builder, "z", obj.ScaleZ.ToString("0.######", CultureInfo.InvariantCulture), isNumber: true);
-                builder.Append("}");
+                AppendJsonField(builder, "payload", record.Payload);
+                builder.Append(',');
+                AppendJsonField(builder, "source", record.Source);
+                builder.Append(',');
+                AppendJsonField(builder, "reason", record.Reason);
                 builder.Append('}');
             }
 
-            builder.Append("]}");
+            builder.Append("]}}");
             return builder.ToString();
         }
 
@@ -641,30 +922,57 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 .Replace("\"", "\\\"");
         }
 
-        private static string BuildTargetIdsLabel(IReadOnlyList<SessionActivitySnapshotPayloadObject> objects)
+
+        private static string ResolveSnapshotPayloadKind(SessionActivitySnapshotPayload payload)
         {
-            if (objects == null || objects.Count == 0)
+            if (payload.HasCapabilitySnapshotEnvelope)
+            {
+                return "CapabilitySnapshotEnvelope";
+            }
+
+            return "<none>";
+        }
+
+        private static int ResolveSnapshotPayloadRecordCount(SessionActivitySnapshotPayload payload)
+        {
+            if (payload.HasCapabilitySnapshotEnvelope && payload.CapabilitySnapshotEnvelope.Records != null)
+            {
+                return payload.CapabilitySnapshotEnvelope.Records.Count;
+            }
+
+            return 0;
+        }
+
+        private static string ResolveSnapshotPayloadTargetIdsLabel(SessionActivitySnapshotPayload payload)
+        {
+            if (payload.HasCapabilitySnapshotEnvelope)
+            {
+                return BuildEnvelopeOwnerIdsLabel(payload.CapabilitySnapshotEnvelope.Records);
+            }
+
+            return "<none>";
+        }
+
+        private static string BuildEnvelopeOwnerIdsLabel(IReadOnlyList<ActivityCapabilitySnapshotRecord> records)
+        {
+            if (records == null || records.Count == 0)
             {
                 return "<none>";
             }
 
-            HashSet<string> targetIds = new(StringComparer.Ordinal);
-            for (int index = 0; index < objects.Count; index++)
+            HashSet<string> ownerIds = new(StringComparer.Ordinal);
+            for (int index = 0; index < records.Count; index++)
             {
-                string targetId = Normalize(objects[index].TargetId);
-                if (!string.IsNullOrWhiteSpace(targetId))
+                string ownerId = Normalize(records[index].OwnerId);
+                if (!string.IsNullOrWhiteSpace(ownerId))
                 {
-                    targetIds.Add(targetId);
+                    ownerIds.Add(ownerId);
                 }
             }
 
-            if (targetIds.Count == 0)
-            {
-                return "<none>";
-            }
-
-            return string.Join(",", targetIds);
+            return ownerIds.Count == 0 ? "<none>" : string.Join(",", ownerIds);
         }
+
 
         private readonly struct RouteActivitySnapshotPayloadResolution
         {
@@ -672,7 +980,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 string schemaId,
                 string sourceActivityId,
                 int sourceEntrySequence,
-                int payloadObjectCount,
+                int recordCount,
                 string targetIds,
                 int payloadSize,
                 RouteActivitySaveSnapshotFailureKind failureKind,
@@ -682,7 +990,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 SchemaId = Normalize(schemaId);
                 SourceActivityId = Normalize(sourceActivityId);
                 SourceEntrySequence = sourceEntrySequence < 0 ? 0 : sourceEntrySequence;
-                PayloadObjectCount = payloadObjectCount < 0 ? 0 : payloadObjectCount;
+                RecordCount = recordCount < 0 ? 0 : recordCount;
                 TargetIds = Normalize(targetIds);
                 PayloadSize = payloadSize < 0 ? 0 : payloadSize;
                 FailureKind = failureKind;
@@ -693,7 +1001,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             public string SchemaId { get; }
             public string SourceActivityId { get; }
             public int SourceEntrySequence { get; }
-            public int PayloadObjectCount { get; }
+            public int RecordCount { get; }
             public string TargetIds { get; }
             public int PayloadSize { get; }
             public RouteActivitySaveSnapshotFailureKind FailureKind { get; }

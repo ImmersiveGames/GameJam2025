@@ -40,10 +40,14 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 return false;
             }
 
+            string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
+            string snapshotPointerSource = string.IsNullOrWhiteSpace(currentSnapshotId)
+                ? "revision_fallback"
+                : "current_snapshot_id";
+
             try
             {
                 var slotId = new SaveSlotId(currentState.SlotId);
-                string currentSnapshotId = Normalize(currentState.CurrentSnapshotId);
                 string snapshotPointer = string.IsNullOrWhiteSpace(currentSnapshotId)
                     ? $"snapshot-rev-{currentState.Revision}"
                     : currentSnapshotId;
@@ -68,7 +72,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
             }
 
             DebugUtility.Log(typeof(DefaultProgressionSlotContextResolver),
-                $"[OBS][SessionOperationalPipeline][RouteActivitySave] ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
+                $"[OBS][SessionOperationalPipeline][RouteActivitySave] ProgressionSlotContextResolved routeIdentity='{Normalize(routeIdentity)}' routeOperationId='{Normalize(routeOperationId)}' transitionId='{Normalize(transitionId)}' routeSequence='{routeSequence}' profileId='{slotContext.ProfileId}' slotId='{slotContext.SlotId}' slotKind='{slotContext.SlotKind}' snapshotId='{slotContext.SnapshotId}' snapshotPointerSource='{snapshotPointerSource}' currentSnapshotIdRaw='{Normalize(currentSnapshotId)}' currentRevision='{currentState.Revision}' source='{Normalize(source)}' reason='{Normalize(reason)}'.",
                 DebugUtility.Colors.Info);
 
             failureReason = "resolved";

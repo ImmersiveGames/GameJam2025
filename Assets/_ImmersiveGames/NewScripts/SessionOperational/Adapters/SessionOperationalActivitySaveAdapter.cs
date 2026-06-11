@@ -99,25 +99,26 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' detail='snapshot payload vazio para save key.'");
             }
 
+            string loadedPayloadKind = DetectActivitySnapshotPayloadKind(activitySnapshotPayload);
             return new RouteActivitySaveLoadResult(
                 RouteActivitySaveLoadOutcomeKind.Loaded,
                 RouteActivitySaveSnapshotFailureKind.None,
                 RouteActivitySaveSkipKind.None,
                 string.Empty,
                 true,
-                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{loadResult.SchemaVersion}' revision='{loadResult.Revision}' entriesCount='{loadResult.Entries?.Count ?? 0}'",
+                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' payloadKind='{loadedPayloadKind}' schemaVersion='{loadResult.SchemaVersion}' revision='{loadResult.Revision}' entriesCount='{loadResult.Entries?.Count ?? 0}'",
                 activitySnapshotPayload);
         }
 
         public RouteActivitySaveSaveResult SaveActivityOnExit(
             RuntimeModeConfig runtimeModeConfig,
             ProgressionSlotContext slotContext,
-            string previousActivityIdentity,
+            string activitySaveOwnerIdentity,
             string activitySnapshotPayload)
         {
             ValidateProgressionSlotContextOrFail(slotContext);
 
-            string normalizedActivityIdentity = Normalize(previousActivityIdentity);
+            string normalizedActivityIdentity = Normalize(activitySaveOwnerIdentity);
             if (string.IsNullOrWhiteSpace(normalizedActivityIdentity))
             {
                 return new RouteActivitySaveSaveResult(
@@ -153,6 +154,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                     "activity snapshot payload esperado mas ausente para save-on-exit.");
             }
 
+            string snapshotPayloadKind = DetectActivitySnapshotPayloadKind(normalizedPayload);
+
             var saveConfig = SaveRuntimeConfigResolver.ResolveSaveConfigOrFail(runtimeModeConfig);
             Dictionary<string, string> entries = new(StringComparer.Ordinal)
             {
@@ -185,7 +188,19 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
                 RouteActivitySaveSkipKind.None,
                 string.Empty,
                 true,
-                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' schemaVersion='{saveResult.SchemaVersion}' revision='{saveResult.Revision}' entriesCount='{saveResult.Entries?.Count ?? 0}'");
+                $"requestAddress='{request.Address}' activitySaveKey='{activitySaveKey}' payloadKind='{snapshotPayloadKind}' schemaVersion='{saveResult.SchemaVersion}' revision='{saveResult.Revision}' entriesCount='{saveResult.Entries?.Count ?? 0}'");
+        }
+
+        private static string DetectActivitySnapshotPayloadKind(string payload)
+        {
+            string normalized = Normalize(payload);
+            if (normalized.IndexOf("\"canonicalPayload\":\"CapabilitySnapshotEnvelope\"", StringComparison.Ordinal) >= 0 ||
+                normalized.IndexOf("\"capabilitySnapshotEnvelope\"", StringComparison.Ordinal) >= 0)
+            {
+                return "CapabilitySnapshotEnvelope";
+            }
+
+            return "Unknown";
         }
 
         private static void ValidateProgressionSlotContextOrFail(ProgressionSlotContext slotContext)

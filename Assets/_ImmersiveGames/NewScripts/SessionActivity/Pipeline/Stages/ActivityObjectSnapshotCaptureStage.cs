@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory.RuntimeReferences;
@@ -181,7 +182,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             bool hasTransformPayload = false;
             string captureFailureDetail = string.Empty;
             HashSet<string> capturedTargetIds = new(StringComparer.Ordinal);
-            List<SessionActivitySnapshotPayloadObject> capturedObjects = new();
+            List<ActivityCapabilitySnapshotRecord> capturedCapabilitySnapshots = new();
             ActivityCapabilityInventory snapshotInventory = runtimeState.CurrentInventoryPreview;
             ActivityCapabilityInventoryValidationResult snapshotInventoryValidation = runtimeState.CurrentInventoryPreviewValidation;
             bool hasValidSnapshotInventory =
@@ -303,19 +304,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     hasTransformPayload |= captureResult.HasTransformPayload;
                     capturedTargetIds.Add(captureResult.Command.TargetId);
                     ActivityObjectSnapshot snapshotData = captureResult.Snapshot;
-                    capturedObjects.Add(new SessionActivitySnapshotPayloadObject(
+                    ActivityCapabilityDescriptor snapshotCapability = ResolveSnapshotCapabilityDescriptor(snapshotInventory, report);
+                    string snapshotCapabilityId = !string.IsNullOrWhiteSpace(snapshotCapability.CapabilityId)
+                        ? snapshotCapability.CapabilityId
+                        : $"activity_object.snapshot_provider:{captureResult.Command.TargetId}";
+                    string snapshotCapabilityKind = snapshotCapability.CapabilityKind != ActivityCapabilityKind.Unknown
+                        ? snapshotCapability.CapabilityKind.ToString()
+                        : nameof(ActivityCapabilityKind.SnapshotProvider);
+                    capturedCapabilitySnapshots.Add(new ActivityCapabilitySnapshotRecord(
+                        captureIdentity,
+                        ActivityCapabilitySnapshotOwnerKind.ActivityObject,
                         captureResult.Command.TargetId,
                         captureResult.Command.ContentProfileId,
-                        snapshotData.PositionX,
-                        snapshotData.PositionY,
-                        snapshotData.PositionZ,
-                        snapshotData.RotationX,
-                        snapshotData.RotationY,
-                        snapshotData.RotationZ,
-                        snapshotData.RotationW,
-                        snapshotData.ScaleX,
-                        snapshotData.ScaleY,
-                        snapshotData.ScaleZ));
+                        snapshotCapabilityId,
+                        snapshotCapabilityKind,
+                        "activity_object.transform_snapshot.v1",
+                        1,
+                        ActivityCapabilitySnapshotPayloadFormat.Json,
+                        BuildTransformSnapshotPayload(snapshotData),
+                        command.Source,
+                        command.Reason));
                     endpoint.EmitFact(
                         facts,
                         SessionActivityFactKind.ActivityObjectSnapshotCaptured,
@@ -365,8 +373,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             string capturedTargetIdsText = capturedTargetIds.Count > 0 ? string.Join(",", capturedTargetIds) : "<none>";
-            if (capturedObjects.Count > 0)
+            int capabilitySnapshotRecordCount = capturedCapabilitySnapshots.Count;
+            string capabilitySnapshotOwnerKinds = BuildOwnerKindsLabel(capturedCapabilitySnapshots);
+            string capabilitySnapshotEnvelopeSchemaId = capabilitySnapshotRecordCount > 0
+                ? "activity_capability.snapshot_envelope.v1"
+                : "<none>";
+
+            if (capabilitySnapshotRecordCount > 0)
             {
+                ActivityCapabilitySnapshotEnvelope capabilitySnapshotEnvelope = new(
+                    capabilitySnapshotEnvelopeSchemaId,
+                    captureIdentity.PipelineId,
+                    captureIdentity.SessionId,
+                    definition.ActivityId,
+                    definition.ActivityOrdinal,
+                    entrySequence,
+                    capturedCapabilitySnapshots,
+                    command.Source,
+                    command.Reason);
                 SessionActivitySnapshotPayload payload = new(
                     command.SnapshotSchemaId,
                     captureIdentity.PipelineId,
@@ -374,7 +398,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     definition.ActivityId,
                     definition.ActivityOrdinal,
                     entrySequence,
-                    capturedObjects);
+                    capabilitySnapshotEnvelope);
+                DebugUtility.Log(
+                    typeof(ActivityObjectSnapshotCaptureStage),
+                    $"[OBS][CapabilitySnapshotEnvelope] event='CapabilitySnapshotEnvelopeCaptured' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' schemaId='{capabilitySnapshotEnvelope.SchemaId}' recordCount='{capabilitySnapshotEnvelope.Records.Count}' ownerKinds='{capabilitySnapshotOwnerKinds}' source='{command.Source}' reason='{command.Reason}'.",
+                    DebugUtility.Colors.Info);
                 runtimeState.SetSnapshotPayloadForSaveOnExit(
                     payload,
                     captureFailed: false,
@@ -382,7 +410,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     definition.ActivityId,
                     entrySequence,
                     "ActivityObjectSnapshotCaptureStage",
-                    "activity_object_snapshot_capture_completed");
+                    "capability_snapshot_envelope_capture_completed");
             }
             else
             {
@@ -397,7 +425,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     definition.ActivityId,
                     entrySequence,
                     "ActivityObjectSnapshotCaptureStage",
-                    "activity_object_snapshot_capture_completed");
+                    "capability_snapshot_envelope_capture_completed");
             }
 
             completedIdentity = endpoint.BuildIdentity(
@@ -411,17 +439,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 completedIdentity,
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");
+                $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");
             DebugUtility.Log(
                 typeof(ActivityObjectSnapshotCaptureStage),
-                $"[OBS][ActivityObjectSnapshotCaptureStage] event='ActivityObjectSnapshotCaptureCompleted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' capturedCount='{capturedCount}' failedCount='{failedCount}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][ActivityObjectSnapshotCaptureStage] event='ActivityObjectSnapshotCaptureCompleted' owner='ActivityObjectSnapshotCaptureStage' activityId='{definition.ActivityId}' entrySequence='{entrySequence}' capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}' source='{command.Source}' reason='{command.Reason}'.",
                 failedCount > 0 ? DebugUtility.Colors.Warning : DebugUtility.Colors.Success);
             endpoint.EmitSnapshot(
                 snapshots,
                 "activity_object_snapshot_capture_completed",
                 command.Source,
                 command.Reason,
-                $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");
+                $"'{definition.ActivityId}' activity object snapshot capture completed capturedCount='{capturedCount}' failedCount='{failedCount}' recordCount='{capabilitySnapshotRecordCount}' envelopeSchemaId='{capabilitySnapshotEnvelopeSchemaId}' ownerKinds='{capabilitySnapshotOwnerKinds}' targetIds='{capturedTargetIdsText}' hasTransformPayload='{hasTransformPayload.ToString().ToLowerInvariant()}'.");
 
             return new ActivityObjectSnapshotCaptureStageResult(
                 completed: true,
@@ -430,6 +458,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 failedCount: failedCount,
                 hasTransformPayload: hasTransformPayload,
                 reason: failedCount > 0 ? "completed_with_failures" : "completed");
+        }
+
+        private static string BuildOwnerKindsLabel(IReadOnlyList<ActivityCapabilitySnapshotRecord> records)
+        {
+            if (records == null || records.Count == 0)
+            {
+                return "<none>";
+            }
+
+            HashSet<string> ownerKinds = new(StringComparer.Ordinal);
+            for (int index = 0; index < records.Count; index++)
+            {
+                ActivityCapabilitySnapshotOwnerKind ownerKind = records[index].OwnerKind;
+                if (ownerKind != ActivityCapabilitySnapshotOwnerKind.Unknown)
+                {
+                    ownerKinds.Add(ownerKind.ToString());
+                }
+            }
+
+            return ownerKinds.Count == 0 ? "<none>" : string.Join(",", ownerKinds);
         }
 
         private static IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProvidersFromInventory(
@@ -470,6 +518,62 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             return providers.ToArray();
+        }
+
+        private static ActivityCapabilityDescriptor ResolveSnapshotCapabilityDescriptor(
+            ActivityCapabilityInventory inventory,
+            ActivityObjectContributionReport report)
+        {
+            if (!inventory.IsValid || !report.IsValid)
+            {
+                return default;
+            }
+
+            for (int index = 0; index < inventory.Capabilities.Count; index++)
+            {
+                ActivityCapabilityDescriptor capability = inventory.Capabilities[index];
+                if (capability.CapabilityKind != ActivityCapabilityKind.SnapshotProvider)
+                {
+                    continue;
+                }
+
+                if (!TryGetPolicyValue(capability.PolicyMetadata, "targetId", out string targetId) ||
+                    !string.Equals(targetId, report.TargetId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                return capability;
+            }
+
+            return default;
+        }
+
+        private static string BuildTransformSnapshotPayload(ActivityObjectSnapshot snapshot)
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "{{\"targetId\":\"{0}\",\"contentProfileId\":\"{1}\",\"coordinateSpace\":\"{2}\",\"position\":{{\"x\":{3:0.######},\"y\":{4:0.######},\"z\":{5:0.######}}},\"rotation\":{{\"x\":{6:0.######},\"y\":{7:0.######},\"z\":{8:0.######},\"w\":{9:0.######}}},\"scale\":{{\"x\":{10:0.######},\"y\":{11:0.######},\"z\":{12:0.######}}}}}",
+                EscapeJson(snapshot.TargetId),
+                EscapeJson(snapshot.ContentProfileId),
+                ToCoordinateSpaceToken(snapshot.CoordinateSpace),
+                snapshot.PositionX,
+                snapshot.PositionY,
+                snapshot.PositionZ,
+                snapshot.RotationX,
+                snapshot.RotationY,
+                snapshot.RotationZ,
+                snapshot.RotationW,
+                snapshot.ScaleX,
+                snapshot.ScaleY,
+                snapshot.ScaleZ);
+        }
+
+        private static string EscapeJson(string value)
+        {
+            return string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value.Replace("\\", "\\\\").Replace("\"", "\\\"");
         }
 
         private static ActivityObjectSnapshotCaptureResult ExecuteObjectSnapshotCaptureCommand(
@@ -527,12 +631,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return result is { IsValid: true, Identity: { IsValid: true } } &&
-                string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                result.Identity.EntrySequence == entrySequence;
+            return result.IsValid &&
+                   result.Identity.IsValid &&
+                   string.Equals(result.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                   result.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsReportForCurrentEntry(
@@ -540,12 +645,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             SessionActivityIdentity identity,
             int entrySequence)
         {
-            return report is { IsValid: true, Identity: { IsValid: true } } &&
-                string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
-                string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
-                string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
-                report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
-                report.Identity.EntrySequence == entrySequence;
+            return report.IsValid &&
+                   report.Identity.IsValid &&
+                   string.Equals(report.Identity.PipelineId, identity.PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.SessionId, identity.SessionId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.ActivityId, identity.ActivityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == identity.ActivityOrdinal &&
+                   report.Identity.EntrySequence == entrySequence;
         }
 
         private static bool IsObjectSnapshotCaptureResultForCurrentEntry(

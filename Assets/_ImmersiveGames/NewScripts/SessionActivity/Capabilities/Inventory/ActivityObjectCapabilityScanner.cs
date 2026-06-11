@@ -29,6 +29,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
             List<IActivityCapabilityRuntimeReference> runtimeReferences = new();
             HashSet<string> ownerKeys = new(StringComparer.Ordinal);
             HashSet<string> capabilityKeys = new(StringComparer.Ordinal);
+            List<IActivityObjectLifecycleContribution> lifecycleContributions = new(4);
 
             for (int index = 0; index < context.ActivityObjectTargets.Count; index++)
             {
@@ -56,24 +57,40 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                         context.Source));
                 }
 
+                ActivityObjectLifecycleContributionContext lifecycleContext = new(
+                    default,
+                    target.Contribution.TargetId,
+                    target.Contribution.RoleId,
+                    target.Contribution.ContributorKind,
+                    target.Contribution.Requiredness,
+                    context.Source,
+                    context.Reason);
                 MonoBehaviour[] behaviours = ResolveBehaviours(target);
                 for (int behaviourIndex = 0; behaviourIndex < behaviours.Length; behaviourIndex++)
                 {
                     MonoBehaviour behaviour = behaviours[behaviourIndex];
-                    if (behaviour == null)
+                    if (behaviour is not IActivityObjectLifecycleContributionProvider provider)
                     {
                         continue;
                     }
 
-                    string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(behaviour.transform);
-                    string componentType = behaviour.GetType().FullName ?? behaviour.GetType().Name;
-                    bool required = target.Contribution.Requiredness == ActivitySetupRequirementRequiredness.Required;
-                    IReadOnlyList<ActivityCapabilityPolicyEntry> metadata = BuildPolicyMetadata(target);
-
-                    TryAppendCapability(capabilities, runtimeReferences, capabilityKeys, inventoryId, ownerId, target.Contribution.TargetId, ActivityCapabilityKind.ResetEndpoint, componentPath, componentType, required, 100, metadata, context.Source, behaviour, behaviour is IActivityObjectResetEndpoint);
-                    TryAppendCapability(capabilities, runtimeReferences, capabilityKeys, inventoryId, ownerId, target.Contribution.TargetId, ActivityCapabilityKind.SnapshotProvider, componentPath, componentType, required, 200, metadata, context.Source, behaviour, behaviour is IActivityObjectSnapshotProvider);
-                    TryAppendCapability(capabilities, runtimeReferences, capabilityKeys, inventoryId, ownerId, target.Contribution.TargetId, ActivityCapabilityKind.SnapshotRestoreEndpoint, componentPath, componentType, required, 300, metadata, context.Source, behaviour, behaviour is IActivityObjectSnapshotRestoreEndpoint);
-                    TryAppendCapability(capabilities, runtimeReferences, capabilityKeys, inventoryId, ownerId, target.Contribution.TargetId, ActivityCapabilityKind.ReleaseEndpoint, componentPath, componentType, required, 400, metadata, context.Source, behaviour, behaviour is IActivityObjectReleaseEndpoint);
+                    lifecycleContributions.Clear();
+                    provider.CollectActivityObjectLifecycleContributions(lifecycleContext, lifecycleContributions);
+                    for (int contributionIndex = 0; contributionIndex < lifecycleContributions.Count; contributionIndex++)
+                    {
+                        TryAppendLifecycleContribution(
+                            capabilities,
+                            runtimeReferences,
+                            capabilityKeys,
+                            inventoryId,
+                            ownerId,
+                            target.Contribution.TargetId,
+                            BuildPolicyMetadata(target),
+                            target.Contribution.Requiredness == ActivitySetupRequirementRequiredness.Required,
+                            context.Source,
+                            behaviour,
+                            lifecycleContributions[contributionIndex]);
+                    }
                 }
             }
 
@@ -90,28 +107,31 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 context.Reason);
         }
 
-        private static void TryAppendCapability(
+        private static void TryAppendLifecycleContribution(
             List<ActivityCapabilityDescriptor> capabilities,
             List<IActivityCapabilityRuntimeReference> runtimeReferences,
             HashSet<string> capabilityKeys,
             ActivityCapabilityInventoryId inventoryId,
             string ownerId,
             string targetId,
-            ActivityCapabilityKind capabilityKind,
-            string componentPath,
-            string componentType,
-            bool required,
-            int priority,
             IReadOnlyList<ActivityCapabilityPolicyEntry> metadata,
+            bool required,
             string source,
-            MonoBehaviour behaviour,
-            bool supportsKind)
+            MonoBehaviour providerBehaviour,
+            IActivityObjectLifecycleContribution contribution)
         {
-            if (!supportsKind)
+            if (contribution == null || !contribution.IsValid || providerBehaviour == null)
             {
                 return;
             }
 
+            if (!TryResolveCapabilityKind(contribution, out ActivityCapabilityKind capabilityKind))
+            {
+                return;
+            }
+
+            string componentPath = ActivityCapabilityTransformPathUtility.BuildTransformPath(providerBehaviour.transform);
+            string componentType = providerBehaviour.GetType().FullName ?? providerBehaviour.GetType().Name;
             string capabilityId = ActivityCapabilityInventoryId.DeriveCapabilityId(inventoryId, ownerId, capabilityKind, ModuleId, componentPath);
             if (!capabilityKeys.Add(capabilityId))
             {
@@ -126,52 +146,72 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory
                 componentPath,
                 componentType,
                 required,
-                priority,
+                contribution.Priority,
                 metadata,
                 source));
 
-            if (capabilityKind == ActivityCapabilityKind.ResetEndpoint &&
-                behaviour is IActivityObjectResetEndpoint endpoint)
+            if (contribution is IActivityObjectResetContribution resetContribution && resetContribution.ResetEndpoint != null)
             {
                 runtimeReferences.Add(new ActivityObjectResetEndpointReference(
                     capabilityId,
                     ownerId,
                     targetId,
                     componentPath,
-                    endpoint));
+                    resetContribution.ResetEndpoint));
             }
 
-            if (capabilityKind == ActivityCapabilityKind.SnapshotProvider &&
-                behaviour is IActivityObjectSnapshotProvider provider)
+            if (contribution is IActivityObjectSnapshotContribution snapshotContribution && snapshotContribution.SnapshotProvider != null)
             {
                 runtimeReferences.Add(new ActivityObjectSnapshotProviderReference(
                     capabilityId,
                     ownerId,
                     targetId,
                     componentPath,
-                    provider));
+                    snapshotContribution.SnapshotProvider));
             }
 
-            if (capabilityKind == ActivityCapabilityKind.SnapshotRestoreEndpoint &&
-                behaviour is IActivityObjectSnapshotRestoreEndpoint restoreEndpoint)
+            if (contribution is IActivityObjectSnapshotRestoreContribution restoreContribution && restoreContribution.RestoreEndpoint != null)
             {
                 runtimeReferences.Add(new ActivityObjectSnapshotRestoreEndpointReference(
                     capabilityId,
                     ownerId,
                     targetId,
                     componentPath,
-                    restoreEndpoint));
+                    restoreContribution.RestoreEndpoint));
             }
 
-            if (capabilityKind == ActivityCapabilityKind.ReleaseEndpoint &&
-                behaviour is IActivityObjectReleaseEndpoint releaseEndpoint)
+            if (contribution is IActivityObjectReleaseContribution releaseContribution && releaseContribution.ReleaseEndpoint != null)
             {
                 runtimeReferences.Add(new ActivityObjectReleaseEndpointReference(
                     capabilityId,
                     ownerId,
                     targetId,
                     componentPath,
-                    releaseEndpoint));
+                    releaseContribution.ReleaseEndpoint));
+            }
+        }
+
+        private static bool TryResolveCapabilityKind(
+            IActivityObjectLifecycleContribution contribution,
+            out ActivityCapabilityKind capabilityKind)
+        {
+            switch (contribution.Kind)
+            {
+                case ActivityObjectLifecycleContributionKind.Reset:
+                    capabilityKind = ActivityCapabilityKind.ResetEndpoint;
+                    return true;
+                case ActivityObjectLifecycleContributionKind.Snapshot:
+                    capabilityKind = ActivityCapabilityKind.SnapshotProvider;
+                    return true;
+                case ActivityObjectLifecycleContributionKind.SnapshotRestore:
+                    capabilityKind = ActivityCapabilityKind.SnapshotRestoreEndpoint;
+                    return true;
+                case ActivityObjectLifecycleContributionKind.Release:
+                    capabilityKind = ActivityCapabilityKind.ReleaseEndpoint;
+                    return true;
+                default:
+                    capabilityKind = ActivityCapabilityKind.Unknown;
+                    return false;
             }
         }
 

@@ -766,7 +766,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             _state.AppendTrace($"[OBS][SessionActivityPipeline] start_from_prepared_handoff handoff='{handoff}' source='{source}' reason='{reason}'");
             _state.AppendTrace($"[OBS][SessionActivityPipeline] SessionActivityEntryHandoffAccepted handoff='{handoff}' source='{source}' reason='{reason}'");
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' actorMaterializationPlanEntries='{handoff.ActorMaterializationPlanEntryCount}' loadedSnapshotPayload='{(handoff.HasLoadedSnapshotPayloadContext ? "present" : "absent")}' loadedSnapshotPayloadObjectCount='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.Objects.Count : 0)}' loadedSnapshotPayloadSourceActivityId='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.ActivityId : "<none>")}' loadedSnapshotPayloadSourceEntrySequence='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.SourceEntrySequence : 0)}'.",
+                $"[OBS][SessionActivityPipeline][Handoff] SessionActivityEntryHandoffAccepted pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{initialDefinition.ActivityId}' activityOrdinal='{initialDefinition.ActivityOrdinal}' entrySequence='{entrySequence}' source='{source}' reason='{reason}' sessionParticipationContext='{(handoff.HasSessionParticipationContext ? "present" : "absent")}' sessionParticipationRevision='{handoff.SessionParticipationRevision}' sessionSlotReservations='{handoff.SessionParticipationSlotReservationCount}' sessionSelections='{handoff.SessionParticipationSelectionCount}' sessionParticipants='{handoff.SessionParticipationParticipantCount}' actorMaterializationPlanEntries='{handoff.ActorMaterializationPlanEntryCount}' loadedSnapshotPayload='{(handoff.HasLoadedSnapshotPayloadContext ? "present" : "absent")}' loadedSnapshotPayloadRecordCount='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.RecordCount : 0)}' loadedSnapshotPayloadSourceActivityId='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.ActivityId : "<none>")}' loadedSnapshotPayloadSourceEntrySequence='{(handoff.HasLoadedSnapshotPayloadContext ? handoff.LoadedSnapshotPayloadContext.Payload.SourceEntrySequence : 0)}'.",
                 DebugUtility.Colors.Success);
             EmitFact(emittedFacts, SessionActivityFactKind.PipelineStarted, activationIdentity, source, reason, "SessionActivityPipeline started from prepared handoff.");
             EmitSnapshot(emittedSnapshots, "pipeline_started_from_handoff", source, reason, "Pipeline started from prepared handoff.");
@@ -1463,7 +1463,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return "NextActivity";
             }
 
-            if (definition is { IsValid: true, HasNextActivity: true })
+            if (definition.IsValid && definition.HasNextActivity)
             {
                 return "NextActivity";
             }
@@ -1498,7 +1498,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 definition.IsValid &&
                 string.Equals(transition.FromActivityId, definition.ActivityId, StringComparison.Ordinal) &&
                 transition.FromEntrySequence == entrySequence;
-            bool hasNextActivity = definition is { IsValid: true, HasNextActivity: true };
+            bool hasNextActivity = definition.IsValid && definition.HasNextActivity;
 
             if (string.Equals(normalizedContinuationKind, "RestartCurrentActivity", StringComparison.Ordinal) && hasPendingRestart)
             {
@@ -3501,7 +3501,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             string reason,
             string readinessPoint)
         {
-            string routeOperationId = _lastSessionParticipationContext is { IsValid: true }
+            string routeOperationId = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
                 ? _lastSessionParticipationContext.RouteOperationId
                 : string.Empty;
             if (string.IsNullOrWhiteSpace(routeOperationId))
@@ -4060,7 +4060,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
         private IReadOnlyList<PlayerActorIdentityRecord> ResolveRetainedMovementTargetsOrEmpty(SessionActivityIdentity identity)
         {
             if (_activityPlayerActorRegistry.TryGetIndexedActiveActorIdentities(out IReadOnlyList<PlayerActorIdentityRecord> activeActors) &&
-                activeActors is { Count: > 0 } &&
+                activeActors != null &&
+                activeActors.Count > 0 &&
                 ActivityActorScopeCompatibilityPolicy.IsScopeCompatible(
                     _activityPlayerActorRegistry.ActiveScopeIdentity,
                     identity,
@@ -4343,12 +4344,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 SessionActivityDefinition currentDefinition,
                 int currentEntrySequence)
             {
-                return currentLoadedSet is { IsValid: true, Identity: { Stage: SessionActivityStage.ActivityContentLoadedSetReady } } &&
-                    string.Equals(currentLoadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                    string.Equals(currentLoadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                    string.Equals(currentLoadedSet.Identity.ActivityId, currentDefinition.ActivityId, StringComparison.Ordinal) &&
-                    currentLoadedSet.Identity.ActivityOrdinal == currentDefinition.ActivityOrdinal &&
-                    currentLoadedSet.Identity.EntrySequence == currentEntrySequence;
+                return currentLoadedSet.IsValid &&
+                       currentLoadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
+                       string.Equals(currentLoadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                       string.Equals(currentLoadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                       string.Equals(currentLoadedSet.Identity.ActivityId, currentDefinition.ActivityId, StringComparison.Ordinal) &&
+                       currentLoadedSet.Identity.ActivityOrdinal == currentDefinition.ActivityOrdinal &&
+                       currentLoadedSet.Identity.EntrySequence == currentEntrySequence;
             }
 
             void AddContractCandidates(
@@ -4570,8 +4572,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     }
 
                     if ((_activityPlayerActorRegistry.TryGetActiveHandleByParticipant(candidate.ParticipantId, out PlayerActorRuntimeHandle candidateHandle) ||
-                            _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out candidateHandle)) &&
-                        candidateHandle is { IsValid: true, ActorInstanceRuntimeId: { IsValid: true } })
+                        _activityPlayerActorRegistry.TryGetRouteScopedHandleByParticipant(candidate.ParticipantId, out candidateHandle)) &&
+                        candidateHandle.IsValid &&
+                        candidateHandle.ActorInstanceRuntimeId.IsValid)
                     {
                         availableActorInstances.Add(candidateHandle.ActorInstanceRuntimeId.ToString());
                     }
@@ -4781,6 +4784,125 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             return false;
         }
 
+        public bool TryQaCaptureCurrentActivitySnapshotPayload(
+            SessionActivityIdentity commandIdentity,
+            string source,
+            string reason,
+            out string outcomeReason)
+        {
+            outcomeReason = "unknown";
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][QA] event='ActivitySnapshotCaptureQaRequested' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' stage='{_state.CurrentStage}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Info);
+
+            if (_state.CurrentStage != SessionActivityStage.ActivityRunning || !_state.CurrentIdentity.IsValid)
+            {
+                outcomeReason = "activity_snapshot_capture_qa_invalid_stage";
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivitySnapshotCaptureQaRejected' reason='{outcomeReason}' stage='{_state.CurrentStage}' activityId='{_state.CurrentDefinition.ActivityId}' entrySequence='{_state.CurrentEntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
+
+            if (!commandIdentity.IsValid || !IsSameActivityCycle(commandIdentity, _state.CurrentIdentity))
+            {
+                outcomeReason = "activity_snapshot_capture_qa_stale_or_foreign_identity";
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivitySnapshotCaptureQaRejected' reason='{outcomeReason}' commandIdentity='{commandIdentity}' currentIdentity='{_state.CurrentIdentity}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
+
+            SessionActivityDefinition definition = _state.CurrentDefinition;
+            SessionActivityIdentity previousIdentity = _state.CurrentIdentity;
+            SessionActivityStage previousStage = _state.CurrentStage;
+            List<SessionActivityFact> facts = new();
+            List<SessionActivitySnapshot> snapshots = new();
+            var command = new SessionActivityCommand(
+                SessionActivityCommandKind.CompleteCurrentActivity,
+                commandIdentity,
+                normalizedSource,
+                normalizedReason);
+
+            ActivityObjectSnapshotCaptureStageResult result;
+            try
+            {
+                result = ActivityObjectSnapshotCaptureStage.Execute(
+                    new ActivityObjectSnapshotCaptureStageCommand(
+                        commandIdentity,
+                        command,
+                        commandIdentity.EntrySequence,
+                        RouteActivitySnapshotSchemaId),
+                    definition,
+                    this,
+                    _activityObjectExitRuntimeState,
+                    facts,
+                    snapshots);
+            }
+            catch (Exception exception)
+            {
+                _state.SetCurrentIdentity(previousIdentity, previousStage);
+                outcomeReason = "activity_snapshot_capture_qa_failed";
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QA] event='ActivitySnapshotCaptureQaFailed' reason='{outcomeReason}' activityId='{commandIdentity.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' source='{normalizedSource}' reasonDetail='{normalizedReason}' error='{exception.Message}'.",
+                    DebugUtility.Colors.Error);
+                return false;
+            }
+
+            _state.SetCurrentIdentity(previousIdentity, previousStage);
+
+            bool hasPayload = _activityObjectExitRuntimeState.TryGetSnapshotPayloadForSaveOnExit(
+                out SessionActivitySnapshotPayload payload,
+                out string payloadFailureReason,
+                definition.ActivityId,
+                commandIdentity.EntrySequence,
+                "SessionActivityPipeline/QA",
+                "qa_snapshot_capture_payload_validation");
+
+            int recordCount = hasPayload && payload.HasCapabilitySnapshotEnvelope && payload.CapabilitySnapshotEnvelope.Records != null
+                ? payload.CapabilitySnapshotEnvelope.Records.Count
+                : 0;
+            string canonicalPayload = hasPayload && payload.HasCapabilitySnapshotEnvelope
+                ? "CapabilitySnapshotEnvelope"
+                : "<none>";
+
+            if (!hasPayload || !payload.IsValid || !payload.HasCapabilitySnapshotEnvelope)
+            {
+                outcomeReason = string.IsNullOrWhiteSpace(payloadFailureReason)
+                    ? "activity_snapshot_capture_qa_payload_missing"
+                    : Normalize(payloadFailureReason);
+
+                if (string.Equals(outcomeReason, "no_activity_content_contributors", StringComparison.Ordinal))
+                {
+                    DebugUtility.Log(
+                        typeof(SessionActivityPipeline),
+                        $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='QaCapabilitySnapshotEnvelopeCapture' checkpointStatus='SkippedNoContent' activityId='{definition.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' captureCompleted='{result.Completed.ToString().ToLowerInvariant()}' capturedCount='{result.CapturedCount}' recordCount='{recordCount}' canonicalPayload='{canonicalPayload}' skipReason='{outcomeReason}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                        DebugUtility.Colors.Info);
+                    return false;
+                }
+
+                DebugUtility.Log(
+                    typeof(SessionActivityPipeline),
+                    $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='QaCapabilitySnapshotEnvelopeCapture' checkpointStatus='Failed' activityId='{definition.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' captureCompleted='{result.Completed.ToString().ToLowerInvariant()}' capturedCount='{result.CapturedCount}' recordCount='{recordCount}' canonicalPayload='{canonicalPayload}' failureReason='{outcomeReason}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
+
+            outcomeReason = "activity_snapshot_capture_qa_captured";
+            DebugUtility.Log(
+                typeof(SessionActivityPipeline),
+                $"[OBS][SessionActivityPipeline][QACheckpoint] checkpoint='QaCapabilitySnapshotEnvelopeCapture' checkpointStatus='Passed' activityId='{definition.ActivityId}' entrySequence='{commandIdentity.EntrySequence}' captureCompleted='{result.Completed.ToString().ToLowerInvariant()}' capturedCount='{result.CapturedCount}' recordCount='{recordCount}' envelopeSchemaId='{payload.CapabilitySnapshotEnvelope.SchemaId}' canonicalPayload='{canonicalPayload}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                DebugUtility.Colors.Success);
+            return true;
+        }
+
         private static bool TryResolvePlayerActorInstanceFromFeed(
             ActorInventoryFeedResult feed,
             PlayerActorIdentityRecord selected,
@@ -4943,23 +5065,25 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private IActivityObjectSnapshotProvider[] ResolveObjectSnapshotProviders(GameObject targetObject)
         {
-            if (targetObject == null)
+            IReadOnlyList<IActivityObjectLifecycleContribution> contributions = ResolveObjectLifecycleContributions(targetObject);
+            if (contributions.Count == 0)
             {
                 return Array.Empty<IActivityObjectSnapshotProvider>();
             }
 
             List<IActivityObjectSnapshotProvider> providers = new();
-            ActivityObjectContributor contributor = targetObject.GetComponent<ActivityObjectContributor>();
-            bool includeChildren = contributor != null && contributor.IncludeChildrenForEndpointDiscovery;
-            MonoBehaviour[] behaviours = includeChildren
-                ? targetObject.GetComponentsInChildren<MonoBehaviour>(true)
-                : targetObject.GetComponents<MonoBehaviour>();
-
-            for (int index = 0; index < behaviours.Length; index++)
+            HashSet<IActivityObjectSnapshotProvider> unique = new();
+            for (int index = 0; index < contributions.Count; index++)
             {
-                if (behaviours[index] is IActivityObjectSnapshotProvider provider)
+                if (contributions[index] is not IActivityObjectSnapshotContribution snapshotContribution ||
+                    snapshotContribution.SnapshotProvider == null)
                 {
-                    providers.Add(provider);
+                    continue;
+                }
+
+                if (unique.Add(snapshotContribution.SnapshotProvider))
+                {
+                    providers.Add(snapshotContribution.SnapshotProvider);
                 }
             }
 
@@ -4968,27 +5092,66 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         private IActivityObjectSnapshotRestoreEndpoint[] ResolveObjectSnapshotRestoreEndpoints(GameObject targetObject, ActivityObjectContributionReport report)
         {
-            if (targetObject == null)
+            IReadOnlyList<IActivityObjectLifecycleContribution> contributions = ResolveObjectLifecycleContributions(targetObject);
+            if (contributions.Count == 0)
             {
                 return Array.Empty<IActivityObjectSnapshotRestoreEndpoint>();
             }
 
             List<IActivityObjectSnapshotRestoreEndpoint> endpoints = new();
-            ActivityObjectContributor contributor = targetObject.GetComponent<ActivityObjectContributor>();
-            bool includeChildren = contributor != null && contributor.IncludeChildrenForEndpointDiscovery;
-            MonoBehaviour[] behaviours = includeChildren
-                ? targetObject.GetComponentsInChildren<MonoBehaviour>(true)
-                : targetObject.GetComponents<MonoBehaviour>();
-
-            for (int index = 0; index < behaviours.Length; index++)
+            HashSet<IActivityObjectSnapshotRestoreEndpoint> unique = new();
+            for (int index = 0; index < contributions.Count; index++)
             {
-                if (behaviours[index] is IActivityObjectSnapshotRestoreEndpoint endpoint)
+                if (contributions[index] is not IActivityObjectSnapshotRestoreContribution restoreContribution ||
+                    restoreContribution.RestoreEndpoint == null)
                 {
-                    endpoints.Add(endpoint);
+                    continue;
+                }
+
+                if (unique.Add(restoreContribution.RestoreEndpoint))
+                {
+                    endpoints.Add(restoreContribution.RestoreEndpoint);
                 }
             }
 
             return endpoints.ToArray();
+        }
+
+        private static IReadOnlyList<IActivityObjectLifecycleContribution> ResolveObjectLifecycleContributions(GameObject targetObject)
+        {
+            if (targetObject == null)
+            {
+                return Array.Empty<IActivityObjectLifecycleContribution>();
+            }
+
+            ActivityObjectContributor contributor = targetObject.GetComponent<ActivityObjectContributor>();
+            if (contributor == null || !contributor.IsValid)
+            {
+                return Array.Empty<IActivityObjectLifecycleContribution>();
+            }
+
+            bool includeChildren = contributor.IncludeChildrenForEndpointDiscovery;
+            MonoBehaviour[] behaviours = includeChildren
+                ? targetObject.GetComponentsInChildren<MonoBehaviour>(true)
+                : targetObject.GetComponents<MonoBehaviour>();
+            ActivityObjectLifecycleContributionContext context = new(
+                default,
+                contributor.TargetId,
+                contributor.RoleId,
+                contributor.ContributorKind,
+                contributor.DefaultRequiredness,
+                nameof(SessionActivityPipeline),
+                "activity_object_lifecycle_contribution_lookup");
+            List<IActivityObjectLifecycleContribution> contributions = new();
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                if (behaviours[index] is IActivityObjectLifecycleContributionProvider provider)
+                {
+                    provider.CollectActivityObjectLifecycleContributions(context, contributions);
+                }
+            }
+
+            return contributions;
         }
 
         private static bool TryResolveSupportingSnapshotProvider(
@@ -5213,12 +5376,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             int entrySequence)
         {
-            return result is { IsValid: true, Identity: { IsValid: true } } &&
-                string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                result.Identity.EntrySequence == entrySequence;
+            return result.IsValid &&
+                   result.Identity.IsValid &&
+                   string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   result.Identity.EntrySequence == entrySequence;
         }
 
         private bool IsDiscoveryResultForCurrentResetEntry(
@@ -5227,12 +5391,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int activityOrdinal,
             int entrySequence)
         {
-            return result is { IsValid: true, Identity: { IsValid: true } } &&
-                string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                string.Equals(result.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
-                result.Identity.ActivityOrdinal == activityOrdinal &&
-                result.Identity.EntrySequence == entrySequence;
+            return result.IsValid &&
+                   result.Identity.IsValid &&
+                   string.Equals(result.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(result.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                   result.Identity.ActivityOrdinal == activityOrdinal &&
+                   result.Identity.EntrySequence == entrySequence;
         }
 
         private bool IsReportForCurrentEntry(
@@ -5240,12 +5405,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             int entrySequence)
         {
-            return report is { IsValid: true, Identity: { IsValid: true } } &&
-                string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                report.Identity.EntrySequence == entrySequence;
+            return report.IsValid &&
+                   report.Identity.IsValid &&
+                   string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   report.Identity.EntrySequence == entrySequence;
         }
 
         private bool IsReportForCurrentResetEntry(
@@ -5254,12 +5420,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int activityOrdinal,
             int entrySequence)
         {
-            return report is { IsValid: true, Identity: { IsValid: true } } &&
-                string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                string.Equals(report.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
-                report.Identity.ActivityOrdinal == activityOrdinal &&
-                report.Identity.EntrySequence == entrySequence;
+            return report.IsValid &&
+                   report.Identity.IsValid &&
+                   string.Equals(report.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(report.Identity.ActivityId, activityId, StringComparison.Ordinal) &&
+                   report.Identity.ActivityOrdinal == activityOrdinal &&
+                   report.Identity.EntrySequence == entrySequence;
         }
 
         private bool HasRequiredResetContributorForCurrentResetEntry(
@@ -5281,7 +5448,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     continue;
                 }
 
-                if (report is { Requiredness: ActivitySetupRequirementRequiredness.Required, SupportedResetGroups: { Count: > 0 } })
+                if (report.Requiredness == ActivitySetupRequirementRequiredness.Required &&
+                    report.SupportedResetGroups != null &&
+                    report.SupportedResetGroups.Count > 0)
                 {
                     return true;
                 }
@@ -5336,12 +5505,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             SessionActivityDefinition definition,
             int entrySequence)
         {
-            return loadedSet is { IsValid: true, Identity: { Stage: SessionActivityStage.ActivityContentLoadedSetReady } } &&
-                string.Equals(loadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
-                string.Equals(loadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
-                string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
-                loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
-                loadedSet.Identity.EntrySequence == entrySequence;
+            return loadedSet.IsValid &&
+                   loadedSet.Identity.Stage == SessionActivityStage.ActivityContentLoadedSetReady &&
+                   string.Equals(loadedSet.Identity.PipelineId, PipelineId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.SessionId, _sessionId, StringComparison.Ordinal) &&
+                   string.Equals(loadedSet.Identity.ActivityId, definition.ActivityId, StringComparison.Ordinal) &&
+                   loadedSet.Identity.ActivityOrdinal == definition.ActivityOrdinal &&
+                   loadedSet.Identity.EntrySequence == entrySequence;
         }
 
         private static string FormatCapabilityKindsSummary(IReadOnlyList<ActivityCapabilityDescriptor> capabilities)
@@ -7399,7 +7569,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             _activityEntryPipeline.StoreActivityParticipationContext(context);
             _activityActorExitRuntimeState.StoreActivityParticipationContext(context);
-            string sessionParticipationState = _lastSessionParticipationContext is { IsValid: true }
+            string sessionParticipationState = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
                 ? "present"
                 : "absent";
             int sessionRevision = _lastSessionParticipationContext?.Revision ?? 0;
@@ -7527,7 +7697,7 @@ private bool TryBuildActivityParticipantBinding(
             string reason)
         {
             DebugUtility.Log(typeof(SessionActivityPipeline),
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext is { IsValid: true } ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipationBindingSkipped' pipelineId='{PipelineId}' sessionStateId='{_sessionId}' activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{FormatSessionParticipantId(participantId)}' sessionParticipationContext='{(_lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid ? "present" : "absent")}' skipReason='{skipReason}' source='{source}' reason='{reason}'.",
                 DebugUtility.Colors.Warning);
         }
 
@@ -7862,7 +8032,7 @@ private bool TryBuildActivityParticipantBinding(
                 return true;
             }
 
-            string observedRouteOperationId = _lastSessionParticipationContext is { IsValid: true }
+            string observedRouteOperationId = _lastSessionParticipationContext != null && _lastSessionParticipationContext.IsValid
                 ? _lastSessionParticipationContext.RouteOperationId
                 : string.Empty;
 

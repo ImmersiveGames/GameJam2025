@@ -1,14 +1,31 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
 {
     [DisallowMultipleComponent]
-    public sealed class ActivityObjectTransformSnapshotProvider : MonoBehaviour, IActivityObjectSnapshotProvider, IActivityObjectSnapshotProviderContractView
+    public sealed class ActivityObjectTransformSnapshotProvider : MonoBehaviour, IActivityObjectSnapshotProvider, IActivityObjectSnapshotProviderContractView, IActivityObjectLifecycleContributionProvider
     {
         [SerializeField] private string targetId;
         [SerializeField] private Transform targetTransform;
+
+
+        public void CollectActivityObjectLifecycleContributions(
+            ActivityObjectLifecycleContributionContext context,
+            IList<IActivityObjectLifecycleContribution> contributions)
+        {
+            if (contributions == null || !context.IsValid || !Supports(context.TargetId))
+            {
+                return;
+            }
+
+            contributions.Add(new ActivityObjectSnapshotContribution(
+                $"activity_object.snapshot:{context.TargetId}:{nameof(ActivityObjectTransformSnapshotProvider)}",
+                200,
+                this));
+        }
 
         public bool Supports(string requestedTargetId)
         {

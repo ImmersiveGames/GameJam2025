@@ -461,12 +461,12 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 
     public readonly struct ActivityEntryObjectSnapshotRestorePayloadContext
     {
-        public ActivityEntryObjectSnapshotRestorePayloadContext(LoadedSessionActivitySnapshotPayload payload)
+        public ActivityEntryObjectSnapshotRestorePayloadContext(LoadedRouteActivitySnapshotPayload payload)
         {
             Payload = payload;
         }
 
-        public LoadedSessionActivitySnapshotPayload Payload { get; }
+        public LoadedRouteActivitySnapshotPayload Payload { get; }
         public bool HasPayload => Payload.IsValid;
         public bool IsValid => HasPayload;
     }

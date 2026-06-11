@@ -1,4 +1,4 @@
-﻿# Plano de RefatoraÃ§Ã£o â€” SessionActivity Base 2.0
+﻿# Plano de Refatoração – SessionActivity Base 2.0
 
 > Historical planning document. The active normative boundary is frozen by `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md` and `ENTRY-BOUNDARY-DOC-0` inside it. Use this plan only as refactor context; do not read inventory-backed setup/binding as an allowed final shape.
 
@@ -10,45 +10,45 @@
 
 ## Objetivo
 
-Decompor `SessionActivityPipeline` sem criar trilho paralelo, fallback silencioso ou novo owner ambÃ­guo.
+Decompor `SessionActivityPipeline` sem criar trilho paralelo, fallback silencioso ou novo owner ambíguo.
 
-O alvo Ã© separar:
+O alvo é separar:
 
 ```text
 SessionActivityPipeline = lifecycle macro / ordem / handoff
 ActivityEntryPipeline = entry lifecycle por Activity entry
-Stages = passos determinÃ­sticos
-Policies = classificaÃ§Ã£o
+Stages = passos determinísticos
+Policies = classificação
 Commands = payload runtime resolvido
 Facts = registro
 Adapters = side-effects
-Endpoints = reaÃ§Ã£o/capacidade local
+Endpoints = reação/capacidade local
 ```
 
 ## Premissas
 
-- Base 1.1 atual Ã© baseline funcional seguro.
-- NÃ£o preservar compatibilidade de shape ruim.
-- NÃ£o usar `partial` para esconder pipeline monolÃ­tico.
-- NÃ£o criar manager/coordinator genÃ©rico.
-- NÃ£o pedir ao Codex build, compile, tests, smoke, playmode ou batchmode.
-- Toda implementaÃ§Ã£o precisa voltar com smoke/log manual antes de PASS.
+- Base 1.1 atual é baseline funcional seguro.
+- Não preservar compatibilidade de shape ruim.
+- Não usar `partial` para esconder pipeline monolítico.
+- Não criar manager/coordinator genérico.
+- Não pedir ao Codex build, compile, tests, smoke, playmode ou batchmode.
+- Toda implementação precisa voltar com smoke/log manual antes de PASS.
 
 
-## Status consolidado pÃ³s-SA-CONTENT-REL-2
+## Status consolidado pós-SA-CONTENT-REL-2
 
-Este plano registra a direÃ§Ã£o inicial. A ordem normativa e os checkpoints detalhados vivem no `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md`.
+Este plano registra a direção inicial. A ordem normativa e os checkpoints detalhados vivem no `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md`.
 
-Cortes fechados relevantes apÃ³s a decomposiÃ§Ã£o principal:
+Cortes fechados relevantes após a decomposição principal:
 
 ```text
-SA-6C   Movement binding stage â€” CLOSED / PASS; shim morto removido.
-SA-6D   Camera binding stage â€” CLOSED / PASS.
-SA-8B   ObjectRelease/SnapshotCapture cleanup â€” CLOSED / PASS; helper morto removido.
-SA-8C   Actor release/participation exit cleanup â€” CLOSED / PASS.
-SA-11A  ActivityEntry state/context extraction â€” CLOSED / PASS arquitetural do ownership de entry.
-SA-12   Command/contract hygiene â€” CLOSED apÃ³s SA-12F5 e SA-12F-MOV-H1.
-SA-CONTENT-REL-1/2 ActivityContent loaded set ownership normalization â€” CLOSED / PASS.
+SA-6C   Movement binding stage – CLOSED / PASS; shim morto removido.
+SA-6D   Camera binding stage – CLOSED / PASS.
+SA-8B   ObjectRelease/SnapshotCapture cleanup – CLOSED / PASS; helper morto removido.
+SA-8C   Actor release/participation exit cleanup – CLOSED / PASS.
+SA-11A  ActivityEntry state/context extraction – CLOSED / PASS arquitetural do ownership de entry.
+SA-12   Command/contract hygiene – CLOSED após SA-12F5 e SA-12F-MOV-H1.
+SA-CONTENT-REL-1/2 ActivityContent loaded set ownership normalization – CLOSED / PASS.
 ```
 
 Fechamento documental adicional:
@@ -63,65 +63,65 @@ SessionActivityPendingOperationKind ficou restrito a operacoes async reais pende
 SA-16D confirmou que PlayerInput canonical actions explicit composition resolve o asset canonico na composition root, injeta ate o ActivityEntryPipeline e remove o lookup global do PlayerInputBindingAdapter.
 ```
 
-SA-16B  ActivityContent async release completion boundary â€” CLOSED.
+SA-16B  ActivityContent async release completion boundary – CLOSED.
 SA-16B1 ActivityContent unload callback boundary cleanup â€” PASS funcional + PASS arquitetural do corte.
 SA-16C  PendingOperation callback contract â€” CLOSED.
 SA-16C1 PendingOperation window unload callback boundary cleanup â€” PASS funcional + PASS arquitetural do corte.
 SA-16C2 PendingOperation kind contract cleanup â€” PASS funcional + PASS arquitetural do corte.
-SA-16D  PlayerInput canonical actions explicit composition â€” CLOSED / PASS funcional + PASS arquitetural do corte.
+SA-16D  PlayerInput canonical actions explicit composition – CLOSED / PASS funcional + PASS arquitetural do corte.
 
 Ownership consolidado:
 
 ```text
 SessionActivityPipeline = lifecycle macro / ordem / handoffs / continuation.
-ActivityEntryPipeline = owner do lifecycle e state canÃ´nico de entry.
-ActivityContentRuntimeState = owner canÃ´nico do loaded set vivo de ActivityContent.
-ActivityContentReleaseRuntimeState = state operacional da release assÃ­ncrona, sem loaded set duplicado.
+ActivityEntryPipeline = owner do lifecycle e state canônico de entry.
+ActivityContentRuntimeState = owner canônico do loaded set vivo de ActivityContent.
+ActivityContentReleaseRuntimeState = state operacional da release assíncrona, sem loaded set duplicado.
 SessionActivityRuntimeState = state macro legítimo, sem mirrors de entry sem consumer comprovado.
 ```
 
 Próximo trabalho deve começar por auditoria dos débitos restantes reais; não reabrir cortes fechados sem regressão explícita.
 
-## Corte SA-0 â€” Congelamento documental
+## Corte SA-0 – Congelamento documental
 
 ### Objetivo
 
 Adicionar ADR e plano ao projeto sem alterar runtime.
 
-### AÃ§Ã£o
+### Ação
 
 - Criar `ADR-2.0-0002-SessionActivity-Ownership-Decomposition.md`.
-- Atualizar Ã­ndice/README de ADRs se existir.
-- Registrar que a auditoria atual Ã© fonte de decisÃ£o.
+- Atualizar índice/README de ADRs se existir.
+- Registrar que a auditoria atual é fonte de decisão.
 
 ### Aceite
 
-- Sem alteraÃ§Ã£o de cÃ³digo runtime.
+- Sem alteração de código runtime.
 - Documento reflete owner de `SessionActivityPipeline`, `ActivityEntryPipeline`, Host, stages, policies, commands, facts, adapters e endpoints.
 
 ### Risco
 
 Baixo.
 
-## Corte SA-1 â€” RouteExit teardown owner unification
+## Corte SA-1 – RouteExit teardown owner unification
 
 ### Objetivo
 
 Remover owner duplicado entre `SessionActivityHost` e `SessionActivityPipeline` para `RouteExit teardown`.
 
-### AÃ§Ã£o
+### Ação
 
 - Auditar chamadas externas de `ISessionActivityRouteExitTeardownBoundary`.
-- Fazer `SessionActivityPipeline` ser owner Ãºnico de decisÃ£o/estado de teardown.
+- Fazer `SessionActivityPipeline` ser owner único de decisão/estado de teardown.
 - Fazer `SessionActivityHost` virar delegador/endpoint externo.
-- Mover classificaÃ§Ã£o duplicada de stages para policy Ãºnica ou mÃ©todo Ãºnico canÃ´nico.
+- Mover classificação duplicada de stages para policy única ou método único canônico.
 - Remover hardcode QA de `activity_01` se estiver acoplado ao lifecycle real.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o criar `ActivityEntryPipeline` ainda.
-- NÃ£o mexer em input/movement/camera/adapters.
-- NÃ£o mexer em service locator/global registry ainda, salvo se for necessÃ¡rio para remover decisÃ£o de lifecycle.
+- Não criar `ActivityEntryPipeline` ainda.
+- Não mexer em input/movement/camera/adapters.
+- Não mexer em service locator/global registry ainda, salvo se for necessário para remover decisão de lifecycle.
 
 ### Aceite arquitetural
 
@@ -130,19 +130,19 @@ Remover owner duplicado entre `SessionActivityHost` e `SessionActivityPipeline` 
 - Sem duas listas divergentes de route-exit/deactivation stages.
 - Sem fallback para caminho antigo.
 
-### Smoke obrigatÃ³rio
+### Smoke obrigatório
 
 - Boot -> Menu -> Sandbox.
 - CompleteActivationWindow.
 - BackToMenu / RouteExit.
 - Confirmar `RouteExitBackToMenu PASS`.
-- Confirmar ausÃªncia de `FATAL`, `Exception`, `route_transition_failed`, foreign/stale indevido.
+- Confirmar ausência de `FATAL`, `Exception`, `route_transition_failed`, foreign/stale indevido.
 
 ### Risco
 
-MÃ©dio. Pode quebrar contrato externo de `SessionOperational` se o Host deixar de responder corretamente.
+Médio. Pode quebrar contrato externo de `SessionOperacional` se o Host deixar de responder corretamente.
 
-## Corte SA-2 â€” ActivityEntryPipeline shell canÃ´nico
+## Corte SA-2 – ActivityEntryPipeline shell canônico
 
 ### Objetivo
 
@@ -152,23 +152,23 @@ Criar `ActivityEntryPipeline` concreto como owner real de entry, sem ainda migra
 
 - Criar `ActivityEntryPipeline` com `ExecuteAsync(ActivityEntryCommand)`.
 - Criar `ActivityEntryCommand`, `ActivityEntryResult`, `ActivityEntryResultKind` se os contratos atuais forem insuficientes.
-- Compor o pipeline por DI explÃ­cita, nÃ£o por service locator.
+- Compor o pipeline por DI explícita, não por service locator.
 - Fazer `SessionActivityPipeline` chamar `ActivityEntryPipeline` no ponto de entry.
 - O primeiro corte pode migrar apenas um bloco pequeno e coeso de entry, removendo o caminho antigo equivalente.
 
 ### NÃ£o fazer
 
-- NÃ£o criar fallback para o fluxo antigo.
-- NÃ£o criar boundary que chama sub-stages como mini-pipeline.
-- NÃ£o passar delegates/Func/stages dentro de command.
-- NÃ£o mover ActivationWindow completion para `ActivityEntryPipeline`.
+- Não criar fallback para o fluxo antigo.
+- Não criar boundary que chama sub-stages como mini-pipeline.
+- Não passar delegates/Func/stages dentro de command.
+- Não mover ActivationWindow completion para `ActivityEntryPipeline`.
 
 ### Aceite arquitetural
 
 - Existe classe concreta `ActivityEntryPipeline`.
-- O path migrado tem owner Ãºnico.
+- O path migrado tem owner único.
 - O caminho antigo equivalente foi removido ou deixou de ser chamado.
-- Logs mostram inÃ­cio/fim de `ActivityEntryPipeline`.
+- Logs mostram início/fim de `ActivityEntryPipeline`.
 
 ### Smoke obrigatÃ³rio
 
@@ -176,13 +176,13 @@ Criar `ActivityEntryPipeline` concreto como owner real de entry, sem ainda migra
 - Activity entry inicial.
 - CompleteActivationWindow.
 - Confirmar chegada em `ActivityRunning`.
-- Confirmar ausÃªncia de `FATAL`, `Exception`, foreign/stale indevido.
+- Confirmar ausência de `FATAL`, `Exception`, foreign/stale indevido.
 
 ### Risco
 
-Alto. O corte define a costura principal da decomposiÃ§Ã£o.
+Alto. O corte define a costura principal da decomposição.
 
-## Corte SA-3 â€” ActivityContent + Inventory para ActivityEntryPipeline
+## Corte SA-3 – ActivityContent + Inventory para ActivityEntryPipeline
 
 ### Objetivo
 
@@ -192,15 +192,15 @@ Mover prepare/load/readiness de `ActivityContent` e preview/resolution de `Activ
 
 - Migrar stages de content load/prepare para entry pipeline.
 - Migrar inventory preview/resolution para entry pipeline.
-- Garantir que content obrigatÃ³rio ausente falhe explicitamente.
-- Garantir skip explÃ­cito para content opcional/no-content.
+- Garantir que content obrigatório ausente falhe explicitamente.
+- Garantir skip explícito para content opcional/no-content.
 - Rejeitar completions stale/foreign por `SessionActivityIdentity + ActivityId + EntrySequence`.
 
-### NÃ£o fazer
+### Não fazer
 
-- NÃ£o mover Actor setup inteiro no mesmo corte.
-- NÃ£o alterar adapters jÃ¡ fail-fast.
-- NÃ£o criar inventÃ¡rio universal em `ActivityContentProfileAsset`.
+- Não mover Actor setup inteiro no mesmo corte.
+- Não alterar adapters já fail-fast.
+- Não criar inventário universal em `ActivityContentProfileAsset`.
 
 ### Aceite arquitetural
 
@@ -218,7 +218,7 @@ Mover prepare/load/readiness de `ActivityContent` e preview/resolution de `Activ
 
 Alto. Content/inventory alimentam quase todos os stages posteriores.
 
-## Corte SA-4 â€” Actor/Object setup para ActivityEntryPipeline
+## Corte SA-4 – Actor/Object setup para ActivityEntryPipeline
 
 ### Objetivo
 
@@ -226,10 +226,10 @@ Mover setup/readiness de actors, objects e capabilities para `ActivityEntryPipel
 
 ### AÃ§Ã£o
 
-Migrar em subcortes, nÃ£o em bloco Ãºnico, mas sem transformar especializaÃ§Ãµes concretas em trilhos arquiteturais:
+Migrar em subcortes, não em bloco único, mas sem transformar especializações concretas em trilhos arquiteturais:
 
 1. ActorDiscovery / ActorInventoryFeed audit.
-2. ActorReadiness genÃ©rico por `ActorScanTarget` / `ActorCapabilitySurface`.
+2. ActorReadiness genérico por `ActorScanTarget` / `ActorCapabilitySurface`.
 3. ActorPresentation setup.
 4. ActorAttributes setup.
 5. ActorParticipation enter readiness.

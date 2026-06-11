@@ -98,7 +98,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Adapters
         RouteActivitySaveSaveResult SaveActivityOnExit(
             RuntimeModeConfig runtimeModeConfig,
             ProgressionSlotContext slotContext,
-            string previousActivityIdentity,
+            string activitySaveOwnerIdentity,
             string activitySnapshotPayload);
     }
 

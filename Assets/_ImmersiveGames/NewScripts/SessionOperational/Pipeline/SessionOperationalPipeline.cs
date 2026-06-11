@@ -131,7 +131,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             _routeActivitySaveLoadOnEnterStage = new OperationalRouteActivitySaveLoadOnEnterStage(
                 _dependencies.ActivitySaveAdapter,
                 _dependencies.ProgressionSlotContextResolver,
-                ResolveSaveStateServiceOrNull,
                 this,
                 RouteActivitySnapshotSchemaId);
             _routeActivitySaveSaveOnExitStage = new OperationalRouteActivitySaveSaveOnExitStage(
@@ -145,6 +144,48 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         }
 
         public SessionOperationalRuntimeState State => _state;
+
+        public bool TryQaSaveCurrentActivitySnapshot(
+            string sessionStateId,
+            string activityIdentity,
+            string source,
+            string reason,
+            out string outcomeReason)
+        {
+            string normalizedSource = Normalize(source);
+            string normalizedReason = Normalize(reason);
+            var command = new OperationalRouteActivitySaveQaSaveCommand(
+                _dependencies.RuntimeModeConfig,
+                sessionStateId,
+                activityIdentity,
+                normalizedSource,
+                normalizedReason);
+
+            OperationalRouteActivitySaveSaveOnExitResult result;
+            try
+            {
+                result = _routeActivitySaveSaveOnExitStage.ExecuteQaSaveCurrentSnapshot(command);
+            }
+            catch (Exception exception)
+            {
+                outcomeReason = $"route_activity_save_qa_failed_exception:{exception.GetType().Name}";
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][QACheckpoint] checkpoint='RouteActivitySaveQaSave' checkpointStatus='Failed' activityIdentity='{Normalize(activityIdentity)}' payloadResolved='unknown' payloadKind='<none>' recordCount='0' contributorResolutionKind='{Normalize(outcomeReason)}' failureReason='{Normalize(exception.Message)}' source='{normalizedSource}' reason='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                DebugUtility.Log(typeof(SessionOperationalPipeline),
+                    $"[OBS][SessionOperationalPipeline][QA] event='RouteActivitySaveQaRequested' outcomeKind='Failed' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                    DebugUtility.Colors.Warning);
+                return false;
+            }
+
+            outcomeReason = string.IsNullOrWhiteSpace(result.Reason) ? result.Detail : result.Reason;
+            bool qaSkipped = result.IsCompleted && Normalize(outcomeReason).StartsWith("qa_save_skipped_", StringComparison.Ordinal);
+            string outcomeKind = result.IsCompleted ? (qaSkipped ? "Skipped" : "Saved") : "Failed";
+            DebugUtility.Log(typeof(SessionOperationalPipeline),
+                $"[OBS][SessionOperationalPipeline][QA] event='RouteActivitySaveQaRequested' outcomeKind='{outcomeKind}' reason='{Normalize(outcomeReason)}' sessionStateId='{Normalize(sessionStateId)}' saveOwnerActivityIdentity='{Normalize(sessionStateId)}' payloadActivityIdentity='{Normalize(activityIdentity)}' source='{normalizedSource}' reasonDetail='{normalizedReason}'.",
+                result.IsCompleted ? DebugUtility.Colors.Success : DebugUtility.Colors.Warning);
+            return result.IsCompleted;
+        }
 
         public RouteRequestSubmissionResult SubmitRouteRequest(
             OperationalRouteAsset route,
@@ -202,7 +243,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public bool TryGetPendingLoadedSnapshotPayload(
             string activityIdentity,
-            out LoadedSessionActivitySnapshotPayload payload,
+            out LoadedRouteActivitySnapshotPayload payload,
             out string failureReason)
         {
             payload = default;
@@ -237,7 +278,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
 
         public void SetPendingLoadedSnapshotPayload(
             string activityIdentity,
-            LoadedSessionActivitySnapshotPayload payload,
+            LoadedRouteActivitySnapshotPayload payload,
             int payloadSize)
         {
             _pendingLoadedRouteActivitySnapshotPayload = new LoadedRouteActivitySnapshotPayloadContext(
@@ -401,7 +442,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     blackoutCommand,
                     blackoutFadeInCompleted);
 
-                if (blackoutResult is { IsCompleted: false, IsSkipped: false })
+                if (!blackoutResult.IsCompleted && !blackoutResult.IsSkipped)
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][SessionOperationalPipeline][Transition] OperationalTransitionBlackoutStage failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' resultKind='{blackoutResult.Kind}' reason='{blackoutResult.Reason}' detail='{blackoutResult.Detail}'.");
@@ -499,7 +540,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                     handoffExitResult,
                     sourceText,
                     reasonText);
-                if (sessionResetResult is { IsValid: true, IsFailed: true })
+                if (sessionResetResult.IsValid && sessionResetResult.IsFailed)
                 {
                     throw new InvalidOperationException(
                         $"[FATAL][SessionOperationalPipeline][PreviousRouteExit] Session reset after previous route exit failed routeIdentity='{routeIdentity}' routeOperationId='{routeOperationId}' transitionId='{transitionId}' routeSequence='{routeSequence}' result='{sessionResetResult}'.");
@@ -1364,13 +1405,6 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             return SessionOperationalObservableIdFormatter.BuildTransitionId(routeIdentity, activeScene, sequence);
         }
 
-        private ISaveStateService ResolveSaveStateServiceOrNull()
-        {
-            return _dependencies.TryResolveSaveStateService(out ISaveStateService saveStateService)
-                ? saveStateService
-                : null;
-        }
-
         private ISessionActivitySnapshotPayloadProvider ResolveActivitySnapshotPayloadProviderOrNull()
         {
             return _dependencies.TryResolveActivitySnapshotPayloadProvider(out ISessionActivitySnapshotPayloadProvider provider)
@@ -1388,7 +1422,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
         {
             public LoadedRouteActivitySnapshotPayloadContext(
                 string activityIdentity,
-                LoadedSessionActivitySnapshotPayload payload,
+                LoadedRouteActivitySnapshotPayload payload,
                 int payloadSize)
             {
                 ActivityIdentity = Normalize(activityIdentity);
@@ -1397,7 +1431,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             }
 
             public string ActivityIdentity { get; }
-            public LoadedSessionActivitySnapshotPayload Payload { get; }
+            public LoadedRouteActivitySnapshotPayload Payload { get; }
             public int PayloadSize { get; }
             public bool IsValid =>
                 !string.IsNullOrWhiteSpace(ActivityIdentity) &&

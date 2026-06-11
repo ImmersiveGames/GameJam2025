@@ -307,8 +307,8 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
             SessionParticipationContext sessionParticipationContext)
         {
             string loadedSnapshotPayloadState = command.HasLoadedSnapshotPayloadContext ? "true" : "false";
-            int loadedSnapshotPayloadObjectCount = command.HasLoadedSnapshotPayloadContext
-                ? command.LoadedSnapshotPayloadContext.Payload.Objects.Count
+            int loadedSnapshotPayloadRecordCount = command.HasLoadedSnapshotPayloadContext
+                ? command.LoadedSnapshotPayloadContext.Payload.RecordCount
                 : 0;
             string loadedSnapshotPayloadSourceActivityId = command.HasLoadedSnapshotPayloadContext
                 ? Normalize(command.LoadedSnapshotPayloadContext.Payload.ActivityId)
@@ -317,7 +317,7 @@ namespace _ImmersiveGames.NewScripts.SessionOperational.Pipeline
                 ? command.LoadedSnapshotPayloadContext.Payload.SourceEntrySequence
                 : 0;
             DebugUtility.Log(typeof(OperationalConsumerEntryAndReadinessStage),
-                $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadObjectCount='{loadedSnapshotPayloadObjectCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'.",
+                $"[OBS][SessionOperationalPipeline][Route] handoff='OperationalRouteConsumerEntryStarted' routeIdentity='{command.RouteIdentity}' routeOperationId='{command.RouteOperationId}' transitionId='{command.TransitionId}' routeSequence='{command.RouteSequence}' source='{command.Source}' reason='{command.Reason}' pendingHandoff='SessionActivityEntry' routeSessionParticipation='true' routeParticipantSetDefinition='{ResolveRouteParticipantSetDefinitionLabel(command.RouteCommand.Plan)}' sessionParticipationContext='present' sessionParticipationRevision='{sessionParticipationContext.Revision}' sessionSlotReservations='{sessionParticipationContext.SlotReservationCount}' sessionSelections='{sessionParticipationContext.SelectionCount}' sessionParticipants='{sessionParticipationContext.ParticipantCount}' playerParticipationSeedOutcome='{FormatPlayerParticipationSeedOutcome(playerParticipationResult.Snapshot.Outcome)}' loadedSnapshotPayload='{loadedSnapshotPayloadState}' loadedSnapshotPayloadRecordCount='{loadedSnapshotPayloadRecordCount}' loadedSnapshotPayloadSourceActivityId='{loadedSnapshotPayloadSourceActivityId}' loadedSnapshotPayloadSourceEntrySequence='{loadedSnapshotPayloadSourceEntrySequence}'.",
                 DebugUtility.Colors.Info);
         }
 
