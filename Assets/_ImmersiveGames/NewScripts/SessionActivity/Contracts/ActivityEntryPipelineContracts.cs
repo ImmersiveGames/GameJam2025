@@ -50,13 +50,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             string activityId,
             int activityOrdinal,
             string source,
-            string reason)
+            string reason,
+            ActivityResetBoundaryKind resetBoundaryKind = ActivityResetBoundaryKind.Activity)
         {
             Identity = identity;
             ActivityId = Normalize(activityId);
             ActivityOrdinal = activityOrdinal;
             Source = Normalize(source);
             Reason = Normalize(reason);
+            ResetBoundaryKind = resetBoundaryKind;
         }
 
         public SessionActivityIdentity Identity { get; }
@@ -64,6 +66,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
         public int ActivityOrdinal { get; }
         public string Source { get; }
         public string Reason { get; }
+        public ActivityResetBoundaryKind ResetBoundaryKind { get; }
 
         public bool IsValid =>
             Identity is { IsValid: true, Stage: SessionActivityStage.ActivitySetupStarted } &&
@@ -71,6 +74,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             ActivityOrdinal >= 0 &&
             string.Equals(Identity.ActivityId, ActivityId, StringComparison.Ordinal) &&
             Identity.ActivityOrdinal == ActivityOrdinal &&
+            ResetBoundaryKind != ActivityResetBoundaryKind.Unknown &&
             !string.IsNullOrWhiteSpace(Source);
 
         private static string Normalize(string value)
@@ -1337,6 +1341,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
             List<SessionActivitySnapshot> snapshots);
         ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
             ActivityEntryObjectSetupCommand command,
+            ActivityResetScopePlan resetScopePlan,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots);

@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Projectile.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
@@ -15,6 +16,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
         {
             ActorResetGroup.Placement,
         };
+
+        [Header("Reset")]
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
 
         private ActorId _runtimeActorId;
         private ActorScope _runtimeActorScope;
@@ -77,7 +81,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 throw new InvalidOperationException($"{origin} requires ActorCapabilitySurface.");
             }
 
-            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out var projectileFireEndpoint))
+            if (CapabilitySurface.TryGetEndpoint<ActorProjectileFireEndpoint>(out ActorProjectileFireEndpoint projectileFireEndpoint))
             {
                 projectileFireEndpoint.ValidateLocalConfigurationOrThrow($"{origin}/{nameof(ActorCapabilitySurface)}.{nameof(ActorCapabilitySurface.ActorProjectileFireEndpoint)}");
             }
@@ -93,7 +97,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                 return false;
             }
 
-            contribution = new PlayerActorPlacementResetContribution(context);
+            contribution = new PlayerActorPlacementResetContribution(context, resetBoundaryEligibility);
             return true;
         }
 
@@ -131,7 +135,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
 
         private readonly struct PlayerActorPlacementResetContribution : IActorResetContribution
         {
-            public PlayerActorPlacementResetContribution(ActorCapabilityContributionContext context)
+            public PlayerActorPlacementResetContribution(ActorCapabilityContributionContext context, ActivityResetBoundaryEligibility resetBoundaryEligibility)
             {
                 Descriptor = new ActorCapabilityContributionDescriptor(
                     new ActorCapabilityId("actor.capability.player.placement"),
@@ -145,10 +149,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player
                     context.ComponentPath,
                     nameof(PlayerActor),
                     "player_actor_placement_reset_contribution");
+                ResetBoundaryEligibility = resetBoundaryEligibility;
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
             public ActorResetGroup[] SupportedGroups => PlacementResetGroups;
+            public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
             public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
         }
     }

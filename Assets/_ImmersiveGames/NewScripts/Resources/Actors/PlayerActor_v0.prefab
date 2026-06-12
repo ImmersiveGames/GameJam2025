@@ -60,6 +60,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   capabilitySurface: {fileID: 666666666666666666}
+  resetBoundaryEligibility: -1
 --- !u!114 &666666666666666666
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -178,6 +179,7 @@ MonoBehaviour:
   rotationSpeed: 500
   inputDeadzone: 0.1
   useFixedUpdateForPhysics: 1
+  resetBoundaryEligibility: -1
 --- !u!114 &333333333333333333
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -251,6 +253,7 @@ MonoBehaviour:
   participationState: 1
   currentActivityId: 
   currentEntrySequence: 0
+  resetBoundaryEligibility: -1
 --- !u!114 &4452905082100865595
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -276,8 +279,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 545e11fe890c4011957f65848dc53665, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resetBoundaryEligibility: -1
 --- !u!1 &910000000000000001
 GameObject:
   m_ObjectHideFlags: 0

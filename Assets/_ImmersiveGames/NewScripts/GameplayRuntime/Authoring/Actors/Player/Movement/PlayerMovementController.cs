@@ -1,6 +1,7 @@
 using System;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using UnityEngine;
 
@@ -14,6 +15,9 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
         [SerializeField] private float rotationSpeed = 360f;
         [SerializeField] private float inputDeadzone = 0.1f;
         [SerializeField] private bool useFixedUpdateForPhysics = true;
+
+        [Header("Reset")]
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
 
         private CharacterController _characterController;
         private Rigidbody _rigidbody;
@@ -92,7 +96,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return false;
             }
 
-            contribution = new MovementTransientResetContribution(context);
+            contribution = new MovementTransientResetContribution(context, resetBoundaryEligibility);
             return true;
         }
 
@@ -150,7 +154,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            var input = _moveInput;
+            Vector2 input = _moveInput;
             if (input == Vector2.zero)
             {
                 HaltHorizontalVelocity();
@@ -188,8 +192,8 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
 
             if (_rigidbody != null)
             {
-                var current = _rigidbody.linearVelocity;
-                var target = direction * moveSpeed;
+                Vector3 current = _rigidbody.linearVelocity;
+                Vector3 target = direction * moveSpeed;
                 _rigidbody.linearVelocity = new Vector3(target.x, current.y, target.z);
                 return;
             }
@@ -204,7 +208,7 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            var targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+            Quaternion targetRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, rotationSpeed * deltaTime);
         }
 
@@ -215,14 +219,14 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                 return;
             }
 
-            var current = _rigidbody.linearVelocity;
+            Vector3 current = _rigidbody.linearVelocity;
             _rigidbody.linearVelocity = new Vector3(0f, current.y, 0f);
             _rigidbody.angularVelocity = Vector3.zero;
         }
 
         private readonly struct MovementTransientResetContribution : IActorResetContribution
         {
-            public MovementTransientResetContribution(ActorCapabilityContributionContext context)
+            public MovementTransientResetContribution(ActorCapabilityContributionContext context, ActivityResetBoundaryEligibility resetBoundaryEligibility)
             {
                 Descriptor = new ActorCapabilityContributionDescriptor(
                     new ActorCapabilityId("actor.capability.movement"),
@@ -236,10 +240,12 @@ namespace _ImmersiveGames.NewScripts.GameplayRuntime.Authoring.Actors.Player.Mov
                     context.ComponentPath,
                     nameof(PlayerMovementController),
                     "movement_transient_reset_contribution");
+                ResetBoundaryEligibility = resetBoundaryEligibility;
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
             public ActorResetGroup[] SupportedGroups => MovementTransientResetGroups;
+            public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
             public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
         }
     }

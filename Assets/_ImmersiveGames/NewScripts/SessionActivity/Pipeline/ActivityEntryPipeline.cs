@@ -11,6 +11,7 @@ using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.PlayerParticipation.Contracts;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using UnityEngine.InputSystem;
 using PlayerSessionParticipationContext = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.SessionParticipationContext;
 
@@ -217,7 +218,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityDefinition is invalid for setup/readiness execution.");
             }
 
-            var setupStartedIdentity = command.Identity;
+            SessionActivityIdentity setupStartedIdentity = command.Identity;
             _logSink.LogEntryOwnerEvent(
                 "ActivityEntrySetupReadinessStarted",
                 setupStartedIdentity,
@@ -263,7 +264,20 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     objectSetupInventoryPlan,
                     objectResetRestorePlan);
 
-                var setupInfrastructureResult = ExecuteSetupInfrastructure(
+                ActivityResetScopePlan resetScopePlan = ActivityResetBoundaryPolicy.ResolveForEntry(command);
+                if (!resetScopePlan.IsValid)
+                {
+                    throw new InvalidOperationException($"Activity reset scope plan is invalid. activityId='{command.ActivityId}' entrySequence='{setupStartedIdentity.EntrySequence}'.");
+                }
+
+                _logSink.LogEntryOwnerEvent(
+                    "ActivityResetScopePlanResolved",
+                    setupStartedIdentity,
+                    command.Source,
+                    command.Reason,
+                    $"owner='ActivityResetBoundaryPolicy' entryPipelineOwner='ActivityEntryPipeline' block='reset_boundary_policy' boundaryKind='{resetScopePlan.BoundaryKind}' targetScope='{resetScopePlan.TargetScope}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' policyId='{resetScopePlan.PolicyId}' behaviorMode='BoundaryEligibilityFiltering'");
+
+                ActivityEntryObjectSetupResult setupInfrastructureResult = ExecuteSetupInfrastructure(
                     objectSetupCommand,
                     facts,
                     snapshots);
@@ -272,7 +286,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline setup infrastructure failed. reason='{setupInfrastructureResult.Reason}' identity='{setupInfrastructureResult.Identity}'.");
                 }
 
-                var participantBindingResult = ExecuteParticipantBinding(
+                ActivityEntryParticipantBindingResult participantBindingResult = ExecuteParticipantBinding(
                     new ActivityEntryParticipantBindingCommand(
                         new ActivityParticipantBindingPlan(
                             setupStartedIdentity,
@@ -296,8 +310,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     setupStartedIdentity.EntrySequence,
                     participantBindingResult);
 
-                var capabilityObjectSetupResult = ExecuteCapabilityObjectSetup(
+                ActivityEntryObjectSetupResult capabilityObjectSetupResult = ExecuteCapabilityObjectSetup(
                     objectSetupCommand,
+                    resetScopePlan,
                     loadedSnapshotPayloadContext,
                     facts,
                     snapshots);
@@ -308,6 +323,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 ActivityEntryParticipantResetStage.Execute(
                     command,
+                    resetScopePlan,
                     participantBindingResult,
                     _activityInventoryRuntimeState.CurrentActorInventoryFeedResult,
                     _activityInventoryRuntimeState.CurrentActivityCapabilityInventoryPreview,
@@ -321,9 +337,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     facts,
                     snapshots);
 
-                var exitCorrelation = BuildActivityObjectExitCorrelationBundle();
+                ActivityObjectExitCorrelationBundle exitCorrelation = BuildActivityObjectExitCorrelationBundle();
 
-                var actorPresentationSetupResult = ExecuteActorPresentationSetup(
+                ActivityEntryActorPresentationSetupResult actorPresentationSetupResult = ExecuteActorPresentationSetup(
                     new ActivityEntryActorPresentationSetupCommand(
                         setupStartedIdentity,
                         _activityInventoryRuntimeState.CurrentActivityPresentationSetupContributions,
@@ -336,7 +352,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline actor presentation setup failed. reason='{actorPresentationSetupResult.Reason}' identity='{actorPresentationSetupResult.Identity}'.");
                 }
 
-                var actorAttributeSetupResult = ExecuteActorAttributeSetup(
+                ActivityEntryActorAttributeSetupResult actorAttributeSetupResult = ExecuteActorAttributeSetup(
                     new ActivityEntryActorAttributeSetupCommand(
                         setupStartedIdentity,
                         _activityInventoryRuntimeState.CurrentActivityAttributeSetupContributions,
@@ -349,7 +365,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline actor attribute setup failed. reason='{actorAttributeSetupResult.Reason}' identity='{actorAttributeSetupResult.Identity}'.");
                 }
 
-                var actorParticipationEnterResult = ExecuteActorParticipationEnter(
+                ActivityEntryActorParticipationEnterResult actorParticipationEnterResult = ExecuteActorParticipationEnter(
                     new ActivityEntryActorParticipationEnterCommand(
                         setupStartedIdentity,
                         command.ActivityId,
@@ -364,7 +380,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline actor participation enter failed. reason='{actorParticipationEnterResult.Reason}' identity='{actorParticipationEnterResult.Identity}'.");
                 }
 
-                var playerInputBindingResult = ExecutePlayerInputBinding(
+                ActivityEntryPlayerInputBindingResult playerInputBindingResult = ExecutePlayerInputBinding(
                     new ActivityEntryPlayerInputBindingCommand(
                         setupStartedIdentity,
                         definition.ActivityId,
@@ -379,7 +395,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline player input binding failed. reason='{playerInputBindingResult.Reason}' identity='{playerInputBindingResult.Identity}'.");
                 }
 
-                var actorCommandBindingResult = ExecuteActorCommandBinding(
+                ActorCommandBindingResult actorCommandBindingResult = ExecuteActorCommandBinding(
                     new ActorCommandBindingCommand(
                         setupStartedIdentity,
                         BuildActorCommandBindingReferences(participantBindingResult),
@@ -392,7 +408,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline actor command binding failed. reason='{actorCommandBindingResult.Reason}' identity='{actorCommandBindingResult.Identity}'.");
                 }
 
-                var permissionTargetPreparationResult = ExecutePermissionTargetPreparation(
+                ActivityEntryPermissionTargetPreparationResult permissionTargetPreparationResult = ExecutePermissionTargetPreparation(
                     new ActivityEntryPermissionTargetPreparationCommand(
                         setupStartedIdentity,
                         definition.ActivityId,
@@ -409,7 +425,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline permission target preparation failed. reason='{permissionTargetPreparationResult.Reason}' identity='{permissionTargetPreparationResult.Identity}'.");
                 }
 
-                var movementBindingResult = ExecuteMovementBinding(
+                ActivityEntryMovementBindingResult movementBindingResult = ExecuteMovementBinding(
                     new ActivityEntryMovementBindingCommand(
                         setupStartedIdentity,
                         definition.ActivityId,
@@ -424,7 +440,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     throw new InvalidOperationException($"ActivityEntryPipeline movement binding failed. reason='{movementBindingResult.Reason}' identity='{movementBindingResult.Identity}'.");
                 }
 
-                var cameraBindingResult = ExecuteCameraBinding(
+                ActivityEntryCameraBindingResult cameraBindingResult = ExecuteCameraBinding(
                     new ActivityEntryCameraBindingCommand(
                         setupStartedIdentity,
                         _activityInventoryRuntimeState.CurrentActivityCameraBindingContributions,
@@ -447,7 +463,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     snapshots,
                     setupStartedIdentity.EntrySequence);
 
-                var completedIdentity = _identityBridge.BuildIdentity(
+                SessionActivityIdentity completedIdentity = _identityBridge.BuildIdentity(
                     definition,
                     SessionActivityStage.ActivitySetupCompleted,
                     setupStartedIdentity.EntrySequence);
@@ -529,7 +545,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             int entrySequence,
             ActivityEntryParticipantBindingResult participantBindingResult)
         {
-            var startedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessStarted, entrySequence);
+            SessionActivityIdentity startedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessStarted, entrySequence);
             _identityBridge.SetCurrentIdentity(startedIdentity, SessionActivityStage.ActivityParticipantReadinessStarted);
             _factBridge.EmitFact(
                 facts,
@@ -545,9 +561,9 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason,
                 $"'{definition.ActivityId}' activity participant readiness started.");
 
-            var expectedBindingIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
+            SessionActivityIdentity expectedBindingIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantBindingCompleted, entrySequence);
             _preparationBridge.TryGetActivePlayerActorIdentities(startedIdentity, out IReadOnlyList<PlayerActorIdentityRecord> activeActors);
-            var readinessResult = ActivityParticipantReadinessStage.Execute(
+            SessionActivityPipeline.ActivityParticipantReadinessStageResult readinessResult = ActivityParticipantReadinessStage.Execute(
                 startedIdentity,
                 expectedBindingIdentity,
                 participantBindingResult,
@@ -555,7 +571,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (readinessResult.IsSkipped)
             {
-                var skippedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessSkippedNoRequiredParticipant, entrySequence);
+                SessionActivityIdentity skippedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessSkippedNoRequiredParticipant, entrySequence);
                 _identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityParticipantReadinessSkippedNoRequiredParticipant);
                 _factBridge.EmitFact(
                     facts,
@@ -571,7 +587,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     reason,
                     $"'{definition.ActivityId}' activity participant readiness skipped because no required participant was declared.");
 
-                var skippedCompletedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessCompleted, entrySequence);
+                SessionActivityIdentity skippedCompletedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessCompleted, entrySequence);
                 _identityBridge.SetCurrentIdentity(skippedCompletedIdentity, SessionActivityStage.ActivityParticipantReadinessCompleted);
                 _factBridge.EmitFact(
                     facts,
@@ -591,7 +607,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (readinessResult.IsFailed)
             {
-                var failedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessFailed, entrySequence);
+                SessionActivityIdentity failedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessFailed, entrySequence);
                 _identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityParticipantReadinessFailed);
                 _factBridge.EmitFact(
                     facts,
@@ -609,7 +625,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"[FATAL][ActivityEntryPipeline][ActivityParticipantReadiness] Failed activityId='{definition.ActivityId}' entrySequence='{entrySequence}' reason='{readinessResult.ReasonCode}'.");
             }
 
-            var readyIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessValidatedMaterializedActors, entrySequence);
+            SessionActivityIdentity readyIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessValidatedMaterializedActors, entrySequence);
             _identityBridge.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActivityParticipantReadinessValidatedMaterializedActors);
             _factBridge.EmitFact(
                 facts,
@@ -625,7 +641,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 reason,
                 $"'{definition.ActivityId}' activity participant materialized actors ready requiredReady='{readinessResult.RequiredResolvedRequirements}' activeActors='{readinessResult.ActiveActorsCount}'.");
 
-            var completedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessCompleted, entrySequence);
+            SessionActivityIdentity completedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityParticipantReadinessCompleted, entrySequence);
             _identityBridge.SetCurrentIdentity(completedIdentity, SessionActivityStage.ActivityParticipantReadinessCompleted);
             _factBridge.EmitFact(
                 facts,
@@ -655,7 +671,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityDefinition is invalid.");
             }
 
-            var setupCompletedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
+            SessionActivityIdentity setupCompletedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivitySetupCompleted, entrySequence);
             _identityBridge.SetCurrentIdentity(setupCompletedIdentity, SessionActivityStage.ActivitySetupCompleted);
             _factBridge.EmitFact(
                 facts,
@@ -695,11 +711,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("ActivityEntryContentLoadCommand is invalid.");
             }
 
-            var plan = command.Plan;
+            ActivityContentLoadPlan plan = command.Plan;
             ValidateContentLoadPlanOrThrow(plan);
 
             int entrySequence = plan.Identity.EntrySequence;
-            var profileResolvedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentProfileResolved, command.Source);
+            SessionActivityIdentity profileResolvedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentProfileResolved, command.Source);
             _identityBridge.SetCurrentIdentity(profileResolvedIdentity, SessionActivityStage.ActivityContentProfileResolved);
 
             if (plan.ActivityContentMode == ActivityContentMode.None)
@@ -716,7 +732,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     command.Reason,
                     $"'{plan.ActivityId}' activity content profile resolved mode='None'.");
 
-                var skippedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadSkippedNoContent, command.Source);
+                SessionActivityIdentity skippedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadSkippedNoContent, command.Source);
                 _identityBridge.SetCurrentIdentity(skippedIdentity, SessionActivityStage.ActivityContentLoadSkippedNoContent);
                 _factBridge.EmitFact(facts,
                     SessionActivityFactKind.ActivityContentLoadSkippedNoContent,
@@ -759,7 +775,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 command.Reason,
                 $"'{plan.ActivityId}' activity content profile resolved mode='Profile' profileId='{profileId}'.");
 
-            var loadStartedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadStarted, command.Source);
+            SessionActivityIdentity loadStartedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadStarted, command.Source);
             _identityBridge.SetCurrentIdentity(loadStartedIdentity, SessionActivityStage.ActivityContentLoadStarted);
             _factBridge.EmitFact(facts,
                 SessionActivityFactKind.ActivityContentLoadStarted,
@@ -821,7 +837,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             }
 
             int entrySequence = command.ActiveIdentity.EntrySequence;
-            var loadedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityContentSceneLoaded, entrySequence);
+            SessionActivityIdentity loadedIdentity = _identityBridge.BuildIdentity(definition, SessionActivityStage.ActivityContentSceneLoaded, entrySequence);
             _identityBridge.SetCurrentIdentity(loadedIdentity, SessionActivityStage.ActivityContentSceneLoaded);
             _factBridge.EmitFact(facts,
                 SessionActivityFactKind.ActivityContentSceneLoaded,
@@ -878,7 +894,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("SessionActivityDefinition is invalid for content load failure.");
             }
 
-            var failedIdentity = _identityBridge.BuildIdentity(
+            SessionActivityIdentity failedIdentity = _identityBridge.BuildIdentity(
                 definition,
                 SessionActivityStage.ActivityContentLoadFailed,
                 command.ActiveIdentity.EntrySequence);
@@ -909,6 +925,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
             }
 
+
             _logSink.LogEntryOwnerEvent(
                 "ActivityEntrySetupInfrastructureStarted",
                 command.Identity,
@@ -918,7 +935,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var loadedSet = _activityContentRuntimeState.CurrentLoadedSet;
+                ActivityContentLoadedSet loadedSet = _activityContentRuntimeState.CurrentLoadedSet;
                 ActivityEntryActorInventoryStage.ExecuteSceneDiscovery(
                     command,
                     loadedSet,
@@ -996,7 +1013,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryParticipantBindingStage.Execute(
+                ActivityEntryParticipantBindingResult result = ActivityEntryParticipantBindingStage.Execute(
                     command,
                     _runtimeBridge,
                     _activityInventoryRuntimeState.CurrentActivitySetupInventory,
@@ -1049,7 +1066,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryActorCommandBindingStage.Execute(
+                ActorCommandBindingResult result = ActivityEntryActorCommandBindingStage.Execute(
                     command,
                     _runtimeBridge,
                     _actorCommandBindingAdapter,
@@ -1079,6 +1096,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
         public ActivityEntryObjectSetupResult ExecuteCapabilityObjectSetup(
             ActivityEntryObjectSetupCommand command,
+            ActivityResetScopePlan resetScopePlan,
             ActivityEntryObjectSnapshotRestorePayloadContext loadedSnapshotPayloadContext,
             List<SessionActivityFact> facts,
             List<SessionActivitySnapshot> snapshots)
@@ -1086,6 +1104,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("ActivityEntryObjectSetupCommand is invalid.");
+            }
+
+            if (!resetScopePlan.IsValid)
+            {
+                throw new InvalidOperationException("ActivityResetScopePlan is invalid for capability object setup.");
+            }
+
+            if (!resetScopePlan.Identity.CycleKey.Equals(command.Identity.CycleKey))
+            {
+                throw new InvalidOperationException(
+                    $"ActivityEntryPipeline capability object setup requires reset scope plan from the current activity cycle. activityId='{command.ActivityId}'.");
             }
 
             _logSink.LogEntryOwnerEvent(
@@ -1097,8 +1126,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var discoveryResult = _activityInventoryRuntimeState.CurrentActivityObjectContributorDiscoveryResult;
-                var actorInventoryFeed = ActivityEntryActorInventoryStage.ExecuteActorInventoryFeed(
+                ActivityObjectContributorDiscoveryResult discoveryResult = _activityInventoryRuntimeState.CurrentActivityObjectContributorDiscoveryResult;
+                ActorInventoryFeedResult actorInventoryFeed = ActivityEntryActorInventoryStage.ExecuteActorInventoryFeed(
                     command,
                     _logSink,
                     _activityParticipationRuntimeState.CurrentParticipationContext,
@@ -1114,7 +1143,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                     "actor_inventory_feed_result_stored");
                 IReadOnlyList<ActorScanTarget> actorTargets = actorInventoryFeed.BuildScanTargets(command.Source);
 
-                var buildResult = ActivityEntryCapabilityInventoryPreviewStage.Execute(
+                ActivityCapabilityInventoryBuildResult buildResult = ActivityEntryCapabilityInventoryPreviewStage.Execute(
                     command,
                     discoveryResult,
                     actorTargets,
@@ -1126,6 +1155,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
                 ActivityEntryObjectResetStage.Execute(
                     command,
+                    resetScopePlan,
                     discoveryResult,
                     buildResult.Inventory,
                     buildResult.Validation,
@@ -1202,7 +1232,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryActorPresentationStage.Execute(
+                ActivityEntryActorPresentationSetupResult result = ActivityEntryActorPresentationStage.Execute(
                     command,
                     _runtimeBridge,
                     _activityInventoryRuntimeState.CurrentActivityPresentationSetupContributions,
@@ -1252,7 +1282,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryActorAttributeStage.Execute(
+                ActivityEntryActorAttributeSetupResult result = ActivityEntryActorAttributeStage.Execute(
                     command,
                     _runtimeBridge,
                     _activityActorExitRuntimeState,
@@ -1304,7 +1334,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryActorParticipationStage.ExecuteEnter(
+                ActivityEntryActorParticipationEnterResult result = ActivityEntryActorParticipationStage.ExecuteEnter(
                     command,
                     definition,
                     _runtimeBridge,
@@ -1354,7 +1384,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryPlayerInputBindingStage.Execute(
+                ActivityEntryPlayerInputBindingResult result = ActivityEntryPlayerInputBindingStage.Execute(
                     command,
                     _runtimeBridge,
                     _playerInputBindingAdapter,
@@ -1401,7 +1431,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityGateBindingStage.Execute(
+                ActivityEntryPermissionTargetPreparationResult result = ActivityGateBindingStage.Execute(
                     command,
                     _runtimeBridge,
                     _permissionTargetBridge,
@@ -1447,7 +1477,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryMovementBindingStage.Execute(
+                ActivityEntryMovementBindingResult result = ActivityEntryMovementBindingStage.Execute(
                     command,
                     _runtimeBridge,
                     _activityPlayerActorRegistry,
@@ -1500,7 +1530,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             try
             {
-                var result = ActivityEntryCameraBindingStage.Execute(
+                ActivityEntryCameraBindingResult result = ActivityEntryCameraBindingStage.Execute(
                     command,
                     _runtimeBridge,
                     _activityCameraPreparationExecutor,
@@ -1550,7 +1580,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ActivityEntryPlayerInputBindingReference> references = new(resolvedParticipants.Count);
             for (int index = 0; index < resolvedParticipants.Count; index++)
             {
-                var resolved = resolvedParticipants[index];
+                ActivityEntryParticipantBindingResolvedRecord resolved = resolvedParticipants[index];
                 if (!resolved.IsValid)
                 {
                     continue;
@@ -1583,7 +1613,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ActorCommandBindingReference> references = new(resolvedParticipants.Count);
             for (int index = 0; index < resolvedParticipants.Count; index++)
             {
-                var resolved = resolvedParticipants[index];
+                ActivityEntryParticipantBindingResolvedRecord resolved = resolvedParticipants[index];
                 if (!resolved.IsValid || !resolved.ParticipantBinding.RequiresPlayerInput)
                 {
                     continue;
@@ -1616,7 +1646,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
             List<ActivityEntryMovementBindingReference> references = new(resolvedParticipants.Count);
             for (int index = 0; index < resolvedParticipants.Count; index++)
             {
-                var resolved = resolvedParticipants[index];
+                ActivityEntryParticipantBindingResolvedRecord resolved = resolvedParticipants[index];
                 if (!resolved.IsValid)
                 {
                     continue;
@@ -1733,7 +1763,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            var frozenEntries = new SessionActivityActorMaterializationPlanEntry[entries.Count];
+            SessionActivityActorMaterializationPlanEntry[] frozenEntries = new SessionActivityActorMaterializationPlanEntry[entries.Count];
             for (int index = 0; index < entries.Count; index++)
             {
                 frozenEntries[index] = entries[index];
@@ -1766,10 +1796,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Activity '{plan.ActivityId}' next content scene ordinal is out of range. next='{sceneOrdinal}' total='{_pendingContentLoadContext.Scenes.Count}'.");
             }
 
-            var scene = _pendingContentLoadContext.Scenes[sceneOrdinal - 1];
+            ActivityContentLoadPlanScene scene = _pendingContentLoadContext.Scenes[sceneOrdinal - 1];
             if (scene is { IsValid: false, Requiredness: ActivityContentRequiredness.Required })
             {
-                var failedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadFailed, source);
+                SessionActivityIdentity failedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadFailed, source);
                 _identityBridge.SetCurrentIdentity(failedIdentity, SessionActivityStage.ActivityContentLoadFailed);
                 _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentLoadFailed, failedIdentity, source, reason, $"'{plan.ActivityId}' required activity content scene is invalid at ordinal='{sceneOrdinal}'.");
                 _factBridge.EmitSnapshot(snapshots, "activity_content_load_failed_required_scene_invalid", source, reason, $"'{plan.ActivityId}' required activity content scene is invalid at ordinal='{sceneOrdinal}'.");
@@ -1779,7 +1809,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
 
             if (!scene.HasSceneReference)
             {
-                var rejectedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadFailed, source);
+                SessionActivityIdentity rejectedIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadFailed, source);
                 _identityBridge.SetCurrentIdentity(rejectedIdentity, SessionActivityStage.ActivityContentLoadFailed);
                 _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentSceneLoadRejected, rejectedIdentity, source, reason, $"'{plan.ActivityId}' activity content scene rejected at ordinal='{sceneOrdinal}' requiredness='{scene.Requiredness}'.");
                 _factBridge.EmitSnapshot(snapshots, "activity_content_scene_load_rejected", source, reason, $"'{plan.ActivityId}' activity content scene rejected at ordinal='{sceneOrdinal}' requiredness='{scene.Requiredness}'.");
@@ -1796,7 +1826,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 return;
             }
 
-            var loadingIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentSceneLoading, source);
+            SessionActivityIdentity loadingIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentSceneLoading, source);
             _identityBridge.SetCurrentIdentity(loadingIdentity, SessionActivityStage.ActivityContentSceneLoading);
 
             ActivityContentSceneLoadCommand loadCommand = new(
@@ -1809,7 +1839,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 source,
                 reason);
 
-            var pendingOperation = BuildActivityContentPendingOperation(plan, entrySequence, loadCommand);
+            SessionActivityPendingOperation pendingOperation = BuildActivityContentPendingOperation(plan, entrySequence, loadCommand);
             _contentPendingOperationBridge.SetPendingOperation(pendingOperation);
             _factBridge.EmitFact(facts, SessionActivityFactKind.ActivityContentSceneLoadCommandIssued, loadingIdentity, source, reason, $"'{plan.ActivityId}' activity content scene load command issued operationId='{loadCommand.OperationId}' contentProfileId='{loadCommand.ContentProfileId}' sceneOrdinal='{loadCommand.SceneOrdinal}' sceneKey='{loadCommand.SceneKey}' sceneName='{loadCommand.SceneName}' requiredness='{loadCommand.Requiredness}'.");
             _factBridge.EmitSnapshot(snapshots, "activity_content_scene_load_command_issued", source, reason, $"'{plan.ActivityId}' activity content scene load command issued operationId='{loadCommand.OperationId}' sceneName='{loadCommand.SceneName}'.");
@@ -1848,10 +1878,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException("Pending activity content load context is invalid to finalize loaded set.");
             }
 
-            var plan = _pendingContentLoadContext.Plan;
+            ActivityContentLoadPlan plan = _pendingContentLoadContext.Plan;
             string profileId = _pendingContentLoadContext.ContentProfileId;
             int loadedSceneCount = _pendingContentLoadContext.LoadedRecords.Count;
-            var readyIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadedSetReady, source);
+            SessionActivityIdentity readyIdentity = BuildIdentity(plan.Identity, SessionActivityStage.ActivityContentLoadedSetReady, source);
             _identityBridge.SetCurrentIdentity(readyIdentity, SessionActivityStage.ActivityContentLoadedSetReady);
             ActivityContentLoadedSet loadedSet = new(
                 readyIdentity,
@@ -1914,7 +1944,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline
                 throw new InvalidOperationException($"Pending activity content scene ordinal '{sceneOrdinal}' is out of range while resolving requiredness.");
             }
 
-            var scene = _pendingContentLoadContext.Scenes[sceneOrdinal - 1];
+            ActivityContentLoadPlanScene scene = _pendingContentLoadContext.Scenes[sceneOrdinal - 1];
             if (scene.Requiredness == ActivityContentRequiredness.Unknown)
             {
                 throw new InvalidOperationException($"Pending activity content scene requiredness is invalid at ordinal='{sceneOrdinal}'.");

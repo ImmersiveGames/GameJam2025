@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.ActivitySetup;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
 using _ImmersiveGames.NewScripts.Actors.Players.ActivitySetup;
+using _ImmersiveGames.NewScripts.Actors.Players.Runtime;
+using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Actors.Semantic.Participation;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Runtime;
 using UnityEngine;
 using PlayerActivityParticipantBinding = _ImmersiveGames.NewScripts.PlayerParticipation.Contracts.ActivityParticipantBinding;
@@ -18,6 +21,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static void Execute(
             ActivityEntryCommand command,
+            ActivityResetScopePlan resetScopePlan,
             ActivityEntryParticipantBindingResult participantBindingResult,
             ActorInventoryFeedResult actorInventoryFeed,
             ActivityCapabilityInventory capabilityInventoryPreview,
@@ -34,6 +38,17 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             if (!command.IsValid)
             {
                 throw new InvalidOperationException("ActivityEntryCommand is invalid for participant reset execution.");
+            }
+
+            if (!resetScopePlan.IsValid)
+            {
+                throw new InvalidOperationException("ActivityResetScopePlan is invalid for participant reset execution.");
+            }
+
+            if (!resetScopePlan.Identity.CycleKey.Equals(command.Identity.CycleKey))
+            {
+                throw new InvalidOperationException(
+                    $"ActivityEntryParticipantResetStage requires reset scope plan from the current activity cycle. activityId='{command.ActivityId}'.");
             }
 
             if (!participantBindingResult.IsValid)
@@ -85,13 +100,13 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new ArgumentNullException(nameof(placementMarkerLookup));
             }
 
-            var identity = command.Identity;
+            SessionActivityIdentity identity = command.Identity;
             logSink.LogEntryOwnerEvent(
                 "ActivityEntryParticipantResetStarted",
                 identity,
                 command.Source,
                 command.Reason,
-                "owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' block='participant_reset' resetSource='activity_capability_inventory'");
+                $"owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' block='participant_reset' resetSource='activity_capability_inventory' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='BoundaryEligibilityFiltering'");
 
             IReadOnlyList<ActivityEntryParticipantBindingResolvedRecord> resolvedParticipants = participantBindingResult.ResolvedParticipants;
             if (resolvedParticipants == null || resolvedParticipants.Count == 0)
@@ -110,24 +125,24 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int participantIndex = 0; participantIndex < resolvedParticipants.Count; participantIndex++)
             {
-                var resolvedParticipant = resolvedParticipants[participantIndex];
+                ActivityEntryParticipantBindingResolvedRecord resolvedParticipant = resolvedParticipants[participantIndex];
                 if (!resolvedParticipant.IsValid)
                 {
                     continue;
                 }
 
-                var participantBinding = resolvedParticipant.ParticipantBinding;
-                if (!TryResolveActivePlayerActorHandleForParticipant(playerActorRegistry, participantBinding.ParticipantId, out var actorHandle))
+                PlayerActivityParticipantBinding participantBinding = resolvedParticipant.ParticipantBinding;
+                if (!TryResolveActivePlayerActorHandleForParticipant(playerActorRegistry, participantBinding.ParticipantId, out PlayerActorRuntimeHandle actorHandle))
                 {
                     throw new InvalidOperationException(
                         $"Activity participant '{participantBinding.ParticipantId}' is not available for operation='reset' activityId='{command.ActivityId}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}'.");
                 }
 
-                IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences = ResolveParticipantResetReferencesFromInventory(
+                IReadOnlyList<ActorCapabilityResetEndpointReference> sourceResetReferences = ResolveParticipantResetReferencesFromInventory(
                     capabilityInventoryPreview,
                     actorHandle,
                     participantBinding);
-                if (resetReferences == null || resetReferences.Count == 0)
+                if (sourceResetReferences == null || sourceResetReferences.Count == 0)
                 {
                     if (resolvedParticipant.Required)
                     {
@@ -150,7 +165,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
-                var materializationPlanEntry =
+                IReadOnlyList<ActorCapabilityResetEndpointReference> resetReferences = ActivityResetBoundaryPolicy.FilterActorResetReferencesByScopePlan(
+                    resetScopePlan,
+                    sourceResetReferences,
+                    command.ActivityId,
+                    resolvedParticipant.RequirementId);
+                if (resetReferences.Count == 0)
+                {
+                    skippedCount += 1;
+                    endpoint.EmitFact(
+                        facts,
+                        SessionActivityFactKind.ActivityParticipantResetApplied,
+                        identity,
+                        command.Source,
+                        command.Reason,
+                        $"'{command.ActivityId}' participant reset skipped requirementId='{resolvedParticipant.RequirementId}' participantId='{participantBinding.ParticipantId}' role='{participantBinding.Role}' playerSlotId='{participantBinding.PlayerSlotId}' actorDefinitionId='{participantBinding.ActorDefinitionId}' actorId='{participantBinding.ActorId}' placementRequirementId='<none>' resetGroups='<none>' appliedGroups='0' skippedGroups='0' adapterExecution='false' source='{command.Source}' reason='{command.Reason}' skipReason='reset_references_filtered_by_boundary_policy' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' sourceReferenceCount='{sourceResetReferences.Count}' filteredReferenceCount='0'.");
+                    DebugUtility.Log(
+                        typeof(ActivityEntryParticipantResetStage),
+                        $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantResetSkippedFromInventory' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedParticipant.RequirementId}' actorId='{participantBinding.ActorId}' actorScope='{participantBinding.ActorScope}' playerSlotId='{participantBinding.PlayerSlotId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' reason='reset_references_filtered_by_boundary_policy' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' sourceReferenceCount='{sourceResetReferences.Count}' filteredReferenceCount='0' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                        DebugUtility.Colors.Warning);
+                    continue;
+                }
+
+                SessionActivityActorMaterializationPlanEntry materializationPlanEntry =
                     ResolveMaterializationPlanEntryForActivityParticipantOrFail(
                         command.ActivityId,
                         participantBinding,
@@ -172,8 +209,8 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     out bool placementRequired,
                     out bool placementOptional,
                     out bool hasPlacement,
-                    out var placementPosition,
-                    out var placementEuler);
+                    out Vector3 placementPosition,
+                    out Vector3 placementEuler);
 
                 ActivityParticipantResetCommand resolvedResetCommand = new(
                     identity,
@@ -200,7 +237,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
                 DebugUtility.Log(
                     typeof(ActivityEntryParticipantResetStage),
-                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActorResetInventoryReferencesResolved' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' referenceCount='{resetReferences.Count}' references='{FormatResetReferenceIds(resetReferences)}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                    $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActorResetInventoryReferencesResolved' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' referenceCount='{resetReferences.Count}' sourceReferenceCount='{sourceResetReferences.Count}' references='{FormatResetReferenceIds(resetReferences)}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                     DebugUtility.Colors.Info);
 
                 IReadOnlyList<ActorResetResult> resetRecords = actorResetAdapter.Execute(resolvedResetCommand, identity);
@@ -218,10 +255,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     identity,
                     command.Source,
                     command.Reason,
-                    $"'{command.ActivityId}' participant reset applied from inventory requirementId='{resolvedResetCommand.RequirementId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' role='{resolvedResetCommand.ParticipantBinding.Role}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resolvedResetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resolvedResetCommand.PlacementRequirementId) ? "<none>" : resolvedResetCommand.PlacementRequirementId)}' resetGroups='{FormatActorResetGroups(resolvedResetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true' inventoryReferenceCount='{resetReferences.Count}'.");
+                    $"'{command.ActivityId}' participant reset applied from inventory requirementId='{resolvedResetCommand.RequirementId}' participantId='{resolvedResetCommand.ParticipantBinding.ParticipantId}' role='{resolvedResetCommand.ParticipantBinding.Role}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorDefinitionId='{resolvedResetCommand.ParticipantBinding.ActorDefinitionId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' placementRequirementId='{(string.IsNullOrWhiteSpace(resolvedResetCommand.PlacementRequirementId) ? "<none>" : resolvedResetCommand.PlacementRequirementId)}' resetGroups='{FormatActorResetGroups(resolvedResetCommand.ResetGroups)}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' adapterExecution='true' commandOwner='ActivityEntryPipeline' participantOwnership='ActivityParticipationContext' activityOwnership='true' inventoryReferenceCount='{resetReferences.Count}' sourceInventoryReferenceCount='{sourceResetReferences.Count}'.");
                 DebugUtility.Log(
                     typeof(ActivityEntryParticipantResetStage),
-                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantResetAppliedFromInventory' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorScope='{resolvedResetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' resetGroups='{FormatActorResetGroups(resolvedResetCommand.ResetGroups)}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' inventoryReferenceCount='{resetReferences.Count}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
+                $"[OBS][ActivityEntryPipeline][ActivityParticipation] event='ActivityParticipantResetAppliedFromInventory' activityId='{command.ActivityId}' entrySequence='{identity.EntrySequence}' requirementId='{resolvedResetCommand.RequirementId}' actorId='{resolvedResetCommand.ParticipantBinding.ActorId}' actorScope='{resolvedResetCommand.ParticipantBinding.ActorScope}' playerSlotId='{resolvedResetCommand.ParticipantBinding.PlayerSlotId}' actorInstanceRuntimeId='{actorHandle.ActorInstanceRuntimeId}' resetGroups='{FormatActorResetGroups(resolvedResetCommand.ResetGroups)}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' appliedGroups='{resetRecords[0].AppliedGroups.Count}' skippedGroups='{resetRecords[0].SkippedGroups.Count}' inventoryReferenceCount='{resetReferences.Count}' sourceInventoryReferenceCount='{sourceResetReferences.Count}' owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' source='{command.Source}' reason='{command.Reason}'.",
                 DebugUtility.Colors.Success);
                 appliedCount += 1;
             }
@@ -231,7 +268,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 identity,
                 command.Source,
                 command.Reason,
-                $"owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' block='participant_reset' total='{resolvedParticipants.Count}' applied='{appliedCount}' skipped='{skippedCount}'");
+                $"owner='ActivityEntryParticipantResetStage' entryPipelineOwner='ActivityEntryPipeline' block='participant_reset' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' total='{resolvedParticipants.Count}' applied='{appliedCount}' skipped='{skippedCount}'");
         }
 
         private static bool TryResolveActivePlayerActorHandleForParticipant(
@@ -273,7 +310,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<ActorCapabilityResetEndpointReference> resolved = new(allReferences.Count);
             for (int index = 0; index < allReferences.Count; index++)
             {
-                var reference = allReferences[index];
+                ActorCapabilityResetEndpointReference reference = allReferences[index];
                 if (reference == null || !reference.IsValid)
                 {
                     continue;
@@ -302,7 +339,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             List<string> capabilityIds = new(references.Count);
             for (int index = 0; index < references.Count; index++)
             {
-                var reference = references[index];
+                ActorCapabilityResetEndpointReference reference = references[index];
                 if (reference == null || !reference.IsValid)
                 {
                     continue;
@@ -331,7 +368,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 for (int index = 0; index < materializationPlanEntries.Count; index++)
                 {
-                    var entry = materializationPlanEntries[index];
+                    SessionActivityActorMaterializationPlanEntry entry = materializationPlanEntries[index];
                     if (entry.IsValid && entry.ParticipantId == participant.ParticipantId)
                     {
                         return entry;
@@ -387,7 +424,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 return;
             }
 
-            if (!placementMarkerLookup.TryResolvePlacementMarker(identity, placementId, out var markerPosition, out var markerEuler, out string resolutionReason))
+            if (!placementMarkerLookup.TryResolvePlacementMarker(identity, placementId, out Vector3 markerPosition, out Vector3 markerEuler, out string resolutionReason))
             {
                 if (placementRequired)
                 {
@@ -399,7 +436,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             }
 
             hasPlacement = true;
-            if (!playerActorRegistry.TryGetActiveHandleByParticipant(participantBinding.ParticipantId, out var handle) ||
+            if (!playerActorRegistry.TryGetActiveHandleByParticipant(participantBinding.ParticipantId, out PlayerActorRuntimeHandle handle) ||
                 !handle.IsValid ||
                 handle.Instance == null)
             {
@@ -407,10 +444,10 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     $"invalid_required_placement: activityId='{activityId}' entrySequence='{identity.EntrySequence}' requirementId='{requirementId}' participantId='{participantBinding.ParticipantId}' actorId='{participantBinding.ActorId}' placementId='{placementId}' operation='{operation}' reason='actor_handle_missing_for_placement_space_resolution'.");
             }
 
-            var parent = handle.Instance.transform.parent;
+            Transform parent = handle.Instance.transform.parent;
             placementPosition = parent == null ? markerPosition : parent.InverseTransformPoint(markerPosition);
-            var markerRotation = Quaternion.Euler(markerEuler);
-            var localRotation = parent == null ? markerRotation : Quaternion.Inverse(parent.rotation) * markerRotation;
+            Quaternion markerRotation = Quaternion.Euler(markerEuler);
+            Quaternion localRotation = parent == null ? markerRotation : Quaternion.Inverse(parent.rotation) * markerRotation;
             placementEuler = localRotation.eulerAngles;
         }
 
@@ -450,7 +487,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int index = 0; index < record.SkippedGroupReasons.Count; index++)
             {
-                var reason = record.SkippedGroupReasons[index];
+                ActorResetSkippedGroupReason reason = record.SkippedGroupReasons[index];
                 if (!reason.IsValid)
                 {
                     continue;

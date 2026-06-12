@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Capabilities.Reset;
+using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
 using _ImmersiveGames.NewScripts.Actors.Runtime;
 using _ImmersiveGames.NewScripts.Foundation.Core.Logging;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Composition;
+using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Config;
 using _ImmersiveGames.NewScripts.Foundation.Platform.Pooling.Contracts;
 using UnityEngine;
 
@@ -14,6 +16,9 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
     [DisallowMultipleComponent]
     public sealed class ActorProjectileSpawnRuntimeTracker : MonoBehaviour, IActorResetEndpoint, IActorResetContributionProvider
     {
+        [Header("Reset")]
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
+
         private static readonly ActorResetGroup[] SpawnedRuntimeObjectResetGroups =
         {
             ActorResetGroup.SpawnedRuntimeObjects,
@@ -35,7 +40,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            contribution = new SpawnedRuntimeObjectsResetContribution(context);
+            contribution = new SpawnedRuntimeObjectsResetContribution(context, resetBoundaryEligibility);
             return true;
         }
 
@@ -86,7 +91,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             RefreshOwnerActor();
 
-            if (!TryResolveOwnerActor(out var ownerActor))
+            if (!TryResolveOwnerActor(out Actor ownerActor))
             {
                 LogTrackSkipped(
                     ActorIdValue,
@@ -105,7 +110,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     spawnedActor,
                     source,
                     reason,
-                    out var trackedSpawnedRuntimeObject,
+                    out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject,
                     out string skippedReason))
             {
                 LogTrackSkipped(
@@ -152,7 +157,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out var trackedSpawnedRuntimeObject))
+            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject))
             {
                 DebugUtility.Log(
                     typeof(ActorProjectileSpawnRuntimeTracker),
@@ -168,7 +173,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out var trackedSpawnedRuntimeObject))
+            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject))
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
@@ -225,7 +230,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            var originPoolDefinition = spawnedActor.OriginPoolDefinition;
+            PoolDefinitionAsset originPoolDefinition = spawnedActor.OriginPoolDefinition;
             if (originPoolDefinition == null)
             {
                 skippedReason = "spawned_actor_origin_pool_definition_missing";
@@ -266,7 +271,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return;
             }
 
-            if (!TryResolvePoolService(out var poolService))
+            if (!TryResolvePoolService(out IPoolService poolService))
             {
                 DebugUtility.LogWarning(
                     typeof(ActorProjectileSpawnRuntimeTracker),
@@ -311,7 +316,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                 return false;
             }
 
-            var spawnedActor = trackedSpawnedRuntimeObject.SpawnedActor;
+            RuntimeSpawnedActor spawnedActor = trackedSpawnedRuntimeObject.SpawnedActor;
             if (spawnedActor.gameObject != trackedSpawnedRuntimeObject.SpawnedInstance)
             {
                 reason = "spawned_instance_actor_mismatch";
@@ -367,8 +372,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
         {
             for (int index = _trackedSpawns.Count - 1; index >= 0; index--)
             {
-                var trackedSpawnedRuntimeObject = _trackedSpawns[index];
-                if (trackedSpawnedRuntimeObject is { IsStillValid: true })
+                TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject = _trackedSpawns[index];
+                if (trackedSpawnedRuntimeObject != null && trackedSpawnedRuntimeObject.IsStillValid)
                 {
                     continue;
                 }
@@ -390,7 +395,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
             for (int index = _trackedSpawns.Count - 1; index >= 0; index--)
             {
-                var candidate = _trackedSpawns[index];
+                TrackedSpawnedRuntimeObject candidate = _trackedSpawns[index];
                 if (candidate == null || !ReferenceEquals(candidate.SpawnedActor, spawnedActor))
                 {
                     continue;
@@ -411,7 +416,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             string reason,
             bool logSkip = true)
         {
-            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out var trackedSpawnedRuntimeObject))
+            if (TryRemoveTrackedSpawnedRuntimeObject(spawnedActor, out TrackedSpawnedRuntimeObject trackedSpawnedRuntimeObject))
             {
                 if (!logSkip)
                 {
@@ -468,7 +473,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
             }
 
             if (DependencyManager.Provider != null &&
-                DependencyManager.Provider.TryGetGlobal<IPoolService>(out var resolvedPoolService) &&
+                DependencyManager.Provider.TryGetGlobal<IPoolService>(out IPoolService resolvedPoolService) &&
                 resolvedPoolService != null)
             {
                 _poolService = resolvedPoolService;
@@ -554,7 +559,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
 
         private readonly struct SpawnedRuntimeObjectsResetContribution : IActorResetContribution
         {
-            public SpawnedRuntimeObjectsResetContribution(ActorCapabilityContributionContext context)
+            public SpawnedRuntimeObjectsResetContribution(ActorCapabilityContributionContext context, ActivityResetBoundaryEligibility resetBoundaryEligibility)
             {
                 Descriptor = new ActorCapabilityContributionDescriptor(
                     new ActorCapabilityId("actor.capability.projectile.spawn_runtime_objects"),
@@ -568,10 +573,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Projectile.Runtime
                     context.ComponentPath,
                     nameof(ActorProjectileSpawnRuntimeTracker),
                     "projectile_spawn_runtime_objects_reset_contribution");
+                ResetBoundaryEligibility = resetBoundaryEligibility;
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
             public ActorResetGroup[] SupportedGroups => SpawnedRuntimeObjectResetGroups;
+            public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
             public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
         }
     }

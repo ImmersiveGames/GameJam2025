@@ -13,6 +13,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         [SerializeField] private ActivityObjectContributorKind contributorKind = ActivityObjectContributorKind.SceneObject;
         [SerializeField] private ActivitySetupRequirementRequiredness defaultRequiredness = ActivitySetupRequirementRequiredness.Required;
         [SerializeField] private List<ActivityStateResetGroup> supportedResetGroups = new();
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
         [SerializeField] private List<ActivityReleaseRequirementKind> supportedReleaseKinds = new();
         [SerializeField] private bool includeChildrenForEndpointDiscovery = true;
         [SerializeField] private string debugLabel;
@@ -22,6 +23,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Authoring
         public ActivityObjectContributorKind ContributorKind => contributorKind;
         public ActivitySetupRequirementRequiredness DefaultRequiredness => defaultRequiredness;
         public IReadOnlyList<ActivityStateResetGroup> SupportedResetGroups => supportedResetGroups;
+        public ActivityResetBoundaryEligibility ResetBoundaryEligibility => resetBoundaryEligibility;
         public IReadOnlyList<ActivityReleaseRequirementKind> SupportedReleaseKinds => supportedReleaseKinds;
         public bool IncludeChildrenForEndpointDiscovery => includeChildrenForEndpointDiscovery;
         public string DebugLabel => Normalize(debugLabel);

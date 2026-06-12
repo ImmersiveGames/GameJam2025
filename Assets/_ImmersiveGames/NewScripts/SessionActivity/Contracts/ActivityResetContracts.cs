@@ -1,7 +1,98 @@
+using System;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Contracts
 {
+
+    public enum ActivityResetBoundaryKind
+    {
+        Unknown = 0,
+        Local = 1,
+        Activity = 2,
+        ActivityTransition = 3,
+        RouteTransition = 4,
+    }
+
+    [Flags]
+    public enum ActivityResetBoundaryEligibility
+    {
+        None = 0,
+        Local = 1 << 0,
+        Activity = 1 << 1,
+        ActivityTransition = 1 << 2,
+        RouteTransition = 1 << 3,
+        All = Local | Activity | ActivityTransition | RouteTransition,
+    }
+
+
+
+    public static class ActivityResetBoundaryEligibilityFormatter
+    {
+        public static string Format(ActivityResetBoundaryEligibility eligibility)
+        {
+            ActivityResetBoundaryEligibility canonical = eligibility & ActivityResetBoundaryEligibility.All;
+            if (canonical == ActivityResetBoundaryEligibility.None)
+            {
+                return "None";
+            }
+
+            if (canonical == ActivityResetBoundaryEligibility.All)
+            {
+                return "All";
+            }
+
+            return canonical.ToString().Replace(" ", string.Empty);
+        }
+    }
+
+    public enum ActivityResetTargetScope
+    {
+        Unknown = 0,
+        LocalTarget = 1,
+        CurrentActivityEntry = 2,
+        CurrentActivity = 3,
+        CurrentRoute = 4,
+        CurrentSession = 5,
+    }
+
+    public readonly struct ActivityResetScopePlan
+    {
+        public ActivityResetScopePlan(
+            SessionActivityIdentity identity,
+            ActivityResetBoundaryKind boundaryKind,
+            ActivityResetTargetScope targetScope,
+            string policyId,
+            string source,
+            string reason)
+        {
+            Identity = identity;
+            BoundaryKind = boundaryKind;
+            TargetScope = targetScope;
+            PolicyId = Normalize(policyId);
+            Source = Normalize(source);
+            Reason = Normalize(reason);
+        }
+
+        public SessionActivityIdentity Identity { get; }
+        public ActivityResetBoundaryKind BoundaryKind { get; }
+        public ActivityResetTargetScope TargetScope { get; }
+        public string PolicyId { get; }
+        public string Source { get; }
+        public string Reason { get; }
+
+        public bool IsValid =>
+            Identity.IsValid &&
+            BoundaryKind != ActivityResetBoundaryKind.Unknown &&
+            TargetScope != ActivityResetTargetScope.Unknown &&
+            !string.IsNullOrWhiteSpace(PolicyId) &&
+            !string.IsNullOrWhiteSpace(Source);
+
+        private static string Normalize(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+    }
+
     public readonly struct ActivityResetActivityReference
     {
         public ActivityResetActivityReference(

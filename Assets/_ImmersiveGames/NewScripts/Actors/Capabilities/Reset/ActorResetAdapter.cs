@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.Actors.Foundation;
+using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
 using UnityEngine;
 
@@ -31,8 +32,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 throw new InvalidOperationException("stale_or_foreign_participant_actor_reset_command: command identity does not match active identity.");
             }
 
-            var actorId = command.ActorIdentity.ActorId;
-            var actorKind = ActorKind.Player;
+            ActorId actorId = command.ActorIdentity.ActorId;
+            ActorKind actorKind = ActorKind.Player;
             List<ActorResetGroup> appliedGroups = new();
             List<ActorResetGroup> skippedGroups = new();
             List<ActorResetSkippedGroupReason> skippedReasons = new();
@@ -44,7 +45,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 
             for (int referenceIndex = 0; referenceIndex < command.ResetReferences.Count; referenceIndex++)
             {
-                var resetReference = command.ResetReferences[referenceIndex];
+                ActorCapabilityResetEndpointReference resetReference = command.ResetReferences[referenceIndex];
                 if (resetReference == null || !resetReference.IsValid)
                 {
                     throw new InvalidOperationException($"Invalid actor reset inventory reference at index '{referenceIndex}' requirementId='{command.RequirementId}'.");
@@ -70,12 +71,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                 }
 
                 Debug.Log(
-                    $"[OBS][ActorResetAdapter] event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' supportedGroups='{FormatActorResetGroups(resetReference.SupportedGroups)}' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.");
+                    $"[OBS][ActorResetAdapter] event='ActorResetInventoryReferencesResolved' capabilityId='{resetReference.CapabilityId}' actorId='{resetReference.ActorId}' actorInstanceRuntimeId='{actorInstanceRuntimeId}' playerActorId='{command.ActorIdentity.PlayerActorId}' playerSlotId='{command.ActorIdentity.PlayerSlotId}' supportedGroups='{FormatActorResetGroups(resetReference.SupportedGroups)}' resetBoundaryEligibility='{ActivityResetBoundaryEligibilityFormatter.Format(resetReference.ResetBoundaryEligibility)}' required='{command.Required}' source='{command.Source}' reason='{command.Reason}'.");
 
                 IReadOnlyList<ActorResetGroup> supportedGroups = resetReference.SupportedGroups;
                 for (int groupIndex = 0; groupIndex < supportedGroups.Count; groupIndex++)
                 {
-                    var group = supportedGroups[groupIndex];
+                    ActorResetGroup group = supportedGroups[groupIndex];
                     if (group == ActorResetGroup.Unknown)
                     {
                         throw new InvalidOperationException($"Unknown reset group at index '{groupIndex}' for capabilityId='{resetReference.CapabilityId}'.");
@@ -99,7 +100,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
 
                     if (group == ActorResetGroup.Placement)
                     {
-                        if (command is { PlacementRequired: true, HasPlacement: false } && string.IsNullOrWhiteSpace(command.PlacementRequirementId))
+                        if (command.PlacementRequired && !command.HasPlacement && string.IsNullOrWhiteSpace(command.PlacementRequirementId))
                         {
                             throw new InvalidOperationException($"invalid_required_placement: actorId='{command.ActorIdentity.ActorId}'.");
                         }
@@ -115,7 +116,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                             continue;
                         }
 
-                        if (command is { PlacementOptional: true, HasPlacement: false })
+                        if (command.PlacementOptional && !command.HasPlacement)
                         {
                             if (skippedGroupSet.Add(group))
                             {
@@ -126,7 +127,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Reset
                             continue;
                         }
 
-                        if (command is { HasPlacement: true, PlacementRequired: false })
+                        if (command.HasPlacement && !command.PlacementRequired)
                         {
                             if (skippedGroupSet.Add(group))
                             {

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using _ImmersiveGames.NewScripts.SessionActivity.Capabilities.Inventory;
 using _ImmersiveGames.NewScripts.SessionActivity.Contracts;
+using _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Policies;
 
 namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 {
@@ -8,6 +10,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
     {
         public static ActivityResetResult Execute(
             ActivityResetCommand command,
+            ActivityResetScopePlan resetScopePlan,
             ActivityResetContext context,
             Func<ActivityObjectContributorDiscoveryResult, string, int, int, bool> isDiscoveryResultForCurrentEntry,
             Func<ActivityObjectContributionReport, string, int, int, bool> isReportForCurrentEntry,
@@ -23,18 +26,29 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                 throw new InvalidOperationException("ActivityResetCommand is invalid.");
             }
 
-            var resetIdentity = command.Identity;
+            if (!resetScopePlan.IsValid)
+            {
+                throw new InvalidOperationException("ActivityResetScopePlan is invalid for QA object reset execution.");
+            }
+
+            if (!resetScopePlan.Identity.CycleKey.Equals(command.Identity.CycleKey))
+            {
+                throw new InvalidOperationException(
+                    $"ActivityResetStage requires reset scope plan from the current activity cycle. activityId='{command.ActivityId}'.");
+            }
+
+            SessionActivityIdentity resetIdentity = command.Identity;
             string activityId = command.ActivityId;
             int activityOrdinal = command.ActivityOrdinal;
             int entrySequence = resetIdentity.EntrySequence;
-            var discoveryResult = context.DiscoveryResult;
+            ActivityObjectContributorDiscoveryResult discoveryResult = context.DiscoveryResult;
 
             emitFact(
                 SessionActivityFactKind.ObjectResetStarted,
-                $"'{activityId}' object reset started.");
+                $"'{activityId}' object reset started resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='BoundaryEligibilityFiltering'.");
             emitSnapshot(
                 "object_reset_started",
-                $"'{activityId}' object reset started.");
+                $"'{activityId}' object reset started resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' boundaryEligibilityRequired='{ActivityResetBoundaryPolicy.ResolveEligibility(resetScopePlan.BoundaryKind)}' behaviorMode='BoundaryEligibilityFiltering'.");
 
             if (!discoveryResult.IsValid)
             {
@@ -80,10 +94,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             int skippedCount = 0;
             int failedCount = 0;
             int noSupportedGroupsCount = 0;
+            int filteredByEligibilityCount = 0;
             int reportEvaluatedCount = 0;
 
-            var resetInventory = context.ResetInventory;
-            var resetInventoryValidation = context.ResetInventoryValidation;
+            ActivityCapabilityInventory resetInventory = context.ResetInventory;
+            ActivityCapabilityInventoryValidationResult resetInventoryValidation = context.ResetInventoryValidation;
             bool hasRequiredContributor = hasRequiredResetContributor(discoveryResult, activityId, activityOrdinal, entrySequence);
             bool hasValidResetInventory =
                 resetInventory.IsValid &&
@@ -115,7 +130,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             for (int reportIndex = 0; reportIndex < discoveryResult.Reports.Count; reportIndex++)
             {
-                var report = discoveryResult.Reports[reportIndex];
+                ActivityObjectContributionReport report = discoveryResult.Reports[reportIndex];
                 if (!report.IsValid || !isReportForCurrentEntry(report, activityId, activityOrdinal, entrySequence))
                 {
                     continue;
@@ -132,15 +147,26 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     continue;
                 }
 
+                if (!ActivityResetBoundaryPolicy.AllowsReset(resetScopePlan, report.ResetBoundaryEligibility))
+                {
+                    skippedCount += 1;
+                    filteredByEligibilityCount += 1;
+                    emitFact(
+                        SessionActivityFactKind.ObjectResetSkippedOptional,
+                        $"'{activityId}' object reset skipped targetId='{report.TargetId}' reason='reset_endpoint_filtered_by_boundary_policy' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}' resetBoundaryEligibility='{ActivityResetBoundaryPolicy.FormatResetBoundaryEligibility(report.ResetBoundaryEligibility)}'.");
+                    continue;
+                }
+
                 IActivityObjectResetEndpoint[] endpoints = resolveEndpointsFromInventory(resetInventory, report);
                 for (int groupIndex = 0; groupIndex < report.SupportedResetGroups.Count; groupIndex++)
                 {
-                    var resetGroup = report.SupportedResetGroups[groupIndex];
+                    ActivityStateResetGroup resetGroup = report.SupportedResetGroups[groupIndex];
                     if (resetGroup == ActivityStateResetGroup.Unknown)
                     {
                         throw new InvalidOperationException(
                             $"Activity '{activityId}' reset group cannot be Unknown targetId='{report.TargetId}'.");
                     }
+
 
                     ActivityObjectResetCommand resetCommand = new(
                         resetIdentity,
@@ -154,15 +180,15 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                     if (!resetCommand.IsValid)
                     {
                         throw new InvalidOperationException(
-                            $"Activity '{activityId}' produced invalid object reset command targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
+                            $"Activity '{activityId}' produced invalid object reset command targetId='{report.TargetId}' resetGroup='{resetGroup}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
                     }
 
                     commandCount += 1;
                     emitFact(
                         SessionActivityFactKind.ObjectResetCommandIssued,
-                        $"'{activityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
+                        $"'{activityId}' object reset command issued targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
 
-                    var result = executeObjectResetCommand(resetCommand, endpoints);
+                    ActivityObjectResetResult result = executeObjectResetCommand(resetCommand, endpoints);
                     if (!result.IsValid)
                     {
                         throw new InvalidOperationException(
@@ -176,7 +202,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                             SessionActivityFactKind.ObjectResetFailed,
                             $"'{activityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='stale_or_foreign_reset_result'.");
                         throw new InvalidOperationException(
-                            $"stale_or_foreign_reset_result: activityId='{activityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}'.");
+                            $"stale_or_foreign_reset_result: activityId='{activityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
                     }
 
                     if (result.IsApplied)
@@ -184,7 +210,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         appliedCount += 1;
                         emitFact(
                             SessionActivityFactKind.ObjectResetApplied,
-                            $"'{activityId}' object reset applied targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}'.");
+                            $"'{activityId}' object reset applied targetId='{report.TargetId}' roleId='{(string.IsNullOrWhiteSpace(report.RoleId) ? "<none>" : report.RoleId)}' contributorKind='{report.ContributorKind}' requiredness='{report.Requiredness}' resetGroup='{resetGroup}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
                         continue;
                     }
 
@@ -202,7 +228,7 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
                         SessionActivityFactKind.ObjectResetFailed,
                         $"'{activityId}' object reset failed targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
                     throw new InvalidOperationException(
-                        $"object_reset_failed: activityId='{activityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}'.");
+                        $"object_reset_failed: activityId='{activityId}' targetId='{report.TargetId}' resetGroup='{resetGroup}' reason='{result.Message}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
                 }
             }
 
@@ -217,6 +243,11 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
             {
                 finalCompletionKind = ActivityResetCompletionKind.NoCommands;
                 finalCompletionReason = "no_reports_for_current_entry";
+            }
+            else if (commandCount <= 0 && filteredByEligibilityCount > 0)
+            {
+                finalCompletionKind = ActivityResetCompletionKind.NoApplicableGroups;
+                finalCompletionReason = "reset_endpoints_filtered_by_boundary_policy";
             }
             else if (commandCount <= 0 && noSupportedGroupsCount > 0)
             {
@@ -241,12 +272,34 @@ namespace _ImmersiveGames.NewScripts.SessionActivity.Pipeline.Stages
 
             emitFact(
                 SessionActivityFactKind.ObjectResetCompleted,
-                $"'{activityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}'.");
+                $"'{activityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
             emitSnapshot(
                 "object_reset_completed",
-                $"'{activityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}'.");
+                $"'{activityId}' object reset completed commandCount='{commandCount}' appliedCount='{appliedCount}' skippedCount='{skippedCount}' failedCount='{failedCount}' completionKind='{finalCompletionKind}' completionReason='{finalCompletionReason}' resetBoundaryKind='{resetScopePlan.BoundaryKind}' resetTargetScope='{resetScopePlan.TargetScope}' resetPolicyId='{resetScopePlan.PolicyId}'.");
 
             return new ActivityResetResult(finalCompletionKind, finalCompletionReason, commandCount, appliedCount, skippedCount, failedCount);
+        }
+
+        private static string FormatActivityObjectResetGroups(IReadOnlyList<ActivityStateResetGroup> groups)
+        {
+            if (groups == null || groups.Count == 0)
+            {
+                return "<none>";
+            }
+
+            List<string> values = new(groups.Count);
+            for (int index = 0; index < groups.Count; index++)
+            {
+                ActivityStateResetGroup group = groups[index];
+                if (group == ActivityStateResetGroup.Unknown)
+                {
+                    continue;
+                }
+
+                values.Add(group.ToString());
+            }
+
+            return values.Count == 0 ? "<none>" : string.Join(",", values);
         }
     }
 }

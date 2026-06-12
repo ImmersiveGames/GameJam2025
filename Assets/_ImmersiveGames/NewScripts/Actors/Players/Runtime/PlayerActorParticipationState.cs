@@ -24,6 +24,8 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
         [SerializeField, HideInInspector] private PlayerActorParticipationStateKind participationState = PlayerActorParticipationStateKind.ActiveInActivity;
         [SerializeField, HideInInspector] private string currentActivityId;
         [SerializeField, HideInInspector] private int currentEntrySequence;
+        [Header("Reset")]
+        [SerializeField] private ActivityResetBoundaryEligibility resetBoundaryEligibility = ActivityResetBoundaryEligibility.All;
 
         public PlayerActorParticipationStateKind ParticipationState => participationState;
         public string CurrentActivityId => string.IsNullOrWhiteSpace(currentActivityId) ? string.Empty : currentActivityId.Trim();
@@ -64,7 +66,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                 return false;
             }
 
-            contribution = new PlayerActorActivityParticipationResetContribution(context);
+            contribution = new PlayerActorActivityParticipationResetContribution(context, resetBoundaryEligibility);
             return true;
         }
 
@@ -91,7 +93,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
 
         private readonly struct PlayerActorActivityParticipationResetContribution : IActorResetContribution
         {
-            public PlayerActorActivityParticipationResetContribution(ActorCapabilityContributionContext context)
+            public PlayerActorActivityParticipationResetContribution(ActorCapabilityContributionContext context, ActivityResetBoundaryEligibility resetBoundaryEligibility)
             {
                 Descriptor = new ActorCapabilityContributionDescriptor(
                     new ActorCapabilityId("actor.capability.player.activity_participation"),
@@ -105,10 +107,12 @@ namespace _ImmersiveGames.NewScripts.Actors.Players.Runtime
                     context.ComponentPath,
                     nameof(PlayerActorParticipationState),
                     "player_actor_activity_participation_reset_contribution");
+                ResetBoundaryEligibility = resetBoundaryEligibility;
             }
 
             public ActorCapabilityContributionDescriptor Descriptor { get; }
             public ActorResetGroup[] SupportedGroups => ActivityParticipationResetGroups;
+            public ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
             public bool IsValid => Descriptor.IsValid && SupportedGroups is { Length: > 0 };
         }
     }

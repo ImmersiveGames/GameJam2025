@@ -330,6 +330,7 @@ namespace _ImmersiveGames.NewScripts.Actors.Capabilities.Contracts
     public interface IActorResetContribution : IActorCapabilityContribution
     {
         ActorResetGroup[] SupportedGroups { get; }
+        ActivityResetBoundaryEligibility ResetBoundaryEligibility { get; }
     }
 
     public interface IActorSnapshotContribution : IActorCapabilityContribution
